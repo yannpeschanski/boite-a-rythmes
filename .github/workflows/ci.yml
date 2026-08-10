@@ -20,8 +20,8 @@ jobs:
     name: Tests & build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -37,7 +37,7 @@ jobs:
       # Le fichier autonome est récupérable depuis l'onglet Actions de chaque
       # exécution — pratique pour l'envoyer à quelqu'un sans déployer.
       - name: Publier le fichier autonome
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: boite-a-rythmes-fichier-unique
           path: dist-singlefile/index.html
@@ -56,19 +56,41 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
+      # Tant que Vercel n'est pas configuré, on saute le déploiement au lieu
+      # d'échouer : le dépôt reste vert (les tests, eux, sont bien passés) et
+      # le résumé explique quoi faire.
+      - name: Vercel est-il configuré ?
+        id: check
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Déploiement ignoré"
+              echo
+              echo "Vercel n'est pas encore configuré sur ce dépôt."
+              echo "Lance \`bash scripts/setup-deploy.sh\` pour créer le projet"
+              echo "et enregistrer les secrets, puis repousse."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Installer la CLI Vercel
+        if: steps.check.outputs.ready == 'true'
         run: npm install --global vercel@latest
       - name: Récupérer la configuration du projet
+        if: steps.check.outputs.ready == 'true'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - name: Build de production
+        if: steps.check.outputs.ready == 'true'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       - name: Déployer
         id: deploy
+        if: steps.check.outputs.ready == 'true'
         run: |
           url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
