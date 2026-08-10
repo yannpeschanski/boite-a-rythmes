@@ -1,0 +1,26 @@
+@import '../ui/xp/tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+body {
+  font-family: var(--xp-font);
+  color: var(--xp-text);
+  background: var(--xp-bliss);
+  background-attachment: fixed;
+  font-size: 14px;
+}
+#app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 12px;
+}
+button {
+  font-family: inherit;
+}

@@ -1,0 +1,498 @@
+// Niveaux du mode jeu — portés VERBATIM de boite-a-rythme-69.html (l. 7116–7463).
+//
+// ÉCARTS DE FORME constatés (données NON adaptées, typées dans leur forme d'origine) :
+// 1. La forme réelle d'un niveau (sortie de mkLevel) ne correspond PAS à
+//    l'interface LevelDef de ../types (id/title/concept/kind/params) : l'original
+//    est un objet plat riche (teach, preamble, subdivOptions, rowsActive,
+//    tempoOptions, swingOptions, dragOptions, shiftOptions, variant,
+//    variantChance, rollMax, rollChance, ghost, fill, density,
+//    forceVariantCount, forceRollCount, presetForceShift, presetGhostDensity,
+//    presetGhostRow, presetFillEvery, voiceTier). On le type ici structurellement
+//    (GameLevel) sans rien renommer.
+// 2. Dans l'original, presetForLevel/subdivForLevel/voiceForLevel lisent la
+//    globale PRESETS avec une forme PLATE (preset.kick.subdiv, preset.kick.pitch…),
+//    différente de SongPreset de ../types (où le fragment vit dans
+//    state.rows.kick). Faute de module presets de morceau ici, la liste est
+//    passée en paramètre, typée structurellement dans la forme consommée
+//    (GamePresetLike).
+// 3. Les fonctions qui utilisaient Math.random reçoivent un paramètre
+//    `rng: () => number` (défaut Math.random), logique inchangée.
+
+import type { DrumRowName, DrumStep } from '../types';
+
+// ---------- Types structurels (forme d'origine) ----------
+
+// Subdivision d'un niveau : soit un nombre (même subdivision sur les 3 lignes),
+// soit un objet {kick,snare,hat} (polyrythmie) — voir pickSubdiv.
+export type SubdivSpec = { kick: number; snare: number; hat: number };
+export type SubdivOption = number | SubdivSpec;
+
+export interface LevelDensity {
+  kickMin: number;
+  kickMax: number;
+  snareMin: number;
+  snareMax: number;
+  hatMin: number;
+  hatMax: number;
+}
+
+export type VoiceTierName = 'easy' | 'medium' | 'hard';
+
+export interface GameLevel {
+  id: number;
+  teach: string;
+  preamble: string;
+  presetId: string | null;
+  subdivOptions: SubdivOption[];
+  rowsActive: { kick: boolean; snare: boolean; hat: boolean };
+  tempoOptions: number[];
+  swingOptions: number[];
+  dragOptions: number[];
+  shiftOptions: number[];
+  variant: { snare: boolean; hat: boolean };
+  variantChance: number;
+  rollMax: number;
+  rollChance: number;
+  ghost: boolean;
+  fill: boolean;
+  density: LevelDensity;
+  forceVariantCount: number;
+  forceRollCount: number;
+  presetForceShift: boolean;
+  presetGhostDensity: number;
+  presetGhostRow: DrumRowName;
+  presetFillEvery: number;
+  voiceTier: VoiceTierName;
+}
+
+// Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
+export interface MkLevelOptions {
+  preamble?: string;
+  presetId?: string;
+  subdivOptions?: SubdivOption[];
+  rowsActive?: { kick?: boolean; snare?: boolean; hat?: boolean };
+  tempoOptions?: number[];
+  swingOptions?: number[];
+  dragOptions?: number[];
+  shiftOptions?: number[];
+  variant?: { snare?: boolean; hat?: boolean };
+  variantChance?: number;
+  rollMax?: number;
+  rollChance?: number;
+  ghost?: boolean;
+  fill?: boolean;
+  density?: LevelDensity;
+  forceVariantCount?: number;
+  forceRollCount?: number;
+  presetForceShift?: boolean;
+  presetGhostDensity?: number;
+  presetGhostRow?: DrumRowName;
+  presetFillEvery?: number;
+}
+
+// Options du générateur de ligne (voir genLevelRow).
+export interface GenRowOpts {
+  forceIndices?: number[];
+  fillRatio?: number | null;
+  minExtra?: number;
+  maxExtra?: number;
+  variantEnabled: boolean;
+  variantChance: number;
+  rollMax: number;
+  rollChance: number;
+}
+
+export interface GenRowResult {
+  state: DrumStep[];
+  roll: number[];
+}
+
+export interface LevelRhythm {
+  target: Record<DrumRowName, DrumStep[]>;
+  roll: Record<DrumRowName, number[]>;
+}
+
+// Timbre par ligne tel que tiré/copié par le mode jeu (sous-ensemble du timbre drum).
+export interface RowTimbre {
+  pitch: number;
+  attack: number;
+  decay: number;
+  tone: number;
+}
+export type GameVoice = Record<DrumRowName, RowTimbre>;
+
+// Forme PLATE d'un preset de morceau telle que consommée par le mode jeu dans
+// l'original (preset.kick.subdiv, preset.kick.pitch…) — écart vs SongPreset,
+// voir commentaire de tête.
+export interface GamePresetRow {
+  subdiv: number;
+  pitch?: number;
+  attack?: number;
+  decay?: number;
+  tone?: number;
+}
+export interface GamePresetLike {
+  id: string;
+  kick: GamePresetRow;
+  snare: GamePresetRow;
+  hat: GamePresetRow;
+}
+
+export interface VoiceTierRange {
+  pitch: number;
+  attack: number;
+  decay: number;
+  toneKick: number;
+  toneSnare: number;
+  toneHat: number;
+}
+
+// ---------- Niveaux de difficulté ----------
+// "subdiv" donne le nombre de pas par ligne : en difficile, kick/snare sont en 4
+// et le hat en 3 -> polyrythmie (3 contre 4) dans la même mesure.
+export function pick<T>(arr: T[], rng: () => number = Math.random): T {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
+// Positions "fortes" d'une mesure divisée en `steps` pas, en la subdivisant par
+// 2, 3 et 4 — sert de réservoir de points d'ancrage variés (au lieu de toujours
+// caler kick/snare sur les mêmes cases, ce qui donnait toujours le même feeling
+// afrobeat/four-on-the-floor).
+export function strongPositions(steps: number): number[] {
+  const set = new Set<number>([0, steps - 1]);
+  [2, 3, 4].forEach(divisions => {
+    if (divisions <= steps) {
+      for (let k = 1; k < divisions; k++) set.add(Math.floor(k * steps / divisions));
+    }
+  });
+  return Array.from(set).filter(i => i < steps && i >= 0).sort((a, b) => a - b);
+}
+
+// Générateur de motif niveau : renvoie un état (0 vide / 1 normal / 2 variante)
+// et une rafale (1 à 4) par pas. Remplace l'ancien genGameRhythm : la variante
+// (rim shot / hat ouvert) et la rafale sont désormais devinables comme le reste,
+// mais seulement quand le niveau les autorise (level.variant / level.rollMax).
+export function genLevelRow(steps: number, opts: GenRowOpts, rng: () => number = Math.random): GenRowResult {
+  const state: DrumStep[] = new Array(steps).fill(0);
+  const roll: number[] = new Array(steps).fill(1);
+  (opts.forceIndices || []).forEach(i => { if (i < steps) state[i] = 1; });
+  if (opts.fillRatio != null) {
+    const target = Math.max(state.filter(Boolean).length, Math.round(steps * opts.fillRatio));
+    let guard = 0;
+    while (state.filter(Boolean).length < target && guard < steps * 4) {
+      const i = Math.floor(rng() * steps);
+      if (!state[i]) state[i] = 1;
+      guard++;
+    }
+  } else {
+    const minExtra = opts.minExtra || 0, maxExtra = opts.maxExtra != null ? opts.maxExtra : minExtra;
+    const extra = minExtra + Math.floor(rng() * (maxExtra - minExtra + 1));
+    for (let n = 0; n < extra; n++) state[Math.floor(rng() * steps)] = 1;
+  }
+  for (let i = 0; i < steps; i++) {
+    if (!state[i]) continue;
+    if (opts.variantEnabled && rng() < opts.variantChance) state[i] = 2;
+    if (opts.rollMax > 1 && rng() < opts.rollChance) {
+      roll[i] = 2 + Math.floor(rng() * (opts.rollMax - 1));
+    }
+  }
+  return { state, roll };
+}
+
+export function genLevelRhythm(subdiv: SubdivSpec, level: GameLevel, rng: () => number = Math.random): LevelRhythm {
+  const active = level.rowsActive || { kick: true, snare: true, hat: true };
+  const kickAnchors = strongPositions(subdiv.kick);
+  const kick = active.kick ? genLevelRow(subdiv.kick, {
+    forceIndices: [pick(kickAnchors, rng)],
+    minExtra: level.density.kickMin, maxExtra: level.density.kickMax,
+    variantEnabled: false, variantChance: 0,
+    rollMax: level.rollMax, rollChance: level.rollChance,
+  }, rng) : { state: new Array<DrumStep>(subdiv.kick).fill(0), roll: new Array<number>(subdiv.kick).fill(1) };
+  const snareAnchors = strongPositions(subdiv.snare);
+  const snare = active.snare ? genLevelRow(subdiv.snare, {
+    forceIndices: [pick(snareAnchors, rng)],
+    minExtra: level.density.snareMin, maxExtra: level.density.snareMax,
+    variantEnabled: level.variant.snare, variantChance: level.variantChance,
+    rollMax: level.rollMax, rollChance: level.rollChance,
+  }, rng) : { state: new Array<DrumStep>(subdiv.snare).fill(0), roll: new Array<number>(subdiv.snare).fill(1) };
+  const hat = active.hat ? genLevelRow(subdiv.hat, {
+    fillRatio: level.density.hatMin + rng() * (level.density.hatMax - level.density.hatMin),
+    variantEnabled: level.variant.hat, variantChance: level.variantChance,
+    rollMax: level.rollMax, rollChance: level.rollChance,
+  }, rng) : { state: new Array<DrumStep>(subdiv.hat).fill(0), roll: new Array<number>(subdiv.hat).fill(1) };
+  return {
+    target: { kick: kick.state, snare: snare.state, hat: hat.state },
+    roll: { kick: kick.roll, snare: snare.roll, hat: hat.roll },
+  };
+}
+
+// subdivOptions peut mélanger des nombres (même subdivision sur les 3 lignes) et
+// des objets {kick,snare,hat} (polyrythmie) — pickSubdiv gère les deux formes.
+export function pickSubdiv(options: SubdivOption[], rng: () => number = Math.random): SubdivSpec {
+  const choice = pick(options, rng);
+  return (typeof choice === 'number') ? { kick: choice, snare: choice, hat: choice } : choice;
+}
+
+// ---------- Niveaux "preset" : reproduire un rythme réel de l'Atelier ----------
+// Plutôt qu'un rythme généré, la cible est directement le pattern d'un preset
+// existant (même subdivision par ligne, mêmes shift/tempo/swing/drag, même
+// timbre) — le format pattern (0/1/2 par pas) est déjà identique à celui du jeu.
+// Volontairement ignorés : ghostDensity/spontRoll/fillEvery du preset (le ghost
+// et le fill n'ont pas encore leur propre leçon à ce stade de la campagne) et
+// toute rafale (roll toujours 1 — la rafale n'est jamais l'objet noté ici).
+// (Portage : la globale PRESETS de l'original est ici passée en paramètre.)
+export function presetForLevel(cfg: GameLevel, presets: GamePresetLike[]): GamePresetLike | null {
+  return cfg.presetId ? (presets.find(p => p.id === cfg.presetId) || null) : null;
+}
+export function subdivForLevel(cfg: GameLevel, presets: GamePresetLike[], rng: () => number = Math.random): SubdivSpec {
+  const preset = presetForLevel(cfg, presets);
+  return preset
+    ? { kick: preset.kick.subdiv, snare: preset.snare.subdiv, hat: preset.hat.subdiv }
+    : pickSubdiv(cfg.subdivOptions, rng);
+}
+export function voiceForLevel(cfg: GameLevel, presets: GamePresetLike[], rng: () => number = Math.random): GameVoice {
+  const preset = presetForLevel(cfg, presets);
+  if (!preset) return randomVoice(VOICE_TIERS[cfg.voiceTier], rng);
+  const v = (row: GamePresetRow): RowTimbre => ({ pitch: row.pitch || 0, attack: row.attack || 0, decay: row.decay || 0, tone: row.tone || 0 });
+  return { kick: v(preset.kick), snare: v(preset.snare), hat: v(preset.hat) };
+}
+
+// ---------- Timbre aléatoire par palier (Mode jeu) ----------
+// Pure couleur sonore, jamais montrée ni devinée — n'affecte que playKick/
+// playSnare/playHatClosed/playHatOpen, jamais gameTarget/gameGuess. Trois paliers
+// d'intensité (comme les anciens easy/medium/hard), choisis selon le niveau.
+export function randBetween(min: number, max: number, rng: () => number = Math.random): number {
+  return Math.round(min + rng() * (max - min));
+}
+export function randomVoice(range: VoiceTierRange, rng: () => number = Math.random): GameVoice {
+  return {
+    kick:  { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: randBetween(0, range.toneKick, rng) },
+    snare: { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: randBetween(-range.toneSnare, range.toneSnare, rng) },
+    hat:   { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: randBetween(0, range.toneHat, rng) },
+  };
+}
+export const VOICE_TIERS: Record<VoiceTierName, VoiceTierRange> = {
+  easy:   { pitch: 2, attack: 6,  decay: 5,  toneKick: 0, toneSnare: 6,  toneHat: 6  },
+  medium: { pitch: 4, attack: 10, decay: 8,  toneKick: 0, toneSnare: 10, toneHat: 10 },
+  hard:   { pitch: 6, attack: 15, decay: 12, toneKick: 0, toneSnare: 15, toneHat: 15 },
+};
+export function voiceTierForLevel(id: number): VoiceTierName {
+  return id <= 12 ? 'easy' : (id <= 26 ? 'medium' : 'hard');
+}
+
+// ---------- Campagne à 34 niveaux, une seule séquence continue ----------
+// Chaque niveau n'introduit qu'UN concept nouveau à la fois (sauf 16-17, qui
+// combinent tout) : placement, variante, rafale, subdivision, swing, traîne,
+// décalage, polyrythmie, ghost/fill, puis tout combiné. Une fois une mécanique
+// introduite elle reste active sur les niveaux suivants, mais son intensité
+// (rollMax/variantChance) redescend d'abord pour laisser la place au nouvel
+// axe avant de remonter crescendo. "preamble" (seulement sur le premier niveau
+// de chaque concept) est affiché au joueur pour expliquer ce qui change.
+export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel {
+  return {
+    id, teach, preamble: o.preamble || '',
+    presetId: o.presetId || null,
+    subdivOptions: o.subdivOptions || [4],
+    rowsActive: {
+      kick: o.rowsActive ? !!o.rowsActive.kick : true,
+      snare: o.rowsActive ? !!o.rowsActive.snare : true,
+      hat: o.rowsActive ? !!o.rowsActive.hat : true,
+    },
+    tempoOptions: o.tempoOptions || [84, 92, 100, 108],
+    swingOptions: o.swingOptions || [0],
+    dragOptions: o.dragOptions || [0],
+    shiftOptions: o.shiftOptions || [0],
+    variant: { snare: !!(o.variant && o.variant.snare), hat: !!(o.variant && o.variant.hat) },
+    variantChance: o.variantChance != null ? o.variantChance : 0.4,
+    rollMax: o.rollMax || 1,
+    rollChance: o.rollChance != null ? o.rollChance : 0.3,
+    ghost: !!o.ghost,
+    fill: !!o.fill,
+    density: o.density || { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 },
+    // Force EXACTEMENT N notes actives en variante/rafale, en plus (ou à la
+    // place) de la génération probabiliste habituelle — utilisé pour les
+    // niveaux "une seule variante/rafale" ET pour les niveaux preset (garantir
+    // qu'un concept déjà enseigné est bien présent dans la cible, même si le
+    // preset original n'en contenait pas assez).
+    forceVariantCount: o.forceVariantCount || 0,
+    forceRollCount: o.forceRollCount || 0,
+    // Preset "modifié pour l'occasion" : décalage aléatoire forcé par ligne
+    // (la plupart des presets ont un shift naturel nul) et ghost/fill activés
+    // dans la cible jouée (au lieu du silence habituel sur les niveaux preset).
+    presetForceShift: !!o.presetForceShift,
+    presetGhostDensity: o.presetGhostDensity || 0,
+    presetGhostRow: o.presetGhostRow || 'snare',
+    presetFillEvery: o.presetFillEvery || 0,
+    voiceTier: voiceTierForLevel(id),
+  };
+}
+
+export const LEVELS: GameLevel[] = [
+  mkLevel(1, 'Poser une note (kick)', {
+    preamble: "Un rythme secret joue en boucle : reproduis-le à l'oreille, comme au Motus — seules les notes bien placées se valident avec un ✓. Pour l'instant, seul le kick (la grosse caisse) compte : les deux autres lignes restent vides, rien à y faire.",
+    subdivOptions: [4], tempoOptions: [84, 92],
+    rowsActive: { kick: true, snare: false, hat: false },
+    density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(2, 'Poser une note (kick + snare)', {
+    preamble: "La snare (caisse claire) entre en jeu à son tour — le hat reste vide encore un niveau.",
+    subdivOptions: [4], tempoOptions: [84, 92],
+    rowsActive: { kick: true, snare: true, hat: false },
+    density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(3, 'Poser une note (kick + snare + hat)', {
+    preamble: "Le hat (charleston) complète le trio : kick, snare et hat forment maintenant la base complète du rythme.",
+    subdivOptions: [4], tempoOptions: [84, 92],
+    density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0.35, hatMax: 0.5 } }),
+  mkLevel(4, 'Reproduire un preset (Motown)', {
+    preamble: "Ces niveaux ne sont plus générés au hasard : ce sont de vrais rythmes de l'Atelier, à replacer dans leur contexte. Motown/soul, le plus simple qui soit — aucune variante, aucune rafale.",
+    presetId: 'motown' }),
+  // ---------- Variante (2 niveaux : une seule, puis complète) ----------
+  mkLevel(5, 'Variante (une seule)', {
+    preamble: "Une case active peut aussi contenir une variante (rim shot pour la snare, hat ouvert pour le hat) — reclique une case déjà active pour y basculer. Ici, une seule note du rythme en contient une : à toi de la repérer.",
+    subdivOptions: [4], tempoOptions: [84, 92],
+    variant: { snare: true, hat: true }, variantChance: 0, forceVariantCount: 1,
+    density: { kickMin: 0, kickMax: 0, snareMin: 1, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(6, 'Variante (complète)', {
+    preamble: "Cette fois, plusieurs notes peuvent être en variante — sur la snare comme sur le hat.",
+    subdivOptions: [4], tempoOptions: [84, 92],
+    variant: { snare: true, hat: true }, variantChance: 0.6, rollMax: 1,
+    density: { kickMin: 0, kickMax: 0, snareMin: 1, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  // ---------- Round 1 : Subdivision + Rafale, entrelacés, avec presets ----------
+  mkLevel(7, 'Subdivision plus fine', {
+    preamble: "La mesure se découpe en plus de cases : plus de précision demandée à l'oreille. Ici, une subdivision différente par ligne — kick et hat en 8, snare en 4.",
+    subdivOptions: [{ kick: 8, snare: 4, hat: 8 }],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 1,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.4, hatMax: 0.55 } }),
+  mkLevel(8, 'Rafale (une seule)', {
+    preamble: "Clic droit (ou appui long) sur une case active : elle joue en rafale, plusieurs coups rapprochés au lieu d'un seul. Une seule note du rythme en contient une ici.",
+    subdivOptions: [6, 7],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0, forceRollCount: 1,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(9, 'Reproduire un preset (Tresillo)', {
+    preamble: "La cellule tresillo (3+3+2), toute simple à l'origine — variante et rafale y sont ajoutées pour l'occasion, histoire de vérifier que ça reste acquis.",
+    variant: { snare: true, hat: true }, rollMax: 2, presetId: 'tresillo', forceVariantCount: 1, forceRollCount: 1 }),
+  mkLevel(10, 'Subdivision plus fine', {
+    preamble: "Subdivision encore plus fine — l'oreille doit suivre davantage de pas.",
+    subdivOptions: [{ kick: 10, snare: 5, hat: 10 }],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.15,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(11, 'Rafale (complète)', {
+    preamble: "Plusieurs rafales possibles maintenant, sur n'importe quelle ligne.",
+    subdivOptions: [6, 7],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.5,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(12, 'Reproduire un preset (House)', {
+    variant: { snare: true, hat: true }, rollMax: 2, presetId: 'house', forceVariantCount: 1, forceRollCount: 1 }),
+  mkLevel(13, 'Reproduire un preset (Dancehall)', {
+    variant: { snare: true, hat: true }, rollMax: 2, presetId: 'dancehall', forceVariantCount: 1, forceRollCount: 1 }),
+  // ---------- Round 2 : Swing + Traîne, entrelacés, avec presets ----------
+  mkLevel(14, 'Swing', {
+    preamble: "Le rythme peut désormais 'balancer' (swing) : certaines cases arrivent légèrement en retard pour un groove moins carré.",
+    subdivOptions: [6, 7], swingOptions: [10],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.3,
+    density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(15, 'Traîne (drag)', {
+    preamble: "Une ligne entière peut traîner légèrement derrière le tempo (drag) — un décalage collectif et constant, pas note par note.",
+    subdivOptions: [6, 7], dragOptions: [5], swingOptions: [0, 10],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.3,
+    density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(16, 'Reproduire un preset (UK Garage)', {
+    preamble: "Le swing de ce preset est très marqué (45%) — pas un hasard, c'est ce chapitre qu'il illustre.",
+    variant: { snare: true, hat: true }, rollMax: 2, presetId: 'garage', forceVariantCount: 1, forceRollCount: 1 }),
+  mkLevel(17, 'Swing', {
+    preamble: "Le swing se prononce un peu plus.",
+    subdivOptions: [6, 7, 8], swingOptions: [10, 20],
+    variant: { snare: true, hat: true }, variantChance: 0.35, rollMax: 2, rollChance: 0.3,
+    density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(18, 'Traîne (drag)', {
+    preamble: "La traîne s'accentue.",
+    subdivOptions: [7, 8], dragOptions: [5, 10, 15], swingOptions: [0, 10, 20],
+    variant: { snare: true, hat: true }, variantChance: 0.35, rollMax: 3, rollChance: 0.3,
+    density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
+  mkLevel(19, 'Reproduire un preset (Gqom)', {
+    preamble: "Ce preset a une vraie traîne naturelle (12%) — un kick minimaliste (un seul temps) pour bien l'entendre sans bruit parasite.",
+    variant: { snare: true, hat: true }, rollMax: 3, presetId: 'gqom', forceVariantCount: 1, forceRollCount: 1 }),
+  // ---------- Round 3 : Ghost + Fill, un niveau chacun, puis preset dédié ----------
+  mkLevel(20, 'Ghost notes', {
+    preamble: "Des ghost notes (discrètes, en arrière-plan) peuvent apparaître dans ce que tu écoutes — elles ne se devinent pas comme les autres notes, elles s'entendent.",
+    subdivOptions: [6, 7, 8], swingOptions: [0, 10], dragOptions: [0, 10],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.3,
+    ghost: true,
+    density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
+  mkLevel(21, 'Fill', {
+    preamble: "Et des fills (petites relances en fin de mesure), qui reviennent régulièrement casser la boucle.",
+    subdivOptions: [7, 8, 9], swingOptions: [0, 10, 20], dragOptions: [0, 10, 15],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.3,
+    ghost: true, fill: true,
+    density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.55, hatMax: 0.7 } }),
+  mkLevel(22, 'Reproduire un preset (House French touch)', {
+    preamble: "Ghost notes et fill sont activés pour l'occasion sur ce preset qui les a naturellement (fill toutes les 4 mesures) — écoute-les en contexte.",
+    variant: { snare: true, hat: true }, rollMax: 3, presetId: 'housefrenchtouch',
+    forceVariantCount: 1, forceRollCount: 1,
+    presetGhostDensity: 15, presetGhostRow: 'snare', presetFillEvery: 4 }),
+  // ---------- Round 4 : Décalage (seul) + Polyrythmie, avec presets ----------
+  mkLevel(23, 'Décalage par ligne', {
+    preamble: "Chaque ligne (kick/snare/hat) peut être décalée indépendamment, en avance ou en retard — regarde les badges ◀/▶ à côté de son nom.",
+    subdivOptions: [6, 7, 8], shiftOptions: [-10, -5, 5, 10], dragOptions: [0, 10], swingOptions: [0, 10, 20],
+    variant: { snare: true, hat: true }, variantChance: 0.35, rollMax: 3, rollChance: 0.3,
+    density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
+  mkLevel(24, 'Polyrythmie', {
+    preamble: "Kick, snare et hat peuvent désormais avoir des subdivisions différentes en même temps — plusieurs pulsations qui se croisent.",
+    subdivOptions: [{ kick: 3, snare: 4, hat: 5 }, { kick: 4, snare: 3, hat: 5 }, { kick: 5, snare: 4, hat: 3 }],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.25,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(25, 'Reproduire un preset (Clave)', {
+    preamble: "Kick, snare et hat n'ont déjà plus du tout la même subdivision entre eux dans ce preset — la meilleure passerelle vers la polyrythmie.",
+    variant: { snare: true, hat: true }, rollMax: 3, presetId: 'clave', forceVariantCount: 1, forceRollCount: 1 }),
+  mkLevel(26, 'Polyrythmie', {
+    preamble: "Une nouvelle combinaison de subdivisions à croiser.",
+    subdivOptions: [{ kick: 4, snare: 5, hat: 3 }, { kick: 5, snare: 3, hat: 4 }, { kick: 3, snare: 5, hat: 4 }],
+    swingOptions: [0, 10], dragOptions: [0, 10], shiftOptions: [-5, 5],
+    variant: { snare: true, hat: true }, variantChance: 0.35, rollMax: 3, rollChance: 0.3,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
+  mkLevel(27, 'Reproduire un preset (Dembow)', {
+    preamble: "Subdivisions très différentes par ligne, syncopation serrée sur la snare — un vrai test de polyrythmie en conditions réelles.",
+    variant: { snare: true, hat: true }, rollMax: 3, presetId: 'dembow', forceVariantCount: 1, forceRollCount: 1 }),
+  // ---------- Mesure longue, puis polyrythmie étirée sur le même rapport 4:3 ----------
+  mkLevel(28, 'Mesure longue', {
+    preamble: "La mesure s'étire à 16 pas sur les 3 lignes — aucune nouvelle notion, juste une mesure bien plus longue à tenir avec précision.",
+    subdivOptions: [{ kick: 16, snare: 16, hat: 16 }],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 3, rollChance: 0.3,
+    density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
+  mkLevel(29, 'Polyrythmie — 8 contre 6', {
+    preamble: "Un vrai cross-rhythm : le kick et le hat jouent en 8, la snare en 6 — le même rapport qu'un 4 contre 3, très courant en afro-cubain.",
+    subdivOptions: [{ kick: 8, snare: 6, hat: 8 }],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 3, rollChance: 0.3,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(30, 'Polyrythmie — 16 contre 12', {
+    preamble: "Le même rapport 4:3 qu'au niveau précédent, mais étiré sur une mesure deux fois plus longue.",
+    subdivOptions: [{ kick: 16, snare: 12, hat: 16 }],
+    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 3, rollChance: 0.3,
+    density: { kickMin: 0, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(31, 'Polyrythmie — 32 contre 24', {
+    preamble: "Le vrai défi de lecture : kick à 32 pas contre snare à 24 (toujours 4:3) — le hat reste volontairement plus simple pour ne pas surcharger l'écran. Le reste (variante, rafale, densité) redescend volontairement : la difficulté ici, c'est la lecture, pas autre chose en plus.",
+    subdivOptions: [{ kick: 32, snare: 24, hat: 8 }],
+    tempoOptions: [72, 80], variant: { snare: true, hat: true }, variantChance: 0.2, rollMax: 2, rollChance: 0.15,
+    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.4, hatMax: 0.5 } }),
+  // ---------- Ancrage : preset polyrythmique réel après l'arc abstrait 28-31 ----------
+  mkLevel(32, 'Reproduire un preset (Funk James Brown)', {
+    preamble: "Après quatre niveaux de polyrythmie abstraite, retour à un vrai morceau qui l'utilise nativement : kick en 16, snare en 4, hat en 16 — le même principe, mais dans un groove reconnaissable.",
+    variant: { snare: true, hat: true }, rollMax: 3, presetId: 'funk', forceVariantCount: 1, forceRollCount: 1 }),
+  // ---------- Finale ----------
+  mkLevel(33, 'Tout combiné', {
+    preamble: "Dernière ligne droite : tous les principes précédents peuvent se combiner en même temps.",
+    subdivOptions: [{ kick: 4, snare: 5, hat: 6 }, { kick: 5, snare: 6, hat: 4 }, { kick: 6, snare: 4, hat: 5 }],
+    tempoOptions: [76, 84, 132, 140], swingOptions: [10, 20, 30], dragOptions: [10, 15, 20],
+    shiftOptions: [-10, -5, 5, 10], variant: { snare: true, hat: true }, variantChance: 0.4,
+    rollMax: 3, rollChance: 0.35, ghost: true, fill: true,
+    density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.55, hatMax: 0.75 } }),
+  mkLevel(34, 'Reproduire un preset (Trap moderne)', {
+    preamble: "Le vrai défi final : Trap moderne a déjà une polyrythmie naturelle (kick/8, snare/4, hat/16) — variante, rafale, décalage, ghost et fill y sont tous ajoutés pour l'occasion. Tout ce que la campagne a enseigné, dans un seul rythme.",
+    variant: { snare: true, hat: true }, rollMax: 4, presetId: 'trapmodern',
+    forceVariantCount: 2, forceRollCount: 2, presetForceShift: true,
+    shiftOptions: [-15, -10, -5, 5, 10, 15],
+    // fillEvery abaissé de 4 à 2 : purement décoratif (jamais dans la cible
+    // vérifiée), donc toutes les 4 mesures était trop rare pour être remarqué
+    // pendant une session de test normale — 2 mesures le rend audible plus vite
+    // sans changer ce qui est noté.
+    presetGhostDensity: 12, presetGhostRow: 'kick', presetFillEvery: 2 }),
+];

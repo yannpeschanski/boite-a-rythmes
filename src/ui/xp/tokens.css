@@ -1,0 +1,64 @@
+/* Design system XP — tokens. Thème "luna" (Atelier, beige clair) posé sur le
+   conteneur de vue ; le futur mode jeu posera data-theme="noir". Tout le look
+   (reliefs, dégradés Luna, Bliss) vit ici en variables — plus de bataille de
+   spécificité comme dans l'original. */
+:root,
+[data-theme='luna'] {
+  --xp-face: #ece9d8;
+  --xp-face-dark: #d6d2c2;
+  --xp-line: #aca899;
+  --xp-text: #1a1a1a;
+  --xp-muted: #6f6d64;
+  --xp-white: #fff;
+  --xp-shadow: #808080;
+
+  /* Barre de titre Luna : dégradé bleu en plusieurs stops */
+  --xp-title-grad: linear-gradient(
+    180deg,
+    #0997ff 0%,
+    #0053ee 8%,
+    #0050ee 40%,
+    #06f 88%,
+    #003dd7 93%,
+    #0997ff 100%
+  );
+  --xp-title-text: #fff;
+  --xp-close-grad: linear-gradient(180deg, #e5a899 0%, #d44e2a 45%, #b13317 100%);
+
+  /* Reliefs boutons/cases (in/out) */
+  --xp-bevel-out: inset -1px -1px 0 var(--xp-shadow), inset 1px 1px 0 var(--xp-white);
+  --xp-bevel-in: inset 1px 1px 0 var(--xp-shadow), inset -1px -1px 0 var(--xp-white);
+
+  /* Les 3 familles de modules : ambre = Drum, violet = Synthé, teal = Général */
+  --xp-accent-amber: #c8881a;
+  --xp-accent-amber-soft: #f4e3c2;
+  --xp-accent-violet: #7b5ea7;
+  --xp-accent-violet-soft: #e6ddf2;
+  --xp-accent-teal: #2b8a8a;
+  --xp-accent-teal-soft: #d3ecec;
+
+  --xp-select-blue: #3169d4;
+  --xp-font: Tahoma, 'Noto Sans', Verdana, 'Segoe UI', sans-serif;
+  --xp-mono: 'JetBrains Mono', monospace;
+
+  /* Fond "colline Bliss" en dégradés CSS purs (aucune image) */
+  --xp-bliss:
+    radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79, 152, 56, 0) 60%),
+    radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87, 163, 61, 0) 62%),
+    linear-gradient(180deg, #2f71d1 0%, #5f9be6 45%, #a9cdf5 70%, #cfe6fa 100%);
+
+  --cell-kick: #d84315;
+  --cell-snare: #c8881a;
+  --cell-hat: #2b8a8a;
+}
+
+[data-theme='noir'] {
+  --xp-face: #3b3b46;
+  --xp-face-dark: #2c2c35;
+  --xp-line: #55555f;
+  --xp-text: #eaeaf0;
+  --xp-muted: #9a9aa6;
+  --xp-white: #5b5b68;
+  --xp-shadow: #17171d;
+  --xp-title-grad: linear-gradient(180deg, #3d4f7c 0%, #232f52 50%, #1a2340 100%);
+}
