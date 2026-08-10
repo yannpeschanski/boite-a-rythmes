@@ -8,6 +8,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Bouton « Run workflow » dans l'onglet Actions : permet de relancer un
+  # déploiement sans avoir à modifier le code (ex. après avoir renouvelé le
+  # jeton Vercel).
+  workflow_dispatch:
 
 # Un déploiement à la fois : si deux push s'enchaînent, le plus ancien est
 # annulé plutôt que de déployer une version dépassée après la récente.
