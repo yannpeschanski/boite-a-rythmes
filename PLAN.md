@@ -265,8 +265,18 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   d'un catalogue (`src/ui/live/liveActions.ts`, 8 actions + 2 axes) plutôt que
   de coder en dur "ce qu'il fait" ; l'overlay ⚙ change l'association d'un
   appui (option suivante, cycle) et la persiste dans localStorage (validée au
-  chargement, retombe sur les défauts si le format a changé) ; (4) polish —
-  viz ②/③ en option, axe d'inclinaison calibré au tap d'entrée.
+  chargement, retombe sur les défauts si le format a changé) ; (4) ✅ polish
+  — viz ②/③ (arty, défilement) redevenues choisissables depuis l'overlay
+  (catalogue étendu à `LIVE_VIZ`), les deux réagissant au vrai niveau de la
+  ligne kick (`getLineLevels()`) plutôt qu'à une horloge synthétique comme
+  dans la maquette d'origine ; axe d'inclinaison assignable comme le pad
+  (`axisTilt`), calibré au premier échantillon reçu après activation — pas un
+  zéro absolu — sur une plage large ±35° plutôt que précise ; le pad et
+  l'inclinaison pouvant viser le même paramètre, l'affichage (bandes ambrées)
+  reflète maintenant la dernière source qui a écrit, pas seulement le pad.
+
+  **Les 4 phases du plan sont posées.** Mode Live est fonctionnellement
+  complet ; les features supplémentaires ci-dessous restent à l'état d'idées.
 
   **Features supplémentaires envisagées** : vibration (`navigator.vibrate`) à
   chaque trigger ; prise/snapshot des assignations rappelable par appui long ;
