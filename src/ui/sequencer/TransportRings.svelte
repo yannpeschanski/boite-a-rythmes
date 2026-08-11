@@ -2,19 +2,30 @@
   // Rappel coloré compact du rythme dans la barre de transport — anneau
   // batterie (Kick/Snare/Hat) et anneau synthé (Basse/Nappe/Mélodie) côte à
   // côte, à droite de Lecture/Break. Volontairement un aperçu, pas un second
-  // éditeur : ni clic ni curseur de lecture, juste "il y a du monde ici" en
-  // un coup d'œil pendant qu'on est sur un autre onglet — remplace l'idée
-  // (abandonnée) d'ancrer tout le séquenceur éditable en permanence.
-  import type { PatternStateV2 } from '../../model/types';
+  // éditeur (ni clic, ni édition) — mais le curseur de lecture, lui, doit
+  // défiler, sinon rien ne dit que ça joue quand on est sur un autre onglet.
+  // Remplace l'idée (abandonnée) d'ancrer tout le séquenceur éditable en
+  // permanence.
+  import type { DrumRowName, PatternStateV2, SynthRowName } from '../../model/types';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
-  let { state }: { state: PatternStateV2 } = $props();
+  let {
+    state,
+    playhead,
+    synthPlayhead,
+  }: {
+    state: PatternStateV2;
+    playhead: Record<DrumRowName, number>;
+    synthPlayhead: Record<SynthRowName, number>;
+  } = $props();
 
   // Mêmes valeurs que --cell-* de tokens.css (StepCircle.FALLBACK,
   // SynthRowView.PREVIEW_COLOR) — un canvas ne peut pas lire une variable
   // CSS directement, donc dupliquées ici comme ailleurs dans le code.
   const DRUM_COLOR = { kick: '#d84315', snare: '#c8881a', hat: '#2b8a8a' } as const;
   const SYNTH_COLOR = { bass: '#6a7bff', pad: '#b06bff', melody: '#ff6bd6' } as const;
+  // Même bleu Luna que StepCircle.INK pour marquer le pas en cours de lecture.
+  const INK = '#0a246a';
   const SIZE = 50;
 
   let drumCanvas: HTMLCanvasElement;
@@ -31,7 +42,10 @@
     return `rgb(${mr},${mg},${mb})`;
   }
 
-  function drawRing(canvas: HTMLCanvasElement, rings: { active: boolean[]; color: string }[]) {
+  function drawRing(
+    canvas: HTMLCanvasElement,
+    rings: { active: boolean[]; color: string; current: number }[],
+  ) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
@@ -51,10 +65,11 @@
       for (let i = 0; i < n; i++) {
         const a0 = (i / n) * Math.PI * 2 - Math.PI / 2 + gap / 2;
         const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2 - gap / 2;
+        const isCurrent = i === ring.current;
         ctx.beginPath();
         ctx.arc(cx, cy, r, a0, a1);
-        ctx.lineWidth = thickness;
-        ctx.strokeStyle = ring.active[i] ? ring.color : mix(ring.color, 18);
+        ctx.lineWidth = isCurrent ? thickness * 1.25 : thickness;
+        ctx.strokeStyle = isCurrent ? INK : ring.active[i] ? ring.color : mix(ring.color, 18);
         ctx.stroke();
       }
     });
@@ -66,6 +81,7 @@
       return {
         color: DRUM_COLOR[name],
         active: row.pattern.slice(0, row.subdiv).map((v) => v > 0),
+        current: playhead[name],
       };
     });
     if (drumCanvas) drawRing(drumCanvas, drumRings);
@@ -75,7 +91,7 @@
       const active = row.pattern
         .slice(0, row.subdivisions)
         .map((v) => (name === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
-      return { color: SYNTH_COLOR[name], active };
+      return { color: SYNTH_COLOR[name], active, current: synthPlayhead[name] };
     });
     if (synthCanvas) drawRing(synthCanvas, synthRings);
   });
