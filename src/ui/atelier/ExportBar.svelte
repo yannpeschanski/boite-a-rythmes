@@ -1,8 +1,11 @@
 <script lang="ts">
-  // Export audio. Contrairement à l'original (ScriptProcessorNode déprécié
-  // pour le WAV en direct), les deux formats passent par le MÊME rendu
-  // offline déterministe : plus rapide que le temps réel, sans dépendance à
-  // une API dépréciée, et bit-à-bit reproductible à graine égale.
+  // Export audio : le MP3 et l'export WAV « rapide » passent par le MÊME
+  // rendu offline déterministe (plus rapide que le temps réel, bit-à-bit
+  // reproductible à graine égale). L'enregistrement du direct est différent
+  // par nature : il capture réellement ce qui joue (curseurs bougés pendant
+  // la lecture inclus), via AudioEngine.startLiveRecording — équivalent du
+  // LiveRecorder de l'original, sur AudioWorklet plutôt que le
+  // ScriptProcessorNode déprécié.
   import { pattern } from '../../stores/pattern.svelte';
   import {
     renderPattern,
@@ -11,10 +14,19 @@
     downloadBlob,
     barsForExport,
   } from '../../engine/render-offline';
+  import { barDuration } from '../../engine/groove';
   import XpWindow from '../xp/XpWindow.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
 
-  let { engine, playing }: { engine: { stop: () => void }; playing: boolean } = $props();
+  let {
+    engine,
+    playing,
+    recordLive,
+  }: {
+    engine: { stop: () => void };
+    playing: boolean;
+    recordLive: (bars: number) => Promise<AudioBuffer>;
+  } = $props();
 
   let seconds = $state(20);
   let busy = $state(false);
@@ -47,6 +59,28 @@
       progress = 0;
     }
   }
+
+  async function doRecordLive() {
+    if (busy || playing) return;
+    busy = true;
+    progress = 0;
+    const state = pattern.snapshot();
+    const bars = barsForExport(state, seconds);
+    const durationS = Math.round(barDuration(state.tempo) * bars + 1);
+    status = `Enregistrement du direct en cours… (~${durationS}s)`;
+    try {
+      const buffer = await recordLive(bars);
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      status = 'Écriture du WAV…';
+      downloadBlob(audioBufferToWavBlob(buffer), `rythme-live-${stamp}.wav`);
+      status = 'Terminé ✓';
+    } catch (err) {
+      status = 'Échec de l’enregistrement : ' + (err instanceof Error ? err.message : String(err));
+    } finally {
+      busy = false;
+      progress = 0;
+    }
+  }
 </script>
 
 <XpWindow title="Export audio" icon="💿" accent="teal">
@@ -54,6 +88,9 @@
   <div class="btns">
     <button class="xp-btn" disabled={busy} onclick={() => doExport('mp3')}>🎵 Exporter en MP3</button>
     <button class="xp-btn" disabled={busy} onclick={() => doExport('wav')}>🎧 Exporter en WAV</button>
+    <button class="xp-btn" disabled={busy || playing} onclick={doRecordLive} title="Rejoue le rythme et capture réellement ce qui sort — utile si tu comptes bouger un curseur pendant l'enregistrement">
+      🔴 Enregistrer le direct (WAV)
+    </button>
   </div>
   {#if status}
     <p class="status">
@@ -62,7 +99,8 @@
     </p>
   {/if}
   <p class="note">
-    Rendu déterministe : le même rythme exporté deux fois donne exactement le même fichier.
+    Export MP3/WAV : rendu déterministe, le même rythme donne toujours le même fichier.
+    Enregistrer le direct : capture la lecture réelle, curseurs bougés pendant l'enregistrement inclus.
   </p>
 </XpWindow>
 

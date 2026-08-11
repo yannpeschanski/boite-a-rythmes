@@ -82,6 +82,42 @@ export function softClipCurve(amount: number): Float32Array<ArrayBuffer> {
   return curve;
 }
 
+// Réponse en fréquence (dB) d'un filtre passe-bas biquad — mêmes formules que
+// le filtre "lowpass" de Web Audio (RBJ Audio EQ Cookbook), réimplémentées en
+// JS pur pour ne PAS dépendre d'un AudioContext : sert au visuel de courbe de
+// filtre synthé (FilterCurve.svelte), qui doit pouvoir s'afficher avant même
+// qu'un son ait été joué.
+export function biquadLowpassResponseDb(
+  freq: number,
+  cutoff: number,
+  q: number,
+  sampleRate: number,
+): number {
+  const w0 = (2 * Math.PI * cutoff) / sampleRate;
+  const alpha = Math.sin(w0) / (2 * q);
+  const cosw0 = Math.cos(w0);
+  const b0 = (1 - cosw0) / 2;
+  const b1 = 1 - cosw0;
+  const b2 = (1 - cosw0) / 2;
+  const a0 = 1 + alpha;
+  const a1 = -2 * cosw0;
+  const a2 = 1 - alpha;
+  const nb0 = b0 / a0;
+  const nb1 = b1 / a0;
+  const nb2 = b2 / a0;
+  const na1 = a1 / a0;
+  const na2 = a2 / a0;
+  const w = (2 * Math.PI * freq) / sampleRate;
+  const numRe = nb0 + nb1 * Math.cos(w) + nb2 * Math.cos(2 * w);
+  const numIm = -nb1 * Math.sin(w) - nb2 * Math.sin(2 * w);
+  const denRe = 1 + na1 * Math.cos(w) + na2 * Math.cos(2 * w);
+  const denIm = -na1 * Math.sin(w) - na2 * Math.sin(2 * w);
+  const numMag = Math.sqrt(numRe * numRe + numIm * numIm);
+  const denMag = Math.sqrt(denRe * denRe + denIm * denIm);
+  const mag = numMag / Math.max(denMag, 1e-9);
+  return 20 * Math.log10(Math.max(mag, 1e-6));
+}
+
 // Impulsion synthétique (bruit + décroissance exponentielle) pour la réverbe
 // partagée — pas de fichier audio externe. Recréée à chaque (re)création du
 // contexte : une AudioBuffer n'est pas garantie de fonctionner de façon
