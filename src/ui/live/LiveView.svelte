@@ -1,29 +1,37 @@
 <script lang="ts">
-  // Mode Live — Phase 2 du plan (PLAN.md §7) : câblage réel par-dessus le
-  // squelette de la phase 1 (verrouillage d'orientation + permission
-  // DeviceOrientationEvent, déjà en place). Toujours accessible seulement via
+  // Mode Live — Phase 3 du plan (PLAN.md §7) : overlay d'assignation réel
+  // par-dessus le câblage de la phase 2. Toujours accessible seulement via
   // #mode-live, absent de la navigation normale — voir App.svelte.
   //
   // Ce qui est réel maintenant :
-  //  - BREAK/FILL déclenchent AudioEngine.requestBreak()/liveRequestFill() ;
-  //  - MUTE K/S/H et ROLL×2 passent par des overrides du scheduler
-  //    (liveMute/forceHatRoll, scheduler.ts) — jamais écrits dans le pattern
-  //    sauvegardé, contrairement à un mute posé dans l'Atelier ;
-  //  - le pad XY pilote un filtre passe-bas et un envoi réverbe "macro live"
-  //    ajoutés au graphe (liveFilter/liveReverbSend, graph.ts), neutres
-  //    partout ailleurs ;
-  //  - le séquenceur linéaire lit le vrai pattern (comme TransportRings,
-  //    mais en bandes plutôt qu'en anneaux) et le visualiseur lit les vrais
-  //    niveaux par ligne (AnalyserNode par ligne, getLineLevels()).
+  //  - chacun des 6 boutons pointe vers une action du catalogue
+  //    (liveActions.ts) plutôt que de coder en dur "ce qu'il fait" ; les axes
+  //    X/Y du pad pointent de la même façon vers un paramètre continu ;
+  //  - l'overlay ⚙ permet de changer ces associations (appui = option
+  //    suivante, cycle) et les persiste dans localStorage ;
+  //  - BREAK/FILL/MUTE/ROLL et le filtre/reverb restent les mêmes appels
+  //    moteur qu'en phase 2 (AudioEngine.requestBreak/liveRequestFill/
+  //    liveSetMute/liveSetHatRoll/setLiveFilterCutoff/setLiveReverbWet),
+  //    juste indirectés par l'assignation courante ;
+  //  - le séquenceur linéaire et le visualiseur restent branchés sur le vrai
+  //    pattern et les vrais niveaux par ligne (phase 2, inchangé).
   //
-  // Ce qui reste à faire (phases suivantes) :
-  //  - le bouton ⚙ d'assignation est désactivé, pas encore câblé (phase 3) ;
-  //  - l'inclinaison ne pilote encore aucun paramètre (phase 4).
+  // Reste pour la phase suivante : l'inclinaison ne pilote encore aucun
+  // paramètre (phase 4).
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
+  import {
+    actionById,
+    axisById,
+    cycleAction,
+    cycleAxis,
+    loadLiveAssignments,
+    saveLiveAssignments,
+    type LiveActionId,
+  } from './liveActions';
 
   let { onExit }: { onExit: () => void } = $props();
 
@@ -33,8 +41,11 @@
   let playing = $state(false);
   let breakArmed = $state(false);
   let fillArmed = $state(false);
-  let rollHeld = $state(false);
+  let rollHeld = $state<number | null>(null); // multiplicateur en cours (2/3/4), ou null
   let muted = $state<Record<DrumRowName, boolean>>({ kick: false, snare: false, hat: false });
+
+  let assignments = $state(loadLiveAssignments());
+  let assignOpen = $state(false);
 
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
@@ -46,31 +57,26 @@
 
   let padX = $state(0.5);
   let padY = $state(0.5);
-  let pressed = $state<Record<string, boolean>>({});
+  let pressed = $state<Record<number, boolean>>({});
 
-  const BUTTONS = [
-    { id: 'break', label: 'BREAK', color: 'var(--cell-kick)', assign: 'Break (déclencheur)' },
-    { id: 'fill', label: 'FILL', color: 'var(--cell-snare)', assign: 'Fill forcé (déclencheur)' },
-    { id: 'mutek', label: 'MUTE K', color: 'var(--cell-kick)', assign: 'Muet — Kick' },
-    { id: 'mutes', label: 'MUTE S', color: 'var(--cell-snare)', assign: 'Muet — Snare' },
-    { id: 'muteh', label: 'MUTE H', color: 'var(--cell-hat)', assign: 'Muet — Hat' },
-    { id: 'roll', label: 'ROLL×2', color: 'var(--cell-hat)', assign: 'Rafale hat ×2 (maintenu)' },
-  ] as const;
-
-  function isActive(id: string): boolean {
-    switch (id) {
+  function isActionActive(actionId: LiveActionId): boolean {
+    switch (actionId) {
       case 'break':
         return breakArmed;
       case 'fill':
         return fillArmed;
-      case 'mutek':
+      case 'mute-kick':
         return muted.kick;
-      case 'mutes':
+      case 'mute-snare':
         return muted.snare;
-      case 'muteh':
+      case 'mute-hat':
         return muted.hat;
-      case 'roll':
-        return rollHeld;
+      case 'roll-hat-x2':
+        return rollHeld === 2;
+      case 'roll-hat-x3':
+        return rollHeld === 3;
+      case 'roll-hat-x4':
+        return rollHeld === 4;
       default:
         return false;
     }
@@ -81,28 +87,57 @@
     engine.liveSetMute(name, muted[name]);
   }
 
-  function press(id: string, on: boolean) {
-    pressed = { ...pressed, [id]: on };
+  // Dispatch générique : chaque slot ne sait plus "ce qu'il fait", seulement
+  // quelle action lui est assignée — un bouton MUTE réassigné en ROLL doit se
+  // comporter EXACTEMENT comme le bouton ROLL d'origine.
+  function runAction(actionId: LiveActionId, on: boolean) {
+    switch (actionId) {
+      case 'break':
+        if (on) engine.requestBreak();
+        break;
+      case 'fill':
+        if (on) engine.liveRequestFill();
+        break;
+      case 'mute-kick':
+        if (on) toggleMute('kick');
+        break;
+      case 'mute-snare':
+        if (on) toggleMute('snare');
+        break;
+      case 'mute-hat':
+        if (on) toggleMute('hat');
+        break;
+      case 'roll-hat-x2':
+        engine.liveSetHatRoll(on ? 2 : null);
+        rollHeld = on ? 2 : null;
+        break;
+      case 'roll-hat-x3':
+        engine.liveSetHatRoll(on ? 3 : null);
+        rollHeld = on ? 3 : null;
+        break;
+      case 'roll-hat-x4':
+        engine.liveSetHatRoll(on ? 4 : null);
+        rollHeld = on ? 4 : null;
+        break;
+    }
   }
 
-  function onButtonDown(id: string) {
-    press(id, true);
-    if (id === 'break') engine.requestBreak();
-    else if (id === 'fill') engine.liveRequestFill();
-    else if (id === 'mutek') toggleMute('kick');
-    else if (id === 'mutes') toggleMute('snare');
-    else if (id === 'muteh') toggleMute('hat');
-    else if (id === 'roll') {
-      engine.liveSetHatRoll(2);
-      rollHeld = true;
-    }
+  function onSlotDown(i: number) {
+    pressed = { ...pressed, [i]: true };
+    runAction(assignments.slots[i], true);
   }
-  function onButtonUp(id: string) {
-    press(id, false);
-    if (id === 'roll') {
-      engine.liveSetHatRoll(null);
-      rollHeld = false;
-    }
+  function onSlotUp(i: number) {
+    pressed = { ...pressed, [i]: false };
+    runAction(assignments.slots[i], false);
+  }
+
+  function cycleSlot(i: number) {
+    assignments.slots[i] = cycleAction(assignments.slots[i]);
+    saveLiveAssignments(assignments);
+  }
+  function cycleAxisAssign(which: 'axisX' | 'axisY') {
+    assignments[which] = cycleAxis(assignments[which]);
+    saveLiveAssignments(assignments);
   }
 
   async function togglePlay() {
@@ -157,15 +192,25 @@
     tiltEnabled = true;
   }
 
-  // Pad XY -> filtre passe-bas (X, courbe exponentielle : 200 Hz étouffé à
-  // 20 kHz grand ouvert, plus naturel à l'oreille qu'une échelle linéaire) et
-  // voile de réverbe (Y, inversé — haut du pad = 100%).
+  // Pad XY -> le paramètre assigné à chaque axe (filtre par défaut en X,
+  // reverb en Y, réassignables depuis l'overlay ⚙). Filtre en courbe
+  // exponentielle (200 Hz étouffé à 20 kHz grand ouvert, plus naturel à
+  // l'oreille qu'une échelle linéaire) ; les deux paramètres sont inversés
+  // pour l'axe Y (haut du pad = 100%), pas pour l'axe X.
+  function applyAxisValue(axisId: 'filter' | 'reverb', value01: number) {
+    if (axisId === 'filter') {
+      const hz = 200 * Math.pow(20000 / 200, value01);
+      engine.setLiveFilterCutoff(hz);
+    } else {
+      engine.setLiveReverbWet(value01);
+    }
+  }
+
   function setPad(clientX: number, clientY: number, rect: DOMRect) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
-    const hz = 200 * Math.pow(20000 / 200, padX);
-    engine.setLiveFilterCutoff(hz);
-    engine.setLiveReverbWet(1 - padY);
+    applyAxisValue(assignments.axisX, padX);
+    applyAxisValue(assignments.axisY, 1 - padY);
   }
 
   let dragging = false;
@@ -354,12 +399,12 @@
         <button class="amp-btn stop" onclick={togglePlay}>{playing ? '■ STOP' : '▶ PLAY'}</button>
         <div class="lcd-block">
           <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}</span>
-          <span class="lcd-sub">BREAK · FILL · MUTE · ROLL — RÉELS · ASSIGNATION EN PHASE 3</span>
+          <span class="lcd-sub">TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD</span>
         </div>
         <button class="tilt-btn" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
           <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
         </button>
-        <button class="amp-btn gear" disabled title="Assignation — bientôt (phase 3)">⚙</button>
+        <button class="amp-btn gear" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
       {#if tiltDenied}
         <p class="tilt-warn">Capteur refusé — le mode reste jouable au tactile seul.</p>
@@ -367,18 +412,19 @@
       <div class="seekbar"><div class="seekbar-fill"></div><div class="seekbar-grip"></div></div>
       <div class="main">
         <div class="buttons">
-          {#each BUTTONS as b (b.id)}
+          {#each assignments.slots as actionId, i (i)}
+            {@const a = actionById(actionId)}
             <button
               class="abtn"
-              class:pressed={pressed[b.id]}
-              class:active={isActive(b.id)}
-              onpointerdown={() => onButtonDown(b.id)}
-              onpointerup={() => onButtonUp(b.id)}
-              onpointerleave={() => onButtonUp(b.id)}
+              class:pressed={pressed[i]}
+              class:active={isActionActive(actionId)}
+              onpointerdown={() => onSlotDown(i)}
+              onpointerup={() => onSlotUp(i)}
+              onpointerleave={() => onSlotUp(i)}
             >
-              <span class="dot" style:background={b.color}></span>
-              <span>{b.label}</span>
-              <span class="assign-label">{b.assign}</span>
+              <span class="dot" style:background={a.color}></span>
+              <span>{a.label}</span>
+              <span class="assign-label">{a.desc}</span>
             </button>
           {/each}
         </div>
@@ -396,7 +442,7 @@
           <div
             class="pad"
             role="slider"
-            aria-label="Filtre / Reverb"
+            aria-label="{axisById(assignments.axisX).label} / {axisById(assignments.axisY).label}"
             aria-valuenow={Math.round(padX * 100)}
             tabindex="0"
             onpointerdown={(e) => padPointerDown(e, e.currentTarget as HTMLDivElement)}
@@ -407,18 +453,43 @@
           </div>
           <div class="eq-readout">
             <div class="eq-band">
-              <span class="eq-lbl">FILTRE</span>
+              <span class="eq-lbl">{axisById(assignments.axisX).label}</span>
               <div class="eq-track"><div class="eq-fill" style:width="{padX * 100}%"></div></div>
               <span class="eq-val">{Math.round(padX * 100)}%</span>
             </div>
             <div class="eq-band">
-              <span class="eq-lbl">REVERB</span>
+              <span class="eq-lbl">{axisById(assignments.axisY).label}</span>
               <div class="eq-track"><div class="eq-fill" style:width="{(1 - padY) * 100}%"></div></div>
               <span class="eq-val">{Math.round((1 - padY) * 100)}%</span>
             </div>
           </div>
         </div>
       </div>
+      {#if assignOpen}
+        <div class="assign-overlay show">
+          <div class="assign-card">
+            <h4>ASSIGNATION</h4>
+            <div class="assign-list">
+              {#each assignments.slots as actionId, i (i)}
+                {@const a = actionById(actionId)}
+                <button class="assign-row" onclick={() => cycleSlot(i)}>
+                  <span class="assign-row-label">BOUTON {i + 1}</span>
+                  <span class="assign-row-val" style:color={a.color}>{a.label}</span>
+                </button>
+              {/each}
+              <button class="assign-row" onclick={() => cycleAxisAssign('axisX')}>
+                <span class="assign-row-label">PAD — AXE X (↔)</span>
+                <span class="assign-row-val">{axisById(assignments.axisX).label}</span>
+              </button>
+              <button class="assign-row" onclick={() => cycleAxisAssign('axisY')}>
+                <span class="assign-row-label">PAD — AXE Y (↕)</span>
+                <span class="assign-row-val">{axisById(assignments.axisY).label}</span>
+              </button>
+            </div>
+            <button class="amp-btn assign-close" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>
+          </div>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -482,6 +553,7 @@
   }
 
   .live {
+    position: relative;
     width: 100%;
     height: 100%;
     background: linear-gradient(180deg, var(--amp-bg-1), var(--amp-bg-2) 12%, var(--amp-bg-3));
@@ -832,5 +904,76 @@
     width: 22px;
     text-align: right;
     flex-shrink: 0;
+  }
+
+  /* ---- Overlay d'assignation (phase 3) ---- */
+  .assign-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 11, 0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    z-index: 10;
+  }
+  .assign-overlay.show {
+    display: flex;
+  }
+  .assign-card {
+    background: linear-gradient(180deg, var(--amp-bg-1), var(--amp-bg-3));
+    border: 1px solid var(--amp-line);
+    border-radius: 8px;
+    padding: 10px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 100%;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+  .assign-card h4 {
+    margin: 0 0 8px;
+    font-size: 10px;
+    color: var(--amp-text);
+    letter-spacing: 0.06em;
+  }
+  .assign-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  /* Appui = option suivante dans le catalogue (cycle) — pas de sous-menu à
+     ouvrir, le geste le plus rapide sur un petit écran tactile. */
+  .assign-row {
+    font-family: inherit;
+    font-size: 9px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--amp-text);
+    background: var(--amp-bg-2);
+    border: 1px solid var(--amp-line);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    text-align: left;
+  }
+  .assign-row:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  .assign-row-label {
+    font-size: 7px;
+    color: #9aa0a6;
+    letter-spacing: 0.04em;
+  }
+  .assign-row-val {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--amp-text);
+  }
+  .assign-close {
+    margin-top: 10px;
+    width: 100%;
   }
 </style>
