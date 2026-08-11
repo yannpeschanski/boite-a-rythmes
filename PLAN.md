@@ -219,6 +219,32 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
 
 ---
 
+## 7. Idées pas mûres (à creuser plus tard, pas encore planifiées)
+
+Pas encore assez cadrées pour aller dans la section 6 (pas d'estimation d'effort,
+parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
+
+- **Mode Live** — manette paysage (pavé XY + boutons assignables), esthétique
+  Winamp (skin violet/bleu nuit + LCD verte). Visualiseur central : 3 pistes
+  explorées (maquette faite), on ne garde que la **①  barres colorées par
+  contributeur** (kick/snare/hat/bass/pad/melody, avec rebond) pour une
+  éventuelle implémentation ; ② arty façon AVS/Milkdrop et ③ défilement 2D
+  (personnage qui court/saute sur un terrain qui ondule avec la musique) restent
+  en réserve pour plus tard, pas abandonnées.
+- **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en plus
+  du cycle entier actuel.
+- **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre des
+  contenus dans l'Atelier (voix, presets, effets ?), pas encore défini quoi
+  exactement ni comment articuler jeu ↔ atelier.
+- **Utiliser les gains de la besace** (actuellement juste comptés, pas dépensés) :
+  - les échanger contre des modules (déblocage payant plutôt qu'automatique) ;
+  - personnaliser un EP après les 4 premiers enregistrements WAV.
+- **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
+  piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier tout
+  de suite), et être très explicatif à chaque nouveauté introduite.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
