@@ -260,10 +260,13 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   `graph.ts`), neutres partout ailleurs (reverbSize non touché — rebuild
   d'impulsion trop coûteux pour du continu) ; séquenceur linéaire branché sur
   le vrai pattern (comme `TransportRings`, en bandes) et visualiseur ① sur de
-  vrais niveaux (un `AnalyserNode` par ligne, `getLineLevels()`) ; (3) overlay d'assignation réel —
-  mapping bouton/axe → paramètre persisté (localStorage), réutilise le modèle
-  d'état v2 plutôt qu'une structure parallèle ; (4) polish — viz ②/③ en option,
-  axe d'inclinaison calibré au tap d'entrée.
+  vrais niveaux (un `AnalyserNode` par ligne, `getLineLevels()`) ; (3) ✅
+  overlay d'assignation réel — chaque bouton/axe pointe vers une définition
+  d'un catalogue (`src/ui/live/liveActions.ts`, 8 actions + 2 axes) plutôt que
+  de coder en dur "ce qu'il fait" ; l'overlay ⚙ change l'association d'un
+  appui (option suivante, cycle) et la persiste dans localStorage (validée au
+  chargement, retombe sur les défauts si le format a changé) ; (4) polish —
+  viz ②/③ en option, axe d'inclinaison calibré au tap d'entrée.
 
   **Features supplémentaires envisagées** : vibration (`navigator.vibrate`) à
   chaque trigger ; prise/snapshot des assignations rappelable par appui long ;
