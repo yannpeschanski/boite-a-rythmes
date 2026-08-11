@@ -10,6 +10,7 @@
 
   let selectedId = $state('');
   const selected = $derived(PRESETS.find((p) => p.id === selectedId) ?? null);
+  let keepSynthAndTempo = $state(false);
 
   function byCat(cat: string): SongPresetData[] {
     return PRESETS.filter((p) => p.cat === cat);
@@ -17,7 +18,7 @@
 
   function apply() {
     if (!selected) return;
-    pattern.replace(presetToState(selected));
+    pattern.replace(presetToState(selected, keepSynthAndTempo ? pattern.snapshot() : undefined, keepSynthAndTempo));
     onApplied?.();
   }
 </script>
@@ -35,6 +36,10 @@
   </select>
   <button class="xp-btn" disabled={!selected} onclick={apply}>Charger</button>
 </div>
+<label class="keep">
+  <input type="checkbox" bind:checked={keepSynthAndTempo} />
+  Garder le synthé et le tempo actuels
+</label>
 {#if selected}
   <div class="texts">
     <p class="history">{selected.history}</p>
@@ -71,6 +76,14 @@
   .xp-btn:disabled {
     color: var(--xp-muted);
     cursor: default;
+  }
+  .keep {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--xp-text);
+    margin-bottom: 6px;
   }
   .texts {
     font-size: 12px;
