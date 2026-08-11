@@ -32,18 +32,19 @@
     const cur = row.pattern[col];
     const next = ((cur + 1) % (maxState + 1)) as DrumStep;
     row.pattern[col] = next;
+    if (next === 0) row.rolls[col] = 1;
     if (next > 0) onPreview?.(name, next);
   }
 
   function cycleRoll(col: number, e: Event) {
     e.preventDefault();
-    row.rolls[col] = (row.rolls[col] % 4) + 1;
+    if (row.pattern[col] > 0) row.rolls[col] = (row.rolls[col] % 4) + 1;
   }
 
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   function pressStart(col: number) {
     longPressTimer = setTimeout(() => {
-      row.rolls[col] = (row.rolls[col] % 4) + 1;
+      if (row.pattern[col] > 0) row.rolls[col] = (row.rolls[col] % 4) + 1;
       longPressTimer = null;
     }, 480);
   }
