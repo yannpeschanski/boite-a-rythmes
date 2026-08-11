@@ -29,6 +29,8 @@
   const isPad = $derived(name === 'pad');
   const voicePresets = $derived(SYNTH_VOICE_PRESETS[name] ?? []);
 
+  let showTimbre = $state(false);
+
   // Regroupement par paquets de 8 au-delà de 8 pas (port de
   // renderPacketizedRow) : une grille de 128 notes d'un bloc est illisible.
   const PACKET_SIZE = 8;
@@ -170,6 +172,69 @@
     <XpSlider label="Delay" min={0} max={100} unit="%"
       value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
   </div>
+  <button class="more" onclick={() => (showTimbre = !showTimbre)}>
+    {showTimbre ? '▾' : '▸'} Timbre & filtre
+  </button>
+  {#if showTimbre}
+    <div class="row-settings">
+      <label>
+        Onde
+        <select bind:value={row.voice.type} onchange={() => onChanged?.()}>
+          <option value="sine">Sinus</option>
+          <option value="triangle">Triangle</option>
+          <option value="square">Carré</option>
+          <option value="sawtooth">Scie</option>
+        </select>
+      </label>
+      <XpSlider label="Attaque" min={0} max={200} step={5} unit=" ms"
+        value={Math.round((row.voice.attack ?? 0) * 1000)}
+        onchange={(v) => { row.voice.attack = v / 1000; onChanged?.(); }} />
+      <label>
+        Forme attaque
+        <select bind:value={row.voice.attackCurve} onchange={() => onChanged?.()}>
+          <option value="exponential">Naturelle</option>
+          <option value="linear">Linéaire</option>
+        </select>
+      </label>
+      <XpSlider label="Release" min={0} max={4000} step={20} unit=" ms"
+        value={Math.round((row.voice.release ?? 0) * 1000)}
+        onchange={(v) => { row.voice.release = v / 1000; onChanged?.(); }} />
+      <label>
+        Forme release
+        <select bind:value={row.voice.releaseCurve} onchange={() => onChanged?.()}>
+          <option value="exponential">Naturelle</option>
+          <option value="linear">Linéaire</option>
+        </select>
+      </label>
+      <XpSlider label="Sub" min={0} max={100} unit="%"
+        value={Math.round((row.voice.subGain ?? 0) * 100)}
+        onchange={(v) => { row.voice.subGain = v / 100; onChanged?.(); }} />
+      <XpSlider label="Détune" min={0} max={30} unit=" c"
+        value={row.voice.detuneCents ?? 0}
+        onchange={(v) => { row.voice.detuneCents = v; onChanged?.(); }} />
+      <XpSlider label="Mix détune" min={0} max={100} unit="%"
+        value={Math.round((row.voice.detuneGain ?? 0) * 100)}
+        onchange={(v) => { row.voice.detuneGain = v / 100; onChanged?.(); }} />
+      <XpSlider label="Chorus" min={0} max={100} unit="%"
+        value={Math.round((row.voice.chorusMix ?? 0) * 100)}
+        onchange={(v) => { row.voice.chorusMix = v / 100; onChanged?.(); }} />
+      <XpSlider label="Vibrato" min={0} max={100} unit="%"
+        value={Math.round((row.voice.vibratoDepth ?? 0) * 100)}
+        onchange={(v) => { row.voice.vibratoDepth = v / 100; onChanged?.(); }} />
+      <XpSlider label="Tone" min={0} max={100} unit="%"
+        value={row.voice.tone ?? 0}
+        onchange={(v) => { row.voice.tone = v; onChanged?.(); }} />
+      <XpSlider label="Filtre" min={100} max={4000} step={50} unit=" Hz"
+        value={row.voice.cutoff ?? 1800}
+        onchange={(v) => { row.voice.cutoff = v; onChanged?.(); }} />
+      <XpSlider label="Ouv. filtre" min={0} max={4000} step={50} unit=" Hz"
+        value={row.voice.filterEnvAmount ?? 0}
+        onchange={(v) => { row.voice.filterEnvAmount = v; onChanged?.(); }} />
+      <XpSlider label="Ferm. filtre" min={0} max={4000} step={20} unit=" ms"
+        value={Math.round((row.voice.filterEnvRelease ?? 0) * 1000)}
+        onchange={(v) => { row.voice.filterEnvRelease = v / 1000; onChanged?.(); }} />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -284,5 +349,26 @@
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 0 16px;
     margin-top: 6px;
+  }
+  .row-settings label {
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .row-settings select {
+    font-family: var(--xp-font);
+    font-size: 12px;
+    border: 1px solid var(--xp-line);
+    background: #fff;
+  }
+  .more {
+    background: none;
+    border: none;
+    color: var(--xp-muted);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 0;
+    font-family: inherit;
   }
 </style>
