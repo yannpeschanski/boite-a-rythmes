@@ -5,6 +5,7 @@
   import type { DrumRowName, DrumStep, SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
+  import XpTabs from '../xp/XpTabs.svelte';
   import DrumRowView from '../sequencer/DrumRowView.svelte';
   import StepCircle from '../sequencer/StepCircle.svelte';
   import SynthModule from './SynthModule.svelte';
@@ -21,6 +22,11 @@
   let recording = $state(false);
   let breakArmed = $state(false);
   let circleView = $state(false);
+  // Onglets Rythme/Synthé/Effets : chaque page redevient courte (plus besoin
+  // de traverser les réglages des deux autres pour retrouver le séquenceur),
+  // pendant que Lecture/Stop/Break restent dans la barre sticky au-dessus,
+  // donc joignables quel que soit l'onglet actif.
+  let activeTab = $state<'rythme' | 'synthe' | 'effets'>('rythme');
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
   let fileInput: HTMLInputElement;
@@ -197,7 +203,7 @@
       <button onclick={() => (canRestore = false)}>Ignorer</button>
     </p>
   {/if}
-  <XpWindow title="Boîte à rythmes — Atelier" icon="🥁" accent="amber">
+  <div class="sticky-bar">
     <div class="transport">
       <button class="xp-btn primary" disabled={recording} onclick={togglePlay}>
         {playing ? '■ Stop' : '▶ Lecture'}
@@ -222,70 +228,95 @@
         <span class="closest">— le plus proche : <strong>{closest.label}</strong> ({Math.round(closest.score * 100)} %)</span>
       {/if}
     </p>
-
     <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+  </div>
+
+  <!-- Hors de la barre sticky (contrairement au transport/tempo, on ne
+       charge pas un preset en continu) — sinon la barre fixe devient trop
+       haute sur mobile et mange l'espace utile. -->
+  <div class="preset-row">
     <PresetPicker onApplied={refreshFx} />
+  </div>
 
-    {#if circleView}
-      <div class="circle-holder">
-        <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
-      </div>
+  <!-- Onglets Rythme/Synthé/Effets : chaque page tient sur un scroll court,
+       le séquenceur de l'onglet Rythme redevient visible sans avoir à
+       traverser Synthé + Effets à chaque fois (voir commentaire sur
+       activeTab plus haut). Lecture/Stop/Break restent joignables via la
+       barre sticky ci-dessus, quel que soit l'onglet actif. -->
+  <XpTabs
+    tabs={[
+      { id: 'rythme', label: '🥁 Rythme' },
+      { id: 'synthe', label: '🎹 Synthé' },
+      { id: 'effets', label: '🔊 Effets' },
+    ]}
+    bind:active={activeTab}
+  />
+
+  <div class="tab-panel">
+    {#if activeTab === 'rythme'}
+      <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
+        {#if circleView}
+          <div class="circle-holder">
+            <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
+          </div>
+        {:else}
+          <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
+            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+          <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
+            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+          <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
+            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+        {/if}
+      </XpWindow>
+
+      <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
+        <div class="two-col">
+          <XpSlider label="Swing" min={0} max={75} unit="%" bind:value={st.swing} />
+          <XpSlider label="Traîne" min={0} max={30} unit="%" bind:value={st.drag} />
+          <XpSlider label="Rafales spontanées" min={0} max={100} unit="%" bind:value={st.spontRoll} />
+          <XpSlider label="Ghost notes" min={0} max={40} unit="%" bind:value={st.ghostDensity} />
+          <XpSlider label="Vélocité aléatoire" min={0} max={100} unit="%" bind:value={st.randomVelocity} />
+          <XpSlider label="Intensité du fill" min={0} max={100} unit="%" bind:value={st.fillIntensity} />
+        </div>
+        <div class="inline-row">
+          <label>
+            Fill toutes les
+            <select bind:value={st.fillEvery}>
+              <option value={0}>— jamais</option>
+              <option value={2}>2 mesures</option>
+              <option value={4}>4 mesures</option>
+              <option value={8}>8 mesures</option>
+            </select>
+          </label>
+          <label>
+            Ghost notes sur
+            <select bind:value={st.ghostRow}>
+              <option value="kick">Kick</option>
+              <option value="snare">Snare</option>
+            </select>
+          </label>
+        </div>
+      </XpWindow>
+    {:else if activeTab === 'synthe'}
+      <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx}
+        onTest={(n) => !playing && engine.previewSynth(n)} />
     {:else}
-      <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
-        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-      <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
-        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-      <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
-        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+      <XpWindow title="Effets de bus & mix" icon="🔊" accent="teal">
+        <div class="two-col">
+          <XpSlider label="Saturation" min={0} max={100} unit="%" bind:value={st.globalSaturation} onchange={refreshFx} />
+          <XpSlider label="Compression" min={0} max={100} unit="%" bind:value={st.globalCompression} onchange={refreshFx} />
+          <XpSlider label="Bitcrush" min={0} max={100} unit="%" bind:value={st.globalBitcrush} onchange={refreshFx} />
+          <XpSlider label="Volume général" min={50} max={150} unit="%" bind:value={st.finalVolume} onchange={refreshFx} />
+        </div>
+        <label class="chk">
+          <input type="checkbox" bind:checked={st.synthGlobal.limitersEnabled} onchange={refreshFx} />
+          Limiteurs de sécurité
+        </label>
+      </XpWindow>
+
+      <ExportBar {engine} {playing} {recordLive} />
     {/if}
-  </XpWindow>
-
-  <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx}
-    onTest={(n) => !playing && engine.previewSynth(n)} />
-
-  <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
-    <div class="two-col">
-      <XpSlider label="Swing" min={0} max={75} unit="%" bind:value={st.swing} />
-      <XpSlider label="Traîne" min={0} max={30} unit="%" bind:value={st.drag} />
-      <XpSlider label="Rafales spontanées" min={0} max={100} unit="%" bind:value={st.spontRoll} />
-      <XpSlider label="Ghost notes" min={0} max={40} unit="%" bind:value={st.ghostDensity} />
-      <XpSlider label="Vélocité aléatoire" min={0} max={100} unit="%" bind:value={st.randomVelocity} />
-      <XpSlider label="Intensité du fill" min={0} max={100} unit="%" bind:value={st.fillIntensity} />
-    </div>
-    <div class="inline-row">
-      <label>
-        Fill toutes les
-        <select bind:value={st.fillEvery}>
-          <option value={0}>— jamais</option>
-          <option value={2}>2 mesures</option>
-          <option value={4}>4 mesures</option>
-          <option value={8}>8 mesures</option>
-        </select>
-      </label>
-      <label>
-        Ghost notes sur
-        <select bind:value={st.ghostRow}>
-          <option value="kick">Kick</option>
-          <option value="snare">Snare</option>
-        </select>
-      </label>
-    </div>
-  </XpWindow>
-
-  <XpWindow title="Effets de bus & mix" icon="🔊" accent="teal">
-    <div class="two-col">
-      <XpSlider label="Saturation" min={0} max={100} unit="%" bind:value={st.globalSaturation} onchange={refreshFx} />
-      <XpSlider label="Compression" min={0} max={100} unit="%" bind:value={st.globalCompression} onchange={refreshFx} />
-      <XpSlider label="Bitcrush" min={0} max={100} unit="%" bind:value={st.globalBitcrush} onchange={refreshFx} />
-      <XpSlider label="Volume général" min={50} max={150} unit="%" bind:value={st.finalVolume} onchange={refreshFx} />
-    </div>
-    <label class="chk">
-      <input type="checkbox" bind:checked={st.synthGlobal.limitersEnabled} onchange={refreshFx} />
-      Limiteurs de sécurité
-    </label>
-  </XpWindow>
-
-  <ExportBar {engine} {playing} {recordLive} />
+  </div>
 </div>
 
 <style>
@@ -312,6 +343,38 @@
     display: flex;
     gap: 6px;
     align-items: center;
+  }
+  /* Toujours joignable pendant qu'on défile dans un onglet — c'est le point
+     du diagnostic ergonomie : Lecture/Stop/Break ne doivent plus disparaître
+     en scrollant, comme la barre de transport fixe de l'original
+     (#drumTransportBar, ANALYSE-ORIGINAL.md §3.3). */
+  .sticky-bar {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: var(--xp-face);
+    border: 1px solid var(--xp-line);
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0, 0, 30, 0.25);
+    padding: 8px 10px 10px;
+    margin-bottom: 0;
+  }
+  .preset-row {
+    background: var(--xp-face);
+    border: 1px solid var(--xp-line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 10px 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 30, 0.12);
+  }
+  .tab-panel {
+    background: var(--xp-face);
+    border: 1px solid var(--xp-line);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 12px 10px 10px;
+    margin-bottom: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 30, 0.2);
   }
   .restore button {
     font-family: inherit;
