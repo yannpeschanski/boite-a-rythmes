@@ -3,17 +3,20 @@
   import { game, LEVELS } from '../../stores/game.svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
-  import type { DrumRowName, PatternStateV2 } from '../../model/types';
+  import type { DrumRowName } from '../../model/types';
   import { DRUM_ROW_NAMES } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
 
   let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
 
-  // Un état tampon joué par le moteur : la cible ou la proposition, selon le
-  // bouton — le même AudioEngine que l'Atelier, aucun scheduler dédié.
-  let playState: PatternStateV2 = game.buildState('target');
-  const engine = new AudioEngine(() => playState);
+  // État lu EN DIRECT par le moteur à chaque tick (comme pattern.snapshot()
+  // pour l'Atelier), pas figé une fois pour toutes au clic sur ▶ — sinon,
+  // modifier sa proposition PENDANT « Écouter ma version » continuerait de
+  // jouer l'ancien état : le son se décale de ce qui est affiché sur la
+  // grille. buildState() est bon marché (quelques tableaux de 32 cases), pas
+  // de souci à le reconstruire à chaque tick (25 ms).
   let playingWhat = $state<'' | 'target' | 'guess'>('');
+  const engine = new AudioEngine(() => game.buildState(playingWhat || 'target'));
   let showMap = $state(false);
   let showBag = $state(false);
 
@@ -49,11 +52,13 @@
     }
     engine.stop();
     resetPlayhead();
-    playState = game.buildState(which);
     if (which === 'target') game.loopPlays++;
     else game.guessPlays++;
-    await engine.start();
+    // Avant start() : le tout premier tick doit déjà lire la bonne cible via
+    // le getState() ci-dessus, sinon la toute première fenêtre programmée
+    // (jusqu'à 0.25s) jouerait encore l'ancienne.
     playingWhat = which;
+    await engine.start();
   }
 
   function stopAll() {
