@@ -324,12 +324,48 @@
   }
   .cell.active {
     box-shadow: var(--xp-bevel-in);
-    background: var(--xp-accent-violet);
     color: #fff;
   }
+  /* Une couleur par ligne (au lieu du même violet pour les 3) — port de
+     .cell-select.active.bass/pad/melody de l'original (--indigo/--violet/
+     --pink), mêmes teintes que la courbe de filtre (PREVIEW_COLOR) et le
+     point médian de rafale de StepCircle. */
+  .cell.bass.active {
+    background: var(--cell-bass);
+  }
   .cell.pad.active {
-    background: color-mix(in srgb, var(--xp-accent-violet) 78%, white);
+    background: color-mix(in srgb, var(--cell-pad) 78%, white);
     color: #16101f;
+  }
+  .cell.melody.active {
+    background: var(--cell-melody);
+  }
+  /* Cases VIDES teintées par ligne, comme la grille batterie — port de
+     #rowBass/#rowPad/#rowMelody .cell-select:not(.active) de l'original
+     (l. 762-764). */
+  .cell.bass:not(.active) {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-bass) 10%, #fff),
+      color-mix(in srgb, var(--cell-bass) 26%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-bass) 45%, var(--xp-line));
+  }
+  .cell.pad:not(.active) {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-pad) 10%, #fff),
+      color-mix(in srgb, var(--cell-pad) 26%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-pad) 45%, var(--xp-line));
+  }
+  .cell.melody:not(.active) {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-melody) 10%, #fff),
+      color-mix(in srgb, var(--cell-melody) 26%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-melody) 45%, var(--xp-line));
   }
   .cell.playing {
     outline: 2px solid #ffd54a;

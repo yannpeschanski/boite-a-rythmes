@@ -204,6 +204,34 @@
   .cell.hat.state-2 {
     background: color-mix(in srgb, var(--cell-hat) 55%, white);
   }
+  /* Cases VIDES teintées par ligne (au lieu d'un gris neutre partagé) — port
+     de #rowKick/#rowSnare/#rowHat .cell:not(.active) de l'original
+     (l. 759-761) : même quand rien n'est posé, on voit quelle ligne est
+     quelle rien qu'à la couleur. */
+  .cell.kick.state-0 {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-kick) 10%, #fff),
+      color-mix(in srgb, var(--cell-kick) 28%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-kick) 45%, var(--xp-line));
+  }
+  .cell.snare.state-0 {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-snare) 10%, #fff),
+      color-mix(in srgb, var(--cell-snare) 28%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-snare) 45%, var(--xp-line));
+  }
+  .cell.hat.state-0 {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-hat) 10%, #fff),
+      color-mix(in srgb, var(--cell-hat) 28%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-hat) 45%, var(--xp-line));
+  }
   .alt {
     position: absolute;
     inset: 0;
