@@ -290,6 +290,20 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   take n'a pas de durée connue d'avance — il faut probablement démarrer/
   arrêter l'enregistrement au bouton plutôt que sur un nombre de mesures fixe.
 
+  **Catalogue de paramètres à étendre, et randomisation.** Aujourd'hui
+  l'assignation (phase 3) ne couvre que 8 actions et 2 axes (filtre/reverb)
+  — largement plus de paramètres du state existant pourraient être ouverts
+  aux boutons/pad/inclinaison : `globalSaturation`, `globalBitcrush`,
+  `globalCompression`, `finalVolume`, `delayFeedback`, `sidechainDepth`,
+  voire des réglages de voix synthé (`cutoff`/`resonance` par ligne). Deux
+  idées de randomisation à creuser en même temps, pas forcément la même
+  feature : (a) un bouton "RANDOM"/chaos qui jette un paramètre assignable
+  sur une valeur aléatoire à chaque appui — dans l'esprit ludique déjà là
+  (`spontRoll`/`randomVelocity`) ; (b) un "brasser" qui réassigne
+  aléatoirement le catalogue aux 6 boutons/2 axes d'un coup (une sorte de
+  "surprends-moi" plutôt que de choisir soi-même via l'overlay ⚙). Pas encore
+  choisi laquelle (ou les deux) implémenter.
+
   **Features supplémentaires envisagées** : vibration (`navigator.vibrate`) à
   chaque trigger ; prise/snapshot des assignations rappelable par appui long ;
   undo léger sur les triggers en direct ; mode duo (deux téléphones connectés
