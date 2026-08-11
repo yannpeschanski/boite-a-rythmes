@@ -35,15 +35,18 @@
 <style>
   .xp-tabs {
     display: flex;
-    gap: 4px;
-    margin-top: 8px;
+    gap: 3px;
+    margin-top: 6px;
   }
+  /* Compressés (padding/police réduits) : ils libèrent la hauteur qu'ont
+     prise les anneaux ajoutés à côté de Lecture/Break, dans la même barre
+     sticky — la barre entière ne doit pas grossir d'autant. */
   .tab {
     flex: 1;
     font-family: inherit;
-    font-size: 12.5px;
+    font-size: 11px;
     font-weight: 700;
-    padding: 7px 8px;
+    padding: 4px 6px;
     border: 1px solid var(--xp-line);
     border-radius: 4px;
     background: linear-gradient(180deg, #fff, var(--xp-face-dark));

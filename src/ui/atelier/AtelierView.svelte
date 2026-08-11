@@ -8,6 +8,7 @@
   import XpTabs from '../xp/XpTabs.svelte';
   import DrumRowView from '../sequencer/DrumRowView.svelte';
   import StepCircle from '../sequencer/StepCircle.svelte';
+  import TransportRings from '../sequencer/TransportRings.svelte';
   import SynthModule from './SynthModule.svelte';
   import PresetPicker from './PresetPicker.svelte';
   import ExportBar from './ExportBar.svelte';
@@ -207,22 +208,34 @@
        remonter en haut de page, quel que soit l'onglet actif ou la
        position de scroll — comme la barre de transport fixe de l'original
        (#drumTransportBar), étendue aux onglets pour ne jamais perdre
-       l'accès à Rythme/Synthé/Effets. Le rappel clavier (Espace/B/Ctrl+Z)
-       n'a pas de sens au toucher : masqué sur les appareils tactiles. -->
+       l'accès à Rythme/Synthé/Effets. Les anneaux (batterie + synthé)
+       rappellent le rythme en couleur sans reproduire tout le séquenceur
+       éditable — un aperçu, pas un second éditeur. Le texte (raccourcis
+       clavier, « le plus proche ») n'a pas sa place sur mobile : masqué au
+       toucher, gardé sur desktop où la largeur ne manque pas. -->
   <div class="sticky-bar">
-    <div class="transport">
-      <button class="xp-btn primary" disabled={recording} onclick={togglePlay}>
-        {playing ? '■ Stop' : '▶ Lecture'}
-      </button>
-      <button
-        class="xp-btn"
-        class:armed={breakArmed}
-        disabled={recording}
-        title="À la prochaine mesure : dépouillé puis explosion"
-        onclick={() => engine.requestBreak()}>🫨 Break</button
-      >
+    <div class="transport-row">
+      <div class="transport">
+        <button class="xp-btn primary" disabled={recording} onclick={togglePlay}>
+          {playing ? '■ Stop' : '▶ Lecture'}
+        </button>
+        <button
+          class="xp-btn"
+          class:armed={breakArmed}
+          disabled={recording}
+          title="À la prochaine mesure : dépouillé puis explosion"
+          onclick={() => engine.requestBreak()}>🫨 Break</button
+        >
+      </div>
+      <div class="spacer"></div>
+      <TransportRings state={st} />
     </div>
-    <p class="hint kbd-hint">Espace : lecture/stop · B : break · Ctrl+Z : annuler</p>
+    <p class="hint desktop-hint">
+      Espace : lecture/stop · B : break · Ctrl+Z : annuler
+      {#if closest}
+        — le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)
+      {/if}
+    </p>
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
@@ -244,9 +257,6 @@
       <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
       <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
     </div>
-    {#if closest}
-      <p class="hint">le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)</p>
-    {/if}
     <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
     <PresetPicker onApplied={refreshFx} />
   </div>
@@ -323,22 +333,31 @@
 </div>
 
 <style>
+  .transport-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
   .transport {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 4px;
+  }
+  .spacer {
+    flex: 1;
   }
   .hint {
     font-size: 11px;
     color: var(--xp-muted);
     margin: 0 0 8px;
   }
-  /* Raccourcis clavier : sans objet au toucher (pas de clavier physique) —
-     masqué sur les appareils tactiles plutôt que d'occuper de la place pour
-     rien dans la barre sticky, où chaque pixel de hauteur compte. */
+  /* Raccourcis clavier + « le plus proche » : texte qui n'a pas sa place sur
+     mobile (pas de clavier physique, peu de largeur pour du texte à côté des
+     anneaux) — masqué sur les appareils tactiles. Sur desktop, où la largeur
+     ne manque pas, on garde les deux. */
   @media (pointer: coarse) {
-    .kbd-hint {
+    .desktop-hint {
       display: none;
     }
   }
