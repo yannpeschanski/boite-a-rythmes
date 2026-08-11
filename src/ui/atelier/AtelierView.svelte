@@ -18,6 +18,7 @@
   const engine = new AudioEngine(() => pattern.snapshot());
 
   let playing = $state(false);
+  let recording = $state(false);
   let breakArmed = $state(false);
   let circleView = $state(false);
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
@@ -122,6 +123,23 @@
     engine.refreshMixSettings();
   }
 
+  // Enregistrement du direct (WAV) : contrairement à l'export (rendu offline
+  // déterministe), ceci capture vraiment ce qui joue — curseurs bougés
+  // pendant la lecture inclus. `playing`/`recording` pilotent l'affichage du
+  // transport pendant toute la durée, gérée par AudioEngine.startLiveRecording.
+  async function recordLive(bars: number) {
+    recording = true;
+    playing = true;
+    try {
+      return await engine.startLiveRecording(bars);
+    } finally {
+      playing = false;
+      recording = false;
+      playhead = { kick: -1, snare: -1, hat: -1 };
+      synthPlayhead = { bass: -1, pad: -1, melody: -1 };
+    }
+  }
+
   function exportJson() {
     const blob = new Blob([pattern.toJson()], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -181,12 +199,13 @@
   {/if}
   <XpWindow title="Boîte à rythmes — Atelier" icon="🥁" accent="amber">
     <div class="transport">
-      <button class="xp-btn primary" onclick={togglePlay}>
+      <button class="xp-btn primary" disabled={recording} onclick={togglePlay}>
         {playing ? '■ Stop' : '▶ Lecture'}
       </button>
       <button
         class="xp-btn"
         class:armed={breakArmed}
+        disabled={recording}
         title="À la prochaine mesure : dépouillé puis explosion"
         onclick={() => engine.requestBreak()}>🫨 Break</button
       >
@@ -221,7 +240,8 @@
     {/if}
   </XpWindow>
 
-  <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx} />
+  <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx}
+    onTest={(n) => !playing && engine.previewSynth(n)} />
 
   <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
     <div class="two-col">
@@ -265,7 +285,7 @@
     </label>
   </XpWindow>
 
-  <ExportBar {engine} {playing} />
+  <ExportBar {engine} {playing} {recordLive} />
 </div>
 
 <style>

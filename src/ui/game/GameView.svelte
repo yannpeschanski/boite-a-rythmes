@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { game, LEVELS } from '../../stores/game.svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
@@ -17,15 +17,38 @@
   let showMap = $state(false);
   let showBag = $state(false);
 
-  onDestroy(() => engine.stop());
+  // Curseur visuel : consommé à chaque frame contre l'horloge audio, comme
+  // dans l'Atelier (AtelierView.svelte) — sans cette boucle, aucune case ne
+  // s'illumine pendant la lecture et il est impossible de suivre le rythme.
+  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
+  let raf = 0;
+  function loop() {
+    for (const ev of engine.consumePlayhead()) {
+      if (ev.name in playhead) playhead[ev.name as DrumRowName] = ev.col;
+    }
+    raf = requestAnimationFrame(loop);
+  }
+  function resetPlayhead() {
+    playhead = { kick: -1, snare: -1, hat: -1 };
+  }
+
+  onMount(() => {
+    raf = requestAnimationFrame(loop);
+  });
+  onDestroy(() => {
+    cancelAnimationFrame(raf);
+    engine.stop();
+  });
 
   async function play(which: 'target' | 'guess') {
     if (playingWhat === which) {
       engine.stop();
       playingWhat = '';
+      resetPlayhead();
       return;
     }
     engine.stop();
+    resetPlayhead();
     playState = game.buildState(which);
     if (which === 'target') game.loopPlays++;
     else game.guessPlays++;
@@ -36,6 +59,7 @@
   function stopAll() {
     engine.stop();
     playingWhat = '';
+    resetPlayhead();
   }
 
   function verify() {
@@ -148,6 +172,7 @@
                   class="cell state-{st}"
                   class:locked
                   class:revealed={game.revealed && game.target[name][col] > 0 && !locked}
+                  class:playing={playhead[name] === col}
                   onclick={() => game.cycleCell(name, col)}
                   oncontextmenu={(e) => {
                     e.preventDefault();
@@ -369,6 +394,10 @@
   }
   .cell.revealed {
     outline: 2px dashed #ffce3d;
+  }
+  .cell.playing {
+    outline: 2px solid #ffd54a;
+    outline-offset: -1px;
   }
   .mark {
     position: absolute;

@@ -15,6 +15,8 @@ import {
   type PlayheadEvent,
 } from './scheduler';
 import { barDuration, type BreakWindow } from './groove';
+import { LiveRecorder } from './recorder';
+import { chordsFor, chordFreqs, degreeFreq } from './harmony';
 
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
@@ -35,6 +37,7 @@ export class AudioEngine {
   // audio à chaque frame (voir consumePlayhead) — jamais via setTimeout, qui
   // tourne sur une horloge différente et dérive par rapport au son.
   private playheadQueue: PlayheadEvent[] = [];
+  private liveRecorder: LiveRecorder | null = null;
 
   isPlaying = false;
   ghostTargetRow: DrumRowName = 'snare';
@@ -223,6 +226,33 @@ export class AudioEngine {
     return due;
   }
 
+  // Enregistrement du direct : démarre une lecture depuis le tout début du
+  // pattern (comme le bouton ▶) et capture la sortie finale (finalGain,
+  // post-limiteur/soft-clip, déjà connectée à destination) pendant `bars`
+  // mesures réelles. Contrairement au rendu offline (render-offline.ts),
+  // c'est vraiment ce qui joue — un curseur bougé pendant l'enregistrement
+  // s'entend dans le résultat, comme dans l'original (LiveRecorder). Le tap
+  // se fait via un AudioWorklet (recorder.ts) plutôt que le ScriptProcessorNode
+  // déprécié de l'original.
+  async startLiveRecording(bars: number): Promise<AudioBuffer> {
+    this.stop();
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    if (ctx.state === 'suspended') await ctx.resume();
+    this.liveRecorder = new LiveRecorder();
+    await this.liveRecorder.start(ctx, this.graph!.finalGain);
+    await this.start();
+    const durationMs = (barDuration(this.getState().tempo) * bars + 1.0) * 1000;
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const buffer = this.liveRecorder!.stop();
+        this.liveRecorder = null;
+        this.stop();
+        resolve(buffer);
+      }, durationMs);
+    });
+  }
+
   // Aperçu d'un son isolé (clic sur une case, test de timbre).
   preview(name: DrumRowName, stepState: number): void {
     this.ensureAudio();
@@ -234,5 +264,29 @@ export class AudioEngine {
     if (name === 'kick') kit.playKick(t, row.volume, row);
     else if (name === 'snare') stepState === 2 ? kit.playRimshot(t, row.volume, row) : kit.playSnare(t, row.volume, row);
     else stepState === 2 ? kit.playHatOpen(t, row.volume, row) : kit.playHatClosed(t, row.volume, row);
+  }
+
+  // Aperçu d'une voix synthé isolée (bouton ▶ Tester) : joue la voix actuelle
+  // d'une ligne telle quelle (preset chargé + réglages manuels), sans poser
+  // de notes ni lancer la lecture générale — un accord I pour la Nappe, une
+  // note (degré 1, octave par défaut) pour Basse/Mélodie. Mêmes gains/durées
+  // que l'original (testSynthVoice, l. 2586).
+  previewSynth(name: SynthRowName): void {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    void ctx.resume();
+    const synth = this.synth!;
+    const state = this.getState();
+    const row = state.synthRows[name];
+    const t = ctx.currentTime + 0.05;
+    if (name === 'pad') {
+      const freqs = chordFreqs(state, chordsFor(state), 0);
+      synth.playPadChord(freqs, t, 0.6, 0.3, row.voice, 0, 0, null);
+    } else {
+      const freq = degreeFreq(state, 1, 0, name === 'bass' ? -24 : 0);
+      const gain = name === 'bass' ? 0.45 : 0.4;
+      if (name === 'bass') synth.playBassNote(freq, t, 0.5, gain, row.voice, null);
+      else synth.playMelodyNote(freq, t, 0.5, gain, row.voice, null);
+    }
   }
 }
