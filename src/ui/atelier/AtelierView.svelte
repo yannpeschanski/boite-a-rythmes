@@ -228,7 +228,7 @@
         >
       </div>
       <div class="spacer"></div>
-      <TransportRings state={st} />
+      <TransportRings state={st} {playhead} {synthPlayhead} />
     </div>
     <p class="hint desktop-hint">
       Espace : lecture/stop · B : break · Ctrl+Z : annuler
