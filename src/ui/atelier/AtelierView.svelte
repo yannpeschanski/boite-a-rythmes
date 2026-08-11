@@ -251,23 +251,27 @@
     <PresetPicker onApplied={refreshFx} />
   </div>
 
+  <!-- Le séquenceur pas-à-pas reste au même endroit à chaque fois, quel que
+       soit l'onglet actif — hors des onglets exprès, pour de vrai cette
+       fois (pas juste "vite retrouvé en revenant sur Rythme"). Rythme ne
+       garde plus que le Groove/variation humaine ci-dessous. -->
+  <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
+    {#if circleView}
+      <div class="circle-holder">
+        <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
+      </div>
+    {:else}
+      <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
+        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+      <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
+        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+      <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
+        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+    {/if}
+  </XpWindow>
+
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
-      <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
-        {#if circleView}
-          <div class="circle-holder">
-            <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
-          </div>
-        {:else}
-          <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
-            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-          <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
-            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-          <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
-            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-        {/if}
-      </XpWindow>
-
       <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
         <div class="two-col">
           <XpSlider label="Swing" min={0} max={75} unit="%" bind:value={st.swing} />
