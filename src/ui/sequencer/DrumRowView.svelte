@@ -36,9 +36,22 @@
     if (next > 0) onPreview?.(name, next);
   }
 
+  // Anti double-rafale : sur mobile, un appui long déclenche à la fois notre
+  // minuteur JS ET le contextmenu natif du navigateur pour le même geste —
+  // sans garde, la rafale avancerait deux fois d'un coup (même souci que
+  // StepCircle.svelte, ROLL_DEBOUNCE_MS).
+  const ROLL_DEBOUNCE_MS = 350;
+  let lastRollAt = 0;
+  function bumpRoll(col: number) {
+    const now = Date.now();
+    if (now - lastRollAt < ROLL_DEBOUNCE_MS) return;
+    lastRollAt = now;
+    if (row.pattern[col] > 0) row.rolls[col] = (row.rolls[col] % 4) + 1;
+  }
+
   function cycleRoll(col: number, e: Event) {
     e.preventDefault();
-    if (row.pattern[col] > 0) row.rolls[col] = (row.rolls[col] % 4) + 1;
+    bumpRoll(col);
   }
 
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -49,7 +62,7 @@
     // en même temps sur un simple clic droit.
     if (e.button === 2) return;
     longPressTimer = setTimeout(() => {
-      if (row.pattern[col] > 0) row.rolls[col] = (row.rolls[col] % 4) + 1;
+      bumpRoll(col);
       longPressTimer = null;
     }, 480);
   }
@@ -161,6 +174,9 @@
     cursor: pointer;
     padding: 0;
     touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
   .cell:active {
     box-shadow: var(--xp-bevel-in);
