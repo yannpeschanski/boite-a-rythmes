@@ -14,11 +14,23 @@ import {
 
 export interface GraphNodes {
   ctx: BaseAudioContext;
-  // Étage final : mixBus reçoit drum + synthé, puis limiteur de sécurité,
-  // saturateur doux anti-clic, volume général, destination.
+  // Étage final : mixBus reçoit drum + synthé, puis un filtre passe-bas
+  // "macro live" (neutre par défaut, cutoff au maximum — seul le Mode Live y
+  // touche), limiteur de sécurité, saturateur doux anti-clic, volume
+  // général, destination.
   mixBus: GainNode;
+  liveFilter: BiquadFilterNode;
   finalLimiter: DynamicsCompressorNode;
   finalGain: GainNode;
+  // Envoi réverbe additionnel pour le Mode Live (gain à 0 par défaut, donc
+  // sans effet ailleurs) : monter le mix entier dans la réverbe partagée
+  // sans reconstruire son impulsion (coûteux), contrairement à reverbSize.
+  liveReverbSend: GainNode;
+  // Un AnalyserNode par ligne (batterie + synthé), pour le visualiseur du
+  // Mode Live — tap seulement, jamais connecté en aval, donc sans effet sur
+  // le son. Créés systématiquement (live/offline/jeu) comme le reste du
+  // graphe : rien ne les lit en dehors du Mode Live.
+  lineAnalyser: Record<DrumRowName | SynthRowName, AnalyserNode>;
   // Bus drum : chaîne d'effets globaux (saturation/compression/bitcrush).
   masterGain: GainNode;
   sat: WaveShaperNode;
@@ -80,10 +92,23 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   softClip.oversample = '4x'; // limite l'aliasing introduit par la saturation
   const finalGain = ctx.createGain();
   finalGain.gain.setValueAtTime(state.finalVolume / 100 || 1, now);
-  mixBus.connect(finalLimiter);
+  // Filtre passe-bas "macro live" : cutoff au maximum (quasi Nyquist) par
+  // défaut, donc transparent partout ailleurs — seul le pad XY du Mode Live
+  // (phase 2, PLAN.md §7) le referme pour un balayage de filtre en direct.
+  const liveFilter = ctx.createBiquadFilter();
+  liveFilter.type = 'lowpass';
+  liveFilter.frequency.setValueAtTime(20000, now);
+  liveFilter.Q.setValueAtTime(0.7, now);
+  mixBus.connect(liveFilter);
+  liveFilter.connect(finalLimiter);
   finalLimiter.connect(softClip);
   softClip.connect(finalGain);
   finalGain.connect(ctx.destination);
+  // Envoi réverbe additionnel pour le Mode Live, gain nul par défaut — câblé
+  // vers `reverb` plus bas, une fois le convolver créé.
+  const liveReverbSend = ctx.createGain();
+  liveReverbSend.gain.setValueAtTime(0, now);
+  mixBus.connect(liveReverbSend);
 
   // --- Bus drum + chaîne d'effets globaux.
   const masterGain = ctx.createGain();
@@ -107,6 +132,7 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   reverb.buffer = buildReverbImpulse(ctx, state.synthGlobal.reverbSize / 100);
   reverb.normalize = true;
   reverb.connect(mixBus);
+  liveReverbSend.connect(reverb);
   const delayNode = ctx.createDelay(2.0);
   delayNode.delayTime.setValueAtTime(delayTimeSeconds(state), now);
   const delayFeedback = ctx.createGain();
@@ -119,11 +145,22 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   const drumLineGain = {} as Record<DrumRowName, GainNode>;
   const lineReverbSend = {} as GraphNodes['lineReverbSend'];
   const lineDelaySend = {} as GraphNodes['lineDelaySend'];
+  // Un AnalyserNode par ligne pour le visualiseur du Mode Live — simple tap
+  // (jamais connecté en aval), fftSize minimal car on ne lit qu'un niveau
+  // crête par frame, pas un vrai spectre.
+  const lineAnalyser = {} as GraphNodes['lineAnalyser'];
+  function tapAnalyser(name: DrumRowName | SynthRowName, source: AudioNode): void {
+    const a = ctx.createAnalyser();
+    a.fftSize = 32;
+    source.connect(a);
+    lineAnalyser[name] = a;
+  }
   (['kick', 'snare', 'hat'] as DrumRowName[]).forEach((name) => {
     const g = ctx.createGain();
     g.gain.value = 1;
     g.connect(masterGain);
     drumLineGain[name] = g;
+    tapAnalyser(name, g);
     const rs = ctx.createGain();
     rs.gain.setValueAtTime(state.rows[name].reverbSend || 0, now);
     g.connect(rs);
@@ -168,6 +205,7 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
     limiter.connect(clip);
     clip.connect(duck);
     duck.connect(synthGain);
+    tapAnalyser(name, duck);
     const rs = ctx.createGain();
     rs.gain.setValueAtTime(state.synthRows[name].reverbSend || 0, now);
     clip.connect(rs);
@@ -192,8 +230,11 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   return {
     ctx,
     mixBus,
+    liveFilter,
     finalLimiter,
     finalGain,
+    liveReverbSend,
+    lineAnalyser,
     masterGain,
     sat,
     crush,

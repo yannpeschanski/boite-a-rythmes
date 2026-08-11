@@ -251,11 +251,16 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   (`src/ui/live/LiveView.svelte`, accessible via `#mode-live`, absent de la
   navigation normale — voir `App.svelte`), verrouillage d'orientation + flux
   de permission `DeviceOrientationEvent` codés, à confirmer sur device réel ;
-  (2) câblage réel — boutons
-  sur les actions existantes du moteur (break/fill/mute/roll), pad XY sur des
-  paramètres déjà présents (filtre/reverb), séquenceur linéaire + viz ①
-  branchés sur les vrais `GainNode` par ligne (`src/engine/graph.ts:123`/
-  `:154`) au lieu de valeurs synthétiques ; (3) overlay d'assignation réel —
+  (2) ✅ câblage réel — BREAK/FILL déclenchent `requestBreak()`/
+  `liveRequestFill()` (ce dernier ajouté au scheduler sur le même principe que
+  Break, `forceFill`) ; MUTE K/S/H et ROLL×2 passent par des overrides du
+  scheduler (`liveMute`/`forceHatRoll`, `scheduler.ts`) jamais écrits dans le
+  pattern sauvegardé ; le pad XY pilote un filtre passe-bas + un envoi
+  réverbe "macro live" ajoutés au graphe (`liveFilter`/`liveReverbSend`,
+  `graph.ts`), neutres partout ailleurs (reverbSize non touché — rebuild
+  d'impulsion trop coûteux pour du continu) ; séquenceur linéaire branché sur
+  le vrai pattern (comme `TransportRings`, en bandes) et visualiseur ① sur de
+  vrais niveaux (un `AnalyserNode` par ligne, `getLineLevels()`) ; (3) overlay d'assignation réel —
   mapping bouton/axe → paramètre persisté (localStorage), réutilise le modèle
   d'état v2 plutôt qu'une structure parallèle ; (4) polish — viz ②/③ en option,
   axe d'inclinaison calibré au tap d'entrée.

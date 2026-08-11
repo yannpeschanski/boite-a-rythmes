@@ -1,22 +1,43 @@
 <script lang="ts">
-  // Mode Live — Phase 1 du plan (PLAN.md §7) : squelette visuel + verrouillage
-  // d'orientation + flux de permission DeviceOrientationEvent, à tester sur un
-  // vrai téléphone (accessible via #mode-live, volontairement absent de la
-  // navigation normale — voir App.svelte).
+  // Mode Live — Phase 2 du plan (PLAN.md §7) : câblage réel par-dessus le
+  // squelette de la phase 1 (verrouillage d'orientation + permission
+  // DeviceOrientationEvent, déjà en place). Toujours accessible seulement via
+  // #mode-live, absent de la navigation normale — voir App.svelte.
   //
-  // Ce que ce composant NE fait PAS encore (phases suivantes) :
-  //  - les boutons/le pad ne pilotent aucun paramètre réel du moteur (phase 2) ;
-  //  - le séquenceur linéaire et le visualiseur tournent sur une animation
-  //    synthétique, pas sur les vrais GainNode par ligne (phase 2) ;
-  //  - le bouton ⚙ d'assignation est désactivé, pas encore câblé (phase 3).
+  // Ce qui est réel maintenant :
+  //  - BREAK/FILL déclenchent AudioEngine.requestBreak()/liveRequestFill() ;
+  //  - MUTE K/S/H et ROLL×2 passent par des overrides du scheduler
+  //    (liveMute/forceHatRoll, scheduler.ts) — jamais écrits dans le pattern
+  //    sauvegardé, contrairement à un mute posé dans l'Atelier ;
+  //  - le pad XY pilote un filtre passe-bas et un envoi réverbe "macro live"
+  //    ajoutés au graphe (liveFilter/liveReverbSend, graph.ts), neutres
+  //    partout ailleurs ;
+  //  - le séquenceur linéaire lit le vrai pattern (comme TransportRings,
+  //    mais en bandes plutôt qu'en anneaux) et le visualiseur lit les vrais
+  //    niveaux par ligne (AnalyserNode par ligne, getLineLevels()).
   //
-  // Esthétique et diagnostic ergonomie détaillés dans PLAN.md §7 : contrôles
-  // interactifs volontairement plus grands que le vrai skin Winamp (pensé
-  // souris de bureau), toggle "inclinaison" sorti de la zone de drag du pad,
-  // inclinaison jamais requise (repli tactile pur toujours complet).
+  // Ce qui reste à faire (phases suivantes) :
+  //  - le bouton ⚙ d'assignation est désactivé, pas encore câblé (phase 3) ;
+  //  - l'inclinaison ne pilote encore aucun paramètre (phase 4).
   import { onMount, onDestroy } from 'svelte';
+  import { pattern } from '../../stores/pattern.svelte';
+  import { AudioEngine } from '../../engine/AudioEngine';
+  import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
+  import type { DrumRowName, SynthRowName } from '../../model/types';
 
   let { onExit }: { onExit: () => void } = $props();
+
+  const engine = new AudioEngine(() => pattern.snapshot());
+  const st = $derived(pattern.state);
+
+  let playing = $state(false);
+  let breakArmed = $state(false);
+  let fillArmed = $state(false);
+  let rollHeld = $state(false);
+  let muted = $state<Record<DrumRowName, boolean>>({ kick: false, snare: false, hat: false });
+
+  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
+  let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
 
   let isPortrait = $state(true);
   let tiltEnabled = $state(false);
@@ -33,8 +54,68 @@
     { id: 'mutek', label: 'MUTE K', color: 'var(--cell-kick)', assign: 'Muet — Kick' },
     { id: 'mutes', label: 'MUTE S', color: 'var(--cell-snare)', assign: 'Muet — Snare' },
     { id: 'muteh', label: 'MUTE H', color: 'var(--cell-hat)', assign: 'Muet — Hat' },
-    { id: 'roll', label: 'ROLL×2', color: 'var(--cell-hat)', assign: 'Rafale hat ×2 (déclencheur)' },
+    { id: 'roll', label: 'ROLL×2', color: 'var(--cell-hat)', assign: 'Rafale hat ×2 (maintenu)' },
   ] as const;
+
+  function isActive(id: string): boolean {
+    switch (id) {
+      case 'break':
+        return breakArmed;
+      case 'fill':
+        return fillArmed;
+      case 'mutek':
+        return muted.kick;
+      case 'mutes':
+        return muted.snare;
+      case 'muteh':
+        return muted.hat;
+      case 'roll':
+        return rollHeld;
+      default:
+        return false;
+    }
+  }
+
+  function toggleMute(name: DrumRowName) {
+    muted[name] = !muted[name];
+    engine.liveSetMute(name, muted[name]);
+  }
+
+  function press(id: string, on: boolean) {
+    pressed = { ...pressed, [id]: on };
+  }
+
+  function onButtonDown(id: string) {
+    press(id, true);
+    if (id === 'break') engine.requestBreak();
+    else if (id === 'fill') engine.liveRequestFill();
+    else if (id === 'mutek') toggleMute('kick');
+    else if (id === 'mutes') toggleMute('snare');
+    else if (id === 'muteh') toggleMute('hat');
+    else if (id === 'roll') {
+      engine.liveSetHatRoll(2);
+      rollHeld = true;
+    }
+  }
+  function onButtonUp(id: string) {
+    press(id, false);
+    if (id === 'roll') {
+      engine.liveSetHatRoll(null);
+      rollHeld = false;
+    }
+  }
+
+  async function togglePlay() {
+    if (playing) {
+      engine.stop();
+      playing = false;
+      playhead = { kick: -1, snare: -1, hat: -1 };
+      synthPlayhead = { bass: -1, pad: -1, melody: -1 };
+    } else {
+      await engine.start();
+      playing = true;
+    }
+  }
 
   function checkOrientation() {
     isPortrait = window.matchMedia('(orientation: portrait)').matches;
@@ -76,9 +157,15 @@
     tiltEnabled = true;
   }
 
+  // Pad XY -> filtre passe-bas (X, courbe exponentielle : 200 Hz étouffé à
+  // 20 kHz grand ouvert, plus naturel à l'oreille qu'une échelle linéaire) et
+  // voile de réverbe (Y, inversé — haut du pad = 100%).
   function setPad(clientX: number, clientY: number, rect: DOMRect) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const hz = 200 * Math.pow(20000 / 200, padX);
+    engine.setLiveFilterCutoff(hz);
+    engine.setLiveReverbWet(1 - padY);
   }
 
   let dragging = false;
@@ -91,26 +178,19 @@
     if (dragging) setPad(e.clientX, e.clientY, el.getBoundingClientRect());
   }
 
-  function press(id: string, on: boolean) {
-    pressed = { ...pressed, [id]: on };
-  }
-
-  // ---- Séquenceur linéaire + visualiseur — synthétiques pour l'instant ----
-  const CONTRIB = [
-    { hex: '#ff6a4a', steps: [0, 4, 8, 12], decay: 0.45, amp: 1.0 },
-    { hex: '#ffcf5c', steps: [4, 12], decay: 0.5, amp: 0.9 },
-    { hex: '#4fd8d8', steps: [0, 2, 4, 6, 8, 10, 12, 14], decay: 0.16, amp: 0.5 },
-    { hex: '#7c8bff', steps: [0, 6, 8, 10], decay: 0.65, amp: 0.85 },
-    { hex: '#cf8bff', steps: [0, 8], decay: 1.5, amp: 0.6 },
-    { hex: '#ff8ce0', steps: [2, 5, 9, 11, 14], decay: 0.35, amp: 0.55 },
-  ];
-  const BPM = 120;
-  const STEP_DUR = 60 / BPM / 4;
-  const STEPS = 16;
+  // ---- Séquenceur linéaire (vrai pattern) + visualiseur (vrais niveaux) ----
+  // Mêmes valeurs que --cell-* de tokens.css (StepCircle.FALLBACK,
+  // TransportRings.DRUM_COLOR/SYNTH_COLOR) — un canvas ne peut pas lire une
+  // variable CSS, donc dupliquées ici comme ailleurs dans le code.
+  const DRUM_COLOR = { kick: '#d84315', snare: '#c8881a', hat: '#2b8a8a' } as const;
+  const SYNTH_COLOR = { bass: '#6a7bff', pad: '#b06bff', melody: '#ff6bd6' } as const;
+  const LINE_COLOR = { ...DRUM_COLOR, ...SYNTH_COLOR } as Record<DrumRowName | SynthRowName, string>;
+  const LINE_NAMES = [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES] as (DrumRowName | SynthRowName)[];
 
   let linCanvas: HTMLCanvasElement = $state()!;
   let vizCanvas: HTMLCanvasElement = $state()!;
   let raf = 0;
+  const levelSmooth: Partial<Record<DrumRowName | SynthRowName, number>> = {};
 
   function roundRectPath(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, rad: number) {
     const rr = Math.max(0, Math.min(rad, w / 2, h / 2));
@@ -139,80 +219,98 @@
     }
   }
 
-  function drawLinSeq(ctx: CanvasRenderingContext2D, now: number) {
+  // Une bande par ligne (comme les anneaux de TransportRings, mais linéaires) :
+  // chacune à l'échelle de son propre nombre de pas, pas d'une grille commune
+  // — kick à 16 pas et basse à 8 ne s'alignent pas forcément, et c'est normal.
+  function drawLinSeq(ctx: CanvasRenderingContext2D) {
     const r = linCanvas.getBoundingClientRect();
     const w = r.width,
       h = r.height;
     ctx.clearRect(0, 0, w, h);
-    const top = 11;
+    const top = 11; // sous le libellé "SÉQUENCEUR"
     const gridH = h - top;
-    const rows = CONTRIB.length;
-    const rowH = gridH / rows;
-    const colW = w / STEPS;
-    const curStepF = (now / STEP_DUR) % STEPS;
-    ctx.fillStyle = 'rgba(255,255,255,.07)';
-    ctx.fillRect(Math.floor(curStepF) * colW, top, colW, gridH);
-    for (let ri = 0; ri < rows; ri++) {
-      const c = CONTRIB[ri];
+    const rows = [
+      ...DRUM_ROW_NAMES.map((name) => {
+        const row = st.rows[name];
+        return {
+          color: DRUM_COLOR[name],
+          active: row.pattern.slice(0, row.subdiv).map((v) => v > 0),
+          current: playhead[name],
+        };
+      }),
+      ...SYNTH_ROW_NAMES.map((name) => {
+        const row = st.synthRows[name];
+        const active = row.pattern
+          .slice(0, row.subdivisions)
+          .map((v) => (name === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
+        return { color: SYNTH_COLOR[name], active, current: synthPlayhead[name] };
+      }),
+    ];
+    const rowH = gridH / rows.length;
+    rows.forEach((row, ri) => {
+      const n = row.active.length;
+      if (n === 0) return;
+      const colW = w / n;
       const y = top + ri * rowH;
-      for (let i = 0; i < STEPS; i++) {
-        const on = c.steps.includes(i);
+      for (let i = 0; i < n; i++) {
+        const isCurrent = i === row.current;
         const x = i * colW;
-        ctx.fillStyle = on ? c.hex : 'rgba(255,255,255,.06)';
+        ctx.fillStyle = isCurrent ? '#eafff0' : row.active[i] ? row.color : 'rgba(255,255,255,.06)';
         roundRectPath(ctx, x + 1, y + 1, colW - 2, rowH - 2, 1.5);
         ctx.fill();
       }
-    }
-    const cursorX = (curStepF / STEPS) * w;
-    ctx.fillStyle = '#eafff0';
-    ctx.fillRect(cursorX - 0.75, top, 1.5, gridH);
+    });
   }
 
-  function drawViz(ctx: CanvasRenderingContext2D, now: number) {
+  // VU-mètre par ligne — niveau crête réel (AudioEngine.getLineLevels(),
+  // lui-même lu depuis les AnalyserNode ajoutés au graphe), avec un
+  // relâchement exponentiel côté UI pour un rebond lisible plutôt qu'un
+  // clignotement pas-à-pas.
+  function drawViz(ctx: CanvasRenderingContext2D) {
     const r = vizCanvas.getBoundingClientRect();
     const w = r.width,
       h = r.height;
     ctx.clearRect(0, 0, w, h);
-    const barW = w / STEPS;
-    const curStepF = (now / STEP_DUR) % STEPS;
-    for (let i = 0; i < STEPS; i++) {
-      if (Math.floor(curStepF) === i) {
-        ctx.fillStyle = 'rgba(255,255,255,.07)';
-        ctx.fillRect(i * barW, 0, barW, h);
-      }
-      let y = h - 2;
-      const x = i * barW + 1;
-      const bw = Math.max(1, barW - 2);
-      for (const c of CONTRIB) {
-        if (!c.steps.includes(i)) continue;
-        let stepsSince = curStepF - i;
-        if (stepsSince < 0) stepsSince += STEPS;
-        const dt = stepsSince * STEP_DUR;
-        const bounce = Math.exp(-dt / c.decay) * (1 + 0.28 * Math.cos(dt * 24));
-        const segH = c.amp * Math.max(0, bounce) * h * 0.3;
-        if (segH < 1.5) continue;
-        ctx.fillStyle = c.hex;
-        roundRectPath(ctx, x, y - segH, bw, segH, 2.5);
-        ctx.fill();
-        y -= segH + 1.5;
-      }
-    }
+    const levels = engine.getLineLevels();
+    const barW = w / LINE_NAMES.length;
+    LINE_NAMES.forEach((name, i) => {
+      const raw = levels[name] ?? 0;
+      const prev = levelSmooth[name] ?? 0;
+      const smoothed = Math.max(raw, prev * 0.88);
+      levelSmooth[name] = smoothed;
+      // Boost d'affichage : les crêtes réelles mesurées avant le bus/limiteur
+      // final tournent souvent bien en dessous de 1.0 (~0.05-0.3) — sans ce
+      // facteur, les barres resteraient quasi invisibles pour un pattern normal.
+      const boosted = Math.min(1, smoothed * 3.5);
+      const barH = boosted * h * 0.95;
+      if (barH < 1) return;
+      const x = i * barW + 2;
+      const bw = Math.max(1, barW - 4);
+      ctx.fillStyle = LINE_COLOR[name];
+      roundRectPath(ctx, x, h - barH, bw, barH, 3);
+      ctx.fill();
+    });
   }
 
   function loop() {
-    const now = performance.now() / 1000;
+    for (const ev of engine.consumePlayhead()) {
+      if (ev.name in playhead) playhead[ev.name as DrumRowName] = ev.col;
+      else synthPlayhead[ev.name as SynthRowName] = ev.col;
+    }
+    breakArmed = engine.breakPending;
+    fillArmed = engine.fillPending;
     if (linCanvas) {
       const linCtx = linCanvas.getContext('2d');
       if (linCtx) {
         ensureSize(linCanvas, linCtx);
-        drawLinSeq(linCtx, now);
+        drawLinSeq(linCtx);
       }
     }
     if (vizCanvas) {
       const vizCtx = vizCanvas.getContext('2d');
       if (vizCtx) {
         ensureSize(vizCanvas, vizCtx);
-        drawViz(vizCtx, now);
+        drawViz(vizCtx);
       }
     }
     raf = requestAnimationFrame(loop);
@@ -230,7 +328,10 @@
       cancelAnimationFrame(raf);
     };
   });
-  onDestroy(() => cancelAnimationFrame(raf));
+  onDestroy(() => {
+    cancelAnimationFrame(raf);
+    engine.stop();
+  });
 </script>
 
 <div class="live-root">
@@ -250,17 +351,12 @@
         </button>
       </div>
       <div class="topbar">
-        <button class="amp-btn stop">■ STOP</button>
+        <button class="amp-btn stop" onclick={togglePlay}>{playing ? '■ STOP' : '▶ PLAY'}</button>
         <div class="lcd-block">
-          <span class="lcd">MOTOWN / SOUL · 120 BPM</span>
-          <span class="lcd-sub">APERÇU · PAS ENCORE RELIÉ AU MOTEUR</span>
+          <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}</span>
+          <span class="lcd-sub">BREAK · FILL · MUTE · ROLL — RÉELS · ASSIGNATION EN PHASE 3</span>
         </div>
-        <button
-          class="tilt-btn"
-          class:on={tiltEnabled}
-          onclick={toggleTilt}
-          title="Inclinaison (optionnelle)"
-        >
+        <button class="tilt-btn" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
           <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
         </button>
         <button class="amp-btn gear" disabled title="Assignation — bientôt (phase 3)">⚙</button>
@@ -275,9 +371,10 @@
             <button
               class="abtn"
               class:pressed={pressed[b.id]}
-              onpointerdown={() => press(b.id, true)}
-              onpointerup={() => press(b.id, false)}
-              onpointerleave={() => press(b.id, false)}
+              class:active={isActive(b.id)}
+              onpointerdown={() => onButtonDown(b.id)}
+              onpointerup={() => onButtonUp(b.id)}
+              onpointerleave={() => onButtonUp(b.id)}
             >
               <span class="dot" style:background={b.color}></span>
               <span>{b.label}</span>
@@ -291,7 +388,7 @@
             <canvas bind:this={linCanvas}></canvas>
           </div>
           <div class="viz-wrap">
-            <span class="viz-label">SPECTRE</span>
+            <span class="viz-label">NIVEAUX</span>
             <canvas bind:this={vizCanvas}></canvas>
           </div>
         </div>
@@ -590,6 +687,12 @@
   }
   .abtn.pressed {
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
+  }
+  /* État "engagé" persistant (mute posé, break/fill en attente, roll
+     maintenu) — distinct du simple retour tactile .pressed, qui ne dure que
+     le temps du contact. */
+  .abtn.active {
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--amp-amber);
   }
   .abtn .dot {
     width: 6px;
