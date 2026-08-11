@@ -310,6 +310,18 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   via le partage par URL existant) ; repli tactile pur obligatoire pour qui
   refuse la permission capteur iOS (l'inclinaison ne doit jamais être
   requise).
+
+  **⏭️ À refaire — viz ① (barres).** L'implémentation actuelle affiche 6
+  barres pleine hauteur, une par ligne (kick/snare/hat/bass/pad/melody) —
+  s'éloigne de l'esprit égaliseur de la toute première maquette. À refaire en
+  vrai visuel d'égaliseur : plusieurs barres (comme un spectre), CHACUNE
+  composée de petits segments empilés représentant la contribution des 6
+  éléments à ce moment-là, pas une barre = une ligne.
+
+  **⏭️ À refaire — viz ③ (défilement).** Remplacer le personnage bâton
+  générique par un lapin : mange des carottes sur son chemin à chaque kick,
+  fait un gros saut à chaque snare, sautille aux hats — un déclencheur par
+  ligne plutôt que le seul niveau de kick utilisé aujourd'hui.
 - **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en plus
   du cycle entier actuel.
 - **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre des
@@ -321,6 +333,16 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
 - **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
   piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier tout
   de suite), et être très explicatif à chaque nouveauté introduite.
+- **Atelier — retirer le séquenceur kick de la partie Synthé.** À clarifier
+  au moment de l'implémentation : très probablement l'anneau/rappel batterie
+  de `TransportRings` (visible dans la barre sticky quel que soit l'onglet
+  actif, donc aussi sur l'onglet Synthé) plutôt qu'un vrai séquenceur dupliqué
+  — mais à confirmer avec Yann avant de coder, la formulation vise
+  spécifiquement le kick.
+- **Atelier — réduire tous les paramètres** (sliders de groove/effets/harmonie)
+  pour libérer de la place et mieux voir les séquenceurs — prolonge le
+  diagnostic ergonomie déjà fait sur mobile (peu d'espace pour scroller,
+  transport sticky).
 
 ---
 
