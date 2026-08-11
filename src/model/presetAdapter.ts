@@ -29,14 +29,21 @@ function applyDrumLine(dst: PatternStateV2['rows'][DrumRowName], src: DrumLinePr
   dst.tone = src.tone;
 }
 
-// `keepSynth` = case « Garder le synthé actuel » : quand elle est cochée, on
-// ne touche à rien du synthé (voix, harmonie, grille, notes, envois,
-// sidechain, groove synthé) — l'état réglé à la main par le joueur survit au
-// chargement d'un preset de rythme.
-export function presetToState(preset: SongPresetData, current?: PatternStateV2, keepSynth = false): PatternStateV2 {
+// `keepSynthAndTempo` = case « Garder le synthé et le tempo actuels » : quand
+// elle est cochée, on ne touche à rien du synthé (voix, harmonie, grille,
+// notes, envois, sidechain, groove synthé) NI au tempo — l'état réglé à la
+// main par le joueur survit au chargement d'un preset de rythme. Extension
+// délibérée par rapport à l'original (qui ne gardait que le synthé, jamais le
+// tempo) : recharger un preset de rythme au milieu d'une session ne doit pas
+// faire sauter le tempo sur lequel le synthé en cours a été composé.
+export function presetToState(
+  preset: SongPresetData,
+  current?: PatternStateV2,
+  keepSynthAndTempo = false,
+): PatternStateV2 {
   const state = defaultState();
 
-  if (keepSynth && current) {
+  if (keepSynthAndTempo && current) {
     state.synthRows = structuredClone(current.synthRows);
     state.synthGlobal = structuredClone(current.synthGlobal);
     state.synthSwing = current.synthSwing;
@@ -45,7 +52,7 @@ export function presetToState(preset: SongPresetData, current?: PatternStateV2, 
     applyPresetSynth(state, preset);
   }
 
-  state.tempo = preset.tempo;
+  state.tempo = keepSynthAndTempo && current ? current.tempo : preset.tempo;
   state.swing = preset.swing;
   state.drag = preset.drag;
   state.randomVelocity = 0; // jamais réglée par un preset, ne persiste pas
