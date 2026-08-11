@@ -39,6 +39,14 @@ export class AudioEngine {
   private playheadQueue: PlayheadEvent[] = [];
   private liveRecorder: LiveRecorder | null = null;
 
+  // Déclencheurs du Mode Live (phase 2, PLAN.md §7) — par-dessus le pattern,
+  // jamais écrits dans l'état : un bouton relâché ou un STOP y remet
+  // toujours l'ordre initial, contrairement à un mute posé dans l'Atelier.
+  private liveMute: Partial<Record<DrumRowName, boolean>> = {};
+  private fillRequested = false;
+  private forcedFillBar: number | null = null;
+  private liveHatRoll: number | null = null;
+
   isPlaying = false;
   ghostTargetRow: DrumRowName = 'snare';
 
@@ -130,6 +138,8 @@ export class AudioEngine {
     this.playheadQueue = [];
     this.breakRequested = false;
     this.breakWindow = null;
+    this.fillRequested = false;
+    this.forcedFillBar = null;
     // Couper vraiment les oscillateurs synthé déjà programmés (release
     // jusqu'à 4s qui continueraient de coûter du CPU), puis recréer le
     // contexte au prochain start() — le moyen le plus sûr de couper net
@@ -154,6 +164,62 @@ export class AudioEngine {
     return this.breakRequested || this.breakWindow !== null;
   }
 
+  // Bouton FILL du Mode Live : même principe que Break (pris en compte au
+  // prochain début de mesure), mais un fill n'a besoin que d'un bar entier —
+  // pas de fenêtre dépouillé/explosion à suivre dans le temps.
+  liveRequestFill(): void {
+    if (this.isPlaying) this.fillRequested = true;
+  }
+
+  get fillPending(): boolean {
+    return this.fillRequested || this.forcedFillBar === this.currentBar;
+  }
+
+  // Boutons MUTE K/S/H : superposés au `muted` du pattern, jamais écrits
+  // dedans — repartir de l'Atelier après le Mode Live retrouve la même
+  // ligne, mutée ou non, qu'avant.
+  liveSetMute(name: DrumRowName, muted: boolean): void {
+    this.liveMute = { ...this.liveMute, [name]: muted };
+  }
+
+  // Bouton ROLL×2 (maintenu) : force le hat en rafale tant qu'il est
+  // enfoncé ; `null` relâche le forçage.
+  liveSetHatRoll(multiplier: number | null): void {
+    this.liveHatRoll = multiplier;
+  }
+
+  // Pad XY du Mode Live — balayage de filtre (axe X) et voile de réverbe
+  // (axe Y), tous deux appliqués en direct sur des nœuds toujours neutres
+  // ailleurs (voir liveFilter/liveReverbSend dans graph.ts). setTargetAtTime
+  // plutôt que setValueAtTime : lisse le geste de drag, évite les clics.
+  setLiveFilterCutoff(hz: number): void {
+    if (!this.graph || !this.ctx) return;
+    this.graph.liveFilter.frequency.setTargetAtTime(hz, this.ctx.currentTime, 0.01);
+  }
+
+  setLiveReverbWet(amount01: number): void {
+    if (!this.graph || !this.ctx) return;
+    // Plafonné à 0.5 : à 1.0 le mix entier partirait noyer la réverbe
+    // partagée, au détriment des envois par ligne déjà réglés dans l'Atelier.
+    const gain = Math.max(0, Math.min(1, amount01)) * 0.5;
+    this.graph.liveReverbSend.gain.setTargetAtTime(gain, this.ctx.currentTime, 0.05);
+  }
+
+  // Niveau crête 0..1 par ligne (batterie + synthé), lu à chaque frame par le
+  // visualiseur du Mode Live — jamais par le moteur lui-même.
+  getLineLevels(): Partial<Record<DrumRowName | SynthRowName, number>> {
+    if (!this.graph) return {};
+    const buf = new Uint8Array(32);
+    const levels: Partial<Record<DrumRowName | SynthRowName, number>> = {};
+    for (const [name, analyser] of Object.entries(this.graph.lineAnalyser)) {
+      analyser.getByteTimeDomainData(buf);
+      let peak = 0;
+      for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+      levels[name as DrumRowName | SynthRowName] = peak / 128;
+    }
+    return levels;
+  }
+
   // Réglages de mix/fx appliqués en direct sans reconstruire le graphe.
   refreshMixSettings(): void {
     if (this.graph) applyMixSettings(this.graph, this.getState());
@@ -176,6 +242,10 @@ export class AudioEngine {
         this.breakWindow = { startTime: justStartedBarTime, endTime: justStartedBarTime + barDur };
         this.breakRequested = false;
       }
+      if (this.fillRequested) {
+        this.forcedFillBar = this.currentBar;
+        this.fillRequested = false;
+      }
     }
     // Expiration explicite : si le scheduler tourne en retard d'un cycle, le
     // break ne doit pas rester actif au-delà de sa fenêtre.
@@ -192,6 +262,9 @@ export class AudioEngine {
         ghostTargetRow: state.ghostRow ?? this.ghostTargetRow,
         onSidechainTrigger: (name, time) => this.maybeTriggerSidechain(name, time),
         emitPlayhead: (ev) => this.playheadQueue.push(ev),
+        liveMute: this.liveMute,
+        forceFill: this.forcedFillBar === this.currentBar,
+        forceHatRoll: this.liveHatRoll,
       },
       now + SCHEDULE_AHEAD,
     );

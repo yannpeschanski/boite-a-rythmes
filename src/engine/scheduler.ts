@@ -52,6 +52,12 @@ export interface ScheduleContext {
   // notes ni les montées de fill) — branché quand le synthé sera porté.
   onSidechainTrigger?: (rowName: DrumRowName, time: number) => void;
   emitPlayhead: (ev: PlayheadEvent) => void;
+  // Déclencheurs Mode Live (phase 2, PLAN.md §7) : par-dessus le pattern,
+  // jamais écrits dedans — un bouton MUTE en direct n'altère pas la ligne
+  // sauvegardée. Optionnels : absents pour l'Atelier/l'export offline/le jeu.
+  liveMute?: Partial<Record<DrumRowName, boolean>>;
+  forceFill?: boolean;
+  forceHatRoll?: number | null;
 }
 
 // Renvoie true si un ghost note a été déclenché (flash visuel en direct).
@@ -65,7 +71,7 @@ function triggerKickSnareStep(
 ): boolean {
   const { state, kit, rng } = cx;
   const row = state.rows[name];
-  if (row.muted) return false;
+  if (row.muted || cx.liveMute?.[name]) return false;
   const play = (t: number, g: number, rim: boolean) => {
     if (name === 'kick') kit.playKick(t, g, row);
     else if (rim) kit.playRimshot(t, g, row);
@@ -146,15 +152,21 @@ function triggerHatStep(
 ): void {
   const { state, kit, rng } = cx;
   const hat = state.rows.hat;
-  if (hat.muted) return;
+  if (hat.muted || cx.liveMute?.hat) return;
   const fillHere = fillNow && isLastSteps(col, hat.subdiv);
+  // ROLL×2 (Mode Live) : forcé exactement comme le ferait un fill — un pas
+  // vide se met à sonner tant que le bouton est maintenu, même logique que
+  // fillHere ci-dessous plutôt qu'un chemin séparé.
+  const rollForced = cx.forceHatRoll != null;
   let stepState = hat.pattern[col];
-  if (fillHere && stepState === 0) stepState = 1; // le fill force la fin de mesure à jouer
+  if ((fillHere || rollForced) && stepState === 0) stepState = 1;
   if (stepState === 0) return;
 
   let roll = hat.rolls[col];
   if (fillHere) {
     roll = 4;
+  } else if (rollForced) {
+    roll = cx.forceHatRoll!;
   } else if (roll === 1 && rng() * 100 < state.spontRoll) {
     roll = 2 + Math.floor(rng() * 3); // rafale spontanée 2-4, cette passe seulement
   }
@@ -178,7 +190,10 @@ interface SchedulingContextInternal extends ScheduleContext {}
 // (now + SCHEDULE_AHEAD en live ; la durée totale en offline).
 export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: number): void {
   const { state, cursors } = cx;
-  const fillNow = isFillBar(state, cx.currentBar);
+  // FILL (Mode Live) : force la mesure en cours à se comporter comme une
+  // mesure de fill normale — même logique de montée/rafale, juste déclenchée
+  // à la demande plutôt que par fillEvery.
+  const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
 
   (['kick', 'snare'] as const).forEach((name) => {
@@ -217,7 +232,7 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
 
 function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
   const { state, cursors } = cx;
-  const fillNow = isFillBar(state, cx.currentBar);
+  const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
   const hatCursor = cursors.hat;
   const hat = state.rows.hat;
