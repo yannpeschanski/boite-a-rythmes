@@ -203,12 +203,12 @@
       <button onclick={() => (canRestore = false)}>Ignorer</button>
     </p>
   {/if}
-  <!-- Strictement l'essentiel : ce qu'on veut pouvoir toucher SANS
-       remonter en haut de page pendant qu'on écoute, quel que soit
-       l'onglet actif — comme la barre de transport fixe de l'original
-       (#drumTransportBar). Vue/Sauver/Charger/Tempo ne servent pas en
-       continu (on les règle une fois, pas à chaque pas) : les sortir d'ici
-       évite une barre fixe trop haute qui mange l'écran, mobile surtout. -->
+  <!-- Bloc sticky unique : transport ET onglets restent joignables SANS
+       remonter en haut de page, quel que soit l'onglet actif ou la
+       position de scroll — comme la barre de transport fixe de l'original
+       (#drumTransportBar), étendue aux onglets pour ne jamais perdre
+       l'accès à Rythme/Synthé/Effets. Le rappel clavier (Espace/B/Ctrl+Z)
+       n'a pas de sens au toucher : masqué sur les appareils tactiles. -->
   <div class="sticky-bar">
     <div class="transport">
       <button class="xp-btn primary" disabled={recording} onclick={togglePlay}>
@@ -222,11 +222,19 @@
         onclick={() => engine.requestBreak()}>🫨 Break</button
       >
     </div>
-    <p class="hint">Espace : lecture/stop · B : break · Ctrl+Z : annuler</p>
+    <p class="hint kbd-hint">Espace : lecture/stop · B : break · Ctrl+Z : annuler</p>
+    <XpTabs
+      tabs={[
+        { id: 'rythme', label: '🥁 Rythme' },
+        { id: 'synthe', label: '🎹 Synthé' },
+        { id: 'effets', label: '🔊 Effets' },
+      ]}
+      bind:active={activeTab}
+    />
   </div>
 
-  <!-- Hors de la barre sticky : réglages ponctuels (vue, sauvegarde, tempo,
-       preset), pas des actions en continu comme lecture/break. -->
+  <!-- Hors du bloc sticky : réglages ponctuels (vue, sauvegarde, tempo,
+       preset), pas des actions en continu comme lecture/break/onglets. -->
   <div class="preset-row">
     <div class="secondary">
       <button class="xp-btn" onclick={() => (circleView = !circleView)}>
@@ -243,37 +251,27 @@
     <PresetPicker onApplied={refreshFx} />
   </div>
 
-  <!-- Onglets Rythme/Synthé/Effets : chaque page tient sur un scroll court,
-       le séquenceur de l'onglet Rythme redevient visible sans avoir à
-       traverser Synthé + Effets à chaque fois (voir commentaire sur
-       activeTab plus haut). Lecture/Stop/Break restent joignables via la
-       barre sticky ci-dessus, quel que soit l'onglet actif. -->
-  <XpTabs
-    tabs={[
-      { id: 'rythme', label: '🥁 Rythme' },
-      { id: 'synthe', label: '🎹 Synthé' },
-      { id: 'effets', label: '🔊 Effets' },
-    ]}
-    bind:active={activeTab}
-  />
+  <!-- Le séquenceur pas-à-pas reste au même endroit à chaque fois, quel que
+       soit l'onglet actif — hors des onglets exprès, pour de vrai cette
+       fois (pas juste "vite retrouvé en revenant sur Rythme"). Rythme ne
+       garde plus que le Groove/variation humaine ci-dessous. -->
+  <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
+    {#if circleView}
+      <div class="circle-holder">
+        <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
+      </div>
+    {:else}
+      <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
+        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+      <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
+        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+      <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
+        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+    {/if}
+  </XpWindow>
 
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
-      <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
-        {#if circleView}
-          <div class="circle-holder">
-            <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
-          </div>
-        {:else}
-          <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
-            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-          <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
-            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-          <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
-            onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-        {/if}
-      </XpWindow>
-
       <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
         <div class="two-col">
           <XpSlider label="Swing" min={0} max={75} unit="%" bind:value={st.swing} />
@@ -336,6 +334,14 @@
     color: var(--xp-muted);
     margin: 0 0 8px;
   }
+  /* Raccourcis clavier : sans objet au toucher (pas de clavier physique) —
+     masqué sur les appareils tactiles plutôt que d'occuper de la place pour
+     rien dans la barre sticky, où chaque pixel de hauteur compte. */
+  @media (pointer: coarse) {
+    .kbd-hint {
+      display: none;
+    }
+  }
   .closest {
     color: var(--xp-accent-amber);
   }
@@ -381,8 +387,7 @@
   .tab-panel {
     background: var(--xp-face);
     border: 1px solid var(--xp-line);
-    border-top: none;
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px;
     padding: 12px 10px 10px;
     margin-bottom: 14px;
     box-shadow: 0 4px 14px rgba(0, 0, 30, 0.2);
