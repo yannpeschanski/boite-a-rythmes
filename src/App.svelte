@@ -6,20 +6,27 @@
   import { onMount } from 'svelte';
   import AtelierView from './ui/atelier/AtelierView.svelte';
   import GameView from './ui/game/GameView.svelte';
+  import LiveView from './ui/live/LiveView.svelte';
   import { game } from './stores/game.svelte';
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
 
-  let view = $state<'splash' | 'atelier' | 'game'>('splash');
+  let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
 
   onMount(() => {
     game.load();
     // Rythme partagé par URL : on entre directement dans l'Atelier.
     if (loadFromHash()) view = 'atelier';
+    // Mode Live — phase 1 (squelette), volontairement pas dans la navigation
+    // normale : accessible seulement en connaissant l'URL, pour tester sur un
+    // vrai téléphone sans l'exposer aux autres visiteurs (PLAN.md §7).
+    if (location.hash === '#mode-live') view = 'live';
   });
 </script>
 
-{#if view === 'splash'}
+{#if view === 'live'}
+  <LiveView onExit={() => (view = 'atelier')} />
+{:else if view === 'splash'}
   <div class="splash">
     <h1>Boîte à rythmes</h1>
     <p>Un séquenceur rétro, et une campagne pour apprendre le rythme à l’oreille.</p>

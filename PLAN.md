@@ -247,9 +247,11 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   pad — à sortir de là ; prévoir un plancher de luminosité LCD au-dessus de
   l'hommage pur pour la lisibilité en extérieur.
 
-  **Plan en 4 phases** : (1) squelette Svelte derrière un flag caché,
-  verrouillage d'orientation + flux de permission `DeviceOrientationEvent`
-  testé sur device réel, mapping par défaut figé ; (2) câblage réel — boutons
+  **Plan en 4 phases** : (1) ✅ squelette Svelte derrière un flag caché
+  (`src/ui/live/LiveView.svelte`, accessible via `#mode-live`, absent de la
+  navigation normale — voir `App.svelte`), verrouillage d'orientation + flux
+  de permission `DeviceOrientationEvent` codés, à confirmer sur device réel ;
+  (2) câblage réel — boutons
   sur les actions existantes du moteur (break/fill/mute/roll), pad XY sur des
   paramètres déjà présents (filtre/reverb), séquenceur linéaire + viz ①
   branchés sur les vrais `GainNode` par ligne (`src/engine/graph.ts:123`/
