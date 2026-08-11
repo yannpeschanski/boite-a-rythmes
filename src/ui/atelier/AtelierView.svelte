@@ -203,6 +203,12 @@
       <button onclick={() => (canRestore = false)}>Ignorer</button>
     </p>
   {/if}
+  <!-- Strictement l'essentiel : ce qu'on veut pouvoir toucher SANS
+       remonter en haut de page pendant qu'on écoute, quel que soit
+       l'onglet actif — comme la barre de transport fixe de l'original
+       (#drumTransportBar). Vue/Sauver/Charger/Tempo ne servent pas en
+       continu (on les règle une fois, pas à chaque pas) : les sortir d'ici
+       évite une barre fixe trop haute qui mange l'écran, mobile surtout. -->
   <div class="sticky-bar">
     <div class="transport">
       <button class="xp-btn primary" disabled={recording} onclick={togglePlay}>
@@ -215,6 +221,14 @@
         title="À la prochaine mesure : dépouillé puis explosion"
         onclick={() => engine.requestBreak()}>🫨 Break</button
       >
+    </div>
+    <p class="hint">Espace : lecture/stop · B : break · Ctrl+Z : annuler</p>
+  </div>
+
+  <!-- Hors de la barre sticky : réglages ponctuels (vue, sauvegarde, tempo,
+       preset), pas des actions en continu comme lecture/break. -->
+  <div class="preset-row">
+    <div class="secondary">
       <button class="xp-btn" onclick={() => (circleView = !circleView)}>
         {circleView ? '▤ Vue linéaire' : '◎ Vue circulaire'}
       </button>
@@ -222,19 +236,10 @@
       <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
       <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
     </div>
-    <p class="hint">
-      Espace : lecture/stop · B : break · 1/2/3 : couper une ligne · Ctrl+Z : annuler
-      {#if closest}
-        <span class="closest">— le plus proche : <strong>{closest.label}</strong> ({Math.round(closest.score * 100)} %)</span>
-      {/if}
-    </p>
+    {#if closest}
+      <p class="hint">le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)</p>
+    {/if}
     <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
-  </div>
-
-  <!-- Hors de la barre sticky (contrairement au transport/tempo, on ne
-       charge pas un preset en continu) — sinon la barre fixe devient trop
-       haute sur mobile et mange l'espace utile. -->
-  <div class="preset-row">
     <PresetPicker onApplied={refreshFx} />
   </div>
 
@@ -331,7 +336,7 @@
     color: var(--xp-muted);
     margin: 0 0 8px;
   }
-  .closest strong {
+  .closest {
     color: var(--xp-accent-amber);
   }
   .restore {
@@ -366,6 +371,12 @@
     padding: 8px 10px;
     margin: 10px 0;
     box-shadow: 0 2px 6px rgba(0, 0, 30, 0.12);
+  }
+  .secondary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
   }
   .tab-panel {
     background: var(--xp-face);
