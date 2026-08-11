@@ -212,9 +212,14 @@ export class AudioEngine {
 
   // Appelée à chaque frame rAF par l'UI : renvoie les événements dont le
   // temps audio programmé est déjà passé selon l'horloge de l'AudioContext.
+  // Compensée par outputLatency : ctx.currentTime avance dès qu'un
+  // échantillon est TRAITÉ, pas quand il sort réellement du haut-parleur —
+  // avec latencyHint 'playback' (choisi pour la robustesse Bluetooth, voir
+  // ensureAudio), cet écart peut être significatif. Sans compensation, le
+  // curseur visuel semble en avance sur ce qu'on entend.
   consumePlayhead(): PlayheadEvent[] {
     if (!this.ctx || this.playheadQueue.length === 0) return [];
-    const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime - (this.ctx.outputLatency || 0);
     const due: PlayheadEvent[] = [];
     const remaining: PlayheadEvent[] = [];
     this.playheadQueue.sort((a, b) => a.time - b.time);
