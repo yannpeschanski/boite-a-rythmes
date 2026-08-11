@@ -558,10 +558,14 @@
         </button>
         <button class="amp-btn gear" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
+      <div class="seekbar"><div class="seekbar-fill"></div><div class="seekbar-grip"></div></div>
       {#if tiltDenied}
+        <!-- Hors du flux de la grille exprès : un enfant de grille conditionnel
+             décale l'auto-placement des rangées suivantes (voir le commentaire
+             sur .main plus bas) — un toast en position absolute n'a pas ce
+             problème. -->
         <p class="tilt-warn">Capteur refusé — le mode reste jouable au tactile seul.</p>
       {/if}
-      <div class="seekbar"><div class="seekbar-fill"></div><div class="seekbar-grip"></div></div>
       <div class="main">
         <div class="buttons">
           {#each assignments.slots as actionId, i (i)}
@@ -718,7 +722,12 @@
     height: 100%;
     background: linear-gradient(180deg, var(--amp-bg-1), var(--amp-bg-2) 12%, var(--amp-bg-3));
     display: grid;
-    grid-template-rows: auto auto auto auto 1fr;
+    /* Exactement les rangées TOUJOURS présentes (titlebar/topbar/seekbar/
+       main) — un enfant en plus ou en moins décale l'auto-placement des
+       rangées suivantes et empêche la dernière (1fr) d'être occupée, donc
+       de s'étirer. Le toast .tilt-warn, conditionnel, est sorti du flux de
+       grille pour cette raison (position: absolute plus bas). */
+    grid-template-rows: auto auto auto 1fr;
     gap: 4px;
     padding: 6px;
   }
@@ -798,10 +807,18 @@
     text-overflow: ellipsis;
   }
   .tilt-warn {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 44px;
+    z-index: 5;
     margin: 0;
     font-size: 9px;
     color: #ffb0a0;
-    padding: 0 4px;
+    background: rgba(10, 10, 11, 0.85);
+    border: 1px solid var(--amp-line);
+    border-radius: 3px;
+    padding: 3px 6px;
   }
   .tilt-btn {
     display: flex;
@@ -887,6 +904,13 @@
   .main {
     display: grid;
     grid-template-columns: 1fr 1.15fr 1fr;
+    /* Sans ligne explicite, une grille à une seule rangée implicite reste
+       dimensionnée à son contenu ("auto") même si .main elle-même occupe
+       toute la hauteur restante — visible en aspect large/carré (desktop,
+       tablette), pas sur un téléphone en paysage assez allongé pour que ça
+       ne se voie pas. Devenu joignable depuis la navigation normale (plus
+       seulement via #mode-live sur un vrai téléphone), donc à corriger. */
+    grid-template-rows: 1fr;
     gap: 6px;
     min-height: 0;
   }

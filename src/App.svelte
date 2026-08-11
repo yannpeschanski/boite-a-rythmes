@@ -17,9 +17,9 @@
     game.load();
     // Rythme partagé par URL : on entre directement dans l'Atelier.
     if (loadFromHash()) view = 'atelier';
-    // Mode Live — phase 1 (squelette), volontairement pas dans la navigation
-    // normale : accessible seulement en connaissant l'URL, pour tester sur un
-    // vrai téléphone sans l'exposer aux autres visiteurs (PLAN.md §7).
+    // Lien direct/favori vers le Mode Live (en plus du bouton de nav
+    // ci-dessous, pas à sa place) — pratique pour y revenir sans repasser
+    // par l'écran d'accueil.
     if (location.hash === '#mode-live') view = 'live';
   });
 </script>
@@ -33,12 +33,14 @@
     <div class="choices">
       <button class="big" onclick={() => (view = 'atelier')}>🥁 Atelier<small>Composer librement</small></button>
       <button class="big" onclick={() => (view = 'game')}>🎮 Mode jeu<small>34 niveaux</small></button>
+      <button class="big" onclick={() => (view = 'live')}>🎛 Mode Live<small>Manette paysage</small></button>
     </div>
   </div>
 {:else}
   <nav class="switcher">
     <button class:on={view === 'atelier'} onclick={() => (view = 'atelier')}>🥁 Atelier</button>
     <button class:on={view === 'game'} onclick={() => (view = 'game')}>🎮 Mode jeu</button>
+    <button onclick={() => (view = 'live')}>🎛 Mode Live</button>
   </nav>
   {#if view === 'atelier'}
     <AtelierView />

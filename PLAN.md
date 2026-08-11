@@ -248,8 +248,9 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   l'hommage pur pour la lisibilité en extérieur.
 
   **Plan en 4 phases** : (1) ✅ squelette Svelte derrière un flag caché
-  (`src/ui/live/LiveView.svelte`, accessible via `#mode-live`, absent de la
-  navigation normale — voir `App.svelte`), verrouillage d'orientation + flux
+  (`src/ui/live/LiveView.svelte`, accessible via `#mode-live` — depuis un
+  vrai bouton "🎛 Mode Live" sur le splash et le switcher une fois les 4
+  phases posées, voir `App.svelte`), verrouillage d'orientation + flux
   de permission `DeviceOrientationEvent` codés, à confirmer sur device réel ;
   (2) ✅ câblage réel — BREAK/FILL déclenchent `requestBreak()`/
   `liveRequestFill()` (ce dernier ajouté au scheduler sur le même principe que
@@ -276,14 +277,25 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   reflète maintenant la dernière source qui a écrit, pas seulement le pad.
 
   **Les 4 phases du plan sont posées.** Mode Live est fonctionnellement
-  complet ; les features supplémentaires ci-dessous restent à l'état d'idées.
+  complet et accessible depuis la navigation normale (bouton "🎛 Mode Live"
+  sur le splash et le switcher) ; les features supplémentaires ci-dessous
+  restent à l'état d'idées.
+
+  **⏭️ Prochain à faire : bouton d'enregistrement du live take.** Capturer en
+  WAV ce qui est vraiment joué en Mode Live (triggers/pad/inclinaison
+  compris), pas juste le pattern de base — réutilise `LiveRecorder` déjà
+  écrit pour l'enregistrement direct de l'Atelier (`AudioEngine.
+  startLiveRecording`), même principe de tap sur `finalGain`. Contrairement à
+  l'enregistrement de l'Atelier (durée fixée en mesures à l'avance), un live
+  take n'a pas de durée connue d'avance — il faut probablement démarrer/
+  arrêter l'enregistrement au bouton plutôt que sur un nombre de mesures fixe.
 
   **Features supplémentaires envisagées** : vibration (`navigator.vibrate`) à
   chaque trigger ; prise/snapshot des assignations rappelable par appui long ;
-  enregistrement du live take en WAV (réutilise `LiveRecorder`) ; undo léger
-  sur les triggers en direct ; mode duo (deux téléphones connectés via le
-  partage par URL existant) ; repli tactile pur obligatoire pour qui refuse la
-  permission capteur iOS (l'inclinaison ne doit jamais être requise).
+  undo léger sur les triggers en direct ; mode duo (deux téléphones connectés
+  via le partage par URL existant) ; repli tactile pur obligatoire pour qui
+  refuse la permission capteur iOS (l'inclinaison ne doit jamais être
+  requise).
 - **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en plus
   du cycle entier actuel.
 - **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre des
