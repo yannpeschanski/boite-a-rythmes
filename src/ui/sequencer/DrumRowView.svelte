@@ -42,7 +42,12 @@
   }
 
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-  function pressStart(col: number) {
+  function pressStart(col: number, e: PointerEvent) {
+    // Clic droit : uniquement géré par oncontextmenu (cycleRoll). Sans ce
+    // garde-fou, le pointerup qui suit le clic droit relance aussi
+    // cycleCell via pressEnd — la rafale ET l'état de la case avancaient
+    // en même temps sur un simple clic droit.
+    if (e.button === 2) return;
     longPressTimer = setTimeout(() => {
       if (row.pattern[col] > 0) row.rolls[col] = (row.rolls[col] % 4) + 1;
       longPressTimer = null;
@@ -74,7 +79,7 @@
       <button
         class="cell state-{state} {name}"
         class:playing={playheadCol === col}
-        onpointerdown={() => pressStart(col)}
+        onpointerdown={(e) => pressStart(col, e)}
         onpointerup={() => pressEnd(col, true)}
         onpointerleave={() => pressEnd(col, false)}
         oncontextmenu={(e) => cycleRoll(col, e)}
