@@ -1,23 +1,28 @@
 <script lang="ts">
-  // Mode Live — Phase 3 du plan (PLAN.md §7) : overlay d'assignation réel
-  // par-dessus le câblage de la phase 2. Toujours accessible seulement via
-  // #mode-live, absent de la navigation normale — voir App.svelte.
+  // Mode Live — Phase 4 du plan (PLAN.md §7), dernière phase prévue :
+  // l'inclinaison pilote enfin un paramètre, et les visualiseurs ②/③ mis de
+  // côté en phase 2 redeviennent choisissables. Toujours accessible
+  // seulement via #mode-live, absent de la navigation normale — App.svelte.
   //
   // Ce qui est réel maintenant :
   //  - chacun des 6 boutons pointe vers une action du catalogue
   //    (liveActions.ts) plutôt que de coder en dur "ce qu'il fait" ; les axes
-  //    X/Y du pad pointent de la même façon vers un paramètre continu ;
-  //  - l'overlay ⚙ permet de changer ces associations (appui = option
-  //    suivante, cycle) et les persiste dans localStorage ;
+  //    X/Y du pad et l'axe d'inclinaison pointent de la même façon vers un
+  //    paramètre continu ;
+  //  - l'inclinaison est CALIBRÉE au moment où on l'active (le gamma courant
+  //    devient le zéro), jamais un zéro absolu — tenir le téléphone penché
+  //    en le sortant de sa poche ne doit pas fausser le point neutre. Plage
+  //    large et tolérante (±35°) plutôt que précise, comme discuté dans le
+  //    diagnostic ergonomie (PLAN.md §7) ;
+  //  - le visualiseur central a 3 variantes (barres/arty/défilement),
+  //    réassignable comme le reste depuis l'overlay ⚙, toutes réagissant au
+  //    vrai niveau de la ligne kick plutôt qu'à une horloge synthétique ;
+  //  - l'overlay ⚙ permet de changer toutes ces associations (appui =
+  //    option suivante, cycle) et les persiste dans localStorage ;
   //  - BREAK/FILL/MUTE/ROLL et le filtre/reverb restent les mêmes appels
   //    moteur qu'en phase 2 (AudioEngine.requestBreak/liveRequestFill/
   //    liveSetMute/liveSetHatRoll/setLiveFilterCutoff/setLiveReverbWet),
-  //    juste indirectés par l'assignation courante ;
-  //  - le séquenceur linéaire et le visualiseur restent branchés sur le vrai
-  //    pattern et les vrais niveaux par ligne (phase 2, inchangé).
-  //
-  // Reste pour la phase suivante : l'inclinaison ne pilote encore aucun
-  // paramètre (phase 4).
+  //    juste indirectés par l'assignation courante.
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
@@ -28,8 +33,10 @@
     axisById,
     cycleAction,
     cycleAxis,
+    cycleViz,
     loadLiveAssignments,
     saveLiveAssignments,
+    vizById,
     type LiveActionId,
   } from './liveActions';
 
@@ -54,6 +61,10 @@
   let tiltEnabled = $state(false);
   let tiltDenied = $state(false);
   let tiltGamma = $state(0); // inclinaison gauche/droite en degrés, lecture brute pour valider le flux sur device réel
+  // Point neutre calibré au moment de l'activation (pas un zéro absolu) —
+  // null tant qu'aucune lecture n'est encore arrivée depuis l'activation.
+  let tiltCalibration = $state<number | null>(null);
+  const TILT_RANGE = 35; // degrés de part et d'autre du point neutre pour couvrir 0..1 — large et tolérant, pas précis
 
   let padX = $state(0.5);
   let padY = $state(0.5);
@@ -135,8 +146,12 @@
     assignments.slots[i] = cycleAction(assignments.slots[i]);
     saveLiveAssignments(assignments);
   }
-  function cycleAxisAssign(which: 'axisX' | 'axisY') {
+  function cycleAxisAssign(which: 'axisX' | 'axisY' | 'axisTilt') {
     assignments[which] = cycleAxis(assignments[which]);
+    saveLiveAssignments(assignments);
+  }
+  function cycleVizAssign() {
+    assignments.viz = cycleViz(assignments.viz);
     saveLiveAssignments(assignments);
   }
 
@@ -164,14 +179,23 @@
     );
   }
 
+  // Calibré au premier échantillon reçu après activation (pas un zéro
+  // absolu) : sortir le téléphone incliné d'une poche ne doit pas fausser le
+  // point neutre. Plage ±35° volontairement large pour rester un axe
+  // tolérant, pas un contrôle de précision (diagnostic ergonomie, PLAN.md §7).
   function onOrientationEvent(e: DeviceOrientationEvent) {
-    tiltGamma = e.gamma ?? 0;
+    const gamma = e.gamma ?? 0;
+    tiltGamma = gamma;
+    if (tiltCalibration === null) tiltCalibration = gamma;
+    const value01 = Math.max(0, Math.min(1, 0.5 + (gamma - tiltCalibration) / (2 * TILT_RANGE)));
+    applyAxisValue(assignments.axisTilt, value01);
   }
 
   async function toggleTilt() {
     if (tiltEnabled) {
       window.removeEventListener('deviceorientation', onOrientationEvent);
       tiltEnabled = false;
+      tiltCalibration = null;
       return;
     }
     if (needsMotionPermission()) {
@@ -188,16 +212,24 @@
       }
     }
     tiltDenied = false;
+    tiltCalibration = null; // recalibré sur la 1ère lecture qui arrive
     window.addEventListener('deviceorientation', onOrientationEvent);
     tiltEnabled = true;
   }
 
-  // Pad XY -> le paramètre assigné à chaque axe (filtre par défaut en X,
-  // reverb en Y, réassignables depuis l'overlay ⚙). Filtre en courbe
-  // exponentielle (200 Hz étouffé à 20 kHz grand ouvert, plus naturel à
-  // l'oreille qu'une échelle linéaire) ; les deux paramètres sont inversés
-  // pour l'axe Y (haut du pad = 100%), pas pour l'axe X.
+  // Pad XY et inclinaison peuvent viser le MÊME paramètre (les deux sont
+  // assignables indépendamment) — la dernière source qui a écrit fait foi,
+  // aussi bien pour le son que pour la lecture affichée : sans ce state
+  // partagé, l'inclinaison changerait le son sans que les bandes ambrées ne
+  // bougent, ce qui serait trompeur.
+  let axisValues = $state<Record<'filter' | 'reverb', number>>({ filter: 0.5, reverb: 0.5 });
+
+  // Le paramètre assigné à chaque axe (filtre par défaut en X, reverb en Y,
+  // réassignables depuis l'overlay ⚙). Filtre en courbe exponentielle
+  // (200 Hz étouffé à 20 kHz grand ouvert, plus naturel à l'oreille qu'une
+  // échelle linéaire).
   function applyAxisValue(axisId: 'filter' | 'reverb', value01: number) {
+    axisValues[axisId] = value01;
     if (axisId === 'filter') {
       const hz = 200 * Math.pow(20000 / 200, value01);
       engine.setLiveFilterCutoff(hz);
@@ -206,6 +238,8 @@
     }
   }
 
+  // Les deux paramètres sont inversés pour l'axe Y du pad (haut du pad =
+  // 100%), pas pour l'axe X ni pour l'inclinaison.
   function setPad(clientX: number, clientY: number, rect: DOMRect) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
@@ -311,7 +345,7 @@
   // lui-même lu depuis les AnalyserNode ajoutés au graphe), avec un
   // relâchement exponentiel côté UI pour un rebond lisible plutôt qu'un
   // clignotement pas-à-pas.
-  function drawViz(ctx: CanvasRenderingContext2D) {
+  function drawVizBars(ctx: CanvasRenderingContext2D) {
     const r = vizCanvas.getBoundingClientRect();
     const w = r.width,
       h = r.height;
@@ -337,6 +371,124 @@
     });
   }
 
+  // ---- Viz ② et ③ (phase 4) — mises de côté en phase 2 au profit des
+  // barres, reprises ici en option plutôt qu'abandonnées (PLAN.md §7). Dans
+  // la maquette d'origine les deux tournaient sur une horloge synthétique ;
+  // ici le "beat" vient du vrai niveau de la ligne kick (getLineLevels()),
+  // avec le même relâchement exponentiel que les barres pour un rebond net
+  // plutôt qu'un clignotement pas-à-pas.
+  let artyBeatSmooth = 0;
+  function drawVizArty(ctx: CanvasRenderingContext2D, now: number) {
+    const r = vizCanvas.getBoundingClientRect();
+    const w = r.width,
+      h = r.height;
+    ctx.fillStyle = 'rgba(4,3,12,.32)';
+    ctx.fillRect(0, 0, w, h);
+    const cx = w / 2,
+      cy = h / 2;
+    const kick = engine.getLineLevels().kick ?? 0;
+    artyBeatSmooth = Math.max(kick, artyBeatSmooth * 0.85);
+    const beat = Math.min(1, artyBeatSmooth * 3.5);
+    const baseR = Math.min(w, h) * 0.14 * (1 + beat * 0.7);
+    const rays = 40;
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2 + now * 0.5;
+      const len = baseR * (1.7 + Math.sin(now * 2.2 + i * 0.5) * 0.55 + beat * 0.9);
+      const hue = (now * 46 + i * (360 / rays)) % 360;
+      ctx.strokeStyle = `hsla(${hue},92%,66%,.55)`;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * baseR * 0.5, cy + Math.sin(a) * baseR * 0.5);
+      ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+      ctx.stroke();
+    }
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR);
+    grad.addColorStop(0, `hsla(${(now * 60) % 360},95%,72%,.95)`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function terrainY(x: number, scroll: number, h: number) {
+    return h * 0.66 + Math.sin((x + scroll) * 0.018) * h * 0.07 + Math.sin((x + scroll) * 0.045 + 1.3) * h * 0.035;
+  }
+  let runnerJumpSmooth = 0;
+  function drawVizRunner(ctx: CanvasRenderingContext2D, now: number) {
+    const r = vizCanvas.getBoundingClientRect();
+    const w = r.width,
+      h = r.height;
+    ctx.clearRect(0, 0, w, h);
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#0c1030');
+    sky.addColorStop(1, '#1c2450');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+    const scroll = now * 70;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (let x = 0; x <= w; x += 8) ctx.lineTo(x, terrainY(x, scroll * 0.35, h) - h * 0.1);
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fillStyle = '#243068';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    const groundPts: [number, number][] = [];
+    for (let x = 0; x <= w; x += 6) {
+      const y = terrainY(x, scroll, h);
+      groundPts.push([x, y]);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fillStyle = '#123a24';
+    ctx.fill();
+    ctx.beginPath();
+    groundPts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    ctx.strokeStyle = '#35e07a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    const charX = w * 0.3;
+    const groundY = terrainY(charX, scroll, h);
+    const kick = engine.getLineLevels().kick ?? 0;
+    runnerJumpSmooth = Math.max(kick, runnerJumpSmooth * 0.8);
+    const jump = Math.min(1, runnerJumpSmooth * 3) * h * 0.16;
+    const cy = groundY - jump - h * 0.05;
+    const run = now * 12;
+    ctx.strokeStyle = '#eafff0';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(charX, cy);
+    ctx.lineTo(charX + Math.sin(run) * 8, cy + h * 0.09);
+    ctx.moveTo(charX, cy);
+    ctx.lineTo(charX - Math.sin(run) * 8, cy + h * 0.09);
+    ctx.stroke();
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(charX, cy - h * 0.03);
+    ctx.lineTo(charX + Math.cos(run) * 7, cy + h * 0.02);
+    ctx.moveTo(charX, cy - h * 0.03);
+    ctx.lineTo(charX - Math.cos(run) * 7, cy + h * 0.02);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(charX, cy - h * 0.03);
+    ctx.lineTo(charX, cy - h * 0.12);
+    ctx.stroke();
+    ctx.fillStyle = '#eafff0';
+    ctx.beginPath();
+    ctx.arc(charX, cy - h * 0.17, h * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawVisualizer(ctx: CanvasRenderingContext2D, now: number) {
+    if (assignments.viz === 'arty') drawVizArty(ctx, now);
+    else if (assignments.viz === 'runner') drawVizRunner(ctx, now);
+    else drawVizBars(ctx);
+  }
+
   function loop() {
     for (const ev of engine.consumePlayhead()) {
       if (ev.name in playhead) playhead[ev.name as DrumRowName] = ev.col;
@@ -355,7 +507,7 @@
       const vizCtx = vizCanvas.getContext('2d');
       if (vizCtx) {
         ensureSize(vizCanvas, vizCtx);
-        drawViz(vizCtx);
+        drawVisualizer(vizCtx, performance.now() / 1000);
       }
     }
     raf = requestAnimationFrame(loop);
@@ -434,7 +586,7 @@
             <canvas bind:this={linCanvas}></canvas>
           </div>
           <div class="viz-wrap">
-            <span class="viz-label">NIVEAUX</span>
+            <span class="viz-label">{vizById(assignments.viz).label}</span>
             <canvas bind:this={vizCanvas}></canvas>
           </div>
         </div>
@@ -454,13 +606,13 @@
           <div class="eq-readout">
             <div class="eq-band">
               <span class="eq-lbl">{axisById(assignments.axisX).label}</span>
-              <div class="eq-track"><div class="eq-fill" style:width="{padX * 100}%"></div></div>
-              <span class="eq-val">{Math.round(padX * 100)}%</span>
+              <div class="eq-track"><div class="eq-fill" style:width="{axisValues[assignments.axisX] * 100}%"></div></div>
+              <span class="eq-val">{Math.round(axisValues[assignments.axisX] * 100)}%</span>
             </div>
             <div class="eq-band">
               <span class="eq-lbl">{axisById(assignments.axisY).label}</span>
-              <div class="eq-track"><div class="eq-fill" style:width="{(1 - padY) * 100}%"></div></div>
-              <span class="eq-val">{Math.round((1 - padY) * 100)}%</span>
+              <div class="eq-track"><div class="eq-fill" style:width="{axisValues[assignments.axisY] * 100}%"></div></div>
+              <span class="eq-val">{Math.round(axisValues[assignments.axisY] * 100)}%</span>
             </div>
           </div>
         </div>
@@ -484,6 +636,14 @@
               <button class="assign-row" onclick={() => cycleAxisAssign('axisY')}>
                 <span class="assign-row-label">PAD — AXE Y (↕)</span>
                 <span class="assign-row-val">{axisById(assignments.axisY).label}</span>
+              </button>
+              <button class="assign-row" onclick={() => cycleAxisAssign('axisTilt')}>
+                <span class="assign-row-label">INCLINAISON</span>
+                <span class="assign-row-val">{axisById(assignments.axisTilt).label}</span>
+              </button>
+              <button class="assign-row" onclick={cycleVizAssign}>
+                <span class="assign-row-label">VISUALISEUR</span>
+                <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
             </div>
             <button class="amp-btn assign-close" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>

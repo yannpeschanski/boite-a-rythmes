@@ -47,23 +47,46 @@ export const LIVE_AXES: LiveAxisDef[] = [
   { id: 'reverb', label: 'REVERB' },
 ];
 
+// Les 3 visualiseurs explorés dans la maquette (proposition-Mode-Live) — un
+// seul retenu au départ (①, phase 2), les deux autres ajoutés en option ici
+// plutôt qu'abandonnés (PLAN.md §7).
+export type LiveVizId = 'bars' | 'arty' | 'runner';
+
+export interface LiveVizDef {
+  id: LiveVizId;
+  label: string;
+}
+
+export const LIVE_VIZ: LiveVizDef[] = [
+  { id: 'bars', label: 'BARRES' },
+  { id: 'arty', label: 'ARTY' },
+  { id: 'runner', label: 'RUN' },
+];
+
 export const SLOT_COUNT = 6;
 
 export interface LiveAssignments {
   slots: LiveActionId[]; // longueur SLOT_COUNT
   axisX: LiveAxisId;
   axisY: LiveAxisId;
+  // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
+  // tant que le bouton TILT n'est pas activé côté capteur.
+  axisTilt: LiveAxisId;
+  viz: LiveVizId;
 }
 
 const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   slots: ['break', 'fill', 'mute-kick', 'mute-snare', 'mute-hat', 'roll-hat-x2'],
   axisX: 'filter',
   axisY: 'reverb',
+  axisTilt: 'filter',
+  viz: 'bars',
 };
 
 const KEY = 'boite-a-rythme:mode-live-assign';
 const ACTION_IDS = new Set(LIVE_ACTIONS.map((a) => a.id));
 const AXIS_IDS = new Set(LIVE_AXES.map((a) => a.id));
+const VIZ_IDS = new Set(LIVE_VIZ.map((v) => v.id));
 
 function isValid(v: unknown): v is LiveAssignments {
   if (!v || typeof v !== 'object') return false;
@@ -75,7 +98,11 @@ function isValid(v: unknown): v is LiveAssignments {
     !!a.axisX &&
     AXIS_IDS.has(a.axisX) &&
     !!a.axisY &&
-    AXIS_IDS.has(a.axisY)
+    AXIS_IDS.has(a.axisY) &&
+    !!a.axisTilt &&
+    AXIS_IDS.has(a.axisTilt) &&
+    !!a.viz &&
+    VIZ_IDS.has(a.viz)
   );
 }
 
@@ -106,6 +133,10 @@ export function axisById(id: LiveAxisId): LiveAxisDef {
   return LIVE_AXES.find((a) => a.id === id)!;
 }
 
+export function vizById(id: LiveVizId): LiveVizDef {
+  return LIVE_VIZ.find((v) => v.id === id)!;
+}
+
 export function cycleAction(current: LiveActionId): LiveActionId {
   const idx = LIVE_ACTIONS.findIndex((a) => a.id === current);
   return LIVE_ACTIONS[(idx + 1) % LIVE_ACTIONS.length].id;
@@ -114,4 +145,9 @@ export function cycleAction(current: LiveActionId): LiveActionId {
 export function cycleAxis(current: LiveAxisId): LiveAxisId {
   const idx = LIVE_AXES.findIndex((a) => a.id === current);
   return LIVE_AXES[(idx + 1) % LIVE_AXES.length].id;
+}
+
+export function cycleViz(current: LiveVizId): LiveVizId {
+  const idx = LIVE_VIZ.findIndex((v) => v.id === current);
+  return LIVE_VIZ[(idx + 1) % LIVE_VIZ.length].id;
 }
