@@ -50,6 +50,14 @@
   --cell-kick: #d84315;
   --cell-snare: #c8881a;
   --cell-hat: #2b8a8a;
+
+  /* Couleurs des 3 lignes synthé — mêmes valeurs que PREVIEW_COLOR dans
+     SynthRowView.svelte (courbe de filtre) : la ligne dessinée sur le canvas
+     et la couleur de ses cases doivent rester la même teinte. Reprises de
+     SYNTH_WAVE_COLORS/--indigo/--violet/--pink de l'original (l. 15-16). */
+  --cell-bass: #6a7bff;
+  --cell-pad: #b06bff;
+  --cell-melody: #ff6bd6;
 }
 
 [data-theme='noir'] {
