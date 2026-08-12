@@ -107,7 +107,7 @@
        Yann) : chaque encart se déploie indépendamment. Un paramètre par
        ligne à l'intérieur (pas de pression d'espace une fois replié par
        défaut). -->
-  <fieldset>
+  <fieldset data-group="drum-sequence">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.sequence = !openGroups.sequence)}>
         {openGroups.sequence ? '▾' : '▸'} Séquence
@@ -121,7 +121,7 @@
         onchange={(v) => (row.volume = v / 100)} />
     {/if}
   </fieldset>
-  <fieldset>
+  <fieldset data-group="drum-timbre">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.timbre = !openGroups.timbre)}>
         {openGroups.timbre ? '▾' : '▸'} Timbre
@@ -134,7 +134,7 @@
       <XpSlider label="Tone" min={-100} max={100} bind:value={row.tone} />
     {/if}
   </fieldset>
-  <fieldset>
+  <fieldset data-group="drum-filtre">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.space = !openGroups.space)}>
         {openGroups.space ? '▾' : '▸'} Filtre & espace

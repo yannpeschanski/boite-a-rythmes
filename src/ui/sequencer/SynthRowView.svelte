@@ -170,7 +170,7 @@
        Yann) : chaque encart se déploie indépendamment. Un paramètre par
        ligne à l'intérieur (pas de pression d'espace une fois replié par
        défaut). -->
-  <fieldset>
+  <fieldset data-group="synth-sequence">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.sequence = !openGroups.sequence)}>
         {openGroups.sequence ? '▾' : '▸'} Séquence
@@ -191,7 +191,7 @@
       {/if}
     {/if}
   </fieldset>
-  <fieldset>
+  <fieldset data-group="synth-oscillateur">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>
         {openGroups.oscillator ? '▾' : '▸'} Oscillateur & enveloppe
@@ -232,7 +232,7 @@
         onchange={(v) => { row.voice.subGain = v / 100; onChanged?.(); }} />
     {/if}
   </fieldset>
-  <fieldset>
+  <fieldset data-group="synth-detune">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.detune = !openGroups.detune)}>
         {openGroups.detune ? '▾' : '▸'} Détune & modulation
@@ -253,7 +253,7 @@
         onchange={(v) => { row.voice.vibratoDepth = v / 100; onChanged?.(); }} />
     {/if}
   </fieldset>
-  <fieldset>
+  <fieldset data-group="synth-filtre">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.filter = !openGroups.filter)}>
         {openGroups.filter ? '▾' : '▸'} Filtre
@@ -274,7 +274,7 @@
         onchange={(v) => { row.voice.filterEnvRelease = v / 1000; onChanged?.(); }} />
     {/if}
   </fieldset>
-  <fieldset>
+  <fieldset data-group="synth-espace">
     <legend>
       <button class="group-toggle" onclick={() => (openGroups.space = !openGroups.space)}>
         {openGroups.space ? '▾' : '▸'} Espace

@@ -507,11 +507,31 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
    (`SynthModule.svelte`), `rng = Math.random` comme les autres boutons 🎲
    de remplissage aléatoire du même fichier (édition Atelier ponctuelle, pas
    le rendu déterministe de l'export).
-3. **Aide à la production contextuelle** (original l. 1141–1147, 8903–8972) :
-   conseil contextuel + liste des modules de réglage jamais touchés dans la
-   session (en mémoire, pas persisté) — pas encore fait, le plus gros des
-   trois, à cadrer avant de coder (où l'afficher dans le nouveau design
-   system XP).
+3. **✅ Aide à la production contextuelle** (original `renderProductionHelp`
+   l. 8903–8972, jamais portée — cadrage fait ici plutôt que redemandé à
+   Yann : la seule vraie question ouverte était OÙ l'afficher dans le
+   nouveau design). Placée **au-dessus des onglets** (`AtelierView.svelte`,
+   juste sous le rappel de raccourcis clavier) plutôt que dans un seul
+   onglet : le conseil peut justement suggérer de CHANGER d'onglet
+   ("passe au Synthé"), il doit rester visible quel que soit celui actif —
+   et contrairement à ce rappel clavier, visible aussi sur tactile (pas
+   masqué par `@media (pointer: coarse)`), l'aide profite justement le plus
+   aux nouveaux venus. Même progression que l'original (pose le Kick → la
+   Snare → le Hat → passe au Synthé → explore les réglages avancés → liste
+   des modules pas encore touchés) et même mécanique de détection : `input`/
+   `change` délégués au niveau fenêtre (`markProductionTouched`,
+   `AtelierView.svelte`) plutôt qu'un handler par curseur — un attribut
+   `data-group` posé sur chaque `<fieldset>`/conteneur existant (13 groupes,
+   pas les 14 originaux 1:1 : ce port n'a pas le même découpage de DOM) fait
+   remonter le "touché" sans câblage supplémentaire, et comme
+   `DrumRowView`/`SynthRowView` sont un seul composant instancié 3× (une
+   fois par ligne), le même `data-group` sur leurs fieldsets agrège
+   naturellement les 3 lignes sous un groupe, exactement comme l'original.
+   Liste des modules non touchés repliée dans la même phrase (bande fine,
+   pas de second bloc séparé comme l'original) plutôt qu'affichée à part.
+   En mémoire seulement (pas de localStorage) : reflète l'exploration de
+   CETTE session, pas un score à conserver — recharger la page repart avec
+   des suggestions fraîches, comme l'original.
 
 ### 7.4 Idées en réserve, pas prioritaires
 
