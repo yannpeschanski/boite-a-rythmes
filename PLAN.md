@@ -264,18 +264,32 @@ seekbar décorative). Code dans `src/ui/live/` (`LiveView.svelte`,
   au kick, gros saut au snare, sautille (oreilles qui frétillent) au hat —
   un déclencheur par ligne (front montant sur `getLineLevels()`) plutôt que
   le seul niveau de kick ;
-- catalogue de paramètres étendu à 12 nouveaux axes (`liveActions.ts`,
-  `LIVE_AXES`) : `saturation`/`bitcrush`/`compression` (bus DRUM
-  uniquement), `volume`, `delay-feedback`, `sidechain-depth`, et
-  `cutoff`/`resonance` par ligne synthé (bass/pad/melody, une entrée
-  chacune) — appliqués directement sur les nœuds du graphe déjà construits
-  (`AudioEngine.setLiveSaturation`/`setLiveBitcrush`/`setLiveCompression`/
-  `setLiveVolume`/`setLiveDelayFeedback`/`setLiveSidechainDepth`/
-  `setLiveSynthCutoff`/`setLiveSynthResonance`), jamais écrits dans le
-  pattern sauvegardé ; cutoff/résonance posés par note (chaque voix synthé
-  crée son propre filtre au déclenchement) plutôt que sur un nœud permanent,
-  donc appliqués via un override par ligne relu à chaque fenêtre de
-  scheduling (`withLiveSynthOverrides`) ;
+- catalogue de paramètres étendu à **55 axes** (`liveActions.ts`,
+  `LIVE_AXES`), largement au-delà des 12 premiers ajoutés — Yann : « il faut
+  qu'on puisse assigner beaucoup plus de paramètres ». Regroupés par
+  catégorie (`AXIS_GROUPS`) : GROOVE (swing, traîne, ghost notes, intensité
+  de fill), BUS BATTERIE (saturation/bitcrush/compression, bus drum
+  uniquement), MIX (volume, delay feedback, sidechain), et BASSE/NAPPE/
+  MÉLODIE — quasi tous les réglages de voix de `SynthRowView.svelte`
+  (cutoff, résonance, attack, release, sub, détune ×2, chorus, vibrato ×2,
+  tone, enveloppe de filtre ×2, glide, + étalement pour la nappe). Chaque
+  entrée du catalogue porte directement sa fonction d'application
+  (`apply(engine, value01)`) plutôt qu'un switch dans `LiveView.svelte` :
+  `LiveAxisId` est devenu une simple chaîne (catalogue trop large pour un
+  union littéral géant à maintenir à la main), validée à l'exécution comme
+  la persistance localStorage. Les 6 paramètres globaux restent appliqués
+  directement sur les nœuds du graphe déjà construits (jamais écrits dans le
+  pattern) ; groove et voix synthé sont des champs d'état simples, appliqués
+  via un override relu à chaque fenêtre de scheduling
+  (`AudioEngine.withLiveOverrides`, `setLiveGrooveParam`/
+  `setLiveSynthVoiceParam`/`setLiveSynthRowParam` génériques plutôt qu'une
+  méthode par champ) ;
+- **sélection dans une liste** plutôt que le cycle pas-à-pas d'origine —
+  Yann : « j'imaginais qu'on puisse choisir dans une liste assez longue ».
+  Taper une ligne d'assignation ouvre un panneau scrollable par-dessus la
+  carte (actions : liste plate avec couleur+description ; axes : groupés par
+  catégorie) plutôt que de cycler sur place, devenu inutilisable à 55
+  entrées ;
 - randomisation : les deux pistes envisagées, implémentées ensemble plutôt
   que l'une ou l'autre — **CHAOS** est une entrée du catalogue d'actions
   (assignable à un bouton comme les autres) qui tire un paramètre du
