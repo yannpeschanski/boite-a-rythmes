@@ -222,138 +222,116 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
 ## 7. Idées pas mûres (à creuser plus tard, pas encore planifiées)
 
 Pas encore assez cadrées pour aller dans la section 6 (pas d'estimation d'effort,
-parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
+parfois plusieurs pistes concurrentes). Plan d'action remis en ordre le
+2026-08-12 : tout ce qui reste ouvert est listé en 7.1–7.3 par ordre suggéré,
+⚠️ marque ce qui a besoin d'un arbitrage de Yann avant de coder.
 
-- **Mode Live** — manette paysage (pavé XY + boutons assignables), esthétique
-  Winamp (skin violet/bleu nuit + LCD verte + accents ambre, grip pointillé sur
-  la titlebar, seekbar décorative). Visualiseur central : 3 pistes explorées
-  (maquette faite), on ne garde que la **① barres colorées par contributeur**
-  (kick/snare/hat/bass/pad/melody, avec rebond) pour une éventuelle
-  implémentation ; ② arty façon AVS/Milkdrop et ③ défilement 2D (personnage qui
-  court/saute sur un terrain qui ondule avec la musique) restent en réserve
-  pour plus tard, pas abandonnées. Idée d'un fond de bureau XP autour de la
-  fenêtre testée puis abandonnée — l'esthétique Winamp reste interne à la
-  fenêtre, pas de mise en scène desktop autour.
-  Ajoutée aussi une synthèse linéaire du séquenceur (16 pas × 6 lignes, mêmes
-  couleurs) au-dessus du visualiseur, avec curseur qui défile en continu.
+### 7.1 Mode Live
 
-  **Diagnostic ergonomie retenu** : ne jamais copier la taille des contrôles du
-  vrai skin Winamp (pensés souris de bureau, 10-18px) — tout ce qui est
-  interactif pendant un live doit rester large (boutons/pad déjà OK), seul le
-  décoratif (grip, seekbar, bandes ambrées) peut rester petit. Points de
-  friction à corriger avant implémentation réelle : le bouton ⚙ d'assignation
-  est trop proche du pad (mistap en plein set) — préférer un appui long sur le
-  bouton cible lui-même ; le toggle "inclinaison" est dans la zone de drag du
-  pad — à sortir de là ; prévoir un plancher de luminosité LCD au-dessus de
-  l'hommage pur pour la lisibilité en extérieur.
+Manette paysage (pavé XY + boutons assignables), esthétique Winamp (skin
+violet/bleu nuit + LCD verte + accents ambre, grip pointillé sur la titlebar,
+seekbar décorative). Code dans `src/ui/live/` (`LiveView.svelte`,
+`liveActions.ts`). Accessible depuis la navigation normale (bouton
+"🎛 Mode Live" sur le splash et le switcher).
 
-  **Plan en 4 phases** : (1) ✅ squelette Svelte derrière un flag caché
-  (`src/ui/live/LiveView.svelte`, accessible via `#mode-live` — depuis un
-  vrai bouton "🎛 Mode Live" sur le splash et le switcher une fois les 4
-  phases posées, voir `App.svelte`), verrouillage d'orientation + flux
-  de permission `DeviceOrientationEvent` codés, à confirmer sur device réel ;
-  (2) ✅ câblage réel — BREAK/FILL déclenchent `requestBreak()`/
-  `liveRequestFill()` (ce dernier ajouté au scheduler sur le même principe que
-  Break, `forceFill`) ; MUTE K/S/H et ROLL×2 passent par des overrides du
-  scheduler (`liveMute`/`forceHatRoll`, `scheduler.ts`) jamais écrits dans le
-  pattern sauvegardé ; le pad XY pilote un filtre passe-bas + un envoi
-  réverbe "macro live" ajoutés au graphe (`liveFilter`/`liveReverbSend`,
-  `graph.ts`), neutres partout ailleurs (reverbSize non touché — rebuild
-  d'impulsion trop coûteux pour du continu) ; séquenceur linéaire branché sur
-  le vrai pattern (comme `TransportRings`, en bandes) et visualiseur ① sur de
-  vrais niveaux (un `AnalyserNode` par ligne, `getLineLevels()`) ; (3) ✅
-  overlay d'assignation réel — chaque bouton/axe pointe vers une définition
-  d'un catalogue (`src/ui/live/liveActions.ts`, 8 actions + 2 axes) plutôt que
-  de coder en dur "ce qu'il fait" ; l'overlay ⚙ change l'association d'un
-  appui (option suivante, cycle) et la persiste dans localStorage (validée au
-  chargement, retombe sur les défauts si le format a changé) ; (4) ✅ polish
-  — viz ②/③ (arty, défilement) redevenues choisissables depuis l'overlay
-  (catalogue étendu à `LIVE_VIZ`), les deux réagissant au vrai niveau de la
-  ligne kick (`getLineLevels()`) plutôt qu'à une horloge synthétique comme
-  dans la maquette d'origine ; axe d'inclinaison assignable comme le pad
-  (`axisTilt`), calibré au premier échantillon reçu après activation — pas un
-  zéro absolu — sur une plage large ±35° plutôt que précise ; le pad et
-  l'inclinaison pouvant viser le même paramètre, l'affichage (bandes ambrées)
-  reflète maintenant la dernière source qui a écrit, pas seulement le pad.
+**✅ Fait** :
+- squelette + verrouillage d'orientation + flux de permission
+  `DeviceOrientationEvent` (jamais testé en vrai sur téléphone — à demander
+  si pas déjà fait) ;
+- câblage réel : BREAK/FILL (`requestBreak`/`liveRequestFill`), MUTE K/S/H et
+  ROLL×2 (overrides du scheduler `liveMute`/`forceHatRoll`, jamais écrits
+  dans le pattern sauvegardé), pad XY → filtre passe-bas + envoi réverbe
+  (`liveFilter`/`liveReverbSend`, neutres partout ailleurs), séquenceur
+  linéaire sur le vrai pattern, viz sur vrais niveaux (`getLineLevels()`,
+  un `AnalyserNode` par ligne) ;
+- overlay ⚙ d'assignation : chaque bouton/axe pointe vers une définition d'un
+  catalogue (`liveActions.ts`, 8 actions + 2 axes) plutôt que codé en dur,
+  persisté en localStorage ;
+- inclinaison assignable comme le pad (`axisTilt`), calibrée au premier
+  échantillon reçu après activation (pas un zéro absolu), plage large ±35° ;
+  pad et inclinaison peuvent viser le même paramètre, l'affichage reflète la
+  dernière source qui a écrit ; repli tactile pur déjà garanti si le capteur
+  est refusé (`tiltDenied`, mode toujours jouable) ;
+- viz②/③ (arty, défilement) choisissables depuis l'overlay (`LIVE_VIZ`) ;
+- bouton ⏺ REC — enregistrement WAV du live take réellement joué
+  (triggers/pad/inclinaison compris), `AudioEngine.startCapture`/
+  `stopCapture` (tap sur `finalGain`, start/stop au bouton plutôt qu'une
+  durée fixée en mesures comme l'Atelier) ;
+- viz① refaite en égaliseur : `EQ_BAR_COUNT` (22) barres façon spectre,
+  chacune composée de petits segments empilés des 6 éléments (`drawVizBars`),
+  pas une barre = une ligne comme avant ;
+- viz③ refaite en lapin (`drawVizRunner`) : mange la carotte la plus proche
+  au kick, gros saut au snare, sautille (oreilles qui frétillent) au hat —
+  un déclencheur par ligne (front montant sur `getLineLevels()`) plutôt que
+  le seul niveau de kick.
 
-  **Les 4 phases du plan sont posées.** Mode Live est fonctionnellement
-  complet et accessible depuis la navigation normale (bouton "🎛 Mode Live"
-  sur le splash et le switcher) ; les features supplémentaires ci-dessous
-  restent à l'état d'idées.
+**Diagnostic ergonomie retenu** (à respecter pour tout ajout futur) : ne
+jamais copier la taille des contrôles du vrai skin Winamp (pensés souris de
+bureau, 10-18px) — tout ce qui est interactif en live reste large (déjà le
+cas), seul le décoratif (grip, seekbar, bandes ambrées) peut rester petit.
+Le bouton ⚙ est éloigné du pad (mistap en plein set), le toggle inclinaison
+est sorti de la zone de drag du pad, plancher de luminosité LCD prévu pour
+la lisibilité en extérieur.
 
-  **✅ Bouton d'enregistrement du live take.** Capture en WAV ce qui est
-  vraiment joué en Mode Live (triggers/pad/inclinaison compris), pas juste le
-  pattern de base — réutilise `LiveRecorder` déjà écrit pour l'enregistrement
-  direct de l'Atelier, même principe de tap sur `finalGain`, mais via deux
-  nouvelles méthodes d'instance (`AudioEngine.startCapture`/`stopCapture`)
-  plutôt que `startLiveRecording` (durée fixée en mesures, inadaptée ici) :
-  start/stop au bouton ⏺ REC du topbar (actif seulement pendant PLAY), et
-  filet de sécurité si la lecture s'arrête (STOP ou sortie du Mode Live)
-  pendant une capture en cours — le WAV est quand même livré plutôt que jeté.
+**⚠️ Prochain à trancher — catalogue de paramètres à étendre, et
+randomisation.** L'assignation ne couvre que 8 actions et 2 axes
+(filtre/reverb). À étendre : `globalSaturation`, `globalBitcrush`,
+`globalCompression`, `finalVolume`, `delayFeedback`, `sidechainDepth`, voire
+des réglages de voix synthé (`cutoff`/`resonance` par ligne). Deux idées de
+randomisation non tranchées, pas forcément la même feature — **à demander à
+Yann laquelle (ou les deux) avant de coder** : (a) bouton "RANDOM"/chaos —
+une valeur aléatoire par appui, esprit `spontRoll`/`randomVelocity` ; (b) un
+"brasser" — réassigne aléatoirement tout le catalogue aux 6 boutons/2 axes
+d'un coup ("surprends-moi" plutôt que de choisir soi-même via l'overlay ⚙).
 
-  **Catalogue de paramètres à étendre, et randomisation.** Aujourd'hui
-  l'assignation (phase 3) ne couvre que 8 actions et 2 axes (filtre/reverb)
-  — largement plus de paramètres du state existant pourraient être ouverts
-  aux boutons/pad/inclinaison : `globalSaturation`, `globalBitcrush`,
-  `globalCompression`, `finalVolume`, `delayFeedback`, `sidechainDepth`,
-  voire des réglages de voix synthé (`cutoff`/`resonance` par ligne). Deux
-  idées de randomisation à creuser en même temps, pas forcément la même
-  feature : (a) un bouton "RANDOM"/chaos qui jette un paramètre assignable
-  sur une valeur aléatoire à chaque appui — dans l'esprit ludique déjà là
-  (`spontRoll`/`randomVelocity`) ; (b) un "brasser" qui réassigne
-  aléatoirement le catalogue aux 6 boutons/2 axes d'un coup (une sorte de
-  "surprends-moi" plutôt que de choisir soi-même via l'overlay ⚙). Pas encore
-  choisi laquelle (ou les deux) implémenter.
+**En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
+trigger ; snapshot des assignations rappelable par appui long ; undo léger
+sur les triggers en direct ; mode duo (deux téléphones connectés via le
+partage par URL existant, `stores/share.ts`).
 
-  **Features supplémentaires envisagées** : vibration (`navigator.vibrate`) à
-  chaque trigger ; prise/snapshot des assignations rappelable par appui long ;
-  undo léger sur les triggers en direct ; mode duo (deux téléphones connectés
-  via le partage par URL existant) ; repli tactile pur obligatoire pour qui
-  refuse la permission capteur iOS (l'inclinaison ne doit jamais être
-  requise).
+### 7.2 Atelier
 
-  **✅ viz ① (barres) refaite en égaliseur.** L'ancienne version affichait 6
-  barres pleine hauteur, une par ligne — doublonnait le séquenceur linéaire
-  juste au-dessus. Remplacée par `EQ_BAR_COUNT` (22) barres façon spectre,
-  chacune composée de petits segments empilés des 6 éléments plutôt qu'une
-  barre = une ligne (`LiveView.svelte`, `drawVizBars`) : chaque ligne pèse
-  sur toutes les barres via une cloche gaussienne centrée sur sa position
-  dans `LINE_EQ_POS` (grave → aigu, décoratif — pas une vraie analyse
-  fréquentielle, les `AnalyserNode` du graphe restent en fftSize minimal),
-  donnant un relief de spectre à partir des 6 niveaux réels sans inventer de
-  fausse donnée. Même relâchement exponentiel qu'avant pour le rebond.
+1. **Réduire tous les paramètres** (sliders groove/effets/harmonie) pour
+   libérer de la place et mieux voir les séquenceurs — prolonge le
+   diagnostic ergonomie déjà fait sur mobile (peu d'espace pour scroller,
+   transport sticky). Prêt à coder, pas de décision bloquante.
+2. **⚠️ Retirer le "séquenceur kick" de la partie Synthé.** Formulation
+   reçue telle quelle de Yann, jamais clarifiée — probablement l'anneau/
+   rappel batterie de `TransportRings` (visible dans la barre sticky même
+   sur l'onglet Synthé) plutôt qu'un vrai séquenceur dupliqué, mais la
+   demande vise spécifiquement le kick. **À confirmer avec Yann avant de
+   coder.**
 
-  **✅ viz ③ (défilement) refaite en lapin.** Le bâton générique remplacé par
-  un lapin (`drawVizRunner`, `LiveView.svelte`) : mange la carotte la plus
-  proche sur son chemin à chaque kick, gros saut à chaque snare, petit
-  sautillement (oreilles qui frétillent) à chaque hat — un déclencheur par
-  ligne (front montant sur le niveau réel de chaque ligne via
-  `getLineLevels()`, avec un court cooldown anti-rebond) plutôt que le seul
-  niveau de kick utilisé auparavant. Terrain et défilement inchangés.
-  Prototypé et validé visuellement dans un aperçu interactif partagé avant
-  implémentation (boutons KICK/SNARE/HAT/AUTO), puis vérifié en conditions
-  réelles (Playwright, Mode Live joué en direct) avant de porter le code.
-- **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en plus
-  du cycle entier actuel.
-- **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre des
-  contenus dans l'Atelier (voix, presets, effets ?), pas encore défini quoi
-  exactement ni comment articuler jeu ↔ atelier.
-- **Utiliser les gains de la besace** (actuellement juste comptés, pas dépensés) :
+### 7.3 Audit de parité avec l'original — jamais traité
+
+Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps, jamais
+portés. Aucune décision bloquante, prêts à coder dans l'ordre :
+
+1. **Son de victoire + flash des cases** en Mode jeu (original `playWinSound`
+   l. 8336, flash des cases à la victoire) — absent du port actuel
+   (`ResultDialog.svelte`/`GuessGrid.svelte`).
+2. **Bouton "Traduire l'arpège en Mélodie"** (original l. 3388–3435) : écrit
+   réellement le motif de l'arpégiateur de la nappe dans la ligne Mélodie,
+   plutôt que de le laisser sonner seulement en live (`SynthModule.svelte`).
+3. **Aide à la production contextuelle** (original l. 1141–1147, 8903–8972) :
+   conseil contextuel + liste des modules de réglage jamais touchés dans la
+   session (en mémoire, pas persisté) — le plus gros des trois, à cadrer
+   avant de coder (où l'afficher dans le nouveau design system XP).
+
+### 7.4 Idées en réserve, pas prioritaires
+
+- **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en
+  plus du cycle entier actuel.
+- **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre
+  des contenus dans l'Atelier (voix, presets, effets ?), pas encore défini
+  quoi exactement ni comment articuler jeu ↔ atelier.
+- **Utiliser les gains de la besace** (actuellement juste comptés, pas
+  dépensés) :
   - les échanger contre des modules (déblocage payant plutôt qu'automatique) ;
   - personnaliser un EP après les 4 premiers enregistrements WAV.
 - **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
-  piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier tout
-  de suite), et être très explicatif à chaque nouveauté introduite.
-- **Atelier — retirer le séquenceur kick de la partie Synthé.** À clarifier
-  au moment de l'implémentation : très probablement l'anneau/rappel batterie
-  de `TransportRings` (visible dans la barre sticky quel que soit l'onglet
-  actif, donc aussi sur l'onglet Synthé) plutôt qu'un vrai séquenceur dupliqué
-  — mais à confirmer avec Yann avant de coder, la formulation vise
-  spécifiquement le kick.
-- **Atelier — réduire tous les paramètres** (sliders de groove/effets/harmonie)
-  pour libérer de la place et mieux voir les séquenceurs — prolonge le
-  diagnostic ergonomie déjà fait sur mobile (peu d'espace pour scroller,
-  transport sticky).
+  piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier
+  tout de suite), et être très explicatif à chaque nouveauté introduite.
 
 ---
 
