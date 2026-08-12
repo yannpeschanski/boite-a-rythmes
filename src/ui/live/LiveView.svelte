@@ -38,6 +38,7 @@
     LIVE_ACTIONS,
     LIVE_AXES,
     AXIS_GROUPS,
+    ACTION_GROUPS,
     LIVE_VIZ,
     SLOT_COUNT,
     type LiveActionId,
@@ -54,8 +55,21 @@
   let recording = $state(false);
   let breakArmed = $state(false);
   let fillArmed = $state(false);
-  let rollHeld = $state<number | null>(null); // multiplicateur en cours (2/3/4), ou null
-  let muted = $state<Record<DrumRowName, boolean>>({ kick: false, snare: false, hat: false });
+  // Multiplicateur en cours (2/3/4) par ligne drum, ou null — chaque ligne
+  // roll indépendamment des deux autres (catalogue étendu, PLAN.md §7).
+  let rollHeld = $state<Record<DrumRowName, number | null>>({ kick: null, snare: null, hat: null });
+  let muted = $state<Record<DrumRowName | SynthRowName, boolean>>({
+    kick: false,
+    snare: false,
+    hat: false,
+    bass: false,
+    pad: false,
+    melody: false,
+  });
+  // Bypass limiteurs (catalogue étendu, PLAN.md §7) : false = normal, comme
+  // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
+  // réel du pattern.
+  let limitersBypassed = $state(false);
 
   let assignments = $state(loadLiveAssignments());
   let assignOpen = $state(false);
@@ -88,12 +102,32 @@
         return muted.snare;
       case 'mute-hat':
         return muted.hat;
+      case 'mute-bass':
+        return muted.bass;
+      case 'mute-pad':
+        return muted.pad;
+      case 'mute-melody':
+        return muted.melody;
+      case 'roll-kick-x2':
+        return rollHeld.kick === 2;
+      case 'roll-kick-x3':
+        return rollHeld.kick === 3;
+      case 'roll-kick-x4':
+        return rollHeld.kick === 4;
+      case 'roll-snare-x2':
+        return rollHeld.snare === 2;
+      case 'roll-snare-x3':
+        return rollHeld.snare === 3;
+      case 'roll-snare-x4':
+        return rollHeld.snare === 4;
       case 'roll-hat-x2':
-        return rollHeld === 2;
+        return rollHeld.hat === 2;
       case 'roll-hat-x3':
-        return rollHeld === 3;
+        return rollHeld.hat === 3;
       case 'roll-hat-x4':
-        return rollHeld === 4;
+        return rollHeld.hat === 4;
+      case 'bypass-limiters':
+        return limitersBypassed;
       default:
         return false;
     }
@@ -102,6 +136,16 @@
   function toggleMute(name: DrumRowName) {
     muted[name] = !muted[name];
     engine.liveSetMute(name, muted[name]);
+  }
+
+  function toggleSynthMute(name: SynthRowName) {
+    muted[name] = !muted[name];
+    engine.liveSetSynthMute(name, muted[name]);
+  }
+
+  function toggleLimitersBypass() {
+    limitersBypassed = !limitersBypassed;
+    engine.setLiveLimiters(!limitersBypassed);
   }
 
   // Dispatch générique : chaque slot ne sait plus "ce qu'il fait", seulement
@@ -124,17 +168,53 @@
       case 'mute-hat':
         if (on) toggleMute('hat');
         break;
+      case 'mute-bass':
+        if (on) toggleSynthMute('bass');
+        break;
+      case 'mute-pad':
+        if (on) toggleSynthMute('pad');
+        break;
+      case 'mute-melody':
+        if (on) toggleSynthMute('melody');
+        break;
+      case 'roll-kick-x2':
+        engine.liveSetKickRoll(on ? 2 : null);
+        rollHeld.kick = on ? 2 : null;
+        break;
+      case 'roll-kick-x3':
+        engine.liveSetKickRoll(on ? 3 : null);
+        rollHeld.kick = on ? 3 : null;
+        break;
+      case 'roll-kick-x4':
+        engine.liveSetKickRoll(on ? 4 : null);
+        rollHeld.kick = on ? 4 : null;
+        break;
+      case 'roll-snare-x2':
+        engine.liveSetSnareRoll(on ? 2 : null);
+        rollHeld.snare = on ? 2 : null;
+        break;
+      case 'roll-snare-x3':
+        engine.liveSetSnareRoll(on ? 3 : null);
+        rollHeld.snare = on ? 3 : null;
+        break;
+      case 'roll-snare-x4':
+        engine.liveSetSnareRoll(on ? 4 : null);
+        rollHeld.snare = on ? 4 : null;
+        break;
       case 'roll-hat-x2':
         engine.liveSetHatRoll(on ? 2 : null);
-        rollHeld = on ? 2 : null;
+        rollHeld.hat = on ? 2 : null;
         break;
       case 'roll-hat-x3':
         engine.liveSetHatRoll(on ? 3 : null);
-        rollHeld = on ? 3 : null;
+        rollHeld.hat = on ? 3 : null;
         break;
       case 'roll-hat-x4':
         engine.liveSetHatRoll(on ? 4 : null);
-        rollHeld = on ? 4 : null;
+        rollHeld.hat = on ? 4 : null;
+        break;
+      case 'bypass-limiters':
+        if (on) toggleLimitersBypass();
         break;
       case 'chaos':
         if (on) triggerChaos();
@@ -1050,12 +1130,15 @@
               </h4>
               <div class="picker-list">
                 {#if picker.kind === 'slot'}
-                  {#each LIVE_ACTIONS as a (a.id)}
-                    <button class="picker-row" class:current={a.id === currentActionId} onclick={() => commitAction(a.id)}>
-                      <span class="picker-dot" style:background={a.color}></span>
-                      <span class="picker-label">{a.label}</span>
-                      <span class="picker-desc">{a.desc}</span>
-                    </button>
+                  {#each ACTION_GROUPS as group (group.name)}
+                    <div class="picker-group">{group.name}</div>
+                    {#each group.items as a (a.id)}
+                      <button class="picker-row" class:current={a.id === currentActionId} onclick={() => commitAction(a.id)}>
+                        <span class="picker-dot" style:background={a.color}></span>
+                        <span class="picker-label">{a.label}</span>
+                        <span class="picker-desc">{a.desc}</span>
+                      </button>
+                    {/each}
                   {/each}
                 {:else if picker.kind === 'axis'}
                   {#each AXIS_GROUPS as group (group.name)}

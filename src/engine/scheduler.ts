@@ -58,6 +58,11 @@ export interface ScheduleContext {
   liveMute?: Partial<Record<DrumRowName, boolean>>;
   forceFill?: boolean;
   forceHatRoll?: number | null;
+  // Rafale forcée kick/snare (Mode Live, PLAN.md §7) — même principe que
+  // forceHatRoll : un pas vide se met à sonner tant que le bouton est
+  // maintenu, plutôt qu'une rafale qui ne s'applique qu'aux pas déjà actifs.
+  forceKickRoll?: number | null;
+  forceSnareRoll?: number | null;
 }
 
 // Renvoie true si un ghost note a été déclenché (flash visuel en direct).
@@ -114,13 +119,18 @@ function triggerKickSnareStep(
     }
     return false;
   }
-  const stepState = row.pattern[col]; // kick: 0/1 — snare: 0/1(normal)/2(rim shot)
+  // ROLL×2/3/4 (Mode Live) : forcé exactement comme le ferait un fill — un
+  // pas vide se met à sonner tant que le bouton est maintenu, même logique
+  // que le hat (triggerHatStep) plutôt qu'un chemin séparé.
+  const forcedRoll = name === 'kick' ? cx.forceKickRoll : cx.forceSnareRoll;
+  let stepState = row.pattern[col]; // kick: 0/1 — snare: 0/1(normal)/2(rim shot)
+  if (forcedRoll != null && !stepState) stepState = 1;
   if (stepState) {
     const isRim = name === 'snare' && stepState === 2;
     // Un seul déclenchement de sidechain par pas, même en rafale (4 coups
     // rapides ne déclenchent pas 4 pompes).
     cx.onSidechainTrigger?.(name, time);
-    const roll = row.rolls ? row.rolls[col] : 1;
+    const roll = forcedRoll ?? (row.rolls ? row.rolls[col] : 1);
     if (roll > 1) {
       const rollDur = stepDur / roll;
       for (let k = 0; k < roll; k++) {
