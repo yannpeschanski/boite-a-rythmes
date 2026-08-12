@@ -21,7 +21,7 @@
     onFxChanged?: () => void;
   } = $props();
 
-  let showTimbre = $state(false);
+  let showSettings = $state(false);
 
   const row = $derived(pattern.state.rows[name]);
   // kick = binaire ; snare/hat = 3 états (normal/rim, fermé/ouvert)
@@ -103,18 +103,16 @@
       </button>
     {/each}
   </div>
-  <div class="row-settings">
-    <XpSlider label="Pas" min={1} max={32} bind:value={row.subdiv} />
-    <XpSlider label="Décalage" min={-50} max={50} unit="%" bind:value={row.shiftPct} />
-    <XpSlider label="Volume" min={0} max={100} unit="%"
-      value={Math.round(row.volume * 100)}
-      onchange={(v) => (row.volume = v / 100)} />
-  </div>
-  <button class="more" onclick={() => (showTimbre = !showTimbre)}>
-    {showTimbre ? '▾' : '▸'} Timbre, filtre & espace
+  <button class="more" onclick={() => (showSettings = !showSettings)}>
+    {showSettings ? '▾' : '▸'} ⚙️ Réglages
   </button>
-  {#if showTimbre}
+  {#if showSettings}
     <div class="row-settings">
+      <XpSlider label="Pas" min={1} max={32} bind:value={row.subdiv} />
+      <XpSlider label="Décalage" min={-50} max={50} unit="%" bind:value={row.shiftPct} />
+      <XpSlider label="Volume" min={0} max={100} unit="%"
+        value={Math.round(row.volume * 100)}
+        onchange={(v) => (row.volume = v / 100)} />
       <XpSlider label="Pitch" min={-24} max={24} unit=" ½t" bind:value={row.pitch} />
       <XpSlider label="Attaque" min={0} max={100} bind:value={row.attack} />
       <XpSlider label="Decay" min={-50} max={50} bind:value={row.decay} />
