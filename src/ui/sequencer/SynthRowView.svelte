@@ -39,7 +39,7 @@
     melody: '#ff6bd6',
   };
 
-  let showTimbre = $state(false);
+  let showSettings = $state(false);
 
   // Regroupement par paquets de 8 au-delà de 8 pas (port de
   // renderPacketizedRow) : une grille de 128 notes d'un bloc est illisible.
@@ -166,29 +166,27 @@
     {/each}
   </div>
 
-  <div class="row-settings">
-    <XpSlider label="Cycles (mesures)" min={1} max={16} value={row.cycleBars}
-      onchange={(v) => (row.cycleBars = v)} />
-    <XpSlider label="Notes du cycle" min={1} max={128} value={row.subdivisions} onchange={resize} />
-    <XpSlider label="Décalage" min={-50} max={50} unit="%" bind:value={row.shiftPct} />
-    <XpSlider label="Volume" min={0} max={150} unit="%"
-      value={Math.round(row.volume * 100)} onchange={(v) => { row.volume = v / 100; onChanged?.(); }} />
-    <XpSlider label="Glide" min={0} max={100} unit="%"
-      value={Math.round(row.glide * 100)} onchange={(v) => (row.glide = v / 100)} />
-    {#if isPad}
-      <XpSlider label="Étalement" min={0} max={100} unit="%"
-        value={Math.round((row.strum ?? 0) * 100)} onchange={(v) => (row.strum = v / 100)} />
-    {/if}
-    <XpSlider label="Réverbe" min={0} max={100} unit="%"
-      value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
-    <XpSlider label="Delay" min={0} max={100} unit="%"
-      value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
-  </div>
-  <button class="more" onclick={() => (showTimbre = !showTimbre)}>
-    {showTimbre ? '▾' : '▸'} Timbre & filtre
+  <button class="more" onclick={() => (showSettings = !showSettings)}>
+    {showSettings ? '▾' : '▸'} ⚙️ Réglages
   </button>
-  {#if showTimbre}
+  {#if showSettings}
     <div class="row-settings">
+      <XpSlider label="Cycles (mesures)" min={1} max={16} value={row.cycleBars}
+        onchange={(v) => (row.cycleBars = v)} />
+      <XpSlider label="Notes du cycle" min={1} max={128} value={row.subdivisions} onchange={resize} />
+      <XpSlider label="Décalage" min={-50} max={50} unit="%" bind:value={row.shiftPct} />
+      <XpSlider label="Volume" min={0} max={150} unit="%"
+        value={Math.round(row.volume * 100)} onchange={(v) => { row.volume = v / 100; onChanged?.(); }} />
+      <XpSlider label="Glide" min={0} max={100} unit="%"
+        value={Math.round(row.glide * 100)} onchange={(v) => (row.glide = v / 100)} />
+      {#if isPad}
+        <XpSlider label="Étalement" min={0} max={100} unit="%"
+          value={Math.round((row.strum ?? 0) * 100)} onchange={(v) => (row.strum = v / 100)} />
+      {/if}
+      <XpSlider label="Réverbe" min={0} max={100} unit="%"
+        value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
+      <XpSlider label="Delay" min={0} max={100} unit="%"
+        value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
       <label>
         Onde
         <select bind:value={row.voice.type} onchange={() => onChanged?.()}>
@@ -402,9 +400,9 @@
   }
   .row-settings {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 0 16px;
-    margin-top: 6px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 0 10px;
+    margin-top: 4px;
   }
   .row-settings label {
     font-size: 12px;

@@ -261,24 +261,27 @@
     <PresetPicker onApplied={refreshFx} />
   </div>
 
-  <!-- Le séquenceur pas-à-pas reste au même endroit à chaque fois, quel que
-       soit l'onglet actif — hors des onglets exprès, pour de vrai cette
-       fois (pas juste "vite retrouvé en revenant sur Rythme"). Rythme ne
-       garde plus que le Groove/variation humaine ci-dessous. -->
-  <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
-    {#if circleView}
-      <div class="circle-holder">
-        <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
-      </div>
-    {:else}
-      <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
-        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-      <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
-        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-      <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
-        onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-    {/if}
-  </XpWindow>
+  <!-- Le séquenceur pas-à-pas reste au même endroit sur Rythme et Effets,
+       hors des onglets exprès (pas besoin de revenir sur Rythme pour
+       l'éditer pendant qu'on ajuste les effets de bus). Retiré du Synthé
+       (PLAN.md §7, retour direct de Yann) : cette page ne travaille que sur
+       basse/nappe/mélodie, le séquenceur kick/snare/hat n'a rien à y faire. -->
+  {#if activeTab !== 'synthe'}
+    <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
+      {#if circleView}
+        <div class="circle-holder">
+          <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
+        </div>
+      {:else}
+        <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
+          onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+        <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
+          onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+        <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
+          onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+      {/if}
+    </XpWindow>
+  {/if}
 
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
@@ -444,8 +447,8 @@
   }
   .two-col {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 0 18px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 0 10px;
   }
   .inline-row {
     display: flex;
