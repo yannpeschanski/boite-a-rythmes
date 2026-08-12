@@ -29,7 +29,18 @@ export type LiveActionId =
   | 'roll-hat-x3'
   | 'roll-hat-x4'
   | 'bypass-limiters'
-  | 'solo-melody';
+  | 'solo-melody'
+  | 'step-transpose-up'
+  | 'step-transpose-down'
+  | 'step-scale-next'
+  | 'step-scale-prev'
+  | 'step-voice-bass-next'
+  | 'step-voice-bass-prev'
+  | 'step-voice-pad-next'
+  | 'step-voice-pad-prev'
+  | 'step-voice-melody-next'
+  | 'step-voice-melody-prev'
+  | 'toggle-pad-arp';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -37,12 +48,21 @@ export interface LiveActionDef {
   color: string;
   desc: string;
   // trigger : un coup au pointerdown (break/fill) ; toggle : bascule au
-  // pointerdown (mute) ; hold : actif tant que maintenu (roll).
-  kind: 'trigger' | 'toggle' | 'hold';
+  // pointerdown (mute) ; hold : actif tant que maintenu (roll) ; step : un
+  // coup au pointerdown, avance un paramètre discret d'un cran (PLAN.md §7,
+  // retour de Yann : « j'agence les boutons selon 3 types » — l'interrupteur
+  // = toggle, le bouton pas = step, le fader = LiveAssignments.slotFaders
+  // ci-dessous, qui réutilise directement le catalogue d'axes plutôt qu'un
+  // 4e kind ici).
+  kind: 'trigger' | 'toggle' | 'hold' | 'step';
   // Regroupement dans le panneau de sélection (voir ACTION_GROUPS) — 19
   // entrées ne se lisent plus comme une liste plate (PLAN.md §7, retour de
   // Yann : catalogue de boutons trop court, même traitement que les axes).
   category: string;
+  // Uniquement pour kind:'step' — l'entrée porte directement son geste
+  // (comme apply() côté axes) plutôt que d'ajouter un cas par paramètre
+  // discret dans le switch de LiveView.runAction, qui grossirait sans fin.
+  step?: (engine: AudioEngine) => void;
 }
 
 export const LIVE_ACTIONS: LiveActionDef[] = [
@@ -87,6 +107,32 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   // pas se télescoper avec ce qui est joué à la main (LiveView.svelte,
   // AudioEngine.playLiveMelodyNote/liveSetSynthMute).
   { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE' },
+
+  // Boutons PAS (PLAN.md §7, retour de Yann : « j'agence les boutons selon
+  // 3 types ») — avancent de nouveaux paramètres discrets, pas un sous-
+  // ensemble du catalogue d'axes continu : ils n'ont pas leur place dans un
+  // fader (tonalité/gamme changent TOUTES les lignes synthé à la fois, un
+  // preset de voix est une combinaison de champs, pas une valeur 0..1).
+  // ±1 demi-ton, borné à ±1 octave (AudioEngine.liveStepTranspose).
+  { id: 'step-transpose-up', label: 'TON +1', color: '#ffb020', desc: 'Transpose +1 demi-ton (pas)', kind: 'step', category: 'TON', step: (e) => e.liveStepTranspose(1) },
+  { id: 'step-transpose-down', label: 'TON −1', color: '#ffb020', desc: 'Transpose −1 demi-ton (pas)', kind: 'step', category: 'TON', step: (e) => e.liveStepTranspose(-1) },
+
+  // Cycle circulaire dans les 5 modes de SCALE_LIBRARY.
+  { id: 'step-scale-next', label: 'GAMME →', color: '#ffb020', desc: 'Mode suivant (pas)', kind: 'step', category: 'GAMME', step: (e) => e.liveStepScale(1) },
+  { id: 'step-scale-prev', label: 'GAMME ←', color: '#ffb020', desc: 'Mode précédent (pas)', kind: 'step', category: 'GAMME', step: (e) => e.liveStepScale(-1) },
+
+  // Cycle circulaire dans SYNTH_VOICE_PRESETS[name] (5 presets/ligne, mêmes
+  // que le sélecteur de preset de l'Atelier, SynthRowView.svelte).
+  { id: 'step-voice-bass-next', label: 'VOIX BASSE →', color: 'var(--cell-bass)', desc: 'Preset suivant (pas)', kind: 'step', category: 'BASSE', step: (e) => e.liveStepVoicePreset('bass', 1) },
+  { id: 'step-voice-bass-prev', label: 'VOIX BASSE ←', color: 'var(--cell-bass)', desc: 'Preset précédent (pas)', kind: 'step', category: 'BASSE', step: (e) => e.liveStepVoicePreset('bass', -1) },
+  { id: 'step-voice-pad-next', label: 'VOIX NAPPE →', color: 'var(--cell-pad)', desc: 'Preset suivant (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepVoicePreset('pad', 1) },
+  { id: 'step-voice-pad-prev', label: 'VOIX NAPPE ←', color: 'var(--cell-pad)', desc: 'Preset précédent (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepVoicePreset('pad', -1) },
+  { id: 'step-voice-melody-next', label: 'VOIX MÉLO →', color: 'var(--cell-melody)', desc: 'Preset suivant (pas)', kind: 'step', category: 'MÉLODIE', step: (e) => e.liveStepVoicePreset('melody', 1) },
+  { id: 'step-voice-melody-prev', label: 'VOIX MÉLO ←', color: 'var(--cell-melody)', desc: 'Preset précédent (pas)', kind: 'step', category: 'MÉLODIE', step: (e) => e.liveStepVoicePreset('melody', -1) },
+
+  // Interrupteur (bascule au pointerdown, comme les mutes) — arpège de la
+  // nappe, seul booléen de synthGlobal qui s'entend clairement en direct.
+  { id: 'toggle-pad-arp', label: 'ARPÈGE NAPPE', color: 'var(--cell-pad)', desc: 'Arpège nappe (bascule)', kind: 'toggle', category: 'NAPPE' },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
@@ -312,6 +358,16 @@ export const LIVE_VIZ: LiveVizDef[] = [
 
 export const SLOT_COUNT = 6;
 
+// Chaque bouton peut fonctionner en mode ACTIONS (catalogue LIVE_ACTIONS —
+// interrupteur/pas/déclencheur/maintenu) ou en mode FADER (catalogue
+// LIVE_AXES, comme le pad/l'inclinaison, mais piloté par un glisser vertical
+// sur le bouton lui-même — PLAN.md §7, retour de Yann : « j'agence les
+// boutons selon 3 types »). Les deux catalogues restent SÉPARÉS par bouton
+// plutôt que mélangés dans un seul tableau : les gestes (tap/hold pour les
+// actions, glisser continu pour le fader) sont incompatibles sur la même
+// surface au même moment.
+export type SlotMode = 'actions' | 'fader';
+
 // Chaque bouton/axe peut désormais porter PLUSIEURS entrées du catalogue à la
 // fois (PLAN.md §7, retour de Yann : « on peut assigner plusieurs paramètres
 // à un même contrôleur ») — un bouton peut déclencher plusieurs actions d'un
@@ -320,6 +376,8 @@ export const SLOT_COUNT = 6;
 // panneau de sélection perdrait toute trace de ce qui est assigné.
 export interface LiveAssignments {
   slots: LiveActionId[][]; // longueur SLOT_COUNT, chaque slot = 1+ actions
+  slotModes: SlotMode[]; // longueur SLOT_COUNT — ignoré (mode 'actions') si le bouton n'a jamais été basculé en fader
+  slotFaders: LiveAxisId[][]; // longueur SLOT_COUNT, 1+ axes — utilisé seulement si slotModes[i] === 'fader'
   axisX: LiveAxisId[];
   axisY: LiveAxisId[];
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
@@ -330,6 +388,8 @@ export interface LiveAssignments {
 
 const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   slots: [['break'], ['fill'], ['mute-kick'], ['mute-snare'], ['mute-hat'], ['roll-hat-x2']],
+  slotModes: ['actions', 'actions', 'actions', 'actions', 'actions', 'actions'],
+  slotFaders: [['filter'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
   axisX: ['filter'],
   axisY: ['reverb'],
   axisTilt: ['filter'],
@@ -340,6 +400,7 @@ const KEY = 'boite-a-rythme:mode-live-assign';
 const ACTION_IDS = new Set(LIVE_ACTIONS.map((a) => a.id));
 const AXIS_IDS = new Set(LIVE_AXES.map((a) => a.id));
 const VIZ_IDS = new Set(LIVE_VIZ.map((v) => v.id));
+const SLOT_MODES: SlotMode[] = ['actions', 'fader'];
 
 function isValidAxisList(v: unknown): v is LiveAxisId[] {
   return Array.isArray(v) && v.length > 0 && v.every((id) => AXIS_IDS.has(id));
@@ -352,6 +413,12 @@ function isValid(v: unknown): v is LiveAssignments {
     Array.isArray(a.slots) &&
     a.slots.length === SLOT_COUNT &&
     a.slots.every((s) => Array.isArray(s) && s.length > 0 && s.every((id) => ACTION_IDS.has(id as LiveActionId))) &&
+    Array.isArray(a.slotModes) &&
+    a.slotModes.length === SLOT_COUNT &&
+    a.slotModes.every((m) => SLOT_MODES.includes(m as SlotMode)) &&
+    Array.isArray(a.slotFaders) &&
+    a.slotFaders.length === SLOT_COUNT &&
+    a.slotFaders.every((f) => isValidAxisList(f)) &&
     isValidAxisList(a.axisX) &&
     isValidAxisList(a.axisY) &&
     isValidAxisList(a.axisTilt) &&

@@ -29,7 +29,6 @@
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
-  import { degreeFreq } from '../../engine/harmony';
   import {
     actionById,
     axisById,
@@ -47,6 +46,7 @@
     type LiveActionId,
     type LiveAxisId,
     type LiveVizId,
+    type SlotMode,
   } from './liveActions';
 
   let { onExit }: { onExit: () => void } = $props();
@@ -73,6 +73,9 @@
   // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
   // réel du pattern.
   let limitersBypassed = $state(false);
+  // ARPÈGE NAPPE (interrupteur, PLAN.md §7) : false = normal, même
+  // convention que les mutes/bypass ci-dessus (démarre éteint).
+  let arpOn = $state(false);
   // SOLO MÉLO (maintenu) : pendant que c'est tenu, le pad joue la mélodie au
   // doigt au lieu de ses axes habituels — voir padPointerDown/Move. Dernière
   // fréquence jouée gardée hors réactivité (juste pour le glide, pas pour
@@ -139,6 +142,8 @@
         return limitersBypassed;
       case 'solo-melody':
         return soloMelodyHeld;
+      case 'toggle-pad-arp':
+        return arpOn;
       default:
         return false;
     }
@@ -235,6 +240,20 @@
       case 'chaos':
         if (on) triggerChaos();
         break;
+      case 'toggle-pad-arp':
+        if (on) {
+          arpOn = !arpOn;
+          engine.setLiveSynthGlobalBool('padArpEnabled', arpOn);
+        }
+        break;
+      default:
+        // Boutons PAS (PLAN.md §7) : chaque entrée porte directement son
+        // geste (def.step, comme apply() côté axes) plutôt qu'un cas par
+        // paramètre discret ici — un coup au pointerdown, rien au relâché.
+        if (on) {
+          const def = actionById(actionId);
+          if (def.kind === 'step') def.step?.(engine);
+        }
     }
   }
 
@@ -259,7 +278,12 @@
     const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
     assignments = {
       ...assignments,
-      slots: Array.from({ length: SLOT_COUNT }, () => [pickAction()]),
+      // Un bouton en mode fader n'a pas d'actions à tirer au hasard (et
+      // vice-versa) — seul le tableau correspondant à son mode ACTUEL est
+      // rebrassé, l'autre reste tel quel (repris tel quel si on rebascule le
+      // mode plus tard, plutôt que perdu).
+      slots: assignments.slotModes.map((mode, i) => (mode === 'fader' ? assignments.slots[i] : [pickAction()])),
+      slotFaders: assignments.slotModes.map((mode, i) => (mode === 'fader' ? [pickAxis()] : assignments.slotFaders[i])),
       axisX: [pickAxis()],
       axisY: [pickAxis()],
       axisTilt: [pickAxis()],
@@ -268,12 +292,41 @@
   }
 
   function onSlotDown(i: number) {
+    if (assignments.slotModes[i] === 'fader') return; // le fader se pilote au glisser (faderPointerDown), pas au tap
     pressed = { ...pressed, [i]: true };
     assignments.slots[i].forEach((id) => runAction(id, true));
   }
   function onSlotUp(i: number) {
+    if (assignments.slotModes[i] === 'fader') return;
     pressed = { ...pressed, [i]: false };
     assignments.slots[i].forEach((id) => runAction(id, false));
+  }
+
+  // Bouton en mode FADER (PLAN.md §7) : glisser verticalement sur le bouton
+  // lui-même pilote un ou plusieurs axes du même catalogue que le pad/
+  // l'inclinaison (applyAxisValue), position = valeur — même convention que
+  // le pad (haut = 100%). Un seul drag actif à la fois (comme le pad,
+  // `dragging`), le multi-touch simultané sur deux faders n'est pas géré.
+  let faderDraggingIndex: number | null = null;
+  function setFader(i: number, clientY: number, rect: DOMRect) {
+    const frac = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    applyAxisValue(assignments.slotFaders[i], 1 - frac);
+  }
+  function faderPointerDown(i: number, e: PointerEvent, el: HTMLDivElement) {
+    faderDraggingIndex = i;
+    el.setPointerCapture(e.pointerId);
+    setFader(i, e.clientY, el.getBoundingClientRect());
+  }
+  function faderPointerMove(i: number, e: PointerEvent, el: HTMLDivElement) {
+    if (faderDraggingIndex === i) setFader(i, e.clientY, el.getBoundingClientRect());
+  }
+  function faderPointerUp() {
+    faderDraggingIndex = null;
+  }
+
+  function toggleSlotMode(i: number) {
+    assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
+    saveLiveAssignments(assignments);
   }
 
   // Panneau de sélection (remplace le cycle pas-à-pas, catalogue trop large
@@ -285,7 +338,11 @@
   // l'entrée dans le slot/axe plutôt que de committer-et-fermer, on referme
   // explicitement une fois fini. Toujours au moins une entrée par slot/axe —
   // retirer la dernière est un no-op silencieux plutôt qu'un slot vide.
-  type Picker = { kind: 'slot'; index: number } | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' } | { kind: 'viz' };
+  type Picker =
+    | { kind: 'slot'; index: number }
+    | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' }
+    | { kind: 'slotFader'; index: number }
+    | { kind: 'viz' };
   let picker = $state<Picker | null>(null);
 
   function toggleActionInSlot(id: LiveActionId) {
@@ -306,6 +363,20 @@
       if (current.length > 1) assignments[which] = current.filter((x) => x !== id);
     } else {
       assignments[which] = [...current, id];
+    }
+    saveLiveAssignments(assignments);
+  }
+  // Même bascule que toggleAxisInSlot ci-dessus, mais pour le fader d'un
+  // bouton (assignments.slotFaders[i]) plutôt qu'un des 3 axes nommés —
+  // fonction séparée plutôt qu'un `which` généralisé, `assignments[which]`
+  // n'a pas de sens pour un tableau indexé.
+  function toggleFaderAxisInSlot(id: LiveAxisId) {
+    if (picker?.kind !== 'slotFader') return;
+    const current = assignments.slotFaders[picker.index];
+    if (current.includes(id)) {
+      if (current.length > 1) assignments.slotFaders[picker.index] = current.filter((x) => x !== id);
+    } else {
+      assignments.slotFaders[picker.index] = [...current, id];
     }
     saveLiveAssignments(assignments);
   }
@@ -433,11 +504,14 @@
   // les axes normaux ci-dessous). Ne redéclenche que si la zone a changé,
   // pour qu'un doigt immobile ne répète pas la note ; le glissé d'une zone à
   // l'autre glisse via glideFrom (playLiveMelodyNote), comme un pas à pas.
+  // liveMelodyFreqForDegree (et non degreeFreq(st, ...) directement) : un
+  // bouton PAS "tonalité"/"gamme" tenu en direct pendant qu'on joue au pad
+  // doit s'entendre ici aussi, pas seulement sur le séquenceur programmé.
   function playSoloMelody(px: number, py: number) {
     const degree = Math.min(7, Math.floor(px * 7) + 1);
     const yInverted = 1 - py;
     const octave = yInverted < 1 / 3 ? -1 : yInverted < 2 / 3 ? 0 : 1;
-    const freq = degreeFreq(st, degree, octave, 0);
+    const freq = engine.liveMelodyFreqForDegree(degree, octave);
     if (freq !== lastMelodyFreq) {
       engine.playLiveMelodyNote(freq, lastMelodyFreq);
       lastMelodyFreq = freq;
@@ -1092,21 +1166,43 @@
       <div class="main">
         <div class="buttons">
           {#each assignments.slots as actionIds, i (i)}
-            {@const defs = actionsFor(actionIds)}
-            <button
-              class="abtn"
-              class:pressed={pressed[i]}
-              class:active={actionIds.some((id) => isActionActive(id))}
-              onpointerdown={() => onSlotDown(i)}
-              onpointerup={() => onSlotUp(i)}
-              onpointerleave={() => onSlotUp(i)}
-            >
-              <span class="dot-row">
-                {#each defs as d (d.id)}<span class="dot" style:background={d.color}></span>{/each}
-              </span>
-              <span>{defs.map((d) => d.label).join(' + ')}</span>
-              {#if defs.length === 1}<span class="assign-label">{defs[0].desc}</span>{/if}
-            </button>
+            {#if assignments.slotModes[i] === 'fader'}
+              {@const faderIds = assignments.slotFaders[i]}
+              {@const val = axisValues[faderIds[0]] ?? 0.5}
+              <div
+                class="abtn fader-btn"
+                role="slider"
+                aria-label={axesFor(faderIds)
+                  .map((a) => a.label)
+                  .join(' + ')}
+                aria-valuenow={Math.round(val * 100)}
+                tabindex="0"
+                onpointerdown={(e) => faderPointerDown(i, e, e.currentTarget as HTMLDivElement)}
+                onpointermove={(e) => faderPointerMove(i, e, e.currentTarget as HTMLDivElement)}
+                onpointerup={faderPointerUp}
+                onpointerleave={faderPointerUp}
+              >
+                <div class="fader-fill" style:height="{val * 100}%"></div>
+                <span class="fader-label">{axesFor(faderIds).map((a) => a.label).join(' + ')}</span>
+                <span class="fader-val">{Math.round(val * 100)}%</span>
+              </div>
+            {:else}
+              {@const defs = actionsFor(actionIds)}
+              <button
+                class="abtn"
+                class:pressed={pressed[i]}
+                class:active={actionIds.some((id) => isActionActive(id))}
+                onpointerdown={() => onSlotDown(i)}
+                onpointerup={() => onSlotUp(i)}
+                onpointerleave={() => onSlotUp(i)}
+              >
+                <span class="dot-row">
+                  {#each defs as d (d.id)}<span class="dot" style:background={d.color}></span>{/each}
+                </span>
+                <span>{defs.map((d) => d.label).join(' + ')}</span>
+                {#if defs.length === 1}<span class="assign-label">{defs[0].desc}</span>{/if}
+              </button>
+            {/if}
           {/each}
         </div>
         <div class="mid-col">
@@ -1152,11 +1248,25 @@
             <h4>ASSIGNATION</h4>
             <div class="assign-list">
               {#each assignments.slots as actionIds, i (i)}
+                {@const mode = assignments.slotModes[i]}
                 {@const defs = actionsFor(actionIds)}
-                <button class="assign-row" onclick={() => (picker = { kind: 'slot', index: i })}>
-                  <span class="assign-row-label">BOUTON {i + 1}</span>
-                  <span class="assign-row-val" style:color={defs[0].color}>{defs.map((d) => d.label).join(' + ')}</span>
-                </button>
+                {@const faderDefs = axesFor(assignments.slotFaders[i])}
+                <div class="assign-row-wrap">
+                  <button class="mode-toggle" onclick={() => toggleSlotMode(i)} title="Basculer actions / fader">
+                    {mode === 'fader' ? '≈ FADER' : '⏻ ACTIONS'}
+                  </button>
+                  <button
+                    class="assign-row"
+                    onclick={() => (picker = mode === 'fader' ? { kind: 'slotFader', index: i } : { kind: 'slot', index: i })}
+                  >
+                    <span class="assign-row-label">BOUTON {i + 1}</span>
+                    {#if mode === 'fader'}
+                      <span class="assign-row-val">{faderDefs.map((a) => a.label).join(' + ')}</span>
+                    {:else}
+                      <span class="assign-row-val" style:color={defs[0].color}>{defs.map((d) => d.label).join(' + ')}</span>
+                    {/if}
+                  </button>
+                </div>
               {/each}
               <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisX' })}>
                 <span class="assign-row-label">PAD — AXE X (↔)</span>
@@ -1180,10 +1290,16 @@
 
           {#if picker}
             {@const currentActionIds = picker.kind === 'slot' ? assignments.slots[picker.index] : []}
-            {@const currentAxisIds = picker.kind === 'axis' ? assignments[picker.which] : []}
+            {@const currentAxisIds = picker.kind === 'axis' ? assignments[picker.which] : picker.kind === 'slotFader' ? assignments.slotFaders[picker.index] : []}
             <div class="picker-card">
               <h4>
-                {picker.kind === 'slot' ? `BOUTON ${picker.index + 1}` : picker.kind === 'viz' ? 'VISUALISEUR' : 'PARAMÈTRE'}
+                {picker.kind === 'slot'
+                  ? `BOUTON ${picker.index + 1}`
+                  : picker.kind === 'slotFader'
+                    ? `BOUTON ${picker.index + 1} — FADER`
+                    : picker.kind === 'viz'
+                      ? 'VISUALISEUR'
+                      : 'PARAMÈTRE'}
                 {#if picker.kind !== 'viz'}<span class="picker-hint">— plusieurs possibles</span>{/if}
               </h4>
               <div class="picker-list">
@@ -1199,6 +1315,19 @@
                         <span class="picker-dot" style:background={a.color}></span>
                         <span class="picker-label">{a.label}</span>
                         <span class="picker-desc">{a.desc}</span>
+                      </button>
+                    {/each}
+                  {/each}
+                {:else if picker.kind === 'slotFader'}
+                  {#each AXIS_GROUPS as group (group.name)}
+                    <div class="picker-group">{group.name}</div>
+                    {#each group.items as ax (ax.id)}
+                      <button
+                        class="picker-row"
+                        class:current={currentAxisIds.includes(ax.id)}
+                        onclick={() => toggleFaderAxisInSlot(ax.id)}
+                      >
+                        <span class="picker-label">{ax.label}</span>
                       </button>
                     {/each}
                   {/each}
@@ -1575,6 +1704,36 @@
     font-size: 8px;
   }
 
+  /* Bouton en mode FADER (PLAN.md §7) : même carcasse que .abtn (fond,
+     bordure, coins arrondis), mais le remplissage vertical .fader-fill fait
+     office de curseur — glisser dessus pilote l'axe assigné comme le
+     ferait le pad, voir faderPointerDown/Move dans le script. */
+  .fader-btn {
+    overflow: hidden;
+    justify-content: flex-end;
+    cursor: ns-resize;
+    touch-action: none;
+  }
+  .fader-fill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, var(--amp-amber), #a56a12);
+    opacity: 0.35;
+    transition: height 0.03s linear;
+  }
+  .fader-label,
+  .fader-val {
+    position: relative;
+    z-index: 1;
+  }
+  .fader-val {
+    color: var(--amp-amber);
+    font-weight: 400;
+    font-size: 8px;
+  }
+
   .mid-col {
     display: flex;
     flex-direction: column;
@@ -1743,8 +1902,33 @@
     grid-template-columns: 1fr 1fr;
     gap: 5px;
   }
-  /* Appui = option suivante dans le catalogue (cycle) — pas de sous-menu à
-     ouvrir, le geste le plus rapide sur un petit écran tactile. */
+  /* Un bouton (pas les 3 axes du pad/l'inclinaison, ni le visualiseur) porte
+     en plus un petit interrupteur ACTIONS/FADER au-dessus de sa ligne
+     d'assignation — bascule le catalogue que la ligne ouvre (voir
+     toggleSlotMode, PLAN.md §7). */
+  .assign-row-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .mode-toggle {
+    align-self: flex-start;
+    font-family: inherit;
+    font-size: 7px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    color: var(--amp-lcd-dim);
+    background: var(--amp-bg-1);
+    border: 1px solid var(--amp-line);
+    letter-spacing: 0.04em;
+  }
+  .mode-toggle:active {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  /* Ouvre le panneau de sélection correspondant au mode (actions ou fader) —
+     tap = ouvrir le panneau, pas un cycle sur place, catalogue trop large
+     pour ça (PLAN.md §7). */
   .assign-row {
     font-family: inherit;
     font-size: 9px;

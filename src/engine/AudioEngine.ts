@@ -3,7 +3,7 @@
 // tout ce qui tombe dans les 0.25s à venir sur l'horloge audioCtx.currentTime
 // (jamais setTimeout). SCHEDULE_AHEAD élargi (était 0.12) : plus de tolérance
 // si le fil principal est occupé un instant.
-import type { PatternStateV2, DrumRowName, SynthRowName, SynthVoice, SynthRowState } from '../model/types';
+import type { PatternStateV2, DrumRowName, SynthRowName, SynthVoice, SynthRowState, SynthGlobalState } from '../model/types';
 import { buildGraph, applyMixSettings, type GraphNodes } from './graph';
 import { DrumKit } from './voices/drums';
 import { SynthKit } from './voices/synth';
@@ -16,8 +16,9 @@ import {
 } from './scheduler';
 import { barDuration, type BreakWindow } from './groove';
 import { LiveRecorder } from './recorder';
-import { chordsFor, chordFreqs, degreeFreq } from './harmony';
+import { chordsFor, chordFreqs, degreeFreq, SCALE_LIBRARY } from './harmony';
 import { driveCurve, bitcrushCurve, applyCompressionAmount, makeupGainForCompression } from './fx';
+import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices';
 
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
@@ -63,6 +64,17 @@ export class AudioEngine {
   private liveSynthOverride: Partial<
     Record<SynthRowName, { voice?: Partial<SynthVoice>; glide?: number; strum?: number; muted?: boolean }>
   > = {};
+  // Tonalité/gamme/arpège nappe — bouton PAS du Mode Live (PLAN.md §7, retour
+  // de Yann : « je propose d'agencer les boutons selon 3 types », bouton pas
+  // confirmé sur de nouveaux paramètres discrets). Même mécanisme d'override
+  // relu à chaque fenêtre que le groove ci-dessus, jamais écrit dans le
+  // pattern.
+  private liveSynthGlobalOverride: Partial<Pick<SynthGlobalState, 'rootMidi' | 'scaleId' | 'padArpEnabled'>> = {};
+  // Index courant dans SYNTH_VOICE_PRESETS[name] pour le bouton PAS "voix" —
+  // distinct de liveSynthOverride[name].voice (qui ne porte que les valeurs
+  // résolues, pas quel preset les a produites) : sert à savoir où reprendre
+  // le cycle au prochain appui.
+  private liveVoicePresetIndex: Partial<Record<SynthRowName, number>> = {};
   // Évite de réassigner `.curve` (WaveShaper) à la même valeur arrondie à
   // chaque frame de drag du pad — la réassignation est un changement discret
   // de la table de correspondance, pas interpolé comme un AudioParam.
@@ -122,17 +134,19 @@ export class AudioEngine {
     if (triggered) this.triggerSidechainDuck(time);
   }
 
-  // Applique les overrides du Mode Live (groove global + voix/ligne synthé
-  // par ligne) à un clone superficiel de l'état, jamais au store — comme
-  // liveMute, un override relâché ou un STOP retrouve les réglages de
-  // l'Atelier intacts. No-op (retourne `state` tel quel) si rien n'est
-  // overridé, pour ne payer aucun coût hors Mode Live.
+  // Applique les overrides du Mode Live (groove global + tonalité/gamme/
+  // arpège + voix/ligne synthé par ligne) à un clone superficiel de l'état,
+  // jamais au store — comme liveMute, un override relâché ou un STOP
+  // retrouve les réglages de l'Atelier intacts. No-op (retourne `state` tel
+  // quel) si rien n'est overridé, pour ne payer aucun coût hors Mode Live.
   private withLiveOverrides(state: PatternStateV2): PatternStateV2 {
     const hasGroove = Object.keys(this.liveGrooveOverride).length > 0;
     const hasSynth = Object.keys(this.liveSynthOverride).length > 0;
-    if (!hasGroove && !hasSynth) return state;
+    const hasGlobal = Object.keys(this.liveSynthGlobalOverride).length > 0;
+    if (!hasGroove && !hasSynth && !hasGlobal) return state;
     let next = state;
     if (hasGroove) next = { ...next, ...this.liveGrooveOverride };
+    if (hasGlobal) next = { ...next, synthGlobal: { ...next.synthGlobal, ...this.liveSynthGlobalOverride } };
     if (hasSynth) {
       const synthRows = { ...next.synthRows };
       (Object.keys(this.liveSynthOverride) as SynthRowName[]).forEach((name) => {
@@ -392,6 +406,61 @@ export class AudioEngine {
       ...this.liveSynthOverride,
       [name]: { ...this.liveSynthOverride[name], [key]: value },
     };
+  }
+
+  // Interrupteur générique pour un booléen de synthGlobal (arpège nappe pour
+  // l'instant) — même familier que les autres setLive* ci-dessus.
+  setLiveSynthGlobalBool(key: 'padArpEnabled', value: boolean): void {
+    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, [key]: value };
+  }
+
+  // Boutons PAS (PLAN.md §7) : avancent des paramètres discrets par
+  // incréments, contrairement au pad/tilt qui pilotent des valeurs
+  // continues. ±1 demi-ton par appui, borné à ±1 octave autour de la
+  // tonalité de l'Atelier — un dial chromatique plutôt qu'une roue infinie,
+  // pour rester dans un ambitus qui reste musical pendant un set.
+  liveStepTranspose(deltaSemitones: number): void {
+    const base = this.getState().synthGlobal.rootMidi;
+    const current = this.liveSynthGlobalOverride.rootMidi ?? base;
+    const next = Math.max(base - 12, Math.min(base + 12, current + deltaSemitones));
+    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, rootMidi: next };
+  }
+
+  // Cycle circulaire dans SCALE_LIBRARY (5 modes) — contrairement à la
+  // tonalité, il n'y a pas de "trop loin", donc ça boucle plutôt que de se
+  // bloquer en bout de liste.
+  liveStepScale(delta: number): void {
+    const base = this.getState().synthGlobal.scaleId;
+    const current = this.liveSynthGlobalOverride.scaleId ?? base;
+    const idx = Math.max(0, SCALE_LIBRARY.findIndex((s) => s.id === current));
+    const nextIdx = (idx + delta + SCALE_LIBRARY.length) % SCALE_LIBRARY.length;
+    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, scaleId: SCALE_LIBRARY[nextIdx].id };
+  }
+
+  // Cycle circulaire dans SYNTH_VOICE_PRESETS[name] — remplace le voice
+  // complet plutôt que de fusionner champ à champ, comme le ferait un vrai
+  // changement de preset dans l'Atelier (SynthRowView.svelte) : les réglages
+  // fins déjà réglés en direct sur d'autres axes pour cette ligne sont donc
+  // écrasés par le preset, pas conservés en dessous.
+  liveStepVoicePreset(name: SynthRowName, delta: number): void {
+    const list = SYNTH_VOICE_PRESETS[name];
+    const idx = this.liveVoicePresetIndex[name] ?? 0;
+    const nextIdx = (idx + delta + list.length) % list.length;
+    this.liveVoicePresetIndex[name] = nextIdx;
+    const voice = resolveVoicePreset(name, list[nextIdx].id);
+    if (!voice) return;
+    this.liveSynthOverride = {
+      ...this.liveSynthOverride,
+      [name]: { ...this.liveSynthOverride[name], voice },
+    };
+  }
+
+  // Fréquence effective d'un degré/octave pour la mélodie jouée à la main
+  // (bouton SOLO MÉLO, LiveView.playSoloMelody) — relit la tonalité/gamme
+  // EFFECTIVES (withLiveOverrides) : un pas de transposition/gamme donné en
+  // direct s'entend donc aussi au pad, pas seulement sur le séquenceur.
+  liveMelodyFreqForDegree(degree: number, octaveShift: number): number {
+    return degreeFreq(this.withLiveOverrides(this.getState()), degree, octaveShift, 0);
   }
 
   // Niveau crête 0..1 par ligne (batterie + synthé), lu à chaque frame par le
