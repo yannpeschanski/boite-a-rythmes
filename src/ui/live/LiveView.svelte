@@ -36,6 +36,8 @@
     axesFor,
     loadLiveAssignments,
     saveLiveAssignments,
+    loadLiveSnapshots,
+    saveLiveSnapshots,
     vizById,
     LIVE_ACTIONS,
     LIVE_AXES,
@@ -43,10 +45,12 @@
     ACTION_GROUPS,
     LIVE_VIZ,
     SLOT_COUNT,
+    SNAPSHOT_COUNT,
     type LiveActionId,
     type LiveAxisId,
     type LiveVizId,
     type SlotMode,
+    type LiveAssignments,
   } from './liveActions';
 
   let { onExit }: { onExit: () => void } = $props();
@@ -85,6 +89,9 @@
 
   let assignments = $state(loadLiveAssignments());
   let assignOpen = $state(false);
+  // Snapshots d'assignation (PLAN.md §7) : 3 emplacements A/B/C, appui court
+  // = sauvegarde, appui long = rappel (voir onSnapshotPointerDown/Up).
+  let snapshots = $state<(LiveAssignments | null)[]>(loadLiveSnapshots());
 
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
@@ -291,8 +298,17 @@
     saveLiveAssignments(assignments);
   }
 
+  // Vibration au trigger (PLAN.md §7, réserve) : un tick court (12ms) à
+  // chaque appui sur un bouton catalogue — pas sur le pad/fader, gestes
+  // continus où ça spammerait. `navigator.vibrate` est absent de Safari iOS,
+  // d'où l'optional chaining plutôt qu'un throw silencieux évité à la main.
+  function hapticTick(ms = 12) {
+    navigator.vibrate?.(ms);
+  }
+
   function onSlotDown(i: number) {
     if (assignments.slotModes[i] === 'fader') return; // le fader se pilote au glisser (faderPointerDown), pas au tap
+    hapticTick();
     pressed = { ...pressed, [i]: true };
     assignments.slots[i].forEach((id) => runAction(id, true));
   }
@@ -327,6 +343,51 @@
   function toggleSlotMode(i: number) {
     assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
     saveLiveAssignments(assignments);
+  }
+
+  // Snapshots d'assignation (PLAN.md §7, réserve : « rappelable par appui
+  // long »). Appui court = sauvegarder (geste anodin, jamais destructeur) ;
+  // appui long = rappeler (geste délibéré, écrase toute l'assignation
+  // courante en plein set — protégé comme le reste des gestes à risque de
+  // mistap déjà identifiés dans le diagnostic ergonomie). `$state.snapshot`
+  // des deux côtés (et non `structuredClone`, qui échoue sur un proxy
+  // `$state` — DataCloneError) : un snapshot est une COPIE figée plain-objet,
+  // pas une référence vers `assignments` qui continuerait à changer sous lui.
+  const LONG_PRESS_MS = 550;
+  let snapshotTimer: ReturnType<typeof setTimeout> | null = null;
+  let snapshotLongPressed = false;
+
+  function saveSnapshot(i: number) {
+    snapshots[i] = $state.snapshot(assignments);
+    saveLiveSnapshots(snapshots);
+    hapticTick(12);
+  }
+  function recallSnapshot(i: number) {
+    const snap = snapshots[i];
+    if (!snap) return;
+    assignments = $state.snapshot(snap);
+    saveLiveAssignments(assignments);
+    hapticTick(25);
+  }
+  function onSnapshotPointerDown(i: number) {
+    snapshotLongPressed = false;
+    snapshotTimer = setTimeout(() => {
+      snapshotLongPressed = true;
+      recallSnapshot(i);
+    }, LONG_PRESS_MS);
+  }
+  function onSnapshotPointerUp(i: number) {
+    if (snapshotTimer) {
+      clearTimeout(snapshotTimer);
+      snapshotTimer = null;
+    }
+    if (!snapshotLongPressed) saveSnapshot(i);
+  }
+  function onSnapshotPointerLeave() {
+    if (snapshotTimer) {
+      clearTimeout(snapshotTimer);
+      snapshotTimer = null;
+    }
   }
 
   // Panneau de sélection (remplace le cycle pas-à-pas, catalogue trop large
@@ -1285,6 +1346,23 @@
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
             </div>
+
+            <h4 class="snapshots-title">SNAPSHOTS <span class="picker-hint">— appui court sauvegarde, appui long rappelle</span></h4>
+            <div class="snapshots-row">
+              {#each Array(SNAPSHOT_COUNT) as _, i (i)}
+                <button
+                  class="snapshot-slot"
+                  class:filled={!!snapshots[i]}
+                  onpointerdown={() => onSnapshotPointerDown(i)}
+                  onpointerup={() => onSnapshotPointerUp(i)}
+                  onpointerleave={onSnapshotPointerLeave}
+                >
+                  <span class="snapshot-letter">{String.fromCharCode(65 + i)}</span>
+                  <span class="snapshot-state">{snapshots[i] ? 'RÉGLÉ' : 'VIDE'}</span>
+                </button>
+              {/each}
+            </div>
+
             <button class="amp-btn assign-close" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>
           </div>
 
@@ -1960,6 +2038,52 @@
   .assign-close {
     margin-top: 10px;
     width: 100%;
+  }
+
+  /* Snapshots d'assignation (PLAN.md §7) — 3 emplacements fixes, appui court
+     sauvegarde / appui long rappelle (voir onSnapshotPointerDown/Up). */
+  .assign-card h4.snapshots-title {
+    margin: 10px 0 6px;
+    font-size: 10px;
+    color: var(--amp-text);
+    letter-spacing: 0.06em;
+  }
+  .snapshots-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .snapshot-slot {
+    font-family: inherit;
+    padding: 8px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--amp-text);
+    background: var(--amp-bg-2);
+    border: 1px solid var(--amp-line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    touch-action: none;
+  }
+  .snapshot-slot:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  .snapshot-slot.filled {
+    border-color: var(--amp-amber);
+  }
+  .snapshot-letter {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .snapshot-state {
+    font-size: 7px;
+    color: #9aa0a6;
+    letter-spacing: 0.06em;
+  }
+  .snapshot-slot.filled .snapshot-state {
+    color: var(--amp-amber);
   }
 
   /* ---- Panneau de sélection (catalogue étendu, PLAN.md §7) — recouvre la
