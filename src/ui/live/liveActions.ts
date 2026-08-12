@@ -12,7 +12,8 @@ export type LiveActionId =
   | 'mute-hat'
   | 'roll-hat-x2'
   | 'roll-hat-x3'
-  | 'roll-hat-x4';
+  | 'roll-hat-x4'
+  | 'chaos';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -33,18 +34,53 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   { id: 'roll-hat-x2', label: 'ROLL×2', color: 'var(--cell-hat)', desc: 'Rafale hat ×2 (maintenu)', kind: 'hold' },
   { id: 'roll-hat-x3', label: 'ROLL×3', color: 'var(--cell-hat)', desc: 'Rafale hat ×3 (maintenu)', kind: 'hold' },
   { id: 'roll-hat-x4', label: 'ROLL×4', color: 'var(--cell-hat)', desc: 'Rafale hat ×4 (maintenu)', kind: 'hold' },
+  // Un paramètre du catalogue d'axes tiré au hasard, valeur aléatoire, à
+  // chaque appui — pas de nouveau bouton dédié, juste une entrée du même
+  // catalogue assignable comme les autres (PLAN.md §7, piste "chaos" vs
+  // "brasser" : chaos ici, brasser est le bouton 🔀 séparé de LiveView).
+  { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger' },
 ];
 
-export type LiveAxisId = 'filter' | 'reverb';
+export type LiveAxisId =
+  | 'filter'
+  | 'reverb'
+  | 'saturation'
+  | 'bitcrush'
+  | 'compression'
+  | 'volume'
+  | 'delay-feedback'
+  | 'sidechain-depth'
+  | 'cutoff-bass'
+  | 'cutoff-pad'
+  | 'cutoff-melody'
+  | 'resonance-bass'
+  | 'resonance-pad'
+  | 'resonance-melody';
 
 export interface LiveAxisDef {
   id: LiveAxisId;
   label: string;
 }
 
+// Les 2 premiers existaient depuis la phase 2 ; les 12 suivants étendent le
+// catalogue (PLAN.md §7) — saturation/bitcrush/compression sont des effets du
+// bus DRUM uniquement (voir globalSaturation/globalBitcrush/globalCompression,
+// model/types.ts), pas du mix entier.
 export const LIVE_AXES: LiveAxisDef[] = [
   { id: 'filter', label: 'FILTRE' },
   { id: 'reverb', label: 'REVERB' },
+  { id: 'saturation', label: 'SAT. BATT.' },
+  { id: 'bitcrush', label: 'CRUSH BATT.' },
+  { id: 'compression', label: 'COMP. BATT.' },
+  { id: 'volume', label: 'VOLUME' },
+  { id: 'delay-feedback', label: 'DELAY FB' },
+  { id: 'sidechain-depth', label: 'SIDECHAIN' },
+  { id: 'cutoff-bass', label: 'CUT. BASSE' },
+  { id: 'cutoff-pad', label: 'CUT. NAPPE' },
+  { id: 'cutoff-melody', label: 'CUT. MÉLO' },
+  { id: 'resonance-bass', label: 'RÉSO BASSE' },
+  { id: 'resonance-pad', label: 'RÉSO NAPPE' },
+  { id: 'resonance-melody', label: 'RÉSO MÉLO' },
 ];
 
 // Les 3 visualiseurs explorés dans la maquette (proposition-Mode-Live) — un

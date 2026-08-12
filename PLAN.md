@@ -263,7 +263,25 @@ seekbar décorative). Code dans `src/ui/live/` (`LiveView.svelte`,
 - viz③ refaite en lapin (`drawVizRunner`) : mange la carotte la plus proche
   au kick, gros saut au snare, sautille (oreilles qui frétillent) au hat —
   un déclencheur par ligne (front montant sur `getLineLevels()`) plutôt que
-  le seul niveau de kick.
+  le seul niveau de kick ;
+- catalogue de paramètres étendu à 12 nouveaux axes (`liveActions.ts`,
+  `LIVE_AXES`) : `saturation`/`bitcrush`/`compression` (bus DRUM
+  uniquement), `volume`, `delay-feedback`, `sidechain-depth`, et
+  `cutoff`/`resonance` par ligne synthé (bass/pad/melody, une entrée
+  chacune) — appliqués directement sur les nœuds du graphe déjà construits
+  (`AudioEngine.setLiveSaturation`/`setLiveBitcrush`/`setLiveCompression`/
+  `setLiveVolume`/`setLiveDelayFeedback`/`setLiveSidechainDepth`/
+  `setLiveSynthCutoff`/`setLiveSynthResonance`), jamais écrits dans le
+  pattern sauvegardé ; cutoff/résonance posés par note (chaque voix synthé
+  crée son propre filtre au déclenchement) plutôt que sur un nœud permanent,
+  donc appliqués via un override par ligne relu à chaque fenêtre de
+  scheduling (`withLiveSynthOverrides`) ;
+- randomisation : les deux pistes envisagées, implémentées ensemble plutôt
+  que l'une ou l'autre — **CHAOS** est une entrée du catalogue d'actions
+  (assignable à un bouton comme les autres) qui tire un paramètre du
+  catalogue d'axes au hasard et lui donne une valeur aléatoire à chaque
+  appui ; **🔀 brasser** est un bouton séparé du topbar (à côté de ⚙) qui
+  réassigne tout le catalogue (6 boutons + 2 axes + inclinaison) d'un coup.
 
 **Diagnostic ergonomie retenu** (à respecter pour tout ajout futur) : ne
 jamais copier la taille des contrôles du vrai skin Winamp (pensés souris de
@@ -272,17 +290,6 @@ cas), seul le décoratif (grip, seekbar, bandes ambrées) peut rester petit.
 Le bouton ⚙ est éloigné du pad (mistap en plein set), le toggle inclinaison
 est sorti de la zone de drag du pad, plancher de luminosité LCD prévu pour
 la lisibilité en extérieur.
-
-**⚠️ Prochain à trancher — catalogue de paramètres à étendre, et
-randomisation.** L'assignation ne couvre que 8 actions et 2 axes
-(filtre/reverb). À étendre : `globalSaturation`, `globalBitcrush`,
-`globalCompression`, `finalVolume`, `delayFeedback`, `sidechainDepth`, voire
-des réglages de voix synthé (`cutoff`/`resonance` par ligne). Deux idées de
-randomisation non tranchées, pas forcément la même feature — **à demander à
-Yann laquelle (ou les deux) avant de coder** : (a) bouton "RANDOM"/chaos —
-une valeur aléatoire par appui, esprit `spontRoll`/`randomVelocity` ; (b) un
-"brasser" — réassigne aléatoirement tout le catalogue aux 6 boutons/2 axes
-d'un coup ("surprends-moi" plutôt que de choisir soi-même via l'overlay ⚙).
 
 **En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
 trigger ; snapshot des assignations rappelable par appui long ; undo léger
