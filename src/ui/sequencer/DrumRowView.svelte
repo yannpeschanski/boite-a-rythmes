@@ -254,9 +254,9 @@
   }
   .row-settings {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0 16px;
-    margin-top: 4px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 0 10px;
+    margin-top: 3px;
   }
   .more {
     background: none;

@@ -402,9 +402,9 @@
   }
   .row-settings {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 0 16px;
-    margin-top: 6px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 0 10px;
+    margin-top: 4px;
   }
   .row-settings label {
     font-size: 12px;

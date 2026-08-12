@@ -263,11 +263,11 @@
 <style>
   .xp-slider {
     display: grid;
-    grid-template-columns: 110px 1fr 56px;
+    grid-template-columns: 72px 1fr 36px;
     align-items: center;
-    gap: 8px;
-    margin: 4px 0;
-    font-size: 12px;
+    gap: 4px;
+    margin: 2px 0;
+    font-size: 10.5px;
   }
   .lab {
     color: var(--xp-text);
@@ -294,7 +294,7 @@
     pointer-events: none;
     appearance: none;
     -webkit-appearance: none;
-    height: 20px;
+    height: 16px;
     background: transparent;
   }
   input[type='range']::-webkit-slider-runnable-track {
@@ -305,9 +305,9 @@
   }
   input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 12px;
-    height: 20px;
-    margin-top: -9px;
+    width: 11px;
+    height: 16px;
+    margin-top: -6px;
     border-radius: 3px;
     background: linear-gradient(180deg, #fefefe, #d6d2c2 45%, #b8b2a0);
     border: 1px solid #7a7768;
@@ -321,8 +321,8 @@
     border-radius: 2px;
   }
   input[type='range']::-moz-range-thumb {
-    width: 12px;
-    height: 20px;
+    width: 11px;
+    height: 16px;
     border-radius: 3px;
     background: linear-gradient(180deg, #fefefe, #d6d2c2 45%, #b8b2a0);
     border: 1px solid #7a7768;
@@ -330,12 +330,12 @@
   }
   .val {
     font-family: var(--xp-mono);
-    font-size: 11px;
+    font-size: 10px;
     text-align: right;
     background: #fff;
     border: 1px solid var(--xp-line);
     box-shadow: var(--xp-bevel-in);
-    padding: 2px 4px;
+    padding: 1px 3px;
     cursor: text;
     width: 100%;
   }

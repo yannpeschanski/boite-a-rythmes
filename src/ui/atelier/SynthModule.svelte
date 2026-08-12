@@ -144,11 +144,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 5px;
   }
   .fill-bar :global(.xp-slider) {
-    min-width: 280px;
+    min-width: 220px;
   }
   .chords {
     font-family: var(--xp-mono);
@@ -186,12 +186,12 @@
   }
   .line-block {
     border-top: 1px dashed var(--xp-line);
-    padding-top: 8px;
+    padding-top: 5px;
   }
   fieldset {
     border: 1px solid var(--xp-line);
-    margin: 8px 0;
-    padding: 6px 8px;
+    margin: 5px 0;
+    padding: 4px 6px;
   }
   legend {
     font-size: 11px;
@@ -209,11 +209,11 @@
   .chk-row {
     display: flex;
     flex-wrap: wrap;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .two-col {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 0 16px;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 0 10px;
   }
 </style>

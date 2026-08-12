@@ -305,6 +305,16 @@ Le bouton ⚙ est éloigné du pad (mistap en plein set), le toggle inclinaison
 est sorti de la zone de drag du pad, plancher de luminosité LCD prévu pour
 la lisibilité en extérieur.
 
+**⏭️ Prochain à faire — catalogue d'actions (boutons) trop court.** Retour
+de Yann : 9 actions aujourd'hui (BREAK/FILL/MUTE×3/ROLL×3/CHAOS) pour 6
+boutons, à étendre largement comme les axes l'ont été (55 entrées) — même
+traitement à appliquer : plus d'actions dans `LIVE_ACTIONS`, groupées par
+catégorie dans le même panneau de sélection déjà en place. Pistes à
+creuser : d'autres mutes/rolls (synthé ?), des triggers ponctuels
+(snapshot d'assignation, randomize-la-ligne-synthé-courante), des toggles
+d'effet (activer/désactiver saturation, limiteurs…). Pas encore scopé en
+détail.
+
 **En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
 trigger ; snapshot des assignations rappelable par appui long ; undo léger
 sur les triggers en direct ; mode duo (deux téléphones connectés via le
@@ -312,16 +322,25 @@ partage par URL existant, `stores/share.ts`).
 
 ### 7.2 Atelier
 
-1. **Réduire tous les paramètres** (sliders groove/effets/harmonie) pour
-   libérer de la place et mieux voir les séquenceurs — prolonge le
-   diagnostic ergonomie déjà fait sur mobile (peu d'espace pour scroller,
-   transport sticky). Prêt à coder, pas de décision bloquante.
-2. **⚠️ Retirer le "séquenceur kick" de la partie Synthé.** Formulation
-   reçue telle quelle de Yann, jamais clarifiée — probablement l'anneau/
-   rappel batterie de `TransportRings` (visible dans la barre sticky même
-   sur l'onglet Synthé) plutôt qu'un vrai séquenceur dupliqué, mais la
-   demande vise spécifiquement le kick. **À confirmer avec Yann avant de
-   coder.**
+1. **✅ Réduire tous les paramètres.** Passe de densité sur `XpSlider`
+   (colonnes 72px/1fr/36px au lieu de 110/1fr/56, piste plus fine, marges
+   resserrées) + seuil des grilles `auto-fit` abaissé (148px au lieu de
+   190-260 selon les fichiers) dans `AtelierView`, `SynthModule`,
+   `DrumRowView` et `SynthRowView` — les groupes de curseurs (groove,
+   effets, harmonie, sidechain, réglages par ligne) passent officiellement
+   à 2 colonnes sur un écran de téléphone réel (mesuré : ~322px de large
+   utile à 390px de viewport, contre ~260-300px requis avant pour
+   déclencher 2 colonnes). Les labels longs tronqués un peu plus
+   agressivement (déjà le comportement existant, juste plus fréquent).
+2. **✅ Retirer le séquenceur kick/snare/hat de l'onglet Synthé.** En
+   relisant `AtelierView.svelte` : ce n'était pas `TransportRings` (simple
+   rappel non éditable dans la barre sticky) mais le vrai séquenceur pas-à-
+   pas complet (`XpWindow "Séquenceur — Kick / Snare / Hat"`), rendu sans
+   condition d'onglet depuis une passe ergonomie précédente ("reste au même
+   endroit quel que soit l'onglet actif") — donc dupliqué sur Synthé alors
+   que cet onglet ne travaille que basse/nappe/mélodie. Repéré directement
+   dans le code plutôt que redemandé à Yann ; masqué uniquement sur Synthé,
+   conservé sur Rythme et Effets (pas mentionnés dans la demande).
 
 ### 7.3 Audit de parité avec l'original — jamais traité
 
