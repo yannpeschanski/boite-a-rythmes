@@ -453,6 +453,37 @@ export function saveLiveAssignments(a: LiveAssignments): void {
   }
 }
 
+// Snapshots d'assignation (PLAN.md §7, réserve : « snapshot des assignations
+// rappelable par appui long ») — 3 emplacements fixes (A/B/C), même principe
+// borné que SLOT_COUNT/SNAPSHOT_COUNT plutôt qu'une liste ouverte à gérer.
+// Un appui court sur un emplacement SAUVEGARDE l'assignation courante dedans
+// (geste anodin, jamais destructeur) ; un appui long la RAPPELLE (geste
+// délibéré — écrase toute l'assignation courante en plein set, donc protégé
+// comme le reste des gestes à risque de mistap déjà identifiés, PLAN.md §7 :
+// bouton ⚙ éloigné du pad, toggle inclinaison sorti de la zone de drag).
+export const SNAPSHOT_COUNT = 3;
+const SNAPSHOT_KEY = 'boite-a-rythme:mode-live-snapshots';
+
+export function loadLiveSnapshots(): (LiveAssignments | null)[] {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (!raw) return Array(SNAPSHOT_COUNT).fill(null);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length !== SNAPSHOT_COUNT) return Array(SNAPSHOT_COUNT).fill(null);
+    return parsed.map((p) => (isValid(p) ? p : null));
+  } catch {
+    return Array(SNAPSHOT_COUNT).fill(null);
+  }
+}
+
+export function saveLiveSnapshots(snapshots: (LiveAssignments | null)[]): void {
+  try {
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshots));
+  } catch {
+    /* quota plein ou stockage refusé : les snapshots restent actifs pour la session, sans persister */
+  }
+}
+
 export function actionById(id: LiveActionId): LiveActionDef {
   return LIVE_ACTIONS.find((a) => a.id === id)!;
 }

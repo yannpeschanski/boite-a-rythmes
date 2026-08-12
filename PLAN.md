@@ -401,10 +401,33 @@ même temps. 🔀 brasser respecte le mode courant de chaque bouton (rebrasse
 `slots[i]` s'il est en ACTIONS, `slotFaders[i]` s'il est en FADER, jamais
 les deux).
 
-**En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
-trigger ; snapshot des assignations rappelable par appui long ; undo léger
-sur les triggers en direct ; mode duo (deux téléphones connectés via le
-partage par URL existant, `stores/share.ts`).
+**✅ Vibration au trigger + snapshots d'assignation rappelables par appui
+long** (les deux items de la réserve regroupés dans une même passe, retour
+de Yann : « poursuis sur les travaux du mode live »).
+- **Vibration** — `hapticTick()` (`navigator.vibrate?.(12)`, optional
+  chaining plutôt qu'un guard `'vibrate' in navigator` : Safari iOS n'a pas
+  l'API, ça doit rester un no-op silencieux) appelé dans `onSlotDown`, donc
+  sur tout appui d'un bouton en mode ACTIONS (trigger/toggle/hold/pas) —
+  jamais sur le pad/fader, gestes continus où ça spammerait.
+- **Snapshots** — 3 emplacements fixes A/B/C (`SNAPSHOT_COUNT`,
+  `liveActions.ts`), persistés à part (`loadLiveSnapshots`/
+  `saveLiveSnapshots`, clé localStorage dédiée, réutilisent `isValid` pour
+  ignorer un snapshot corrompu/obsolète). Nouvelle rangée dans l'overlay ⚙,
+  sous la liste d'assignation. **Appui court = sauvegarder** l'assignation
+  courante dans l'emplacement (geste anodin, jamais destructeur) ; **appui
+  long (550 ms) = rappeler** (geste délibéré qui écrase toute l'assignation
+  courante en plein set — protégé comme le reste des gestes à risque de
+  mistap déjà identifiés dans le diagnostic ergonomie : bouton ⚙ éloigné du
+  pad, toggle inclinaison sorti de la zone de drag). `$state.snapshot()` des
+  deux côtés (pas `structuredClone`, qui lève une `DataCloneError` sur un
+  proxy `$state` — piège repéré et corrigé en vérification Playwright avant
+  merge, pas en production) : un snapshot est une copie figée plain-objet,
+  jamais une référence vivante vers `assignments`.
+
+**En réserve, pas prioritaire** : undo léger sur les triggers en direct
+(sémantique pas encore claire — annuler quoi, pour un mute qu'un second
+appui annule déjà ?) ; mode duo (deux téléphones connectés via le partage
+par URL existant, `stores/share.ts`).
 
 ### 7.2 Atelier
 
