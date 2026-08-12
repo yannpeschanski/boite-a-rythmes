@@ -359,6 +359,48 @@ zone) joue une note ; un doigt qui glisse ne redéclenche qu'au changement de
 zone (pas de répétition sur un doigt immobile). Relâcher le bouton restaure
 le pad normal et démute la mélodie.
 
+**✅ 3 types de contrôleurs par bouton** (retour de Yann : « il faut encore
+plus de paramètres ! Je propose d'agencer les boutons selon 3 types :
+l'interrupteur, le bouton pas, contrôle fader » — clarifié avant
+implémentation : le bouton PAS avance de **nouveaux paramètres discrets**,
+pas des paliers sur les axes déjà là). Chaque bouton porte désormais un mode
+(`LiveAssignments.slotModes: SlotMode[]`, `'actions' | 'fader'`, bascule
+`⏻ ACTIONS`/`≈ FADER` au-dessus de sa ligne dans l'overlay ⚙) :
+- **Interrupteur** = le `kind: 'toggle'` déjà là (mutes, bypass limiteurs) —
+  rien de nouveau côté mécanique, juste formalisé comme l'un des 3 types ;
+  nouvel exemple : **ARPÈGE NAPPE** (`toggle-pad-arp`, bascule
+  `synthGlobal.padArpEnabled` en direct).
+- **Bouton pas** (`kind: 'step'`, nouveau) — un coup au pointerdown avance un
+  paramètre discret d'un cran, rien au relâché. Chaque entrée porte
+  directement son geste (`step: (engine) => …`, même principe que `apply()`
+  côté axes) plutôt qu'un cas par paramètre dans `runAction` — un `default:`
+  générique dans le switch les dispatche toutes. 10 nouvelles entrées :
+  **TON +1/−1** (`liveStepTranspose`, ±1 demi-ton, borné à ±1 octave autour
+  de la tonalité de l'Atelier), **GAMME →/←** (`liveStepScale`, cycle
+  circulaire dans les 5 modes de `SCALE_LIBRARY`), **VOIX
+  BASSE/NAPPE/MÉLODIE →/←** par ligne (`liveStepVoicePreset`, cycle
+  circulaire dans `SYNTH_VOICE_PRESETS[name]`, remplace le `voice` complet
+  comme le ferait un vrai changement de preset). Tonalité/gamme vivent dans
+  un nouvel override `liveSynthGlobalOverride` (même mécanisme relu à chaque
+  fenêtre que le groove), et `AudioEngine.liveMelodyFreqForDegree` relit cet
+  override pour que SOLO MÉLO (ci-dessus) entende un pas de
+  transposition/gamme donné en direct, pas seulement le séquenceur.
+- **Fader** (nouveau) — réutilise TEL QUEL le catalogue des 55 axes
+  (`LiveAssignments.slotFaders: LiveAxisId[][]`, un axe/bouton ou plusieurs
+  en macro comme le pad) : glisser verticalement sur le bouton pilote la
+  valeur, position = valeur (même convention que le pad, haut = 100%,
+  `faderPointerDown/Move`, `setFader`). Rendu comme `.abtn` avec un
+  remplissage (`.fader-fill`) qui monte/descend avec la valeur — même
+  `axisValues`/`applyAxisValue` que le pad, donc un fader et le pad peuvent
+  viser le même paramètre et rester synchronisés (dernière source qui a
+  écrit fait foi, comme pad/inclinaison).
+Actions et faders restent deux catalogues séparés par bouton plutôt que
+mélangés dans un seul tableau : les gestes (tap/hold pour les actions,
+glisser continu pour le fader) sont incompatibles sur la même surface en
+même temps. 🔀 brasser respecte le mode courant de chaque bouton (rebrasse
+`slots[i]` s'il est en ACTIONS, `slotFaders[i]` s'il est en FADER, jamais
+les deux).
+
 **En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
 trigger ; snapshot des assignations rappelable par appui long ; undo léger
 sur les triggers en direct ; mode duo (deux téléphones connectés via le
