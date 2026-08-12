@@ -5,7 +5,7 @@
   import { SCALE_LIBRARY } from '../../model/presets/scales';
   import { ROOT_NOTE_NAMES } from '../../model/presets/scales';
   import { chordsFor } from '../../engine/harmony';
-  import { randomizeSynth, randomizePad, randomizePitchedLine } from '../../engine/generators';
+  import { randomizeSynth, randomizePad, randomizePitchedLine, translatePadArpToMelody } from '../../engine/generators';
   import type { SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
@@ -38,6 +38,10 @@
     if (name === 'pad') randomizePad(st, fillRate / 100, Math.random);
     else if (name === 'bass') randomizePitchedLine(st, 'bass', (fillRate / 100) * 0.75, 0.85, Math.random);
     else randomizePitchedLine(st, 'melody', fillRate / 100, 0.7, Math.random);
+  }
+
+  function translateArpToMelody() {
+    translatePadArpToMelody(st, Math.random);
   }
 </script>
 
@@ -97,6 +101,13 @@
         <option value="8">8 notes / pas</option>
       </select>
     </label>
+    <button
+      class="xp-btn tiny"
+      onclick={translateArpToMelody}
+      title="Écrit l'arpège actuel comme de vraies notes sur la ligne Mélodie — remplace son contenu"
+    >
+      ✍️ Traduire l'arpège en Mélodie
+    </button>
   </fieldset>
 
   <fieldset>

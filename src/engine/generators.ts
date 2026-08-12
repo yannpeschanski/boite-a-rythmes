@@ -5,6 +5,7 @@
 import type { PatternStateV2, SynthRowName, SynthNote } from '../model/types';
 import { resizeSynthLine } from '../model/defaults';
 import { padChordAtBarPosition, barPositionForStep, chordsFor, type ChordDef } from './harmony';
+import { arpNoteOrder } from './voices/synth';
 import type { Rng } from './rng';
 
 // 4 enchaînements parmi les plus courants en pop/variété (indices : 0=I,
@@ -91,4 +92,50 @@ export function applyRandomRolls(state: PatternStateV2, name: SynthRowName, rate
     const active = name === 'pad' ? typeof v === 'number' && v >= 0 : v != null;
     if (active && rng() < rate) row.rolls[i] = 2 + Math.floor(rng() * 3); // x2 à x4
   });
+}
+
+// Traduit l'arpège de la Nappe (playPadArp/arpNoteOrder, voices/synth.ts —
+// même logique de motif/ordre) en notes réellement posées sur la ligne
+// Mélodie — jusqu'ici l'arpège n'existait qu'en temps réel à la lecture,
+// jamais comme des notes éditables (original padArpToMelodyBtn, l. 3387,
+// jamais porté — PLAN.md §7.3). Redimensionne la Mélodie pour avoir une
+// case par note d'arpège (nombre de pas Nappe × vitesse d'arpège), calée
+// sur les mêmes mesures que la Nappe. Remplace tout le contenu existant de
+// la Mélodie — instantané figé de l'arpège du moment, pas un lien live.
+export function translatePadArpToMelody(state: PatternStateV2, rng: Rng): void {
+  const pad = state.synthRows.pad;
+  const pattern = state.synthGlobal.padArpPattern;
+  const rate = Math.max(1, parseInt(state.synthGlobal.padArpRate, 10) || 4);
+  const oldSteps = pad.pattern.length;
+  // Plafonné à 128 (même maximum que le curseur "Notes du cycle") : au-delà,
+  // les notes d'arpège en trop sont simplement ignorées plutôt que de tenter
+  // un tableau plus grand que ce que l'UI sait gérer.
+  const newSubdiv = Math.min(128, oldSteps * rate);
+  resizeSynthLine(state.synthRows.melody, pad.cycleBars, newSubdiv, false);
+  const melody = state.synthRows.melody;
+  const chords = chordsFor(state);
+  for (let i = 0; i < oldSteps; i++) {
+    const chordIdx = pad.pattern[i];
+    if (typeof chordIdx !== 'number' || chordIdx < 0) continue; // pas d'accord ici -> silence en Mélodie aussi
+    const chord = chords[chordIdx];
+    if (!chord) continue;
+    const order = arpNoteOrder(pattern, chord.degrees.length, rate, rng);
+    order.forEach((idx, k) => {
+      const targetStep = i * rate + k;
+      if (targetStep >= newSubdiv) return; // au-delà du plafond ci-dessus
+      const d = chord.degrees[idx];
+      // Le degré n'est représentable que 1-7 : on replie l'octave en trop
+      // (chord.degrees peut dépasser 7, ex. root=7 -> 11) dans `octave`
+      // plutôt que d'écrire un degré hors plage.
+      const wrapped = (((d - 1) % 7) + 7) % 7 + 1;
+      const extraOctave = Math.floor((d - 1) / 7);
+      // -1 de base : chordFreqs joue la Nappe un octave plus bas (-12
+      // demi-tons) que le registre par défaut de la Mélodie — sans ce
+      // décalage, la mélodie traduite sonnerait une octave trop haut par
+      // rapport à l'accord d'origine. Bornée à [-1,1], seule plage que
+      // l'UI (▲▼) sait représenter.
+      const octave = Math.max(-1, Math.min(1, -1 + extraOctave));
+      melody.pattern[targetStep] = { degree: wrapped, octave };
+    });
+  }
 }

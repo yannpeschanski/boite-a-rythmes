@@ -42,6 +42,16 @@ export function starsForAttempts(attempts: number): number {
   return 1;
 }
 
+// Palier du son de victoire (original composeRoast, l. 8351) — distinct de
+// starsForAttempts ci-dessus : à 3 essais tier vaut 3 (tandis que stars vaut
+// encore 2), l'original les calcule séparément et ce port fait pareil plutôt
+// que de réutiliser starsForAttempts pour les deux usages.
+export function tierForAttempts(attempts: number): 1 | 2 | 3 {
+  if (attempts === 1) return 1;
+  if (attempts === 2) return 2;
+  return 3;
+}
+
 function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);

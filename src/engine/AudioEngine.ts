@@ -653,6 +653,43 @@ export class AudioEngine {
     }
   }
 
+  // Son de victoire du Mode jeu (original playChime/playWinSound,
+  // l. 8321-8340, jamais porté — PLAN.md §7.3). Connecté à `finalGain`
+  // plutôt qu'au « masterGain » de l'original : là-bas ce nom désigne en
+  // réalité le bus batterie (passe par saturation/bitcrush/compression du
+  // pattern cible) — un hasard de nommage, pas un choix documenté pour ce
+  // son précis. Le Mode jeu part toujours d'un état neutre sur ces réglages
+  // donc le résultat est identique à l'oreille ; connecter au vrai master
+  // reste plus direct si un futur niveau venait à dérégler le bus batterie.
+  // Mêmes fréquences/durées/gains que l'original : tier 1 = arpège éclatant
+  // qui monte (« ouahou »), tier 2 = simple et positif (« bien »), tier 3 =
+  // petite descente tiède (« mouais »).
+  playWinChime(tier: 1 | 2 | 3): void {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    void ctx.resume();
+    const out = this.graph!.finalGain;
+    const chime = (freqs: number[], dur: number, gain: number) => {
+      freqs.forEach((f, i) => {
+        const t = ctx.currentTime + i * dur;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.9);
+        osc.connect(g);
+        g.connect(out);
+        osc.start(t);
+        osc.stop(t + dur);
+      });
+    };
+    if (tier === 1) chime([523, 659, 784, 1047], 0.14, 0.35);
+    else if (tier === 2) chime([523, 659], 0.16, 0.28);
+    else chime([392, 370], 0.22, 0.2);
+  }
+
   // Bouton SOLO du Mode Live (maintenu, PLAN.md §7) : joue une note de
   // mélodie à la demande — glisser/tapoter sur le pad pendant que SOLO est
   // tenu remplace le séquenceur pour cette ligne (mutée en direct pendant ce

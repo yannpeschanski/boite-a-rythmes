@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { game, LEVELS } from '../../stores/game.svelte';
+  import { game, LEVELS, tierForAttempts } from '../../stores/game.svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { DrumRowName } from '../../model/types';
@@ -67,9 +67,24 @@
     resetPlayhead();
   }
 
+  // Son de victoire + flash des cases (original showGameResult, l. 8558-8564,
+  // jamais porté — PLAN.md §7.3). `game.solved` ne peut passer à true QUE
+  // par CET appel : le bouton ✓ Vérifier est désactivé dès que solved (voir
+  // plus bas), donc pas besoin de retenir l'état "avant" pour détecter la
+  // victoire.
+  let winFlash = $state(false);
+  function triggerWinFlash() {
+    winFlash = true;
+    setTimeout(() => (winFlash = false), 1100);
+  }
+
   function verify() {
     stopAll();
     game.verify();
+    if (game.solved) {
+      engine.playWinChime(tierForAttempts(game.attempts));
+      triggerWinFlash();
+    }
   }
 
   function saveToAtelier() {
@@ -178,6 +193,7 @@
                   class:locked
                   class:revealed={game.revealed && game.target[name][col] > 0 && !locked}
                   class:playing={playhead[name] === col}
+                  class:win-flash={winFlash}
                   onclick={() => game.cycleCell(name, col)}
                   oncontextmenu={(e) => {
                     e.preventDefault();
@@ -403,6 +419,20 @@
   .cell.playing {
     outline: 2px solid #ffd54a;
     outline-offset: -1px;
+  }
+  /* Flash de victoire (original, l. 441-442) : 3 pulsations de luminosité,
+     déclenché sur toutes les cases à la résolution (triggerWinFlash). */
+  @keyframes cellFlash {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.6);
+    }
+  }
+  .cell.win-flash {
+    animation: cellFlash 0.35s ease 3;
   }
   .mark {
     position: absolute;
