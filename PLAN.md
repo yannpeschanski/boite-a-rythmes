@@ -323,10 +323,16 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   donnant un relief de spectre à partir des 6 niveaux réels sans inventer de
   fausse donnée. Même relâchement exponentiel qu'avant pour le rebond.
 
-  **⏭️ À refaire — viz ③ (défilement).** Remplacer le personnage bâton
-  générique par un lapin : mange des carottes sur son chemin à chaque kick,
-  fait un gros saut à chaque snare, sautille aux hats — un déclencheur par
-  ligne plutôt que le seul niveau de kick utilisé aujourd'hui.
+  **✅ viz ③ (défilement) refaite en lapin.** Le bâton générique remplacé par
+  un lapin (`drawVizRunner`, `LiveView.svelte`) : mange la carotte la plus
+  proche sur son chemin à chaque kick, gros saut à chaque snare, petit
+  sautillement (oreilles qui frétillent) à chaque hat — un déclencheur par
+  ligne (front montant sur le niveau réel de chaque ligne via
+  `getLineLevels()`, avec un court cooldown anti-rebond) plutôt que le seul
+  niveau de kick utilisé auparavant. Terrain et défilement inchangés.
+  Prototypé et validé visuellement dans un aperçu interactif partagé avant
+  implémentation (boutons KICK/SNARE/HAT/AUTO), puis vérifié en conditions
+  réelles (Playwright, Mode Live joué en direct) avant de porter le code.
 - **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en plus
   du cycle entier actuel.
 - **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre des

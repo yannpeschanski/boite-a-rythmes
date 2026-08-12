@@ -480,7 +480,57 @@
   function terrainY(x: number, scroll: number, h: number) {
     return h * 0.66 + Math.sin((x + scroll) * 0.018) * h * 0.07 + Math.sin((x + scroll) * 0.045 + 1.3) * h * 0.035;
   }
-  let runnerJumpSmooth = 0;
+  // Viz ③ — lapin coureur (PLAN.md §7, « à refaire ») : le bâton générique
+  // précédent réagissait au seul niveau de la ligne kick pour son unique
+  // geste (le saut). Ici chaque tambour pilote un geste distinct — détecté
+  // par un FRONT MONTANT du niveau réel de sa ligne (getLineLevels(), même
+  // source que la viz① et l'arty) plutôt que par le niveau continu : ça
+  // distingue un coup d'un simple maintien au-dessus du seuil. Cooldown
+  // court pour éviter qu'une même frappe, dont la crête oscille en
+  // redescendant, ne redéclenche plusieurs fois de suite.
+  const RUNNER_TRIGGER_THRESHOLD = 0.1;
+  const RUNNER_TRIGGER_COOLDOWN = 0.08; // s
+  const runnerPrevLevel: Partial<Record<DrumRowName, number>> = {};
+  const runnerLastTrigger: Partial<Record<DrumRowName, number>> = {};
+  function runnerEdge(
+    name: DrumRowName,
+    levels: Partial<Record<DrumRowName | SynthRowName, number>>,
+    now: number,
+  ): boolean {
+    const level = levels[name] ?? 0;
+    const prev = runnerPrevLevel[name] ?? 0;
+    runnerPrevLevel[name] = level;
+    const last = runnerLastTrigger[name] ?? -10;
+    if (level > RUNNER_TRIGGER_THRESHOLD && prev <= RUNNER_TRIGGER_THRESHOLD && now - last > RUNNER_TRIGGER_COOLDOWN) {
+      runnerLastTrigger[name] = now;
+      return true;
+    }
+    return false;
+  }
+
+  let runnerKickT = -10;
+  let runnerSnareT = -10;
+  let runnerHatT = -10;
+
+  // Carottes le long du chemin, en coordonnées « monde » (indépendantes du
+  // défilement — leur position à l'écran se déduit de `scroll`).
+  let runnerCarrots: { world: number; bite: number }[] = [];
+  function runnerSeedCarrots(startWorld: number) {
+    runnerCarrots = [];
+    for (let i = 0; i < 5; i++) runnerCarrots.push({ world: startWorld + 90 + i * 150 + Math.random() * 30, bite: 0 });
+  }
+  // Mange la carotte la plus proche devant le lapin — tolérant plutôt que
+  // strict sur la distance : au tempo réel un kick tombe naturellement près
+  // d'une carotte grâce à leur espacement régulier.
+  function runnerEatNextCarrot(scroll: number, charX: number) {
+    let best: { world: number; bite: number } | null = null;
+    for (const c of runnerCarrots) {
+      const sx = c.world - scroll;
+      if (sx > charX - 60 && (!best || sx < best.world - scroll)) best = c;
+    }
+    if (best) best.bite = 0.001; // > 0 amorce l'animation de disparition
+  }
+
   function drawVizRunner(ctx: CanvasRenderingContext2D, now: number) {
     const r = vizCanvas.getBoundingClientRect();
     const w = r.width,
@@ -516,37 +566,245 @@
     ctx.strokeStyle = '#35e07a';
     ctx.lineWidth = 2;
     ctx.stroke();
+
     const charX = w * 0.3;
     const groundY = terrainY(charX, scroll, h);
-    const kick = engine.getLineLevels().kick ?? 0;
-    runnerJumpSmooth = Math.max(kick, runnerJumpSmooth * 0.8);
-    const jump = Math.min(1, runnerJumpSmooth * 3) * h * 0.16;
-    const cy = groundY - jump - h * 0.05;
+
+    const levels = engine.getLineLevels();
+    if (runnerEdge('kick', levels, now)) {
+      runnerEatNextCarrot(scroll, charX);
+      runnerKickT = now;
+    }
+    if (runnerEdge('snare', levels, now)) runnerSnareT = now;
+    if (runnerEdge('hat', levels, now)) runnerHatT = now;
+
+    // ---- Ravitaillement des carottes ----
+    if (runnerCarrots.length === 0) runnerSeedCarrots(scroll + charX);
+    runnerCarrots = runnerCarrots.filter((c) => c.world - scroll > charX - 140 && c.bite < 1);
+    while (runnerCarrots.length < 5) {
+      const last = runnerCarrots.length ? runnerCarrots[runnerCarrots.length - 1].world : scroll + charX + 90;
+      runnerCarrots.push({ world: last + 130 + Math.random() * 40, bite: 0 });
+    }
+
+    // ---- Carottes ----
+    runnerCarrots.forEach((c) => {
+      const sx = c.world - scroll;
+      if (sx < -20 || sx > w + 20) return;
+      const gy = terrainY(sx, scroll, h);
+      const bounce = c.bite > 0 ? c.bite : 0;
+      const scale = 1 - bounce;
+      if (scale <= 0.02) return;
+      const cw = 8 * scale,
+        ch = 12 * scale;
+      const cy = gy - ch * 0.5 - bounce * 14;
+      ctx.save();
+      ctx.translate(sx, cy);
+      ctx.fillStyle = '#ff8f3c';
+      ctx.beginPath();
+      ctx.moveTo(-cw / 2, -ch * 0.15);
+      ctx.lineTo(cw / 2, -ch * 0.15);
+      ctx.lineTo(0, ch * 0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#35e07a';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(-2.5, -ch * 0.15);
+      ctx.lineTo(-3.5, -ch * 0.7);
+      ctx.moveTo(0, -ch * 0.15);
+      ctx.lineTo(0, -ch * 0.85);
+      ctx.moveTo(2.5, -ch * 0.15);
+      ctx.lineTo(3.5, -ch * 0.7);
+      ctx.stroke();
+      ctx.restore();
+      if (c.bite > 0) c.bite = Math.min(1, c.bite + 0.09);
+    });
+
+    // ---- Lapin ----
+    const sinceSnare = now - runnerSnareT;
+    const sinceHat = now - runnerHatT;
+    const sinceKick = now - runnerKickT;
+    const snareDur = 0.42;
+    const hatDur = 0.18;
+    const snareArc = sinceSnare >= 0 && sinceSnare < snareDur ? Math.sin((sinceSnare / snareDur) * Math.PI) : 0;
+    const hatArc = sinceHat >= 0 && sinceHat < hatDur ? Math.sin((sinceHat / hatDur) * Math.PI) : 0;
+    const jump = snareArc * h * 0.22 + hatArc * h * 0.06;
+    const squash = sinceSnare >= 0 && sinceSnare < snareDur ? 1 - snareArc * 0.28 : 1;
+    const chomp = sinceKick >= 0 && sinceKick < 0.22 ? Math.sin((sinceKick / 0.22) * Math.PI) : 0;
+
     const run = now * 12;
-    ctx.strokeStyle = '#eafff0';
-    ctx.lineWidth = 3;
+    const bodyBob = Math.sin(run) * h * 0.012 * (1 - snareArc);
+    const cy = groundY - jump - h * 0.05 + bodyBob;
+    const u = h * 0.0105; // unité de base — toutes les proportions du lapin en dérivent
+
+    // ombre au sol : rétrécit et s'estompe avec la hauteur du saut, pour
+    // ancrer le personnage même quand il décolle du terrain.
+    const shadowScale = Math.max(0.35, 1 - (jump / (h * 0.26)) * 0.65);
+    ctx.save();
+    ctx.translate(charX, groundY + 1);
+    ctx.scale(shadowScale, shadowScale * 0.38);
+    const shGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, u * 9);
+    shGrad.addColorStop(0, 'rgba(5,5,10,0.4)');
+    shGrad.addColorStop(1, 'rgba(5,5,10,0)');
+    ctx.fillStyle = shGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, u * 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(charX, cy);
+    ctx.scale(1 / squash, squash);
+
+    const legSwing = Math.sin(run) * u * 2 * (1 - snareArc * 0.6);
+    const legSwingF = Math.cos(run) * u * 1.4 * (1 - snareArc * 0.6);
+    const furStroke = '#c9a97a';
+
+    // patte arrière — courte et trapue, dessinée en premier pour passer
+    // sous le corps.
+    ctx.strokeStyle = '#ded2ae';
+    ctx.lineWidth = u * 2.1;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(charX, cy);
-    ctx.lineTo(charX + Math.sin(run) * 8, cy + h * 0.09);
-    ctx.moveTo(charX, cy);
-    ctx.lineTo(charX - Math.sin(run) * 8, cy + h * 0.09);
+    ctx.moveTo(-u * 3, u * 3);
+    ctx.quadraticCurveTo(-u * 3 + legSwing * 0.4, u * 5.6, -u * 3 + legSwing, u * 7.8);
     ctx.stroke();
-    ctx.lineWidth = 2.4;
+    ctx.fillStyle = '#ded2ae';
     ctx.beginPath();
-    ctx.moveTo(charX, cy - h * 0.03);
-    ctx.lineTo(charX + Math.cos(run) * 7, cy + h * 0.02);
-    ctx.moveTo(charX, cy - h * 0.03);
-    ctx.lineTo(charX - Math.cos(run) * 7, cy + h * 0.02);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(charX, cy - h * 0.03);
-    ctx.lineTo(charX, cy - h * 0.12);
-    ctx.stroke();
-    ctx.fillStyle = '#eafff0';
-    ctx.beginPath();
-    ctx.arc(charX, cy - h * 0.17, h * 0.05, 0, Math.PI * 2);
+    ctx.ellipse(-u * 3 + legSwing, u * 8.2, u * 1.7, u * 1, 0.15, 0, Math.PI * 2);
     ctx.fill();
+
+    // queue — petit pompon dégradé
+    const tailGrad = ctx.createRadialGradient(-u * 7.6, -u * 1, 0, -u * 7.6, -u * 1, u * 2.7);
+    tailGrad.addColorStop(0, '#fffaf0');
+    tailGrad.addColorStop(1, '#e4d5ac');
+    ctx.fillStyle = tailGrad;
+    ctx.beginPath();
+    ctx.arc(-u * 7.6, -u * 1, u * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // corps — silhouette en courbes de Bézier (poitrail relevé, croupe
+    // arrondie) plutôt qu'une ellipse plate, avec un léger dégradé pour le
+    // volume.
+    const bodyGrad = ctx.createLinearGradient(0, -u * 9, 0, u * 6);
+    bodyGrad.addColorStop(0, '#fffdf6');
+    bodyGrad.addColorStop(1, '#e4d9bd');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.moveTo(-u * 8, u * 3);
+    ctx.bezierCurveTo(-u * 9.2, -u * 4, -u * 4, -u * 8.6, u * 2, -u * 8);
+    ctx.bezierCurveTo(u * 8, -u * 7.4, u * 10, -u * 1.8, u * 8.4, u * 3.2);
+    ctx.bezierCurveTo(u * 6.8, u * 6.6, -u * 6, u * 6.6, -u * 8, u * 3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = furStroke;
+    ctx.lineWidth = u * 0.5;
+    ctx.stroke();
+
+    // tête
+    const headX = u * 9.6,
+      headY = -u * 8.6;
+    const headR = u * 4.7;
+    const headGrad = ctx.createRadialGradient(
+      headX - headR * 0.3,
+      headY - headR * 0.3,
+      headR * 0.2,
+      headX,
+      headY,
+      headR * 1.25,
+    );
+    headGrad.addColorStop(0, '#fffdf6');
+    headGrad.addColorStop(1, '#ecdfc0');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = furStroke;
+    ctx.lineWidth = u * 0.45;
+    ctx.stroke();
+
+    // oreilles — se couchent en arrière au sprint, se dressent au saut,
+    // dégradé + pavillon interne rosé pour la profondeur.
+    const earLean = -0.32 + snareArc * 0.5 - Math.max(0, Math.sin(run)) * 0.09;
+    [-1, 1].forEach((side) => {
+      ctx.save();
+      ctx.translate(headX + side * headR * 0.4, headY - headR * 0.55);
+      ctx.rotate(side * 0.24 + earLean);
+      const earGrad = ctx.createLinearGradient(0, -headR * 2.35, 0, 0);
+      earGrad.addColorStop(0, '#fffdf6');
+      earGrad.addColorStop(1, '#ecdfc0');
+      ctx.fillStyle = earGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, -headR * 1.15, headR * 0.34, headR * 1.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = furStroke;
+      ctx.lineWidth = u * 0.35;
+      ctx.stroke();
+      ctx.fillStyle = '#ffc9d6';
+      ctx.beginPath();
+      ctx.ellipse(0, -headR * 1.1, headR * 0.17, headR * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // joue — petit renflement pour donner du volume au museau
+    ctx.fillStyle = '#fffdf6';
+    ctx.beginPath();
+    ctx.arc(headX + headR * 0.55, headY + headR * 0.45, headR * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+
+    // nez + bouche (s'ouvre au chomp) + moustaches
+    const mouthOpen = chomp * headR * 0.55;
+    ctx.save();
+    ctx.translate(headX + headR * 0.85, headY + headR * 0.25);
+    ctx.fillStyle = '#ff9e8f';
+    ctx.beginPath();
+    ctx.moveTo(0, -headR * 0.12);
+    ctx.quadraticCurveTo(headR * 0.16, 0, 0, headR * 0.12);
+    ctx.quadraticCurveTo(-headR * 0.16, 0, 0, -headR * 0.12);
+    ctx.fill();
+    ctx.strokeStyle = '#7a5230';
+    ctx.lineWidth = u * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(0, headR * 0.1);
+    ctx.lineTo(-headR * 0.05 - mouthOpen * 0.5, headR * 0.1 + mouthOpen);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,100,70,0.5)';
+    ctx.lineWidth = u * 0.25;
+    [-1, 1].forEach((s) => {
+      for (let i = 0; i < 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo(headR * 0.05, s * headR * 0.06 * (i + 1));
+        ctx.lineTo(headR * 0.75, s * headR * 0.24 * (i + 1));
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+
+    // œil avec reflet
+    ctx.fillStyle = '#2a1f14';
+    ctx.beginPath();
+    ctx.arc(headX + headR * 0.28, headY - headR * 0.08, headR * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(headX + headR * 0.33, headY - headR * 0.15, headR * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+
+    // patte avant — dessinée en dernier, au premier plan devant le corps
+    ctx.strokeStyle = '#ded2ae';
+    ctx.lineWidth = u * 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(u * 7.6, u * 1.5);
+    ctx.quadraticCurveTo(u * 7.6 + legSwingF * 0.4, u * 4.4, u * 7.6 + legSwingF, u * 6.6);
+    ctx.stroke();
+    ctx.fillStyle = '#ded2ae';
+    ctx.beginPath();
+    ctx.ellipse(u * 7.6 + legSwingF, u * 7, u * 1.25, u * 0.8, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
   }
 
   function drawVisualizer(ctx: CanvasRenderingContext2D, now: number) {
