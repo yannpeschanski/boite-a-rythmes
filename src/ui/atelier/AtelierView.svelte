@@ -9,6 +9,7 @@
   import DrumRowView from '../sequencer/DrumRowView.svelte';
   import StepCircle from '../sequencer/StepCircle.svelte';
   import TransportRings from '../sequencer/TransportRings.svelte';
+  import GeneralSequencer from '../sequencer/GeneralSequencer.svelte';
   import SynthModule from './SynthModule.svelte';
   import PresetPicker from './PresetPicker.svelte';
   import ExportBar from './ExportBar.svelte';
@@ -261,12 +262,13 @@
     <PresetPicker onApplied={refreshFx} />
   </div>
 
-  <!-- Le séquenceur pas-à-pas reste au même endroit sur Rythme et Effets,
-       hors des onglets exprès (pas besoin de revenir sur Rythme pour
-       l'éditer pendant qu'on ajuste les effets de bus). Retiré du Synthé
-       (PLAN.md §7, retour direct de Yann) : cette page ne travaille que sur
-       basse/nappe/mélodie, le séquenceur kick/snare/hat n'a rien à y faire. -->
-  {#if activeTab !== 'synthe'}
+  <!-- Le séquenceur pas-à-pas éditable reste sur Rythme, hors de l'onglet
+       exprès (pas besoin d'y revenir pour l'éditer pendant qu'on ajuste
+       autre chose). Retiré du Synthé (PLAN.md §7, retour de Yann) : cette
+       page ne travaille que sur basse/nappe/mélodie. Sur Effets, remplacé
+       par un aperçu combiné des 6 lignes plutôt que dupliquer juste la
+       batterie — les effets de bus touchent tout le mix (retour de Yann). -->
+  {#if activeTab === 'rythme'}
     <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
       {#if circleView}
         <div class="circle-holder">
@@ -280,6 +282,10 @@
         <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
       {/if}
+    </XpWindow>
+  {:else if activeTab === 'effets'}
+    <XpWindow title="Séquenceur général" icon="🎼" accent="teal">
+      <GeneralSequencer state={st} {playhead} {synthPlayhead} />
     </XpWindow>
   {/if}
 
