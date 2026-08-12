@@ -39,7 +39,7 @@
     melody: '#ff6bd6',
   };
 
-  let showSettings = $state(false);
+  let openGroups = $state({ sequence: false, oscillator: false, detune: false, filter: false, space: false });
 
   // Regroupement par paquets de 8 au-delà de 8 pas (port de
   // renderPacketizedRow) : une grille de 128 notes d'un bloc est illisible.
@@ -166,16 +166,17 @@
     {/each}
   </div>
 
-  <button class="more" onclick={() => (showSettings = !showSettings)}>
-    {showSettings ? '▾' : '▸'} ⚙️ Réglages
-  </button>
-  {#if showSettings}
-    <!-- Un paramètre par ligne plutôt que compressé en 2 colonnes : ce
-         panneau n'est visible qu'une fois déployé, pas de pression d'espace
-         comme sur les curseurs toujours affichés (retour de Yann). Regroupé
-         par encarts cohérents plutôt qu'une liste plate. -->
-    <fieldset>
-      <legend>Séquence</legend>
+  <!-- Un icône par groupe plutôt qu'un seul dépliable général (retour de
+       Yann) : chaque encart se déploie indépendamment. Un paramètre par
+       ligne à l'intérieur (pas de pression d'espace une fois replié par
+       défaut). -->
+  <fieldset>
+    <legend>
+      <button class="group-toggle" onclick={() => (openGroups.sequence = !openGroups.sequence)}>
+        {openGroups.sequence ? '▾' : '▸'} Séquence
+      </button>
+    </legend>
+    {#if openGroups.sequence}
       <XpSlider label="Cycles (mesures)" min={1} max={16} value={row.cycleBars}
         onchange={(v) => (row.cycleBars = v)} />
       <XpSlider label="Notes du cycle" min={1} max={128} value={row.subdivisions} onchange={resize} />
@@ -188,9 +189,15 @@
         <XpSlider label="Étalement" min={0} max={100} unit="%"
           value={Math.round((row.strum ?? 0) * 100)} onchange={(v) => (row.strum = v / 100)} />
       {/if}
-    </fieldset>
-    <fieldset>
-      <legend>Oscillateur & enveloppe</legend>
+    {/if}
+  </fieldset>
+  <fieldset>
+    <legend>
+      <button class="group-toggle" onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>
+        {openGroups.oscillator ? '▾' : '▸'} Oscillateur & enveloppe
+      </button>
+    </legend>
+    {#if openGroups.oscillator}
       <label>
         Onde
         <select bind:value={row.voice.type} onchange={() => onChanged?.()}>
@@ -223,9 +230,15 @@
       <XpSlider label="Sub" min={0} max={100} unit="%"
         value={Math.round((row.voice.subGain ?? 0) * 100)}
         onchange={(v) => { row.voice.subGain = v / 100; onChanged?.(); }} />
-    </fieldset>
-    <fieldset>
-      <legend>Détune & modulation</legend>
+    {/if}
+  </fieldset>
+  <fieldset>
+    <legend>
+      <button class="group-toggle" onclick={() => (openGroups.detune = !openGroups.detune)}>
+        {openGroups.detune ? '▾' : '▸'} Détune & modulation
+      </button>
+    </legend>
+    {#if openGroups.detune}
       <XpSlider label="Détune" min={0} max={30} unit=" c"
         value={row.voice.detuneCents ?? 0}
         onchange={(v) => { row.voice.detuneCents = v; onChanged?.(); }} />
@@ -238,9 +251,15 @@
       <XpSlider label="Vibrato" min={0} max={100} unit="%"
         value={Math.round((row.voice.vibratoDepth ?? 0) * 100)}
         onchange={(v) => { row.voice.vibratoDepth = v / 100; onChanged?.(); }} />
-    </fieldset>
-    <fieldset>
-      <legend>Filtre</legend>
+    {/if}
+  </fieldset>
+  <fieldset>
+    <legend>
+      <button class="group-toggle" onclick={() => (openGroups.filter = !openGroups.filter)}>
+        {openGroups.filter ? '▾' : '▸'} Filtre
+      </button>
+    </legend>
+    {#if openGroups.filter}
       <XpSlider label="Tone" min={0} max={100} unit="%"
         value={row.voice.tone ?? 0}
         onchange={(v) => { row.voice.tone = v; onChanged?.(); }} />
@@ -253,15 +272,21 @@
       <XpSlider label="Ferm. filtre" min={0} max={4000} step={20} unit=" ms"
         value={Math.round((row.voice.filterEnvRelease ?? 0) * 1000)}
         onchange={(v) => { row.voice.filterEnvRelease = v / 1000; onChanged?.(); }} />
-    </fieldset>
-    <fieldset>
-      <legend>Espace</legend>
+    {/if}
+  </fieldset>
+  <fieldset>
+    <legend>
+      <button class="group-toggle" onclick={() => (openGroups.space = !openGroups.space)}>
+        {openGroups.space ? '▾' : '▸'} Espace
+      </button>
+    </legend>
+    {#if openGroups.space}
       <XpSlider label="Réverbe" min={0} max={100} unit="%"
         value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
       <XpSlider label="Delay" min={0} max={100} unit="%"
         value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
-    </fieldset>
-  {/if}
+    {/if}
+  </fieldset>
 </div>
 
 <style>
@@ -428,23 +453,22 @@
     border: 1px solid var(--xp-line);
     background: #fff;
   }
-  .more {
+  fieldset {
+    border: 1px solid var(--xp-line);
+    margin: 5px 0;
+    padding: 0 6px 4px;
+  }
+  legend {
+    padding: 0;
+  }
+  .group-toggle {
     background: none;
     border: none;
-    color: var(--xp-muted);
+    color: var(--xp-accent-violet);
+    font-weight: 700;
     font-size: 11px;
     cursor: pointer;
     padding: 2px 0;
     font-family: inherit;
-  }
-  fieldset {
-    border: 1px solid var(--xp-line);
-    margin: 5px 0;
-    padding: 4px 6px;
-  }
-  legend {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--xp-accent-violet);
   }
 </style>

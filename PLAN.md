@@ -347,18 +347,26 @@ partage par URL existant, `stores/share.ts`).
    regroupé en encarts `<fieldset>` cohérents plutôt qu'une liste plate —
    drum : Séquence / Timbre / Filtre & espace ; synthé : Séquence /
    Oscillateur & enveloppe / Détune & modulation / Filtre / Espace
-   (`DrumRowView.svelte`, `SynthRowView.svelte`). Réglages avancés en 2e
+   (`DrumRowView.svelte`, `SynthRowView.svelte`) ; (c) chaque encart se
+   déploie désormais indépendamment plutôt qu'un seul repli général —
+   `<legend>` cliquable par `<fieldset>` (`openGroups` par nom de groupe,
+   remplace le booléen unique `showSettings`). Réglages avancés en 2e
    niveau de dépliable : pas encore fait, à voir à l'usage si le besoin se
    confirme.
-2. **✅ Retirer le séquenceur kick/snare/hat de l'onglet Synthé.** En
-   relisant `AtelierView.svelte` : ce n'était pas `TransportRings` (simple
-   rappel non éditable dans la barre sticky) mais le vrai séquenceur pas-à-
-   pas complet (`XpWindow "Séquenceur — Kick / Snare / Hat"`), rendu sans
+2. **✅ Retirer le séquenceur kick/snare/hat de l'onglet Synthé, et le
+   remplacer sur Effets par un aperçu combiné des 6 lignes.** En relisant
+   `AtelierView.svelte` : ce n'était pas `TransportRings` (simple rappel
+   non éditable dans la barre sticky) mais le vrai séquenceur pas-à-pas
+   complet (`XpWindow "Séquenceur — Kick / Snare / Hat"`), rendu sans
    condition d'onglet depuis une passe ergonomie précédente ("reste au même
-   endroit quel que soit l'onglet actif") — donc dupliqué sur Synthé alors
-   que cet onglet ne travaille que basse/nappe/mélodie. Repéré directement
-   dans le code plutôt que redemandé à Yann ; masqué uniquement sur Synthé,
-   conservé sur Rythme et Effets (pas mentionnés dans la demande).
+   endroit quel que soit l'onglet actif") — donc dupliqué sur Synthé ET sur
+   Effets, sans rapport avec le sujet de ces deux onglets. Repéré
+   directement dans le code plutôt que redemandé à Yann. Retiré de Synthé ;
+   sur Effets, remplacé (retour de Yann le jour même) par
+   `GeneralSequencer.svelte` — un aperçu en bandes colorées des 6 lignes
+   (batterie + synthé), même philosophie que `TransportRings` (lecture
+   seule, pas un second éditeur), en DOM plutôt qu'en canvas pour rester
+   cohérent avec le reste de l'Atelier.
 
 ### 7.3 Audit de parité avec l'original — jamais traité
 
