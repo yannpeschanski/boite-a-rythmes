@@ -26,6 +26,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
+  import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
   import {
@@ -46,6 +47,7 @@
   const st = $derived(pattern.state);
 
   let playing = $state(false);
+  let recording = $state(false);
   let breakArmed = $state(false);
   let fillArmed = $state(false);
   let rollHeld = $state<number | null>(null); // multiplicateur en cours (2/3/4), ou null
@@ -155,8 +157,20 @@
     saveLiveAssignments(assignments);
   }
 
+  function downloadCapture(buffer: AudioBuffer) {
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    downloadBlob(audioBufferToWavBlob(buffer), `rythme-live-${stamp}.wav`);
+  }
+
   async function togglePlay() {
     if (playing) {
+      // Un live take en cours n'a de sens que pendant la lecture — STOP le
+      // termine et livre le WAV plutôt que de le jeter silencieusement.
+      if (recording) {
+        const buffer = engine.stopCapture();
+        recording = false;
+        if (buffer) downloadCapture(buffer);
+      }
       engine.stop();
       playing = false;
       playhead = { kick: -1, snare: -1, hat: -1 };
@@ -164,6 +178,21 @@
     } else {
       await engine.start();
       playing = true;
+    }
+  }
+
+  // Bouton ⏺ REC du Mode Live : start/stop au bouton (pas de durée fixée en
+  // mesures comme l'enregistrement de l'Atelier) — capture tout ce qui est
+  // réellement joué (triggers/pad/inclinaison compris), voir PLAN.md §7.
+  async function toggleRecord() {
+    if (!playing) return;
+    if (recording) {
+      const buffer = engine.stopCapture();
+      recording = false;
+      if (buffer) downloadCapture(buffer);
+    } else {
+      await engine.startCapture();
+      recording = true;
     }
   }
 
@@ -527,6 +556,12 @@
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
+    // Quitter le Mode Live (×) pendant un enregistrement en cours livre quand
+    // même le WAV plutôt que de le jeter — même geste que STOP (togglePlay).
+    if (recording) {
+      const buffer = engine.stopCapture();
+      if (buffer) downloadCapture(buffer);
+    }
     engine.stop();
   });
 </script>
@@ -549,8 +584,17 @@
       </div>
       <div class="topbar">
         <button class="amp-btn stop" onclick={togglePlay}>{playing ? '■ STOP' : '▶ PLAY'}</button>
+        <button
+          class="amp-btn rec"
+          class:on={recording}
+          disabled={!playing}
+          onclick={toggleRecord}
+          title={playing ? "Enregistrer le live take en WAV" : 'Lance PLAY pour pouvoir enregistrer'}
+        >
+          <span class="rec-dot"></span>{recording ? 'REC…' : 'REC'}
+        </button>
         <div class="lcd-block">
-          <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}</span>
+          <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}</span>
           <span class="lcd-sub">TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD</span>
         </div>
         <button class="tilt-btn" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
@@ -899,6 +943,38 @@
     padding: 4px 0;
     opacity: 0.45;
     cursor: not-allowed;
+  }
+  .amp-btn.rec {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .amp-btn.rec:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .amp-btn.rec .rec-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7a2a20;
+  }
+  .amp-btn.rec.on {
+    color: #ff8f7a;
+  }
+  .amp-btn.rec.on .rec-dot {
+    background: #ff3b30;
+    box-shadow: 0 0 5px #ff3b30;
+    animation: rec-pulse 1s ease-in-out infinite;
+  }
+  @keyframes rec-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
   }
 
   .main {

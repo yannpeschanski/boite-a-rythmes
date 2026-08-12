@@ -281,14 +281,15 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   sur le splash et le switcher) ; les features supplémentaires ci-dessous
   restent à l'état d'idées.
 
-  **⏭️ Prochain à faire : bouton d'enregistrement du live take.** Capturer en
-  WAV ce qui est vraiment joué en Mode Live (triggers/pad/inclinaison
-  compris), pas juste le pattern de base — réutilise `LiveRecorder` déjà
-  écrit pour l'enregistrement direct de l'Atelier (`AudioEngine.
-  startLiveRecording`), même principe de tap sur `finalGain`. Contrairement à
-  l'enregistrement de l'Atelier (durée fixée en mesures à l'avance), un live
-  take n'a pas de durée connue d'avance — il faut probablement démarrer/
-  arrêter l'enregistrement au bouton plutôt que sur un nombre de mesures fixe.
+  **✅ Bouton d'enregistrement du live take.** Capture en WAV ce qui est
+  vraiment joué en Mode Live (triggers/pad/inclinaison compris), pas juste le
+  pattern de base — réutilise `LiveRecorder` déjà écrit pour l'enregistrement
+  direct de l'Atelier, même principe de tap sur `finalGain`, mais via deux
+  nouvelles méthodes d'instance (`AudioEngine.startCapture`/`stopCapture`)
+  plutôt que `startLiveRecording` (durée fixée en mesures, inadaptée ici) :
+  start/stop au bouton ⏺ REC du topbar (actif seulement pendant PLAY), et
+  filet de sécurité si la lecture s'arrête (STOP ou sortie du Mode Live)
+  pendant une capture en cours — le WAV est quand même livré plutôt que jeté.
 
   **Catalogue de paramètres à étendre, et randomisation.** Aujourd'hui
   l'assignation (phase 3) ne couvre que 8 actions et 2 axes (filtre/reverb)

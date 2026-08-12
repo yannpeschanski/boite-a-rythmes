@@ -140,6 +140,16 @@ export class AudioEngine {
     this.breakWindow = null;
     this.fillRequested = false;
     this.forcedFillBar = null;
+    // Filet de sécurité : si un live take était en cours de capture sans
+    // avoir été arrêté explicitement (STOP pressé pendant l'enregistrement),
+    // on détache proprement le tap plutôt que de laisser des nœuds pendus
+    // sur un contexte sur le point d'être fermé. L'appelant qui veut le WAV
+    // doit appeler stopCapture() lui-même AVANT stop() pour récupérer le
+    // buffer — ici on jette juste le résultat.
+    if (this.liveRecorder) {
+      this.liveRecorder.stop();
+      this.liveRecorder = null;
+    }
     // Couper vraiment les oscillateurs synthé déjà programmés (release
     // jusqu'à 4s qui continueraient de coûter du CPU), puis recréer le
     // contexte au prochain start() — le moyen le plus sûr de couper net
@@ -302,6 +312,31 @@ export class AudioEngine {
     }
     this.playheadQueue = remaining;
     return due;
+  }
+
+  // Mode Live — enregistrement du live take (PLAN.md §7) : contrairement à
+  // startLiveRecording ci-dessous (durée fixée en mesures, relance la
+  // lecture depuis le début), ici la lecture est déjà en cours et n'a pas de
+  // durée connue d'avance — start/stop au bouton, sur le graphe qui tourne
+  // déjà. Même principe de tap sur finalGain (post-limiteur/soft-clip).
+  async startCapture(): Promise<void> {
+    if (!this.ctx || !this.graph || this.liveRecorder) return;
+    const recorder = new LiveRecorder();
+    await recorder.start(this.ctx, this.graph.finalGain);
+    this.liveRecorder = recorder;
+  }
+
+  get isCapturing(): boolean {
+    return this.liveRecorder !== null;
+  }
+
+  // Renvoie null si aucune capture n'était en cours (bouton relâché deux
+  // fois, ou lecture arrêtée entretemps sans capture démarrée).
+  stopCapture(): AudioBuffer | null {
+    if (!this.liveRecorder) return null;
+    const buffer = this.liveRecorder.stop();
+    this.liveRecorder = null;
+    return buffer;
   }
 
   // Enregistrement du direct : démarre une lecture depuis le tout début du
