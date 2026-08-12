@@ -295,6 +295,23 @@
   const LINE_COLOR = { ...DRUM_COLOR, ...SYNTH_COLOR } as Record<DrumRowName | SynthRowName, string>;
   const LINE_NAMES = [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES] as (DrumRowName | SynthRowName)[];
 
+  // Position 0..1 (grave → aigu) de chaque ligne dans le spectre décoratif de
+  // viz① — pas une vraie analyse fréquentielle (les AnalyserNode du graphe
+  // sont volontairement en fftSize minimal, voir graph.ts), un classement
+  // approximatif du registre de chaque élément pour donner un vrai look de
+  // spectre plutôt que 6 barres pleine hauteur redondantes avec le
+  // séquenceur linéaire juste au-dessus.
+  const LINE_EQ_POS: Record<DrumRowName | SynthRowName, number> = {
+    kick: 0.03,
+    bass: 0.22,
+    snare: 0.42,
+    pad: 0.58,
+    hat: 0.78,
+    melody: 0.95,
+  };
+  const EQ_BAR_COUNT = 22;
+  const EQ_SIGMA = 0.26; // étalement de la cloche : plusieurs barres voisines réagissent à un même élément
+
   let linCanvas: HTMLCanvasElement = $state()!;
   let vizCanvas: HTMLCanvasElement = $state()!;
   let raf = 0;
@@ -370,18 +387,25 @@
     });
   }
 
-  // VU-mètre par ligne — niveau crête réel (AudioEngine.getLineLevels(),
-  // lui-même lu depuis les AnalyserNode ajoutés au graphe), avec un
-  // relâchement exponentiel côté UI pour un rebond lisible plutôt qu'un
-  // clignotement pas-à-pas.
+  // Égaliseur — PLAN.md §7 (« à refaire ») : la première version faisait une
+  // barre pleine hauteur par ligne, ce qui doublonnait le séquenceur linéaire
+  // juste au-dessus. Ici : EQ_BAR_COUNT barres façon spectre, CHACUNE
+  // composée de petits segments empilés représentant la contribution des 6
+  // éléments à cet instant — pas une barre = une ligne. Chaque ligne pèse
+  // sur toutes les barres via une cloche centrée sur sa position dans
+  // LINE_EQ_POS (grave → aigu) : les barres proches de sa position montrent
+  // un gros segment, les lointaines un segment minuscule voire nul — ça
+  // donne un vrai relief de spectre à partir des 6 niveaux réels (pas de
+  // fausse donnée), avec le même relâchement exponentiel qu'avant pour le
+  // rebond.
   function drawVizBars(ctx: CanvasRenderingContext2D) {
     const r = vizCanvas.getBoundingClientRect();
     const w = r.width,
       h = r.height;
     ctx.clearRect(0, 0, w, h);
     const levels = engine.getLineLevels();
-    const barW = w / LINE_NAMES.length;
-    LINE_NAMES.forEach((name, i) => {
+    const boosted: Partial<Record<DrumRowName | SynthRowName, number>> = {};
+    LINE_NAMES.forEach((name) => {
       const raw = levels[name] ?? 0;
       const prev = levelSmooth[name] ?? 0;
       const smoothed = Math.max(raw, prev * 0.88);
@@ -389,15 +413,28 @@
       // Boost d'affichage : les crêtes réelles mesurées avant le bus/limiteur
       // final tournent souvent bien en dessous de 1.0 (~0.05-0.3) — sans ce
       // facteur, les barres resteraient quasi invisibles pour un pattern normal.
-      const boosted = Math.min(1, smoothed * 3.5);
-      const barH = boosted * h * 0.95;
-      if (barH < 1) return;
-      const x = i * barW + 2;
-      const bw = Math.max(1, barW - 4);
-      ctx.fillStyle = LINE_COLOR[name];
-      roundRectPath(ctx, x, h - barH, bw, barH, 3);
-      ctx.fill();
+      boosted[name] = Math.min(1, smoothed * 3.5);
     });
+    const barW = w / EQ_BAR_COUNT;
+    const bw = Math.max(1, barW - 2);
+    const segGap = 1;
+    for (let i = 0; i < EQ_BAR_COUNT; i++) {
+      const barPos = i / (EQ_BAR_COUNT - 1);
+      const x = i * barW + 1;
+      let y = h;
+      const top = h * 0.05;
+      for (const name of LINE_NAMES) {
+        const d = barPos - LINE_EQ_POS[name];
+        const weight = Math.exp(-(d * d) / (2 * EQ_SIGMA * EQ_SIGMA));
+        const raw = (boosted[name] ?? 0) * weight * h * 0.95;
+        const segH = Math.max(0, Math.min(raw - segGap, y - top));
+        if (segH < 1) continue;
+        ctx.fillStyle = LINE_COLOR[name];
+        roundRectPath(ctx, x, y - segH, bw, segH, 1.5);
+        ctx.fill();
+        y -= segH + segGap;
+      }
+    }
   }
 
   // ---- Viz ② et ③ (phase 4) — mises de côté en phase 2 au profit des
