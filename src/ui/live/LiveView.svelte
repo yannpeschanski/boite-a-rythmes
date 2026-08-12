@@ -32,17 +32,17 @@
   import {
     actionById,
     axisById,
-    cycleAction,
-    cycleAxis,
-    cycleViz,
     loadLiveAssignments,
     saveLiveAssignments,
     vizById,
     LIVE_ACTIONS,
     LIVE_AXES,
+    AXIS_GROUPS,
+    LIVE_VIZ,
     SLOT_COUNT,
     type LiveActionId,
     type LiveAxisId,
+    type LiveVizId,
   } from './liveActions';
 
   let { onExit }: { onExit: () => void } = $props();
@@ -178,17 +178,34 @@
     runAction(assignments.slots[i], false);
   }
 
-  function cycleSlot(i: number) {
-    assignments.slots[i] = cycleAction(assignments.slots[i]);
-    saveLiveAssignments(assignments);
+  // Panneau de sélection (remplace le cycle pas-à-pas, catalogue trop large
+  // depuis l'extension PLAN.md §7 — Yann : « je voulais choisir dans une
+  // liste ») : une ligne d'assignation ouvre `picker`, plutôt que de cycler
+  // sur place, avec la liste complète des options (groupée par catégorie
+  // pour les axes) ; un tap dedans committe et referme le panneau.
+  type Picker = { kind: 'slot'; index: number } | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' } | { kind: 'viz' };
+  let picker = $state<Picker | null>(null);
+
+  function commitAction(id: LiveActionId) {
+    if (picker?.kind === 'slot') {
+      assignments.slots[picker.index] = id;
+      saveLiveAssignments(assignments);
+    }
+    picker = null;
   }
-  function cycleAxisAssign(which: 'axisX' | 'axisY' | 'axisTilt') {
-    assignments[which] = cycleAxis(assignments[which]);
-    saveLiveAssignments(assignments);
+  function commitAxis(id: LiveAxisId) {
+    if (picker?.kind === 'axis') {
+      assignments[picker.which] = id;
+      saveLiveAssignments(assignments);
+    }
+    picker = null;
   }
-  function cycleVizAssign() {
-    assignments.viz = cycleViz(assignments.viz);
-    saveLiveAssignments(assignments);
+  function commitViz(id: LiveVizId) {
+    if (picker?.kind === 'viz') {
+      assignments.viz = id;
+      saveLiveAssignments(assignments);
+    }
+    picker = null;
   }
 
   function downloadCapture(buffer: AudioBuffer) {
@@ -285,61 +302,15 @@
   // aussi bien pour le son que pour la lecture affichée : sans ce state
   // partagé, l'inclinaison changerait le son sans que les bandes ambrées ne
   // bougent, ce qui serait trompeur.
-  let axisValues = $state<Record<LiveAxisId, number>>(
-    Object.fromEntries(LIVE_AXES.map((a) => [a.id, 0.5])) as Record<LiveAxisId, number>,
-  );
+  let axisValues = $state<Record<LiveAxisId, number>>(Object.fromEntries(LIVE_AXES.map((a) => [a.id, 0.5])));
 
   // Le paramètre assigné à chaque axe (filtre par défaut en X, reverb en Y,
-  // réassignables depuis l'overlay ⚙, catalogue étendu PLAN.md §7). Les
-  // grandeurs en Hz/Q utilisent une courbe exponentielle plutôt que linéaire,
-  // plus naturelle à l'oreille pour un balayage — même principe que le
-  // filtre d'origine (200 Hz étouffé à 20 kHz grand ouvert).
+  // réassignables depuis l'overlay ⚙, catalogue étendu PLAN.md §7). Chaque
+  // entrée du catalogue sait déjà quoi faire de la valeur 0..1 (courbe,
+  // plage, quelle méthode d'AudioEngine appeler) — plus de switch ici.
   function applyAxisValue(axisId: LiveAxisId, value01: number) {
     axisValues[axisId] = value01;
-    switch (axisId) {
-      case 'filter':
-        engine.setLiveFilterCutoff(200 * Math.pow(20000 / 200, value01));
-        break;
-      case 'reverb':
-        engine.setLiveReverbWet(value01);
-        break;
-      case 'saturation':
-        engine.setLiveSaturation(value01);
-        break;
-      case 'bitcrush':
-        engine.setLiveBitcrush(value01);
-        break;
-      case 'compression':
-        engine.setLiveCompression(value01);
-        break;
-      case 'volume':
-        engine.setLiveVolume(value01);
-        break;
-      case 'delay-feedback':
-        engine.setLiveDelayFeedback(value01);
-        break;
-      case 'sidechain-depth':
-        engine.setLiveSidechainDepth(value01);
-        break;
-      case 'cutoff-bass':
-        engine.setLiveSynthCutoff('bass', 100 * Math.pow(4000 / 100, value01));
-        break;
-      case 'cutoff-pad':
-        engine.setLiveSynthCutoff('pad', 100 * Math.pow(4000 / 100, value01));
-        break;
-      case 'cutoff-melody':
-        engine.setLiveSynthCutoff('melody', 100 * Math.pow(4000 / 100, value01));
-        break;
-      case 'resonance-bass':
-        engine.setLiveSynthResonance('bass', 0.3 * Math.pow(12 / 0.3, value01));
-        break;
-      case 'resonance-pad':
-        engine.setLiveSynthResonance('pad', 0.3 * Math.pow(12 / 0.3, value01));
-        break;
-      case 'resonance-melody':
-        engine.setLiveSynthResonance('melody', 0.3 * Math.pow(12 / 0.3, value01));
-        break;
-    }
+    axisById(axisId).apply(engine, value01);
   }
 
   // Les deux paramètres sont inversés pour l'axe Y du pad (haut du pad =
@@ -1045,30 +1016,67 @@
             <div class="assign-list">
               {#each assignments.slots as actionId, i (i)}
                 {@const a = actionById(actionId)}
-                <button class="assign-row" onclick={() => cycleSlot(i)}>
+                <button class="assign-row" onclick={() => (picker = { kind: 'slot', index: i })}>
                   <span class="assign-row-label">BOUTON {i + 1}</span>
                   <span class="assign-row-val" style:color={a.color}>{a.label}</span>
                 </button>
               {/each}
-              <button class="assign-row" onclick={() => cycleAxisAssign('axisX')}>
+              <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisX' })}>
                 <span class="assign-row-label">PAD — AXE X (↔)</span>
                 <span class="assign-row-val">{axisById(assignments.axisX).label}</span>
               </button>
-              <button class="assign-row" onclick={() => cycleAxisAssign('axisY')}>
+              <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisY' })}>
                 <span class="assign-row-label">PAD — AXE Y (↕)</span>
                 <span class="assign-row-val">{axisById(assignments.axisY).label}</span>
               </button>
-              <button class="assign-row" onclick={() => cycleAxisAssign('axisTilt')}>
+              <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisTilt' })}>
                 <span class="assign-row-label">INCLINAISON</span>
                 <span class="assign-row-val">{axisById(assignments.axisTilt).label}</span>
               </button>
-              <button class="assign-row" onclick={cycleVizAssign}>
+              <button class="assign-row" onclick={() => (picker = { kind: 'viz' })}>
                 <span class="assign-row-label">VISUALISEUR</span>
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
             </div>
             <button class="amp-btn assign-close" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>
           </div>
+
+          {#if picker}
+            {@const currentActionId = picker.kind === 'slot' ? assignments.slots[picker.index] : null}
+            {@const currentAxisId = picker.kind === 'axis' ? assignments[picker.which] : null}
+            <div class="picker-card">
+              <h4>
+                {picker.kind === 'slot' ? `BOUTON ${picker.index + 1}` : picker.kind === 'viz' ? 'VISUALISEUR' : 'PARAMÈTRE'}
+              </h4>
+              <div class="picker-list">
+                {#if picker.kind === 'slot'}
+                  {#each LIVE_ACTIONS as a (a.id)}
+                    <button class="picker-row" class:current={a.id === currentActionId} onclick={() => commitAction(a.id)}>
+                      <span class="picker-dot" style:background={a.color}></span>
+                      <span class="picker-label">{a.label}</span>
+                      <span class="picker-desc">{a.desc}</span>
+                    </button>
+                  {/each}
+                {:else if picker.kind === 'axis'}
+                  {#each AXIS_GROUPS as group (group.name)}
+                    <div class="picker-group">{group.name}</div>
+                    {#each group.items as ax (ax.id)}
+                      <button class="picker-row" class:current={ax.id === currentAxisId} onclick={() => commitAxis(ax.id)}>
+                        <span class="picker-label">{ax.label}</span>
+                      </button>
+                    {/each}
+                  {/each}
+                {:else}
+                  {#each LIVE_VIZ as v (v.id)}
+                    <button class="picker-row" class:current={v.id === assignments.viz} onclick={() => commitViz(v.id)}>
+                      <span class="picker-label">{v.label}</span>
+                    </button>
+                  {/each}
+                {/if}
+              </div>
+              <button class="amp-btn picker-close" onclick={() => (picker = null)}>ANNULER</button>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
@@ -1613,6 +1621,82 @@
     color: var(--amp-text);
   }
   .assign-close {
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  /* ---- Panneau de sélection (catalogue étendu, PLAN.md §7) — recouvre la
+     carte d'assignation plutôt que de cycler sur place, trop de paramètres
+     pour ça désormais (55 axes + 9 actions). ---- */
+  .picker-card {
+    position: absolute;
+    inset: 10px;
+    background: linear-gradient(180deg, var(--amp-bg-1), var(--amp-bg-3));
+    border: 1px solid var(--amp-line);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  }
+  .picker-card h4 {
+    margin: 0 0 8px;
+    font-size: 10px;
+    color: var(--amp-text);
+    letter-spacing: 0.06em;
+  }
+  .picker-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .picker-group {
+    margin-top: 6px;
+    font-size: 7.5px;
+    color: var(--amp-lcd-dim);
+    letter-spacing: 0.08em;
+  }
+  .picker-group:first-child {
+    margin-top: 0;
+  }
+  .picker-row {
+    font-family: inherit;
+    font-size: 9.5px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--amp-text);
+    background: var(--amp-bg-2);
+    border: 1px solid var(--amp-line);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-align: left;
+  }
+  .picker-row:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  .picker-row.current {
+    box-shadow: 0 0 0 2px var(--amp-amber);
+  }
+  .picker-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .picker-label {
+    font-weight: 700;
+  }
+  .picker-desc {
+    font-size: 8px;
+    color: #9aa0a6;
+    font-weight: 400;
+  }
+  .picker-close {
     margin-top: 10px;
     width: 100%;
   }

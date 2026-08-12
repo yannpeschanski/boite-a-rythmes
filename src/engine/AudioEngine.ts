@@ -3,7 +3,7 @@
 // tout ce qui tombe dans les 0.25s à venir sur l'horloge audioCtx.currentTime
 // (jamais setTimeout). SCHEDULE_AHEAD élargi (était 0.12) : plus de tolérance
 // si le fil principal est occupé un instant.
-import type { PatternStateV2, DrumRowName, SynthRowName } from '../model/types';
+import type { PatternStateV2, DrumRowName, SynthRowName, SynthVoice, SynthRowState } from '../model/types';
 import { buildGraph, applyMixSettings, type GraphNodes } from './graph';
 import { DrumKit } from './voices/drums';
 import { SynthKit } from './voices/synth';
@@ -48,13 +48,16 @@ export class AudioEngine {
   private forcedFillBar: number | null = null;
   private liveHatRoll: number | null = null;
   // Catalogue étendu (PLAN.md §7) : sidechain n'a pas de nœud continu (juste
-  // une valeur relue à chaque déclenchement, voir triggerSidechainDuck) et
-  // cutoff/résonance synthé sont posés PAR NOTE (chaque voix crée son propre
-  // filtre au déclenchement, voir voices/synth.ts) plutôt que sur un nœud
-  // permanent modulable — un override par ligne appliqué juste avant chaque
-  // fenêtre de scheduling (withLiveSynthOverrides) plutôt qu'un nœud dédié.
+  // une valeur relue à chaque déclenchement, voir triggerSidechainDuck) ; le
+  // groove (swing/traîne/ghost/fill) et les réglages de voix synthé sont des
+  // champs d'état simples relus à chaque fenêtre de scheduling plutôt que des
+  // nœuds de graphe — un override appliqué juste avant chaque fenêtre
+  // (withLiveOverrides) plutôt qu'un nœud dédié à construire pour chacun.
   private liveSidechainDepth: number | null = null;
-  private liveSynthOverride: Partial<Record<SynthRowName, { cutoff?: number; resonance?: number }>> = {};
+  private liveGrooveOverride: Partial<Pick<PatternStateV2, 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity'>> = {};
+  private liveSynthOverride: Partial<
+    Record<SynthRowName, { voice?: Partial<SynthVoice>; glide?: number; strum?: number }>
+  > = {};
   // Évite de réassigner `.curve` (WaveShaper) à la même valeur arrondie à
   // chaque frame de drag du pad — la réassignation est un changement discret
   // de la table de correspondance, pas interpolé comme un AudioParam.
@@ -114,20 +117,34 @@ export class AudioEngine {
     if (triggered) this.triggerSidechainDuck(time);
   }
 
-  // Applique les overrides de voix synthé du Mode Live (cutoff/résonance par
-  // ligne) à un clone superficiel de l'état, jamais au store — comme
+  // Applique les overrides du Mode Live (groove global + voix/ligne synthé
+  // par ligne) à un clone superficiel de l'état, jamais au store — comme
   // liveMute, un override relâché ou un STOP retrouve les réglages de
   // l'Atelier intacts. No-op (retourne `state` tel quel) si rien n'est
   // overridé, pour ne payer aucun coût hors Mode Live.
-  private withLiveSynthOverrides(state: PatternStateV2): PatternStateV2 {
-    if (Object.keys(this.liveSynthOverride).length === 0) return state;
-    const synthRows = { ...state.synthRows };
-    (Object.keys(this.liveSynthOverride) as SynthRowName[]).forEach((name) => {
-      const ov = this.liveSynthOverride[name];
-      if (!ov) return;
-      synthRows[name] = { ...synthRows[name], voice: { ...synthRows[name].voice, ...ov } };
-    });
-    return { ...state, synthRows };
+  private withLiveOverrides(state: PatternStateV2): PatternStateV2 {
+    const hasGroove = Object.keys(this.liveGrooveOverride).length > 0;
+    const hasSynth = Object.keys(this.liveSynthOverride).length > 0;
+    if (!hasGroove && !hasSynth) return state;
+    let next = state;
+    if (hasGroove) next = { ...next, ...this.liveGrooveOverride };
+    if (hasSynth) {
+      const synthRows = { ...next.synthRows };
+      (Object.keys(this.liveSynthOverride) as SynthRowName[]).forEach((name) => {
+        const ov = this.liveSynthOverride[name];
+        if (!ov) return;
+        const rowOverride: Partial<SynthRowState> = {};
+        if (ov.glide !== undefined) rowOverride.glide = ov.glide;
+        if (ov.strum !== undefined) rowOverride.strum = ov.strum;
+        synthRows[name] = {
+          ...synthRows[name],
+          ...rowOverride,
+          voice: ov.voice ? { ...synthRows[name].voice, ...ov.voice } : synthRows[name].voice,
+        };
+      });
+      next = { ...next, synthRows };
+    }
+    return next;
   }
 
   // latencyHint 'playback' : robustesse (Bluetooth notamment) plutôt que
@@ -303,16 +320,36 @@ export class AudioEngine {
     this.liveSidechainDepth = amount01;
   }
 
-  // Cutoff/résonance par ligne synthé — posés PAR NOTE (chaque voix crée son
-  // propre BiquadFilterNode au déclenchement, voices/synth.ts), donc pas de
-  // nœud permanent à modulateur ici : l'override est relu à la prochaine
-  // note programmée (voir withLiveSynthOverrides).
-  setLiveSynthCutoff(name: SynthRowName, hz: number): void {
-    this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], cutoff: hz } };
+  // Groove global (swing/traîne/densité de ghost notes/intensité de fill) —
+  // relu à chaque fenêtre de scheduling (withLiveOverrides), jamais écrit
+  // dans le pattern : mêmes champs que les curseurs Groove de l'Atelier,
+  // mêmes unités (0..100, voir AtelierView.svelte).
+  setLiveGrooveParam(key: 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity', value: number): void {
+    this.liveGrooveOverride = { ...this.liveGrooveOverride, [key]: value };
   }
 
-  setLiveSynthResonance(name: SynthRowName, q: number): void {
-    this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], resonance: q } };
+  // Réglages de voix synthé par ligne — posés PAR NOTE (chaque voix crée son
+  // propre BiquadFilterNode/gain au déclenchement, voices/synth.ts), donc pas
+  // de nœud permanent à moduler ici : l'override est relu à la prochaine
+  // note programmée (voir withLiveOverrides). Un seul setter générique plutôt
+  // qu'une méthode par champ de SynthVoice (cutoff, résonance, attack,
+  // release, detune…) — le catalogue (liveActions.ts) sait déjà quel champ
+  // il pilote.
+  setLiveSynthVoiceParam<K extends keyof SynthVoice>(name: SynthRowName, key: K, value: SynthVoice[K]): void {
+    this.liveSynthOverride = {
+      ...this.liveSynthOverride,
+      [name]: { ...this.liveSynthOverride[name], voice: { ...this.liveSynthOverride[name]?.voice, [key]: value } },
+    };
+  }
+
+  // Glide et étalement (strum, nappe seulement) vivent sur la ligne, pas
+  // dans SynthVoice — même principe, mêmes unités que row.glide/row.strum
+  // (0..1, voir SynthRowView.svelte).
+  setLiveSynthRowParam(name: SynthRowName, key: 'glide' | 'strum', value: number): void {
+    this.liveSynthOverride = {
+      ...this.liveSynthOverride,
+      [name]: { ...this.liveSynthOverride[name], [key]: value },
+    };
   }
 
   // Niveau crête 0..1 par ligne (batterie + synthé), lu à chaque frame par le
@@ -340,7 +377,7 @@ export class AudioEngine {
     const graph = this.graph;
     const kit = this.kit;
     if (!ctx || !graph || !kit || !this.isPlaying) return;
-    const state = this.getState();
+    const state = this.withLiveOverrides(this.getState());
     const now = ctx.currentTime;
     const barDur = barDuration(state.tempo);
 
@@ -381,7 +418,7 @@ export class AudioEngine {
     if (this.synth) {
       scheduleSynthWindow(
         {
-          state: this.withLiveSynthOverrides(state),
+          state,
           synth: this.synth,
           cursors: this.synthCursors,
           rng: Math.random,

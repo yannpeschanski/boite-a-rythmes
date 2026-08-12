@@ -1,8 +1,13 @@
-// Catalogue des actions assignables du Mode Live (phase 3, PLAN.md §7) — un
-// bouton/axe ne code plus en dur "ce qu'il fait", il pointe vers une de ces
-// définitions, et l'association est modifiable depuis l'overlay ⚙ puis
-// persistée. Séparé de LiveView.svelte pour que le catalogue et sa
-// validation restent testables sans monter le composant.
+// Catalogue des actions/axes assignables du Mode Live (phase 3, PLAN.md §7)
+// — un bouton/axe ne code plus en dur "ce qu'il fait", il pointe vers une de
+// ces définitions, et l'association est modifiable depuis l'overlay ⚙ (liste
+// scrollable groupée par catégorie plutôt qu'un cycle pas à pas — le
+// catalogue est trop large pour ça depuis l'extension PLAN.md §7) puis
+// persistée. Type-only import d'AudioEngine (érasé à la compilation) : le
+// catalogue reste des données pures, testable sans monter le composant ni
+// instancier de contexte audio.
+import type { AudioEngine } from '../../engine/AudioEngine';
+import type { SynthRowName } from '../../model/types';
 
 export type LiveActionId =
   | 'break'
@@ -41,47 +46,199 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger' },
 ];
 
-export type LiveAxisId =
-  | 'filter'
-  | 'reverb'
-  | 'saturation'
-  | 'bitcrush'
-  | 'compression'
-  | 'volume'
-  | 'delay-feedback'
-  | 'sidechain-depth'
-  | 'cutoff-bass'
-  | 'cutoff-pad'
-  | 'cutoff-melody'
-  | 'resonance-bass'
-  | 'resonance-pad'
-  | 'resonance-melody';
+// Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
+// Yann : « une liste assez longue ») : groove, bus batterie, mix, et la quasi
+// totalité des réglages de voix synthé par ligne, plutôt qu'un sous-ensemble
+// choisi pour nous. `id` reste une chaîne simple (pas un union littéral géant
+// à maintenir à la main) : les entrées par ligne synthé sont générées, et la
+// validité est de toute façon vérifiée à l'exécution (AXIS_IDS) — même
+// principe que pour la persistance localStorage plus bas.
+export type LiveAxisId = string;
 
 export interface LiveAxisDef {
   id: LiveAxisId;
   label: string;
+  // Regroupement dans le panneau de sélection (voir AssignPicker côté UI) —
+  // pas de catégorie = liste plate (utilisé pour les macros historiques).
+  category?: string;
+  // Le catalogue sait lui-même quoi faire de la valeur 0..1 (courbe, plage,
+  // quel setter d'AudioEngine appeler) — LiveView n'a plus qu'à appeler
+  // axisById(id).apply(engine, value01).
+  apply: (engine: AudioEngine, value01: number) => void;
 }
 
-// Les 2 premiers existaient depuis la phase 2 ; les 12 suivants étendent le
-// catalogue (PLAN.md §7) — saturation/bitcrush/compression sont des effets du
-// bus DRUM uniquement (voir globalSaturation/globalBitcrush/globalCompression,
-// model/types.ts), pas du mix entier.
+const linMap = (min: number, max: number, value01: number) => min + (max - min) * value01;
+const expMap = (min: number, max: number, value01: number) => min * Math.pow(max / min, value01);
+
+const LINE_LABEL: Record<SynthRowName, string> = { bass: 'BASSE', pad: 'NAPPE', melody: 'MÉLODIE' };
+const LINE_SHORT: Record<SynthRowName, string> = { bass: 'BASSE', pad: 'NAPPE', melody: 'MÉLO' };
+
+// 14 réglages par ligne synthé (+ étalement pour la nappe seule) — mêmes
+// champs, mêmes plages et mêmes unités que SynthRowView.svelte (Atelier),
+// pour que ce que fait le pad corresponde à ce que montrerait le curseur
+// équivalent. Cutoff/résonance/enveloppe de filtre en courbe exponentielle
+// (plus naturel à l'oreille pour un balayage), le reste en linéaire.
+function synthAxesFor(name: SynthRowName): LiveAxisDef[] {
+  const category = LINE_LABEL[name];
+  const s = LINE_SHORT[name];
+  const defs: LiveAxisDef[] = [
+    {
+      id: `cutoff-${name}`,
+      label: `CUTOFF ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'cutoff', expMap(100, 4000, v)),
+    },
+    {
+      id: `resonance-${name}`,
+      label: `RÉSO ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'resonance', expMap(0.3, 12, v)),
+    },
+    {
+      id: `attack-${name}`,
+      label: `ATTACK ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'attack', linMap(0, 0.2, v)),
+    },
+    {
+      id: `release-${name}`,
+      label: `RELEASE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'release', linMap(0, 4, v)),
+    },
+    {
+      id: `subgain-${name}`,
+      label: `SUB ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'subGain', v),
+    },
+    {
+      id: `detune-${name}`,
+      label: `DÉTUNE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'detuneCents', linMap(0, 30, v)),
+    },
+    {
+      id: `detune-mix-${name}`,
+      label: `MIX DÉT. ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'detuneGain', v),
+    },
+    {
+      id: `chorus-${name}`,
+      label: `CHORUS ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'chorusMix', v),
+    },
+    {
+      id: `vibrato-${name}`,
+      label: `VIBRATO ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'vibratoDepth', v),
+    },
+    {
+      id: `vibrato-rate-${name}`,
+      label: `VIB. RATE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'vibratoRate', linMap(1, 12, v)),
+    },
+    {
+      id: `tone-${name}`,
+      label: `TONE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'tone', linMap(0, 100, v)),
+    },
+    {
+      id: `filter-env-${name}`,
+      label: `ENV. FILTRE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'filterEnvAmount', linMap(0, 4000, v)),
+    },
+    {
+      id: `filter-env-release-${name}`,
+      label: `FERM. FILTRE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'filterEnvRelease', linMap(0, 4, v)),
+    },
+    {
+      id: `glide-${name}`,
+      label: `GLIDE ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthRowParam(name, 'glide', v),
+    },
+  ];
+  if (name === 'pad') {
+    defs.push({
+      id: 'strum-pad',
+      label: 'ÉTALEMENT',
+      category,
+      apply: (e, v) => e.setLiveSynthRowParam('pad', 'strum', v),
+    });
+  }
+  return defs;
+}
+
 export const LIVE_AXES: LiveAxisDef[] = [
-  { id: 'filter', label: 'FILTRE' },
-  { id: 'reverb', label: 'REVERB' },
-  { id: 'saturation', label: 'SAT. BATT.' },
-  { id: 'bitcrush', label: 'CRUSH BATT.' },
-  { id: 'compression', label: 'COMP. BATT.' },
-  { id: 'volume', label: 'VOLUME' },
-  { id: 'delay-feedback', label: 'DELAY FB' },
-  { id: 'sidechain-depth', label: 'SIDECHAIN' },
-  { id: 'cutoff-bass', label: 'CUT. BASSE' },
-  { id: 'cutoff-pad', label: 'CUT. NAPPE' },
-  { id: 'cutoff-melody', label: 'CUT. MÉLO' },
-  { id: 'resonance-bass', label: 'RÉSO BASSE' },
-  { id: 'resonance-pad', label: 'RÉSO NAPPE' },
-  { id: 'resonance-melody', label: 'RÉSO MÉLO' },
+  // Macros live historiques (phase 2) — nœuds de graphe dédiés
+  // (liveFilter/liveReverbSend, graph.ts), toujours neutres ailleurs.
+  { id: 'filter', label: 'FILTRE', apply: (e, v) => e.setLiveFilterCutoff(expMap(200, 20000, v)) },
+  { id: 'reverb', label: 'REVERB', apply: (e, v) => e.setLiveReverbWet(v) },
+
+  // Groove — mêmes champs/unités que les curseurs Groove de l'Atelier.
+  { id: 'swing', label: 'SWING', category: 'GROOVE', apply: (e, v) => e.setLiveGrooveParam('swing', linMap(0, 75, v)) },
+  { id: 'drag', label: 'TRAÎNE', category: 'GROOVE', apply: (e, v) => e.setLiveGrooveParam('drag', linMap(0, 30, v)) },
+  {
+    id: 'ghost-density',
+    label: 'GHOST NOTES',
+    category: 'GROOVE',
+    apply: (e, v) => e.setLiveGrooveParam('ghostDensity', linMap(0, 40, v)),
+  },
+  {
+    id: 'fill-intensity',
+    label: 'INT. FILL',
+    category: 'GROOVE',
+    apply: (e, v) => e.setLiveGrooveParam('fillIntensity', linMap(0, 100, v)),
+  },
+
+  // Bus DRUM uniquement (globalSaturation/globalBitcrush/globalCompression,
+  // model/types.ts) — pas le mix entier.
+  { id: 'saturation', label: 'SATUR. BATT.', category: 'BUS BATTERIE', apply: (e, v) => e.setLiveSaturation(v) },
+  { id: 'bitcrush', label: 'CRUSH BATT.', category: 'BUS BATTERIE', apply: (e, v) => e.setLiveBitcrush(v) },
+  { id: 'compression', label: 'COMP. BATT.', category: 'BUS BATTERIE', apply: (e, v) => e.setLiveCompression(v) },
+
+  // Mix global.
+  { id: 'volume', label: 'VOLUME', category: 'MIX', apply: (e, v) => e.setLiveVolume(v) },
+  { id: 'delay-feedback', label: 'DELAY FB', category: 'MIX', apply: (e, v) => e.setLiveDelayFeedback(v) },
+  { id: 'sidechain-depth', label: 'SIDECHAIN', category: 'MIX', apply: (e, v) => e.setLiveSidechainDepth(v) },
+
+  // Voix synthé, une catégorie par ligne.
+  ...synthAxesFor('bass'),
+  ...synthAxesFor('pad'),
+  ...synthAxesFor('melody'),
 ];
+
+// LIVE_AXES groupé par catégorie, dans l'ordre d'apparition — pour le
+// panneau de sélection (trop d'entrées pour une liste plate lisible). Les
+// deux macros historiques (filtre/reverb, sans catégorie) forment un groupe
+// "MACRO" implicite en tête de liste.
+export interface LiveAxisGroup {
+  name: string;
+  items: LiveAxisDef[];
+}
+
+export const AXIS_GROUPS: LiveAxisGroup[] = (() => {
+  const order: string[] = [];
+  const byName = new Map<string, LiveAxisDef[]>();
+  for (const axis of LIVE_AXES) {
+    const name = axis.category ?? 'MACRO';
+    if (!byName.has(name)) {
+      byName.set(name, []);
+      order.push(name);
+    }
+    byName.get(name)!.push(axis);
+  }
+  return order.map((name) => ({ name, items: byName.get(name)! }));
+})();
 
 // Les 3 visualiseurs explorés dans la maquette (proposition-Mode-Live) — un
 // seul retenu au départ (①, phase 2), les deux autres ajoutés en option ici
@@ -171,19 +328,4 @@ export function axisById(id: LiveAxisId): LiveAxisDef {
 
 export function vizById(id: LiveVizId): LiveVizDef {
   return LIVE_VIZ.find((v) => v.id === id)!;
-}
-
-export function cycleAction(current: LiveActionId): LiveActionId {
-  const idx = LIVE_ACTIONS.findIndex((a) => a.id === current);
-  return LIVE_ACTIONS[(idx + 1) % LIVE_ACTIONS.length].id;
-}
-
-export function cycleAxis(current: LiveAxisId): LiveAxisId {
-  const idx = LIVE_AXES.findIndex((a) => a.id === current);
-  return LIVE_AXES[(idx + 1) % LIVE_AXES.length].id;
-}
-
-export function cycleViz(current: LiveVizId): LiveVizId {
-  const idx = LIVE_VIZ.findIndex((v) => v.id === current);
-  return LIVE_VIZ[(idx + 1) % LIVE_VIZ.length].id;
 }
