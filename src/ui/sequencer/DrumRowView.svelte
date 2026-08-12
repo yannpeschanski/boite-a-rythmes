@@ -107,16 +107,27 @@
     {showSettings ? '▾' : '▸'} ⚙️ Réglages
   </button>
   {#if showSettings}
-    <div class="row-settings">
+    <!-- Un paramètre par ligne plutôt que compressé en 2 colonnes : ce
+         panneau n'est visible qu'une fois déployé, pas de pression d'espace
+         comme sur les curseurs toujours affichés (retour de Yann). Regroupé
+         par encarts cohérents plutôt qu'une liste plate. -->
+    <fieldset>
+      <legend>Séquence</legend>
       <XpSlider label="Pas" min={1} max={32} bind:value={row.subdiv} />
       <XpSlider label="Décalage" min={-50} max={50} unit="%" bind:value={row.shiftPct} />
       <XpSlider label="Volume" min={0} max={100} unit="%"
         value={Math.round(row.volume * 100)}
         onchange={(v) => (row.volume = v / 100)} />
+    </fieldset>
+    <fieldset>
+      <legend>Timbre</legend>
       <XpSlider label="Pitch" min={-24} max={24} unit=" ½t" bind:value={row.pitch} />
       <XpSlider label="Attaque" min={0} max={100} bind:value={row.attack} />
       <XpSlider label="Decay" min={-50} max={50} bind:value={row.decay} />
       <XpSlider label="Tone" min={-100} max={100} bind:value={row.tone} />
+    </fieldset>
+    <fieldset>
+      <legend>Filtre & espace</legend>
       <XpSlider label="Filtre passe-bas" min={200} max={20000} step={100} unit=" Hz"
         bind:value={row.filterCutoff} />
       <XpSlider label="Réverbe" min={0} max={100} unit="%"
@@ -125,7 +136,7 @@
       <XpSlider label="Delay" min={0} max={100} unit="%"
         value={Math.round(row.delaySend * 100)}
         onchange={(v) => { row.delaySend = v / 100; onFxChanged?.(); }} />
-    </div>
+    </fieldset>
   {/if}
 </div>
 
@@ -250,12 +261,6 @@
     border-radius: 2px;
     padding: 0 2px;
   }
-  .row-settings {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-    gap: 0 10px;
-    margin-top: 3px;
-  }
   .more {
     background: none;
     border: none;
@@ -264,5 +269,15 @@
     cursor: pointer;
     padding: 2px 0;
     font-family: inherit;
+  }
+  fieldset {
+    border: 1px solid var(--xp-line);
+    margin: 5px 0;
+    padding: 4px 6px;
+  }
+  legend {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--xp-accent-amber);
   }
 </style>

@@ -332,12 +332,18 @@ partage par URL existant, `stores/share.ts`).
    utile à 390px de viewport, contre ~260-300px requis avant pour
    déclencher 2 colonnes). Les labels longs tronqués un peu plus
    agressivement (déjà le comportement existant, juste plus fréquent).
-   Complété ensuite (retour de Yann le jour même) : les réglages
+   Complété ensuite (deux retours de Yann le jour même) : (a) les réglages
    « toujours visibles » (Pas/Décalage/Volume en drum, Cycles/Notes/
    Décalage/Volume/Glide/… en synthé) fusionnés dans le même dépliable
-   `▸ ⚙️ Réglages` que Timbre/filtre/espace, plutôt que deux blocs
-   distincts — un seul repli par ligne, tout caché par défaut
-   (`DrumRowView.svelte`, `SynthRowView.svelte`).
+   `▸ ⚙️ Réglages` que Timbre/filtre/espace, un seul repli par ligne, tout
+   caché par défaut ; (b) une fois déployé, un paramètre par ligne plutôt
+   que 2 colonnes (plus de pression d'espace une fois masqué par défaut) et
+   regroupé en encarts `<fieldset>` cohérents plutôt qu'une liste plate —
+   drum : Séquence / Timbre / Filtre & espace ; synthé : Séquence /
+   Oscillateur & enveloppe / Détune & modulation / Filtre / Espace
+   (`DrumRowView.svelte`, `SynthRowView.svelte`). Réglages avancés en 2e
+   niveau de dépliable : pas encore fait, à voir à l'usage si le besoin se
+   confirme.
 2. **✅ Retirer le séquenceur kick/snare/hat de l'onglet Synthé.** En
    relisant `AtelierView.svelte` : ce n'était pas `TransportRings` (simple
    rappel non éditable dans la barre sticky) mais le vrai séquenceur pas-à-
