@@ -28,7 +28,8 @@ export type LiveActionId =
   | 'roll-hat-x2'
   | 'roll-hat-x3'
   | 'roll-hat-x4'
-  | 'bypass-limiters';
+  | 'bypass-limiters'
+  | 'solo-melody';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -79,6 +80,13 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   // Coupe le limiteur de sécurité final le temps d'un geste — même valeurs
   // enabled/disabled que le réglage de l'Atelier (graph.ts, buildGraph).
   { id: 'bypass-limiters', label: 'BYPASS LIM.', color: '#ff5a5a', desc: 'Bypass limiteurs (bascule)', kind: 'toggle', category: 'MIX' },
+
+  // Maintenu : le temps de l'appui, le pad joue la mélodie au doigt
+  // (glisser = degré de gamme + octave, tapoter = une note) au lieu de ses
+  // axes habituels, et la mélodie programmée est coupée en direct pour ne
+  // pas se télescoper avec ce qui est joué à la main (LiveView.svelte,
+  // AudioEngine.playLiveMelodyNote/liveSetSynthMute).
+  { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE' },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
@@ -304,21 +312,27 @@ export const LIVE_VIZ: LiveVizDef[] = [
 
 export const SLOT_COUNT = 6;
 
+// Chaque bouton/axe peut désormais porter PLUSIEURS entrées du catalogue à la
+// fois (PLAN.md §7, retour de Yann : « on peut assigner plusieurs paramètres
+// à un même contrôleur ») — un bouton peut déclencher plusieurs actions d'un
+// coup, un axe peut piloter plusieurs paramètres ensemble (macro). Toujours
+// au moins une entrée par slot/axe : jamais de tableau vide, sinon le
+// panneau de sélection perdrait toute trace de ce qui est assigné.
 export interface LiveAssignments {
-  slots: LiveActionId[]; // longueur SLOT_COUNT
-  axisX: LiveAxisId;
-  axisY: LiveAxisId;
+  slots: LiveActionId[][]; // longueur SLOT_COUNT, chaque slot = 1+ actions
+  axisX: LiveAxisId[];
+  axisY: LiveAxisId[];
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
   // tant que le bouton TILT n'est pas activé côté capteur.
-  axisTilt: LiveAxisId;
+  axisTilt: LiveAxisId[];
   viz: LiveVizId;
 }
 
 const DEFAULT_ASSIGNMENTS: LiveAssignments = {
-  slots: ['break', 'fill', 'mute-kick', 'mute-snare', 'mute-hat', 'roll-hat-x2'],
-  axisX: 'filter',
-  axisY: 'reverb',
-  axisTilt: 'filter',
+  slots: [['break'], ['fill'], ['mute-kick'], ['mute-snare'], ['mute-hat'], ['roll-hat-x2']],
+  axisX: ['filter'],
+  axisY: ['reverb'],
+  axisTilt: ['filter'],
   viz: 'bars',
 };
 
@@ -327,32 +341,40 @@ const ACTION_IDS = new Set(LIVE_ACTIONS.map((a) => a.id));
 const AXIS_IDS = new Set(LIVE_AXES.map((a) => a.id));
 const VIZ_IDS = new Set(LIVE_VIZ.map((v) => v.id));
 
+function isValidAxisList(v: unknown): v is LiveAxisId[] {
+  return Array.isArray(v) && v.length > 0 && v.every((id) => AXIS_IDS.has(id));
+}
+
 function isValid(v: unknown): v is LiveAssignments {
   if (!v || typeof v !== 'object') return false;
   const a = v as Partial<LiveAssignments>;
   return (
     Array.isArray(a.slots) &&
     a.slots.length === SLOT_COUNT &&
-    a.slots.every((id) => ACTION_IDS.has(id as LiveActionId)) &&
-    !!a.axisX &&
-    AXIS_IDS.has(a.axisX) &&
-    !!a.axisY &&
-    AXIS_IDS.has(a.axisY) &&
-    !!a.axisTilt &&
-    AXIS_IDS.has(a.axisTilt) &&
+    a.slots.every((s) => Array.isArray(s) && s.length > 0 && s.every((id) => ACTION_IDS.has(id as LiveActionId))) &&
+    isValidAxisList(a.axisX) &&
+    isValidAxisList(a.axisY) &&
+    isValidAxisList(a.axisTilt) &&
     !!a.viz &&
     VIZ_IDS.has(a.viz)
   );
 }
 
+// Chaque slot/axe contient désormais des tableaux (référence, pas valeur) —
+// un simple spread ne suffit plus à isoler une copie de DEFAULT_ASSIGNMENTS,
+// muter assignments.slots[0] muterait le tableau par défaut partagé.
+function freshDefaults(): LiveAssignments {
+  return structuredClone(DEFAULT_ASSIGNMENTS);
+}
+
 export function loadLiveAssignments(): LiveAssignments {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { ...DEFAULT_ASSIGNMENTS, slots: [...DEFAULT_ASSIGNMENTS.slots] };
+    if (!raw) return freshDefaults();
     const parsed = JSON.parse(raw);
-    return isValid(parsed) ? parsed : { ...DEFAULT_ASSIGNMENTS, slots: [...DEFAULT_ASSIGNMENTS.slots] };
+    return isValid(parsed) ? parsed : freshDefaults();
   } catch {
-    return { ...DEFAULT_ASSIGNMENTS, slots: [...DEFAULT_ASSIGNMENTS.slots] };
+    return freshDefaults();
   }
 }
 
@@ -370,6 +392,15 @@ export function actionById(id: LiveActionId): LiveActionDef {
 
 export function axisById(id: LiveAxisId): LiveAxisDef {
   return LIVE_AXES.find((a) => a.id === id)!;
+}
+
+// Helpers pluriels — un slot/axe porte désormais 1+ entrées du catalogue.
+export function actionsFor(ids: LiveActionId[]): LiveActionDef[] {
+  return ids.map((id) => actionById(id));
+}
+
+export function axesFor(ids: LiveAxisId[]): LiveAxisDef[] {
+  return ids.map((id) => axisById(id));
 }
 
 export function vizById(id: LiveVizId): LiveVizDef {

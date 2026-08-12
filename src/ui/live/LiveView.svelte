@@ -29,9 +29,12 @@
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
+  import { degreeFreq } from '../../engine/harmony';
   import {
     actionById,
     axisById,
+    actionsFor,
+    axesFor,
     loadLiveAssignments,
     saveLiveAssignments,
     vizById,
@@ -70,6 +73,12 @@
   // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
   // réel du pattern.
   let limitersBypassed = $state(false);
+  // SOLO MÉLO (maintenu) : pendant que c'est tenu, le pad joue la mélodie au
+  // doigt au lieu de ses axes habituels — voir padPointerDown/Move. Dernière
+  // fréquence jouée gardée hors réactivité (juste pour le glide, pas pour
+  // l'affichage) — reset à chaque nouvelle prise du bouton.
+  let soloMelodyHeld = $state(false);
+  let lastMelodyFreq: number | null = null;
 
   let assignments = $state(loadLiveAssignments());
   let assignOpen = $state(false);
@@ -128,6 +137,8 @@
         return rollHeld.hat === 4;
       case 'bypass-limiters':
         return limitersBypassed;
+      case 'solo-melody':
+        return soloMelodyHeld;
       default:
         return false;
     }
@@ -216,6 +227,11 @@
       case 'bypass-limiters':
         if (on) toggleLimitersBypass();
         break;
+      case 'solo-melody':
+        soloMelodyHeld = on;
+        engine.liveSetSynthMute('melody', on);
+        if (on) lastMelodyFreq = null;
+        break;
       case 'chaos':
         if (on) triggerChaos();
         break;
@@ -229,56 +245,69 @@
   // l'inclinaison, la lecture (bandes ambrées) se met à jour normalement.
   function triggerChaos() {
     const axis = LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)];
-    applyAxisValue(axis.id, Math.random());
+    applyAxisValue([axis.id], Math.random());
   }
 
   // Bouton 🔀 (séparé, PLAN.md §7 — piste "brasser") : réassigne aléatoirement
   // tout le catalogue d'un coup plutôt que de choisir soi-même via l'overlay
   // ⚙ — un "surprends-moi" complémentaire du chaos ci-dessus, qui lui ne
-  // change QUE la valeur d'un paramètre sans toucher aux associations.
+  // change QUE la valeur d'un paramètre sans toucher aux associations. Un
+  // seul élément par slot/axe (pas de combo aléatoire) : le multi-paramètre
+  // est un choix délibéré via le panneau de sélection, pas une surprise.
   function shuffleAssignments() {
     const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
     const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
     assignments = {
       ...assignments,
-      slots: Array.from({ length: SLOT_COUNT }, pickAction),
-      axisX: pickAxis(),
-      axisY: pickAxis(),
-      axisTilt: pickAxis(),
+      slots: Array.from({ length: SLOT_COUNT }, () => [pickAction()]),
+      axisX: [pickAxis()],
+      axisY: [pickAxis()],
+      axisTilt: [pickAxis()],
     };
     saveLiveAssignments(assignments);
   }
 
   function onSlotDown(i: number) {
     pressed = { ...pressed, [i]: true };
-    runAction(assignments.slots[i], true);
+    assignments.slots[i].forEach((id) => runAction(id, true));
   }
   function onSlotUp(i: number) {
     pressed = { ...pressed, [i]: false };
-    runAction(assignments.slots[i], false);
+    assignments.slots[i].forEach((id) => runAction(id, false));
   }
 
   // Panneau de sélection (remplace le cycle pas-à-pas, catalogue trop large
   // depuis l'extension PLAN.md §7 — Yann : « je voulais choisir dans une
   // liste ») : une ligne d'assignation ouvre `picker`, plutôt que de cycler
   // sur place, avec la liste complète des options (groupée par catégorie
-  // pour les axes) ; un tap dedans committe et referme le panneau.
+  // pour les axes). Multi-sélection (PLAN.md §7, retour de Yann : « on peut
+  // assigner plusieurs paramètres à un même contrôleur ») : un tap BASCULE
+  // l'entrée dans le slot/axe plutôt que de committer-et-fermer, on referme
+  // explicitement une fois fini. Toujours au moins une entrée par slot/axe —
+  // retirer la dernière est un no-op silencieux plutôt qu'un slot vide.
   type Picker = { kind: 'slot'; index: number } | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' } | { kind: 'viz' };
   let picker = $state<Picker | null>(null);
 
-  function commitAction(id: LiveActionId) {
-    if (picker?.kind === 'slot') {
-      assignments.slots[picker.index] = id;
-      saveLiveAssignments(assignments);
+  function toggleActionInSlot(id: LiveActionId) {
+    if (picker?.kind !== 'slot') return;
+    const current = assignments.slots[picker.index];
+    if (current.includes(id)) {
+      if (current.length > 1) assignments.slots[picker.index] = current.filter((x) => x !== id);
+    } else {
+      assignments.slots[picker.index] = [...current, id];
     }
-    picker = null;
+    saveLiveAssignments(assignments);
   }
-  function commitAxis(id: LiveAxisId) {
-    if (picker?.kind === 'axis') {
-      assignments[picker.which] = id;
-      saveLiveAssignments(assignments);
+  function toggleAxisInSlot(id: LiveAxisId) {
+    if (picker?.kind !== 'axis') return;
+    const which = picker.which;
+    const current = assignments[which];
+    if (current.includes(id)) {
+      if (current.length > 1) assignments[which] = current.filter((x) => x !== id);
+    } else {
+      assignments[which] = [...current, id];
     }
-    picker = null;
+    saveLiveAssignments(assignments);
   }
   function commitViz(id: LiveVizId) {
     if (picker?.kind === 'viz') {
@@ -384,13 +413,35 @@
   // bougent, ce qui serait trompeur.
   let axisValues = $state<Record<LiveAxisId, number>>(Object.fromEntries(LIVE_AXES.map((a) => [a.id, 0.5])));
 
-  // Le paramètre assigné à chaque axe (filtre par défaut en X, reverb en Y,
-  // réassignables depuis l'overlay ⚙, catalogue étendu PLAN.md §7). Chaque
-  // entrée du catalogue sait déjà quoi faire de la valeur 0..1 (courbe,
-  // plage, quelle méthode d'AudioEngine appeler) — plus de switch ici.
-  function applyAxisValue(axisId: LiveAxisId, value01: number) {
-    axisValues[axisId] = value01;
-    axisById(axisId).apply(engine, value01);
+  // Le ou les paramètres assignés à chaque axe (filtre par défaut en X,
+  // reverb en Y, réassignables depuis l'overlay ⚙, catalogue étendu
+  // PLAN.md §7). Un axe peut piloter plusieurs paramètres à la fois (retour
+  // de Yann : « assigner plusieurs paramètres à un même contrôleur ») — même
+  // valeur 0..1 appliquée à chacun, en macro. Chaque entrée du catalogue
+  // sait déjà quoi faire de cette valeur (courbe, plage, quelle méthode
+  // d'AudioEngine appeler) — plus de switch ici.
+  function applyAxisValue(axisIds: LiveAxisId[], value01: number) {
+    for (const axisId of axisIds) {
+      axisValues[axisId] = value01;
+      axisById(axisId).apply(engine, value01);
+    }
+  }
+
+  // SOLO MÉLO tenu : le pad ne pilote plus ses axes habituels, il joue la
+  // mélodie au doigt — X quantisé en 7 zones = degré de la gamme courante,
+  // Y en tiers = octave (même inversion « haut du pad = plus haut » que pour
+  // les axes normaux ci-dessous). Ne redéclenche que si la zone a changé,
+  // pour qu'un doigt immobile ne répète pas la note ; le glissé d'une zone à
+  // l'autre glisse via glideFrom (playLiveMelodyNote), comme un pas à pas.
+  function playSoloMelody(px: number, py: number) {
+    const degree = Math.min(7, Math.floor(px * 7) + 1);
+    const yInverted = 1 - py;
+    const octave = yInverted < 1 / 3 ? -1 : yInverted < 2 / 3 ? 0 : 1;
+    const freq = degreeFreq(st, degree, octave, 0);
+    if (freq !== lastMelodyFreq) {
+      engine.playLiveMelodyNote(freq, lastMelodyFreq);
+      lastMelodyFreq = freq;
+    }
   }
 
   // Les deux paramètres sont inversés pour l'axe Y du pad (haut du pad =
@@ -398,6 +449,10 @@
   function setPad(clientX: number, clientY: number, rect: DOMRect) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    if (soloMelodyHeld) {
+      playSoloMelody(padX, padY);
+      return;
+    }
     applyAxisValue(assignments.axisX, padX);
     applyAxisValue(assignments.axisY, 1 - padY);
   }
@@ -1036,19 +1091,21 @@
       {/if}
       <div class="main">
         <div class="buttons">
-          {#each assignments.slots as actionId, i (i)}
-            {@const a = actionById(actionId)}
+          {#each assignments.slots as actionIds, i (i)}
+            {@const defs = actionsFor(actionIds)}
             <button
               class="abtn"
               class:pressed={pressed[i]}
-              class:active={isActionActive(actionId)}
+              class:active={actionIds.some((id) => isActionActive(id))}
               onpointerdown={() => onSlotDown(i)}
               onpointerup={() => onSlotUp(i)}
               onpointerleave={() => onSlotUp(i)}
             >
-              <span class="dot" style:background={a.color}></span>
-              <span>{a.label}</span>
-              <span class="assign-label">{a.desc}</span>
+              <span class="dot-row">
+                {#each defs as d (d.id)}<span class="dot" style:background={d.color}></span>{/each}
+              </span>
+              <span>{defs.map((d) => d.label).join(' + ')}</span>
+              {#if defs.length === 1}<span class="assign-label">{defs[0].desc}</span>{/if}
             </button>
           {/each}
         </div>
@@ -1066,7 +1123,7 @@
           <div
             class="pad"
             role="slider"
-            aria-label="{axisById(assignments.axisX).label} / {axisById(assignments.axisY).label}"
+            aria-label="{axesFor(assignments.axisX).map((a) => a.label).join(' + ')} / {axesFor(assignments.axisY).map((a) => a.label).join(' + ')}"
             aria-valuenow={Math.round(padX * 100)}
             tabindex="0"
             onpointerdown={(e) => padPointerDown(e, e.currentTarget as HTMLDivElement)}
@@ -1077,14 +1134,14 @@
           </div>
           <div class="eq-readout">
             <div class="eq-band">
-              <span class="eq-lbl">{axisById(assignments.axisX).label}</span>
-              <div class="eq-track"><div class="eq-fill" style:width="{axisValues[assignments.axisX] * 100}%"></div></div>
-              <span class="eq-val">{Math.round(axisValues[assignments.axisX] * 100)}%</span>
+              <span class="eq-lbl">{axesFor(assignments.axisX).map((a) => a.label).join(' + ')}</span>
+              <div class="eq-track"><div class="eq-fill" style:width="{axisValues[assignments.axisX[0]] * 100}%"></div></div>
+              <span class="eq-val">{Math.round(axisValues[assignments.axisX[0]] * 100)}%</span>
             </div>
             <div class="eq-band">
-              <span class="eq-lbl">{axisById(assignments.axisY).label}</span>
-              <div class="eq-track"><div class="eq-fill" style:width="{axisValues[assignments.axisY] * 100}%"></div></div>
-              <span class="eq-val">{Math.round(axisValues[assignments.axisY] * 100)}%</span>
+              <span class="eq-lbl">{axesFor(assignments.axisY).map((a) => a.label).join(' + ')}</span>
+              <div class="eq-track"><div class="eq-fill" style:width="{axisValues[assignments.axisY[0]] * 100}%"></div></div>
+              <span class="eq-val">{Math.round(axisValues[assignments.axisY[0]] * 100)}%</span>
             </div>
           </div>
         </div>
@@ -1094,24 +1151,24 @@
           <div class="assign-card">
             <h4>ASSIGNATION</h4>
             <div class="assign-list">
-              {#each assignments.slots as actionId, i (i)}
-                {@const a = actionById(actionId)}
+              {#each assignments.slots as actionIds, i (i)}
+                {@const defs = actionsFor(actionIds)}
                 <button class="assign-row" onclick={() => (picker = { kind: 'slot', index: i })}>
                   <span class="assign-row-label">BOUTON {i + 1}</span>
-                  <span class="assign-row-val" style:color={a.color}>{a.label}</span>
+                  <span class="assign-row-val" style:color={defs[0].color}>{defs.map((d) => d.label).join(' + ')}</span>
                 </button>
               {/each}
               <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisX' })}>
                 <span class="assign-row-label">PAD — AXE X (↔)</span>
-                <span class="assign-row-val">{axisById(assignments.axisX).label}</span>
+                <span class="assign-row-val">{axesFor(assignments.axisX).map((a) => a.label).join(' + ')}</span>
               </button>
               <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisY' })}>
                 <span class="assign-row-label">PAD — AXE Y (↕)</span>
-                <span class="assign-row-val">{axisById(assignments.axisY).label}</span>
+                <span class="assign-row-val">{axesFor(assignments.axisY).map((a) => a.label).join(' + ')}</span>
               </button>
               <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisTilt' })}>
                 <span class="assign-row-label">INCLINAISON</span>
-                <span class="assign-row-val">{axisById(assignments.axisTilt).label}</span>
+                <span class="assign-row-val">{axesFor(assignments.axisTilt).map((a) => a.label).join(' + ')}</span>
               </button>
               <button class="assign-row" onclick={() => (picker = { kind: 'viz' })}>
                 <span class="assign-row-label">VISUALISEUR</span>
@@ -1122,18 +1179,23 @@
           </div>
 
           {#if picker}
-            {@const currentActionId = picker.kind === 'slot' ? assignments.slots[picker.index] : null}
-            {@const currentAxisId = picker.kind === 'axis' ? assignments[picker.which] : null}
+            {@const currentActionIds = picker.kind === 'slot' ? assignments.slots[picker.index] : []}
+            {@const currentAxisIds = picker.kind === 'axis' ? assignments[picker.which] : []}
             <div class="picker-card">
               <h4>
                 {picker.kind === 'slot' ? `BOUTON ${picker.index + 1}` : picker.kind === 'viz' ? 'VISUALISEUR' : 'PARAMÈTRE'}
+                {#if picker.kind !== 'viz'}<span class="picker-hint">— plusieurs possibles</span>{/if}
               </h4>
               <div class="picker-list">
                 {#if picker.kind === 'slot'}
                   {#each ACTION_GROUPS as group (group.name)}
                     <div class="picker-group">{group.name}</div>
                     {#each group.items as a (a.id)}
-                      <button class="picker-row" class:current={a.id === currentActionId} onclick={() => commitAction(a.id)}>
+                      <button
+                        class="picker-row"
+                        class:current={currentActionIds.includes(a.id)}
+                        onclick={() => toggleActionInSlot(a.id)}
+                      >
                         <span class="picker-dot" style:background={a.color}></span>
                         <span class="picker-label">{a.label}</span>
                         <span class="picker-desc">{a.desc}</span>
@@ -1144,7 +1206,11 @@
                   {#each AXIS_GROUPS as group (group.name)}
                     <div class="picker-group">{group.name}</div>
                     {#each group.items as ax (ax.id)}
-                      <button class="picker-row" class:current={ax.id === currentAxisId} onclick={() => commitAxis(ax.id)}>
+                      <button
+                        class="picker-row"
+                        class:current={currentAxisIds.includes(ax.id)}
+                        onclick={() => toggleAxisInSlot(ax.id)}
+                      >
                         <span class="picker-label">{ax.label}</span>
                       </button>
                     {/each}
@@ -1157,7 +1223,7 @@
                   {/each}
                 {/if}
               </div>
-              <button class="amp-btn picker-close" onclick={() => (picker = null)}>ANNULER</button>
+              <button class="amp-btn picker-close" onclick={() => (picker = null)}>FERMÉ</button>
             </div>
           {/if}
         </div>
@@ -1494,6 +1560,10 @@
   .abtn.active {
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--amp-amber);
   }
+  .abtn .dot-row {
+    display: flex;
+    gap: 2px;
+  }
   .abtn .dot {
     width: 6px;
     height: 6px;
@@ -1727,6 +1797,12 @@
     font-size: 10px;
     color: var(--amp-text);
     letter-spacing: 0.06em;
+  }
+  .picker-hint {
+    font-weight: 400;
+    color: var(--amp-lcd-dim);
+    text-transform: none;
+    letter-spacing: normal;
   }
   .picker-list {
     flex: 1;
