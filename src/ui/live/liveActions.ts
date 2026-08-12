@@ -28,7 +28,8 @@ export type LiveActionId =
   | 'roll-hat-x2'
   | 'roll-hat-x3'
   | 'roll-hat-x4'
-  | 'bypass-limiters';
+  | 'bypass-limiters'
+  | 'solo-melody';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -79,6 +80,13 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   // Coupe le limiteur de sécurité final le temps d'un geste — même valeurs
   // enabled/disabled que le réglage de l'Atelier (graph.ts, buildGraph).
   { id: 'bypass-limiters', label: 'BYPASS LIM.', color: '#ff5a5a', desc: 'Bypass limiteurs (bascule)', kind: 'toggle', category: 'MIX' },
+
+  // Maintenu : le temps de l'appui, le pad joue la mélodie au doigt
+  // (glisser = degré de gamme + octave, tapoter = une note) au lieu de ses
+  // axes habituels, et la mélodie programmée est coupée en direct pour ne
+  // pas se télescoper avec ce qui est joué à la main (LiveView.svelte,
+  // AudioEngine.playLiveMelodyNote/liveSetSynthMute).
+  { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE' },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de

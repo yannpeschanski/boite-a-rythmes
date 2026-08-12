@@ -29,6 +29,7 @@
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
+  import { degreeFreq } from '../../engine/harmony';
   import {
     actionById,
     axisById,
@@ -72,6 +73,12 @@
   // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
   // réel du pattern.
   let limitersBypassed = $state(false);
+  // SOLO MÉLO (maintenu) : pendant que c'est tenu, le pad joue la mélodie au
+  // doigt au lieu de ses axes habituels — voir padPointerDown/Move. Dernière
+  // fréquence jouée gardée hors réactivité (juste pour le glide, pas pour
+  // l'affichage) — reset à chaque nouvelle prise du bouton.
+  let soloMelodyHeld = $state(false);
+  let lastMelodyFreq: number | null = null;
 
   let assignments = $state(loadLiveAssignments());
   let assignOpen = $state(false);
@@ -130,6 +137,8 @@
         return rollHeld.hat === 4;
       case 'bypass-limiters':
         return limitersBypassed;
+      case 'solo-melody':
+        return soloMelodyHeld;
       default:
         return false;
     }
@@ -217,6 +226,11 @@
         break;
       case 'bypass-limiters':
         if (on) toggleLimitersBypass();
+        break;
+      case 'solo-melody':
+        soloMelodyHeld = on;
+        engine.liveSetSynthMute('melody', on);
+        if (on) lastMelodyFreq = null;
         break;
       case 'chaos':
         if (on) triggerChaos();
@@ -413,11 +427,32 @@
     }
   }
 
+  // SOLO MÉLO tenu : le pad ne pilote plus ses axes habituels, il joue la
+  // mélodie au doigt — X quantisé en 7 zones = degré de la gamme courante,
+  // Y en tiers = octave (même inversion « haut du pad = plus haut » que pour
+  // les axes normaux ci-dessous). Ne redéclenche que si la zone a changé,
+  // pour qu'un doigt immobile ne répète pas la note ; le glissé d'une zone à
+  // l'autre glisse via glideFrom (playLiveMelodyNote), comme un pas à pas.
+  function playSoloMelody(px: number, py: number) {
+    const degree = Math.min(7, Math.floor(px * 7) + 1);
+    const yInverted = 1 - py;
+    const octave = yInverted < 1 / 3 ? -1 : yInverted < 2 / 3 ? 0 : 1;
+    const freq = degreeFreq(st, degree, octave, 0);
+    if (freq !== lastMelodyFreq) {
+      engine.playLiveMelodyNote(freq, lastMelodyFreq);
+      lastMelodyFreq = freq;
+    }
+  }
+
   // Les deux paramètres sont inversés pour l'axe Y du pad (haut du pad =
   // 100%), pas pour l'axe X ni pour l'inclinaison.
   function setPad(clientX: number, clientY: number, rect: DOMRect) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    if (soloMelodyHeld) {
+      playSoloMelody(padX, padY);
+      return;
+    }
     applyAxisValue(assignments.axisX, padX);
     applyAxisValue(assignments.axisY, 1 - padY);
   }

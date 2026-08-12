@@ -583,4 +583,27 @@ export class AudioEngine {
       else synth.playMelodyNote(freq, t, 0.5, gain, row.voice, null);
     }
   }
+
+  // Bouton SOLO du Mode Live (maintenu, PLAN.md §7) : joue une note de
+  // mélodie à la demande — glisser/tapoter sur le pad pendant que SOLO est
+  // tenu remplace le séquenceur pour cette ligne (mutée en direct pendant ce
+  // temps, voir liveSetSynthMute). Ponctuel comme preview()/previewSynth(),
+  // jamais écrit dans le pattern. `glideFrom` réutilise le mécanisme de
+  // portamento déjà utilisé par le scheduler pas à pas — un glissé du doigt
+  // d'une zone à l'autre du pad glisse la note comme s'il s'agissait de deux
+  // pas successifs, avec exactement la même formule glideTime = glide*0.12
+  // (scheduler.ts) : si l'axe glide de la mélodie n'est pas assigné/monté en
+  // direct, aucun portamento, comme au pas à pas. Mêmes durée/gain que
+  // l'aperçu ▶ Tester (previewSynth). withLiveOverrides (et non l'état brut) :
+  // un cutoff/résonance mélodie réglé en direct sur un autre axe s'entend
+  // aussi ici.
+  playLiveMelodyNote(freq: number, glideFrom: number | null): void {
+    if (!this.ctx || !this.synth) return;
+    void this.ctx.resume();
+    const row = this.withLiveOverrides(this.getState()).synthRows.melody;
+    const t = this.ctx.currentTime + 0.01;
+    const glideTime = (row.glide || 0) * 0.12;
+    const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
+    this.synth.playMelodyNote(freq, t, 0.5, 0.4, row.voice, glide);
+  }
 }

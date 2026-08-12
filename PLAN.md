@@ -336,6 +336,29 @@ références, un simple spread aurait partagé les slots entre deux sessions).
 🔀 brasser continue de tirer une seule entrée par slot/axe (le multi est un
 choix délibéré via le panneau, pas une surprise du hasard).
 
+**✅ Bouton SOLO MÉLO** (retour de Yann : « un bouton 'solo' qui permet de
+modifier la mélodie en faisant glisser son doigt ou tapotant » — analysé
+avant implémentation à sa demande explicite, deux points confirmés : geste
+sur le pad XY existant, fonctionnement maintenu/hold). Nouvelle catégorie de
+catalogue PERFORMANCE (`liveActions.ts`, `LIVE_ACTIONS`) : tant que le bouton
+assigné est tenu, le pad ne pilote plus ses axes habituels (X/Y) — il joue la
+mélodie au doigt à la place, et la mélodie programmée est coupée en direct
+(`AudioEngine.liveSetSynthMute('melody', true)`, même garde-fou que les
+autres mutes synthé) pour ne pas se télescoper avec ce qui est joué à la
+main. Mapping du pad : X quantisé en 7 zones = degré de la gamme courante
+(1-7), Y en tiers = octave (-1/0/+1, même inversion haut-du-pad=plus-haut que
+pour les axes normaux) ; fréquence via `degreeFreq` (`engine/harmony.ts`),
+jouée par `AudioEngine.playLiveMelodyNote` — nouvelle méthode ponctuelle,
+jamais écrite dans le pattern, qui relit `withLiveOverrides` (un
+cutoff/résonance mélodie réglé en direct sur un autre axe s'entend aussi
+ici) et applique le même calcul de portamento que le scheduler
+(`glideTime = glide * 0.12`, `scheduler.ts`) : sans axe glide assigné sur la
+mélodie, chaque zone déclenche une note franche ; avec, glisser d'une zone à
+l'autre glisse la note comme un pas à pas. Un tap (down+up sans changer de
+zone) joue une note ; un doigt qui glisse ne redéclenche qu'au changement de
+zone (pas de répétition sur un doigt immobile). Relâcher le bouton restaure
+le pad normal et démute la mélodie.
+
 **En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
 trigger ; snapshot des assignations rappelable par appui long ; undo léger
 sur les triggers en direct ; mode duo (deux téléphones connectés via le
