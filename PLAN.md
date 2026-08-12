@@ -321,6 +321,21 @@ faites cette passe : snapshot d'assignation, randomize-la-ligne-synthé-
 courante (écrirait dans le pattern réel, contraire au principe des
 overlays Live — pas tranché).
 
+**✅ Assignation multiple par contrôleur** (retour de Yann : « on peut
+assigner plusieurs paramètres à un même contrôleur »). `LiveAssignments`
+passe de valeurs uniques à des tableaux (`slots: LiveActionId[][]`,
+`axisX/axisY/axisTilt: LiveAxisId[]`, jamais vides) — un bouton peut
+déclencher plusieurs actions d'un coup, un axe peut piloter plusieurs
+paramètres ensemble (macro, même valeur 0..1 appliquée à chacun via
+`applyAxisValue`). Le panneau de sélection bascule chaque entrée au lieu de
+committer-et-fermer (`toggleActionInSlot`/`toggleAxisInSlot`), retirer la
+dernière entrée d'un slot est un no-op silencieux plutôt qu'un slot vide.
+`liveActions.ts` : helpers pluriels `actionsFor`/`axesFor`, et
+`structuredClone` pour cloner les valeurs par défaut (les tableaux sont des
+références, un simple spread aurait partagé les slots entre deux sessions).
+🔀 brasser continue de tirer une seule entrée par slot/axe (le multi est un
+choix délibéré via le panneau, pas une surprise du hasard).
+
 **En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
 trigger ; snapshot des assignations rappelable par appui long ; undo léger
 sur les triggers en direct ; mode duo (deux téléphones connectés via le
