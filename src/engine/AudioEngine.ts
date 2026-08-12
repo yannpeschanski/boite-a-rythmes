@@ -47,6 +47,11 @@ export class AudioEngine {
   private fillRequested = false;
   private forcedFillBar: number | null = null;
   private liveHatRoll: number | null = null;
+  // Catalogue d'actions étendu (PLAN.md §7) : rafale forcée kick/snare, même
+  // principe que le hat (liveHatRoll) — un pas vide se met à sonner tant que
+  // le bouton est maintenu (voir scheduler.ts, forceKickRoll/forceSnareRoll).
+  private liveKickRoll: number | null = null;
+  private liveSnareRoll: number | null = null;
   // Catalogue étendu (PLAN.md §7) : sidechain n'a pas de nœud continu (juste
   // une valeur relue à chaque déclenchement, voir triggerSidechainDuck) ; le
   // groove (swing/traîne/ghost/fill) et les réglages de voix synthé sont des
@@ -56,7 +61,7 @@ export class AudioEngine {
   private liveSidechainDepth: number | null = null;
   private liveGrooveOverride: Partial<Pick<PatternStateV2, 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity'>> = {};
   private liveSynthOverride: Partial<
-    Record<SynthRowName, { voice?: Partial<SynthVoice>; glide?: number; strum?: number }>
+    Record<SynthRowName, { voice?: Partial<SynthVoice>; glide?: number; strum?: number; muted?: boolean }>
   > = {};
   // Évite de réassigner `.curve` (WaveShaper) à la même valeur arrondie à
   // chaque frame de drag du pad — la réassignation est un changement discret
@@ -136,6 +141,7 @@ export class AudioEngine {
         const rowOverride: Partial<SynthRowState> = {};
         if (ov.glide !== undefined) rowOverride.glide = ov.glide;
         if (ov.strum !== undefined) rowOverride.strum = ov.strum;
+        if (ov.muted !== undefined) rowOverride.muted = ov.muted;
         synthRows[name] = {
           ...synthRows[name],
           ...rowOverride,
@@ -245,10 +251,35 @@ export class AudioEngine {
     this.liveMute = { ...this.liveMute, [name]: muted };
   }
 
+  // Catalogue étendu (PLAN.md §7) — MUTE Basse/Nappe/Mélodie, même principe
+  // que liveSetMute mais via l'override de ligne synthé déjà en place pour
+  // cutoff/résonance/glide (withLiveOverrides) plutôt qu'un second mécanisme :
+  // `muted` n'est écrit dans l'override QUE quand on coupe (jamais `false`),
+  // pour ne jamais forcer un démutage d'une ligne coupée dans l'Atelier —
+  // même garde-fou que liveMute pour la batterie.
+  liveSetSynthMute(name: SynthRowName, muted: boolean): void {
+    if (muted) {
+      this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], muted: true } };
+    } else {
+      const { muted: _drop, ...rest } = this.liveSynthOverride[name] ?? {};
+      this.liveSynthOverride = { ...this.liveSynthOverride, [name]: rest };
+    }
+  }
+
   // Bouton ROLL×2 (maintenu) : force le hat en rafale tant qu'il est
   // enfoncé ; `null` relâche le forçage.
   liveSetHatRoll(multiplier: number | null): void {
     this.liveHatRoll = multiplier;
+  }
+
+  // Catalogue étendu (PLAN.md §7) — ROLL kick/snare, même principe que le
+  // hat (scheduler.ts, forceKickRoll/forceSnareRoll).
+  liveSetKickRoll(multiplier: number | null): void {
+    this.liveKickRoll = multiplier;
+  }
+
+  liveSetSnareRoll(multiplier: number | null): void {
+    this.liveSnareRoll = multiplier;
   }
 
   // Pad XY du Mode Live — balayage de filtre (axe X) et voile de réverbe
@@ -318,6 +349,17 @@ export class AudioEngine {
   // réglage de l'Atelier (sg.sidechainDepth), jamais écrasé.
   setLiveSidechainDepth(amount01: number): void {
     this.liveSidechainDepth = amount01;
+  }
+
+  // Catalogue étendu (PLAN.md §7) — bouton BYPASS LIMITEURS : mêmes valeurs
+  // exactes que buildGraph (graph.ts) pour enabled/disabled, appliquées
+  // directement sur le limiteur déjà construit plutôt que reconstruire le
+  // graphe.
+  setLiveLimiters(enabled: boolean): void {
+    if (!this.graph || !this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.graph.finalLimiter.threshold.setValueAtTime(enabled ? -1 : 0, now);
+    this.graph.finalLimiter.ratio.setValueAtTime(enabled ? 12 : 1, now);
   }
 
   // Groove global (swing/traîne/densité de ghost notes/intensité de fill) —
@@ -412,6 +454,8 @@ export class AudioEngine {
         liveMute: this.liveMute,
         forceFill: this.forcedFillBar === this.currentBar,
         forceHatRoll: this.liveHatRoll,
+        forceKickRoll: this.liveKickRoll,
+        forceSnareRoll: this.liveSnareRoll,
       },
       now + SCHEDULE_AHEAD,
     );

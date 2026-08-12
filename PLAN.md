@@ -305,15 +305,21 @@ Le bouton ⚙ est éloigné du pad (mistap en plein set), le toggle inclinaison
 est sorti de la zone de drag du pad, plancher de luminosité LCD prévu pour
 la lisibilité en extérieur.
 
-**⏭️ Prochain à faire — catalogue d'actions (boutons) trop court.** Retour
-de Yann : 9 actions aujourd'hui (BREAK/FILL/MUTE×3/ROLL×3/CHAOS) pour 6
-boutons, à étendre largement comme les axes l'ont été (55 entrées) — même
-traitement à appliquer : plus d'actions dans `LIVE_ACTIONS`, groupées par
-catégorie dans le même panneau de sélection déjà en place. Pistes à
-creuser : d'autres mutes/rolls (synthé ?), des triggers ponctuels
-(snapshot d'assignation, randomize-la-ligne-synthé-courante), des toggles
-d'effet (activer/désactiver saturation, limiteurs…). Pas encore scopé en
-détail.
+**✅ Catalogue d'actions étendu de 9 à 19** (`liveActions.ts`, `LIVE_ACTIONS`),
+groupées par catégorie dans le même panneau de sélection que les axes
+(`ACTION_GROUPS`, même fonction `groupByCategory` réutilisée) : TRANSPORT
+(break/fill/chaos), MUTES BATTERIE (déjà là), **MUTES SYNTHÉ** — nouveau,
+basse/nappe/mélodie via `AudioEngine.liveSetSynthMute` (même garde-fou que
+les mutes batterie : n'ajoute jamais qu'une coupure, ne démute jamais un
+mute posé dans l'Atelier), **ROLL KICK** et **ROLL SNARE** — nouveau,
+symétrique du roll hat déjà là (`scheduler.ts` : `forceKickRoll`/
+`forceSnareRoll` sur `ScheduleContext`, même principe qu'un pas vide qui se
+met à sonner tant que le bouton est maintenu), ROLL HAT (déjà là), et MIX
+— nouveau, **BYPASS LIMITEURS** (`AudioEngine.setLiveLimiters`, mêmes
+valeurs enabled/disabled que `buildGraph`). Pistes encore en réserve, pas
+faites cette passe : snapshot d'assignation, randomize-la-ligne-synthé-
+courante (écrirait dans le pattern réel, contraire au principe des
+overlays Live — pas tranché).
 
 **En réserve, pas prioritaire** : vibration (`navigator.vibrate`) à chaque
 trigger ; snapshot des assignations rappelable par appui long ; undo léger

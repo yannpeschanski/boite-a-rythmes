@@ -12,13 +12,23 @@ import type { SynthRowName } from '../../model/types';
 export type LiveActionId =
   | 'break'
   | 'fill'
+  | 'chaos'
   | 'mute-kick'
   | 'mute-snare'
   | 'mute-hat'
+  | 'mute-bass'
+  | 'mute-pad'
+  | 'mute-melody'
+  | 'roll-kick-x2'
+  | 'roll-kick-x3'
+  | 'roll-kick-x4'
+  | 'roll-snare-x2'
+  | 'roll-snare-x3'
+  | 'roll-snare-x4'
   | 'roll-hat-x2'
   | 'roll-hat-x3'
   | 'roll-hat-x4'
-  | 'chaos';
+  | 'bypass-limiters';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -28,22 +38,47 @@ export interface LiveActionDef {
   // trigger : un coup au pointerdown (break/fill) ; toggle : bascule au
   // pointerdown (mute) ; hold : actif tant que maintenu (roll).
   kind: 'trigger' | 'toggle' | 'hold';
+  // Regroupement dans le panneau de sélection (voir ACTION_GROUPS) — 19
+  // entrées ne se lisent plus comme une liste plate (PLAN.md §7, retour de
+  // Yann : catalogue de boutons trop court, même traitement que les axes).
+  category: string;
 }
 
 export const LIVE_ACTIONS: LiveActionDef[] = [
-  { id: 'break', label: 'BREAK', color: 'var(--cell-kick)', desc: 'Break (déclencheur)', kind: 'trigger' },
-  { id: 'fill', label: 'FILL', color: 'var(--cell-snare)', desc: 'Fill forcé (déclencheur)', kind: 'trigger' },
-  { id: 'mute-kick', label: 'MUTE K', color: 'var(--cell-kick)', desc: 'Muet — Kick', kind: 'toggle' },
-  { id: 'mute-snare', label: 'MUTE S', color: 'var(--cell-snare)', desc: 'Muet — Snare', kind: 'toggle' },
-  { id: 'mute-hat', label: 'MUTE H', color: 'var(--cell-hat)', desc: 'Muet — Hat', kind: 'toggle' },
-  { id: 'roll-hat-x2', label: 'ROLL×2', color: 'var(--cell-hat)', desc: 'Rafale hat ×2 (maintenu)', kind: 'hold' },
-  { id: 'roll-hat-x3', label: 'ROLL×3', color: 'var(--cell-hat)', desc: 'Rafale hat ×3 (maintenu)', kind: 'hold' },
-  { id: 'roll-hat-x4', label: 'ROLL×4', color: 'var(--cell-hat)', desc: 'Rafale hat ×4 (maintenu)', kind: 'hold' },
+  { id: 'break', label: 'BREAK', color: 'var(--cell-kick)', desc: 'Break (déclencheur)', kind: 'trigger', category: 'TRANSPORT' },
+  { id: 'fill', label: 'FILL', color: 'var(--cell-snare)', desc: 'Fill forcé (déclencheur)', kind: 'trigger', category: 'TRANSPORT' },
   // Un paramètre du catalogue d'axes tiré au hasard, valeur aléatoire, à
   // chaque appui — pas de nouveau bouton dédié, juste une entrée du même
   // catalogue assignable comme les autres (PLAN.md §7, piste "chaos" vs
   // "brasser" : chaos ici, brasser est le bouton 🔀 séparé de LiveView).
-  { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger' },
+  { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger', category: 'TRANSPORT' },
+
+  { id: 'mute-kick', label: 'MUTE K', color: 'var(--cell-kick)', desc: 'Muet — Kick', kind: 'toggle', category: 'MUTES BATTERIE' },
+  { id: 'mute-snare', label: 'MUTE S', color: 'var(--cell-snare)', desc: 'Muet — Snare', kind: 'toggle', category: 'MUTES BATTERIE' },
+  { id: 'mute-hat', label: 'MUTE H', color: 'var(--cell-hat)', desc: 'Muet — Hat', kind: 'toggle', category: 'MUTES BATTERIE' },
+
+  // Même garde-fou que les mutes batterie : le bouton ne fait qu'AJOUTER un
+  // mute par-dessus le pattern, jamais retirer un mute posé dans l'Atelier
+  // (AudioEngine.liveSetSynthMute).
+  { id: 'mute-bass', label: 'MUTE BASSE', color: 'var(--cell-bass)', desc: 'Muet — Basse', kind: 'toggle', category: 'MUTES SYNTHÉ' },
+  { id: 'mute-pad', label: 'MUTE NAPPE', color: 'var(--cell-pad)', desc: 'Muet — Nappe', kind: 'toggle', category: 'MUTES SYNTHÉ' },
+  { id: 'mute-melody', label: 'MUTE MÉLO', color: 'var(--cell-melody)', desc: 'Muet — Mélodie', kind: 'toggle', category: 'MUTES SYNTHÉ' },
+
+  { id: 'roll-kick-x2', label: 'ROLL K×2', color: 'var(--cell-kick)', desc: 'Rafale kick ×2 (maintenu)', kind: 'hold', category: 'ROLL KICK' },
+  { id: 'roll-kick-x3', label: 'ROLL K×3', color: 'var(--cell-kick)', desc: 'Rafale kick ×3 (maintenu)', kind: 'hold', category: 'ROLL KICK' },
+  { id: 'roll-kick-x4', label: 'ROLL K×4', color: 'var(--cell-kick)', desc: 'Rafale kick ×4 (maintenu)', kind: 'hold', category: 'ROLL KICK' },
+
+  { id: 'roll-snare-x2', label: 'ROLL S×2', color: 'var(--cell-snare)', desc: 'Rafale snare ×2 (maintenu)', kind: 'hold', category: 'ROLL SNARE' },
+  { id: 'roll-snare-x3', label: 'ROLL S×3', color: 'var(--cell-snare)', desc: 'Rafale snare ×3 (maintenu)', kind: 'hold', category: 'ROLL SNARE' },
+  { id: 'roll-snare-x4', label: 'ROLL S×4', color: 'var(--cell-snare)', desc: 'Rafale snare ×4 (maintenu)', kind: 'hold', category: 'ROLL SNARE' },
+
+  { id: 'roll-hat-x2', label: 'ROLL H×2', color: 'var(--cell-hat)', desc: 'Rafale hat ×2 (maintenu)', kind: 'hold', category: 'ROLL HAT' },
+  { id: 'roll-hat-x3', label: 'ROLL H×3', color: 'var(--cell-hat)', desc: 'Rafale hat ×3 (maintenu)', kind: 'hold', category: 'ROLL HAT' },
+  { id: 'roll-hat-x4', label: 'ROLL H×4', color: 'var(--cell-hat)', desc: 'Rafale hat ×4 (maintenu)', kind: 'hold', category: 'ROLL HAT' },
+
+  // Coupe le limiteur de sécurité final le temps d'un geste — même valeurs
+  // enabled/disabled que le réglage de l'Atelier (graph.ts, buildGraph).
+  { id: 'bypass-limiters', label: 'BYPASS LIM.', color: '#ff5a5a', desc: 'Bypass limiteurs (bascule)', kind: 'toggle', category: 'MIX' },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
@@ -217,28 +252,39 @@ export const LIVE_AXES: LiveAxisDef[] = [
   ...synthAxesFor('melody'),
 ];
 
-// LIVE_AXES groupé par catégorie, dans l'ordre d'apparition — pour le
-// panneau de sélection (trop d'entrées pour une liste plate lisible). Les
-// deux macros historiques (filtre/reverb, sans catégorie) forment un groupe
-// "MACRO" implicite en tête de liste.
+// Regroupe une liste d'entrées de catalogue par catégorie, dans l'ordre
+// d'apparition — pour le panneau de sélection (trop d'entrées pour une liste
+// plate lisible, aussi bien côté axes que côté actions depuis leur extension
+// respective, PLAN.md §7).
+function groupByCategory<T extends { category?: string }>(items: T[], fallback: string): { name: string; items: T[] }[] {
+  const order: string[] = [];
+  const byName = new Map<string, T[]>();
+  for (const item of items) {
+    const name = item.category ?? fallback;
+    if (!byName.has(name)) {
+      byName.set(name, []);
+      order.push(name);
+    }
+    byName.get(name)!.push(item);
+  }
+  return order.map((name) => ({ name, items: byName.get(name)! }));
+}
+
 export interface LiveAxisGroup {
   name: string;
   items: LiveAxisDef[];
 }
 
-export const AXIS_GROUPS: LiveAxisGroup[] = (() => {
-  const order: string[] = [];
-  const byName = new Map<string, LiveAxisDef[]>();
-  for (const axis of LIVE_AXES) {
-    const name = axis.category ?? 'MACRO';
-    if (!byName.has(name)) {
-      byName.set(name, []);
-      order.push(name);
-    }
-    byName.get(name)!.push(axis);
-  }
-  return order.map((name) => ({ name, items: byName.get(name)! }));
-})();
+// Les deux macros historiques (filtre/reverb, sans catégorie) forment un
+// groupe "MACRO" implicite en tête de liste.
+export const AXIS_GROUPS: LiveAxisGroup[] = groupByCategory(LIVE_AXES, 'MACRO');
+
+export interface LiveActionGroup {
+  name: string;
+  items: LiveActionDef[];
+}
+
+export const ACTION_GROUPS: LiveActionGroup[] = groupByCategory(LIVE_ACTIONS, 'AUTRE');
 
 // Les 3 visualiseurs explorés dans la maquette (proposition-Mode-Live) — un
 // seul retenu au départ (①, phase 2), les deux autres ajoutés en option ici
