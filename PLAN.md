@@ -312,12 +312,16 @@ parfois plusieurs pistes concurrentes). Notées pour ne pas les reperdre.
   refuse la permission capteur iOS (l'inclinaison ne doit jamais être
   requise).
 
-  **⏭️ À refaire — viz ① (barres).** L'implémentation actuelle affiche 6
-  barres pleine hauteur, une par ligne (kick/snare/hat/bass/pad/melody) —
-  s'éloigne de l'esprit égaliseur de la toute première maquette. À refaire en
-  vrai visuel d'égaliseur : plusieurs barres (comme un spectre), CHACUNE
-  composée de petits segments empilés représentant la contribution des 6
-  éléments à ce moment-là, pas une barre = une ligne.
+  **✅ viz ① (barres) refaite en égaliseur.** L'ancienne version affichait 6
+  barres pleine hauteur, une par ligne — doublonnait le séquenceur linéaire
+  juste au-dessus. Remplacée par `EQ_BAR_COUNT` (22) barres façon spectre,
+  chacune composée de petits segments empilés des 6 éléments plutôt qu'une
+  barre = une ligne (`LiveView.svelte`, `drawVizBars`) : chaque ligne pèse
+  sur toutes les barres via une cloche gaussienne centrée sur sa position
+  dans `LINE_EQ_POS` (grave → aigu, décoratif — pas une vraie analyse
+  fréquentielle, les `AnalyserNode` du graphe restent en fftSize minimal),
+  donnant un relief de spectre à partir des 6 niveaux réels sans inventer de
+  fausse donnée. Même relâchement exponentiel qu'avant pour le rebond.
 
   **⏭️ À refaire — viz ③ (défilement).** Remplacer le personnage bâton
   générique par un lapin : mange des carottes sur son chemin à chaque kick,
