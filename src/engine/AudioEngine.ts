@@ -17,6 +17,7 @@ import {
 import { barDuration, type BreakWindow } from './groove';
 import { LiveRecorder } from './recorder';
 import { chordsFor, chordFreqs, degreeFreq } from './harmony';
+import { driveCurve, bitcrushCurve, applyCompressionAmount, makeupGainForCompression } from './fx';
 
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
@@ -46,6 +47,19 @@ export class AudioEngine {
   private fillRequested = false;
   private forcedFillBar: number | null = null;
   private liveHatRoll: number | null = null;
+  // Catalogue étendu (PLAN.md §7) : sidechain n'a pas de nœud continu (juste
+  // une valeur relue à chaque déclenchement, voir triggerSidechainDuck) et
+  // cutoff/résonance synthé sont posés PAR NOTE (chaque voix crée son propre
+  // filtre au déclenchement, voir voices/synth.ts) plutôt que sur un nœud
+  // permanent modulable — un override par ligne appliqué juste avant chaque
+  // fenêtre de scheduling (withLiveSynthOverrides) plutôt qu'un nœud dédié.
+  private liveSidechainDepth: number | null = null;
+  private liveSynthOverride: Partial<Record<SynthRowName, { cutoff?: number; resonance?: number }>> = {};
+  // Évite de réassigner `.curve` (WaveShaper) à la même valeur arrondie à
+  // chaque frame de drag du pad — la réassignation est un changement discret
+  // de la table de correspondance, pas interpolé comme un AudioParam.
+  private liveSatBucket: number | null = null;
+  private liveCrushBucket: number | null = null;
 
   isPlaying = false;
   ghostTargetRow: DrumRowName = 'snare';
@@ -75,7 +89,7 @@ export class AudioEngine {
     const graph = this.graph;
     if (!graph) return;
     const sg = this.getState().synthGlobal;
-    const depth = sg.sidechainDepth / 100;
+    const depth = this.liveSidechainDepth ?? sg.sidechainDepth / 100;
     const release = sg.sidechainRelease / 1000;
     const floor = Math.max(0.001, 1 - depth);
     const targets: SynthRowName[] = [];
@@ -98,6 +112,22 @@ export class AudioEngine {
       (rowName === 'kick' && sg.sidechainTriggerKick) ||
       (rowName === 'snare' && sg.sidechainTriggerSnare);
     if (triggered) this.triggerSidechainDuck(time);
+  }
+
+  // Applique les overrides de voix synthé du Mode Live (cutoff/résonance par
+  // ligne) à un clone superficiel de l'état, jamais au store — comme
+  // liveMute, un override relâché ou un STOP retrouve les réglages de
+  // l'Atelier intacts. No-op (retourne `state` tel quel) si rien n'est
+  // overridé, pour ne payer aucun coût hors Mode Live.
+  private withLiveSynthOverrides(state: PatternStateV2): PatternStateV2 {
+    if (Object.keys(this.liveSynthOverride).length === 0) return state;
+    const synthRows = { ...state.synthRows };
+    (Object.keys(this.liveSynthOverride) as SynthRowName[]).forEach((name) => {
+      const ov = this.liveSynthOverride[name];
+      if (!ov) return;
+      synthRows[name] = { ...synthRows[name], voice: { ...synthRows[name].voice, ...ov } };
+    });
+    return { ...state, synthRows };
   }
 
   // latencyHint 'playback' : robustesse (Bluetooth notamment) plutôt que
@@ -161,6 +191,12 @@ export class AudioEngine {
       this.graph = null;
       this.kit = null;
       this.synth = null;
+      // Le prochain start() reconstruit un graphe neuf (sat/crush initialisés
+      // depuis l'état, pas depuis le dernier réglage live) — sans ce reset,
+      // un pad qui retombe sur le même palier arrondi qu'avant le STOP
+      // sauterait sa réapplication (voir setLiveSaturation/setLiveBitcrush).
+      this.liveSatBucket = null;
+      this.liveCrushBucket = null;
     }
   }
 
@@ -213,6 +249,70 @@ export class AudioEngine {
     // partagée, au détriment des envois par ligne déjà réglés dans l'Atelier.
     const gain = Math.max(0, Math.min(1, amount01)) * 0.5;
     this.graph.liveReverbSend.gain.setTargetAtTime(gain, this.ctx.currentTime, 0.05);
+  }
+
+  // Catalogue étendu (PLAN.md §7) — six paramètres globaux ouverts au
+  // pad/inclinaison, appliqués DIRECTEMENT sur les nœuds du bus déjà
+  // construits par buildGraph (jamais écrits dans le pattern : rien ne les
+  // relit tant que refreshMixSettings() n'est pas rappelé, et le Mode Live ne
+  // l'appelle jamais). Mêmes fonctions et mêmes plages que applyMixSettings
+  // (graph.ts) — pas de nouvelle formule inventée pour le direct, cohérent
+  // avec ce que fait déjà l'Atelier quand on bouge ces curseurs.
+
+  // Saturation/bitcrush : bus DRUM uniquement (sat/crush dans graph.ts, pas
+  // la chaîne synthé). `.curve` n'est pas un AudioParam interpolé — on ne
+  // réassigne que si le palier arrondi a changé, pour éviter de recalculer/
+  // réaffecter la courbe à chaque frame de drag pour la même valeur.
+  setLiveSaturation(amount01: number): void {
+    if (!this.graph) return;
+    const bucket = Math.round(amount01 * 100);
+    if (bucket === this.liveSatBucket) return;
+    this.liveSatBucket = bucket;
+    this.graph.sat.curve = driveCurve(amount01);
+  }
+
+  setLiveBitcrush(amount01: number): void {
+    if (!this.graph) return;
+    const bucket = Math.round(amount01 * 100);
+    if (bucket === this.liveCrushBucket) return;
+    this.liveCrushBucket = bucket;
+    this.graph.crush.curve = bitcrushCurve(amount01);
+  }
+
+  setLiveCompression(amount01: number): void {
+    if (!this.graph || !this.ctx) return;
+    applyCompressionAmount(this.graph.comp, amount01, this.ctx);
+    this.graph.makeup.gain.setValueAtTime(makeupGainForCompression(amount01), this.ctx.currentTime);
+  }
+
+  // 50..150 % — même plage que le curseur "Volume général" de l'Atelier.
+  setLiveVolume(amount01: number): void {
+    if (!this.graph || !this.ctx) return;
+    this.graph.finalGain.gain.setValueAtTime(0.5 + amount01, this.ctx.currentTime);
+  }
+
+  setLiveDelayFeedback(amount01: number): void {
+    if (!this.graph || !this.ctx) return;
+    this.graph.delayFeedback.gain.setValueAtTime(Math.min(0.9, amount01), this.ctx.currentTime);
+  }
+
+  // Pas de nœud continu : juste relu au prochain déclenchement sidechain
+  // (triggerSidechainDuck) — un bouton relâché ou un STOP retombe sur le
+  // réglage de l'Atelier (sg.sidechainDepth), jamais écrasé.
+  setLiveSidechainDepth(amount01: number): void {
+    this.liveSidechainDepth = amount01;
+  }
+
+  // Cutoff/résonance par ligne synthé — posés PAR NOTE (chaque voix crée son
+  // propre BiquadFilterNode au déclenchement, voices/synth.ts), donc pas de
+  // nœud permanent à modulateur ici : l'override est relu à la prochaine
+  // note programmée (voir withLiveSynthOverrides).
+  setLiveSynthCutoff(name: SynthRowName, hz: number): void {
+    this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], cutoff: hz } };
+  }
+
+  setLiveSynthResonance(name: SynthRowName, q: number): void {
+    this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], resonance: q } };
   }
 
   // Niveau crête 0..1 par ligne (batterie + synthé), lu à chaque frame par le
@@ -281,7 +381,7 @@ export class AudioEngine {
     if (this.synth) {
       scheduleSynthWindow(
         {
-          state,
+          state: this.withLiveSynthOverrides(state),
           synth: this.synth,
           cursors: this.synthCursors,
           rng: Math.random,

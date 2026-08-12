@@ -38,7 +38,11 @@
     loadLiveAssignments,
     saveLiveAssignments,
     vizById,
+    LIVE_ACTIONS,
+    LIVE_AXES,
+    SLOT_COUNT,
     type LiveActionId,
+    type LiveAxisId,
   } from './liveActions';
 
   let { onExit }: { onExit: () => void } = $props();
@@ -132,7 +136,37 @@
         engine.liveSetHatRoll(on ? 4 : null);
         rollHeld = on ? 4 : null;
         break;
+      case 'chaos':
+        if (on) triggerChaos();
+        break;
     }
+  }
+
+  // Bouton CHAOS (assignable comme les autres, PLAN.md §7) : tire un
+  // paramètre du catalogue d'axes au hasard et lui donne une valeur
+  // aléatoire, via applyAxisValue — exactement le même chemin qu'un geste de
+  // pad, donc si le paramètre tiré est aussi celui assigné au pad/à
+  // l'inclinaison, la lecture (bandes ambrées) se met à jour normalement.
+  function triggerChaos() {
+    const axis = LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)];
+    applyAxisValue(axis.id, Math.random());
+  }
+
+  // Bouton 🔀 (séparé, PLAN.md §7 — piste "brasser") : réassigne aléatoirement
+  // tout le catalogue d'un coup plutôt que de choisir soi-même via l'overlay
+  // ⚙ — un "surprends-moi" complémentaire du chaos ci-dessus, qui lui ne
+  // change QUE la valeur d'un paramètre sans toucher aux associations.
+  function shuffleAssignments() {
+    const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
+    const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
+    assignments = {
+      ...assignments,
+      slots: Array.from({ length: SLOT_COUNT }, pickAction),
+      axisX: pickAxis(),
+      axisY: pickAxis(),
+      axisTilt: pickAxis(),
+    };
+    saveLiveAssignments(assignments);
   }
 
   function onSlotDown(i: number) {
@@ -251,19 +285,60 @@
   // aussi bien pour le son que pour la lecture affichée : sans ce state
   // partagé, l'inclinaison changerait le son sans que les bandes ambrées ne
   // bougent, ce qui serait trompeur.
-  let axisValues = $state<Record<'filter' | 'reverb', number>>({ filter: 0.5, reverb: 0.5 });
+  let axisValues = $state<Record<LiveAxisId, number>>(
+    Object.fromEntries(LIVE_AXES.map((a) => [a.id, 0.5])) as Record<LiveAxisId, number>,
+  );
 
   // Le paramètre assigné à chaque axe (filtre par défaut en X, reverb en Y,
-  // réassignables depuis l'overlay ⚙). Filtre en courbe exponentielle
-  // (200 Hz étouffé à 20 kHz grand ouvert, plus naturel à l'oreille qu'une
-  // échelle linéaire).
-  function applyAxisValue(axisId: 'filter' | 'reverb', value01: number) {
+  // réassignables depuis l'overlay ⚙, catalogue étendu PLAN.md §7). Les
+  // grandeurs en Hz/Q utilisent une courbe exponentielle plutôt que linéaire,
+  // plus naturelle à l'oreille pour un balayage — même principe que le
+  // filtre d'origine (200 Hz étouffé à 20 kHz grand ouvert).
+  function applyAxisValue(axisId: LiveAxisId, value01: number) {
     axisValues[axisId] = value01;
-    if (axisId === 'filter') {
-      const hz = 200 * Math.pow(20000 / 200, value01);
-      engine.setLiveFilterCutoff(hz);
-    } else {
-      engine.setLiveReverbWet(value01);
+    switch (axisId) {
+      case 'filter':
+        engine.setLiveFilterCutoff(200 * Math.pow(20000 / 200, value01));
+        break;
+      case 'reverb':
+        engine.setLiveReverbWet(value01);
+        break;
+      case 'saturation':
+        engine.setLiveSaturation(value01);
+        break;
+      case 'bitcrush':
+        engine.setLiveBitcrush(value01);
+        break;
+      case 'compression':
+        engine.setLiveCompression(value01);
+        break;
+      case 'volume':
+        engine.setLiveVolume(value01);
+        break;
+      case 'delay-feedback':
+        engine.setLiveDelayFeedback(value01);
+        break;
+      case 'sidechain-depth':
+        engine.setLiveSidechainDepth(value01);
+        break;
+      case 'cutoff-bass':
+        engine.setLiveSynthCutoff('bass', 100 * Math.pow(4000 / 100, value01));
+        break;
+      case 'cutoff-pad':
+        engine.setLiveSynthCutoff('pad', 100 * Math.pow(4000 / 100, value01));
+        break;
+      case 'cutoff-melody':
+        engine.setLiveSynthCutoff('melody', 100 * Math.pow(4000 / 100, value01));
+        break;
+      case 'resonance-bass':
+        engine.setLiveSynthResonance('bass', 0.3 * Math.pow(12 / 0.3, value01));
+        break;
+      case 'resonance-pad':
+        engine.setLiveSynthResonance('pad', 0.3 * Math.pow(12 / 0.3, value01));
+        break;
+      case 'resonance-melody':
+        engine.setLiveSynthResonance('melody', 0.3 * Math.pow(12 / 0.3, value01));
+        break;
     }
   }
 
@@ -895,6 +970,9 @@
         <button class="tilt-btn" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
           <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
         </button>
+        <button class="amp-btn shuffle" onclick={shuffleAssignments} title="Brasser — réassigne tout le catalogue au hasard">
+          🔀
+        </button>
         <button class="amp-btn gear" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
       <div class="seekbar"><div class="seekbar-fill"></div><div class="seekbar-grip"></div></div>
@@ -1239,6 +1317,10 @@
     opacity: 0.45;
     cursor: not-allowed;
   }
+  .amp-btn.shuffle {
+    width: 22px;
+    padding: 4px 0;
+  }
   .amp-btn.rec {
     display: flex;
     align-items: center;
@@ -1438,8 +1520,11 @@
     font-size: 6.5px;
     color: var(--amp-lcd-dim);
     letter-spacing: 0.04em;
-    width: 30px;
+    width: 40px;
     flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .eq-track {
     flex: 1;
