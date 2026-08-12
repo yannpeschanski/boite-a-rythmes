@@ -471,21 +471,47 @@ par URL existant, `stores/share.ts`).
    seule, pas un second éditeur), en DOM plutôt qu'en canvas pour rester
    cohérent avec le reste de l'Atelier.
 
-### 7.3 Audit de parité avec l'original — jamais traité
+### 7.3 Audit de parité avec l'original
 
-Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps, jamais
-portés. Aucune décision bloquante, prêts à coder dans l'ordre :
+Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
 
-1. **Son de victoire + flash des cases** en Mode jeu (original `playWinSound`
-   l. 8336, flash des cases à la victoire) — absent du port actuel
-   (`ResultDialog.svelte`/`GuessGrid.svelte`).
-2. **Bouton "Traduire l'arpège en Mélodie"** (original l. 3388–3435) : écrit
-   réellement le motif de l'arpégiateur de la nappe dans la ligne Mélodie,
-   plutôt que de le laisser sonner seulement en live (`SynthModule.svelte`).
+1. **✅ Son de victoire + flash des cases** en Mode jeu (original
+   `playChime`/`playWinSound` l. 8321-8340, `showGameResult` l. 8558-8564,
+   jamais portés). `AudioEngine.playWinChime(tier)` : mêmes fréquences/
+   durées/gains que l'original (tier 1 = arpège éclatant qui monte, tier 2 =
+   simple et positif, tier 3 = petite descente tiède), connecté à
+   `finalGain` plutôt qu'au « masterGain » de l'original — qui, malgré son
+   nom, est en réalité le bus batterie (passe par saturation/bitcrush/
+   compression), un hasard de nommage plutôt qu'un choix documenté ; le Mode
+   jeu part toujours d'un état neutre sur ces réglages donc le résultat est
+   identique à l'oreille. Flash : classe CSS `.win-flash` (même animation
+   `cellFlash`, 3 pulsations de luminosité) posée sur toutes les cases de
+   `GameView.svelte` pendant 1100ms, déclenchée dans `verify()` dès que
+   `game.solved` passe à `true` (le bouton ✓ Vérifier étant désactivé une
+   fois résolu, cette transition ne peut se produire que sur CET appel).
+   `tierForAttempts` (nouveau, `game.svelte.ts`) distinct de
+   `starsForAttempts` déjà là : à 3 essais tier vaut 3 alors que stars vaut
+   encore 2, l'original les calcule séparément.
+2. **✅ Bouton "Traduire l'arpège en Mélodie"** (original l. 3388–3435,
+   jamais porté). `translatePadArpToMelody(state, rng)` (nouveau,
+   `engine/generators.ts`, aux côtés de `randomizePad`/
+   `randomizePitchedLine`) : redimensionne la Mélodie à `pas Nappe × vitesse
+   d'arpège` (plafonné à 128), calée sur les mêmes mesures que la Nappe
+   (`resizeSynthLine`, déjà porté), puis rejoue `arpNoteOrder` (déjà exporté
+   par `voices/synth.ts`, injecté en `rng`) pour chaque pas de nappe ayant un
+   accord — un pas sans accord reste silencieux en Mélodie aussi. Octave
+   repliée dans [-1,1] avec le même décalage de -1 que l'original (la Nappe
+   joue -12 demi-tons plus bas que le registre par défaut de la Mélodie).
+   Remplace tout le contenu existant de la ligne — instantané figé, pas un
+   lien live. Bouton dans le fieldset "Arpégiateur de nappe"
+   (`SynthModule.svelte`), `rng = Math.random` comme les autres boutons 🎲
+   de remplissage aléatoire du même fichier (édition Atelier ponctuelle, pas
+   le rendu déterministe de l'export).
 3. **Aide à la production contextuelle** (original l. 1141–1147, 8903–8972) :
    conseil contextuel + liste des modules de réglage jamais touchés dans la
-   session (en mémoire, pas persisté) — le plus gros des trois, à cadrer
-   avant de coder (où l'afficher dans le nouveau design system XP).
+   session (en mémoire, pas persisté) — pas encore fait, le plus gros des
+   trois, à cadrer avant de coder (où l'afficher dans le nouveau design
+   system XP).
 
 ### 7.4 Idées en réserve, pas prioritaires
 
