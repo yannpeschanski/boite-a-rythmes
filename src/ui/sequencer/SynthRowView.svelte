@@ -170,7 +170,12 @@
     {showSettings ? '▾' : '▸'} ⚙️ Réglages
   </button>
   {#if showSettings}
-    <div class="row-settings">
+    <!-- Un paramètre par ligne plutôt que compressé en 2 colonnes : ce
+         panneau n'est visible qu'une fois déployé, pas de pression d'espace
+         comme sur les curseurs toujours affichés (retour de Yann). Regroupé
+         par encarts cohérents plutôt qu'une liste plate. -->
+    <fieldset>
+      <legend>Séquence</legend>
       <XpSlider label="Cycles (mesures)" min={1} max={16} value={row.cycleBars}
         onchange={(v) => (row.cycleBars = v)} />
       <XpSlider label="Notes du cycle" min={1} max={128} value={row.subdivisions} onchange={resize} />
@@ -183,10 +188,9 @@
         <XpSlider label="Étalement" min={0} max={100} unit="%"
           value={Math.round((row.strum ?? 0) * 100)} onchange={(v) => (row.strum = v / 100)} />
       {/if}
-      <XpSlider label="Réverbe" min={0} max={100} unit="%"
-        value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
-      <XpSlider label="Delay" min={0} max={100} unit="%"
-        value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
+    </fieldset>
+    <fieldset>
+      <legend>Oscillateur & enveloppe</legend>
       <label>
         Onde
         <select bind:value={row.voice.type} onchange={() => onChanged?.()}>
@@ -219,6 +223,9 @@
       <XpSlider label="Sub" min={0} max={100} unit="%"
         value={Math.round((row.voice.subGain ?? 0) * 100)}
         onchange={(v) => { row.voice.subGain = v / 100; onChanged?.(); }} />
+    </fieldset>
+    <fieldset>
+      <legend>Détune & modulation</legend>
       <XpSlider label="Détune" min={0} max={30} unit=" c"
         value={row.voice.detuneCents ?? 0}
         onchange={(v) => { row.voice.detuneCents = v; onChanged?.(); }} />
@@ -231,6 +238,9 @@
       <XpSlider label="Vibrato" min={0} max={100} unit="%"
         value={Math.round((row.voice.vibratoDepth ?? 0) * 100)}
         onchange={(v) => { row.voice.vibratoDepth = v / 100; onChanged?.(); }} />
+    </fieldset>
+    <fieldset>
+      <legend>Filtre</legend>
       <XpSlider label="Tone" min={0} max={100} unit="%"
         value={row.voice.tone ?? 0}
         onchange={(v) => { row.voice.tone = v; onChanged?.(); }} />
@@ -243,7 +253,14 @@
       <XpSlider label="Ferm. filtre" min={0} max={4000} step={20} unit=" ms"
         value={Math.round((row.voice.filterEnvRelease ?? 0) * 1000)}
         onchange={(v) => { row.voice.filterEnvRelease = v / 1000; onChanged?.(); }} />
-    </div>
+    </fieldset>
+    <fieldset>
+      <legend>Espace</legend>
+      <XpSlider label="Réverbe" min={0} max={100} unit="%"
+        value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
+      <XpSlider label="Delay" min={0} max={100} unit="%"
+        value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
+    </fieldset>
   {/if}
 </div>
 
@@ -398,19 +415,14 @@
     gap: 2px;
     justify-content: center;
   }
-  .row-settings {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-    gap: 0 10px;
-    margin-top: 4px;
-  }
-  .row-settings label {
+  fieldset label {
     font-size: 12px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    margin: 2px 0;
   }
-  .row-settings select {
+  fieldset select {
     font-family: var(--xp-font);
     font-size: 12px;
     border: 1px solid var(--xp-line);
@@ -424,5 +436,15 @@
     cursor: pointer;
     padding: 2px 0;
     font-family: inherit;
+  }
+  fieldset {
+    border: 1px solid var(--xp-line);
+    margin: 5px 0;
+    padding: 4px 6px;
+  }
+  legend {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--xp-accent-violet);
   }
 </style>
