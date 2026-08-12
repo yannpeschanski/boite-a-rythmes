@@ -46,7 +46,7 @@
 </script>
 
 <XpWindow title="Synthé — Basse / Nappe / Mélodie" icon="🎹" accent="violet">
-  <div class="harmony">
+  <div class="harmony" data-group="synth-harmonie">
     <label>
       Tonalité
       <select bind:value={sg.rootMidi}>
@@ -81,7 +81,7 @@
     </div>
   {/each}
 
-  <fieldset>
+  <fieldset data-group="synth-arpege">
     <legend>Arpégiateur de nappe</legend>
     <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
     <label>
@@ -110,7 +110,7 @@
     </button>
   </fieldset>
 
-  <fieldset>
+  <fieldset data-group="synth-sidechain">
     <legend>Sidechain — le synthé « respire » avec la batterie</legend>
     <div class="chk-row">
       <span>Déclencheurs :</span>
@@ -129,7 +129,7 @@
     </div>
   </fieldset>
 
-  <fieldset>
+  <fieldset data-group="synth-groove">
     <legend>Groove synthé & espace</legend>
     <div class="two-col">
       <XpSlider label="Swing synthé" min={0} max={75} unit="%" bind:value={st.synthSwing} />

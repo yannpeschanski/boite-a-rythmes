@@ -76,12 +76,79 @@
   onMount(() => {
     raf = requestAnimationFrame(loop);
     window.addEventListener('keydown', onKey);
+    window.addEventListener('input', markProductionTouched);
+    window.addEventListener('change', markProductionTouched);
     canRestore = hasAutosave();
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('input', markProductionTouched);
+    window.removeEventListener('change', markProductionTouched);
     engine.stop();
+  });
+
+  // Aide à la production contextuelle (original renderProductionHelp,
+  // l. 8903-8972, jamais portée avant — dernier item de l'audit de parité,
+  // PLAN.md §7.3). Placée au-dessus des onglets (pas dans un seul) : le
+  // conseil peut justement suggérer de CHANGER d'onglet ("passe au
+  // Synthé"). Groupes alignés sur les fieldsets/fenêtres déjà visibles dans
+  // ce port (13, pas les 14 originaux 1:1 — ce port n'a pas le même
+  // découpage de DOM) ; délégation d'événement sur `data-group` comme
+  // l'original plutôt qu'un handler par curseur (markProductionTouched
+  // ci-dessus) : ajouter un curseur à un fieldset existant le fait suivre
+  // automatiquement, sans câblage supplémentaire — et un fieldset partagé
+  // par les 3 instances de DrumRowView/SynthRowView (une par ligne) agrège
+  // naturellement les 3 lignes sous un seul groupe, comme l'original.
+  // En mémoire seulement (pas de localStorage) : reflète l'exploration de
+  // CETTE session, pas un score à conserver.
+  const PRODUCTION_GROUPS = [
+    { id: 'drum-groove', label: 'Groove batterie' },
+    { id: 'drum-sequence', label: 'Séquence (Drum)' },
+    { id: 'drum-timbre', label: 'Timbre (Drum)' },
+    { id: 'drum-filtre', label: 'Filtre & espace (Drum)' },
+    { id: 'synth-harmonie', label: 'Gamme & harmonie' },
+    { id: 'synth-sequence', label: 'Séquence (Synthé)' },
+    { id: 'synth-oscillateur', label: 'Oscillateur & enveloppe' },
+    { id: 'synth-detune', label: 'Détune & modulation' },
+    { id: 'synth-filtre', label: 'Filtre (Synthé)' },
+    { id: 'synth-espace', label: 'Espace (Synthé)' },
+    { id: 'synth-arpege', label: 'Arpégiateur de nappe' },
+    { id: 'synth-sidechain', label: 'Sidechain' },
+    { id: 'synth-groove', label: 'Groove synthé & espace' },
+    { id: 'effets-bus', label: 'Effets de bus & mix' },
+  ];
+  let productionTouched = $state(new Set<string>());
+  function markProductionTouched(e: Event) {
+    const target = e.target as HTMLElement | null;
+    const grp = target?.closest<HTMLElement>('[data-group]');
+    const id = grp?.dataset.group;
+    if (id && !productionTouched.has(id)) productionTouched = new Set(productionTouched).add(id);
+  }
+  // hasNotes : kick/snare/hat (0/1/2, 0 = vide) et bass/melody (objet note
+  // ou null) partagent la même logique !!v. La Nappe est différente : sa
+  // case vide vaut -1, "truthy" en JS — il lui faut le test >= 0.
+  function hasNotes(row: { pattern: unknown[] }, isPad = false): boolean {
+    return isPad ? row.pattern.some((v) => typeof v === 'number' && v >= 0) : row.pattern.some((v) => !!v);
+  }
+  const productionUntouched = $derived(PRODUCTION_GROUPS.filter((g) => !productionTouched.has(g.id)));
+  const productionTip = $derived.by(() => {
+    if (!hasNotes(pattern.state.rows.kick)) return "Commence par poser un rythme sur le Kick — c'est la base de tout le morceau.";
+    if (!hasNotes(pattern.state.rows.snare)) return 'Ajoute la Snare pour marquer le contretemps.';
+    if (!hasNotes(pattern.state.rows.hat))
+      return 'Le Hat apporte du mouvement — pose quelques pas, ou tente une rafale (clic droit / appui long).';
+    if (
+      !hasNotes(pattern.state.synthRows.bass) &&
+      !hasNotes(pattern.state.synthRows.pad, true) &&
+      !hasNotes(pattern.state.synthRows.melody)
+    ) {
+      return 'Passe au Synthé : le 🎲 sur la Nappe pose vite un fond harmonique pour démarrer.';
+    }
+    if (productionTouched.size === 0) {
+      return 'Le rythme de base est posé — explore les réglages avancés (Groove, Filtres, Effets...) pour le personnaliser.';
+    }
+    if (productionUntouched.length === 0) return "Tu as touché à tous les modules — libre à toi d'affiner le rythme !";
+    return `Tu peux continuer à affiner, ou explorer : ${productionUntouched.map((g) => g.label).join(' · ')}`;
   });
 
   // Raccourcis clavier (absents de l'original) : Espace = lecture/stop,
@@ -237,6 +304,7 @@
         — le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)
       {/if}
     </p>
+    <p class="hint production-hint">💡 {productionTip}</p>
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
@@ -292,7 +360,7 @@
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
       <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
-        <div class="two-col">
+        <div class="two-col" data-group="drum-groove">
           <XpSlider label="Swing" min={0} max={75} unit="%" bind:value={st.swing} />
           <XpSlider label="Traîne" min={0} max={30} unit="%" bind:value={st.drag} />
           <XpSlider label="Rafales spontanées" min={0} max={100} unit="%" bind:value={st.spontRoll} />
@@ -300,7 +368,7 @@
           <XpSlider label="Vélocité aléatoire" min={0} max={100} unit="%" bind:value={st.randomVelocity} />
           <XpSlider label="Intensité du fill" min={0} max={100} unit="%" bind:value={st.fillIntensity} />
         </div>
-        <div class="inline-row">
+        <div class="inline-row" data-group="drum-groove">
           <label>
             Fill toutes les
             <select bind:value={st.fillEvery}>
@@ -324,13 +392,13 @@
         onTest={(n) => !playing && engine.previewSynth(n)} />
     {:else}
       <XpWindow title="Effets de bus & mix" icon="🔊" accent="teal">
-        <div class="two-col">
+        <div class="two-col" data-group="effets-bus">
           <XpSlider label="Saturation" min={0} max={100} unit="%" bind:value={st.globalSaturation} onchange={refreshFx} />
           <XpSlider label="Compression" min={0} max={100} unit="%" bind:value={st.globalCompression} onchange={refreshFx} />
           <XpSlider label="Bitcrush" min={0} max={100} unit="%" bind:value={st.globalBitcrush} onchange={refreshFx} />
           <XpSlider label="Volume général" min={50} max={150} unit="%" bind:value={st.finalVolume} onchange={refreshFx} />
         </div>
-        <label class="chk">
+        <label class="chk" data-group="effets-bus">
           <input type="checkbox" bind:checked={st.synthGlobal.limitersEnabled} onchange={refreshFx} />
           Limiteurs de sécurité
         </label>
