@@ -65,6 +65,17 @@
     openMenu = '';
     action();
   }
+
+  // Bouton retour utilisateur (retour de Yann, 2026-08-13) : pas de backend,
+  // un simple mailto: pré-rempli est la solution la plus légère — marche
+  // partout, ne demande aucun compte, aucun serveur à maintenir.
+  function reportFeedback() {
+    const subject = encodeURIComponent('Boîte à rythmes — retour');
+    const body = encodeURIComponent(
+      `Bug, correction ou idée — écris ici :\n\n\n---\n${location.href}`,
+    );
+    location.href = `mailto:yann.peschanski@gmail.com?subject=${subject}&body=${body}`;
+  }
 </script>
 
 <svelte:window onclick={() => (openMenu = '')} />
@@ -118,6 +129,21 @@
         <button onclick={() => choose(() => (circleView = false))}>Vue linéaire</button>
         <button onclick={() => choose(() => (circleView = true))}>Vue circulaire</button>
         <button onclick={() => choose(toggleSystemSounds)}>{soundsOn ? '🔊' : '🔈'} Sons système : {soundsOn ? 'Activés' : 'Désactivés'}</button>
+      </div>
+    {/if}
+  </div>
+  <div class="menu">
+    <button
+      class="menu-btn"
+      class:on={openMenu === 'help'}
+      onclick={(e) => {
+        e.stopPropagation();
+        openMenu = openMenu === 'help' ? '' : 'help';
+      }}>Aide</button
+    >
+    {#if openMenu === 'help'}
+      <div class="dropdown">
+        <button onclick={() => choose(reportFeedback)}>✉️ Signaler un bug / une idée</button>
       </div>
     {/if}
   </div>

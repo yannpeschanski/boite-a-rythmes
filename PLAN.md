@@ -455,6 +455,46 @@ de Yann : « poursuis sur les travaux du mode live »).
 appui annule déjà ?) ; mode duo (deux téléphones connectés via le partage
 par URL existant, `stores/share.ts`).
 
+**Nouveau, retour de Yann 2026-08-13 — pas encore fait :**
+- **Fader horizontal** (en plus du fader vertical actuel) : « il faudrait
+  qu'il y ait un type de bouton où c'est un fader gauche-droite au sein du
+  bouton, où haut-bas, à voir le plus simple ». Piste la plus simple :
+  `faderPointerDown`/`faderPointerMove`/`setFader` (`LiveView.svelte`,
+  L332-343) lisent aujourd'hui en dur `e.clientY`/`rect.height` — leur
+  ajouter un paramètre d'axe (`'x' | 'y'`) qui bascule vers
+  `e.clientX`/`rect.width` réglerait la mécanique ; il faudrait un champ
+  d'orientation par bouton dans `LiveAssignments` (à côté de `slotModes`,
+  même genre de toggle dans l'overlay ⚙ que ACTIONS/FADER) et un rendu CSS
+  du remplissage en largeur plutôt qu'en hauteur pour l'orientation
+  horizontale. Pas encore commencé.
+- **Verrouiller un bouton avant brassage** : « il faudrait qu'on puisse
+  verrouiller un bouton qu'on veut garder avant le brassage pour le
+  conserver ». `shuffleAssignments` (`liveActions.ts`) réassigne
+  aujourd'hui tous les slots/axes sans exception. Piste : un tableau de
+  verrous par bouton (parallèle à `slotModes`), togglable (cadenas dans
+  l'overlay ⚙, à côté de chaque ligne), que `shuffleAssignments` saute.
+  Pas encore commencé.
+- **Paramètres de base toujours accessibles dans le bandeau du haut** —
+  audit demandé par Yann, fait le 2026-08-13 : aujourd'hui le `topbar`
+  (`LiveView.svelte` L1235-1257 : PLAY, REC, LCD tempo/statut, TILT, 🔀, ⚙)
+  n'expose **aucun contrôle direct** — tout ce qui est réglable en direct
+  passe par le catalogue d'assignation (boutons/pad/fader), donc rien n'est
+  garanti accessible sans configuration préalable. Deux manques identifiés,
+  faute d'équivalent bouton dédié dans le catalogue (contrairement à
+  BREAK/FILL/MUTE, déjà « à portée de main » comme actions assignables
+  classiques) :
+  - **Tempo** — actuellement en lecture seule (`{Math.round(st.tempo)} BPM`
+    dans le LCD), aucun moyen de le changer en Live sans en sortir.
+  - **Volume master** — dans le catalogue d'axes (`liveActions.ts`,
+    `id: 'volume'`) mais seulement joignable si explicitement assigné à un
+    fader/axe ; sinon aucune prise dessus en plein set.
+  Le filtre/reverb (macros pad par défaut) et les mutes/rolls (déjà des
+  actions du catalogue) n'ont pas ce problème — pas candidats. Piste
+  proposée, pas encore faite : deux mini-contrôles fixes dans le `topbar`,
+  hors catalogue d'assignation (tap/drag sur le LCD pour le tempo, petit
+  slider compact à côté de TILT pour le volume), plutôt que d'agrandir le
+  catalogue existant.
+
 ### 7.2 Atelier
 
 1. **✅ Réduire tous les paramètres.** Passe de densité sur `XpSlider`
@@ -573,6 +613,50 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
 - **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
   piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier
   tout de suite), et être très explicatif à chaque nouveauté introduite.
+- **Explications légères par paramètre** (retour de Yann, 2026-08-13) : une
+  micro-explication disponible pour chaque réglage, sans surcharger l'écran
+  ni noyer un nouvel arrivant. Piste à trancher : affordance discrète type
+  bulle XP (au survol/appui long, pas affichée par défaut), contenu texte
+  seul dans une table id → phrase courte, réutilisant le mécanisme d'activation
+  déjà posé pour les sons système (réglage persistant dans Affichage). Sert
+  aussi la prise en main.
+- ✅ **Bouton retour utilisateur** (bug / correction / idée) — retour de
+  Yann, 2026-08-13, fait le jour même. Destination tranchée par Yann :
+  mailto: (pas de backend à construire). Nouveau menu **Aide** dans
+  `ToolBar.svelte` (Atelier), à côté de Fichier/Édition/Affichage —
+  `reportFeedback()` construit un `mailto:yann.peschanski@gmail.com` avec
+  sujet et corps pré-remplis (URL courante en pied de message pour le
+  contexte), ouvert via `location.href` comme `share()` gère déjà l'échec
+  du presse-papiers juste au-dessus dans le même fichier.
+- **Fredonner une mélodie au micro → grille Mélodie** (retour de Yann,
+  2026-08-13). Détection de hauteur en direct (`getFloatTimeDomainData` +
+  autocorrélation ou YIN, pas de lib externe si évitable), quantification de
+  la fréquence détectée sur la gamme/tonalité courante puis sur la grille de
+  pas. Projet en soi (DSP temps réel + UX d'enregistrement) — à faire
+  descendre en section 6 « grosses » une fois cadré.
+- ✅ **Viz③ Mode Live (lapin coureur) : lien musique trop faible** (retour de
+  Yann, 2026-08-13, corrigé le jour même). Diagnostic (`LiveView.svelte`,
+  `drawVizRunner`) : le défilement (`scroll = now * 70`) tournait à vitesse
+  réelle fixe, indépendante du tempo et de l'état lecture/arrêt, et les
+  carottes étaient semées à un espacement pixel aléatoire (130–150 px + aléa)
+  plutôt qu'aux positions réelles des pas du pattern. Trois correctifs :
+  (1) horloge de course dédiée (`runnerClock`) qui n'avance que pendant la
+  lecture (`playing`) — le lapin s'immobilise net à l'arrêt au lieu de
+  continuer sur l'horloge murale, vérifié par capture d'écran (deux frames à
+  1,2 s d'écart à l'arrêt strictement identiques) ; (2) vitesse de défilement
+  dérivée du tempo réel (`runnerScrollSpeed`, `RUNNER_STEP_PX / stepDur`,
+  `stepDur = barDuration(tempo) / kick.subdiv` de `engine/groove.ts`),
+  calibrée pour retrouver ~70px/s au réglage par défaut (120 BPM, kick à
+  4 pas) ; (3) carottes semées sur le pattern réel de la ligne kick
+  (`runnerRefillCarrots`, un curseur de pas qui avance en boucle sur
+  `kick.pattern`/`kick.subdiv`, une carotte par pas actif, pas silencieux
+  comptés dans l'espacement) au lieu d'un espacement aléatoire — manger une
+  carotte correspond maintenant à un coup de kick effectivement programmé.
+  Le cycle de jambes (`run`) suit la même horloge et le même ratio de
+  vitesse pour rester visuellement cohérent avec le sol qui défile. La
+  détection de morsure (front montant sur `getLineLevels()`) reste sur
+  l'horloge murale réelle — c'est le seul repère fiable de ce qui sonne
+  vraiment.
 
 ---
 
