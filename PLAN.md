@@ -580,10 +580,14 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
   seul dans une table id → phrase courte, réutilisant le mécanisme d'activation
   déjà posé pour les sons système (réglage persistant dans Affichage). Sert
   aussi la prise en main.
-- **Bouton retour utilisateur** (bug / correction / idée) — retour de Yann,
-  2026-08-13. Pas de backend : destination à trancher (mailto: vers
-  yann.peschanski@gmail.com le plus simple sans rien construire, sinon issue
-  GitHub pré-remplie si le dépôt doit rester la référence).
+- ✅ **Bouton retour utilisateur** (bug / correction / idée) — retour de
+  Yann, 2026-08-13, fait le jour même. Destination tranchée par Yann :
+  mailto: (pas de backend à construire). Nouveau menu **Aide** dans
+  `ToolBar.svelte` (Atelier), à côté de Fichier/Édition/Affichage —
+  `reportFeedback()` construit un `mailto:yann.peschanski@gmail.com` avec
+  sujet et corps pré-remplis (URL courante en pied de message pour le
+  contexte), ouvert via `location.href` comme `share()` gère déjà l'échec
+  du presse-papiers juste au-dessus dans le même fichier.
 - **Fredonner une mélodie au micro → grille Mélodie** (retour de Yann,
   2026-08-13). Détection de hauteur en direct (`getFloatTimeDomainData` +
   autocorrélation ou YIN, pas de lib externe si évitable), quantification de
