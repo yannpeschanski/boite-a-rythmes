@@ -455,6 +455,46 @@ de Yann : « poursuis sur les travaux du mode live »).
 appui annule déjà ?) ; mode duo (deux téléphones connectés via le partage
 par URL existant, `stores/share.ts`).
 
+**Nouveau, retour de Yann 2026-08-13 — pas encore fait :**
+- **Fader horizontal** (en plus du fader vertical actuel) : « il faudrait
+  qu'il y ait un type de bouton où c'est un fader gauche-droite au sein du
+  bouton, où haut-bas, à voir le plus simple ». Piste la plus simple :
+  `faderPointerDown`/`faderPointerMove`/`setFader` (`LiveView.svelte`,
+  L332-343) lisent aujourd'hui en dur `e.clientY`/`rect.height` — leur
+  ajouter un paramètre d'axe (`'x' | 'y'`) qui bascule vers
+  `e.clientX`/`rect.width` réglerait la mécanique ; il faudrait un champ
+  d'orientation par bouton dans `LiveAssignments` (à côté de `slotModes`,
+  même genre de toggle dans l'overlay ⚙ que ACTIONS/FADER) et un rendu CSS
+  du remplissage en largeur plutôt qu'en hauteur pour l'orientation
+  horizontale. Pas encore commencé.
+- **Verrouiller un bouton avant brassage** : « il faudrait qu'on puisse
+  verrouiller un bouton qu'on veut garder avant le brassage pour le
+  conserver ». `shuffleAssignments` (`liveActions.ts`) réassigne
+  aujourd'hui tous les slots/axes sans exception. Piste : un tableau de
+  verrous par bouton (parallèle à `slotModes`), togglable (cadenas dans
+  l'overlay ⚙, à côté de chaque ligne), que `shuffleAssignments` saute.
+  Pas encore commencé.
+- **Paramètres de base toujours accessibles dans le bandeau du haut** —
+  audit demandé par Yann, fait le 2026-08-13 : aujourd'hui le `topbar`
+  (`LiveView.svelte` L1235-1257 : PLAY, REC, LCD tempo/statut, TILT, 🔀, ⚙)
+  n'expose **aucun contrôle direct** — tout ce qui est réglable en direct
+  passe par le catalogue d'assignation (boutons/pad/fader), donc rien n'est
+  garanti accessible sans configuration préalable. Deux manques identifiés,
+  faute d'équivalent bouton dédié dans le catalogue (contrairement à
+  BREAK/FILL/MUTE, déjà « à portée de main » comme actions assignables
+  classiques) :
+  - **Tempo** — actuellement en lecture seule (`{Math.round(st.tempo)} BPM`
+    dans le LCD), aucun moyen de le changer en Live sans en sortir.
+  - **Volume master** — dans le catalogue d'axes (`liveActions.ts`,
+    `id: 'volume'`) mais seulement joignable si explicitement assigné à un
+    fader/axe ; sinon aucune prise dessus en plein set.
+  Le filtre/reverb (macros pad par défaut) et les mutes/rolls (déjà des
+  actions du catalogue) n'ont pas ce problème — pas candidats. Piste
+  proposée, pas encore faite : deux mini-contrôles fixes dans le `topbar`,
+  hors catalogue d'assignation (tap/drag sur le LCD pour le tempo, petit
+  slider compact à côté de TILT pour le volume), plutôt que d'agrandir le
+  catalogue existant.
+
 ### 7.2 Atelier
 
 1. **✅ Réduire tous les paramètres.** Passe de densité sur `XpSlider`
