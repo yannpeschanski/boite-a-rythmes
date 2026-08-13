@@ -573,6 +573,33 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
 - **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
   piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier
   tout de suite), et être très explicatif à chaque nouveauté introduite.
+- **Explications légères par paramètre** (retour de Yann, 2026-08-13) : une
+  micro-explication disponible pour chaque réglage, sans surcharger l'écran
+  ni noyer un nouvel arrivant. Piste à trancher : affordance discrète type
+  bulle XP (au survol/appui long, pas affichée par défaut), contenu texte
+  seul dans une table id → phrase courte, réutilisant le mécanisme d'activation
+  déjà posé pour les sons système (réglage persistant dans Affichage). Sert
+  aussi la prise en main.
+- **Bouton retour utilisateur** (bug / correction / idée) — retour de Yann,
+  2026-08-13. Pas de backend : destination à trancher (mailto: vers
+  yann.peschanski@gmail.com le plus simple sans rien construire, sinon issue
+  GitHub pré-remplie si le dépôt doit rester la référence).
+- **Fredonner une mélodie au micro → grille Mélodie** (retour de Yann,
+  2026-08-13). Détection de hauteur en direct (`getFloatTimeDomainData` +
+  autocorrélation ou YIN, pas de lib externe si évitable), quantification de
+  la fréquence détectée sur la gamme/tonalité courante puis sur la grille de
+  pas. Projet en soi (DSP temps réel + UX d'enregistrement) — à faire
+  descendre en section 6 « grosses » une fois cadré.
+- **Viz③ Mode Live (lapin coureur) : lien musique trop faible** (retour de
+  Yann, 2026-08-13). Diagnostic (`LiveView.svelte`, `drawVizRunner`) : le
+  défilement (`scroll = now * 70`) tourne à vitesse réelle fixe, indépendante
+  du tempo, et les carottes sont semées à un espacement pixel fixe
+  (130–170 px + aléa) plutôt qu'aux positions réelles des pas du pattern —
+  seul le kick fait manger une carotte, sans rapport avec le tempo affiché.
+  Piste : dériver la vitesse de défilement du tempo courant (distance
+  constante entre deux carottes = un temps, pas un intervalle réel fixe), et
+  semer les carottes aux pas effectivement actifs de la ligne kick plutôt
+  qu'au hasard.
 
 ---
 
