@@ -6,6 +6,7 @@
   import type { DrumRowName, DrumStep } from '../../model/types';
   import XpSlider from '../xp/XpSlider.svelte';
   import { history } from '../../stores/history.svelte';
+  import { applyEuclideanRhythm } from '../../engine/generators';
 
   let {
     name,
@@ -26,6 +27,15 @@
   const row = $derived(pattern.state.rows[name]);
   // kick = binaire ; snare/hat = 3 états (normal/rim, fermé/ouvert)
   const maxState = $derived(name === 'kick' ? 1 : 2);
+
+  // Générateur euclidien (PLAN.md §6) : nombre de coups à répartir, réglage
+  // ponctuel comme fillRate côté Synthé (SynthModule.svelte) — pas un champ
+  // du pattern, recalculé à chaque appui sur Répartir.
+  let euclidPulses = $state(4);
+  function applyEuclid() {
+    history.push();
+    applyEuclideanRhythm(pattern.state, name, euclidPulses);
+  }
 
   function cycleCell(col: number) {
     history.push();
@@ -119,6 +129,16 @@
       <XpSlider label="Volume" min={0} max={100} unit="%"
         value={Math.round(row.volume * 100)}
         onchange={(v) => (row.volume = v / 100)} />
+      <div class="euclid-row">
+        <XpSlider label="Coups euclidiens" min={1} max={row.subdiv} bind:value={euclidPulses} />
+        <button
+          class="xp-btn tiny"
+          onclick={applyEuclid}
+          title="Répartit ce nombre de coups le plus uniformément possible sur les pas — remplace le contenu de la ligne"
+        >
+          🔵 Répartir
+        </button>
+      </div>
     {/if}
   </fieldset>
   <fieldset data-group="drum-timbre">
@@ -291,5 +311,13 @@
     cursor: pointer;
     padding: 2px 0;
     font-family: inherit;
+  }
+  .euclid-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .euclid-row :global(.xp-slider) {
+    flex: 1;
   }
 </style>

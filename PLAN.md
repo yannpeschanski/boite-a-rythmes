@@ -195,11 +195,23 @@ Tailles relatives sur un total 100 %.
 Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à l'esprit de l'app (XP + pédagogie + fun).
 
 ### Petites (quelques heures chacune, gros effet)
-- ⭐ **Partage par URL** : le pattern (format v2) compressé dans le hash de l'URL → « envoie ton rythme à un pote » sans fichier. Trivial une fois l'état sérialisable, et transforme l'app en objet social.
-- ⭐ **Tap tempo** : taper le tempo sur un bouton (ou la barre espace ×4).
+- ✅⭐ **Partage par URL** — fait (`stores/share.ts`), pas marqué à l'époque : le pattern compressé dans le hash de l'URL.
+- ✅⭐ **Tap tempo** — fait (`ToolBar.svelte`, bouton 👆 Tap tempo), pas marqué à l'époque.
 - **Métronome + précompte** avant l'enregistrement WAV.
 - ⭐ **Sons système XP** synthétisés (démarrage, erreur, « tada » sur 3 étoiles au jeu) — déjà prévu §2, ça mérite d'être une vraie feature désactivable.
-- **Générateur euclidien** : bouton « répartir N coups uniformément » par ligne (algorithme de Bjorklund, ~30 lignes) — pédagogique ET utile, très dans l'esprit polyrythmie de l'app.
+- ✅ **Générateur euclidien** (retour de Yann : « next ! », choisi parmi les
+  idées §6 restantes). Bouton « répartir N coups uniformément » par ligne —
+  `euclideanRhythm(steps, pulses)` (nouveau, `engine/generators.ts`),
+  algorithme de Bjorklund par bissection de groupes homogènes (pas la
+  récursion originale, même résultat, plus lisible) ; testé contre le motif
+  canonique E(3,8) (tresillo cubain) et des cas limites (0 coup, autant de
+  coups que de pas), voir `tests/model.test.ts`. `applyEuclideanRhythm`
+  remplace tout le contenu de la ligne (état simple, pas d'accent/rim) et
+  réinitialise les rafales. UI : slider « Coups euclidiens » + bouton
+  🔵 Répartir dans le fieldset Séquence de chaque ligne drum
+  (`DrumRowView.svelte`) — nombre de coups gardé en état de composant
+  local (pas un champ du pattern), même logique que `fillRate` côté
+  Synthé (`SynthModule.svelte`).
 
 ### Moyennes (une à quelques journées)
 - ⭐ **Mode Song / chaînage de patterns** : 4 slots A/B/C/D + une timeline simple (AABA…) — la demande n°1 de toute boîte à rythmes. Le modèle d'état sérialisable rend ça peu coûteux (un slot = un `PatternStateV2`).

@@ -2,7 +2,7 @@
 // randomizeSynth/applyRandomRolls (l. 3437–3581). `rng` injectable :
 // Math.random pour le bouton manuel, makeSeededRng(noteSeed) pour les presets
 // (rendu déterministe, pas un tirage différent à chaque rechargement).
-import type { PatternStateV2, SynthRowName, SynthNote } from '../model/types';
+import type { PatternStateV2, SynthRowName, SynthNote, DrumRowName, DrumStep } from '../model/types';
 import { resizeSynthLine } from '../model/defaults';
 import { padChordAtBarPosition, barPositionForStep, chordsFor, type ChordDef } from './harmony';
 import { arpNoteOrder } from './voices/synth';
@@ -138,4 +138,42 @@ export function translatePadArpToMelody(state: PatternStateV2, rng: Rng): void {
       melody.pattern[targetStep] = { degree: wrapped, octave };
     });
   }
+}
+
+// Rythme euclidien (algorithme de Bjorklund) — répartit `pulses` coups le
+// plus uniformément possible sur `steps` pas (PLAN.md §6, « Générateur
+// euclidien »). Implémentation par bissection de groupes homogènes plutôt
+// que la récursion originale de Bjorklund : même résultat, plus simple à
+// lire. Cas limites : pulses<=0 -> tout silencieux, pulses>=steps -> tout
+// actif, plutôt que planter ou boucler sur un cas dégénéré.
+export function euclideanRhythm(steps: number, pulses: number): boolean[] {
+  const n = Math.max(1, Math.round(steps));
+  const k = Math.max(0, Math.min(n, Math.round(pulses)));
+  if (k === 0) return new Array(n).fill(false);
+  if (k === n) return new Array(n).fill(true);
+  let groups: boolean[][] = Array.from({ length: k }, () => [true]);
+  let remainder: boolean[][] = Array.from({ length: n - k }, () => [false]);
+  // À chaque tour, on accole le plus de paires groupe/reste possible ; ce
+  // qui ne rentre pas dans une paire devient le nouveau "reste" à répartir
+  // au tour suivant — la bissection s'arrête dès qu'il ne reste plus qu'un
+  // seul groupe de reste (plus rien à distribuer plus finement).
+  while (remainder.length > 1) {
+    const pairs = Math.min(groups.length, remainder.length);
+    const merged: boolean[][] = [];
+    for (let i = 0; i < pairs; i++) merged.push([...groups[i], ...remainder[i]]);
+    const leftoverGroups = groups.slice(pairs);
+    const leftoverRemainder = remainder.slice(pairs);
+    groups = merged;
+    remainder = leftoverGroups.length ? leftoverGroups : leftoverRemainder;
+  }
+  return groups.concat(remainder).flat();
+}
+
+// Applique un rythme euclidien à une ligne drum — remplace tout le contenu
+// existant (état 1, simple, pas d'accent/rim : « répartir uniformément »
+// n'est pas un choix d'accentuation) et réinitialise les rafales.
+export function applyEuclideanRhythm(state: PatternStateV2, name: DrumRowName, pulses: number): void {
+  const row = state.rows[name];
+  row.pattern = euclideanRhythm(row.subdiv, pulses).map((on) => (on ? 1 : 0)) as DrumStep[];
+  row.rolls = new Array(row.subdiv).fill(1);
 }

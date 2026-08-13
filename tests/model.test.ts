@@ -7,6 +7,7 @@ import { LEVELS } from '../src/model/presets/levels';
 import { MAXSTEPS } from '../src/model/types';
 import { makeSeededRng } from '../src/engine/rng';
 import { isFillBar, isLastSteps, randomizeGain, barDuration } from '../src/engine/groove';
+import { euclideanRhythm } from '../src/engine/generators';
 
 describe('sérialisation v2', () => {
   it('round-trip export/import préserve le drum', () => {
@@ -86,5 +87,17 @@ describe('moteur — briques pures', () => {
     expect(barDuration(120)).toBe(2);
     // à vélocité aléatoire 0, le gain est inchangé
     expect(randomizeGain(0.8, 0, makeSeededRng(1))).toBe(0.8);
+  });
+
+  it('rythme euclidien : cas connus et cas limites', () => {
+    // E(3,8) — tresillo cubain, motif canonique x..x..x.
+    expect(euclideanRhythm(8, 3)).toEqual([true, false, false, true, false, false, true, false]);
+    // E(4,8) — un coup sur deux
+    expect(euclideanRhythm(8, 4)).toEqual([true, false, true, false, true, false, true, false]);
+    // Cas limites : 0 coup -> tout silencieux, autant de coups que de pas -> tout actif
+    expect(euclideanRhythm(5, 0)).toEqual([false, false, false, false, false]);
+    expect(euclideanRhythm(5, 5)).toEqual([true, true, true, true, true]);
+    // Toujours exactement `pulses` coups actifs, quel que soit le rythme
+    expect(euclideanRhythm(16, 5).filter(Boolean)).toHaveLength(5);
   });
 });
