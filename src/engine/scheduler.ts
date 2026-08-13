@@ -66,9 +66,12 @@ export interface ScheduleContext {
 }
 
 // Renvoie true si un ghost note a été déclenché (flash visuel en direct).
+// Clap (PLAN.md §6) suit ce même modèle plutôt qu'un chemin dédié — c'est un
+// coup ponctuel comme kick/snare (candidat aux ghost notes/breaks), à la
+// différence du shaker qui suit le modèle "hat" (triggerHatStep ci-dessous).
 function triggerKickSnareStep(
   cx: SchedueCtxAlias,
-  name: 'kick' | 'snare',
+  name: 'kick' | 'snare' | 'clap',
   col: number,
   time: number,
   stepDur: number,
@@ -79,6 +82,7 @@ function triggerKickSnareStep(
   if (row.muted || cx.liveMute?.[name]) return false;
   const play = (t: number, g: number, rim: boolean) => {
     if (name === 'kick') kit.playKick(t, g, row);
+    else if (name === 'clap') kit.playClap(t, g, row);
     else if (rim) kit.playRimshot(t, g, row);
     else kit.playSnare(t, g, row);
   };
@@ -122,8 +126,11 @@ function triggerKickSnareStep(
   // ROLL×2/3/4 (Mode Live) : forcé exactement comme le ferait un fill — un
   // pas vide se met à sonner tant que le bouton est maintenu, même logique
   // que le hat (triggerHatStep) plutôt qu'un chemin séparé.
-  const forcedRoll = name === 'kick' ? cx.forceKickRoll : cx.forceSnareRoll;
-  let stepState = row.pattern[col]; // kick: 0/1 — snare: 0/1(normal)/2(rim shot)
+  // Le clap n'a pas de rafale forcée dédiée en Mode Live (pas d'équivalent
+  // forceClapRoll — portée du Mode Live volontairement pas étendue à
+  // clap/shaker dans cette passe, PLAN.md §6).
+  const forcedRoll = name === 'kick' ? cx.forceKickRoll : name === 'snare' ? cx.forceSnareRoll : null;
+  let stepState = row.pattern[col]; // kick/clap: 0/1 — snare: 0/1(normal)/2(rim shot)
   if (forcedRoll != null && !stepState) stepState = 1;
   if (stepState) {
     const isRim = name === 'snare' && stepState === 2;
@@ -206,7 +213,14 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
   const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
 
-  (['kick', 'snare'] as const).forEach((name) => {
+  // Clap (PLAN.md §6) rejoint ce tableau plutôt qu'une boucle séparée — même
+  // fonction de déclenchement que kick/snare (triggerKickSnareStep), donc
+  // même traitement break/fill/ghost pour les trois. Ajouté APRÈS kick/snare
+  // (jamais entre eux) : à motif vide par défaut, ça ne consomme aucun tirage
+  // aléatoire tant qu'on n'y programme rien, donc ça ne perturbe pas l'ordre
+  // de consommation du générateur pour les patterns déjà sauvegardés
+  // (contrainte CLAUDE.md).
+  (['kick', 'snare', 'clap'] as const).forEach((name) => {
     const cursor = cursors[name];
     const row = state.rows[name];
     while (cursor.nextStepTime < horizon) {
@@ -217,8 +231,8 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
       const drag = (state.drag / 100) * stepDur;
       const time = cursor.nextStepTime + shift + swing + drag;
 
-      // Break : dépouillé -> kick/snare coupés (seul le hat tient le temps) ;
-      // explosion -> fill forcé par-dessus le fill normal éventuel.
+      // Break : dépouillé -> kick/snare/clap coupés (seul le hat tient le
+      // temps) ; explosion -> fill forcé par-dessus le fill normal éventuel.
       const breakPhase = breakPhaseFor(time, cx.breakWindow, barDur);
       if (breakPhase !== 'strip') {
         const ghosted = triggerKickSnareStep(
@@ -238,6 +252,7 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
   });
 
   scheduleHatRows(cx, horizon);
+  scheduleShakerRows(cx, horizon);
 }
 
 function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
@@ -262,6 +277,52 @@ function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
 
     hatCursor.nextStepTime += stepDur;
     hatCursor.stepIndex++;
+  }
+}
+
+// Shaker (PLAN.md §6) : version simplifiée du hat — binaire (pas de variante
+// ouverte/fermée ni de choke), pas de rafales spontanées ni de fill/break
+// (texture discrète en continu plutôt qu'un élément qui doit « exploser »
+// avec le reste — portée volontairement réduite dans cette passe, à revoir
+// si le besoin s'en fait sentir à l'usage).
+function triggerShakerStep(cx: SchedueCtxAlias, col: number, time: number, stepDur: number): void {
+  const { state, kit, rng } = cx;
+  const shaker = state.rows.shaker;
+  if (shaker.muted || cx.liveMute?.shaker) return;
+  const stepState = shaker.pattern[col];
+  if (!stepState) return;
+  const roll = shaker.rolls[col];
+  if (roll > 1) {
+    const rollDur = stepDur / roll;
+    for (let k = 0; k < roll; k++) {
+      const t = time + k * rollDur;
+      const velocity = 0.35 + 0.65 * (k / (roll - 1));
+      const g = randomizeGain(shaker.volume * velocity, state.randomVelocity / 100, rng);
+      kit.playShaker(t, g, shaker);
+    }
+  } else {
+    const g = randomizeGain(shaker.volume, state.randomVelocity / 100, rng);
+    kit.playShaker(time, g, shaker);
+  }
+}
+
+function scheduleShakerRows(cx: SchedulingContextInternal, horizon: number): void {
+  const { state, cursors } = cx;
+  const shakerCursor = cursors.shaker;
+  const shaker = state.rows.shaker;
+  while (shakerCursor.nextStepTime < horizon) {
+    const col = shakerCursor.stepIndex % shaker.subdiv;
+    const stepDur = stepDurationFor(state, 'shaker');
+    const swing = col % 2 === 1 ? (state.swing / 100) * stepDur : 0;
+    const shift = (shaker.shiftPct / 100) * stepDur;
+    const drag = (state.drag / 100) * stepDur;
+    const time = shakerCursor.nextStepTime + shift + swing + drag;
+
+    triggerShakerStep(cx, col, time, stepDur);
+    cx.emitPlayhead({ name: 'shaker', col, time, ghosted: false });
+
+    shakerCursor.nextStepTime += stepDur;
+    shakerCursor.stepIndex++;
   }
 }
 

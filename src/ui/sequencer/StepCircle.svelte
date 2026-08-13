@@ -26,14 +26,22 @@
     onCellRoll?: (name: DrumRowName, col: number) => void;
   } = $props();
 
+  // Vue circulaire volontairement limitée à kick/snare/hat (PLAN.md §6) — pas
+  // clap/shaker : 5 anneaux concentriques tasseraient l'anneau intérieur au
+  // point de devenir difficile à viser au doigt. Type local plutôt que
+  // `DrumRowName` (élargi) pour RING_ORDER/FALLBACK/radii/ringColor
+  // ci-dessous — clap/shaker restent éditables en vue linéaire (DrumRowView)
+  // seulement.
+  type CircleRowName = 'kick' | 'snare' | 'hat';
+
   // Ordre de dessin ; rayons comme l'original : kick à l'extérieur (0.92),
   // snare au milieu (0.62), hat à l'intérieur (0.34).
-  const RING_ORDER: DrumRowName[] = ['kick', 'snare', 'hat'];
+  const RING_ORDER: CircleRowName[] = ['kick', 'snare', 'hat'];
 
   // Couleurs d'anneau : les tokens --cell-* du design system (mêmes teintes
   // que la grille linéaire), lus au montage ; repli sur les valeurs de
   // tokens.css si la variable est absente (canvas hors d'un thème).
-  const FALLBACK: Record<DrumRowName, string> = {
+  const FALLBACK: Record<CircleRowName, string> = {
     kick: '#d84315',
     snare: '#c8881a',
     hat: '#2b8a8a',
@@ -48,7 +56,7 @@
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D | null = null;
-  const ringColor: Record<DrumRowName, string> = { ...FALLBACK };
+  const ringColor: Record<CircleRowName, string> = { ...FALLBACK };
 
   // ---- Géométrie (port de ringGeometry) ----
   function ringGeometry(w: number, h: number) {
@@ -56,7 +64,7 @@
     const cy = h / 2;
     const maxR = Math.min(w, h) * 0.46;
     const thickness = maxR * 0.16;
-    const radii: Record<DrumRowName, number> = {
+    const radii: Record<CircleRowName, number> = {
       kick: maxR * 0.92,
       snare: maxR * 0.62,
       hat: maxR * 0.34,

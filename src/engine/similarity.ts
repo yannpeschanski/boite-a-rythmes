@@ -3,8 +3,14 @@
 // lignes (un rythme joué kick/snare/hat inversé reste le même rythme).
 // Port de similarityScore/updateClosestMatch (l. 6584–6642).
 import type { PatternStateV2, DrumRowName, DrumStep } from '../model/types';
-import { DRUM_ROW_NAMES } from '../model/types';
 import { PRESETS, type SongPresetData } from '../model/presets/songs';
+
+// Comparaison volontairement limitée à kick/snare/hat (PLAN.md §6) : clap et
+// shaker n'existent pas dans les 34 presets (contenu non écrit dans cette
+// passe) et 5 lignes feraient exploser les permutations testées (5! = 120
+// contre 6 aujourd'hui) — PAS `DRUM_ROW_NAMES` (qui inclut désormais
+// clap/shaker) pour ce tableau ni pour la comparaison ci-dessous.
+const SIMILARITY_ROWS = ['kick', 'snare', 'hat'] as const;
 
 // Les 6 permutations des 3 lignes.
 const PERMUTATIONS: DrumRowName[][] = [
@@ -44,7 +50,7 @@ export interface ClosestMatch {
 export function findClosestPreset(state: PatternStateV2): ClosestMatch | null {
   let best: ClosestMatch | null = null;
   for (const preset of PRESETS) {
-    const presetRows = DRUM_ROW_NAMES.map((n) => {
+    const presetRows = SIMILARITY_ROWS.map((n) => {
       const src = preset[n];
       return { pattern: normalizePattern(src.pattern, src.subdiv), subdiv: src.subdiv };
     });

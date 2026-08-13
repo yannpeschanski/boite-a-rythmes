@@ -283,7 +283,86 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
       besoin se confirme à l'usage. Pas encore fait : bouton catalogue
       dédié pour changer de séquence sans repasser par ⚙ (piste v2 si la
       liste dans l'overlay se révèle trop lente en plein set).
-- ⭐ **Nouvelles voix drum** : clap 909 (bursts de bruit décalés), tom (sinus pitch-drop plus lent), cowbell 808 (2 oscillateurs carrés 540/800 Hz), shaker — le moteur actuel les accueille sans changement d'architecture (une ligne = une voix + un pattern).
+- ✅⭐ **Nouvelles voix drum : clap et shaker** (retour de Yann 2026-08-13 — tom
+  et cowbell laissés de côté, choix explicite de Yann). Cartographie
+  exhaustive faite avant de coder (25 fichiers touchés) — le moteur
+  n'accueille PAS ces voix « sans changement d'architecture » comme espéré
+  au départ : `DrumRowName` est un contrat central dont dépendent le
+  scheduler (ordre de consommation du générateur aléatoire, contrainte
+  CLAUDE.md), le Mode jeu (34 niveaux câblés en dur sur 3 lignes), le Mode
+  Live (catalogue d'actions, visualiseurs), la vue circulaire et
+  l'indicateur de similarité.
+  - **Modèle** : `DrumRowName` étendu à `'kick'|'snare'|'hat'|'clap'|'shaker'`
+    (`model/types.ts`), binaires (pas d'état 2, contrairement à snare/hat).
+    Motif vide par défaut (`defaults.ts`) — ce sont des voix à découvrir, pas
+    une base attendue au premier chargement. `serialize.ts` était déjà
+    tolérant à l'absence d'une ligne (`if (!src) return`, repli sur
+    `defaultState()`) : un vieux fichier de sauvegarde sans clap/shaker
+    importe donc proprement sans rien à changer côté désérialisation —
+    vérifié par un nouveau test dédié (`tests/model.test.ts`).
+  - **Synthèse** (`engine/voices/drums.ts`) : `playClap` — plusieurs
+    impulsions de bruit bandpass très rapprochées (les « mains » qui ne
+    tombent jamais exactement ensemble sur une vraie 909) suivies d'une
+    traîne plus longue pour le corps ; `playShaker` — bruit passe-haut large
+    bande, pas de banc d'oscillateurs (contrairement au hat) ni de
+    passe-bande étroit (contrairement au clap), enveloppe courte. Les deux
+    reprennent `resolveVoice`/`pitchMult`/`decayMult`/`attackAdd`/
+    `filterDest` comme kick/snare/hat, timbre réglable à l'identique.
+  - **Scheduler** (`engine/scheduler.ts`) : clap suit le modèle kick/snare
+    (`triggerKickSnareStep` élargie à `'kick'|'snare'|'clap'` — candidat aux
+    ghost notes/fills/breaks, PAS le fill de fin de mesure réservé à la
+    snare) ; shaker suit une version simplifiée du modèle hat
+    (`triggerShakerStep`/`scheduleShakerRows`, nouvelles fonctions —
+    binaire, pas de choke ni de rafales spontanées/fill/break, texture en
+    continu plutôt qu'un élément qui « explose » avec le reste : portée
+    réduite volontairement, à revoir si le besoin s'en fait sentir). Clap
+    ajoutée à la boucle kick/snare existante (après, jamais entre elles) ;
+    shaker programmée après le hat. Motif vide par défaut = zéro tirage
+    aléatoire consommé tant qu'on n'y programme rien (le early-return sur
+    pas inactif précède tout appel à `rng()`), donc les patterns déjà
+    sauvegardés/exportés ne sont pas affectés par ce changement.
+  - **Atelier** : deux nouvelles lignes dans le séquenceur linéaire
+    (`DrumRowView`, fenêtre renommée « Kick / Snare / Hat / Clap / Shaker »),
+    raccourcis clavier Mute étendus à 1-5. Bug latent corrigé au passage :
+    `maxState` (nombre d'états par pas) et le switch de `AudioEngine.preview`
+    présumaient tous deux « tout ce qui n'est ni kick ni snare est le hat » —
+    aurait fait jouer/afficher le hat à la place de clap/shaker sans le
+    correctif explicite. Couleurs dédiées `--cell-clap` (vert) et
+    `--cell-shaker` (cyan) dans `tokens.css` — les deux teintes encore
+    libres entre les 3 couleurs batterie et les 3 couleurs synthé
+    existantes.
+  - **Portée volontairement exclue de cette passe** (à reprendre plus tard
+    si besoin, PAS un oubli) :
+    - **Mode jeu** : les 34 niveaux restent figés à kick/snare/hat — nouveau
+      type local `GameDrumRowName` (`presets/levels.ts`) utilisé par
+      `GameVoice`/`LevelRhythm`/`Grid`/`Rolls` à la place du `DrumRowName`
+      global élargi, pour que le jeu n'ait pas à gérer 2 lignes qu'il ne
+      connaît pas. `game.svelte.ts`/`GameView.svelte` suivent.
+    - **Vue circulaire** (StepCircle, Atelier) : reste à 3 anneaux — 5
+      anneaux concentriques tasseraient l'anneau intérieur au point d'être
+      illisible au doigt (type local `CircleRowName`, même principe).
+    - **Anneau batterie compact** (TransportRings, barre de transport) :
+      même raisonnement sur un canvas de 50px (type local `RING_DRUM_ROWS`).
+    - **Indicateur « le plus proche »** (`similarity.ts`) : reste sur
+      kick/snare/hat — avec 5 lignes le nombre de permutations testées
+      passerait de 6 (3!) à 120 (5!) ; clap/shaker n'existent de toute façon
+      pas dans les 34 presets.
+    - **Mode Live — actions** : pas de mute/roll clap/shaker dans le
+      catalogue (`liveActions.ts` inchangé) — `rollHeld`/`muted` gardent des
+      entrées clap/shaker inertes juste pour satisfaire le type élargi.
+    - **Mode Live — visualisation** : à l'inverse, PAS exclue : l'égaliseur
+      (viz①, `LINE_EQ_POS`/`DRUM_COLOR`) et le séquenceur linéaire du Live
+      affichent bien clap/shaker (ces lignes sonnent réellement en Live
+      puisque le pattern est partagé avec l'Atelier — les exclure aurait
+      été un vrai manque, pas juste une réduction de portée).
+    - **Contenu des 34 presets** (`songs.ts`) : clap/shaker restent vides
+      par défaut dans tous les presets existants — `presetAdapter.ts` ne
+      les touche pas du tout, aucun changement nécessaire, `defaultState()`
+      fournit déjà des lignes silencieuses.
+  - Vérifié : `npm run check`/`test`/`build`/`build:singlefile` verts,
+    script Playwright (clic sur une case clap/shaker + lecture 1,5s sans
+    erreur console, capture des états vide/rempli) et fumée Mode Live
+    (play/stop sans erreur).
 - ⭐ **Défi du jour** : un niveau généré seedé par la date (même rythme pour tout le monde, façon Wordle/Motus quotidien), avec partage du score en emojis 🟩🟨 — prolonge naturellement le mode jeu Motus existant.
 - ❌ **Visualiseur façon Winamp** dans une fenêtre XP déplaçable (oscilloscope/spectre sur AnalyserNode) — abandonné, retour de Yann 2026-08-13. Ne pas reproposer.
 - **Finger drumming** : jouer kick/snare/hat au clavier (A/Z/E), avec enregistrement quantifié dans la grille pendant la lecture.

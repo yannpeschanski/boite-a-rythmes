@@ -17,13 +17,41 @@ describe('sérialisation v2', () => {
     state.rows.kick.subdiv = 7;
     state.rows.snare.pattern[3] = 2;
     state.rows.hat.rolls[2] = 4;
+    state.rows.clap.pattern[1] = 1;
+    state.rows.shaker.pattern[6] = 1;
+    state.rows.shaker.subdiv = 8;
     const back = deserializeState(serializeState(state));
     expect(back.tempo).toBe(90);
     expect(back.rows.kick.subdiv).toBe(7);
     expect(back.rows.kick.pattern[5]).toBe(1);
     expect(back.rows.snare.pattern[3]).toBe(2);
     expect(back.rows.hat.rolls[2]).toBe(4);
+    expect(back.rows.clap.pattern[1]).toBe(1);
+    expect(back.rows.shaker.pattern[6]).toBe(1);
+    expect(back.rows.shaker.subdiv).toBe(8);
     expect(back.rows.kick.pattern).toHaveLength(MAXSTEPS);
+  });
+
+  it('un export v2 sans clap/shaker (fait avant leur ajout) importe proprement', () => {
+    // Vieille sauvegarde : rows ne porte que kick/snare/hat, comme tout
+    // fichier exporté avant l'ajout de ces deux lignes (PLAN.md §6).
+    const v2 = {
+      version: 2,
+      tempo: 128,
+      rows: {
+        kick: { subdiv: 4, pattern: [1, 0, 1, 0] },
+        snare: { subdiv: 4, pattern: [0, 1, 0, 1] },
+        hat: { subdiv: 3, pattern: [1, 1, 1] },
+      },
+    };
+    const state = deserializeState(JSON.stringify(v2));
+    expect(state.tempo).toBe(128);
+    expect(state.rows.kick.pattern.slice(0, 4)).toEqual([1, 0, 1, 0]);
+    // clap/shaker retombent sur les valeurs par défaut (silencieuses), pas d'erreur
+    expect(state.rows.clap.pattern.every((v) => v === 0)).toBe(true);
+    expect(state.rows.shaker.pattern.every((v) => v === 0)).toBe(true);
+    expect(state.rows.clap.subdiv).toBeGreaterThanOrEqual(1);
+    expect(state.rows.shaker.subdiv).toBeGreaterThanOrEqual(1);
   });
 
   it('import v1 (kick booléens, pas de synthé) reste valide', () => {

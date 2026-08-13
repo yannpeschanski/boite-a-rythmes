@@ -44,6 +44,8 @@ export async function renderPattern(
     kick: { stepIndex: 0, nextStepTime: 0 },
     snare: { stepIndex: 0, nextStepTime: 0 },
     hat: { stepIndex: 0, nextStepTime: 0 },
+    clap: { stepIndex: 0, nextStepTime: 0 },
+    shaker: { stepIndex: 0, nextStepTime: 0 },
   };
   const synthCursors: SynthCursors = {
     bass: { stepIndex: 0, nextStepTime: 0, lastFreq: null, lastFreqs: null },

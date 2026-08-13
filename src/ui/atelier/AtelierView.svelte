@@ -31,7 +31,7 @@
   // pendant que Lecture/Stop/Break restent dans la barre sticky au-dessus,
   // donc joignables quel que soit l'onglet actif.
   let activeTab = $state<'rythme' | 'synthe' | 'effets'>('rythme');
-  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
+  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
   let fileInput: HTMLInputElement;
 
@@ -176,8 +176,8 @@
       void togglePlay();
     } else if (e.key.toLowerCase() === 'b') {
       engine.requestBreak();
-    } else if (e.key >= '1' && e.key <= '3') {
-      const name = (['kick', 'snare', 'hat'] as DrumRowName[])[Number(e.key) - 1];
+    } else if (e.key >= '1' && e.key <= '5') {
+      const name = (['kick', 'snare', 'hat', 'clap', 'shaker'] as DrumRowName[])[Number(e.key) - 1];
       pattern.state.rows[name].muted = !pattern.state.rows[name].muted;
     }
   }
@@ -186,7 +186,7 @@
     if (playing) {
       engine.stop();
       playing = false;
-      playhead = { kick: -1, snare: -1, hat: -1 };
+      playhead = { kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 };
       synthPlayhead = { bass: -1, pad: -1, melody: -1 };
     } else {
       await engine.start();
@@ -212,7 +212,7 @@
     } finally {
       playing = false;
       recording = false;
-      playhead = { kick: -1, snare: -1, hat: -1 };
+      playhead = { kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 };
       synthPlayhead = { bass: -1, pad: -1, melody: -1 };
     }
   }
@@ -243,7 +243,7 @@
   // Édition depuis le cercle — mêmes règles que la grille linéaire.
   function tapCell(name: DrumRowName, col: number) {
     const row = pattern.state.rows[name];
-    const maxState = name === 'kick' ? 1 : 2;
+    const maxState = name === 'snare' || name === 'hat' ? 2 : 1;
     const next = (((row.pattern[col] ?? 0) + 1) % (maxState + 1)) as DrumStep;
     row.pattern[col] = next;
     if (next === 0) row.rolls[col] = 1;
@@ -341,7 +341,7 @@
        par un aperçu combiné des 6 lignes plutôt que dupliquer juste la
        batterie — les effets de bus touchent tout le mix (retour de Yann). -->
   {#if activeTab === 'rythme'}
-    <XpWindow title="Séquenceur — Kick / Snare / Hat" icon="🥁" accent="amber">
+    <XpWindow title="Séquenceur — Kick / Snare / Hat / Clap / Shaker" icon="🥁" accent="amber">
       {#if circleView}
         <div class="circle-holder">
           <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
@@ -352,6 +352,10 @@
         <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
         <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
+          onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+        <DrumRowView name="clap" label="Clap" playheadCol={playhead.clap}
+          onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+        <DrumRowView name="shaker" label="Shaker" playheadCol={playhead.shaker}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
       {/if}
     </XpWindow>

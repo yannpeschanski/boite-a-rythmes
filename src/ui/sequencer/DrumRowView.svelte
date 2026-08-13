@@ -25,8 +25,8 @@
   let openGroups = $state({ sequence: false, timbre: false, space: false });
 
   const row = $derived(pattern.state.rows[name]);
-  // kick = binaire ; snare/hat = 3 états (normal/rim, fermé/ouvert)
-  const maxState = $derived(name === 'kick' ? 1 : 2);
+  // snare/hat = 3 états (normal/rim, fermé/ouvert) ; kick/clap/shaker = binaire
+  const maxState = $derived(name === 'snare' || name === 'hat' ? 2 : 1);
 
   // Générateur euclidien (PLAN.md §6) : nombre de coups à répartir, réglage
   // ponctuel comme fillRate côté Synthé (SynthModule.svelte) — pas un champ
@@ -246,6 +246,12 @@
   .cell.hat.state-2 {
     background: color-mix(in srgb, var(--cell-hat) 55%, white);
   }
+  .cell.clap.state-1 {
+    background: var(--cell-clap);
+  }
+  .cell.shaker.state-1 {
+    background: var(--cell-shaker);
+  }
   /* Cases VIDES teintées par ligne (au lieu d'un gris neutre partagé) — port
      de #rowKick/#rowSnare/#rowHat .cell:not(.active) de l'original
      (l. 759-761) : même quand rien n'est posé, on voit quelle ligne est
@@ -273,6 +279,22 @@
       color-mix(in srgb, var(--cell-hat) 28%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-hat) 45%, var(--xp-line));
+  }
+  .cell.clap.state-0 {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-clap) 10%, #fff),
+      color-mix(in srgb, var(--cell-clap) 28%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-clap) 45%, var(--xp-line));
+  }
+  .cell.shaker.state-0 {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--cell-shaker) 10%, #fff),
+      color-mix(in srgb, var(--cell-shaker) 28%, var(--xp-face-dark))
+    );
+    border-color: color-mix(in srgb, var(--cell-shaker) 45%, var(--xp-line));
   }
   .alt {
     position: absolute;

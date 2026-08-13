@@ -6,14 +6,21 @@
 
 export const MAXSTEPS = 32;
 
-export type DrumRowName = 'kick' | 'snare' | 'hat';
+// clap/shaker (PLAN.md §6, retour de Yann 2026-08-13) : ajoutées après kick/
+// snare/hat, jamais insérées entre elles — l'ordre du tableau/de l'union
+// n'a pas d'importance pour la sérialisation (chaque ligne est nommée dans
+// le JSON), mais l'ORDRE DE SCHEDULING (engine/scheduler.ts) est distinct et
+// contraint par CLAUDE.md (ordre de consommation du générateur aléatoire) :
+// clap/shaker y sont programmées après hat et avant la basse, jamais entre
+// kick/snare/hat.
+export type DrumRowName = 'kick' | 'snare' | 'hat' | 'clap' | 'shaker';
 export type SynthRowName = 'bass' | 'pad' | 'melody';
 export type LineName = DrumRowName | SynthRowName;
 
-export const DRUM_ROW_NAMES: DrumRowName[] = ['kick', 'snare', 'hat'];
+export const DRUM_ROW_NAMES: DrumRowName[] = ['kick', 'snare', 'hat', 'clap', 'shaker'];
 export const SYNTH_ROW_NAMES: SynthRowName[] = ['bass', 'pad', 'melody'];
 
-// kick : 0/1 (bool dans l'original, normalisé en 0/1 à l'import) ;
+// kick/clap/shaker : 0/1 (binaire, pas de variante) ;
 // snare : 0 = rien, 1 = normal, 2 = rim shot ;
 // hat : 0 = rien, 1 = fermé, 2 = ouvert (choke automatique).
 export type DrumStep = 0 | 1 | 2;

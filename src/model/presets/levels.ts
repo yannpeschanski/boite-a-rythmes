@@ -18,7 +18,14 @@
 // 3. Les fonctions qui utilisaient Math.random reçoivent un paramètre
 //    `rng: () => number` (défaut Math.random), logique inchangée.
 
-import type { DrumRowName, DrumStep } from '../types';
+import type { DrumStep } from '../types';
+
+// Mode jeu volontairement limité à kick/snare/hat (PLAN.md §6, clap/shaker
+// ajoutées à l'Atelier mais pas ici) — type LOCAL plutôt que le `DrumRowName`
+// global (désormais élargi), pour que les 34 niveaux continuent de raisonner
+// sur exactement 3 lignes sans qu'une extension du modèle ne les force à
+// gérer 2 lignes qu'ils ne connaissent pas.
+export type GameDrumRowName = 'kick' | 'snare' | 'hat';
 
 // ---------- Types structurels (forme d'origine) ----------
 
@@ -60,7 +67,7 @@ export interface GameLevel {
   forceRollCount: number;
   presetForceShift: boolean;
   presetGhostDensity: number;
-  presetGhostRow: DrumRowName;
+  presetGhostRow: GameDrumRowName;
   presetFillEvery: number;
   voiceTier: VoiceTierName;
 }
@@ -86,7 +93,7 @@ export interface MkLevelOptions {
   forceRollCount?: number;
   presetForceShift?: boolean;
   presetGhostDensity?: number;
-  presetGhostRow?: DrumRowName;
+  presetGhostRow?: GameDrumRowName;
   presetFillEvery?: number;
 }
 
@@ -108,8 +115,8 @@ export interface GenRowResult {
 }
 
 export interface LevelRhythm {
-  target: Record<DrumRowName, DrumStep[]>;
-  roll: Record<DrumRowName, number[]>;
+  target: Record<GameDrumRowName, DrumStep[]>;
+  roll: Record<GameDrumRowName, number[]>;
 }
 
 // Timbre par ligne tel que tiré/copié par le mode jeu (sous-ensemble du timbre drum).
@@ -119,7 +126,7 @@ export interface RowTimbre {
   decay: number;
   tone: number;
 }
-export type GameVoice = Record<DrumRowName, RowTimbre>;
+export type GameVoice = Record<GameDrumRowName, RowTimbre>;
 
 // Forme PLATE d'un preset de morceau telle que consommée par le mode jeu dans
 // l'original (preset.kick.subdiv, preset.kick.pitch…) — écart vs SongPreset,

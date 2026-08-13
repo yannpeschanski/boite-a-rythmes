@@ -50,6 +50,12 @@
   --cell-kick: #d84315;
   --cell-snare: #c8881a;
   --cell-hat: #2b8a8a;
+  /* Clap/shaker (PLAN.md §6) : vert et cyan — les deux teintes encore
+     libres sur la roue chromatique entre les 3 couleurs batterie
+     (rouge-orangé/ambre/sarcelle) et les 3 couleurs synthé (bleu-violet/
+     violet/rose) ci-dessous, pour rester distinctes des 6 déjà prises. */
+  --cell-clap: #3fae54;
+  --cell-shaker: #22a6c9;
 
   /* Couleurs des 3 lignes synthé — mêmes valeurs que PREVIEW_COLOR dans
      SynthRowView.svelte (courbe de filtre) : la ligne dessinée sur le canvas
