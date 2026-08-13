@@ -289,9 +289,16 @@
       // Un bouton en mode fader n'a pas d'actions à tirer au hasard (et
       // vice-versa) — seul le tableau correspondant à son mode ACTUEL est
       // rebrassé, l'autre reste tel quel (repris tel quel si on rebascule le
-      // mode plus tard, plutôt que perdu).
-      slots: assignments.slotModes.map((mode, i) => (mode === 'fader' ? assignments.slots[i] : [pickAction()])),
-      slotFaders: assignments.slotModes.map((mode, i) => (mode === 'fader' ? [pickAxis()] : assignments.slotFaders[i])),
+      // mode plus tard, plutôt que perdu). Un bouton verrouillé (retour de
+      // Yann, PLAN.md §7 : « verrouiller un bouton qu'on veut garder avant
+      // le brassage ») garde ses DEUX tableaux tels quels, quel que soit son
+      // mode courant — seul 🔀 le respecte, le reste de l'UI l'ignore.
+      slots: assignments.slotModes.map((mode, i) =>
+        assignments.slotLocked[i] || mode === 'fader' ? assignments.slots[i] : [pickAction()],
+      ),
+      slotFaders: assignments.slotModes.map((mode, i) =>
+        assignments.slotLocked[i] || mode !== 'fader' ? assignments.slotFaders[i] : [pickAxis()],
+      ),
       axisX: [pickAxis()],
       axisY: [pickAxis()],
       axisTilt: [pickAxis()],
@@ -343,6 +350,11 @@
 
   function toggleSlotMode(i: number) {
     assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
+    saveLiveAssignments(assignments);
+  }
+
+  function toggleSlotLock(i: number) {
+    assignments.slotLocked[i] = !assignments.slotLocked[i];
     saveLiveAssignments(assignments);
   }
 
@@ -1352,9 +1364,19 @@
                 {@const defs = actionsFor(actionIds)}
                 {@const faderDefs = axesFor(assignments.slotFaders[i])}
                 <div class="assign-row-wrap">
-                  <button class="mode-toggle" onclick={() => toggleSlotMode(i)} title="Basculer actions / fader">
-                    {mode === 'fader' ? '≈ FADER' : '⏻ ACTIONS'}
-                  </button>
+                  <div class="toggle-row">
+                    <button class="mode-toggle" onclick={() => toggleSlotMode(i)} title="Basculer actions / fader">
+                      {mode === 'fader' ? '≈ FADER' : '⏻ ACTIONS'}
+                    </button>
+                    <button
+                      class="mode-toggle lock-toggle"
+                      class:on={assignments.slotLocked[i]}
+                      onclick={() => toggleSlotLock(i)}
+                      title={assignments.slotLocked[i] ? 'Déverrouiller (🔀 pourra le rebrasser)' : 'Verrouiller (🔀 le laissera tel quel)'}
+                    >
+                      {assignments.slotLocked[i] ? '🔒' : '🔓'}
+                    </button>
+                  </div>
                   <button
                     class="assign-row"
                     onclick={() => (picker = mode === 'fader' ? { kind: 'slotFader', index: i } : { kind: 'slot', index: i })}
@@ -2028,6 +2050,10 @@
     flex-direction: column;
     gap: 3px;
   }
+  .toggle-row {
+    display: flex;
+    gap: 4px;
+  }
   .mode-toggle {
     align-self: flex-start;
     font-family: inherit;
@@ -2042,6 +2068,13 @@
   }
   .mode-toggle:active {
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  /* Verrou de bouton (PLAN.md §7) : même gabarit que le toggle actions/fader
+     voisin, distingué par la couleur ambre une fois verrouillé (même accent
+     que les emplacements de snapshot remplis, .snapshot-slot.filled). */
+  .lock-toggle.on {
+    color: var(--amp-amber);
+    border-color: var(--amp-amber);
   }
   /* Ouvre le panneau de sélection correspondant au mode (actions ou fader) —
      tap = ouvrir le panneau, pas un cycle sur place, catalogue trop large
