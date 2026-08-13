@@ -197,7 +197,23 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
 ### Petites (quelques heures chacune, gros effet)
 - ✅⭐ **Partage par URL** — fait (`stores/share.ts`), pas marqué à l'époque : le pattern compressé dans le hash de l'URL.
 - ✅⭐ **Tap tempo** — fait (`ToolBar.svelte`, bouton 👆 Tap tempo), pas marqué à l'époque.
-- **Métronome + précompte** avant l'enregistrement WAV.
+- ✅ **Métronome + précompte** avant l'enregistrement WAV (palier 1 du
+  backlog priorisé du 13/08, item 4/5). Une mesure 4/4 de clics au tempo
+  courant (`AudioEngine.countIn`, premier temps accentué) avant que
+  `startLiveRecording` ne commence à capturer — le précompte standard de
+  n'importe quel logiciel d'enregistrement, qui manquait complètement.
+  Nouveau `engine/metronome.ts` (`scheduleClick`) : connecté DIRECTEMENT à
+  `ctx.destination`, jamais au graphe de mixage (`finalGain`, le point de
+  capture de `LiveRecorder`) — audible au performer, jamais dans le WAV
+  capturé, même si précompte et début d'enregistrement se chevauchaient
+  d'une frame. `doRecordLive()` (`ExportBar.svelte`) affiche le décompte
+  dans son `status` existant (« Précompte… 1 » → 2 → 3 → 4) via le
+  callback `onTick` de `countIn`, sans dupliquer le calcul du tempo — le
+  prop `engine` élargi d'une méthode plutôt qu'un nouveau prop dédié.
+  Scope volontairement limité à l'enregistrement du DIRECT (capture
+  réelle) : l'export MP3/WAV classique est un rendu offline déterministe,
+  pas une prise à préparer. Vérifié par script Playwright : séquence de
+  statuts observée = Précompte… → 1 → 2 → 3 → 4 → Enregistrement en cours.
 - ✅⭐ **Sons système XP** synthétisés (retour de Yann : « sons système XP
   maintenant »). Nouveau module `ui/xp/systemSounds.ts` — chirps Web Audio
   courts, contexte audio dédié séparé de toute instance `AudioEngine`
