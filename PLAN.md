@@ -752,13 +752,44 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
 - **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
   piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier
   tout de suite), et être très explicatif à chaque nouveauté introduite.
-- **Explications légères par paramètre** (retour de Yann, 2026-08-13) : une
+- ✅ **Explications légères par paramètre** (retour de Yann, 2026-08-13 ;
+  codé le jour même, palier 1 du backlog priorisé, item 5/5) : une
   micro-explication disponible pour chaque réglage, sans surcharger l'écran
-  ni noyer un nouvel arrivant. Piste à trancher : affordance discrète type
-  bulle XP (au survol/appui long, pas affichée par défaut), contenu texte
-  seul dans une table id → phrase courte, réutilisant le mécanisme d'activation
-  déjà posé pour les sons système (réglage persistant dans Affichage). Sert
-  aussi la prise en main.
+  ni noyer un nouvel arrivant. Nouveau `ui/xp/paramHints.svelte.ts` :
+  table `PARAM_HINTS: Record<string, string>` indexée sur le LIBELLÉ du
+  curseur (`XpSlider.label`) plutôt qu'un identifiant dédié à passer à
+  chaque appel — un même libellé ("Swing", "Attaque"…) revient sur
+  plusieurs lignes/pages avec le même sens, une seule entrée couvre toutes
+  ses occurrences, ajouter une ligne à la table suffit à faire apparaître
+  la bulle partout sans toucher aux dizaines de call sites. Contenu
+  volontiers incomplet (~30 entrées, les paramètres de groove/effets/synth
+  les plus chargés en jargon) plutôt que deviné — mieux vaut aucune bulle
+  qu'une explication approximative ; chaque phrase vérifiée contre le
+  comportement réel du scheduler/de la voix avant d'être écrite (ex.
+  Traîne ≠ Swing : la traîne retarde TOUS les pas, le swing un sur deux).
+  `XpSlider.svelte` cherche son propre hint (`hintFor(label)`) et bascule
+  son libellé en `<button class="lab has-hint">` (souligné en pointillés,
+  `cursor: help`) uniquement si un hint existe ET que le réglage est
+  activé — sinon `<span class="lab">` inchangé. Bulle jaune classique des
+  tooltips Windows (`#ffffe1`, bordure noire) plutôt qu'un composant
+  générique repeint, cohérent avec le design XP assumé. Affordance
+  choisie : le libellé LUI-MÊME est le déclencheur (survol/focus) — pas
+  d'icône ⓘ séparée, la colonne de libellé ne fait que 72px, une icône en
+  plus l'aurait surchargée pour rien. Déclenchement au survol/tap plutôt
+  qu'à l'appui long envisagé au départ : un appui long est un geste caché
+  qu'un nouvel arrivant ne découvre jamais tout seul, contraire à l'objectif
+  de prise en main — un libellé souligné en pointillés se découvre au
+  premier coup d'œil.
+  - **Réglage persistant** (Affichage ▸ Aide contextuelle, `ToolBar.svelte`,
+    activé par défaut) : même emplacement que Sons système, mais PAS le
+    même mécanisme de state — `systemSounds.ts` garde une variable de
+    module simple (suffisant, un son ne se déclenche qu'au prochain
+    événement) alors que `paramHintsSettings.enabled` est un `$state` de
+    classe (`ParamHintsSettings`) : ici la réactivité doit atteindre tous
+    les `XpSlider` déjà montés à l'écran dès qu'on bascule le réglage, pas
+    seulement influencer un futur appel. Vérifié par script Playwright :
+    désactiver le réglage fait disparaître l'affordance sur un `XpSlider`
+    déjà affiché, sans re-rendu manuel ni rechargement de page.
 - **Bouton retour utilisateur, v2** (bug / correction / idée) — le mailto:
   du 2026-08-13 (menu Aide de l'Atelier) est réévalué le jour même : Yann ne
   veut plus qu'il ouvre le client mail, veut un accès identique depuis les
