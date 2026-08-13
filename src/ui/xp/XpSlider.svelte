@@ -20,6 +20,8 @@
   // En le rendant purement visuel, il ne peut plus jamais capter le moindre
   // geste — tout passe exclusivement par cette enveloppe, qu'on contrôle
   // intégralement.
+  import { paramHintsSettings, hintFor } from './paramHints.svelte';
+
   let {
     label,
     min = 0,
@@ -37,6 +39,12 @@
     value?: number;
     onchange?: (v: number) => void;
   } = $props();
+
+  // Explication légère (PLAN.md §7) : cherchée sur le libellé plutôt que
+  // passée en prop par chaque appelant — ajouter une entrée à
+  // paramHints.svelte.ts suffit à faire apparaître la bulle partout où ce
+  // libellé est utilisé, sans toucher aux dizaines de call sites.
+  const hint = $derived(paramHintsSettings.enabled ? hintFor(label) : undefined);
 
   let editing = $state(false);
   let editValue = $state('');
@@ -203,7 +211,12 @@
 </script>
 
 <div class="xp-slider">
-  <span class="lab">{label}</span>
+  {#if hint}
+    <button type="button" class="lab has-hint">{label}</button>
+    <span class="hint-bubble" role="tooltip">{hint}</span>
+  {:else}
+    <span class="lab">{label}</span>
+  {/if}
   <!-- Enveloppe qui capte tout le geste à la place du range natif (voir
        commentaire d'en-tête). touch-action:none : c'est elle qui gère le
        tactile, le navigateur ne doit ni scroller ni zoomer pendant. -->
@@ -262,6 +275,7 @@
 
 <style>
   .xp-slider {
+    position: relative;
     display: grid;
     grid-template-columns: 72px 1fr 36px;
     align-items: center;
@@ -274,6 +288,42 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  /* Explication légère (PLAN.md §7) : le libellé lui-même devient le
+     déclencheur (survol/focus) plutôt qu'une icône séparée — pas de place
+     dans une colonne de 72px, et ça évite d'ajouter un élément visuel de
+     plus. Bulle jaune classique des tooltips Windows, cohérente avec le
+     reste du design XP assumé (pas un composant générique repeint). */
+  button.lab.has-hint {
+    font: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    border-bottom: 1px dotted var(--xp-muted);
+    cursor: help;
+  }
+  .hint-bubble {
+    display: none;
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 4px;
+    z-index: 50;
+    max-width: 220px;
+    width: max-content;
+    background: #ffffe1;
+    color: #000;
+    border: 1px solid #000;
+    box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
+    padding: 4px 6px;
+    font-size: 10.5px;
+    line-height: 1.4;
+    white-space: normal;
+  }
+  .lab.has-hint:hover + .hint-bubble,
+  .lab.has-hint:focus + .hint-bubble {
+    display: block;
   }
   .wrap {
     display: block;

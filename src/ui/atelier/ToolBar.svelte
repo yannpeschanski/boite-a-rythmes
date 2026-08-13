@@ -5,6 +5,7 @@
   import { history } from '../../stores/history.svelte';
   import { buildShareUrl } from '../../stores/share';
   import { systemSoundsEnabled, setSystemSoundsEnabled, playSystemSound } from '../xp/systemSounds';
+  import { paramHintsSettings } from '../xp/paramHints.svelte';
 
   let {
     onExport,
@@ -129,6 +130,9 @@
         <button onclick={() => choose(() => (circleView = false))}>Vue linéaire</button>
         <button onclick={() => choose(() => (circleView = true))}>Vue circulaire</button>
         <button onclick={() => choose(toggleSystemSounds)}>{soundsOn ? '🔊' : '🔈'} Sons système : {soundsOn ? 'Activés' : 'Désactivés'}</button>
+        <button onclick={() => choose(() => paramHintsSettings.toggle())}
+          >{paramHintsSettings.enabled ? '💡' : '🌑'} Aide contextuelle : {paramHintsSettings.enabled ? 'Activée' : 'Désactivée'}</button
+        >
       </div>
     {/if}
   </div>
