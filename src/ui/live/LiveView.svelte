@@ -25,6 +25,7 @@
   //    juste indirectés par l'assignation courante.
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
+  import { sequenceBank } from '../../stores/bank.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import { barDuration } from '../../engine/groove';
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
@@ -496,7 +497,8 @@
     | { kind: 'slot'; index: number }
     | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' }
     | { kind: 'slotFader'; index: number }
-    | { kind: 'viz' };
+    | { kind: 'viz' }
+    | { kind: 'bank' };
   let picker = $state<Picker | null>(null);
 
   function toggleActionInSlot(id: LiveActionId) {
@@ -539,6 +541,17 @@
       assignments.viz = id;
       saveLiveAssignments(assignments);
     }
+    picker = null;
+  }
+
+  // Bascule vers une séquence de la banque (PLAN.md §6, retour de Yann :
+  // « pouvoir basculer de l'une à l'autre depuis le mode live ») — pas une
+  // assignation persistée comme les autres kinds de picker (rien à retenir
+  // dans LiveAssignments), un chargement immédiat comme un rappel de
+  // snapshot : `pattern.replace` en direct, le pattern joué change tout de
+  // suite (playhead/scheduler le relisent au prochain tick).
+  function commitBankLoad(id: string) {
+    sequenceBank.load(id);
     picker = null;
   }
 
@@ -1587,6 +1600,10 @@
                 <span class="assign-row-label">VISUALISEUR</span>
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
+              <button class="assign-row" onclick={() => (picker = { kind: 'bank' })}>
+                <span class="assign-row-label">BANQUE DE SÉQUENCES</span>
+                <span class="assign-row-val">{sequenceBank.entries.length} enregistrée{sequenceBank.entries.length === 1 ? '' : 's'}</span>
+              </button>
             </div>
 
             <h4 class="snapshots-title">SNAPSHOTS <span class="picker-hint">— appui court sauvegarde, appui long rappelle</span></h4>
@@ -1619,8 +1636,10 @@
                     ? `BOUTON ${picker.index + 1} — FADER`
                     : picker.kind === 'viz'
                       ? 'VISUALISEUR'
-                      : 'PARAMÈTRE'}
-                {#if picker.kind !== 'viz'}<span class="picker-hint">— plusieurs possibles</span>{/if}
+                      : picker.kind === 'bank'
+                        ? 'BANQUE DE SÉQUENCES'
+                        : 'PARAMÈTRE'}
+                {#if picker.kind !== 'viz' && picker.kind !== 'bank'}<span class="picker-hint">— plusieurs possibles</span>{/if}
               </h4>
               <div class="picker-list">
                 {#if picker.kind === 'slot'}
@@ -1664,10 +1683,20 @@
                       </button>
                     {/each}
                   {/each}
-                {:else}
+                {:else if picker.kind === 'viz'}
                   {#each LIVE_VIZ as v (v.id)}
                     <button class="picker-row" class:current={v.id === assignments.viz} onclick={() => commitViz(v.id)}>
                       <span class="picker-label">{v.label}</span>
+                    </button>
+                  {/each}
+                {:else if sequenceBank.entries.length === 0}
+                  <p class="picker-empty">
+                    Aucune séquence enregistrée — dans l'Atelier, bandeau des presets, ➕ pour en sauvegarder une.
+                  </p>
+                {:else}
+                  {#each sequenceBank.entries as e (e.id)}
+                    <button class="picker-row" onclick={() => commitBankLoad(e.id)}>
+                      <span class="picker-label">{e.name}</span>
                     </button>
                   {/each}
                 {/if}
@@ -2538,5 +2567,12 @@
   .picker-close {
     margin-top: 10px;
     width: 100%;
+  }
+  .picker-empty {
+    font-size: 10.5px;
+    color: #9aa0a6;
+    line-height: 1.5;
+    padding: 10px 4px;
+    margin: 0;
   }
 </style>

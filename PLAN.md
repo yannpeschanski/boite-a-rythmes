@@ -229,17 +229,44 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
 
 ### Moyennes (une à quelques journées)
 - ⭐ **Mode Song / chaînage de patterns** : 4 slots A/B/C/D + une timeline simple (AABA…) — la demande n°1 de toute boîte à rythmes. Le modèle d'état sérialisable rend ça peu coûteux (un slot = un `PatternStateV2`).
-  - **Sous-brique plus simple, retour de Yann 2026-08-13** : « mettre en
-    banque plusieurs séquences dans l'Atelier et pouvoir basculer de l'une
-    à l'autre depuis le Mode Live ». C'est le Mode Song SANS la timeline
-    auto-enchaînée (AABA…) — juste une bibliothèque de patterns nommés
-    (sauvegardés/rappelés depuis l'Atelier, format v2 déjà sérialisable,
-    même mécanique que `stores/pattern.svelte`) et un sélecteur pour
-    basculer l'un d'eux en direct depuis `LiveView.svelte`, à la manière
-    d'un changement de pattern sur une vraie boîte à rythmes. Bon candidat
-    pour construire Mode Song en deux temps : cette brique d'abord (banque
-    + bascule manuelle), la timeline AABA ensuite si le besoin se confirme
-    à l'usage.
+  - ✅ **Sous-brique plus simple, retour de Yann 2026-08-13, faite le jour
+    même (« pars sur les niveaux 1 »)** : « mettre en banque plusieurs
+    séquences dans l'Atelier et pouvoir basculer de l'une à l'autre depuis
+    le Mode Live ». C'est le Mode Song SANS la timeline auto-enchaînée
+    (AABA…) — juste une bibliothèque de patterns nommés. Nouveau store
+    partagé `stores/bank.svelte.ts` (`sequenceBank`, classe `$state`
+    minimale : `entries`, `save`/`load`/`rename`/`remove`) réutilisant TEL
+    QUEL la sérialisation existante (`pattern.toJson()`/`loadJson()`, même
+    mécanique que l'autosave de `stores/share.ts`) — chaque entrée est un
+    JSON v2 nommé, persistée dans `localStorage`
+    (`boite-a-rythme:sequence-bank`), pas de format dédié ni de cap
+    arbitraire sur le nombre d'entrées.
+    - **Atelier** : nouveau composant `SequenceBank.svelte`, même charte
+      que `PresetPicker.svelte` juste au-dessus (select + Charger) plutôt
+      qu'une fenêtre XP dédiée — même interaction (choisir dans une liste,
+      charger), pas besoin de plus. `➕` sauvegarde le pattern actuel sous
+      un nom (`prompt()`, comme l'erreur d'import illisible utilise déjà
+      `alert()` — dialogues natifs acceptés dans ce fichier), `✏️`
+      renomme, `🗑` supprime (`confirm()`) ; jamais d'écrasement silencieux,
+      toujours une nouvelle entrée à la sauvegarde.
+    - **Live** : nouvelle entrée « BANQUE DE SÉQUENCES » dans la liste de
+      l'overlay ⚙ (à côté de VISUALISEUR), ouvre le même `picker-card` que
+      les autres catalogues mais un tap CHARGE et ferme immédiatement
+      (`commitBankLoad`, comme `commitViz` mais sur `sequenceBank.load(id)`
+      plutôt que sur `assignments` — ce n'est pas une assignation
+      persistée, rien à retenir dans `LiveAssignments`, juste un
+      `pattern.replace` en direct que le scheduler relit au tick suivant).
+      État vide géré (message plutôt qu'une liste blanche) plutôt que de
+      cacher l'entrée tant que la banque n'a rien.
+    - **Vérifié bout en bout** (script Playwright) : tempo réglé à 140 dans
+      l'Atelier, sauvegardé sous « Séquence 140 », page rechargée (le
+      Live démarre à 120 par défaut), rappel depuis l'overlay ⚙ du Mode
+      Live → le LCD affiche bien 140 BPM immédiatement.
+    - Bon point de départ pour Mode Song en deux temps : cette brique
+      d'abord (banque + bascule manuelle), la timeline AABA ensuite si le
+      besoin se confirme à l'usage. Pas encore fait : bouton catalogue
+      dédié pour changer de séquence sans repasser par ⚙ (piste v2 si la
+      liste dans l'overlay se révèle trop lente en plein set).
 - ⭐ **Nouvelles voix drum** : clap 909 (bursts de bruit décalés), tom (sinus pitch-drop plus lent), cowbell 808 (2 oscillateurs carrés 540/800 Hz), shaker — le moteur actuel les accueille sans changement d'architecture (une ligne = une voix + un pattern).
 - ⭐ **Défi du jour** : un niveau généré seedé par la date (même rythme pour tout le monde, façon Wordle/Motus quotidien), avec partage du score en emojis 🟩🟨 — prolonge naturellement le mode jeu Motus existant.
 - **Visualiseur façon Winamp** dans une fenêtre XP déplaçable (oscilloscope/spectre sur AnalyserNode, très peu de code, très fort en nostalgie).
