@@ -590,16 +590,29 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
   la fréquence détectée sur la gamme/tonalité courante puis sur la grille de
   pas. Projet en soi (DSP temps réel + UX d'enregistrement) — à faire
   descendre en section 6 « grosses » une fois cadré.
-- **Viz③ Mode Live (lapin coureur) : lien musique trop faible** (retour de
-  Yann, 2026-08-13). Diagnostic (`LiveView.svelte`, `drawVizRunner`) : le
-  défilement (`scroll = now * 70`) tourne à vitesse réelle fixe, indépendante
-  du tempo, et les carottes sont semées à un espacement pixel fixe
-  (130–170 px + aléa) plutôt qu'aux positions réelles des pas du pattern —
-  seul le kick fait manger une carotte, sans rapport avec le tempo affiché.
-  Piste : dériver la vitesse de défilement du tempo courant (distance
-  constante entre deux carottes = un temps, pas un intervalle réel fixe), et
-  semer les carottes aux pas effectivement actifs de la ligne kick plutôt
-  qu'au hasard.
+- ✅ **Viz③ Mode Live (lapin coureur) : lien musique trop faible** (retour de
+  Yann, 2026-08-13, corrigé le jour même). Diagnostic (`LiveView.svelte`,
+  `drawVizRunner`) : le défilement (`scroll = now * 70`) tournait à vitesse
+  réelle fixe, indépendante du tempo et de l'état lecture/arrêt, et les
+  carottes étaient semées à un espacement pixel aléatoire (130–150 px + aléa)
+  plutôt qu'aux positions réelles des pas du pattern. Trois correctifs :
+  (1) horloge de course dédiée (`runnerClock`) qui n'avance que pendant la
+  lecture (`playing`) — le lapin s'immobilise net à l'arrêt au lieu de
+  continuer sur l'horloge murale, vérifié par capture d'écran (deux frames à
+  1,2 s d'écart à l'arrêt strictement identiques) ; (2) vitesse de défilement
+  dérivée du tempo réel (`runnerScrollSpeed`, `RUNNER_STEP_PX / stepDur`,
+  `stepDur = barDuration(tempo) / kick.subdiv` de `engine/groove.ts`),
+  calibrée pour retrouver ~70px/s au réglage par défaut (120 BPM, kick à
+  4 pas) ; (3) carottes semées sur le pattern réel de la ligne kick
+  (`runnerRefillCarrots`, un curseur de pas qui avance en boucle sur
+  `kick.pattern`/`kick.subdiv`, une carotte par pas actif, pas silencieux
+  comptés dans l'espacement) au lieu d'un espacement aléatoire — manger une
+  carotte correspond maintenant à un coup de kick effectivement programmé.
+  Le cycle de jambes (`run`) suit la même horloge et le même ratio de
+  vitesse pour rester visuellement cohérent avec le sol qui défile. La
+  détection de morsure (front montant sur `getLineLevels()`) reste sur
+  l'horloge murale réelle — c'est le seul repère fiable de ce qui sonne
+  vraiment.
 
 ---
 

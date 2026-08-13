@@ -26,6 +26,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
+  import { barDuration } from '../../engine/groove';
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
@@ -828,12 +829,48 @@
   let runnerSnareT = -10;
   let runnerHatT = -10;
 
+  // Horloge de course : n'avance que pendant la lecture (retour de Yann,
+  // 2026-08-13 — le lapin courait sur une horloge murale indépendante de la
+  // musique, y compris à l'arrêt). `now` reste l'horloge murale (utilisée
+  // ailleurs pour le cooldown des déclencheurs) ; `runnerClock` est ce que
+  // le décor/lapin doit suivre.
+  let runnerClock = 0;
+  let runnerLastNow = 0;
+
+  // Distance « monde » d'un pas de la ligne kick — la vitesse de défilement
+  // s'en déduit (px/s = distance / durée réelle du pas), donc suit le tempo
+  // au lieu d'une constante figée. Calibré pour retrouver ~70px/s au réglage
+  // par défaut (120 BPM, kick à 4 pas).
+  const RUNNER_STEP_PX = 35;
+  function runnerStepDur(): number {
+    return barDuration(st.tempo) / (st.rows.kick.subdiv || 1);
+  }
+  function runnerScrollSpeed(): number {
+    return RUNNER_STEP_PX / runnerStepDur();
+  }
+
   // Carottes le long du chemin, en coordonnées « monde » (indépendantes du
-  // défilement — leur position à l'écran se déduit de `scroll`).
+  // défilement — leur position à l'écran se déduit de `scroll`). Espacées
+  // sur le pattern réel de la ligne kick (une carotte par pas actif, pas
+  // silencieux comptés) plutôt qu'à intervalle aléatoire — manger une
+  // carotte doit correspondre à un coup de kick effectivement programmé.
   let runnerCarrots: { world: number; bite: number }[] = [];
+  let runnerStepCursor = 0;
+  let runnerCursorWorld = 0;
   function runnerSeedCarrots(startWorld: number) {
     runnerCarrots = [];
-    for (let i = 0; i < 5; i++) runnerCarrots.push({ world: startWorld + 90 + i * 150 + Math.random() * 30, bite: 0 });
+    runnerStepCursor = 0;
+    runnerCursorWorld = startWorld + 90;
+  }
+  function runnerRefillCarrots(aheadWorld: number) {
+    const kick = st.rows.kick;
+    const subdiv = kick.subdiv || 1;
+    let guard = subdiv * 4; // au plus quelques tours de pattern par frame
+    while (guard-- > 0 && (runnerCarrots.length < 5 || runnerCursorWorld < aheadWorld)) {
+      if ((kick.pattern[runnerStepCursor] ?? 0) > 0) runnerCarrots.push({ world: runnerCursorWorld, bite: 0 });
+      runnerStepCursor = (runnerStepCursor + 1) % subdiv;
+      runnerCursorWorld += RUNNER_STEP_PX;
+    }
   }
   // Mange la carotte la plus proche devant le lapin — tolérant plutôt que
   // strict sur la distance : au tempo réel un kick tombe naturellement près
@@ -857,7 +894,12 @@
     sky.addColorStop(1, '#1c2450');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
-    const scroll = now * 70;
+
+    const dt = runnerLastNow ? Math.min(now - runnerLastNow, 1 / 20) : 0;
+    runnerLastNow = now;
+    if (playing) runnerClock += dt;
+    const scrollSpeed = runnerScrollSpeed();
+    const scroll = runnerClock * scrollSpeed;
     ctx.beginPath();
     ctx.moveTo(0, h);
     for (let x = 0; x <= w; x += 8) ctx.lineTo(x, terrainY(x, scroll * 0.35, h) - h * 0.1);
@@ -897,10 +939,7 @@
     // ---- Ravitaillement des carottes ----
     if (runnerCarrots.length === 0) runnerSeedCarrots(scroll + charX);
     runnerCarrots = runnerCarrots.filter((c) => c.world - scroll > charX - 140 && c.bite < 1);
-    while (runnerCarrots.length < 5) {
-      const last = runnerCarrots.length ? runnerCarrots[runnerCarrots.length - 1].world : scroll + charX + 90;
-      runnerCarrots.push({ world: last + 130 + Math.random() * 40, bite: 0 });
-    }
+    runnerRefillCarrots(scroll + w + 140);
 
     // ---- Carottes ----
     runnerCarrots.forEach((c) => {
@@ -948,7 +987,7 @@
     const squash = sinceSnare >= 0 && sinceSnare < snareDur ? 1 - snareArc * 0.28 : 1;
     const chomp = sinceKick >= 0 && sinceKick < 0.22 ? Math.sin((sinceKick / 0.22) * Math.PI) : 0;
 
-    const run = now * 12;
+    const run = runnerClock * 12 * (scrollSpeed / 70);
     const bodyBob = Math.sin(run) * h * 0.012 * (1 - snareArc);
     const cy = groundY - jump - h * 0.05 + bodyBob;
     const u = h * 0.0105; // unité de base — toutes les proportions du lapin en dérivent
