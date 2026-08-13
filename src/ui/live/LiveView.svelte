@@ -1306,49 +1306,100 @@
       <div class="main">
         <div class="buttons">
           {#each assignments.slots as actionIds, i (i)}
-            {#if assignments.slotModes[i] === 'fader'}
-              {@const faderIds = assignments.slotFaders[i]}
-              {@const val = axisValues[faderIds[0]] ?? 0.5}
-              {@const horizontal = assignments.faderOrientation[i] === 'horizontal'}
-              <div
-                class="abtn fader-btn"
-                class:horizontal
-                role="slider"
-                aria-label={axesFor(faderIds)
-                  .map((a) => a.label)
-                  .join(' + ')}
-                aria-valuenow={Math.round(val * 100)}
-                tabindex="0"
-                onpointerdown={(e) => faderPointerDown(i, e, e.currentTarget as HTMLDivElement)}
-                onpointermove={(e) => faderPointerMove(i, e, e.currentTarget as HTMLDivElement)}
-                onpointerup={faderPointerUp}
-                onpointerleave={faderPointerUp}
-              >
-                {#if horizontal}
-                  <div class="fader-fill" style:width="{val * 100}%"></div>
-                {:else}
-                  <div class="fader-fill" style:height="{val * 100}%"></div>
-                {/if}
-                <span class="fader-label">{axesFor(faderIds).map((a) => a.label).join(' + ')}</span>
-                <span class="fader-val">{Math.round(val * 100)}%</span>
+            {@const mode = assignments.slotModes[i]}
+            <div class="abtn-wrap">
+              {#if mode === 'fader'}
+                {@const faderIds = assignments.slotFaders[i]}
+                {@const val = axisValues[faderIds[0]] ?? 0.5}
+                {@const horizontal = assignments.faderOrientation[i] === 'horizontal'}
+                <div
+                  class="abtn fader-btn"
+                  class:horizontal
+                  role="slider"
+                  aria-label={axesFor(faderIds)
+                    .map((a) => a.label)
+                    .join(' + ')}
+                  aria-valuenow={Math.round(val * 100)}
+                  tabindex="0"
+                  onpointerdown={(e) => faderPointerDown(i, e, e.currentTarget as HTMLDivElement)}
+                  onpointermove={(e) => faderPointerMove(i, e, e.currentTarget as HTMLDivElement)}
+                  onpointerup={faderPointerUp}
+                  onpointerleave={faderPointerUp}
+                >
+                  {#if horizontal}
+                    <div class="fader-fill" style:width="{val * 100}%"></div>
+                  {:else}
+                    <div class="fader-fill" style:height="{val * 100}%"></div>
+                  {/if}
+                  <span class="fader-label">{axesFor(faderIds).map((a) => a.label).join(' + ')}</span>
+                  <span class="fader-val">{Math.round(val * 100)}%</span>
+                </div>
+              {:else}
+                {@const defs = actionsFor(actionIds)}
+                <button
+                  class="abtn"
+                  class:pressed={pressed[i]}
+                  class:active={actionIds.some((id) => isActionActive(id))}
+                  onpointerdown={() => onSlotDown(i)}
+                  onpointerup={() => onSlotUp(i)}
+                  onpointerleave={() => onSlotUp(i)}
+                >
+                  <span class="dot-row">
+                    {#each defs as d (d.id)}<span class="dot" style:background={d.color}></span>{/each}
+                  </span>
+                  <span>{defs.map((d) => d.label).join(' + ')}</span>
+                  {#if defs.length === 1}<span class="assign-label">{defs[0].desc}</span>{/if}
+                </button>
+              {/if}
+              <!-- Icônes de coin (retour de Yann, PLAN.md §7 : « assigner/
+                   verrouiller/brasser directement autour des boutons » —
+                   analyse d'ergonomie faite le jour même : un geste type
+                   joystick percuterait les actions `hold` et le mode FADER,
+                   qui utilisent déjà l'appui long/le glisser comme geste
+                   live. Icônes persistantes minuscules à la place, mêmes
+                   actions que l'overlay ⚙ (toggleSlotLock/randomizeSlot/
+                   picker), SIBLINGS du bouton plutôt qu'imbriquées dedans
+                   (un <button> ne peut pas contenir un <button>) — le tap
+                   sur une icône ne touche donc jamais le bouton en dessous,
+                   pas besoin de désambiguïser un geste. -->
+              <div class="corner-icons">
+                <button
+                  class="corner-icon"
+                  class:locked={assignments.slotLocked[i]}
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    toggleSlotLock(i);
+                  }}
+                  title={assignments.slotLocked[i] ? 'Déverrouiller' : 'Verrouiller (protège du 🔀)'}
+                >
+                  {assignments.slotLocked[i] ? '🔒' : '🔓'}
+                </button>
+                <button
+                  class="corner-icon"
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    randomizeSlot(i);
+                  }}
+                  title="Tirer un nouveau réglage au hasard"
+                >
+                  🎲
+                </button>
+                <button
+                  class="corner-icon"
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    // Le panneau de sélection (picker) n'est rendu que sous
+                    // l'overlay ⚙ (assignOpen) — l'ouvrir ici aussi plutôt
+                    // que de dupliquer son balisage hors de l'overlay.
+                    assignOpen = true;
+                    picker = mode === 'fader' ? { kind: 'slotFader', index: i } : { kind: 'slot', index: i };
+                  }}
+                  title="Assigner ce bouton"
+                >
+                  ✏️
+                </button>
               </div>
-            {:else}
-              {@const defs = actionsFor(actionIds)}
-              <button
-                class="abtn"
-                class:pressed={pressed[i]}
-                class:active={actionIds.some((id) => isActionActive(id))}
-                onpointerdown={() => onSlotDown(i)}
-                onpointerup={() => onSlotUp(i)}
-                onpointerleave={() => onSlotUp(i)}
-              >
-                <span class="dot-row">
-                  {#each defs as d (d.id)}<span class="dot" style:background={d.color}></span>{/each}
-                </span>
-                <span>{defs.map((d) => d.label).join(' + ')}</span>
-                {#if defs.length === 1}<span class="assign-label">{defs[0].desc}</span>{/if}
-              </button>
-            {/if}
+            </div>
           {/each}
         </div>
         <div class="mid-col">
@@ -1844,6 +1895,44 @@
     grid-template-columns: 1fr 1fr;
     grid-auto-rows: 1fr;
     gap: 5px;
+  }
+  /* Conteneur d'un bouton de la grille — remplace .abtn comme item de
+     grille pour porter .corner-icons en absolu par-dessus, sans imbriquer
+     un bouton dans un autre (voir le commentaire au-dessus du template). */
+  .abtn-wrap {
+    position: relative;
+  }
+  .abtn-wrap .abtn {
+    width: 100%;
+    height: 100%;
+  }
+  .corner-icons {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    z-index: 2;
+    display: flex;
+    gap: 2px;
+  }
+  .corner-icon {
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border-radius: 3px;
+    border: 1px solid var(--amp-line);
+    background: rgba(10, 10, 24, 0.55);
+    color: var(--amp-lcd-dim);
+    font-size: 8px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .corner-icon.locked {
+    color: var(--amp-amber);
+    border-color: var(--amp-amber);
   }
   .abtn {
     position: relative;
