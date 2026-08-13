@@ -91,6 +91,13 @@ export function defaultState(): PatternStateV2 {
   const kick = defaultDrumRow(4, 1.0);
   const snare = defaultDrumRow(4, 0.9);
   const hat = defaultDrumRow(3, 0.7);
+  // Clap/shaker (PLAN.md §6) : motif vide à l'accueil, contrairement à
+  // kick/snare/hat — ce sont des voix en plus à découvrir, pas une base
+  // attendue dès le premier chargement. Un vieux fichier de sauvegarde sans
+  // ces deux lignes retombe exactement sur ces mêmes valeurs par défaut
+  // (model/serialize.ts, deserializeState part de defaultState()).
+  const clap = defaultDrumRow(4, 0.85);
+  const shaker = defaultDrumRow(8, 0.5);
   kick.pattern[0] = 1;
   kick.pattern[2] = 1;
   snare.pattern[1] = 1;
@@ -114,7 +121,7 @@ export function defaultState(): PatternStateV2 {
     globalCompression: 0,
     globalBitcrush: 0,
     finalVolume: 100,
-    rows: { kick, snare, hat },
+    rows: { kick, snare, hat, clap, shaker },
     synthRows: {
       bass: defaultSynthRow('bass'),
       pad: defaultSynthRow('pad'),

@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { game, LEVELS, tierForAttempts } from '../../stores/game.svelte';
+  import { game, LEVELS, tierForAttempts, GAME_DRUM_ROWS } from '../../stores/game.svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
-  import type { DrumRowName } from '../../model/types';
-  import { DRUM_ROW_NAMES } from '../../model/types';
+  import type { GameDrumRowName } from '../../model/presets/levels';
   import XpWindow from '../xp/XpWindow.svelte';
 
   let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
@@ -23,11 +22,11 @@
   // Curseur visuel : consommé à chaque frame contre l'horloge audio, comme
   // dans l'Atelier (AtelierView.svelte) — sans cette boucle, aucune case ne
   // s'illumine pendant la lecture et il est impossible de suivre le rythme.
-  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
+  let playhead = $state<Record<GameDrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
   let raf = 0;
   function loop() {
     for (const ev of engine.consumePlayhead()) {
-      if (ev.name in playhead) playhead[ev.name as DrumRowName] = ev.col;
+      if (ev.name in playhead) playhead[ev.name as GameDrumRowName] = ev.col;
     }
     raf = requestAnimationFrame(loop);
   }
@@ -93,7 +92,7 @@
   }
 
   const lvl = $derived(game.level);
-  const rowLabels: Record<DrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
+  const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
 </script>
 
 <div class="game" data-theme="noir">
@@ -173,7 +172,7 @@
         </button>
       </div>
 
-      {#each DRUM_ROW_NAMES as name (name)}
+      {#each GAME_DRUM_ROWS as name (name)}
         {#if game.target[name].some((v) => v > 0) || game.guess[name].some((v) => v > 0)}
           {@const c = game.counts(name)}
           <div class="row">

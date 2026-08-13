@@ -94,6 +94,8 @@ export class AudioEngine {
       kick: { stepIndex: 0, nextStepTime: 0 },
       snare: { stepIndex: 0, nextStepTime: 0 },
       hat: { stepIndex: 0, nextStepTime: 0 },
+      clap: { stepIndex: 0, nextStepTime: 0 },
+      shaker: { stepIndex: 0, nextStepTime: 0 },
     };
   }
 
@@ -651,7 +653,9 @@ export class AudioEngine {
     const t = ctx.currentTime + 0.02;
     if (name === 'kick') kit.playKick(t, row.volume, row);
     else if (name === 'snare') stepState === 2 ? kit.playRimshot(t, row.volume, row) : kit.playSnare(t, row.volume, row);
-    else stepState === 2 ? kit.playHatOpen(t, row.volume, row) : kit.playHatClosed(t, row.volume, row);
+    else if (name === 'hat') stepState === 2 ? kit.playHatOpen(t, row.volume, row) : kit.playHatClosed(t, row.volume, row);
+    else if (name === 'clap') kit.playClap(t, row.volume, row);
+    else kit.playShaker(t, row.volume, row);
   }
 
   // Aperçu d'une voix synthé isolée (bouton ▶ Tester) : joue la voix actuelle

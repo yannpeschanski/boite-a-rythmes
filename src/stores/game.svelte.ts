@@ -1,8 +1,7 @@
 // Mode jeu — boucle « Motus rythmique » : écouter la cible, poser sa version,
 // Vérifier. Les cases exactes (état ET rafale) se verrouillent avec ✓.
 // Port de la logique de l. 7467–8734, sans la couche DOM.
-import type { DrumRowName, DrumStep, PatternStateV2 } from '../model/types';
-import { DRUM_ROW_NAMES } from '../model/types';
+import type { DrumStep, PatternStateV2 } from '../model/types';
 import { defaultState } from '../model/defaults';
 import {
   LEVELS,
@@ -15,6 +14,7 @@ import {
   type GameVoice,
   type SubdivSpec,
   type GamePresetLike,
+  type GameDrumRowName,
 } from '../model/presets/levels';
 import { PRESETS } from '../model/presets/songs';
 import {
@@ -26,6 +26,12 @@ import {
   ROAST_LOOP,
   type BagItem,
 } from '../model/presets/gameData';
+
+// Mode jeu limité à kick/snare/hat (PLAN.md §6, voir GameDrumRowName dans
+// presets/levels.ts) — PAS `DRUM_ROW_NAMES` du modèle (désormais élargi à
+// clap/shaker) pour les boucles ci-dessous : les états construits ici
+// (Grid/Rolls/shift) n'ont que ces 3 clés.
+export const GAME_DRUM_ROWS: GameDrumRowName[] = ['kick', 'snare', 'hat'];
 
 const KEY_BAG = 'boite-a-rythme:besaces';
 const KEY_PROGRESS = 'boite-a-rythme:progression';
@@ -68,8 +74,8 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-type Grid = Record<DrumRowName, DrumStep[]>;
-type Rolls = Record<DrumRowName, number[]>;
+type Grid = Record<GameDrumRowName, DrumStep[]>;
+type Rolls = Record<GameDrumRowName, number[]>;
 
 function emptyGrid(subdiv: SubdivSpec): Grid {
   return {
@@ -95,7 +101,7 @@ class GameStore {
   guess = $state<Grid>(emptyGrid({ kick: 4, snare: 4, hat: 4 }));
   guessRolls = $state<Rolls>(emptyRolls({ kick: 4, snare: 4, hat: 4 }));
   // Cases déjà validées comme exactes : verrouillées, plus modifiables.
-  locked = $state<Record<DrumRowName, boolean[]>>({ kick: [], snare: [], hat: [] });
+  locked = $state<Record<GameDrumRowName, boolean[]>>({ kick: [], snare: [], hat: [] });
   revealed = $state(false);
   attempts = $state(0);
   loopPlays = $state(0);
@@ -105,7 +111,7 @@ class GameStore {
   tempo = $state(100);
   swing = $state(0);
   drag = $state(0);
-  shift = $state<Record<DrumRowName, number>>({ kick: 0, snare: 0, hat: 0 });
+  shift = $state<Record<GameDrumRowName, number>>({ kick: 0, snare: 0, hat: 0 });
   lastResult = $state<{ stars: number; roast: string; items: BagItem[]; presetLabel?: string; history?: string } | null>(null);
 
   progress = $state<Record<string, PlayerProgress>>({});
@@ -153,7 +159,7 @@ class GameStore {
       // volontairement ignorées — jamais l'objet noté ici.
       const p = preset as unknown as Record<string, { pattern: Array<boolean | number>; subdiv: number; shift: number }>;
       const grid = emptyGrid(this.subdiv);
-      DRUM_ROW_NAMES.forEach((name) => {
+      GAME_DRUM_ROWS.forEach((name) => {
         const src = p[name];
         grid[name] = new Array<DrumStep>(src.subdiv)
           .fill(0)
@@ -200,14 +206,14 @@ class GameStore {
   }
 
   // Combien de cases actives la ligne attend, et combien sont posées.
-  counts(name: DrumRowName): { placed: number; expected: number } {
+  counts(name: GameDrumRowName): { placed: number; expected: number } {
     return {
       placed: this.guess[name].filter((v) => v > 0).length,
       expected: this.target[name].filter((v) => v > 0).length,
     };
   }
 
-  cycleCell(name: DrumRowName, col: number): void {
+  cycleCell(name: GameDrumRowName, col: number): void {
     if (this.locked[name][col] || this.solved || this.revealed) return;
     const maxState = name === 'kick' ? 1 : 2;
     const next = ((this.guess[name][col] + 1) % (maxState + 1)) as DrumStep;
@@ -215,7 +221,7 @@ class GameStore {
     if (next === 0) this.guessRolls[name][col] = 1;
   }
 
-  cycleRoll(name: DrumRowName, col: number): void {
+  cycleRoll(name: GameDrumRowName, col: number): void {
     if (this.locked[name][col] || this.solved || this.revealed) return;
     if (this.guess[name][col] > 0) this.guessRolls[name][col] = (this.guessRolls[name][col] % 4) + 1;
   }
@@ -225,7 +231,7 @@ class GameStore {
     if (this.solved || this.revealed) return this.solved;
     this.attempts++;
     let allExact = true;
-    DRUM_ROW_NAMES.forEach((name) => {
+    GAME_DRUM_ROWS.forEach((name) => {
       this.target[name].forEach((t, i) => {
         const exact = this.guess[name][i] === t && this.guessRolls[name][i] === this.targetRolls[name][i];
         if (exact && t > 0) this.locked[name][i] = true;
@@ -314,7 +320,7 @@ class GameStore {
     state.drag = this.drag;
     const grid = which === 'target' ? this.target : this.guess;
     const rolls = which === 'target' ? this.targetRolls : this.guessRolls;
-    DRUM_ROW_NAMES.forEach((name) => {
+    GAME_DRUM_ROWS.forEach((name) => {
       const row = state.rows[name];
       row.subdiv = this.subdiv[name];
       row.pattern = new Array(32).fill(0).map((z, i) => grid[name][i] ?? z);

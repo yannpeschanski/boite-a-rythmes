@@ -155,7 +155,7 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
     source.connect(a);
     lineAnalyser[name] = a;
   }
-  (['kick', 'snare', 'hat'] as DrumRowName[]).forEach((name) => {
+  (['kick', 'snare', 'hat', 'clap', 'shaker'] as DrumRowName[]).forEach((name) => {
     const g = ctx.createGain();
     g.gain.value = 1;
     g.connect(masterGain);
@@ -268,7 +268,7 @@ export function applyMixSettings(g: GraphNodes, state: PatternStateV2): void {
   g.finalLimiter.ratio.setValueAtTime(enabled ? 12 : 1, now);
   g.delayNode.delayTime.setValueAtTime(delayTimeSeconds(state), now);
   g.delayFeedback.gain.setValueAtTime(delayFeedbackAmount(state), now);
-  (['kick', 'snare', 'hat'] as DrumRowName[]).forEach((name) => {
+  (['kick', 'snare', 'hat', 'clap', 'shaker'] as DrumRowName[]).forEach((name) => {
     g.lineReverbSend[name].gain.setValueAtTime(state.rows[name].reverbSend || 0, now);
     g.lineDelaySend[name].gain.setValueAtTime(state.rows[name].delaySend || 0, now);
   });

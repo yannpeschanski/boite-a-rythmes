@@ -66,11 +66,17 @@
   let fillArmed = $state(false);
   // Multiplicateur en cours (2/3/4) par ligne drum, ou null — chaque ligne
   // roll indépendamment des deux autres (catalogue étendu, PLAN.md §7).
-  let rollHeld = $state<Record<DrumRowName, number | null>>({ kick: null, snare: null, hat: null });
+  // rollHeld/muted n'ont pas d'entrée réellement utilisée pour clap/shaker —
+  // portée du Mode Live pas étendue à ces deux lignes (PLAN.md §6, mute/roll
+  // exclus de cette passe), présentes seulement pour satisfaire le type
+  // Record<DrumRowName, …> désormais élargi.
+  let rollHeld = $state<Record<DrumRowName, number | null>>({ kick: null, snare: null, hat: null, clap: null, shaker: null });
   let muted = $state<Record<DrumRowName | SynthRowName, boolean>>({
     kick: false,
     snare: false,
     hat: false,
+    clap: false,
+    shaker: false,
     bass: false,
     pad: false,
     melody: false,
@@ -95,7 +101,7 @@
   // = sauvegarde, appui long = rappel (voir onSnapshotPointerDown/Up).
   let snapshots = $state<(LiveAssignments | null)[]>(loadLiveSnapshots());
 
-  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
+  let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
 
   let isPortrait = $state(true);
@@ -571,7 +577,7 @@
       }
       engine.stop();
       playing = false;
-      playhead = { kick: -1, snare: -1, hat: -1 };
+      playhead = { kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 };
       synthPlayhead = { bass: -1, pad: -1, melody: -1 };
     } else {
       await engine.start();
@@ -712,7 +718,13 @@
   // Mêmes valeurs que --cell-* de tokens.css (StepCircle.FALLBACK,
   // TransportRings.DRUM_COLOR/SYNTH_COLOR) — un canvas ne peut pas lire une
   // variable CSS, donc dupliquées ici comme ailleurs dans le code.
-  const DRUM_COLOR = { kick: '#d84315', snare: '#c8881a', hat: '#2b8a8a' } as const;
+  const DRUM_COLOR = {
+    kick: '#d84315',
+    snare: '#c8881a',
+    hat: '#2b8a8a',
+    clap: '#3fae54',
+    shaker: '#22a6c9',
+  } as const;
   const SYNTH_COLOR = { bass: '#6a7bff', pad: '#b06bff', melody: '#ff6bd6' } as const;
   const LINE_COLOR = { ...DRUM_COLOR, ...SYNTH_COLOR } as Record<DrumRowName | SynthRowName, string>;
   const LINE_NAMES = [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES] as (DrumRowName | SynthRowName)[];
@@ -724,12 +736,14 @@
   // spectre plutôt que 6 barres pleine hauteur redondantes avec le
   // séquenceur linéaire juste au-dessus.
   const LINE_EQ_POS: Record<DrumRowName | SynthRowName, number> = {
-    kick: 0.03,
-    bass: 0.22,
+    kick: 0.02,
+    bass: 0.16,
+    clap: 0.3, // bandpass ~1200Hz, un peu plus sourd que la snare — juste avant elle
     snare: 0.42,
-    pad: 0.58,
-    hat: 0.78,
-    melody: 0.95,
+    pad: 0.56,
+    hat: 0.72,
+    shaker: 0.86, // passe-haut large bande, plus aigu que le hat
+    melody: 0.97,
   };
   const EQ_BAR_COUNT = 22;
   const EQ_SIGMA = 0.26; // étalement de la cloche : plusieurs barres voisines réagissent à un même élément

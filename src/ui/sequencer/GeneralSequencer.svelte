@@ -22,6 +22,8 @@
     kick: 'Kick',
     snare: 'Snare',
     hat: 'Hat',
+    clap: 'Clap',
+    shaker: 'Shaker',
     bass: 'Basse',
     pad: 'Nappe',
     melody: 'Mélodie',

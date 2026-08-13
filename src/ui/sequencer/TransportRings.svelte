@@ -7,7 +7,13 @@
   // Remplace l'idée (abandonnée) d'ancrer tout le séquenceur éditable en
   // permanence.
   import type { DrumRowName, PatternStateV2, SynthRowName } from '../../model/types';
-  import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
+  import { SYNTH_ROW_NAMES } from '../../model/types';
+
+  // Anneau batterie volontairement limité à kick/snare/hat (PLAN.md §6) — PAS
+  // `DRUM_ROW_NAMES` (élargi à clap/shaker) : sur un canvas de 50px, 3 anneaux
+  // concentriques sont déjà serrés, 5 rendrait l'anneau intérieur illisible.
+  // Même choix que StepCircle (vue circulaire de l'Atelier).
+  const RING_DRUM_ROWS = ['kick', 'snare', 'hat'] as const;
 
   let {
     state,
@@ -76,7 +82,7 @@
   }
 
   $effect(() => {
-    const drumRings = DRUM_ROW_NAMES.map((name) => {
+    const drumRings = RING_DRUM_ROWS.map((name) => {
       const row = state.rows[name];
       return {
         color: DRUM_COLOR[name],

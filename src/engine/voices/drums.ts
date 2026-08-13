@@ -30,6 +30,12 @@ const attackAdd = (v: Partial<DrumVoice>) => ((v.attack || 0) / 100) * 0.08; // 
 const HAT_OSC_RATIOS = [2, 3, 4.16, 5.43, 6.79, 8.21];
 const HAT_FUNDAMENTAL = 40; // Hz, avant application de Pitch
 
+// Clap 909 (PLAN.md §6) : décalages des impulsions de bruit qui simulent
+// plusieurs mains qui ne tombent jamais exactement ensemble — c'est cet
+// empilement, pas un simple bruit filtré, qui donne le caractère « clap »
+// plutôt qu'un souffle.
+const CLAP_BURST_OFFSETS = [0, 0.01, 0.02];
+
 export class DrumKit {
   private ctx: BaseAudioContext;
   private graph: GraphNodes;
@@ -159,6 +165,61 @@ export class DrumKit {
     src.stop(time + 0.05 * dMult + aAdd);
     osc.start(time);
     osc.stop(time + 0.03 * dMult + aAdd);
+  }
+
+  playClap(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    const v = resolveVoice(voice);
+    const mult = pitchMult(v);
+    const dMult = decayMult(v);
+    const aAdd = attackAdd(v);
+    const bpFreq = 1200 * Math.pow(2, (v.tone || 0) / 50) * mult;
+    const dest = this.filterDest(v, this.graph.drumLineGain.clap);
+    const burstOf = (t: number, peak: number, dur: number) => {
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.graph.noiseBuffer;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = bpFreq;
+      bp.Q.value = 1.4;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.001), t + 0.002 + aAdd);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur + aAdd);
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(dest as AudioNode);
+      src.start(t);
+      src.stop(t + dur + aAdd + 0.01);
+    };
+    CLAP_BURST_OFFSETS.forEach((offset) => burstOf(time + offset, gain * 0.6, 0.02 * dMult));
+    burstOf(time + 0.03, gain * 0.8, 0.12 * dMult); // traîne finale, plus longue
+  }
+
+  // Shaker (PLAN.md §6) : bruit passe-haut large bande, enveloppe courte —
+  // pas de banc d'oscillateurs (contrairement au hat) ni de passe-bande
+  // étroit (contrairement au clap) : un shaker est essentiellement du bruit
+  // blanc, sa couleur vient d'où on coupe le bas, pas d'une résonance.
+  playShaker(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    const v = resolveVoice(voice);
+    const mult = pitchMult(v);
+    const dMult = decayMult(v);
+    const aAdd = attackAdd(v);
+    const hpFreq = 6000 * Math.pow(2, (v.tone || 0) / 50) * mult;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.graph.noiseBuffer;
+    const hp = this.ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = Math.min(16000, Math.max(500, hpFreq));
+    hp.Q.value = 0.7;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(Math.max(gain * 0.55, 0.001), time + 0.004 + aAdd);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05 * dMult + aAdd);
+    src.connect(hp);
+    hp.connect(g);
+    g.connect(this.filterDest(v, this.graph.drumLineGain.shaker) as AudioNode);
+    src.start(time);
+    src.stop(time + 0.06 * dMult + aAdd);
   }
 
   // Choke : un hat fermé coupe le hat ouvert encore en train de sonner —
