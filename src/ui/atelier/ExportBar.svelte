@@ -23,7 +23,7 @@
     playing,
     recordLive,
   }: {
-    engine: { stop: () => void };
+    engine: { stop: () => void; countIn: (onTick?: (beat: number) => void) => Promise<void> };
     playing: boolean;
     recordLive: (bars: number) => Promise<AudioBuffer>;
   } = $props();
@@ -67,8 +67,13 @@
     const state = pattern.snapshot();
     const bars = barsForExport(state, seconds);
     const durationS = Math.round(barDuration(state.tempo) * bars + 1);
-    status = `Enregistrement du direct en cours… (~${durationS}s)`;
     try {
+      // Précompte (PLAN.md §6) : une mesure de clics avant que la capture
+      // ne démarre réellement — le temps de se préparer, comme un vrai
+      // enregistrement plutôt que de capturer dès le clic sur le bouton.
+      status = 'Précompte…';
+      await engine.countIn((beat) => (status = `Précompte… ${beat}`));
+      status = `Enregistrement du direct en cours… (~${durationS}s)`;
       const buffer = await recordLive(bars);
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
       status = 'Écriture du WAV…';

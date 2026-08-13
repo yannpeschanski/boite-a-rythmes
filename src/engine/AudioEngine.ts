@@ -16,6 +16,7 @@ import {
 } from './scheduler';
 import { barDuration, type BreakWindow } from './groove';
 import { LiveRecorder } from './recorder';
+import { scheduleClick } from './metronome';
 import { chordsFor, chordFreqs, degreeFreq, SCALE_LIBRARY } from './harmony';
 import { driveCurve, bitcrushCurve, applyCompressionAmount, makeupGainForCompression } from './fx';
 import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices';
@@ -587,6 +588,30 @@ export class AudioEngine {
     const buffer = this.liveRecorder.stop();
     this.liveRecorder = null;
     return buffer;
+  }
+
+  // Précompte avant l'enregistrement du direct (PLAN.md §6, retour de
+  // Yann : « métronome + précompte avant l'enregistrement WAV »). Une
+  // mesure 4/4 de clics au tempo courant, premier temps accentué — le
+  // précompte standard de n'importe quel logiciel d'enregistrement.
+  // `onTick` laisse l'appelant afficher le décompte sans dupliquer le
+  // calcul du tempo/timing ; la promesse ne se résout qu'une fois les 4
+  // clics passés, avant que startLiveRecording ne commence à capturer.
+  async countIn(onTick?: (beat: number) => void): Promise<void> {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    if (ctx.state === 'suspended') await ctx.resume();
+    const beatDur = 60 / this.getState().tempo;
+    const startAt = ctx.currentTime + 0.05;
+    for (let beat = 0; beat < 4; beat++) {
+      scheduleClick(ctx, startAt + beat * beatDur, beat === 0);
+    }
+    await new Promise<void>((resolve) => {
+      for (let beat = 0; beat < 4; beat++) {
+        setTimeout(() => onTick?.(beat + 1), Math.max(0, (startAt - ctx.currentTime + beat * beatDur) * 1000));
+      }
+      setTimeout(resolve, Math.max(0, (startAt - ctx.currentTime + 4 * beatDur) * 1000));
+    });
   }
 
   // Enregistrement du direct : démarre une lecture depuis le tout début du
