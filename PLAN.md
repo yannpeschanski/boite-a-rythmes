@@ -537,11 +537,12 @@ par URL existant, `stores/share.ts`).
   hors catalogue d'assignation (tap/drag sur le LCD pour le tempo, petit
   slider compact à côté de TILT pour le volume), plutôt que d'agrandir le
   catalogue existant.
-- **Assigner/verrouiller/brasser directement autour de chaque bouton, sans
-  passer par ⚙** — retour de Yann 2026-08-13, avec demande explicite
-  d'analyse d'ergonomie avant de coder (« peux-tu analyser pour faire la
-  meilleure ergonomie ?? »), et une piste proposée par lui : un joystick
-  circulaire sur le bouton du milieu. Analyse faite le jour même :
+- ✅ **Assigner/verrouiller/brasser directement autour de chaque bouton, sans
+  passer par ⚙** (retour de Yann 2026-08-13, « pars sur les niveaux 1 »,
+  fait le jour même) — avec demande explicite d'analyse d'ergonomie avant
+  de coder (« peux-tu analyser pour faire la meilleure ergonomie ?? »), et
+  une piste proposée par lui : un joystick circulaire sur le bouton du
+  milieu. Analyse faite le jour même :
   - Un geste (appui long → menu radial/joystick) est **incompatible avec
     deux des états qu'un bouton peut déjà porter** : les actions
     `kind: 'hold'` (rolls) utilisent l'appui long comme LE geste live
@@ -566,8 +567,22 @@ par URL existant, `stores/share.ts`).
     boutons `trigger`/`toggle`/`step` (où l'appui long est aujourd'hui un
     vrai no-op), mais introduirait deux modèles d'interaction différents
     selon ce qui est assigné — la cohérence l'emporte : icônes de coin
-    recommandées, joystick mis en réserve. Pas encore codé, en attente du
-    feu vert de Yann.
+    recommandées, joystick mis en réserve.
+  - **Implémenté** : nouveau conteneur `.abtn-wrap` par bouton de la grille
+    (`LiveView.svelte`), SIBLING du `.abtn`/`.fader-btn` plutôt qu'un
+    parent — un `<button>` ne peut pas contenir un autre `<button>`, et
+    être siblings (pas ancêtre/descendant) évite tout souci de bubbling :
+    taper une icône ne touche jamais le bouton en dessous, aucune
+    désambiguïation de geste à faire. `.corner-icons` en position absolue,
+    coin haut-droit, 3 icônes ~15px (🔒/🔓, 🎲, ✏️) réutilisant
+    `toggleSlotLock`/`randomizeSlot` déjà existants ; ✏️ ouvre le panneau de
+    sélection directement (`assignOpen = true` + `picker = …` — le picker
+    n'était rendu que sous l'overlay ⚙, il fallait aussi l'ouvrir, pas
+    seulement poser `picker`). Le toggle ACTIONS/FADER n'a PAS été ajouté
+    aux icônes de coin, comme prévu dans l'analyse. Vérifié par script
+    Playwright : taper le corps du bouton déclenche toujours l'action live
+    normale (mute qui s'active, fader qui glisse), taper une icône ne
+    déclenche jamais l'action du dessous.
 
 ### 7.2 Atelier
 
