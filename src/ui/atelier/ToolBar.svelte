@@ -4,6 +4,7 @@
   import { pattern } from '../../stores/pattern.svelte';
   import { history } from '../../stores/history.svelte';
   import { buildShareUrl } from '../../stores/share';
+  import { systemSoundsEnabled, setSystemSoundsEnabled, playSystemSound } from '../xp/systemSounds';
 
   let {
     onExport,
@@ -19,6 +20,16 @@
 
   let openMenu = $state('');
   let shareMsg = $state('');
+
+  // Sons système XP (PLAN.md §2/§6) : réglage global, persisté en
+  // localStorage par systemSounds.ts — état local juste pour que le libellé
+  // du menu reflète le réglage courant sans le relire à chaque rendu.
+  let soundsOn = $state(systemSoundsEnabled());
+  function toggleSystemSounds() {
+    soundsOn = !soundsOn;
+    setSystemSoundsEnabled(soundsOn);
+    if (soundsOn) playSystemSound('open'); // confirmation audible du réglage qu'on vient d'activer
+  }
 
   // Tap tempo : on garde les intervalles récents et on en prend la moyenne.
   // Absent de l'original, alors que régler un tempo « à l'oreille » sur un
@@ -106,6 +117,7 @@
       <div class="dropdown">
         <button onclick={() => choose(() => (circleView = false))}>Vue linéaire</button>
         <button onclick={() => choose(() => (circleView = true))}>Vue circulaire</button>
+        <button onclick={() => choose(toggleSystemSounds)}>{soundsOn ? '🔊' : '🔈'} Sons système : {soundsOn ? 'Activés' : 'Désactivés'}</button>
       </div>
     {/if}
   </div>

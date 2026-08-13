@@ -198,7 +198,21 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
 - ✅⭐ **Partage par URL** — fait (`stores/share.ts`), pas marqué à l'époque : le pattern compressé dans le hash de l'URL.
 - ✅⭐ **Tap tempo** — fait (`ToolBar.svelte`, bouton 👆 Tap tempo), pas marqué à l'époque.
 - **Métronome + précompte** avant l'enregistrement WAV.
-- ⭐ **Sons système XP** synthétisés (démarrage, erreur, « tada » sur 3 étoiles au jeu) — déjà prévu §2, ça mérite d'être une vraie feature désactivable.
+- ✅⭐ **Sons système XP** synthétisés (retour de Yann : « sons système XP
+  maintenant »). Nouveau module `ui/xp/systemSounds.ts` — chirps Web Audio
+  courts, contexte audio dédié séparé de toute instance `AudioEngine`
+  (`XpWindow`, composant générique réutilisé partout, ne doit dépendre
+  d'aucun graphe audio précis). Portée précisée par rapport au libellé §2 :
+  « étoile gagnée » est en réalité déjà couverte par `playWinChime` (Mode
+  jeu, §7.3 — tier 1/3 essais = exactement le cas 3 étoiles) et reste un
+  son de *gameplay* propre à son moteur, pas rattaché à ce nouveau réglage ;
+  ce qui restait vraiment à faire — repli/dépliage de fenêtre et erreur —
+  est fait : chirp montant/descendant sur `XpWindow` replier/déplier
+  (gardé derrière un test d'état pour qu'un clic répété sur le même bouton
+  ne le rejoue pas), chirp grave (carré, plus dur) sur fichier illisible à
+  l'import (`AtelierView.importJson`). Désactivable — persisté en
+  localStorage, activé par défaut — bascule dans Affichage ▸ Sons système
+  de la barre de menus (`ToolBar.svelte`).
 - ✅ **Générateur euclidien** (retour de Yann : « next ! », choisi parmi les
   idées §6 restantes). Bouton « répartir N coups uniformément » par ligne —
   `euclideanRhythm(steps, pulses)` (nouveau, `engine/generators.ts`),
