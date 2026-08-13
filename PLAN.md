@@ -456,17 +456,26 @@ appui annule déjà ?) ; mode duo (deux téléphones connectés via le partage
 par URL existant, `stores/share.ts`).
 
 **Nouveau, retour de Yann 2026-08-13 — pas encore fait :**
-- **Fader horizontal** (en plus du fader vertical actuel) : « il faudrait
-  qu'il y ait un type de bouton où c'est un fader gauche-droite au sein du
-  bouton, où haut-bas, à voir le plus simple ». Piste la plus simple :
-  `faderPointerDown`/`faderPointerMove`/`setFader` (`LiveView.svelte`,
-  L332-343) lisent aujourd'hui en dur `e.clientY`/`rect.height` — leur
-  ajouter un paramètre d'axe (`'x' | 'y'`) qui bascule vers
-  `e.clientX`/`rect.width` réglerait la mécanique ; il faudrait un champ
-  d'orientation par bouton dans `LiveAssignments` (à côté de `slotModes`,
-  même genre de toggle dans l'overlay ⚙ que ACTIONS/FADER) et un rendu CSS
-  du remplissage en largeur plutôt qu'en hauteur pour l'orientation
-  horizontale. Pas encore commencé.
+- ✅ **Fader horizontal** (retour de Yann 2026-08-13, fait le jour même) :
+  « il faudrait qu'il y ait un type de bouton où c'est un fader
+  gauche-droite au sein du bouton, où haut-bas, à voir le plus simple ».
+  Nouveau champ `LiveAssignments.faderOrientation: FaderOrientation[]`
+  (`liveActions.ts`, `'vertical' | 'horizontal'`, longueur SLOT_COUNT,
+  `'vertical'` par défaut — comportement inchangé tant qu'on n'y touche
+  pas), validé comme `slotLocked`. `setFader` (`LiveView.svelte`) prend
+  désormais `clientX` ET `clientY` et choisit l'axe/la dimension
+  (`clientX`/`rect.width` ou `clientY`/`rect.height`) selon l'orientation du
+  bouton ; convention distincte par orientation plutôt qu'unifiée : vertical
+  garde haut = 100 % (frac inversée, comme le pad), horizontal suit le sens
+  de lecture (gauche = 0 %, frac directe) — inverser l'horizontal aurait été
+  plus déroutant qu'utile. Toggle ↕/↔ dans l'overlay ⚙, quatrième icône du
+  `.toggle-row`, affiché SEULEMENT quand le bouton est en mode FADER
+  (l'orientation ne veut rien dire en mode ACTIONS). Rendu : `.fader-fill`
+  passe de `style:height` à `style:width` et d'un dégradé vertical à
+  horizontal quand `.horizontal` est posée sur `.fader-btn`, curseur
+  `ew-resize` plutôt que `ns-resize`. Vérifié par script Playwright :
+  glisser à 20 %/80 % depuis la gauche d'un fader horizontal lit
+  20 %/80 %.
 - ✅ **Verrouiller un bouton avant brassage** (retour de Yann 2026-08-13,
   fait le jour même) : « il faudrait qu'on puisse verrouiller un bouton
   qu'on veut garder avant le brassage pour le conserver ». Nouveau champ
