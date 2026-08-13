@@ -517,26 +517,33 @@ par URL existant, `stores/share.ts`).
   🔀, pas d'un geste posé délibérément sur sa propre ligne ; vérifié par
   script Playwright (🎲 change un bouton verrouillé, 🔀 ensuite ne le
   touche pas).
-- **Paramètres de base toujours accessibles dans le bandeau du haut** —
-  audit demandé par Yann, fait le 2026-08-13 : aujourd'hui le `topbar`
-  (`LiveView.svelte` L1235-1257 : PLAY, REC, LCD tempo/statut, TILT, 🔀, ⚙)
-  n'expose **aucun contrôle direct** — tout ce qui est réglable en direct
-  passe par le catalogue d'assignation (boutons/pad/fader), donc rien n'est
-  garanti accessible sans configuration préalable. Deux manques identifiés,
-  faute d'équivalent bouton dédié dans le catalogue (contrairement à
-  BREAK/FILL/MUTE, déjà « à portée de main » comme actions assignables
-  classiques) :
-  - **Tempo** — actuellement en lecture seule (`{Math.round(st.tempo)} BPM`
-    dans le LCD), aucun moyen de le changer en Live sans en sortir.
-  - **Volume master** — dans le catalogue d'axes (`liveActions.ts`,
-    `id: 'volume'`) mais seulement joignable si explicitement assigné à un
-    fader/axe ; sinon aucune prise dessus en plein set.
-  Le filtre/reverb (macros pad par défaut) et les mutes/rolls (déjà des
-  actions du catalogue) n'ont pas ce problème — pas candidats. Piste
-  proposée, pas encore faite : deux mini-contrôles fixes dans le `topbar`,
-  hors catalogue d'assignation (tap/drag sur le LCD pour le tempo, petit
-  slider compact à côté de TILT pour le volume), plutôt que d'agrandir le
-  catalogue existant.
+- ✅ **Paramètres de base toujours accessibles dans le bandeau du haut**
+  (audit demandé par Yann, fait le 2026-08-13 ; codé le même jour, « pars
+  sur les niveaux 1 ») : le `topbar` n'exposait **aucun contrôle direct** —
+  tout ce qui est réglable en direct passait par le catalogue d'assignation
+  (boutons/pad/fader), donc rien n'était garanti accessible sans
+  configuration préalable. Deux manques comblés :
+  - **Tempo** — stepper ±1 BPM (`tempoPointerDown`/`Up`, `LiveView.svelte`)
+    de part et d'autre du LCD, défilement automatique au maintien (400 ms
+    puis un cran/120 ms, même charte qu'un vrai stepper matériel) plutôt
+    que le glisser sur le LCD envisagé au départ — plus précis, aucun
+    risque de dérailler le tempo d'un geste imprécis sur une zone
+    minuscule. Écrit directement dans `pattern.state.tempo`, comme
+    `tapTempo()` de l'Atelier (`ToolBar.svelte`) — le tempo n'a jamais fait
+    partie du catalogue d'axes Live.
+  - **Volume master** — mini-fader horizontal dans le bandeau
+    (`vol-slider`, même mécanique que `.fader-btn.horizontal` mais hors
+    catalogue d'assignation), écrit via `applyAxisValue(['volume'], …)` —
+    reste donc synchronisé si 'volume' est *aussi* assigné à un bouton/axe
+    ailleurs (dernière source qui écrit fait foi, même convention que
+    pad/fader/inclinaison).
+  Piège de mise en page rencontré et corrigé : `.lcd-block` est un enfant
+  `flex:1` d'une colonne flex sans `align-items` explicite, donc `stretch`
+  par défaut — le groupe stepper+LCD+stepper héritait cette largeur totale
+  (~594px) et le bouton "+" se retrouvait collé à l'autre bout du bandeau,
+  loin du "−" et du nombre. `align-self: flex-start` sur `.lcd-tempo`
+  règle ça (repéré et corrigé en vérification Playwright avant commit, pas
+  après).
 - ✅ **Assigner/verrouiller/brasser directement autour de chaque bouton, sans
   passer par ⚙** (retour de Yann 2026-08-13, « pars sur les niveaux 1 »,
   fait le jour même) — avec demande explicite d'analyse d'ergonomie avant
