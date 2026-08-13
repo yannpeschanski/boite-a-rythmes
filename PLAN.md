@@ -229,6 +229,17 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
 
 ### Moyennes (une à quelques journées)
 - ⭐ **Mode Song / chaînage de patterns** : 4 slots A/B/C/D + une timeline simple (AABA…) — la demande n°1 de toute boîte à rythmes. Le modèle d'état sérialisable rend ça peu coûteux (un slot = un `PatternStateV2`).
+  - **Sous-brique plus simple, retour de Yann 2026-08-13** : « mettre en
+    banque plusieurs séquences dans l'Atelier et pouvoir basculer de l'une
+    à l'autre depuis le Mode Live ». C'est le Mode Song SANS la timeline
+    auto-enchaînée (AABA…) — juste une bibliothèque de patterns nommés
+    (sauvegardés/rappelés depuis l'Atelier, format v2 déjà sérialisable,
+    même mécanique que `stores/pattern.svelte`) et un sélecteur pour
+    basculer l'un d'eux en direct depuis `LiveView.svelte`, à la manière
+    d'un changement de pattern sur une vraie boîte à rythmes. Bon candidat
+    pour construire Mode Song en deux temps : cette brique d'abord (banque
+    + bascule manuelle), la timeline AABA ensuite si le besoin se confirme
+    à l'usage.
 - ⭐ **Nouvelles voix drum** : clap 909 (bursts de bruit décalés), tom (sinus pitch-drop plus lent), cowbell 808 (2 oscillateurs carrés 540/800 Hz), shaker — le moteur actuel les accueille sans changement d'architecture (une ligne = une voix + un pattern).
 - ⭐ **Défi du jour** : un niveau généré seedé par la date (même rythme pour tout le monde, façon Wordle/Motus quotidien), avec partage du score en emojis 🟩🟨 — prolonge naturellement le mode jeu Motus existant.
 - **Visualiseur façon Winamp** dans une fenêtre XP déplaçable (oscilloscope/spectre sur AnalyserNode, très peu de code, très fort en nostalgie).
@@ -526,6 +537,37 @@ par URL existant, `stores/share.ts`).
   hors catalogue d'assignation (tap/drag sur le LCD pour le tempo, petit
   slider compact à côté de TILT pour le volume), plutôt que d'agrandir le
   catalogue existant.
+- **Assigner/verrouiller/brasser directement autour de chaque bouton, sans
+  passer par ⚙** — retour de Yann 2026-08-13, avec demande explicite
+  d'analyse d'ergonomie avant de coder (« peux-tu analyser pour faire la
+  meilleure ergonomie ?? »), et une piste proposée par lui : un joystick
+  circulaire sur le bouton du milieu. Analyse faite le jour même :
+  - Un geste (appui long → menu radial/joystick) est **incompatible avec
+    deux des états qu'un bouton peut déjà porter** : les actions
+    `kind: 'hold'` (rolls) utilisent l'appui long comme LE geste live
+    (tenir = actif) — un menu radial déclenché au même seuil (550 ms,
+    convention snapshots) percuterait le roll en plein set ; et un bouton
+    en mode FADER utilise déjà le glisser comme geste live
+    (`faderPointerDown/Move`). Le même geste ferait donc des choses
+    différentes selon ce qui est actuellement assigné au bouton —
+    comportement imprévisible plutôt qu'ergonomique.
+  - Piste retenue : pas un geste, des **icônes persistantes minuscules dans
+    un coin de chaque bouton** (même esprit que 🔒/🎲 déjà dans l'overlay ⚙,
+    simplement déplacées sur la grille elle-même) — 🔒 et 🎲, toujours
+    visibles mais petites (~14px, coin haut-droit, hors de la zone d'appui
+    naturel du pouce), le reste du bouton garde exactement son comportement
+    live actuel (trigger/toggle/hold/fader). Une 3ᵉ icône ✏️ ouvrirait le
+    panneau de sélection DIRECTEMENT pour ce bouton (au lieu de
+    ⚙ → trouver la ligne → taper la ligne → panneau — un vrai raccourci
+    même si le panneau reste le même). Le toggle ACTIONS/FADER resterait
+    dans ⚙ seul — moins utile en plein set, et un mistap dessus change le
+    comportement du bouton au pire moment.
+  - Le joystick circulaire reste une bonne idée pour un *v2* limité aux
+    boutons `trigger`/`toggle`/`step` (où l'appui long est aujourd'hui un
+    vrai no-op), mais introduirait deux modèles d'interaction différents
+    selon ce qui est assigné — la cohérence l'emporte : icônes de coin
+    recommandées, joystick mis en réserve. Pas encore codé, en attente du
+    feu vert de Yann.
 
 ### 7.2 Atelier
 
@@ -652,14 +694,31 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
   seul dans une table id → phrase courte, réutilisant le mécanisme d'activation
   déjà posé pour les sons système (réglage persistant dans Affichage). Sert
   aussi la prise en main.
-- ✅ **Bouton retour utilisateur** (bug / correction / idée) — retour de
-  Yann, 2026-08-13, fait le jour même. Destination tranchée par Yann :
-  mailto: (pas de backend à construire). Nouveau menu **Aide** dans
-  `ToolBar.svelte` (Atelier), à côté de Fichier/Édition/Affichage —
-  `reportFeedback()` construit un `mailto:yann.peschanski@gmail.com` avec
-  sujet et corps pré-remplis (URL courante en pied de message pour le
-  contexte), ouvert via `location.href` comme `share()` gère déjà l'échec
-  du presse-papiers juste au-dessus dans le même fichier.
+- **Bouton retour utilisateur, v2** (bug / correction / idée) — le mailto:
+  du 2026-08-13 (menu Aide de l'Atelier) est réévalué le jour même : Yann ne
+  veut plus qu'il ouvre le client mail, veut un accès identique depuis les
+  trois modes (pas seulement l'Atelier — un bouton fixe, ex. bas-droite),
+  une saisie rapide du problème dans la page elle-même, et **l'envoi par
+  mail ne doit pas se voir depuis le site** (ni adresse en clair dans le
+  code source, ni app mail qui s'ouvre). Ça ne se fait plus sans un
+  intermédiaire côté serveur : le site est un SPA statique (`dist/` sur
+  Vercel), rien ne peut poster un e-mail sans exposer une clé quelque part.
+  Deux pistes :
+  - **Service de formulaire tiers** (type Formspree) : la page poste en
+    `fetch` vers un endpoint public propre au formulaire, le service
+    relaie par mail — zéro code serveur, zéro secret dans le bundle
+    (l'ID de formulaire n'est pas une clé sensible). Recommandé : le plus
+    rapide, cohérent avec « site statique déployé sur Vercel ».
+  - **Fonction serverless Vercel** (`api/feedback.ts`) qui appelle une API
+    d'e-mail transactionnel (ex. Resend) avec une clé en variable
+    d'environnement Vercel — plus de contrôle, mais introduit un vrai
+    backend au projet (rien de tel aujourd'hui) et une clé à provisionner.
+  Bloqué sur un choix de Yann (+ créer le compte/formulaire côté service
+  choisi, je ne peux pas le faire à sa place) avant de coder quoi que ce
+  soit. Bouton flottant (position à trancher, bas-droite proposé) + petit
+  formulaire inline (texte libre, pas de sujet/destinataire visibles)
+  remplacerait le menu Aide actuel, partagé entre Atelier/Jeu/Live plutôt
+  que spécifique à `ToolBar.svelte`.
 - **Fredonner une mélodie au micro → grille Mélodie** (retour de Yann,
   2026-08-13). Détection de hauteur en direct (`getFloatTimeDomainData` +
   autocorrélation ou YIN, pas de lib externe si évitable), quantification de
