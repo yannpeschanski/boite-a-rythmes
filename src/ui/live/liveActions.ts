@@ -378,6 +378,12 @@ export interface LiveAssignments {
   slots: LiveActionId[][]; // longueur SLOT_COUNT, chaque slot = 1+ actions
   slotModes: SlotMode[]; // longueur SLOT_COUNT — ignoré (mode 'actions') si le bouton n'a jamais été basculé en fader
   slotFaders: LiveAxisId[][]; // longueur SLOT_COUNT, 1+ axes — utilisé seulement si slotModes[i] === 'fader'
+  // Verrou par bouton (PLAN.md §7, retour de Yann : « verrouiller un bouton
+  // qu'on veut garder avant le brassage ») — un bouton verrouillé garde son
+  // assignation (slots[i] ET slotFaders[i], quel que soit le mode courant)
+  // quand 🔀 brasse tout le reste. N'affecte que les 6 boutons, pas le pad
+  // ni l'inclinaison (Yann : « un bouton », pas les axes).
+  slotLocked: boolean[]; // longueur SLOT_COUNT
   axisX: LiveAxisId[];
   axisY: LiveAxisId[];
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
@@ -390,6 +396,7 @@ const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   slots: [['break'], ['fill'], ['mute-kick'], ['mute-snare'], ['mute-hat'], ['roll-hat-x2']],
   slotModes: ['actions', 'actions', 'actions', 'actions', 'actions', 'actions'],
   slotFaders: [['filter'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
+  slotLocked: [false, false, false, false, false, false],
   axisX: ['filter'],
   axisY: ['reverb'],
   axisTilt: ['filter'],
@@ -419,6 +426,9 @@ function isValid(v: unknown): v is LiveAssignments {
     Array.isArray(a.slotFaders) &&
     a.slotFaders.length === SLOT_COUNT &&
     a.slotFaders.every((f) => isValidAxisList(f)) &&
+    Array.isArray(a.slotLocked) &&
+    a.slotLocked.length === SLOT_COUNT &&
+    a.slotLocked.every((l) => typeof l === 'boolean') &&
     isValidAxisList(a.axisX) &&
     isValidAxisList(a.axisY) &&
     isValidAxisList(a.axisTilt) &&

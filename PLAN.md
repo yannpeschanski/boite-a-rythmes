@@ -467,13 +467,36 @@ par URL existant, `stores/share.ts`).
   même genre de toggle dans l'overlay ⚙ que ACTIONS/FADER) et un rendu CSS
   du remplissage en largeur plutôt qu'en hauteur pour l'orientation
   horizontale. Pas encore commencé.
-- **Verrouiller un bouton avant brassage** : « il faudrait qu'on puisse
-  verrouiller un bouton qu'on veut garder avant le brassage pour le
-  conserver ». `shuffleAssignments` (`liveActions.ts`) réassigne
-  aujourd'hui tous les slots/axes sans exception. Piste : un tableau de
-  verrous par bouton (parallèle à `slotModes`), togglable (cadenas dans
-  l'overlay ⚙, à côté de chaque ligne), que `shuffleAssignments` saute.
-  Pas encore commencé.
+- ✅ **Verrouiller un bouton avant brassage** (retour de Yann 2026-08-13,
+  fait le jour même) : « il faudrait qu'on puisse verrouiller un bouton
+  qu'on veut garder avant le brassage pour le conserver ». Nouveau champ
+  `LiveAssignments.slotLocked: boolean[]` (`liveActions.ts`, longueur
+  SLOT_COUNT, `false` par défaut, validé comme les autres champs dans
+  `isValid`) — n'affecte que les 6 boutons, pas le pad ni l'inclinaison
+  (Yann a dit « un bouton », pas un axe). `toggleSlotLock` (`LiveView.svelte`)
+  bascule et persiste ; `shuffleAssignments` saute désormais tout slot
+  verrouillé et garde ses DEUX tableaux (`slots[i]` ET `slotFaders[i]`,
+  quel que soit le mode ACTIONS/FADER courant — un bouton verrouillé en
+  fader ne doit pas se faire rebrasser ses actions au prochain passage en
+  ACTIONS). Cadenas 🔒/🔓 dans l'overlay ⚙, à côté du toggle
+  ACTIONS/FADER existant (même gabarit `.mode-toggle`, accent ambre une
+  fois verrouillé — même code couleur que les emplacements de snapshot
+  remplis). Vérifié par script Playwright : bouton verrouillé inchangé
+  après 5 brassages consécutifs, bouton non verrouillé changé à chaque
+  fois.
+- ✅ **🎲 Random par bouton** (retour de Yann, dans la foulée du verrou :
+  « autant proposer un bouton d'assignement et un bouton random à côté de
+  chacun »). L'assignement existait déjà — taper la ligne BOUTON i ouvre le
+  panneau de sélection, inchangé ; ce qui manquait était un tirage direct
+  sans ouvrir ce panneau. `randomizeSlot(i)` (`LiveView.svelte`) tire un
+  seul nouveau réglage dans le catalogue du mode courant du bouton
+  (`pickAction`/`pickAxis`, désormais hissées en portée du composant et
+  partagées avec `shuffleAssignments` plutôt que redéfinies localement).
+  Troisième icône 🎲 dans le même `.toggle-row` que ⏻/🔒. Agit même sur un
+  bouton verrouillé — le verrou protège du brassage global accidentel par
+  🔀, pas d'un geste posé délibérément sur sa propre ligne ; vérifié par
+  script Playwright (🎲 change un bouton verrouillé, 🔀 ensuite ne le
+  touche pas).
 - **Paramètres de base toujours accessibles dans le bandeau du haut** —
   audit demandé par Yann, fait le 2026-08-13 : aujourd'hui le `topbar`
   (`LiveView.svelte` L1235-1257 : PLAY, REC, LCD tempo/statut, TILT, 🔀, ⚙)

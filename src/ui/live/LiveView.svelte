@@ -275,6 +275,11 @@
     applyAxisValue([axis.id], Math.random());
   }
 
+  // Tirage au hasard dans les catalogues — partagé par 🔀 (tout le monde) et
+  // 🎲 (une seule ligne, voir randomizeSlot plus bas).
+  const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
+  const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
+
   // Bouton 🔀 (séparé, PLAN.md §7 — piste "brasser") : réassigne aléatoirement
   // tout le catalogue d'un coup plutôt que de choisir soi-même via l'overlay
   // ⚙ — un "surprends-moi" complémentaire du chaos ci-dessus, qui lui ne
@@ -282,16 +287,21 @@
   // seul élément par slot/axe (pas de combo aléatoire) : le multi-paramètre
   // est un choix délibéré via le panneau de sélection, pas une surprise.
   function shuffleAssignments() {
-    const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
-    const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
     assignments = {
       ...assignments,
       // Un bouton en mode fader n'a pas d'actions à tirer au hasard (et
       // vice-versa) — seul le tableau correspondant à son mode ACTUEL est
       // rebrassé, l'autre reste tel quel (repris tel quel si on rebascule le
-      // mode plus tard, plutôt que perdu).
-      slots: assignments.slotModes.map((mode, i) => (mode === 'fader' ? assignments.slots[i] : [pickAction()])),
-      slotFaders: assignments.slotModes.map((mode, i) => (mode === 'fader' ? [pickAxis()] : assignments.slotFaders[i])),
+      // mode plus tard, plutôt que perdu). Un bouton verrouillé (retour de
+      // Yann, PLAN.md §7 : « verrouiller un bouton qu'on veut garder avant
+      // le brassage ») garde ses DEUX tableaux tels quels, quel que soit son
+      // mode courant — seul 🔀 le respecte, le reste de l'UI l'ignore.
+      slots: assignments.slotModes.map((mode, i) =>
+        assignments.slotLocked[i] || mode === 'fader' ? assignments.slots[i] : [pickAction()],
+      ),
+      slotFaders: assignments.slotModes.map((mode, i) =>
+        assignments.slotLocked[i] || mode !== 'fader' ? assignments.slotFaders[i] : [pickAxis()],
+      ),
       axisX: [pickAxis()],
       axisY: [pickAxis()],
       axisTilt: [pickAxis()],
@@ -343,6 +353,25 @@
 
   function toggleSlotMode(i: number) {
     assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
+    saveLiveAssignments(assignments);
+  }
+
+  function toggleSlotLock(i: number) {
+    assignments.slotLocked[i] = !assignments.slotLocked[i];
+    saveLiveAssignments(assignments);
+  }
+
+  // Bouton 🎲 par ligne (retour de Yann, PLAN.md §7 : « un bouton
+  // d'assignement et un bouton random à côté de chacun » — l'assignement,
+  // c'est déjà la ligne elle-même, tapée elle ouvre le panneau de sélection ;
+  // ce qui manquait, c'est un tirage direct sans ouvrir ce panneau). Tire un
+  // nouveau réglage pour CE bouton seul, dans le catalogue de son mode
+  // courant — contrairement à 🔀 qui rebrasse tout d'un coup. Agit même sur
+  // un bouton verrouillé : le verrou protège du brassage global accidentel
+  // par 🔀, pas d'un geste posé délibérément sur sa propre ligne.
+  function randomizeSlot(i: number) {
+    if (assignments.slotModes[i] === 'fader') assignments.slotFaders[i] = [pickAxis()];
+    else assignments.slots[i] = [pickAction()];
     saveLiveAssignments(assignments);
   }
 
@@ -1352,9 +1381,22 @@
                 {@const defs = actionsFor(actionIds)}
                 {@const faderDefs = axesFor(assignments.slotFaders[i])}
                 <div class="assign-row-wrap">
-                  <button class="mode-toggle" onclick={() => toggleSlotMode(i)} title="Basculer actions / fader">
-                    {mode === 'fader' ? '≈ FADER' : '⏻ ACTIONS'}
-                  </button>
+                  <div class="toggle-row">
+                    <button class="mode-toggle" onclick={() => toggleSlotMode(i)} title="Basculer actions / fader">
+                      {mode === 'fader' ? '≈ FADER' : '⏻ ACTIONS'}
+                    </button>
+                    <button
+                      class="mode-toggle lock-toggle"
+                      class:on={assignments.slotLocked[i]}
+                      onclick={() => toggleSlotLock(i)}
+                      title={assignments.slotLocked[i] ? 'Déverrouiller (🔀 pourra le rebrasser)' : 'Verrouiller (🔀 le laissera tel quel)'}
+                    >
+                      {assignments.slotLocked[i] ? '🔒' : '🔓'}
+                    </button>
+                    <button class="mode-toggle random-toggle" onclick={() => randomizeSlot(i)} title="Tirer un nouveau réglage au hasard pour ce bouton">
+                      🎲
+                    </button>
+                  </div>
                   <button
                     class="assign-row"
                     onclick={() => (picker = mode === 'fader' ? { kind: 'slotFader', index: i } : { kind: 'slot', index: i })}
@@ -2028,6 +2070,10 @@
     flex-direction: column;
     gap: 3px;
   }
+  .toggle-row {
+    display: flex;
+    gap: 4px;
+  }
   .mode-toggle {
     align-self: flex-start;
     font-family: inherit;
@@ -2042,6 +2088,13 @@
   }
   .mode-toggle:active {
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  /* Verrou de bouton (PLAN.md §7) : même gabarit que le toggle actions/fader
+     voisin, distingué par la couleur ambre une fois verrouillé (même accent
+     que les emplacements de snapshot remplis, .snapshot-slot.filled). */
+  .lock-toggle.on {
+    color: var(--amp-amber);
+    border-color: var(--amp-amber);
   }
   /* Ouvre le panneau de sélection correspondant au mode (actions ou fader) —
      tap = ouvrir le panneau, pas un cycle sur place, catalogue trop large
