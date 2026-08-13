@@ -12,6 +12,7 @@
   import GeneralSequencer from '../sequencer/GeneralSequencer.svelte';
   import SynthModule from './SynthModule.svelte';
   import PresetPicker from './PresetPicker.svelte';
+  import SequenceBank from './SequenceBank.svelte';
   import ExportBar from './ExportBar.svelte';
   import ToolBar from './ToolBar.svelte';
   import { history } from '../../stores/history.svelte';
@@ -330,6 +331,7 @@
     </div>
     <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
     <PresetPicker onApplied={refreshFx} />
+    <SequenceBank onApplied={refreshFx} />
   </div>
 
   <!-- Le séquenceur pas-à-pas éditable reste sur Rythme, hors de l'onglet
