@@ -275,6 +275,11 @@
     applyAxisValue([axis.id], Math.random());
   }
 
+  // Tirage au hasard dans les catalogues — partagé par 🔀 (tout le monde) et
+  // 🎲 (une seule ligne, voir randomizeSlot plus bas).
+  const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
+  const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
+
   // Bouton 🔀 (séparé, PLAN.md §7 — piste "brasser") : réassigne aléatoirement
   // tout le catalogue d'un coup plutôt que de choisir soi-même via l'overlay
   // ⚙ — un "surprends-moi" complémentaire du chaos ci-dessus, qui lui ne
@@ -282,8 +287,6 @@
   // seul élément par slot/axe (pas de combo aléatoire) : le multi-paramètre
   // est un choix délibéré via le panneau de sélection, pas une surprise.
   function shuffleAssignments() {
-    const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
-    const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
     assignments = {
       ...assignments,
       // Un bouton en mode fader n'a pas d'actions à tirer au hasard (et
@@ -355,6 +358,20 @@
 
   function toggleSlotLock(i: number) {
     assignments.slotLocked[i] = !assignments.slotLocked[i];
+    saveLiveAssignments(assignments);
+  }
+
+  // Bouton 🎲 par ligne (retour de Yann, PLAN.md §7 : « un bouton
+  // d'assignement et un bouton random à côté de chacun » — l'assignement,
+  // c'est déjà la ligne elle-même, tapée elle ouvre le panneau de sélection ;
+  // ce qui manquait, c'est un tirage direct sans ouvrir ce panneau). Tire un
+  // nouveau réglage pour CE bouton seul, dans le catalogue de son mode
+  // courant — contrairement à 🔀 qui rebrasse tout d'un coup. Agit même sur
+  // un bouton verrouillé : le verrou protège du brassage global accidentel
+  // par 🔀, pas d'un geste posé délibérément sur sa propre ligne.
+  function randomizeSlot(i: number) {
+    if (assignments.slotModes[i] === 'fader') assignments.slotFaders[i] = [pickAxis()];
+    else assignments.slots[i] = [pickAction()];
     saveLiveAssignments(assignments);
   }
 
@@ -1375,6 +1392,9 @@
                       title={assignments.slotLocked[i] ? 'Déverrouiller (🔀 pourra le rebrasser)' : 'Verrouiller (🔀 le laissera tel quel)'}
                     >
                       {assignments.slotLocked[i] ? '🔒' : '🔓'}
+                    </button>
+                    <button class="mode-toggle random-toggle" onclick={() => randomizeSlot(i)} title="Tirer un nouveau réglage au hasard pour ce bouton">
+                      🎲
                     </button>
                   </div>
                   <button
