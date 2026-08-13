@@ -357,6 +357,58 @@
     faderDraggingIndex = null;
   }
 
+  // Volume master toujours accessible dans le bandeau (PLAN.md §7, audit du
+  // 13/08 : seul moyen d'y toucher en plein set jusqu'ici était de l'avoir
+  // explicitement assigné à un fader/axe). Même mécanique que setFader
+  // horizontal, mais écrit directement dans le catalogue d'axes
+  // (`applyAxisValue(['volume'], …)`) plutôt qu'un nœud dédié — reste donc
+  // synchronisé si 'volume' est AUSSI assigné à un bouton/axe ailleurs
+  // (dernière source qui écrit fait foi, même convention que pad/fader/
+  // inclinaison).
+  let volDragging = false;
+  function setVolumeFromClientX(clientX: number, rect: DOMRect) {
+    const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    applyAxisValue(['volume'], frac);
+  }
+  function volPointerDown(e: PointerEvent, el: HTMLDivElement) {
+    volDragging = true;
+    el.setPointerCapture(e.pointerId);
+    setVolumeFromClientX(e.clientX, el.getBoundingClientRect());
+  }
+  function volPointerMove(e: PointerEvent, el: HTMLDivElement) {
+    if (volDragging) setVolumeFromClientX(e.clientX, el.getBoundingClientRect());
+  }
+  function volPointerUp() {
+    volDragging = false;
+  }
+
+  // Tempo toujours accessible dans le bandeau (même audit) — un stepper
+  // ±1 BPM plutôt qu'un glisser sur le LCD (piste initiale de PLAN.md) :
+  // plus précis et sans risque de dérailler le tempo en plein set d'un
+  // geste imprécis sur une zone minuscule. Appui maintenu = défilement
+  // automatique (400 ms avant le premier cran, puis un cran toutes les
+  // 120 ms), même charte que les vrais steppers de tempo des boîtes à
+  // rythmes matérielles. Écrit directement dans pattern.state.tempo, comme
+  // tapTempo() dans ToolBar.svelte (Atelier) — pas un axe du catalogue Live,
+  // le tempo n'en a jamais fait partie.
+  let tempoRepeatDelay: ReturnType<typeof setTimeout> | null = null;
+  let tempoRepeatTimer: ReturnType<typeof setInterval> | null = null;
+  function stepTempo(delta: number) {
+    pattern.state.tempo = Math.max(40, Math.min(200, Math.round(pattern.state.tempo) + delta));
+  }
+  function tempoPointerDown(delta: number) {
+    stepTempo(delta);
+    tempoRepeatDelay = setTimeout(() => {
+      tempoRepeatTimer = setInterval(() => stepTempo(delta), 120);
+    }, 400);
+  }
+  function tempoPointerUp() {
+    if (tempoRepeatDelay) clearTimeout(tempoRepeatDelay);
+    if (tempoRepeatTimer) clearInterval(tempoRepeatTimer);
+    tempoRepeatDelay = null;
+    tempoRepeatTimer = null;
+  }
+
   function toggleSlotMode(i: number) {
     assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
     saveLiveAssignments(assignments);
@@ -1246,6 +1298,7 @@
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
+    tempoPointerUp(); // au cas où on quitte le Mode Live avec le stepper de tempo maintenu
     // Quitter le Mode Live (×) pendant un enregistrement en cours livre quand
     // même le WAV plutôt que de le jeter — même geste que STOP (togglePlay).
     if (recording) {
@@ -1284,8 +1337,39 @@
           <span class="rec-dot"></span>{recording ? 'REC…' : 'REC'}
         </button>
         <div class="lcd-block">
-          <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}</span>
+          <div class="lcd-tempo">
+            <button
+              class="tempo-btn"
+              onpointerdown={() => tempoPointerDown(-1)}
+              onpointerup={tempoPointerUp}
+              onpointerleave={tempoPointerUp}
+              title="Tempo −1 (maintenir pour défiler)"
+            >−</button>
+            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}</span>
+            <button
+              class="tempo-btn"
+              onpointerdown={() => tempoPointerDown(1)}
+              onpointerup={tempoPointerUp}
+              onpointerleave={tempoPointerUp}
+              title="Tempo +1 (maintenir pour défiler)"
+            >+</button>
+          </div>
           <span class="lcd-sub">TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD</span>
+        </div>
+        <div
+          class="vol-slider"
+          role="slider"
+          aria-label="Volume"
+          aria-valuenow={Math.round(axisValues['volume'] * 100)}
+          tabindex="0"
+          onpointerdown={(e) => volPointerDown(e, e.currentTarget as HTMLDivElement)}
+          onpointermove={(e) => volPointerMove(e, e.currentTarget as HTMLDivElement)}
+          onpointerup={volPointerUp}
+          onpointerleave={volPointerUp}
+          title="Volume master"
+        >
+          <div class="vol-fill" style:width="{axisValues['volume'] * 100}%"></div>
+          <span class="vol-val">{Math.round(axisValues['volume'] * 100)}%</span>
         </div>
         <button class="tilt-btn" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
           <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
@@ -1744,6 +1828,74 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  /* Stepper de tempo (PLAN.md §7, audit du bandeau du haut) : ±1 BPM par
+     tap, défilement au maintien (tempoPointerDown/Up dans le script) —
+     seul moyen de changer le tempo sans quitter le Mode Live. */
+  .lcd-tempo {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .lcd-tempo .lcd {
+    min-width: 0;
+  }
+  .tempo-btn {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border-radius: 3px;
+    border: 1px solid var(--amp-line);
+    background: var(--amp-bg-1);
+    color: var(--amp-lcd-fg);
+    font-size: 11px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .tempo-btn:active {
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+  /* Volume master toujours accessible (même audit) — mini-fader horizontal
+     dans le bandeau, même mécanique que .fader-btn.horizontal mais hors
+     catalogue d'assignation (volPointerDown/Move dans le script). */
+  .vol-slider {
+    position: relative;
+    flex: none;
+    width: 54px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid var(--amp-line);
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    cursor: ew-resize;
+    touch-action: none;
+  }
+  .vol-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, #7a4a08, var(--amp-amber));
+    box-shadow: 0 0 4px rgba(255, 176, 32, 0.55);
+  }
+  .vol-val {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--amp-text);
   }
   .tilt-warn {
     position: absolute;
