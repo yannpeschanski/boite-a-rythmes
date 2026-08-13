@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { playSystemSound } from './systemSounds';
 
   let {
     title,
@@ -17,7 +18,20 @@
   let shutdown = $state(false);
 
   // Boutons de fenêtre détournés, comme l'original : _ replie, □ déplie,
-  // × = gag « Extinction en cours… » qui se referme tout seul.
+  // × = gag « Extinction en cours… » qui se referme tout seul. Chirp système
+  // (PLAN.md §2/§6) sur repli/dépliage — gardé derrière un test d'état pour
+  // qu'un clic répété sur le même bouton (déjà replié/déjà déplié) ne
+  // rejoue pas le son pour rien.
+  function collapse() {
+    if (collapsed) return;
+    collapsed = true;
+    playSystemSound('close');
+  }
+  function expand() {
+    if (!collapsed) return;
+    collapsed = false;
+    playSystemSound('open');
+  }
   function fakeShutdown() {
     shutdown = true;
     setTimeout(() => (shutdown = false), 1800);
@@ -29,8 +43,8 @@
     <span class="icon">{icon}</span>
     <span class="title">{title}</span>
     <span class="buttons">
-      <button class="wbtn" title="Replier" onclick={() => (collapsed = true)}>_</button>
-      <button class="wbtn" title="Déplier" onclick={() => (collapsed = false)}>□</button>
+      <button class="wbtn" title="Replier" onclick={collapse}>_</button>
+      <button class="wbtn" title="Déplier" onclick={expand}>□</button>
       <button class="wbtn close" title="Fermer" onclick={fakeShutdown}>×</button>
     </span>
   </header>

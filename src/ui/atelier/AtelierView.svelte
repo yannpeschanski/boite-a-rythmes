@@ -17,6 +17,7 @@
   import { history } from '../../stores/history.svelte';
   import { scheduleAutosave, hasAutosave, restoreAutosave } from '../../stores/share';
   import { findClosestPreset } from '../../engine/similarity';
+  import { playSystemSound } from '../xp/systemSounds';
 
   const engine = new AudioEngine(() => pattern.snapshot());
 
@@ -232,6 +233,7 @@
       pattern.loadJson(await file.text());
       refreshFx();
     } catch {
+      playSystemSound('error');
       alert('Fichier illisible — ce n’est pas une sauvegarde de rythme valide.');
     }
     fileInput.value = '';
