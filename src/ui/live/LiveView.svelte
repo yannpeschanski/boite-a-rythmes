@@ -329,23 +329,29 @@
     assignments.slots[i].forEach((id) => runAction(id, false));
   }
 
-  // Bouton en mode FADER (PLAN.md §7) : glisser verticalement sur le bouton
-  // lui-même pilote un ou plusieurs axes du même catalogue que le pad/
-  // l'inclinaison (applyAxisValue), position = valeur — même convention que
-  // le pad (haut = 100%). Un seul drag actif à la fois (comme le pad,
-  // `dragging`), le multi-touch simultané sur deux faders n'est pas géré.
+  // Bouton en mode FADER (PLAN.md §7) : glisser sur le bouton lui-même
+  // pilote un ou plusieurs axes du même catalogue que le pad/l'inclinaison
+  // (applyAxisValue), position = valeur. Orientation par bouton (retour de
+  // Yann : « un fader gauche-droite où haut-bas ») — vertical garde la
+  // convention du pad (haut = 100%, frac inversée) ; horizontal suit le sens
+  // de lecture (gauche = 0%, droite = 100%, frac direct). Un seul drag actif
+  // à la fois (comme le pad, `dragging`), le multi-touch simultané sur deux
+  // faders n'est pas géré.
   let faderDraggingIndex: number | null = null;
-  function setFader(i: number, clientY: number, rect: DOMRect) {
-    const frac = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
-    applyAxisValue(assignments.slotFaders[i], 1 - frac);
+  function setFader(i: number, clientX: number, clientY: number, rect: DOMRect) {
+    const horizontal = assignments.faderOrientation[i] === 'horizontal';
+    const frac = horizontal
+      ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+      : Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    applyAxisValue(assignments.slotFaders[i], horizontal ? frac : 1 - frac);
   }
   function faderPointerDown(i: number, e: PointerEvent, el: HTMLDivElement) {
     faderDraggingIndex = i;
     el.setPointerCapture(e.pointerId);
-    setFader(i, e.clientY, el.getBoundingClientRect());
+    setFader(i, e.clientX, e.clientY, el.getBoundingClientRect());
   }
   function faderPointerMove(i: number, e: PointerEvent, el: HTMLDivElement) {
-    if (faderDraggingIndex === i) setFader(i, e.clientY, el.getBoundingClientRect());
+    if (faderDraggingIndex === i) setFader(i, e.clientX, e.clientY, el.getBoundingClientRect());
   }
   function faderPointerUp() {
     faderDraggingIndex = null;
@@ -353,6 +359,11 @@
 
   function toggleSlotMode(i: number) {
     assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
+    saveLiveAssignments(assignments);
+  }
+
+  function toggleFaderOrientation(i: number) {
+    assignments.faderOrientation[i] = assignments.faderOrientation[i] === 'horizontal' ? 'vertical' : 'horizontal';
     saveLiveAssignments(assignments);
   }
 
@@ -1298,8 +1309,10 @@
             {#if assignments.slotModes[i] === 'fader'}
               {@const faderIds = assignments.slotFaders[i]}
               {@const val = axisValues[faderIds[0]] ?? 0.5}
+              {@const horizontal = assignments.faderOrientation[i] === 'horizontal'}
               <div
                 class="abtn fader-btn"
+                class:horizontal
                 role="slider"
                 aria-label={axesFor(faderIds)
                   .map((a) => a.label)
@@ -1311,7 +1324,11 @@
                 onpointerup={faderPointerUp}
                 onpointerleave={faderPointerUp}
               >
-                <div class="fader-fill" style:height="{val * 100}%"></div>
+                {#if horizontal}
+                  <div class="fader-fill" style:width="{val * 100}%"></div>
+                {:else}
+                  <div class="fader-fill" style:height="{val * 100}%"></div>
+                {/if}
                 <span class="fader-label">{axesFor(faderIds).map((a) => a.label).join(' + ')}</span>
                 <span class="fader-val">{Math.round(val * 100)}%</span>
               </div>
@@ -1396,6 +1413,15 @@
                     <button class="mode-toggle random-toggle" onclick={() => randomizeSlot(i)} title="Tirer un nouveau réglage au hasard pour ce bouton">
                       🎲
                     </button>
+                    {#if mode === 'fader'}
+                      <button
+                        class="mode-toggle"
+                        onclick={() => toggleFaderOrientation(i)}
+                        title="Basculer le sens du glisser (vertical / horizontal)"
+                      >
+                        {assignments.faderOrientation[i] === 'horizontal' ? '↔' : '↕'}
+                      </button>
+                    {/if}
                   </div>
                   <button
                     class="assign-row"
@@ -1864,14 +1890,21 @@
   }
 
   /* Bouton en mode FADER (PLAN.md §7) : même carcasse que .abtn (fond,
-     bordure, coins arrondis), mais le remplissage vertical .fader-fill fait
-     office de curseur — glisser dessus pilote l'axe assigné comme le
-     ferait le pad, voir faderPointerDown/Move dans le script. */
+     bordure, coins arrondis), mais le remplissage fait office de curseur —
+     glisser dessus pilote l'axe assigné comme le ferait le pad, voir
+     faderPointerDown/Move dans le script. Orientation par bouton (retour de
+     Yann, PLAN.md §7) : verticale par défaut (remplissage en hauteur,
+     ancré en bas) ou horizontale (.horizontal, remplissage en largeur,
+     ancré à gauche — sens de lecture, gauche = 0%). */
   .fader-btn {
     overflow: hidden;
     justify-content: flex-end;
     cursor: ns-resize;
     touch-action: none;
+  }
+  .fader-btn.horizontal {
+    justify-content: center;
+    cursor: ew-resize;
   }
   .fader-fill {
     position: absolute;
@@ -1881,6 +1914,12 @@
     background: linear-gradient(180deg, var(--amp-amber), #a56a12);
     opacity: 0.35;
     transition: height 0.03s linear;
+  }
+  .fader-btn.horizontal .fader-fill {
+    right: auto;
+    top: 0;
+    background: linear-gradient(90deg, var(--amp-amber), #a56a12);
+    transition: width 0.03s linear;
   }
   .fader-label,
   .fader-val {

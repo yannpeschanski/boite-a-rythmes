@@ -368,6 +368,13 @@ export const SLOT_COUNT = 6;
 // surface au même moment.
 export type SlotMode = 'actions' | 'fader';
 
+// Orientation du glisser en mode FADER (PLAN.md §7, retour de Yann : « un
+// type de bouton où c'est un fader gauche-droite au sein du bouton, où
+// haut-bas, à voir le plus simple ») — un champ par bouton, à côté de
+// slotModes, ignoré tant que le bouton n'est pas en mode fader (même
+// convention que slotFaders).
+export type FaderOrientation = 'vertical' | 'horizontal';
+
 // Chaque bouton/axe peut désormais porter PLUSIEURS entrées du catalogue à la
 // fois (PLAN.md §7, retour de Yann : « on peut assigner plusieurs paramètres
 // à un même contrôleur ») — un bouton peut déclencher plusieurs actions d'un
@@ -384,6 +391,7 @@ export interface LiveAssignments {
   // quand 🔀 brasse tout le reste. N'affecte que les 6 boutons, pas le pad
   // ni l'inclinaison (Yann : « un bouton », pas les axes).
   slotLocked: boolean[]; // longueur SLOT_COUNT
+  faderOrientation: FaderOrientation[]; // longueur SLOT_COUNT — utilisé seulement si slotModes[i] === 'fader'
   axisX: LiveAxisId[];
   axisY: LiveAxisId[];
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
@@ -397,6 +405,7 @@ const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   slotModes: ['actions', 'actions', 'actions', 'actions', 'actions', 'actions'],
   slotFaders: [['filter'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
   slotLocked: [false, false, false, false, false, false],
+  faderOrientation: ['vertical', 'vertical', 'vertical', 'vertical', 'vertical', 'vertical'],
   axisX: ['filter'],
   axisY: ['reverb'],
   axisTilt: ['filter'],
@@ -408,6 +417,7 @@ const ACTION_IDS = new Set(LIVE_ACTIONS.map((a) => a.id));
 const AXIS_IDS = new Set(LIVE_AXES.map((a) => a.id));
 const VIZ_IDS = new Set(LIVE_VIZ.map((v) => v.id));
 const SLOT_MODES: SlotMode[] = ['actions', 'fader'];
+const FADER_ORIENTATIONS: FaderOrientation[] = ['vertical', 'horizontal'];
 
 function isValidAxisList(v: unknown): v is LiveAxisId[] {
   return Array.isArray(v) && v.length > 0 && v.every((id) => AXIS_IDS.has(id));
@@ -429,6 +439,9 @@ function isValid(v: unknown): v is LiveAssignments {
     Array.isArray(a.slotLocked) &&
     a.slotLocked.length === SLOT_COUNT &&
     a.slotLocked.every((l) => typeof l === 'boolean') &&
+    Array.isArray(a.faderOrientation) &&
+    a.faderOrientation.length === SLOT_COUNT &&
+    a.faderOrientation.every((o) => FADER_ORIENTATIONS.includes(o as FaderOrientation)) &&
     isValidAxisList(a.axisX) &&
     isValidAxisList(a.axisY) &&
     isValidAxisList(a.axisTilt) &&
