@@ -1071,6 +1071,23 @@ Quatre retours sur des features livrées la veille, plus trois sur le Mode Live 
   Vérifié par script Playwright (capture d'écran Mode Live) : icônes de
   coin visibles sur les 6 boutons ET le pad, bandeau "🗄 Aucune séquence"
   avec `‹`/`›` à la place de l'ancienne seekbar.
+- ✅ **Arpège/Bourdon rangés en sous-catégories de la Nappe** (retour de
+  Yann, 2026-08-14 : « les options d'arpeggiator et de bourdon devraient
+  être en sous catégorie de nappe »). Les deux fieldsets vivaient à part
+  dans `SynthModule.svelte`, après les 3 lignes (Basse/Nappe/Mélodie),
+  toujours visibles quelle que soit la ligne concernée — alors qu'ils ne
+  s'appliquent qu'à la Nappe. Déplacés dans `SynthRowView.svelte` (le
+  composant de ligne, déjà instancié 3×), comme deux nouveaux groupes
+  dépliables `{#if isPad}` après « Espace » — même mécanique que les 5
+  groupes déjà là (`openGroups.arpege`/`.drone`, repliés par défaut comme
+  les autres). Ils portent sur `synthGlobal` (padArpEnabled/padDroneEnabled…)
+  et pas sur `row`, mais `SynthRowView` dérive déjà `pattern.state` — un
+  simple `sg = $derived(pattern.state.synthGlobal)` suffit, pas besoin de
+  props supplémentaires. `translatePadArpToMelody` (bouton "Traduire
+  l'arpège en Mélodie") suit dans le même fichier. N'apparaissent plus du
+  tout sur Basse/Mélodie. Vérifié par script Playwright : capture d'écran
+  Synthé avec tous les groupes dépliés — Arpégiateur/Bourdon visibles
+  seulement entre l'Espace de la Nappe et la Séquence de la Mélodie.
 
 ---
 
