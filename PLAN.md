@@ -965,6 +965,115 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
 
 ---
 
+## Compléments d'action — 2026-08-14 (retours de Yann sur le palier 1)
+
+Quatre retours sur des features livrées la veille, plus trois sur le Mode Live en cours de route — traités dans la foulée, sans repasser par une confirmation de périmètre (Yann : « arrête de me demander ça »).
+
+- ✅ **Bourdon (drone) v2 — vrai maintien qui change de pitch** (« le bourdon
+  ne marche pas très bien, je souhaiterais que ça maintienne le son... dans
+  l'idée de faire du synthwave »). La v1 (retrigger toutes les 8 mesures sur
+  l'accord du 1er pas) ne correspondait pas à l'intention : Yann voulait un
+  **vrai legato** — les mêmes oscillateurs tenus en continu, jamais
+  ré-attaqués, qui glissent de fréquence quand l'accord change plutôt que de
+  rejouer une nouvelle note. Nouveau mécanisme dans `SynthKit`
+  (`engine/voices/synth.ts`) : `startDrone`/`updateDrone`/`stopDrone` —
+  3 voix tenues (les accords de `buildChordsForScale` sont toujours des
+  triades), attaque une seule fois, puis seule `osc.frequency` est
+  reprogrammée (`exponentialRampToValueAtTime`) à chaque nouvel accord
+  rencontré. Le scheduler (`scheduleSynthWindow`) suit maintenant le VRAI
+  motif de la Nappe (cycle/pas/pattern, plus ignorés comme en v1) : un pas
+  actif retune le drone, un pas vide ne fait rien (le drone continue de
+  tenir le dernier accord — c'est le principe même d'un bourdon), muted/break
+  coupe avec un release. `SynthKit.syncDroneMode` détecte la bascule ON->OFF
+  du réglage en cours de lecture pour couper proprement. Nouveau champ `now`
+  sur `SynthScheduleContext` (l'horloge réelle de l'appelant, distincte de
+  `horizon`) pour programmer cette coupure au bon moment ; `AudioEngine.tick`
+  et `render-offline.ts` le fournissent tous les deux. `AudioEngine.stop()`
+  coupe déjà tout net via `synth.stopAll()` (les oscillateurs du drone sont
+  trackés comme les autres). Limite assumée inchangée : pas un maintien
+  littéralement indéfini (retune à chaque pas actif, pas un unique
+  oscillateur immortel) — texte d'aide de `SynthModule.svelte` mis à jour en
+  conséquence.
+- ✅ **34 presets adaptés pour clap/shaker, quand le genre s'y prête** (« il
+  faut adapter tous les presets pour intégrer ces nouvelles lignes si
+  nécessaire »). Nouveaux champs optionnels `clap?`/`shaker?` sur
+  `SongPresetData` (`model/presets/songs.ts`), appliqués par
+  `presetAdapter.ts` seulement quand présents (sinon `defaultState()` garde
+  ces lignes silencieuses, comme avant). **25 des 34 presets modifiés**,
+  jugement musical par genre plutôt qu'un ajout systématique :
+  - Hip-hop/trap (5/5) : clap qui double la snare partout (boombap,
+    trapmodern, drill, dilla à volume réduit), + shaker continu pour dembow
+    (güira du reggaeton).
+  - Électronique/club (5/7) : le "house clap" classique (house,
+    housefrenchtouch — dont la démo mentionnait déjà "clap 2/4" sans ligne
+    dédiée avant ça —, hardhouse, garage), clap sous le gros snare half-time
+    du dubstep. Techno minimale et jungle explicitement épargnées (aussi
+    délibéré que le reste : l'esthétique minimale/breakbeat n'appelle pas
+    une couche en plus).
+  - Funk/soul/jazz (1/6) : shaker continu pour funk (tambourin). Motown
+    (témoin "carré" pédagogique, swing/traîne à 0 — ajouter une couche
+    casserait son rôle de référence), swing jazz, shuffle, swing, charleston
+    laissés tels quels (genres acoustiques batterie/cymbale, pas
+    percussion additionnelle).
+  - Latin/Afro/Caribbean (14/15) : la catégorie où shaker/clap sont quasiment
+    partout à leur place (maracas/chekere/chocalho omniprésents dans ces
+    répertoires) — clave, afrobeat, tresillo, habanera, clave23, claverumba,
+    cinquillo, bossanova, samba (shaker), amapiano (clap 2/4 + shaker,
+    démo déjà explicite), dancehall, bailefunk (clap), bodiddley (shaker qui
+    calque le MÊME tresillo que kick/snare — c'est historiquement le motif
+    exact des maracas de Jerome Green), reggaeonedrop (shaker sur le skank).
+    Gqom seul épargné (esthétique sombre/minimale délibérée, comme techno).
+  - "Autre" (motorik) épargné : hypnotique/minimal par principe.
+  Vérifié par script Playwright : preset Dembow chargé, lignes Clap et
+  Shaker visibles et peuplées dans le séquenceur.
+- ✅ **Explications par paramètre : couverture exhaustive + langage simple**
+  (« j'ai l'impression que ce n'est pas exhaustif et que ça ne parle pas un
+  langage assez simple »). Recherche exhaustive de TOUS les libellés
+  `XpSlider` réellement utilisés dans l'appli (43 au total) plutôt qu'un
+  ajout au jugé — 10 manquaient (Delay, Durée, Cycles (mesures), Nb
+  d'accords, Notes du cycle, Pas, Pitch, Réverbe, Tempo, Volume), désormais
+  tous couverts dans `ui/xp/paramHints.svelte.ts`. Toutes les entrées
+  existantes reformulées pour éviter le jargon (portamento, sidechain, curve
+  exponentielle…) au profit d'une description de l'effet entendu. Piège
+  repéré en vérifiant : le libellé "Nb d'accords" utilise une apostrophe
+  DROITE dans `SynthModule.svelte` (contrairement aux apostrophes
+  typographiques du reste du fichier) — la clé de la table doit matcher
+  exactement, sinon la bulle n'apparaît jamais silencieusement.
+- ✅ **Banque de séquences : explication ajoutée** (« il faut une
+  explication »). Un `<p class="hint">` au-dessus du picker dans l'Atelier
+  (`SequenceBank.svelte`) expliquant à quoi ça sert et comment ça s'articule
+  avec le Mode Live ; même principe dans l'overlay ⚙ du Live
+  (`picker-caption`, affiché uniquement pour l'entrée BANQUE DE SÉQUENCES).
+- ✅ **Mode Live — 3 retours traités dans la foulée** :
+  - **Icônes de coin agrandies** (« les petits boutons sont un peu trop
+    petit ») : `.corner-icon` passe de 15px/8px à 22px/12px (police) — reste
+    hors de la zone d'appui naturelle du bouton (diagnostic ergonomie déjà
+    posé), mais devient une vraie cible tactile.
+  - **Mêmes icônes sur le pad** (« il faudrait avoir les mêmes options sur
+    le pad ») : 🔒/🎲/✏️ ajoutées sur le pad XY, symétriques de celles des 6
+    boutons. Nouveau champ `LiveAssignments.padLocked: boolean` (un seul
+    verrou pour X ET Y ensemble — le pad est UN geste physique, pas deux
+    comme slotLocked qui est par bouton) respecté par 🔀 brasser ;
+    `randomizePad()` retire un nouveau réglage pour X et Y d'un coup ; ✏️
+    ouvre l'overlay complet (les lignes X/Y y sont déjà séparées, pas besoin
+    d'un picker dédié à un seul axe).
+  - **Curseur vert mystère → bandeau de séquences fonctionnel** (« un
+    curseur vert que je ne comprends pas entre le bandeau du haut et les
+    boutons » / « pouvoir basculer de séquence directement... sans passer
+    par le menu de réglage » — deux retours réglés d'un coup). La "seekbar"
+    était purement décorative (esthétique Winamp, `width:38%` figé, ne
+    pilotait rien) — remplacée par un vrai contrôle `.seq-bar` : LCD verte
+    affichant la séquence courante de la banque, `‹`/`›` pour avancer/
+    reculer et charger immédiatement, zéro overlay à ouvrir. `bankIndex`
+    (nouvel état local à `LiveView`, pas dans le store partagé) suit
+    uniquement ce bandeau — un chargement depuis l'Atelier ou l'overlay ⚙
+    reste indépendant.
+  Vérifié par script Playwright (capture d'écran Mode Live) : icônes de
+  coin visibles sur les 6 boutons ET le pad, bandeau "🗄 Aucune séquence"
+  avec `‹`/`›` à la place de l'ancienne seekbar.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)

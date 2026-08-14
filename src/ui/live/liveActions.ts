@@ -397,6 +397,13 @@ export interface LiveAssignments {
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
   // tant que le bouton TILT n'est pas activé côté capteur.
   axisTilt: LiveAxisId[];
+  // Verrou du pad (retour de Yann, 2026-08-14 : « les mêmes options sur le
+  // pad » que les icônes de coin des boutons) — symétrique de slotLocked
+  // mais un seul booléen : le pad est UN contrôle (X et Y ensemble), pas 6
+  // comme les boutons. Protège axisX ET axisY du brassage 🔀, jamais
+  // l'inclinaison (même principe que slotLocked : un geste physique
+  // distinct, pas un axe).
+  padLocked: boolean;
   viz: LiveVizId;
 }
 
@@ -409,6 +416,7 @@ const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   axisX: ['filter'],
   axisY: ['reverb'],
   axisTilt: ['filter'],
+  padLocked: false,
   viz: 'bars',
 };
 
@@ -445,6 +453,7 @@ function isValid(v: unknown): v is LiveAssignments {
     isValidAxisList(a.axisX) &&
     isValidAxisList(a.axisY) &&
     isValidAxisList(a.axisTilt) &&
+    typeof a.padLocked === 'boolean' &&
     !!a.viz &&
     VIZ_IDS.has(a.viz)
   );

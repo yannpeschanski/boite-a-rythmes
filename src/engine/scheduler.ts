@@ -338,31 +338,31 @@ export interface SynthScheduleContext {
   rng: Rng;
   breakWindow: BreakWindow | null;
   emitPlayhead: (ev: PlayheadEvent) => void;
+  // Horloge réelle de l'appelant (ctx.currentTime) : sert uniquement à couper
+  // le bourdon proprement (avec release) quand padDroneEnabled bascule à OFF
+  // en cours de lecture — voir syncDroneMode. Distinct de `horizon`, qui est
+  // la fin de la fenêtre de lookahead, pas l'instant présent.
+  now: number;
 }
-
-// Bourdon (PLAN.md §6) : durée d'une note tenue avant retrigger, en mesures.
-// Pas un vrai maintien indéfini (le moteur n'a pas de nœud audio à durée de
-// vie découplée du scheduler) — de longues notes retriggées à cette
-// cadence, assez espacées pour se percevoir comme continues plutôt que
-// comme un motif. Retrigger sur le MÊME accord = quasi imperceptible.
-const DRONE_BAR_SPAN = 8;
 
 export function scheduleSynthWindow(cx: SynthScheduleContext, horizon: number): void {
   const { state, synth, cursors, rng } = cx;
   const barDur = barDuration(state.tempo);
   const chords = chordsFor(state);
 
+  // Bourdon (PLAN.md §6, v2) : bascule ON->OFF détectée une fois par fenêtre
+  // plutôt que par pas — sinon un OFF entre deux pas actifs ne serait jamais
+  // vu tant qu'aucun pas de Nappe ne tombe dans la fenêtre.
+  synth.syncDroneMode(state.synthGlobal.padDroneEnabled, cx.now);
+
   (['bass', 'pad', 'melody'] as SynthRowName[]).forEach((name) => {
     const row = state.synthRows[name];
     const cursor = cursors[name];
-    // Bourdon : ignore cycleBars/subdivisions/pattern de la ligne — une seule
-    // position, tenue sur DRONE_BAR_SPAN mesures, accord du 1er pas (ou
-    // l'accord I si ce pas est vide, plutôt qu'un bourdon silencieux).
     const droneMode = name === 'pad' && state.synthGlobal.padDroneEnabled;
-    const totalSteps = droneMode ? 1 : stepsForLine(row);
-    const stepDur = droneMode ? barDur * DRONE_BAR_SPAN : stepDurForLine(row, barDur);
+    const totalSteps = stepsForLine(row);
+    const stepDur = stepDurForLine(row, barDur);
     while (cursor.nextStepTime < horizon) {
-      const col = droneMode ? 0 : cursor.stepIndex % totalSteps;
+      const col = cursor.stepIndex % totalSteps;
       // Décalage : ±50% d'un pas de CETTE ligne.
       const shift = (row.shiftPct / 100) * stepDur;
       const synthSwing = col % 2 === 1 ? (state.synthSwing / 100) * stepDur : 0;
@@ -374,19 +374,34 @@ export function scheduleSynthWindow(cx: SynthScheduleContext, horizon: number): 
       // bourdon : une rafale sur une note tenue romprait tout le principe.
       const breakPhase = breakPhaseFor(time, cx.breakWindow, barDur);
       const stripped = row.muted || breakPhase === 'strip';
-      let roll = droneMode ? 1 : row.rolls ? row.rolls[col] : 1;
+      let roll = row.rolls ? row.rolls[col] : 1;
       if (!droneMode && breakPhase === 'explode') roll = Math.max(roll, 2 + Math.floor(rng() * 3));
+      if (droneMode) {
+        // Bourdon : on suit le vrai motif de la Nappe (plus un accord figé
+        // sur le 1er pas) — chaque pas qui porte un accord fait glisser le
+        // MÊME drone vers ce nouvel accord (voir SynthKit.updateDrone),
+        // jamais de nouvelle attaque. Un pas vide ne fait RIEN : le drone
+        // continue de tenir le dernier accord rencontré, c'est le principe
+        // même d'un bourdon. Ni roll ni arpège ici : une rafale ou un
+        // égrenage sur une note tenue romprait le principe.
+        const chordIdx = typeof value === 'number' ? value : -1;
+        if (stripped) {
+          synth.stopDrone(time, 0.3);
+          cursor.lastFreqs = null;
+        } else if (chordIdx >= 0) {
+          const glideTime = (row.glide || 0) * 0.12; // 0..1 -> 0..120ms, même échelle que Basse/Mélodie
+          const freqs = chordFreqs(state, chords, chordIdx);
+          synth.updateDrone(freqs, time, 0.3, row.voice, glideTime);
+          cursor.lastFreqs = freqs;
+        }
+        cx.emitPlayhead({ name, col, time, ghosted: false });
+        cursor.nextStepTime += stepDur;
+        cursor.stepIndex++;
+        continue;
+      }
       if (!stripped) {
         if (name === 'pad') {
-          // Bourdon sur pas vide : accord I plutôt qu'un bourdon silencieux
-          // (le 1er pas n'a pas forcément d'accord programmé).
-          const chordIdx = droneMode
-            ? typeof value === 'number' && value >= 0
-              ? value
-              : 0
-            : typeof value === 'number'
-              ? value
-              : -1;
+          const chordIdx = typeof value === 'number' ? value : -1;
           if (chordIdx >= 0) {
             const rollDur = stepDur / roll;
             const strumSpread = (row.strum || 0) * 0.08; // 0..1 -> 0..80ms

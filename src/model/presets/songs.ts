@@ -116,6 +116,11 @@ export interface SongPresetData {
   kick: DrumLinePresetData;
   snare: DrumLinePresetData;
   hat: DrumLinePresetData;
+  // Clap/shaker (PLAN.md §6) : absents de la plupart des presets d'origine
+  // (voix ajoutées après coup) — optionnels, appliqués seulement quand le
+  // genre s'y prête (voir presetAdapter.ts, qui les laisse silencieux sinon).
+  clap?: DrumLinePresetData;
+  shaker?: DrumLinePresetData;
   synthVoice: { bass: VoicePresetData; pad: VoicePresetData; melody: VoicePresetData };
   harmony: HarmonyPresetData;
   synthGrid: SynthGridPresetData;
@@ -161,6 +166,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,5],8), shift:0, volume:100, pitch:-3, attack:0, decay:8, tone:12},
     snare:{subdiv:8, pattern:b([2,6],8), shift:0, volume:90, pitch:0, attack:0, decay:-5, tone:-10},
     hat:{subdiv:16, ...h([0,2,4,6,7,8,10,12,14],16), shift:0, volume:60, pitch:2, attack:0, decay:-5, tone:8},
+    // Clap qui double la snare (même pas) à volume réduit : la couche
+    // classique boom bap qui épaissit le "crack" sans changer le rythme.
+    clap:{subdiv:8, pattern:b([2,6],8), shift:0, volume:55, pitch:0, attack:0, decay:-5, tone:-8},
     synthVoice: {
       bass:   { type:'sine', cutoff:500, attack:0.01, release:0.18, subGain:0.5, vibratoDepth:0.15, tone:15 },
       pad:    { type:'triangle', cutoff:700, attack:0.15, release:0.5, detuneCents:8, detuneGain:0.5, chorusMix:0.4, tone:10 },
@@ -197,6 +205,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,5],8), shift:0, volume:100, pitch:-8, attack:0, decay:35, tone:20},
     snare:{subdiv:4, pattern:b([2],4), shift:0, volume:95, pitch:3, attack:0, decay:-10, tone:15},
     hat:{subdiv:16, ...h([0,1,2,3,4,5,7,8,9,10,11,12,13],16,[15],{'6':3,'14':2}), shift:0, volume:65, pitch:5, attack:0, decay:-10, tone:25},
+    // Clap qui double la snare : couche standard du trap moderne, en plus
+    // des hi-hats roulés.
+    clap:{subdiv:4, pattern:b([2],4), shift:0, volume:70, pitch:1, attack:0, decay:-10, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:350, attack:0.008, release:0.4, subGain:0.9, tone:25 },
       pad:    { type:'sawtooth', cutoff:500, attack:0.05, release:0.25 },
@@ -233,6 +244,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,2,6],8), shift:0, volume:100, pitch:-6, attack:0, decay:20, tone:15},
     snare:{subdiv:4, pattern:b([2],4), shift:18, volume:95, pitch:4, attack:0, decay:-15, tone:18},
     hat:{subdiv:16, ...h([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],16,[],{'5':3,'13':3}), shift:0, volume:60, pitch:4, attack:0, decay:-8, tone:22} ,
+    // Clap qui double la snare décalée (même shift) : renforce le "glisse"
+    // signature du drill au lieu de le contrarier avec un pas droit.
+    clap:{subdiv:4, pattern:b([2],4), shift:18, volume:75, pitch:2, attack:0, decay:-10, tone:8},
     synthVoice: {
       bass:   { type:'sine', cutoff:300, attack:0.006, release:0.35, subGain:0.85, tone:22 },
       pad:    { type:'sawtooth', cutoff:450, attack:0.06, release:0.3 },
@@ -260,6 +274,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,5],8), shift:0, volume:100, pitch:-2, attack:5, decay:10, tone:8},
     snare:{subdiv:4, pattern:b([1,3],4), shift:0, volume:90, pitch:-2, attack:8, decay:0, tone:-12},
     hat:{subdiv:8, ...h([0,1,2,3,4,5,6,7],8), shift:0, volume:55, pitch:-1, attack:4, decay:0, tone:0} ,
+    // Clap discret qui double la snare, volume bas : un peu de corps en plus
+    // sans dénaturer le feel posé/organique du "drunk beat".
+    clap:{subdiv:4, pattern:b([1,3],4), shift:0, volume:45, pitch:-1, attack:5, decay:-5, tone:-10},
     synthVoice: {
       bass:   { type:'sine', cutoff:550, attack:0.012, release:0.2, subGain:0.4, tone:10 },
       pad:    { type:'triangle', cutoff:750, attack:0.12, release:0.45, chorusMix:0.3 },
@@ -287,6 +304,12 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:16, pattern:b([0,6],16), shift:0, volume:100, pitch:-2, attack:0, decay:5, tone:10},
     snare:{subdiv:16, pattern:[0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0], shift:0, volume:90, pitch:2, attack:0, decay:-10, tone:10},
     hat:{subdiv:8, ...h([0,2,4,6],8,[1,3,5,7]), shift:0, volume:55, pitch:2, attack:0, decay:-5, tone:15} ,
+    // Clap qui accentue le même "ch...chick" que le rimshot (pas 4 et 7 sur
+    // 16), plus dur/sec — épaissit la syncopation caractéristique du dembow.
+    // Shaker en croches continues : le güira/maraca qui porte le groove en
+    // continu sous le tresillo, très caractéristique du reggaeton.
+    clap:{subdiv:16, pattern:b([4,7],16), shift:0, volume:70, pitch:0, attack:0, decay:-8, tone:0},
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:35, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.006, release:0.15, subGain:0.5 },
       pad:    { type:'square', cutoff:850, attack:0.02, release:0.35, chorusMix:0.2 },
@@ -311,6 +334,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,1,2,3],4), shift:0, volume:100, pitch:-4, attack:0, decay:0, tone:8},
     snare:{subdiv:4, pattern:b([1,3],4), shift:0, volume:80, pitch:0, attack:0, decay:-8, tone:5},
     hat:{subdiv:8, ...h([0,2,4,6],8,[1,3,5,7]), shift:0, volume:60, pitch:0, attack:0, decay:0, tone:10},
+    // Le "house clap" classique double la snare sur l'offbeat — aussi
+    // signature du genre que le pompage sidechain.
+    clap:{subdiv:4, pattern:b([1,3],4), shift:0, volume:75, pitch:0, attack:0, decay:-5, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:700, attack:0.004, release:0.1, subGain:0.4 },
       pad:    { type:'sawtooth', cutoff:600, filterEnvAmount:3200, filterEnvRelease:0.35, detuneCents:12, detuneGain:0.7, tone:15 },
@@ -348,6 +374,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,1,2,3],4), shift:0, volume:95, pitch:-3, attack:3, decay:5, tone:5},
     snare:{subdiv:4, pattern:b([1,3],4), shift:4, volume:80, pitch:-1, attack:3, decay:-5, tone:-8},
     hat:{subdiv:16, ...h([2,3,10,11],16,[6,14]), shift:8, volume:55, pitch:-1, attack:2, decay:0, tone:-20} ,
+    // Le "clap 2/4" mentionné dans la démo, désormais une vraie ligne clap
+    // (même pas/décalage que la snare) plutôt qu'implicite dans son timbre.
+    clap:{subdiv:4, pattern:b([1,3],4), shift:4, volume:70, pitch:-1, attack:3, decay:-5, tone:-8},
     synthVoice: {
       bass:   { type:'sine', cutoff:650, attack:0.005, release:0.12, subGain:0.35 },
       // Filtre bas au repos + ouverture forte et lente : c'est ce sweep qui
@@ -377,6 +406,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,1,2,3],4), shift:0, volume:100, pitch:-2, attack:0, decay:-5, tone:25},
     snare:{subdiv:4, pattern:b([1,3],4), shift:0, volume:90, pitch:3, attack:0, decay:-15, tone:20},
     hat:{subdiv:16, ...h([0,1,3,4,5,7,8,9,11,12,13,15],16,[2,6,10,14],{'14':2}), shift:0, volume:60, pitch:3, attack:0, decay:-5, tone:20},
+    // Clap qui double la snare, franc — l'énergie "hands up" carbure aussi
+    // au layering des percussions.
+    clap:{subdiv:4, pattern:b([1,3],4), shift:0, volume:80, pitch:3, attack:0, decay:-10, tone:15},
     synthVoice: {
       bass:   { type:'sine', cutoff:650, attack:0.004, release:0.1, subGain:0.4 },
       pad:    { type:'sawtooth', cutoff:700, filterEnvAmount:3500, filterEnvRelease:0.3, detuneCents:15, detuneGain:0.75, tone:20 },
@@ -428,6 +460,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,5],8), shift:0, volume:100, pitch:-2, attack:0, decay:0, tone:8},
     snare:{subdiv:8, pattern:b([2,6],8), shift:0, volume:90, pitch:2, attack:0, decay:-5, tone:12},
     hat:{subdiv:16, ...h([2,4,6,9,10,12,14],16), shift:0, volume:55, pitch:3, attack:0, decay:-5, tone:15} ,
+    // Clap qui double la snare : couche classique du garage pour épaissir
+    // le "snap" sous le shuffle marqué du hat.
+    clap:{subdiv:8, pattern:b([2,6],8), shift:0, volume:65, pitch:2, attack:0, decay:-5, tone:10},
     synthVoice: {
       bass:   { type:'sine', cutoff:550, attack:0.006, release:0.15, subGain:0.45 },
       pad:    { type:'sawtooth', cutoff:800, attack:0.05, release:0.3, chorusMix:0.3 },
@@ -476,6 +511,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,4],8), shift:0, volume:100, pitch:-10, attack:0, decay:40, tone:30},
     snare:{subdiv:4, pattern:b([2],4), shift:0, volume:95, pitch:2, attack:0, decay:10, tone:15},
     hat:{subdiv:8, ...h([0,3,6],8,[],{'6':3}), shift:12, volume:55, pitch:0, attack:0, decay:5, tone:10} ,
+    // Clap qui double le gros snare half-time (le seul coup fort de la
+    // mesure) — l'épaissir en couche est une pratique courante en dubstep.
+    clap:{subdiv:4, pattern:b([2],4), shift:0, volume:65, pitch:1, attack:0, decay:0, tone:10},
     synthVoice: {
       bass:   { type:'sawtooth', cutoff:250, attack:0.008, release:0.3, subGain:0.7, tone:30 },
       pad:    { type:'sawtooth', cutoff:500, attack:0.1, release:0.5 },
@@ -506,6 +544,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:16, pattern:b([0,3,6,10],16), shift:0, volume:100, pitch:-2, attack:0, decay:-5, tone:5},
     snare:{subdiv:4, pattern:b([1,3],4), shift:0, volume:90, pitch:1, attack:0, decay:-10, tone:5},
     hat:{subdiv:16, ...h([0,1,2,3,4,5,6,7,9,10,11,12,13,14,15],16,[8]), shift:0, volume:55, pitch:0, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues : le tambourin/shaker qui porte le groove
+    // funk en continu sous le backbeat, très caractéristique du genre.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:30, pitch:0, attack:0, decay:0, tone:8},
     synthVoice: {
       bass:   { type:'sine', cutoff:650, attack:0.005, release:0.12, subGain:0.3, tone:8 },
       pad:    { type:'square', cutoff:900, attack:0.02, release:0.3, chorusMix:0.2 },
@@ -578,6 +619,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([3,7],8), shift:0, volume:90, pitch:-4, attack:0, decay:5, tone:0},
     snare:{subdiv:16, pattern:[2,0,0,2,0,0,2,0,0,0,2,0,2,0,0,0], shift:0, volume:80, pitch:3, attack:0, decay:-10, tone:12},
     hat:{subdiv:4, ...h([0,1,2,3],4), shift:0, volume:45, pitch:2, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues : les maracas qui tiennent le pouls
+    // régulier sous la cellule clave, omniprésentes dans le son cubain.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:30, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.007, release:0.15, subGain:0.4 },
       pad:    { type:'triangle', cutoff:800, attack:0.05, release:0.3, chorusMix:0.2 },
@@ -602,6 +646,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:16, pattern:b([0,1,8,9],16), shift:0, volume:100, pitch:3, attack:0, decay:-5, tone:0},
     snare:{subdiv:16, pattern:b([4,12],16), shift:0, volume:80, pitch:1, attack:0, decay:-10, tone:5},
     hat:{subdiv:16, ...h([0,2,3,4,6,7,8,10,11,12,14,15],16), shift:0, volume:55, pitch:1, attack:0, decay:0, tone:8} ,
+    // Shaker en croches continues : le shekere qui porte le groove afrobeat
+    // en continu, sous les polyrythmies de Tony Allen.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:28, pitch:0, attack:0, decay:0, tone:8},
     synthVoice: {
       bass:   { type:'sine', cutoff:650, attack:0.006, release:0.15, subGain:0.35 },
       pad:    { type:'triangle', cutoff:850, attack:0.06, release:0.35, chorusMix:0.25 },
@@ -627,6 +674,12 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,1,2,3],4), shift:0, volume:100, pitch:-6, attack:5, decay:15, tone:10},
     snare:{subdiv:4, pattern:b([1,3],4), shift:0, volume:85, pitch:0, attack:0, decay:-5, tone:0},
     hat:{subdiv:16, ...h([0,1,3,4,5,7,8,9,11,12,13,15],16,[2,6,10,14],{'9':2}), shift:0, volume:55, pitch:1, attack:3, decay:0, tone:5} ,
+    // Le "clap sur 2 et 4" mentionné dans la démo, désormais une vraie ligne
+    // clap plutôt qu'implicite dans le timbre de la snare.
+    clap:{subdiv:4, pattern:b([1,3],4), shift:0, volume:80, pitch:0, attack:3, decay:-5, tone:5},
+    // Shaker sur les mêmes contretemps que le hat ouvert : renforce la
+    // texture syncopée très caractéristique de l'amapiano.
+    shaker:{subdiv:16, pattern:b([2,6,10,14],16), shift:0, volume:35, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:400, attack:0.01, release:0.3, subGain:0.6, tone:10 },
       pad:    { type:'triangle', cutoff:900, attack:0.1, release:0.5, chorusMix:0.35 },
@@ -675,6 +728,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,1,2,3],4), shift:0, volume:95, pitch:-2, attack:0, decay:0, tone:8},
     snare:{subdiv:8, pattern:[0,0,2,0,0,0,2,0], shift:0, volume:90, pitch:2, attack:0, decay:-10, tone:10},
     hat:{subdiv:8, ...h([],8,[1,3,5,7]), shift:0, volume:55, pitch:3, attack:0, decay:0, tone:15},
+    // Clap qui double le rim shot/cross-stick de la snare : épaissit le
+    // "pop" sec caractéristique du dancehall numérique.
+    clap:{subdiv:8, pattern:b([2,6],8), shift:0, volume:60, pitch:1, attack:0, decay:-5, tone:8},
     synthVoice: {
       bass:   { type:'triangle', cutoff:450, attack:0.015, release:0.3, subGain:0.6 },
       pad:    { type:'square', cutoff:800, attack:0.02, release:0.6, chorusMix:0.5, tone:5 },
@@ -707,6 +763,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:16, pattern:b([0,3,6,8,11,14],16), shift:-6, volume:100, pitch:-4, attack:0, decay:-10, tone:20},
     snare:{subdiv:8, pattern:b([2,6],8), shift:0, volume:90, pitch:2, attack:0, decay:-10, tone:12},
     hat:{subdiv:16, ...h([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],16), shift:0, volume:55, pitch:3, attack:0, decay:-5, tone:18} ,
+    // Clap qui double la snare : la couche "clap" est un élément central du
+    // tamborzão, aussi identifiable que le kick syncopé.
+    clap:{subdiv:8, pattern:b([2,6],8), shift:0, volume:75, pitch:2, attack:0, decay:-8, tone:15},
     synthVoice: {
       bass:   { type:'square', cutoff:500, attack:0.006, release:0.15, subGain:0.45, tone:15 },
       pad:    { type:'sawtooth', cutoff:700, attack:0.03, release:0.25 },
@@ -758,6 +817,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,6],8), shift:0, volume:100, pitch:4, attack:0, decay:-5, tone:0},
     snare:{subdiv:8, pattern:b([2,6],8), shift:0, volume:80, pitch:1, attack:0, decay:-10, tone:8},
     hat:{subdiv:8, ...h([0,1,2,3,4,5,6,7],8), shift:0, volume:50, pitch:1, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues : les maracas qui accompagnent
+    // traditionnellement la cellule tresillo.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:30, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.007, release:0.15, subGain:0.4 },
       pad:    { type:'triangle', cutoff:800, attack:0.05, release:0.3 },
@@ -780,6 +842,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,6],8), shift:0, volume:100, pitch:5, attack:0, decay:-5, tone:0},
     snare:{subdiv:8, pattern:b([4],8), shift:0, volume:75, pitch:2, attack:0, decay:-10, tone:8},
     hat:{subdiv:8, ...h([0,1,2,3,4,5,6,7],8), shift:0, volume:50, pitch:1, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues : maracas habanera, complément historique
+    // du tresillo.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:28, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.008, release:0.18, subGain:0.4 },
       pad:    { type:'triangle', cutoff:800, attack:0.06, release:0.3 },
@@ -802,6 +867,8 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([1,5],8), shift:0, volume:90, pitch:-4, attack:0, decay:5, tone:0},
     snare:{subdiv:16, pattern:[0,0,2,0,2,0,0,0,2,0,0,2,0,0,2,0], shift:0, volume:80, pitch:3, attack:0, decay:-10, tone:12},
     hat:{subdiv:4, ...h([0,1,2,3],4), shift:0, volume:45, pitch:2, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues, symétrique de la clave son 3-2.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:30, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.007, release:0.15, subGain:0.4 },
       pad:    { type:'triangle', cutoff:800, attack:0.05, release:0.3 },
@@ -824,6 +891,8 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([3,7],8), shift:0, volume:90, pitch:-4, attack:0, decay:5, tone:0},
     snare:{subdiv:16, pattern:[2,0,0,2,0,0,0,2,0,0,2,0,2,0,0,0], shift:0, volume:80, pitch:3, attack:0, decay:-8, tone:12},
     hat:{subdiv:4, ...h([0,1,2,3],4), shift:0, volume:45, pitch:1, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues : le chekere qui accompagne la rumba.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:30, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.007, release:0.15, subGain:0.4 },
       pad:    { type:'triangle', cutoff:800, attack:0.05, release:0.3, chorusMix:0.2 },
@@ -846,6 +915,8 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,2],4), shift:0, volume:95, pitch:3, attack:0, decay:-5, tone:0},
     snare:{subdiv:16, pattern:[2,0,2,2,0,2,2,0,2,0,2,2,0,2,2,0], shift:0, volume:80, pitch:3, attack:0, decay:-10, tone:10},
     hat:{subdiv:8, ...h([0,1,2,3,4,5,6,7],8), shift:0, volume:45, pitch:1, attack:0, decay:0, tone:5} ,
+    // Shaker en croches continues : les maracas qui portent le cinquillo.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:28, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.007, release:0.15, subGain:0.4 },
       pad:    { type:'triangle', cutoff:800, attack:0.05, release:0.3 },
@@ -868,6 +939,10 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:8, pattern:b([0,3,6],8), shift:0, volume:100, pitch:0, attack:0, decay:-5, tone:10},
     snare:{subdiv:8, pattern:b([0,3,6],8), shift:0, volume:75, pitch:0, attack:0, decay:-10, tone:10},
     hat:{subdiv:8, ...h([0,1,2,3,4,5,6,7],8), shift:0, volume:55, pitch:0, attack:0, decay:0, tone:10} ,
+    // Shaker calqué sur le même tresillo que kick/snare : les maracas de
+    // Jerome Green jouaient littéralement la même figure, pas un remplissage
+    // à part — c'est LA signature de ce beat.
+    shaker:{subdiv:8, pattern:b([0,3,6],8), shift:0, volume:55, pitch:0, attack:0, decay:0, tone:10},
     synthVoice: {
       bass:   { type:'square', cutoff:550, attack:0.006, release:0.15, subGain:0.3, tone:18 },
       pad:    { type:'square', cutoff:850, attack:0.02, release:0.3, tone:12 },
@@ -959,6 +1034,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([0,2],4), shift:0, volume:90, pitch:1, attack:8, decay:-10, tone:0},
     snare:{subdiv:16, pattern:[2,0,0,2,0,0,1,0,0,0,2,0,1,0,0,0], shift:0, volume:75, pitch:-3, attack:10, decay:-15, tone:-15},
     hat:{subdiv:8, ...h([0,1,2,3,4,5,6,7],8), shift:0, volume:45, pitch:-2, attack:5, decay:0, tone:0} ,
+    // Shaker discret, chocalho feutré — texture continue, jamais au premier
+    // plan dans la bossa.
+    shaker:{subdiv:8, pattern:b([0,1,2,3,4,5,6,7],8), shift:0, volume:20, pitch:0, attack:5, decay:0, tone:-5},
     synthVoice: {
       bass:   { type:'sine', cutoff:580, attack:0.01, release:0.18, subGain:0.3 },
       pad:    { type:'triangle', cutoff:850, attack:0.1, release:0.4, chorusMix:0.3 },
@@ -985,6 +1063,9 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([1,3],4), shift:0, volume:100, pitch:-3, attack:0, decay:10, tone:0},
     snare:{subdiv:16, pattern:b([1,3,5,6,8,9,11,13,15],16), shift:0, volume:75, pitch:2, attack:0, decay:-5, tone:8},
     hat:{subdiv:16, ...h([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],16), shift:0, volume:55, pitch:1, attack:0, decay:0, tone:5} ,
+    // Shaker dense en doubles-croches : le chocalho, moteur percussif de la
+    // batucada, aussi présent que la caixa elle-même.
+    shaker:{subdiv:16, pattern:b([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],16), shift:0, volume:40, pitch:0, attack:0, decay:0, tone:10},
     synthVoice: {
       bass:   { type:'sine', cutoff:600, attack:0.007, release:0.15, subGain:0.35 },
       pad:    { type:'triangle', cutoff:850, attack:0.06, release:0.3, chorusMix:0.25 },
@@ -1008,6 +1089,8 @@ export const PRESETS: SongPresetData[] = [
     kick:{subdiv:4, pattern:b([2],4), shift:0, volume:100, pitch:-4, attack:3, decay:15, tone:5},
     snare:{subdiv:4, pattern:[0,0,2,0], shift:0, volume:90, pitch:-1, attack:3, decay:5, tone:0},
     hat:{subdiv:8, ...h([1,3,5,7],8), shift:0, volume:55, pitch:0, attack:3, decay:5, tone:0} ,
+    // Shaker sur les mêmes contretemps que le hat (le skank reggae).
+    shaker:{subdiv:8, pattern:b([1,3,5,7],8), shift:0, volume:28, pitch:0, attack:0, decay:0, tone:5},
     synthVoice: {
       bass:   { type:'triangle', cutoff:450, attack:0.015, release:0.3, subGain:0.6 },
       pad:    { type:'square', cutoff:800, attack:0.02, release:0.6, chorusMix:0.5 },

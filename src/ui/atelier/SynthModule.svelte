@@ -114,8 +114,10 @@
     <legend>Bourdon de nappe</legend>
     <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
     <p class="hint">
-      La Nappe tient de longues notes sur l'accord de son 1er pas au lieu de suivre sa séquence —
-      cycle et pas édités sur la ligne Nappe n'ont plus d'effet tant que c'est actif.
+      La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord programmé
+      sur sa grille = un drone fixe ; plusieurs accords = le même son qui glisse de l'un à l'autre
+      au lieu de rejouer une nouvelle note à chaque fois. Cycle et pas de la ligne Nappe gardent
+      leur effet habituel, c'est juste la façon dont le son est produit qui change.
     </p>
   </fieldset>
 

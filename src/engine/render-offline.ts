@@ -75,7 +75,7 @@ export async function renderPattern(
       horizon,
     );
     scheduleSynthWindow(
-      { state, synth, cursors: synthCursors, rng, breakWindow: null, emitPlayhead: noop },
+      { state, synth, cursors: synthCursors, rng, breakWindow: null, emitPlayhead: noop, now: bar * barDur },
       horizon,
     );
   }
