@@ -1,11 +1,12 @@
 <script lang="ts">
-  // Module Synthé : harmonie générative, les 3 lignes, arpégiateur de nappe,
-  // sidechain, réglages globaux réverbe/delay.
+  // Module Synthé : harmonie générative, les 3 lignes (arpège/bourdon en
+  // sous-catégories de la Nappe, voir SynthRowView), sidechain, réglages
+  // globaux réverbe/delay.
   import { pattern } from '../../stores/pattern.svelte';
   import { SCALE_LIBRARY } from '../../model/presets/scales';
   import { ROOT_NOTE_NAMES } from '../../model/presets/scales';
   import { chordsFor } from '../../engine/harmony';
-  import { randomizeSynth, randomizePad, randomizePitchedLine, translatePadArpToMelody } from '../../engine/generators';
+  import { randomizeSynth, randomizePad, randomizePitchedLine } from '../../engine/generators';
   import type { SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
@@ -40,9 +41,6 @@
     else randomizePitchedLine(st, 'melody', fillRate / 100, 0.7, Math.random);
   }
 
-  function translateArpToMelody() {
-    translatePadArpToMelody(st, Math.random);
-  }
 </script>
 
 <XpWindow title="Synthé — Basse / Nappe / Mélodie" icon="🎹" accent="violet">
@@ -80,46 +78,6 @@
       />
     </div>
   {/each}
-
-  <fieldset data-group="synth-arpege">
-    <legend>Arpégiateur de nappe</legend>
-    <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
-    <label>
-      Motif
-      <select bind:value={sg.padArpPattern}>
-        <option value="up">Montant</option>
-        <option value="down">Descendant</option>
-        <option value="updown">Montant-descendant</option>
-        <option value="random">Aléatoire</option>
-      </select>
-    </label>
-    <label>
-      Vitesse
-      <select bind:value={sg.padArpRate}>
-        <option value="2">2 notes / pas</option>
-        <option value="4">4 notes / pas</option>
-        <option value="8">8 notes / pas</option>
-      </select>
-    </label>
-    <button
-      class="xp-btn tiny"
-      onclick={translateArpToMelody}
-      title="Écrit l'arpège actuel comme de vraies notes sur la ligne Mélodie — remplace son contenu"
-    >
-      ✍️ Traduire l'arpège en Mélodie
-    </button>
-  </fieldset>
-
-  <fieldset data-group="synth-drone">
-    <legend>Bourdon de nappe</legend>
-    <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
-    <p class="hint">
-      La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord programmé
-      sur sa grille = un drone fixe ; plusieurs accords = le même son qui glisse de l'un à l'autre
-      au lieu de rejouer une nouvelle note à chaque fois. Cycle et pas de la ligne Nappe gardent
-      leur effet habituel, c'est juste la façon dont le son est produit qui change.
-    </p>
-  </fieldset>
 
   <fieldset data-group="synth-sidechain">
     <legend>Sidechain — le synthé « respire » avec la batterie</legend>
@@ -176,11 +134,6 @@
     font-family: var(--xp-mono);
     font-size: 11px;
     color: var(--xp-muted);
-  }
-  .hint {
-    font-size: 11px;
-    color: var(--xp-muted);
-    margin: 4px 0 0;
   }
   label {
     font-size: 12px;

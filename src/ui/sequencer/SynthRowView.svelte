@@ -10,6 +10,7 @@
   import type { SynthRowName, SynthNote } from '../../model/types';
   import { chordsFor, justesseForStep } from '../../engine/harmony';
   import { SYNTH_VOICE_PRESETS } from '../../model/presets/voices';
+  import { translatePadArpToMelody } from '../../engine/generators';
   import XpSlider from '../xp/XpSlider.svelte';
   import FilterCurve from './FilterCurve.svelte';
 
@@ -30,6 +31,7 @@
   const row = $derived(pattern.state.synthRows[name]);
   const chords = $derived(chordsFor(pattern.state));
   const isPad = $derived(name === 'pad');
+  const sg = $derived(pattern.state.synthGlobal);
   const voicePresets = $derived(SYNTH_VOICE_PRESETS[name] ?? []);
   // Couleurs d'aperçu par ligne — mêmes teintes que SYNTH_WAVE_COLORS de
   // l'original (boite-a-rythme-69.html l. 2617).
@@ -39,7 +41,15 @@
     melody: '#ff6bd6',
   };
 
-  let openGroups = $state({ sequence: false, oscillator: false, detune: false, filter: false, space: false });
+  let openGroups = $state({
+    sequence: false,
+    oscillator: false,
+    detune: false,
+    filter: false,
+    space: false,
+    arpege: false,
+    drone: false,
+  });
 
   // Regroupement par paquets de 8 au-delà de 8 pas (port de
   // renderPacketizedRow) : une grille de 128 notes d'un bloc est illisible.
@@ -108,6 +118,17 @@
     row.pattern = pat;
     row.rolls = rolls;
     if (openPacket >= Math.ceil(n / PACKET_SIZE)) openPacket = 0;
+  }
+
+  // Arpège/Bourdon (PLAN.md §6) : sous-catégories de la ligne Nappe (retour
+  // de Yann, 2026-08-14 : « les options d'arpeggiator et de bourdon
+  // devraient être en sous catégorie de nappe ») plutôt que des fieldsets à
+  // part dans SynthModule.svelte — ils portent sur `synthGlobal`
+  // (padArpEnabled/padDroneEnabled…), pas sur `row`, mais ne concernent QUE
+  // la Nappe : `rng = Math.random` comme les autres boutons 🎲 de l'Atelier
+  // (édition ponctuelle, pas le rendu déterministe de l'export).
+  function translateArpToMelody() {
+    translatePadArpToMelody(pattern.state, Math.random);
   }
 </script>
 
@@ -287,6 +308,59 @@
         value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
     {/if}
   </fieldset>
+  {#if isPad}
+    <fieldset data-group="synth-arpege">
+      <legend>
+        <button class="group-toggle" onclick={() => (openGroups.arpege = !openGroups.arpege)}>
+          {openGroups.arpege ? '▾' : '▸'} Arpégiateur
+        </button>
+      </legend>
+      {#if openGroups.arpege}
+        <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
+        <label>
+          Motif
+          <select bind:value={sg.padArpPattern}>
+            <option value="up">Montant</option>
+            <option value="down">Descendant</option>
+            <option value="updown">Montant-descendant</option>
+            <option value="random">Aléatoire</option>
+          </select>
+        </label>
+        <label>
+          Vitesse
+          <select bind:value={sg.padArpRate}>
+            <option value="2">2 notes / pas</option>
+            <option value="4">4 notes / pas</option>
+            <option value="8">8 notes / pas</option>
+          </select>
+        </label>
+        <button
+          class="xp-btn tiny"
+          onclick={translateArpToMelody}
+          title="Écrit l'arpège actuel comme de vraies notes sur la ligne Mélodie — remplace son contenu"
+        >
+          ✍️ Traduire l'arpège en Mélodie
+        </button>
+      {/if}
+    </fieldset>
+    <fieldset data-group="synth-drone">
+      <legend>
+        <button class="group-toggle" onclick={() => (openGroups.drone = !openGroups.drone)}>
+          {openGroups.drone ? '▾' : '▸'} Bourdon
+        </button>
+      </legend>
+      {#if openGroups.drone}
+        <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
+        <p class="hint">
+          La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord
+          programmé sur sa grille = un drone fixe ; plusieurs accords = le même son qui glisse de
+          l'un à l'autre au lieu de rejouer une nouvelle note à chaque fois. Cycle et pas de la
+          ligne Nappe gardent leur effet habituel, c'est juste la façon dont le son est produit
+          qui change.
+        </p>
+      {/if}
+    </fieldset>
+  {/if}
 </div>
 
 <style>
@@ -470,5 +544,28 @@
     cursor: pointer;
     padding: 2px 0;
     font-family: inherit;
+  }
+  /* Arpège/Bourdon (sous-catégories de la Nappe) : mêmes styles que les
+     boutons 🎲/bulle d'aide du reste de l'Atelier, portés ici avec eux. */
+  .xp-btn {
+    padding: 4px 12px;
+    border: 1px solid #003c74;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    box-shadow: var(--xp-bevel-out);
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .xp-btn:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .xp-btn.tiny {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+  .hint {
+    font-size: 11px;
+    color: var(--xp-muted);
+    margin: 4px 0 0;
   }
 </style>
