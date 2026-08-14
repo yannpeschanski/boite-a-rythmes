@@ -390,8 +390,9 @@ export function scheduleSynthWindow(cx: SynthScheduleContext, horizon: number): 
           cursor.lastFreqs = null;
         } else if (chordIdx >= 0) {
           const glideTime = (row.glide || 0) * 0.12; // 0..1 -> 0..120ms, même échelle que Basse/Mélodie
+          const strumSpread = (row.strum || 0) * 0.08; // 0..1 -> 0..80ms, même échelle que playPadChord
           const freqs = chordFreqs(state, chords, chordIdx);
-          synth.updateDrone(freqs, time, 0.3, row.voice, glideTime);
+          synth.updateDrone(freqs, time, 0.3, row.voice, glideTime, strumSpread);
           cursor.lastFreqs = freqs;
         }
         cx.emitPlayhead({ name, col, time, ghosted: false });
