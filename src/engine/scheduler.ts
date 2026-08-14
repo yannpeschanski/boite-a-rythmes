@@ -340,6 +340,13 @@ export interface SynthScheduleContext {
   emitPlayhead: (ev: PlayheadEvent) => void;
 }
 
+// Bourdon (PLAN.md §6) : durée d'une note tenue avant retrigger, en mesures.
+// Pas un vrai maintien indéfini (le moteur n'a pas de nœud audio à durée de
+// vie découplée du scheduler) — de longues notes retriggées à cette
+// cadence, assez espacées pour se percevoir comme continues plutôt que
+// comme un motif. Retrigger sur le MÊME accord = quasi imperceptible.
+const DRONE_BAR_SPAN = 8;
+
 export function scheduleSynthWindow(cx: SynthScheduleContext, horizon: number): void {
   const { state, synth, cursors, rng } = cx;
   const barDur = barDuration(state.tempo);
@@ -348,10 +355,14 @@ export function scheduleSynthWindow(cx: SynthScheduleContext, horizon: number): 
   (['bass', 'pad', 'melody'] as SynthRowName[]).forEach((name) => {
     const row = state.synthRows[name];
     const cursor = cursors[name];
-    const totalSteps = stepsForLine(row);
-    const stepDur = stepDurForLine(row, barDur);
+    // Bourdon : ignore cycleBars/subdivisions/pattern de la ligne — une seule
+    // position, tenue sur DRONE_BAR_SPAN mesures, accord du 1er pas (ou
+    // l'accord I si ce pas est vide, plutôt qu'un bourdon silencieux).
+    const droneMode = name === 'pad' && state.synthGlobal.padDroneEnabled;
+    const totalSteps = droneMode ? 1 : stepsForLine(row);
+    const stepDur = droneMode ? barDur * DRONE_BAR_SPAN : stepDurForLine(row, barDur);
     while (cursor.nextStepTime < horizon) {
-      const col = cursor.stepIndex % totalSteps;
+      const col = droneMode ? 0 : cursor.stepIndex % totalSteps;
       // Décalage : ±50% d'un pas de CETTE ligne.
       const shift = (row.shiftPct / 100) * stepDur;
       const synthSwing = col % 2 === 1 ? (state.synthSwing / 100) * stepDur : 0;
@@ -359,14 +370,23 @@ export function scheduleSynthWindow(cx: SynthScheduleContext, horizon: number): 
       const time = cursor.nextStepTime + shift + synthSwing + synthDrag;
       const value = row.pattern[col];
       // Break : dépouillé -> ligne coupée comme muted ; explosion -> rafale
-      // forcée (x2 à x4 minimum) pour la sensation de "tout explose".
+      // forcée (x2 à x4 minimum) pour la sensation de "tout explose". Pas en
+      // bourdon : une rafale sur une note tenue romprait tout le principe.
       const breakPhase = breakPhaseFor(time, cx.breakWindow, barDur);
       const stripped = row.muted || breakPhase === 'strip';
-      let roll = row.rolls ? row.rolls[col] : 1;
-      if (breakPhase === 'explode') roll = Math.max(roll, 2 + Math.floor(rng() * 3));
+      let roll = droneMode ? 1 : row.rolls ? row.rolls[col] : 1;
+      if (!droneMode && breakPhase === 'explode') roll = Math.max(roll, 2 + Math.floor(rng() * 3));
       if (!stripped) {
         if (name === 'pad') {
-          const chordIdx = typeof value === 'number' ? value : -1;
+          // Bourdon sur pas vide : accord I plutôt qu'un bourdon silencieux
+          // (le 1er pas n'a pas forcément d'accord programmé).
+          const chordIdx = droneMode
+            ? typeof value === 'number' && value >= 0
+              ? value
+              : 0
+            : typeof value === 'number'
+              ? value
+              : -1;
           if (chordIdx >= 0) {
             const rollDur = stepDur / roll;
             const strumSpread = (row.strum || 0) * 0.08; // 0..1 -> 0..80ms

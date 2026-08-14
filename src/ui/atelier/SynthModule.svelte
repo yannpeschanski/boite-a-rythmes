@@ -110,6 +110,15 @@
     </button>
   </fieldset>
 
+  <fieldset data-group="synth-drone">
+    <legend>Bourdon de nappe</legend>
+    <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
+    <p class="hint">
+      La Nappe tient de longues notes sur l'accord de son 1er pas au lieu de suivre sa séquence —
+      cycle et pas édités sur la ligne Nappe n'ont plus d'effet tant que c'est actif.
+    </p>
+  </fieldset>
+
   <fieldset data-group="synth-sidechain">
     <legend>Sidechain — le synthé « respire » avec la batterie</legend>
     <div class="chk-row">
@@ -165,6 +174,11 @@
     font-family: var(--xp-mono);
     font-size: 11px;
     color: var(--xp-muted);
+  }
+  .hint {
+    font-size: 11px;
+    color: var(--xp-muted);
+    margin: 4px 0 0;
   }
   label {
     font-size: 12px;
