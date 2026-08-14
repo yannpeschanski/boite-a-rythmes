@@ -4,50 +4,77 @@
 // LIBELLÉ du curseur (`XpSlider.label`) plutôt qu'un identifiant dédié à
 // ajouter à chaque appel : un même libellé ("Swing", "Attaque"…) revient
 // sur plusieurs lignes/pages avec le même sens, une seule entrée suffit
-// pour toutes ses occurrences. Contenu volontiers incomplet plutôt que
-// deviné — mieux vaut aucune bulle qu'une explication approximative.
+// pour toutes ses occurrences.
+//
+// Révisé (retour de Yann, 2026-08-14 : « c'est bien mais j'ai l'impression
+// que ce n'est pas exhaustif et que ça ne parle pas un langage assez
+// simple ») : couvre désormais TOUS les libellés de XpSlider présents dans
+// l'appli (vérifié par recherche exhaustive, pas au jugé), et chaque phrase
+// est reformulée pour éviter le jargon technique (pas de "portamento",
+// "sidechain", "curve exponentielle"…) au profit d'une description de
+// l'EFFET entendu, comme si on l'expliquait à quelqu'un qui découvre.
 export const PARAM_HINTS: Record<string, string> = {
   // Groove (Atelier > Rythme, SynthModule > Groove synthé)
-  Swing: 'Décale légèrement les pas pairs, pour un groove chaloupé façon shuffle plutôt que carré.',
-  'Swing synthé': 'Même décalage que le Swing de la batterie, appliqué aux lignes basse/nappe/mélodie.',
-  Traîne: 'Retarde légèrement TOUS les pas, contrairement au Swing qui n’en décale qu’un sur deux — un groove qui traîne derrière le tempo.',
-  'Traîne synthé': 'Même retard que la Traîne de la batterie, appliqué aux lignes basse/nappe/mélodie.',
-  'Ghost notes': 'Ajoute de petits coups discrets (volume réduit) entre les temps forts, pour un rythme moins figé.',
-  'Rafales spontanées': 'Probabilité qu’un pas normal se transforme tout seul en rafale (roll) pendant la lecture.',
-  'Vélocité aléatoire': 'Fait varier légèrement le volume de chaque coup, pour un jeu moins mécanique.',
-  'Intensité du fill': 'Détermine à quel point les fills (relances rythmiques automatiques) sont chargés en coups.',
-  Décalage: 'Avance ou retarde tous les coups de cette ligne par rapport au reste du morceau.',
+  Swing: 'Retarde légèrement un pas sur deux, pour un rythme qui balance au lieu d’être bien carré.',
+  'Swing synthé': 'Le même effet que le Swing de la batterie, mais appliqué à la basse/nappe/mélodie.',
+  Traîne: 'Retarde légèrement TOUS les pas (pas un sur deux comme le Swing) — donne l’impression que le rythme traîne un peu derrière le tempo.',
+  'Traîne synthé': 'Le même effet que la Traîne de la batterie, mais appliqué à la basse/nappe/mélodie.',
+  'Ghost notes': 'Ajoute de petits coups discrets, plus doux, entre les temps forts — un rythme moins figé, plus vivant.',
+  'Rafales spontanées': 'Fait que des pas normaux se transforment de temps en temps, tout seuls, en petite rafale de coups rapides pendant que ça joue.',
+  'Vélocité aléatoire': 'Fait légèrement varier le volume de chaque coup, pour que ce soit moins joué à la machine.',
+  'Intensité du fill': 'Plus c’est haut, plus les fills (les petites relances rythmiques automatiques) sont chargés en coups.',
+  Décalage: 'Avance ou retarde tous les coups de cette ligne par rapport aux autres.',
 
   // Bus & effets (Atelier > Effets)
-  Saturation: 'Ajoute du grain et une légère distorsion, comme un ampli qu’on pousse un peu.',
-  Compression: 'Resserre l’écart entre sons forts et faibles, pour un mix plus « collé ».',
-  Bitcrush: 'Réduit la résolution du son pour un effet lo-fi, façon vieille console de jeu.',
-  'Volume général': 'Volume de sortie de tout le morceau, après tous les effets de bus.',
-  Profondeur: 'Sidechain : à quel point le synthé se coupe quand la batterie frappe.',
-  Retour: 'Sidechain : le temps que met le synthé à retrouver son volume après une frappe.',
-  'Taille réverbe': 'Sensation de grandeur de la pièce simulée — petite pièce ou grande salle.',
-  'Feedback delay': 'Combien de fois l’écho du delay se répète avant de s’éteindre.',
+  Saturation: 'Ajoute un peu de grain et de distorsion, comme un ampli qu’on pousse un peu fort.',
+  Compression: 'Resserre l’écart entre les sons forts et les sons faibles, pour un mix plus compact, plus « collé ».',
+  Bitcrush: 'Dégrade la qualité du son exprès, pour un effet rétro, façon vieille console de jeu.',
+  'Volume général': 'Le volume final de tout le morceau, une fois que tous les effets sont appliqués.',
+  Profondeur: 'À quel point le son du synthé baisse à chaque coup de batterie — l’effet « pompe » très utilisé en électro.',
+  Retour: 'Le temps que met le synthé à retrouver son volume normal après chaque coup de batterie.',
+  'Taille réverbe': 'La taille de la pièce simulée par la réverbération — petit local ou grande salle qui résonne.',
+  'Feedback delay': 'Le nombre de fois où l’écho (delay) se répète avant de disparaître.',
 
   // Synthé — voix (SynthRowView, une entrée par ligne basse/nappe/mélodie)
-  'Filtre passe-bas': 'Coupe les aigus au-dessus de ce seuil, pour un son plus doux ou plus étouffé.',
-  Filtre: 'Coupe les aigus au-dessus de ce seuil, pour un son plus doux ou plus étouffé.',
-  Attaque: 'Temps que met le son à atteindre son volume maximum après avoir été joué.',
-  Decay: 'Temps de chute du son juste après l’attaque, avant de se stabiliser.',
-  Release: 'Temps que met le son à s’éteindre une fois la note relâchée.',
-  Sub: 'Ajoute un oscillateur grave, une octave en dessous, pour épaissir le bas du son.',
-  Détune: 'Désaccorde légèrement un second oscillateur par rapport au premier, pour épaissir le son.',
-  'Mix détune': 'Doses la présence de cet oscillateur désaccordé dans le mélange.',
-  Chorus: 'Duplique et désaccorde subtilement le son, pour un effet plus large et plus riche.',
-  Vibrato: 'Fait légèrement osciller la hauteur du son, de façon régulière.',
-  Tone: 'Équilibre entre les graves et les aigus du timbre.',
-  Glide: 'Le son glisse d’une note à l’autre au lieu de sauter net (portamento).',
-  'Ouv. filtre': 'À quel point le filtre s’ouvre (laisse passer d’aigus) au moment où la note est jouée.',
-  'Ferm. filtre': 'Temps que met le filtre à se refermer après l’ouverture du début de note.',
-  Étalement: 'Les notes de l’accord sont jouées légèrement décalées plutôt que toutes en même temps.',
+  'Filtre passe-bas': 'Adoucit le son en coupant les fréquences aiguës au-dessus de ce réglage.',
+  Filtre: 'Adoucit le son en coupant les fréquences aiguës au-dessus de ce réglage.',
+  Attaque: 'Le temps que met le son à monter à son volume maximum, dès qu’il est joué.',
+  Decay: 'Le temps que met le son à redescendre juste après l’attaque, avant de se stabiliser.',
+  Release: 'Le temps que met le son à s’éteindre une fois la note relâchée.',
+  Sub: 'Ajoute un son grave, une octave en dessous, pour épaissir le bas du son.',
+  Détune: 'Désaccorde très légèrement un second oscillateur, pour un son plus épais, plus large.',
+  'Mix détune': 'Dose la présence de cet oscillateur désaccordé dans le son final.',
+  Chorus: 'Duplique et désaccorde très légèrement le son, pour un effet plus large — comme plusieurs voix ensemble.',
+  Vibrato: 'Fait légèrement onduler la hauteur du son, de façon régulière — comme un chant vibré.',
+  Tone: 'Équilibre entre les graves et les aigus du timbre, en un seul réglage.',
+  Glide: 'La note glisse vers la suivante au lieu de changer net, comme un doigt qui glisse sur une corde.',
+  'Ouv. filtre': 'À quel point le filtre s’ouvre (laisse passer plus d’aigus) au moment précis où la note démarre.',
+  'Ferm. filtre': 'Le temps que met le filtre à se refermer après s’être ouvert au début de la note.',
+  Étalement: 'Les notes de l’accord ne sont pas jouées pile en même temps, mais très légèrement décalées les unes après les autres.',
+
+  // Synthé — séquence (SynthRowView > Séquence)
+  'Cycles (mesures)': 'Le nombre de mesures avant que le motif de cette ligne ne recommence depuis le début.',
+  'Notes du cycle': 'Le nombre de pas (de notes possibles) dans le motif de cette ligne.',
+
+  // Drum — séquence/timbre (DrumRowView)
+  Pas: 'Le nombre de cases dans la grille de cette ligne — plus il y en a, plus le motif peut être détaillé.',
+  Pitch: 'Change la hauteur du son de cette ligne, en demi-tons — plus grave ou plus aigu.',
+  Réverbe: 'La quantité de réverbération (écho de pièce) envoyée sur cette ligne.',
+  Delay: 'La quantité d’écho répété (delay) envoyée sur cette ligne.',
+  Volume: 'Le volume de cette ligne dans le mix.',
+
+  // Harmonie (SynthModule) — apostrophe DROITE dans le libellé lui-même
+  // (voir SynthModule.svelte), contrairement aux autres apostrophes
+  // typographiques de ce fichier : la clé doit matcher EXACTEMENT.
+  "Nb d'accords": 'Le nombre d’accords différents utilisés par la progression harmonique du morceau.',
+
+  // Transport / export
+  Tempo: 'La vitesse du morceau, en battements par minute (BPM) — plus le nombre est haut, plus ça va vite.',
+  Durée: 'La durée du morceau à exporter, en secondes.',
 
   // Générateurs
   'Taux de remplissage': 'Densité des notes générées par 🎲 Remplissage aléatoire — plus haut, plus de pas remplis.',
-  'Coups euclidiens': 'Nombre de coups à répartir le plus uniformément possible sur les pas de la ligne.',
+  'Coups euclidiens': 'Le nombre de coups à répartir le plus régulièrement possible sur les pas de la ligne.',
 };
 
 export function hintFor(label: string): string | undefined {

@@ -38,6 +38,11 @@
   }
 </script>
 
+<p class="hint">
+  🗄 Banque de séquences : enregistre plusieurs versions du pattern actuel sous un nom, pour les
+  rappeler d’un clic — pratique pour préparer plusieurs séquences à l’avance, puis basculer de
+  l’une à l’autre en Mode Live sans repasser par l’Atelier.
+</p>
 <div class="picker">
   <select bind:value={selectedId}>
     <option value="">— Banque : {sequenceBank.entries.length ? 'choisir une séquence…' : 'vide'}</option>
@@ -52,6 +57,11 @@
 </div>
 
 <style>
+  .hint {
+    font-size: 11px;
+    color: var(--xp-muted);
+    margin: 0 0 4px;
+  }
   .picker {
     display: flex;
     gap: 6px;

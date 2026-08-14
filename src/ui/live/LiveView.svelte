@@ -309,10 +309,26 @@
       slotFaders: assignments.slotModes.map((mode, i) =>
         assignments.slotLocked[i] || mode !== 'fader' ? assignments.slotFaders[i] : [pickAxis()],
       ),
-      axisX: [pickAxis()],
-      axisY: [pickAxis()],
+      // Le pad (X/Y ensemble) respecte désormais son propre verrou, comme
+      // les boutons — l'inclinaison n'a pas d'icône de verrou dédiée (même
+      // principe que slotLocked : un geste physique séparé du pad).
+      axisX: assignments.padLocked ? assignments.axisX : [pickAxis()],
+      axisY: assignments.padLocked ? assignments.axisY : [pickAxis()],
       axisTilt: [pickAxis()],
     };
+    saveLiveAssignments(assignments);
+  }
+
+  function togglePadLock() {
+    assignments = { ...assignments, padLocked: !assignments.padLocked };
+    saveLiveAssignments(assignments);
+  }
+
+  // 🎲 du pad (retour de Yann, PLAN.md §7 : « les mêmes options sur le pad »
+  // que les boutons) — tire un nouveau réglage pour X ET Y d'un coup, comme
+  // randomizeSlot le fait pour un seul bouton.
+  function randomizePad() {
+    assignments = { ...assignments, axisX: [pickAxis()], axisY: [pickAxis()] };
     saveLiveAssignments(assignments);
   }
 
@@ -506,6 +522,12 @@
     | { kind: 'viz' }
     | { kind: 'bank' };
   let picker = $state<Picker | null>(null);
+  // Index dans sequenceBank.entries de la dernière séquence chargée depuis
+  // CE bandeau (cycleBankSequence) — -1 tant qu'on n'a pas encore basculé.
+  let bankIndex = $state(-1);
+  const bankCurrent = $derived(
+    bankIndex >= 0 && bankIndex < sequenceBank.entries.length ? sequenceBank.entries[bankIndex] : null,
+  );
 
   function toggleActionInSlot(id: LiveActionId) {
     if (picker?.kind !== 'slot') return;
@@ -559,6 +581,21 @@
   function commitBankLoad(id: string) {
     sequenceBank.load(id);
     picker = null;
+    bankIndex = sequenceBank.entries.findIndex((e) => e.id === id);
+  }
+
+  // Bascule directe depuis le bandeau du haut (retour de Yann, 2026-08-14 :
+  // « pouvoir basculer de séquence directement... sans passer par le menu de
+  // réglage ») — remplace la seekbar décorative (voir plus bas) par un vrai
+  // contrôle : ‹/› avance/recule dans la banque et charge tout de suite,
+  // zéro overlay à ouvrir. `bankIndex` ne suit que CE bandeau (pas un état
+  // de la banque elle-même) — un chargement depuis l'overlay ⚙ ou
+  // l'Atelier reste possible en parallèle, sans lien avec ce curseur.
+  function cycleBankSequence(dir: number) {
+    const entries = sequenceBank.entries;
+    if (!entries.length) return;
+    bankIndex = bankIndex < 0 ? 0 : (bankIndex + dir + entries.length) % entries.length;
+    sequenceBank.load(entries[bankIndex].id);
   }
 
   function downloadCapture(buffer: AudioBuffer) {
@@ -1406,7 +1443,34 @@
         </button>
         <button class="amp-btn gear" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
-      <div class="seekbar"><div class="seekbar-fill"></div><div class="seekbar-grip"></div></div>
+      <!-- Remplace l'ex-seekbar décorative façon Winamp (retour de Yann,
+           2026-08-14 : « un curseur vert que je ne comprends pas entre le
+           bandeau du haut et les boutons » — elle ne pilotait rien, juste un
+           38% figé). Bascule directe dans la banque de séquences depuis le
+           bandeau, sans passer par ⚙ (même retour) : ‹/› avance/recule et
+           charge tout de suite. -->
+      <div class="seq-bar">
+        <button
+          class="seq-nav"
+          onclick={() => cycleBankSequence(-1)}
+          disabled={sequenceBank.entries.length < 2}
+          title="Séquence précédente"
+        >‹</button>
+        <button
+          class="seq-current"
+          onclick={() => cycleBankSequence(1)}
+          disabled={sequenceBank.entries.length === 0}
+          title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
+        >
+          🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Choisir une séquence…' : 'Aucune séquence')}
+        </button>
+        <button
+          class="seq-nav"
+          onclick={() => cycleBankSequence(1)}
+          disabled={sequenceBank.entries.length < 2}
+          title="Séquence suivante"
+        >›</button>
+      </div>
       {#if tiltDenied}
         <!-- Hors du flux de la grille exprès : un enfant de grille conditionnel
              décale l'auto-placement des rangées suivantes (voir le commentaire
@@ -1535,6 +1599,46 @@
             onpointerup={() => (dragging = false)}
           >
             <div class="pad-thumb" style:left="{padX * 100}%" style:top="{padY * 100}%"></div>
+            <!-- Mêmes icônes de coin que les boutons (retour de Yann,
+                 2026-08-14 : « il faudrait avoir les mêmes options sur le
+                 pad ») — un seul verrou pour X ET Y ensemble (padLocked, pas
+                 un par axe : le pad est UN geste physique), 🎲 retire les
+                 deux axes d'un coup, ✏️ ouvre l'overlay complet (les deux
+                 lignes X/Y y sont déjà séparées, pas besoin d'un picker dédié
+                 pour un seul axe à la fois). -->
+            <div class="corner-icons">
+              <button
+                class="corner-icon"
+                class:locked={assignments.padLocked}
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  togglePadLock();
+                }}
+                title={assignments.padLocked ? 'Déverrouiller le pad' : 'Verrouiller le pad (protège du 🔀)'}
+              >
+                {assignments.padLocked ? '🔒' : '🔓'}
+              </button>
+              <button
+                class="corner-icon"
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  randomizePad();
+                }}
+                title="Tirer un nouveau réglage au hasard pour X et Y"
+              >
+                🎲
+              </button>
+              <button
+                class="corner-icon"
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  assignOpen = true;
+                }}
+                title="Assigner le pad (X/Y)"
+              >
+                ✏️
+              </button>
+            </div>
           </div>
           <div class="eq-readout">
             <div class="eq-band">
@@ -1655,6 +1759,12 @@
                         : 'PARAMÈTRE'}
                 {#if picker.kind !== 'viz' && picker.kind !== 'bank'}<span class="picker-hint">— plusieurs possibles</span>{/if}
               </h4>
+              {#if picker.kind === 'bank'}
+                <p class="picker-caption">
+                  Les séquences enregistrées dans l'Atelier (bouton ➕ à côté des presets) — un tap
+                  charge tout de suite le pattern joué, sans perdre les assignations du Live.
+                </p>
+              {/if}
               <div class="picker-list">
                 {#if picker.kind === 'slot'}
                   {#each ACTION_GROUPS as group (group.name)}
@@ -1788,7 +1898,7 @@
     height: 100%;
     background: linear-gradient(180deg, var(--amp-bg-1), var(--amp-bg-2) 12%, var(--amp-bg-3));
     display: grid;
-    /* Exactement les rangées TOUJOURS présentes (titlebar/topbar/seekbar/
+    /* Exactement les rangées TOUJOURS présentes (titlebar/topbar/seq-bar/
        main) — un enfant en plus ou en moins décale l'auto-placement des
        rangées suivantes et empêche la dernière (1fr) d'être occupée, donc
        de s'étirer. Le toast .tilt-warn, conditionnel, est sorti du flux de
@@ -1979,33 +2089,49 @@
     background: var(--amp-lcd-fg);
     box-shadow: 0 0 4px var(--amp-lcd-fg);
   }
-  .seekbar {
-    position: relative;
-    height: 6px;
+  .seq-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    height: 22px;
+  }
+  .seq-nav {
+    flex: none;
+    width: 26px;
+    font-size: 13px;
+    font-weight: 700;
     border-radius: 3px;
+    border: 1px solid var(--amp-line);
+    background: linear-gradient(180deg, var(--amp-hi), var(--amp-bg-2) 55%, var(--amp-bg-3));
+    color: var(--amp-text);
+    cursor: pointer;
+  }
+  .seq-nav:disabled {
+    color: var(--amp-lcd-dim);
+    cursor: default;
+    opacity: 0.5;
+  }
+  .seq-current {
+    flex: 1;
+    min-width: 0;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0 8px;
+    border-radius: 3px;
+    border: 1px solid var(--amp-line);
     background: var(--amp-lcd-bg);
-    border: 1px solid var(--amp-line);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.7);
+    color: var(--amp-lcd-fg);
+    text-shadow: 0 0 4px rgba(51, 255, 68, 0.5);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
   }
-  .seekbar-fill {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 38%;
-    background: linear-gradient(90deg, #145520, var(--amp-lcd-fg));
-    border-radius: 3px 0 0 3px;
-  }
-  .seekbar-grip {
-    position: absolute;
-    left: 38%;
-    top: 50%;
-    width: 6px;
-    height: 10px;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(180deg, var(--amp-hi), var(--amp-bg-3));
-    border: 1px solid var(--amp-line);
-    border-radius: 1px;
+  .seq-current:disabled {
+    color: var(--amp-lcd-dim);
+    text-shadow: none;
+    cursor: default;
   }
   .amp-btn {
     font-family: inherit;
@@ -2103,21 +2229,25 @@
   }
   .corner-icons {
     position: absolute;
-    top: 3px;
-    right: 3px;
+    top: 4px;
+    right: 4px;
     z-index: 2;
     display: flex;
-    gap: 2px;
+    gap: 3px;
   }
   .corner-icon {
-    width: 15px;
-    height: 15px;
+    /* Agrandi (retour de Yann, 2026-08-14 : « les petits boutons sont un peu
+       trop petit ») — 15px était trop fin pour un tap fiable au pouce ;
+       22px reste hors de la zone d'appui naturelle du bouton (diagnostic
+       ergonomie, PLAN.md §7) tout en étant un vrai cible tactile. */
+    width: 22px;
+    height: 22px;
     padding: 0;
-    border-radius: 3px;
+    border-radius: 4px;
     border: 1px solid var(--amp-line);
-    background: rgba(10, 10, 24, 0.55);
+    background: rgba(10, 10, 24, 0.6);
     color: var(--amp-lcd-dim);
-    font-size: 8px;
+    font-size: 12px;
     line-height: 1;
     display: flex;
     align-items: center;
@@ -2587,6 +2717,13 @@
     color: #9aa0a6;
     line-height: 1.5;
     padding: 10px 4px;
+    margin: 0;
+  }
+  .picker-caption {
+    font-size: 10.5px;
+    color: #9aa0a6;
+    line-height: 1.5;
+    padding: 0 4px 6px;
     margin: 0;
   }
 </style>

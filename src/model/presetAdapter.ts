@@ -67,6 +67,10 @@ export function presetToState(
   applyDrumLine(state.rows.kick, preset.kick);
   applyDrumLine(state.rows.snare, preset.snare);
   applyDrumLine(state.rows.hat, preset.hat);
+  // Clap/shaker : seulement quand le preset en porte (genres où ça fait
+  // sens) — sans ça, defaultState() laisse déjà ces lignes silencieuses.
+  if (preset.clap) applyDrumLine(state.rows.clap, preset.clap);
+  if (preset.shaker) applyDrumLine(state.rows.shaker, preset.shaker);
   return state;
 }
 

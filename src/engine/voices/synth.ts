@@ -276,6 +276,127 @@ export class SynthKit {
     return chordFreqs;
   }
 
+  // Bourdon (PLAN.md §6, v2 — retour de Yann : « ça doit maintenir le son,
+  // pas re-attaquer à chaque accord, comme un vrai drone synthwave qui
+  // change de pitch »). Contrairement à playPadChord (une attaque + un
+  // release PAR accord joué), le bourdon garde EXACTEMENT les mêmes
+  // oscillateurs allumés en continu du premier accord rencontré jusqu'à
+  // stopDrone — seule leur fréquence est reprogrammée (glissée) quand
+  // l'accord change, jamais de nouvelle attaque. Toujours 3 voix : les
+  // accords de buildChordsForScale sont toujours des triades
+  // (degrees.length === 3, voir model/presets/scales.ts).
+  private droneVoices: {
+    osc: OscillatorNode;
+    gain: GainNode;
+    detuneOsc?: OscillatorNode;
+    detuneGain?: GainNode;
+    subOsc?: OscillatorNode;
+    subGain?: GainNode;
+  }[] | null = null;
+  private droneEnabled = false;
+
+  // Détecte la bascule ON->OFF du réglage (padDroneEnabled décoché en plein
+  // jeu) pour couper proprement avec un release plutôt que de laisser le
+  // bourdon sonner indéfiniment une fois le mode désactivé.
+  syncDroneMode(enabled: boolean, time: number, release = 0.6): void {
+    if (this.droneEnabled && !enabled) this.stopDrone(time, release);
+    this.droneEnabled = enabled;
+  }
+
+  // Appelé à chaque pas actif de la Nappe en mode bourdon (un pas qui porte
+  // un accord). Premier appel = attaque réelle ; les suivants glissent
+  // simplement la fréquence de chaque voix déjà tenue vers le nouvel accord,
+  // voix par position (comme le glide par voix de playPadChord).
+  updateDrone(freqs: number[], time: number, gain: number, voice: SynthVoice, glideTime: number): void {
+    if (!freqs.length) return;
+    if (!this.droneVoices) {
+      this.startDrone(freqs, time, gain, voice);
+      return;
+    }
+    const rampTime = time + Math.max(glideTime, 0.02);
+    freqs.forEach((f, i) => {
+      const v = this.droneVoices![i];
+      if (!v) return;
+      const target = Math.max(f, 0.01);
+      v.osc.frequency.exponentialRampToValueAtTime(target, rampTime);
+      v.detuneOsc?.frequency.exponentialRampToValueAtTime(target, rampTime);
+      v.subOsc?.frequency.exponentialRampToValueAtTime(Math.max(f / 2, 0.01), rampTime);
+    });
+  }
+
+  private startDrone(freqs: number[], time: number, gain: number, voice: SynthVoice): void {
+    const ctx = this.ctx;
+    const opts = { type: 'sawtooth' as OscillatorType, cutoff: 900, attack: 0.08, resonance: 0.7, ...voice };
+    const attack = Math.max(opts.attack, 0.05);
+    const bus = this.graph.synthLineGain.pad;
+    this.droneVoices = freqs.map((f) => {
+      const osc = ctx.createOscillator();
+      const filt = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      osc.type = opts.type;
+      osc.frequency.setValueAtTime(f, time);
+      filt.type = 'lowpass';
+      filt.frequency.setValueAtTime(opts.cutoff, time);
+      filt.Q.value = opts.resonance;
+      g.gain.setValueAtTime(0.0001, time);
+      g.gain.exponentialRampToValueAtTime(Math.max(gain, 0.001), time + attack);
+      osc.connect(filt);
+      filt.connect(g);
+      g.connect(bus);
+      osc.start(time);
+      this.track(osc);
+      const unit: NonNullable<typeof this.droneVoices>[number] = { osc, gain: g };
+      // Détune : même second oscillateur statique que playSynthNote, tenu en
+      // continu — épaissit le drone sans mouvement supplémentaire.
+      if (opts.detuneCents) {
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.type = opts.type;
+        osc2.frequency.setValueAtTime(f, time);
+        osc2.detune.setValueAtTime(opts.detuneCents, time);
+        g2.gain.setValueAtTime(0.0001, time);
+        g2.gain.exponentialRampToValueAtTime(Math.max(gain * (opts.detuneGain ?? 0.6), 0.001), time + attack);
+        osc2.connect(filt);
+        g2.connect(bus);
+        osc2.start(time);
+        this.track(osc2);
+        unit.detuneOsc = osc2;
+        unit.detuneGain = g2;
+      }
+      if (opts.subGain) {
+        const subOsc = ctx.createOscillator();
+        const subG = ctx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(f / 2, time);
+        subG.gain.setValueAtTime(0.0001, time);
+        subG.gain.exponentialRampToValueAtTime(Math.max(gain * opts.subGain, 0.001), time + attack);
+        subOsc.connect(subG);
+        subG.connect(bus);
+        subOsc.start(time);
+        this.track(subOsc);
+        unit.subOsc = subOsc;
+        unit.subGain = subG;
+      }
+      return unit;
+    });
+  }
+
+  // Coupe le bourdon avec un release (bascule du réglage, mute de la ligne,
+  // ou Stop du transport — voir AudioEngine.stop/tick) — jamais un cut net.
+  stopDrone(time: number, release: number): void {
+    if (!this.droneVoices) return;
+    this.droneVoices.forEach((v) => {
+      [v.gain, v.detuneGain, v.subGain].forEach((g) => {
+        if (!g) return;
+        g.gain.cancelScheduledValues(time);
+        g.gain.setValueAtTime(g.gain.value, time);
+        g.gain.exponentialRampToValueAtTime(0.0001, time + release);
+      });
+      [v.osc, v.detuneOsc, v.subOsc].forEach((o) => o?.stop(time + release + 0.05));
+    });
+    this.droneVoices = null;
+  }
+
   // Basse : même modèle degré+octave que la mélodie, voix grave. Renvoie la
   // fréquence jouée (point de départ du glide de la note suivante).
   playBassNote(freq: number, time: number, dur: number, gain: number, voice: SynthVoice, glide: { fromFreq: number; glideTime: number } | null): number {

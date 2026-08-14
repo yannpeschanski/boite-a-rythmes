@@ -540,6 +540,7 @@ export class AudioEngine {
           rng: Math.random,
           breakWindow: this.breakWindow,
           emitPlayhead: (ev) => this.playheadQueue.push(ev),
+          now,
         },
         now + SCHEDULE_AHEAD,
       );
