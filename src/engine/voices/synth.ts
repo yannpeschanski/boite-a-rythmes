@@ -292,8 +292,16 @@ export class SynthKit {
     detuneGain?: GainNode;
     subOsc?: OscillatorNode;
     subGain?: GainNode;
+    vibLfo?: OscillatorNode;
+    vibDepthGain?: GainNode;
+    chorusLfo?: OscillatorNode;
+    chorusOutGain?: GainNode;
   }[] | null = null;
   private droneEnabled = false;
+  // Forme du release, mémorisée depuis la voix au démarrage — stopDrone ne
+  // reçoit pas `voice` (appelé depuis des points variés : mute, bascule du
+  // réglage, Stop du transport), donc pas d'autre moyen de la retrouver.
+  private droneReleaseCurve: 'linear' | 'exponential' | undefined;
 
   // Détecte la bascule ON->OFF du réglage (padDroneEnabled décoché en plein
   // jeu) pour couper proprement avec un release plutôt que de laisser le
@@ -306,7 +314,10 @@ export class SynthKit {
   // Appelé à chaque pas actif de la Nappe en mode bourdon (un pas qui porte
   // un accord). Premier appel = attaque réelle ; les suivants glissent
   // simplement la fréquence de chaque voix déjà tenue vers le nouvel accord,
-  // voix par position (comme le glide par voix de playPadChord).
+  // voix par position (comme le glide par voix de playPadChord) — TOUS les
+  // réglages de la voix (retour de Yann : « pourquoi les paramètres de
+  // nappe ne s'appliquent pas au bourdon ? ») restent donc ceux en vigueur
+  // au moment du premier accord ; seul le pitch bouge ensuite.
   updateDrone(freqs: number[], time: number, gain: number, voice: SynthVoice, glideTime: number): void {
     if (!freqs.length) return;
     if (!this.droneVoices) {
@@ -314,6 +325,11 @@ export class SynthKit {
       return;
     }
     const rampTime = time + Math.max(glideTime, 0.02);
+    // Vibrato : la profondeur est un écart en Hz calculé depuis le pitch
+    // (comme playSynthNote) — sans la recalculer ici, un accord grave suivi
+    // d'un accord aigu garderait la largeur de vibrato de l'ancien pitch.
+    const vibDepthHz = (f: number) =>
+      voice.vibratoDepth ? f * (Math.pow(2, (voice.vibratoDepth * 30) / 1200) - 1) : 0;
     freqs.forEach((f, i) => {
       const v = this.droneVoices![i];
       if (!v) return;
@@ -321,6 +337,7 @@ export class SynthKit {
       v.osc.frequency.exponentialRampToValueAtTime(target, rampTime);
       v.detuneOsc?.frequency.exponentialRampToValueAtTime(target, rampTime);
       v.subOsc?.frequency.exponentialRampToValueAtTime(Math.max(f / 2, 0.01), rampTime);
+      if (v.vibDepthGain) v.vibDepthGain.gain.linearRampToValueAtTime(vibDepthHz(f), rampTime);
     });
   }
 
@@ -328,7 +345,10 @@ export class SynthKit {
     const ctx = this.ctx;
     const opts = { type: 'sawtooth' as OscillatorType, cutoff: 900, attack: 0.08, resonance: 0.7, ...voice };
     const attack = Math.max(opts.attack, 0.05);
+    const attackCurve = opts.attackCurve || 'exponential';
+    this.droneReleaseCurve = opts.releaseCurve || 'exponential';
     const bus = this.graph.synthLineGain.pad;
+    const toneAmount = (opts.tone || 0) / 100;
     this.droneVoices = freqs.map((f) => {
       const osc = ctx.createOscillator();
       const filt = ctx.createBiquadFilter();
@@ -336,11 +356,31 @@ export class SynthKit {
       osc.type = opts.type;
       osc.frequency.setValueAtTime(f, time);
       filt.type = 'lowpass';
-      filt.frequency.setValueAtTime(opts.cutoff, time);
+      // Enveloppe de filtre : appliquée UNE FOIS à l'attaque, comme une
+      // vraie note — jamais rejouée à chaque nouvel accord (retune), sinon
+      // le filtre "ré-attaquerait" à chaque changement de pitch, ce qui
+      // romprait exactement le legato continu que le bourdon doit être.
+      const envAmount = opts.filterEnvAmount || 0;
+      if (envAmount !== 0) {
+        const envRelease = opts.filterEnvRelease != null ? opts.filterEnvRelease : 0.3;
+        filt.frequency.setValueAtTime(opts.cutoff + envAmount, time);
+        filt.frequency.exponentialRampToValueAtTime(Math.max(opts.cutoff, 40), time + envRelease);
+      } else {
+        filt.frequency.setValueAtTime(opts.cutoff, time);
+      }
       filt.Q.value = opts.resonance;
       g.gain.setValueAtTime(0.0001, time);
-      g.gain.exponentialRampToValueAtTime(Math.max(gain, 0.001), time + attack);
-      osc.connect(filt);
+      rampGain(g.gain, attackCurve, Math.max(gain, 0.001), time + attack);
+      // Tone (drive) : mêmes règles que playSynthNote — uniquement sur
+      // l'oscillateur principal, avant le filtre.
+      if (toneAmount > 0.03) {
+        const shaper = ctx.createWaveShaper();
+        shaper.curve = driveCurve(toneAmount);
+        osc.connect(shaper);
+        shaper.connect(filt);
+      } else {
+        osc.connect(filt);
+      }
       filt.connect(g);
       g.connect(bus);
       osc.start(time);
@@ -355,7 +395,7 @@ export class SynthKit {
         osc2.frequency.setValueAtTime(f, time);
         osc2.detune.setValueAtTime(opts.detuneCents, time);
         g2.gain.setValueAtTime(0.0001, time);
-        g2.gain.exponentialRampToValueAtTime(Math.max(gain * (opts.detuneGain ?? 0.6), 0.001), time + attack);
+        rampGain(g2.gain, attackCurve, Math.max(gain * (opts.detuneGain ?? 0.6), 0.001), time + attack);
         osc2.connect(filt);
         g2.connect(bus);
         osc2.start(time);
@@ -369,13 +409,54 @@ export class SynthKit {
         subOsc.type = 'sine';
         subOsc.frequency.setValueAtTime(f / 2, time);
         subG.gain.setValueAtTime(0.0001, time);
-        subG.gain.exponentialRampToValueAtTime(Math.max(gain * opts.subGain, 0.001), time + attack);
+        rampGain(subG.gain, attackCurve, Math.max(gain * opts.subGain, 0.001), time + attack);
         subOsc.connect(subG);
         subG.connect(bus);
         subOsc.start(time);
         this.track(subOsc);
         unit.subOsc = subOsc;
         unit.subGain = subG;
+      }
+      // Vibrato : LFO sur l'oscillateur principal uniquement (pas le sub),
+      // profondeur en Hz recalculée à chaque retune (voir updateDrone).
+      if (opts.vibratoDepth) {
+        const vibRate = opts.vibratoRate != null ? opts.vibratoRate : 5.5;
+        const vibLfo = ctx.createOscillator();
+        vibLfo.type = 'sine';
+        vibLfo.frequency.setValueAtTime(vibRate, time);
+        const vibDepthGain = ctx.createGain();
+        const vibDepthHz = f * (Math.pow(2, (opts.vibratoDepth * 30) / 1200) - 1);
+        vibDepthGain.gain.setValueAtTime(vibDepthHz, time);
+        vibLfo.connect(vibDepthGain);
+        vibDepthGain.connect(osc.frequency);
+        vibLfo.start(time);
+        this.track(vibLfo);
+        unit.vibLfo = vibLfo;
+        unit.vibDepthGain = vibDepthGain;
+      }
+      // Chorus : délai court modulé par un LFO lent, en continu (jamais
+      // stoppé tant que le bourdon tient) — même mouvement qu'une note
+      // classique, juste tenu indéfiniment au lieu d'un aller simple.
+      if (opts.chorusMix) {
+        const chorusDelay = ctx.createDelay(0.05);
+        chorusDelay.delayTime.setValueAtTime(0.012, time);
+        const chorusLfo = ctx.createOscillator();
+        chorusLfo.type = 'sine';
+        chorusLfo.frequency.setValueAtTime(0.6, time);
+        const chorusLfoGain = ctx.createGain();
+        chorusLfoGain.gain.setValueAtTime(0.004, time);
+        chorusLfo.connect(chorusLfoGain);
+        chorusLfoGain.connect(chorusDelay.delayTime);
+        const chorusOutGain = ctx.createGain();
+        chorusOutGain.gain.setValueAtTime(0.0001, time);
+        rampGain(chorusOutGain.gain, attackCurve, Math.max(gain * opts.chorusMix, 0.001), time + attack);
+        osc.connect(chorusDelay);
+        chorusDelay.connect(chorusOutGain);
+        chorusOutGain.connect(bus);
+        chorusLfo.start(time);
+        this.track(chorusLfo);
+        unit.chorusLfo = chorusLfo;
+        unit.chorusOutGain = chorusOutGain;
       }
       return unit;
     });
@@ -385,14 +466,15 @@ export class SynthKit {
   // ou Stop du transport — voir AudioEngine.stop/tick) — jamais un cut net.
   stopDrone(time: number, release: number): void {
     if (!this.droneVoices) return;
+    const curve = this.droneReleaseCurve;
     this.droneVoices.forEach((v) => {
-      [v.gain, v.detuneGain, v.subGain].forEach((g) => {
+      [v.gain, v.detuneGain, v.subGain, v.chorusOutGain].forEach((g) => {
         if (!g) return;
         g.gain.cancelScheduledValues(time);
         g.gain.setValueAtTime(g.gain.value, time);
-        g.gain.exponentialRampToValueAtTime(0.0001, time + release);
+        rampGain(g.gain, curve, 0.0001, time + release);
       });
-      [v.osc, v.detuneOsc, v.subOsc].forEach((o) => o?.stop(time + release + 0.05));
+      [v.osc, v.detuneOsc, v.subOsc, v.vibLfo, v.chorusLfo].forEach((o) => o?.stop(time + release + 0.05));
     });
     this.droneVoices = null;
   }

@@ -1088,6 +1088,40 @@ Quatre retours sur des features livrées la veille, plus trois sur le Mode Live 
   tout sur Basse/Mélodie. Vérifié par script Playwright : capture d'écran
   Synthé avec tous les groupes dépliés — Arpégiateur/Bourdon visibles
   seulement entre l'Espace de la Nappe et la Séquence de la Mélodie.
+- ✅ **Bourdon : les réglages de voix de la Nappe s'appliquent enfin**
+  (retour de Yann, 2026-08-14 : « pourquoi les paramètres de nappe ne
+  s'appliquent pas au bourdon ? »). Trou réel dans la v2 du bourdon (la
+  passe précédente) : `SynthKit.startDrone` ne reprenait que type/cutoff/
+  attack/résonance/détune/sub de la voix — Tone (drive), Chorus, Vibrato,
+  l'enveloppe de filtre (Ouv./Ferm. filtre) et la FORME de l'attaque/du
+  release (linéaire vs naturelle) n'étaient tout simplement pas branchés,
+  contrairement à `playSynthNote` (le chemin normal des autres lignes) qui
+  les gère tous. Corrigé dans `engine/voices/synth.ts` :
+  - **Tone/drive** : même `WaveShaperNode` statique que `playSynthNote`,
+    uniquement sur l'oscillateur principal (avant le filtre), comme
+    l'original.
+  - **Chorus/Vibrato** : mêmes LFO que `playSynthNote`, mais qui ne
+    s'arrêtent JAMAIS tant que le bourdon tient (au lieu d'un aller simple
+    borné par la durée de la note) — le vibrato recalcule sa profondeur en
+    Hz à chaque retune (`updateDrone`), sinon un accord grave suivi d'un
+    accord aigu garderait la largeur de vibrato de l'ancien pitch.
+  - **Enveloppe de filtre** : appliquée UNE SEULE FOIS, à l'attaque
+    initiale — **jamais rejouée à un retune** (décision de portée assumée :
+    la rejouer à chaque nouvel accord réintroduirait exactement l'effet de
+    ré-attaque que le bourdon doit justement éviter).
+  - **Forme d'attaque/release** (`attackCurve`/`releaseCurve`) : appliquées
+    via le même helper `rampGain` que `playSynthNote`, au lieu d'un
+    `exponentialRampToValueAtTime` toujours codé en dur. La forme de release
+    est mémorisée au démarrage du bourdon (`droneReleaseCurve`) — `stopDrone`
+    est appelé depuis plusieurs points (mute, bascule du réglage, Stop) qui
+    ne reçoivent pas la voix.
+  - Volume de ligne, Réverbe et Delay n'avaient PAS besoin de correctif :
+    ils s'appliquent au bus (`synthLineGain.pad`/ses envois), en aval de
+    toutes les voix de la ligne y compris le bourdon — déjà correct avant ce
+    correctif, juste vérifié.
+  Vérifié par script Playwright : Tone/Chorus/Vibrato/Détune/Sub/Ouv. et
+  Ferm. filtre poussés à des valeurs franches sur la Nappe, bourdon activé,
+  lecture 5s sans erreur console.
 
 ---
 
