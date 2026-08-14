@@ -363,6 +363,45 @@ Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à 
     script Playwright (clic sur une case clap/shaker + lecture 1,5s sans
     erreur console, capture des états vide/rempli) et fumée Mode Live
     (play/stop sans erreur).
+
+- ✅⭐ **Bourdon (drone) sur la Nappe** (retour de Yann, dans la foulée de
+  clap/shaker : « on peut aussi imaginer un drone dans le synthé aussi »).
+  Deux approches possibles, Yann a choisi celle recommandée : un mode sur la
+  ligne Nappe existante plutôt qu'une 4ᵉ ligne synthé dédiée (pas de
+  changement de `SynthRowName`, `MAXSTEPS`, ni de la sérialisation des
+  lignes — juste un booléen `synthGlobal.padDroneEnabled`, même
+  emplacement/esprit que `padArpEnabled`).
+  - **Scheduler** (`engine/scheduler.ts`) : en mode bourdon, la Nappe ignore
+    `cycleBars`/`subdivisions`/`row.pattern` (inchangés, juste pas lus) —
+    une seule position tenue `DRONE_BAR_SPAN` (8) mesures avant retrigger,
+    sur l'accord du 1er pas (accord I si ce pas est vide, plutôt qu'un
+    bourdon silencieux). Pas de rafale (`roll` forcé à 1, y compris pendant
+    l'explosion d'un Break) — une rafale sur une note tenue romprait le
+    principe.
+  - **Pas de nouveau code de synthèse** : réutilise `SynthKit.playPadChord`/
+    `playPadArp` tel quel avec une durée longue plutôt qu'un nouveau
+    mécanisme de maintien indéfini — l'enveloppe existante
+    (`playSynthNote`, `engine/voices/synth.ts`) tient déjà le gain au
+    plateau jusqu'à `time + dur` puis relâche sur `release` : un `dur` de
+    plusieurs mesures produit directement un maintien long, sans changement
+    d'architecture audio. **Limite assumée** : pas un maintien VRAIMENT
+    indéfini (aucun nœud audio à durée de vie découplée du scheduler dans
+    ce moteur) — de longues notes retriggées toutes les 8 mesures,
+    perceptivement continues sur le même accord (le retrigger est quasi
+    imperceptible), pas un unique oscillateur qui tournerait sans fin. À
+    revisiter si Yann trouve la coupure audible à l'usage.
+  - **Atelier** : nouveau fieldset « Bourdon de nappe » dans
+    `SynthModule.svelte`, juste après l'Arpégiateur — une case à cocher +
+    une phrase d'avertissement (cycle/pas de la Nappe sans effet tant que
+    c'est actif, pour éviter la confusion si un pas édité ne change rien
+    au son).
+  - **Hors scope** (comme clap/shaker, cohérence de portée) : pas de
+    contrôle dédié en Mode Live pour l'instant — le champ est un `Pick`
+    partiel dans `liveSynthGlobalOverride`, l'ajouter est trivial plus
+    tard si le besoin se confirme.
+  - Vérifié : `npm run check`/`test`/`build`/`build:singlefile` verts,
+    script Playwright (bascule de la case, lecture 2,5s avec bourdon actif
+    sans erreur console, capture du fieldset).
 - ⭐ **Défi du jour** : un niveau généré seedé par la date (même rythme pour tout le monde, façon Wordle/Motus quotidien), avec partage du score en emojis 🟩🟨 — prolonge naturellement le mode jeu Motus existant.
 - ❌ **Visualiseur façon Winamp** dans une fenêtre XP déplaçable (oscilloscope/spectre sur AnalyserNode) — abandonné, retour de Yann 2026-08-13. Ne pas reproposer.
 - **Finger drumming** : jouer kick/snare/hat au clavier (A/Z/E), avec enregistrement quantifié dans la grille pendant la lecture.

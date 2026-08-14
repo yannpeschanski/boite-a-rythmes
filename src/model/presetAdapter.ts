@@ -138,4 +138,5 @@ function applyPresetSynth(state: PatternStateV2, p: SongPresetData): void {
   sg.padArpEnabled = false;
   sg.padArpPattern = 'up';
   sg.padArpRate = '4';
+  sg.padDroneEnabled = false;
 }

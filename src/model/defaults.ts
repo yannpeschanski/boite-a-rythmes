@@ -84,6 +84,7 @@ export function defaultSynthGlobal(): SynthGlobalState {
     padArpEnabled: false,
     padArpPattern: 'up',
     padArpRate: '4',
+    padDroneEnabled: false,
   };
 }
 

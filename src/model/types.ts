@@ -109,6 +109,12 @@ export interface SynthGlobalState {
   padArpEnabled: boolean;
   padArpPattern: ArpPattern | string;
   padArpRate: string; // notes par pas : '2' | '4' | '8'
+  // Bourdon (PLAN.md §6, retour de Yann) : la Nappe ignore son propre motif
+  // (cycleBars/subdivisions/pattern inchangés, juste pas lus) et tient de
+  // longues notes sur l'accord du 1er pas, plutôt qu'une 4e ligne synthé
+  // dédiée — même esprit que padArpEnabled, un mode plutôt qu'une ligne en
+  // plus.
+  padDroneEnabled: boolean;
 }
 
 export interface PatternStateV2 {
