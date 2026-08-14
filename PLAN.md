@@ -1119,6 +1119,18 @@ Quatre retours sur des features livrées la veille, plus trois sur le Mode Live 
     ils s'appliquent au bus (`synthLineGain.pad`/ses envois), en aval de
     toutes les voix de la ligne y compris le bourdon — déjà correct avant ce
     correctif, juste vérifié.
+  - **Glide** n'avait pas non plus besoin de correctif : déjà passé à
+    `updateDrone` (`glideTime`), c'est lui qui règle la vitesse du glissé
+    entre deux accords — juste vérifié.
+  - **Étalement (strum)** manquait bien (retour de Yann, suite immédiate :
+    « et glide + étalement + section espace ? ») : `scheduler.ts` calculait
+    `strumSpread` uniquement dans la branche non-bourdon, jamais transmis à
+    `updateDrone`. Ajouté en 5e paramètre (`strumSpread = 0`) : même formule
+    de décalage par voix que `playPadChord`
+    (`perNoteOffset = strumSpread / (nbVoix - 1)`), appliquée à l'attaque
+    initiale (`startDrone`) ET à chaque retune — sur un retune, ça étale
+    légèrement le DÉBUT DU GLISSÉ de chaque voix plutôt qu'une attaque (il
+    n'y en a plus une fois le bourdon lancé).
   Vérifié par script Playwright : Tone/Chorus/Vibrato/Détune/Sub/Ouv. et
   Ferm. filtre poussés à des valeurs franches sur la Nappe, bourdon activé,
   lecture 5s sans erreur console.
