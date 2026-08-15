@@ -1012,14 +1012,32 @@ détail des constats plus bas dans ce document) :
   - conseil 💡 production ramené à une ligne tronquée, dépliable au tap :
     il reste visible et découvrable — l'objectif de §7.3 — sans occuper la
     moitié du bandeau en continu.
-  - **Reste à faire, et ça demande un arbitrage** : le plus gros bloc
-    restant est désormais `.preset-row` (~290px), coincé ENTRE les onglets
-    et le contenu qu'ils commutent. Deux pistes, non tranchées : (1) le
-    descendre sous le séquenceur — pur réordonnancement, aucune perte, gain
-    immédiat sur la première case ; (2) A6, dédoublonner Vue
-    circulaire/Sauver/Charger qui répètent les menus Fichier et Affichage.
-    La barre de menus continue par ailleurs de se casser en deux lignes sur
-    téléphone (B7), ce qui coûte ~35px.
+- ✅ **A1 — 2ᵉ passage, le même jour** (Yann : « allons-y, testons ») :
+  `.preset-row` descendu SOUS le séquenceur. Il était coincé entre les
+  onglets et le contenu que les onglets commutent — taper « Synthé »
+  obligeait à traverser tempo + morceau + banque avant d'atteindre le
+  synthé. Pur réordonnancement, **rien n'est retiré** : ce qu'on joue
+  vient en premier, ce qu'on charge et ce qu'on règle vient après.
+  Lecture/Break/onglets n'ont pas bougé (barre sticky, joignables de
+  partout) et le tempo reste immédiatement sous le séquenceur.
+
+  **60 % → 34 %** du premier écran mobile, **56 % → 31 %** sur desktop.
+  Bilan complet de A1 : **64 % → 34 %** (585px → 288px avant la première
+  case). Trois lignes de batterie entières sont désormais visibles sans
+  défiler, là où on n'en voyait aucune.
+
+  Vérifié par script Playwright : ordre du DOM, Vue circulaire qui pilote
+  bien le séquenceur situé au-dessus d'elle, retour en vue linéaire,
+  tempo éditable au clavier ET au glissé, chargement d'un morceau depuis
+  sa nouvelle place, lecture audio réelle, bascule des 3 onglets. Zéro
+  erreur console.
+
+  - **Reste ouvert** : A6 (Vue circulaire/Sauver/Charger répètent les
+    menus Fichier et Affichage) et B7 (la barre de menus se casse en deux
+    lignes sur téléphone, ~35px, d'autant plus depuis l'ajout du menu
+    « Mode »). Nit repéré en testant : taper la valeur d'un curseur
+    pré-remplit le champ sans le sélectionner — il faut effacer à la main
+    avant de saisir. Un `select()` au focus suffirait.
 - ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
   contrainte des subdivisions différentes par ligne. Vrai parti pris
   visuel, à trancher.

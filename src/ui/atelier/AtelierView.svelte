@@ -336,22 +336,6 @@
     />
   </div>
 
-  <!-- Hors du bloc sticky : réglages ponctuels (vue, sauvegarde, tempo,
-       preset), pas des actions en continu comme lecture/break/onglets. -->
-  <div class="preset-row">
-    <div class="secondary">
-      <button class="xp-btn" onclick={() => (circleView = !circleView)}>
-        {circleView ? '▤ Vue linéaire' : '◎ Vue circulaire'}
-      </button>
-      <button class="xp-btn" onclick={exportJson}>💾 Sauver</button>
-      <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
-      <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
-    </div>
-    <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
-    <PresetPicker onApplied={refreshFx} />
-    <SequenceBank onApplied={refreshFx} />
-  </div>
-
   <!-- Le séquenceur pas-à-pas éditable reste sur Rythme, hors de l'onglet
        exprès (pas besoin d'y revenir pour l'éditer pendant qu'on ajuste
        autre chose). Retiré du Synthé (PLAN.md §7, retour de Yann) : cette
@@ -382,6 +366,28 @@
       <GeneralSequencer state={st} {playhead} {synthPlayhead} />
     </XpWindow>
   {/if}
+
+  <!-- Descendu SOUS le séquenceur (audit A1, 2ᵉ passage). Il était coincé
+       entre les onglets et le contenu que les onglets commutent : taper
+       « Synthé » obligeait à traverser tempo + morceau + banque avant
+       d'atteindre le synthé. Rien n'est retiré, c'est un pur
+       réordonnancement — ce qu'on joue vient en premier, ce qu'on charge et
+       ce qu'on règle vient après. Le tempo reste à portée immédiate du
+       séquenceur, et Lecture/Break/onglets n'ont jamais bougé : ils sont
+       dans la barre sticky, joignables de partout. -->
+  <div class="preset-row">
+    <div class="secondary">
+      <button class="xp-btn" onclick={() => (circleView = !circleView)}>
+        {circleView ? '▤ Vue linéaire' : '◎ Vue circulaire'}
+      </button>
+      <button class="xp-btn" onclick={exportJson}>💾 Sauver</button>
+      <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
+      <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
+    </div>
+    <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+    <PresetPicker onApplied={refreshFx} />
+    <SequenceBank onApplied={refreshFx} />
+  </div>
 
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
