@@ -4,6 +4,12 @@
 > Analyse détaillée de l'original : voir [ANALYSE-ORIGINAL.md](ANALYSE-ORIGINAL.md).
 >
 > **Décisions fermes** : Svelte 5 + TS + Vite · distribution double (site + fichier HTML unique via vite-plugin-singlefile) · périmètre complet Atelier + Mode jeu (iso-fonctionnalités puis améliorations) · abandon du code dormant (ambiance splash, verrouillage des modules) · design Windows XP conservé et assumé davantage.
+>
+> **En reprenant le travail, lire d'abord** : la [dette d'interface (§7.5)](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2),
+> puis les [remarques de Yann du 2026-08-15, 2e lot](#remarques-de-yann--2026-08-15-2e-lot--analyse-et-cadrage)
+> (mélodies des presets, mode jeu, comptes/BDD, fill de clap, cycles
+> fractionnaires, pad d'enregistrement) — dont **trois items attendent un
+> arbitrage** et ne doivent pas être commencés sans.
 
 ---
 
@@ -1643,6 +1649,262 @@ jamais été testé sur un téléphone réel** (pour un mode conçu pour le
 paysage sur téléphone), et le **bouton de retour utilisateur attend un
 arbitrage** (formulaire tiers vs fonction serverless) depuis le 13/08.
 Les blocages méritent d'être en tête de document.
+
+---
+
+## Remarques de Yann — 2026-08-15 (2e lot) : analyse et cadrage
+
+Sept remarques livrées en vrac, analysées ici **contre le code** avant d'être
+rangées dans le backlog. Chacune est datée du constat mesuré qui la fonde :
+sans ça, une remarque devient un item de liste qu'on relit dans six mois sans
+savoir ce qu'elle voulait dire. Ordre ci-dessous = ordre de la note de Yann,
+PAS ordre de priorité (proposé en fin de section).
+
+### R1 — « Les mélodies des presets ne sont pas très bien réglées et prennent souvent trop de place »
+
+**Ce n'est pas un réglage à corriger preset par preset : aucun preset ne
+contient de mélodie.** Les 34 presets n'embarquent qu'une graine (`noteSeed`)
+et un taux de remplissage (`synthFillRate`) ; les notes sont tirées au
+chargement par `randomizeSynth` (`src/engine/generators.ts:70`), appelé depuis
+`presetAdapter.ts:105`. « Mal réglé » désigne donc le générateur, pas les
+données.
+
+Trois causes, mesurées sur les 34 presets (script jetable, densité après
+`presetToState`) :
+
+1. **La mélodie est la ligne la plus dense, par construction.** Dans
+   `randomizeSynth`, la basse reçoit `fillRate * 0.75` et la mélodie
+   `fillRate` **plein pot** — au moment où c'est justement elle qui a la
+   subdivision la plus fine (`melodySubdiv` vaut 8 sur 23 presets et 16 sur
+   11, contre 4 pour la nappe). Résultat moyen : **1,9 note/mesure pour la
+   mélodie contre 1,2 pour la basse et 0,9 pour la nappe** — la mélodie est
+   la ligne la plus chargée dans **31 presets sur 34**. Pires cas : Garage 7
+   notes/mesure, House 6, Hard house 6, French touch 5.
+2. **Il n'y a pas de phrase, seulement une densité.** Chaque pas est un
+   tirage indépendant (`if (rng() > density) return null`), sans motif, sans
+   répétition, sans reprise de souffle, sans ancrage sur les temps forts. Une
+   suite de notes justes tirées indépendamment ne fait pas une mélodie, elle
+   fait une texture — c'est exactement l'impression de « pas très bien
+   réglé ». Les notes ne sont jamais *fausses* (gamme fixe, 70 % de notes
+   d'accord), elles sont *sans intention*.
+3. **Le silence n'est pas un matériau.** `randomizePitchedLine` ne sait pas
+   produire de repos structuré : à 55 % de remplissage, une mesure sur deux
+   n'a aucun trou de plus de deux pas.
+
+**Piège écarté en vérifiant** (hypothèse à ne pas rejouer) : `PITCHED_LINE_CONFIG`
+donne `defaultOctave: 0` à la basse ET à la mélodie, ce qui donne l'impression
+qu'elles se marchent dessus. Faux : le registre est décidé plus loin, dans le
+scheduler (`scheduler.ts:461`, `-24` demi-tons pour la basse). La config à deux
+entrées identiques est du poids mort, pas un bug.
+
+**Piste recommandée**, dans l'ordre de rapport effet/risque :
+- (a) **Redescendre la densité de la mélodie sous celle de la basse** — un
+  facteur `0.5` là où il y a `fillRate` aujourd'hui. Une ligne, effet
+  immédiat sur les 34 presets.
+- (b) **Générer un motif court puis le répéter** (2 ou 4 temps tirés, réutilisés
+  sur le cycle avec une variation en fin de phrase) plutôt qu'un tirage par
+  pas. C'est le vrai correctif ; ça rend la mélodie *mémorisable*.
+- (c) N'ouvrir la question « et si les presets portaient de vraies mélodies
+  écrites à la main ? » qu'après (a) et (b) : c'est 34 × N notes à saisir, et
+  ça fait perdre la propriété « un preset = une graine » qui garde
+  `songs.ts` lisible.
+
+⚠️ **Contrainte de déterminisme, à lire avant de coder.** Toute modification
+du NOMBRE ou de l'ORDRE des tirages dans `randomizeSynth` change les notes de
+**tous** les presets et de toutes les sauvegardes qui rejouent une graine.
+Ce n'est pas interdit (ce n'est pas le scheduler, `tests/scheduler.test.ts`
+ne le couvre pas), mais c'est un changement **visible et irréversible** pour
+qui a sauvegardé un morceau : à assumer explicitement, pas à découvrir après
+coup. Une modification qui ne change que les *arguments* (piste (a)) reste sans
+risque pour l'ordre de consommation.
+
+### R2 — « Il faut travailler le mode jeu »
+
+Constat après lecture (`src/stores/game.svelte.ts` 342 l.,
+`src/model/presets/levels.ts` 505 l., `GameView.svelte` 482 l.) : **le contenu
+n'est pas le point faible.** Les 34 niveaux forment une vraie progression
+pensée (rounds thématiques, preset d'ancrage après chaque notion abstraite,
+arc 4:3 étiré sur les niveaux 28-31, préambules écrits). Ce qui est mince est
+ailleurs :
+
+- **Un seul verbe : reproduire.** Les 34 niveaux font varier les *paramètres*
+  (subdivision, swing, traîne, polyrythmie) mais jamais la *tâche*. `verify()`
+  est une comparaison case à case, binaire. Rien ne teste l'oreille autrement
+  (reconnaître un genre, repérer l'intrus, compléter une mesure manquante,
+  poser un contre-temps), ni le geste (jouer en rythme, tenir un tempo).
+- **La moitié de l'appli n'est pas enseignée.** Le jeu est volontairement
+  limité à kick/snare/hat (`GameDrumRowName`, décision §6) : ni clap/shaker,
+  ni synthé, ni harmonie, ni mix. Un joueur qui finit la campagne n'a jamais
+  rencontré la Nappe.
+- **La campagne se termine.** Après le niveau 34, plus rien : pas de mode
+  sans fin, pas de rejeu noté, pas de défi quotidien. Les étoiles et la
+  besace récompensent la première traversée seulement.
+
+⚠️ **Arbitrage nécessaire avant tout code** : « travailler le mode jeu » peut
+vouloir dire trois chantiers très différents (nouveaux types d'exercices /
+extension au synthé / rejouabilité après le 34). À faire trancher — la
+recommandation par défaut est **un deuxième type d'exercice** (le plus faible
+coût pour le plus gros changement de perception : la campagne cesse d'être une
+même épreuve répétée 34 fois).
+
+### R3 — Login/mot de passe, base de données, commentaires et signalements, profils admin, monitoring des usages
+
+**C'est le seul item du lot qui change la nature du projet, pas son contenu.**
+État réel aujourd'hui : **une seule dépendance runtime** (`lamejs` pour
+l'export MP3), aucun dossier `api/`, aucune fonction serverless, tout l'état
+persistant en `localStorage` (progression du jeu, banque de séquences,
+autosave, réglages). Le site est un tas de fichiers statiques sur Vercel.
+
+Conséquence à poser franchement : **`npm run build:singlefile` et les comptes
+utilisateurs sont incompatibles.** Le fichier HTML autonome — qui marche sans
+serveur, hors ligne, et qu'on peut s'envoyer par mail — ne peut pas
+authentifier qui que ce soit. Ce n'est pas un détail d'implémentation, c'est
+une propriété du produit qui est dans le `README`, dans la CI et dans
+CLAUDE.md. Deux issues :
+
+- **Option 1 — dégradation gracieuse (recommandée).** Le noyau reste 100 %
+  local et le compte est *optionnel* : sans connexion, l'appli est exactement
+  celle d'aujourd'hui ; connecté, on synchronise sa banque de séquences et sa
+  progression, et on peut publier/commenter. Le build autonome continue de
+  passer, avec le module réseau simplement absent. C'est la seule option qui
+  ne détruit rien.
+- **Option 2 — l'appli devient un service.** Comptes obligatoires, la banque
+  vit côté serveur. Le build autonome perd son sens et doit être retiré de la
+  CI. À n'envisager que si Yann le décide *explicitement*, en connaissance de
+  ce qu'on jette.
+
+Sous l'option 1, le lot se découpe en quatre briques **indépendantes**, à ne
+surtout pas traiter comme un bloc :
+1. **Monitoring des usages** — brique isolée, aucun compte requis. Un simple
+   comptage anonyme (pages, presets chargés, exports) via l'analytique Vercel
+   ou un endpoint minimal. **De loin le meilleur rapport valeur/effort du
+   lot**, et le seul qui informe les six autres remarques : on saurait enfin
+   si le mode jeu est joué et jusqu'où.
+2. **Auth** — à ne pas écrire soi-même. Un fournisseur (Vercel + Supabase /
+   Auth.js) et rien d'autre ; toute session maison sur ce projet serait une
+   régression de sécurité.
+3. **Base + banque partagée** — dépend de 2. C'est ici que vit la vraie
+   valeur (publier une séquence, la retrouver ailleurs).
+4. **Commentaires + signalements + rôle admin** — dépend de 1, 2 et 3, et
+   ouvre la **modération**, c'est-à-dire un engagement de temps humain
+   permanent, pas une fonctionnalité qu'on livre et qu'on oublie. À traiter en
+   dernier, ou pas.
+
+⚠️ **Arbitrage nécessaire** : option 1 vs option 2, et est-ce qu'on veut de la
+modération. Recommandation : livrer la brique 1 seule, tout de suite, et
+attendre ses chiffres avant d'engager 2-3-4.
+
+### R4 — « Pour les claps : il faudrait proposer un fill de clap »
+
+Petit en surface, avec un piège précis dessous. Aujourd'hui le clap partage
+la fonction de déclenchement du kick et de la snare
+(`triggerKickSnareStep`), mais la zone de fill est explicitement réservée :
+`const fillZone = name === 'snare' && fillNow && …` (`scheduler.ts:91`). Le
+clap traverse donc les mesures de fill sans rien faire de particulier.
+
+⚠️ **Le piège est le déterminisme, pas le son.** Un fill fait sonner des pas
+aujourd'hui silencieux ; chaque frappe ajoutée appelle `randomizeGain(…, rng)`.
+Des tirages en plus **décalent tout ce qui suit** — c'est exactement
+l'interdit de CLAUDE.md, et `tests/scheduler.test.ts` tombera (ce qui est son
+rôle). Les anciens exports MP3 cesseraient d'être reproductibles.
+
+**Solution propre, à retenir** : laisser intact le nombre de tirages pris sur
+le flux principal (une frappe programmée = un tirage, comme aujourd'hui) et
+alimenter les **frappes supplémentaires du fill** depuis un second générateur
+dédié, dérivé de la même graine. Le flux principal ne bouge pas, donc les
+patterns existants sonnent identiques ; seul le clap gagne quelque chose. À
+valider en rejouant l'instantané de référence du test, qui doit rester vert
+**sans être mis à jour** — s'il faut le modifier, c'est que la solution est
+ratée.
+
+### R5 — Cycles en fraction de mesure (1/2, 1/3, 1/4) — « poser la question à Claude de la meilleure manière de travailler »
+
+Réponse demandée, donc voici l'analyse et une recommandation ferme.
+
+**Où on en est.** Les deux familles de lignes n'ont pas le même modèle de
+grille : une ligne **synthé** a déjà `cycleBars` (1..16 mesures) +
+`subdivisions`, alors qu'une ligne **batterie** n'a que `subdiv` et boucle
+**toujours sur exactement une mesure** (`stepDurationFor = barDuration /
+subdiv`, `groove.ts:9`, curseur qui repasse à zéro à `subdiv`). La demande
+porte donc sur les lignes batterie, et elle demande l'inverse de `cycleBars` :
+une boucle **plus courte** qu'une mesure.
+
+**Trois manières de le faire, par coût croissant :**
+
+- **B — un multiplicateur de répétition** (`repeat: 1|2|3|4`) : la ligne garde
+  sa grille d'une mesure, on n'écrit que `subdiv/repeat` cases et le moteur les
+  répète. 1/2, 1/3, 1/4 sont exactement ça. **Zéro changement de timing, zéro
+  tirage aléatoire en plus, zéro risque sur le déterminisme**, un entier de
+  plus dans l'état. Ne permet pas les périodes qui ne divisent pas la mesure.
+- **A — `cycleBars` rationnel sur les lignes batterie** : unifie les deux
+  modèles de grille, ce qui est séduisant sur le papier. **C'est le piège du
+  lot.** Le fill (`isFillBar`, `isLastSteps`), le break, le mode jeu, la règle
+  du swing (`col % 2`), la grille CSS `--bars`, l'anneau de transport
+  (`totalBars` deviendrait un PPCM de fractions) et la sérialisation supposent
+  tous qu'une ligne batterie dure une mesure. « Quel est le dernier quart
+  d'une mesure de fill quand la ligne boucle en 1/3 de mesure ? » n'a pas de
+  réponse évidente — et c'est une question qu'il faut résoudre *avant* la
+  première ligne de code, pas pendant.
+- **C — période libre en pas** (`periodSteps`, la ligne se décale d'une mesure
+  à l'autre) : le seul qui donne du vrai déphasage façon Steve Reich, et celui
+  qui casse le plus (la ligne n'est plus alignée sur la mesure du tout).
+
+**Recommandation : B d'abord**, livré comme fonctionnalité d'écriture (« motif
+de 4 cases, répété 3 fois dans la mesure »), et **C plus tard** si Yann veut du
+déphasage réel. **Ne pas partir sur A** : il coûte le prix de C en donnant le
+résultat de B.
+
+À savoir avant de choisir : `subdiv` monte déjà à 32, donc 1/3 est *déjà*
+jouable à la main aujourd'hui (subdiv 12, motif de 4 cases recopié trois fois).
+B ne débloque donc pas un son nouveau — il supprime la recopie et rend le
+motif modifiable en un seul endroit. C'est un gain d'écriture, à assumer comme
+tel dans l'arbitrage : ça change ce qu'on peut *faire vite*, pas ce qu'on peut
+faire.
+
+### R6 — « Et pk pas un système de pad à déployer pour enregistrer en direct les lignes de synthé ? »
+
+**Bonne nouvelle : c'est déjà à 80 % construit, et ça ne se voit pas.** Le
+Mode Live (`LiveView.svelte`, 2 729 l.) a un pad XY, et le mode « SOLO MÉLO »
+(maintenu) fait déjà **jouer la mélodie au doigt** sur ce pad, via
+`AudioEngine.playLiveMelodyNote()` et `liveMelodyFreqForDegree()`.
+
+Ce qui manque est précisément une chose : **rien n'écrit ce qu'on joue dans la
+grille.** Le bouton ⏺ REC du Mode Live capture de l'**audio**
+(`engine.startCapture()` → WAV téléchargé) ; aucun code ne pose de note dans
+`synthRows.*.pattern`. On peut jouer une ligne au doigt et l'entendre, mais pas
+la garder.
+
+Le chantier est donc « enregistrement de notes, quantifié » : horodater les
+appuis, les ramener au pas le plus proche de la ligne cible, écrire dans le
+motif. **Aucun risque de déterminisme** (on écrit de l'état, on n'ajoute pas de
+tirage dans le scheduler), et le geste existe déjà. C'est le meilleur rapport
+effet/effort des sept remarques après le monitoring.
+
+Question ouverte à trancher au moment de le faire : est-ce que ça s'enregistre
+depuis le Mode Live (où le pad vit) ou est-ce qu'on amène un pad dans
+l'Atelier (où vit la grille) ? Le premier réutilise tout, le second évite un
+aller-retour entre deux modes. Recommandation : **le Mode Live**, en ajoutant
+« garder ce que je viens de jouer » à côté du REC audio — un élément d'UI de
+plus, mais dans un mode qui a de la place, pas dans l'Atelier qui n'en a plus
+(règle n°1 du §7.5).
+
+### Priorité proposée pour ce lot
+
+1. **R1(a)** — densité de la mélodie divisée : une ligne, effet sur les 34
+   presets, c'est la remarque la plus concrète du lot.
+2. **R3 brique 1** — monitoring anonyme seul : le seul item qui *informe* les
+   autres, et sans compte à gérer.
+3. **R6** — enregistrer les notes jouées au pad : le geste existe déjà.
+4. **R4** — fill de clap, avec le second générateur.
+5. **R1(b)** — mélodie par motif répété : le vrai correctif musical.
+6. **R5 (option B)** — répétition de motif dans la mesure.
+7. **R2** — mode jeu : demande un arbitrage avant tout code.
+8. **R3 briques 2-4** — comptes, base, modération : après les chiffres de la
+   brique 1, jamais avant.
+
+Trois items attendent un arbitrage de Yann et ne doivent pas être commencés
+sans : **R2** (quel chantier), **R3** (option 1 vs 2, et modération ou non),
+**R5** (B tout de suite, ou C visé d'emblée).
 
 ---
 
