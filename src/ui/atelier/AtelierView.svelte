@@ -188,6 +188,24 @@
     }
   }
 
+  // Tap tempo : on garde les intervalles récents et on en prend la moyenne.
+  // Absent de l'original, alors que régler un tempo « à l'oreille » sur un
+  // morceau existant est le cas d'usage le plus courant. Vivait dans
+  // `ToolBar.svelte` jusqu'à l'audit A6/B7 — déplacé ici avec son bouton,
+  // contre le curseur Tempo.
+  let taps: number[] = [];
+  function tapTempo() {
+    const now = performance.now();
+    if (taps.length && now - taps[taps.length - 1] > 2000) taps = []; // trop long : nouvelle série
+    taps.push(now);
+    if (taps.length > 5) taps.shift();
+    if (taps.length < 2) return;
+    const intervals = taps.slice(1).map((t, i) => t - taps[i]);
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const bpm = Math.round(60000 / avg / 10) * 10; // le tempo va par pas de 10
+    pattern.state.tempo = Math.max(40, Math.min(200, bpm));
+  }
+
   async function togglePlay() {
     if (playing) {
       engine.stop();
@@ -384,7 +402,16 @@
       <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
       <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
     </div>
-    <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+    <!-- Tap tempo remonté de la barre d'outils (audit A6/B7) : il RÈGLE le
+         tempo, donc sa place est contre le curseur qu'il pilote — on voit
+         désormais la valeur bouger à chaque frappe, ce qui n'était pas le
+         cas quand le bouton vivait trois blocs plus haut. -->
+    <div class="tempo-row">
+      <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+      <button class="xp-btn" onclick={tapTempo} title="Tape le tempo en rythme, au moins deux fois">
+        👆 Tap
+      </button>
+    </div>
     <PresetPicker onApplied={refreshFx} />
     <SequenceBank onApplied={refreshFx} />
   </div>
@@ -533,6 +560,21 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 6px;
+  }
+  .tempo-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* L'enveloppe de requête de conteneur est la racine de XpSlider : c'est
+     elle l'enfant flex ici (même chose que dans .euclid-row). */
+  .tempo-row :global(.xp-slider-outer) {
+    flex: 1;
+    min-width: 0;
+  }
+  .tempo-row .xp-btn {
+    white-space: nowrap;
+    padding: 8px 12px;
   }
   .tab-panel {
     background: var(--xp-face);

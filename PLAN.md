@@ -1032,12 +1032,42 @@ détail des constats plus bas dans ce document) :
   sa nouvelle place, lecture audio réelle, bascule des 3 onglets. Zéro
   erreur console.
 
-  - **Reste ouvert** : A6 (Vue circulaire/Sauver/Charger répètent les
-    menus Fichier et Affichage) et B7 (la barre de menus se casse en deux
-    lignes sur téléphone, ~35px, d'autant plus depuis l'ajout du menu
-    « Mode »). Nit repéré en testant : taper la valeur d'un curseur
-    pré-remplit le champ sans le sélectionner — il faut effacer à la main
-    avant de saisir. Un `select()` au focus suffirait.
+- ✅ **B7 + A6 (barre d'outils) — 3ᵉ passage, le même jour.** La barre de
+  menus tenait sur deux lignes sous ~460px et coupait ↶ de ↷. Elle tient
+  désormais sur **une seule ligne de 360px à 1280px** (34px au lieu de
+  ~70px). **34 % → 31 %** du premier écran mobile.
+
+  Le cadrage initial (« replier Tap tempo / ↶ / ↷ / Partager dans les
+  menus qui les contiennent déjà ») s'est révélé faux à la lecture, et a
+  été corrigé avant de coder :
+  - **🔗 Partager retiré** — celui-là était bien un doublon exact du menu
+    Fichier, et partager n'est pas un geste qu'on répète. [A6]
+  - **👆 Tap tempo déplacé, pas replié** — il n'était dans AUCUN menu, et
+    un menu lui serait de toute façon interdit : on ne peut pas taper un
+    rythme dans un menu qui se referme. Remonté contre le curseur Tempo
+    (bloc preset), c'est-à-dire contre le contrôle qu'il pilote — on voit
+    maintenant la valeur bouger à chaque frappe. Libellé raccourci en
+    « 👆 Tap ». `tapTempo()` a migré de `ToolBar.svelte` vers
+    `AtelierView.svelte` avec son bouton ; l'import `pattern` devenu mort
+    dans ToolBar a été retiré.
+  - **↶ / ↷ conservés** malgré leur doublon dans le menu Édition : sur
+    téléphone il n'y a pas de Ctrl+Z, ce sont les seuls accès à un clic.
+    Les retirer aurait été appliquer A6 mécaniquement contre l'ergonomie.
+    Groupés dans un conteneur `nowrap` pour ne plus jamais être séparés.
+  - Remplissage **horizontal** des menus resserré sous 460px — la hauteur
+    de cible reste à 28px, A3 n'est pas défait.
+
+  Vérifié par script Playwright : barre sur 1 ligne à 360/390/414/1280px,
+  tap tempo fonctionnel à sa nouvelle place (5 frappes à ~500ms → 110 BPM,
+  arrondi au pas de 10 comme prévu), Partager toujours opérant depuis le
+  menu Fichier, Annuler toujours à un clic. Zéro erreur console.
+
+  - **Reste ouvert** : A6 côté bloc preset (Vue circulaire / Sauver /
+    Charger répètent les menus Affichage et Fichier) — non traité, il
+    faut trancher laquelle des deux surfaces garde quoi. Nit repéré en
+    testant : taper la valeur d'un curseur pré-remplit le champ sans le
+    sélectionner — il faut effacer à la main avant de saisir. Un
+    `select()` au focus suffirait.
 - ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
   contrainte des subdivisions différentes par ligne. Vrai parti pris
   visuel, à trancher.

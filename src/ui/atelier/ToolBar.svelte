@@ -1,7 +1,6 @@
 <script lang="ts">
   // Barre de menus XP (Fichier / Édition / Affichage) + les outils ajoutés
   // par la réécriture : partage par URL, undo/redo, tap tempo.
-  import { pattern } from '../../stores/pattern.svelte';
   import { history } from '../../stores/history.svelte';
   import { buildShareUrl } from '../../stores/share';
   import { systemSoundsEnabled, setSystemSoundsEnabled, playSystemSound } from '../xp/systemSounds';
@@ -34,22 +33,6 @@
     soundsOn = !soundsOn;
     setSystemSoundsEnabled(soundsOn);
     if (soundsOn) playSystemSound('open'); // confirmation audible du réglage qu'on vient d'activer
-  }
-
-  // Tap tempo : on garde les intervalles récents et on en prend la moyenne.
-  // Absent de l'original, alors que régler un tempo « à l'oreille » sur un
-  // morceau existant est le cas d'usage le plus courant.
-  let taps: number[] = [];
-  function tapTempo() {
-    const now = performance.now();
-    if (taps.length && now - taps[taps.length - 1] > 2000) taps = []; // trop long : nouvelle série
-    taps.push(now);
-    if (taps.length > 5) taps.shift();
-    if (taps.length < 2) return;
-    const intervals = taps.slice(1).map((t, i) => t - taps[i]);
-    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-    const bpm = Math.round(60000 / avg / 10) * 10; // le tempo va par pas de 10
-    pattern.state.tempo = Math.max(40, Math.min(200, bpm));
   }
 
   async function share() {
@@ -178,10 +161,22 @@
   </div>
 
   <div class="spacer"></div>
-  <button class="tool" onclick={tapTempo} title="Tape le tempo en rythme">👆 Tap tempo</button>
-  <button class="tool" disabled={!history.canUndo} onclick={() => history.undo()} title="Annuler (Ctrl+Z)">↶</button>
-  <button class="tool" disabled={!history.canRedo} onclick={() => history.redo()} title="Rétablir (Ctrl+Y)">↷</button>
-  <button class="tool" onclick={share} title="Copier un lien contenant ce rythme">🔗 Partager</button>
+  <!-- Ne restent en accès direct que Annuler/Rétablir (audit A6/B7).
+       « 🔗 Partager » est parti : il existait à l'identique dans le menu
+       Fichier, et partager un rythme n'est pas un geste qu'on répète — un
+       menu est son bon domicile. « 👆 Tap tempo » a déménagé à côté du
+       curseur Tempo, dans le bloc preset : il RÈGLE le tempo, sa place est
+       contre le contrôle qu'il pilote, pas dans une barre d'outils trois
+       blocs plus haut (et un menu lui serait interdit — on ne peut pas
+       taper un rythme dans un menu qui se referme).
+       Annuler/Rétablir restent ici malgré leur doublon dans le menu
+       Édition : sur téléphone il n'y a pas de Ctrl+Z, ce sont les seuls
+       accès à un clic. Groupés dans un conteneur `nowrap` pour ne plus
+       jamais être séparés l'un de l'autre par un retour à la ligne. -->
+  <div class="tools">
+    <button class="tool" disabled={!history.canUndo} onclick={() => history.undo()} title="Annuler (Ctrl+Z)">↶</button>
+    <button class="tool" disabled={!history.canRedo} onclick={() => history.redo()} title="Rétablir (Ctrl+Y)">↷</button>
+  </div>
 </div>
 {#if shareMsg}<p class="share-msg">{shareMsg}</p>{/if}
 
@@ -250,6 +245,27 @@
   }
   .spacer {
     flex: 1;
+  }
+  /* Les outils passent à la ligne ENSEMBLE ou pas du tout (audit B7) : avant,
+     ↶ et ↷ pouvaient se retrouver de part et d'autre d'un retour à la ligne. */
+  .tools {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+  /* Sur téléphone, les cinq menus + les deux outils ne tiennent sur une seule
+     ligne qu'en resserrant les libellés — c'est ce qui supprime la deuxième
+     rangée (~36px de chrome permanent). La cible tactile ne bouge pas : seul
+     le remplissage HORIZONTAL est réduit, la hauteur reste à 28px. */
+  @media (max-width: 460px) {
+    .menu-btn {
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+    .tool {
+      padding-left: 7px;
+      padding-right: 7px;
+    }
   }
   /* Cible tactile (audit A3) : 19px de haut avant. ↶ et ↷ faisaient 27×19
      alors qu'ils sont utilisés en rafale — `min-width` leur donne aussi une
