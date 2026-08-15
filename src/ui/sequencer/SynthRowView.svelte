@@ -36,7 +36,6 @@
     oscillator: false,
     detune: false,
     filter: false,
-    space: false,
     arpege: false,
     drone: false,
   });
@@ -104,6 +103,47 @@
     if (isPad) return typeof v === 'number' && v >= 0 ? chords[v]?.roman ?? '?' : '·';
     const n = v as SynthNote | null;
     return n ? String(n.degree) : '·';
+  }
+
+  // --- Macros de filtre (retour de Yann : « filtre on comprend rien, on peut
+  // pas résumer en un ou deux paramètres… de manière à fusionner avec
+  // espace ? ») ---------------------------------------------------------
+  //
+  // Le panneau « Filtre » exposait QUATRE réglages en unités techniques
+  // (Tone %, Filtre Hz, Ouv. filtre Hz, Ferm. filtre ms) — et en mélangeait
+  // deux choses sans rapport : `voice.tone` n'est PAS un filtre mais un drive
+  // de waveshaper (`driveCurve`, voices/synth.ts l. 121-124), rangé là par
+  // hasard. Il part donc dans « Oscillateur & enveloppe » sous son vrai nom,
+  // Saturation.
+  //
+  // Restent deux macros, qui décrivent ce qu'on ENTEND plutôt que le nœud
+  // audio qu'elles pilotent. Les champs d'état ne bougent pas : le format v2
+  // est le contrat central (CLAUDE.md), aucun n'est supprimé, seule l'UI est
+  // résumée — un preset qui règle finement `filterEnvRelease` continue de
+  // sonner pareil tant qu'on ne touche pas à la macro.
+  const CUT_MIN = 100;
+  const CUT_MAX = 4000;
+  // Exponentiel : l'oreille perçoit les fréquences en RATIOS, pas en écarts.
+  // Linéaire, tout le haut du curseur aurait sonné pareil.
+  const brillance = $derived(
+    Math.round(
+      (100 * Math.log(Math.min(CUT_MAX, Math.max(CUT_MIN, row.voice.cutoff ?? 1800)) / CUT_MIN)) /
+        Math.log(CUT_MAX / CUT_MIN),
+    ),
+  );
+  function setBrillance(v: number) {
+    row.voice.cutoff = Math.round(CUT_MIN * Math.pow(CUT_MAX / CUT_MIN, v / 100));
+    onChanged?.();
+  }
+  // « Mouvement » = de combien le filtre s'ouvre au début de la note, et donc
+  // à quel point on entend le son « bouger ». Pilote l'ampleur ET le temps de
+  // fermeture ensemble : à faible mouvement une fermeture longue ne s'entend
+  // pas, à fort mouvement une fermeture instantanée fait un clic.
+  const mouvement = $derived(Math.round(Math.min(100, ((row.voice.filterEnvAmount ?? 0) / 4000) * 100)));
+  function setMouvement(v: number) {
+    row.voice.filterEnvAmount = Math.round((v / 100) * 4000);
+    row.voice.filterEnvRelease = 0.05 + (v / 100) * 0.55;
+    onChanged?.();
   }
 
   function applyVoicePreset(id: string) {
@@ -228,9 +268,7 @@
     <button class="chip" class:on={openGroups.detune} aria-expanded={openGroups.detune}
       onclick={() => (openGroups.detune = !openGroups.detune)}>Détune</button>
     <button class="chip" class:on={openGroups.filter} aria-expanded={openGroups.filter}
-      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre</button>
-    <button class="chip" class:on={openGroups.space} aria-expanded={openGroups.space}
-      onclick={() => (openGroups.space = !openGroups.space)}>Espace</button>
+      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre &amp; espace</button>
     {#if isPad}
       <button class="chip" class:on={openGroups.arpege} aria-expanded={openGroups.arpege}
         onclick={() => (openGroups.arpege = !openGroups.arpege)}>Arpégiateur</button>
@@ -288,6 +326,11 @@
       <XpSlider label="Sub" min={0} max={100} unit="%"
         value={Math.round((row.voice.subGain ?? 0) * 100)}
         onchange={(v) => { row.voice.subGain = v / 100; onChanged?.(); }} />
+      <!-- Anciennement « Tone », dans le panneau Filtre : c'est en réalité un
+           drive de waveshaper, pas un filtre. Renommé et déplacé ici. -->
+      <XpSlider label="Saturation" min={0} max={100} unit="%"
+        value={row.voice.tone ?? 0}
+        onchange={(v) => { row.voice.tone = v; onChanged?.(); }} />
     </div>
   {/if}
   {#if openGroups.detune}
@@ -308,22 +351,8 @@
   {/if}
   {#if openGroups.filter}
     <div class="group-panel" data-group="synth-filtre">
-      <XpSlider label="Tone" min={0} max={100} unit="%"
-        value={row.voice.tone ?? 0}
-        onchange={(v) => { row.voice.tone = v; onChanged?.(); }} />
-      <XpSlider label="Filtre" min={100} max={4000} step={50} unit=" Hz"
-        value={row.voice.cutoff ?? 1800}
-        onchange={(v) => { row.voice.cutoff = v; onChanged?.(); }} />
-      <XpSlider label="Ouv. filtre" min={0} max={4000} step={50} unit=" Hz"
-        value={row.voice.filterEnvAmount ?? 0}
-        onchange={(v) => { row.voice.filterEnvAmount = v; onChanged?.(); }} />
-      <XpSlider label="Ferm. filtre" min={0} max={4000} step={20} unit=" ms"
-        value={Math.round((row.voice.filterEnvRelease ?? 0) * 1000)}
-        onchange={(v) => { row.voice.filterEnvRelease = v / 1000; onChanged?.(); }} />
-    </div>
-  {/if}
-  {#if openGroups.space}
-    <div class="group-panel" data-group="synth-espace">
+      <XpSlider label="Brillance" min={0} max={100} unit="%" value={brillance} onchange={setBrillance} />
+      <XpSlider label="Mouvement" min={0} max={100} unit="%" value={mouvement} onchange={setMouvement} />
       <XpSlider label="Réverbe" min={0} max={100} unit="%"
         value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
       <XpSlider label="Delay" min={0} max={100} unit="%"
