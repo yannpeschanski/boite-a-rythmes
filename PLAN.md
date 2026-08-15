@@ -135,6 +135,25 @@ Le thème se pose sur le conteneur de vue → le mode jeu garde son identité sa
 - **Undo/redo** quasi gratuit : `history.svelte.ts` empile `$state.snapshot(pattern)` (≤100 entrées, coalescence des drags de slider).
 - **Robustesse** : `unhandledrejection` en plus de `onerror`, plus d'`escapeHtml` nécessaire (Svelte échappe par défaut), scheduler optionnellement piloté par un Worker-clock (immunisé au throttling arrière-plan ; on garde la pause sur `visibilitychange` en réglage).
 - **Tests** : Vitest sur `model/` et `engine/` (théorie musicale, buildChordsForScale, générateur de niveaux avec seed, similarité, sérialisation/migration, groove). **Déterminisme d'export en 2 étages** : (1) rapide, en CI — snapshot JSON de la liste d'événements schedulés à seed fixe (pur, sans Web Audio) ; (2) profond, Playwright — rendu OfflineAudioContext réel dans Chromium, hash SHA du Float32Array (stable pour une même version de navigateur, épinglée en CI). Le (1) attrape 95 % des régressions pour presque rien.
+  - ✅ **Étage (1) fait le 2026-08-15** (audit C4 — prévu ici dès le départ,
+    jamais écrit pendant trois semaines alors que c'était le seul filet sous
+    l'invariant le plus dur de `CLAUDE.md`). `tests/scheduler.test.ts` :
+    faux `DrumKit`/`SynthKit` qui enregistrent les appels au lieu de produire
+    du son, rejouant EXACTEMENT la boucle de `renderPattern` (mesure par
+    mesure, drum puis synthé, mêmes curseurs, même RNG seedé) — donc aucun
+    Web Audio, ~13 ms en CI. Cinq tests : reproductibilité à graine égale,
+    divergence à graine différente (sinon le premier serait vide de sens),
+    **ordre d'itération figé**, instantané de référence de la séquence
+    complète, et « une ligne au motif vide ne consomme aucun tirage quel que
+    soit son nombre de pas » (la propriété sur laquelle reposait l'ajout de
+    clap/shaker, §6 — vérifiée en faisant varier les pas de 4 à 32 plutôt
+    qu'en comparant à un code disparu). **Validé par régressions
+    simulées** : réordonner deux lignes fait tomber 2 tests, et ajouter un
+    `rng()` sans effet audible en fait tomber 1 — c'est exactement le
+    scénario silencieux que rien n'attrapait. Au passage, `CLAUDE.md` citait
+    encore l'ordre à six lignes d'avant clap/shaker : corrigé.
+  - Étage (2) (hash du rendu offline réel sous Playwright) : toujours pas
+    fait. Moins urgent maintenant que (1) existe.
 - **CI** : lint + tests + build site + build singlefile + budget de taille du fichier unique (échec si > seuil).
 - **PWA optionnelle** (vite-plugin-pwa, build site uniquement) — la version singlefile EST déjà l'offline de secours.
 - **Incohérence MAXSTEPS 32 vs 128** : ne pas unifier les modèles pendant la migration (risque de régression) ; documenter dans `types.ts` deux types distincts `DrumRow`/`SynthRow`, et traiter l'unification comme amélioration post-v1 si souhaitée.
@@ -976,7 +995,11 @@ détail des constats plus bas dans ce document) :
 - ✅ **A2 · B1 · B2 — proportions du curseur** (fait le 2026-08-15, voir
   plus bas). Rouvre §7.2.1 sans annuler son intention.
 - ✅ **A3 — cibles tactiles** des dépliables, des mutes et de la barre
-  d'outils (fait le 2026-08-15, voir plus bas).
+  d'outils (fait le 2026-08-15, voir plus bas). **Ce que ça a coûté à
+  l'écran** (règle n°2 ci-dessus, première application) : le chrome du
+  premier écran mobile passe de 64 % à 69 %, les barres de menus et
+  d'outils ayant grandi. Assumé et à reprendre par A1 — la menubar est
+  justement l'un des blocs qu'il propose de fondre.
 - ⚠️ **A1 — budget d'écran** : 64 % du premier écran mobile est du chrome.
   **Demande un arbitrage de Yann** (que couper : nav des 3 modes fondue
   dans la menubar ? explication de la Banque derrière un ⓘ ? conseil de
