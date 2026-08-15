@@ -1103,6 +1103,29 @@ détail des constats plus bas dans ce document) :
   paquets** — un paquet commence à une fraction quelconque de la mesure,
   les traits seraient déphasés, mieux vaut aucun repère qu'un repère qui
   ment.
+  - ⚠️ **Correctif le jour même** (Yann : « et dans synthé, on peut en
+    faire de même non ? » — en allant vérifier, le défaut était chez moi).
+    Un temps ne mérite un trait que s'il reste plus espacé que les cases,
+    sinon on ne marque plus le rythme, on RAYE les cases. Cas qui l'a
+    révélé : la Nappe part à `cycleBars: 4` pour 4 cases
+    (`defaults.ts`), donc 16 temps sur 4 cases — trois traits au travers
+    de chaque case. Au-delà de 8 temps on retombe sur les seules barres
+    de mesure (les deux périodes du dégradé sont rendues égales, la
+    couche « mesure », plus marquée et dessinée par-dessus, recouvre
+    celle des temps). Seuil volontairement haut pour préserver LE cas qui
+    compte — hat à 3 pas contre 4 temps, la polyrythmie qu'on cherche
+    justement à rendre lisible.
+  - **Pas de règle de temps numérotée sur l'onglet Synthé**, contrairement
+    à Rythme, et c'est délibéré : sur Rythme toutes les lignes couvrent
+    une mesure, un « 1·2·3·4 » partagé est donc vrai pour toutes. Sur
+    Synthé les lignes ont des portées différentes (Basse/Mélodie 1
+    mesure, Nappe 4 par défaut) — une règle unique mentirait pour au
+    moins une ligne. À la place, la portée du cycle est accolée au
+    libellé de la ligne (« NAPPE · 4 mes. ») quand elle dépasse une
+    mesure : sans ça, deux grilles d'apparence identique ne représentent
+    pas du tout la même durée. Porté par le libellé existant plutôt que
+    par un badge séparé — aucun élément permanent de plus, aucune hauteur
+    gagnée (règle du §7.5).
 - **B3 · B4 · B5 · B6 · B8 · B9** (finitions) — voir le palier 3 de
   l'audit. B7 est fait (voir plus bas).
 - ❌ **Accessibilité** (promue depuis §4, audit C5) : `role="grid"`/

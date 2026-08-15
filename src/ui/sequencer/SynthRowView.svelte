@@ -64,6 +64,20 @@
     return Array.from({ length: Math.min(PACKET_SIZE, row.subdivisions - start) }, (_, i) => start + i);
   });
 
+  // Densité des repères de temps (correctif A5). Un temps ne mérite un trait
+  // que s'il reste plus espacé que les cases : sinon on ne marque plus le
+  // rythme, on raye les cases. Cas concret qui l'a révélé — la Nappe part à
+  // `cycleBars: 4` pour 4 cases (defaults.ts), donc 16 temps sur 4 cases :
+  // trois traits AU TRAVERS de chaque case, illisible.
+  // Au-delà de 8 temps, on retombe donc sur les seules barres de mesure (en
+  // faisant coïncider les deux périodes : la couche « mesure », dessinée
+  // par-dessus et plus marquée, recouvre exactement celle des temps).
+  // Le seuil est volontairement haut pour préserver LE cas qui compte —
+  // hat à 3 pas contre 4 temps, la polyrythmie qu'on cherche justement à
+  // rendre lisible — et ne couper que là où le trait cesse d'informer.
+  const MAX_BEAT_LINES = 8;
+  const beatLines = $derived(4 * row.cycleBars <= MAX_BEAT_LINES ? 4 * row.cycleBars : row.cycleBars);
+
   function cycleCell(col: number) {
     if (isPad) {
       // Nappe : -1 (silence) puis les accords disponibles, en boucle.
@@ -134,7 +148,19 @@
 
 <div class="synth-row">
   <div class="row-head">
-    <span class="row-label">{label}</span>
+    <!-- Portée du cycle accolée au libellé (correctif A5). Sur Rythme, une
+         case est toujours une subdivision d'UNE mesure ; sur Synthé, elle
+         peut valoir une mesure entière (la Nappe démarre à 4). Sans cette
+         mention, deux grilles d'apparence identique ne représentent pas du
+         tout la même durée, et les repères de temps semblent incohérents
+         d'une ligne à l'autre. Porté par le libellé existant plutôt que par
+         un badge séparé : aucun élément permanent de plus, aucune hauteur
+         gagnée (règle du §7.5). Masqué à 1 mesure, le cas par défaut. -->
+    <span class="row-label"
+      >{label}{#if row.cycleBars > 1}<span class="cycle-span" title="Cette ligne se déroule sur {row.cycleBars} mesures : une case y dure {row.cycleBars / row.subdivisions >= 1 ? 'une mesure ou plus' : 'une fraction de mesure'}"
+          >&nbsp;· {row.cycleBars} mes.</span
+        >{/if}</span
+    >
     <button class="mini" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
       {row.muted ? '🔇' : '🔊'}
     </button>
@@ -171,7 +197,7 @@
     class:beat-grid={!packetized}
     style:--cols={visibleCols.length}
     style:--bars={row.cycleBars}
-    style:--beats={4 * row.cycleBars}
+    style:--beats={beatLines}
   >
     {#each visibleCols as col (col)}
       {@const v = row.pattern[col]}
@@ -384,6 +410,12 @@
     font-size: 12px;
     text-transform: uppercase;
     color: var(--xp-accent-violet);
+  }
+  .cycle-span {
+    font-weight: 400;
+    text-transform: none;
+    color: var(--xp-muted);
+    font-size: 11px;
   }
   /* Cibles tactiles (audit A3) : mute, test et octave se visent en pleine
      composition — le remplissage passe de 1px à 6px vertical, sans toucher
