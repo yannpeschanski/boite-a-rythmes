@@ -11,11 +11,15 @@
     onExport,
     onImport,
     onReset,
+    onSwitchView,
     circleView = $bindable(false),
   }: {
     onExport: () => void;
     onImport: () => void;
     onReset: () => void;
+    // Bascule d'écran, remontée depuis App.svelte : la barre de navigation
+    // séparée a disparu de l'Atelier (audit A1), son rôle vit ici.
+    onSwitchView?: (v: 'atelier' | 'game' | 'live') => void;
     circleView?: boolean;
   } = $props();
 
@@ -82,6 +86,27 @@
 <svelte:window onclick={() => (openMenu = '')} />
 
 <div class="menubar" role="menubar">
+  <!-- Menu « Mode » : remplace la barre de navigation qui vivait au-dessus
+       de la barre de menus (audit A1). Coche l'écran courant comme un menu
+       XP, plutôt qu'un onglet enfoncé — même information, zéro pixel de
+       hauteur en plus. -->
+  <div class="menu">
+    <button
+      class="menu-btn"
+      class:on={openMenu === 'mode'}
+      onclick={(e) => {
+        e.stopPropagation();
+        openMenu = openMenu === 'mode' ? '' : 'mode';
+      }}>Mode</button
+    >
+    {#if openMenu === 'mode'}
+      <div class="dropdown">
+        <button onclick={() => choose(() => onSwitchView?.('atelier'))}>✓ 🥁 Atelier</button>
+        <button onclick={() => choose(() => onSwitchView?.('game'))}>&nbsp;&nbsp; 🎮 Mode jeu</button>
+        <button onclick={() => choose(() => onSwitchView?.('live'))}>&nbsp;&nbsp; 🎛 Mode Live</button>
+      </div>
+    {/if}
+  </div>
   <div class="menu">
     <button
       class="menu-btn"

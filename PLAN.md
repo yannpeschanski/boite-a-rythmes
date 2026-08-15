@@ -1000,11 +1000,26 @@ détail des constats plus bas dans ce document) :
   premier écran mobile passe de 64 % à 69 %, les barres de menus et
   d'outils ayant grandi. Assumé et à reprendre par A1 — la menubar est
   justement l'un des blocs qu'il propose de fondre.
-- ⚠️ **A1 — budget d'écran** : 64 % du premier écran mobile est du chrome.
-  **Demande un arbitrage de Yann** (que couper : nav des 3 modes fondue
-  dans la menubar ? explication de la Banque derrière un ⓘ ? conseil de
-  production repliable ?). C'est le plus gros gain ergonomique restant, et
-  la condition de déblocage du backlog XP de §2.
+- 🟡 **A1 — budget d'écran : premier passage fait le 2026-08-15**, sur les
+  trois coupes arbitrées par Yann. **69 % → 60 %** du premier écran mobile
+  (585px → 510px avant la première case ; le Kick est désormais visible
+  sans défiler, ce qui n'était pas le cas). Quatre barres empilées → trois.
+  - nav des 3 modes fondue dans un menu « Mode » de la barre de menus. La
+    barre de navigation ne subsiste que pour le Mode jeu, qui n'a pas de
+    barre de menus et dispose de toute la hauteur.
+  - explication de la Banque de séquences derrière un ⓘ (4 lignes pleines
+    affichées en permanence → 0 par défaut, le texte reste à un tap).
+  - conseil 💡 production ramené à une ligne tronquée, dépliable au tap :
+    il reste visible et découvrable — l'objectif de §7.3 — sans occuper la
+    moitié du bandeau en continu.
+  - **Reste à faire, et ça demande un arbitrage** : le plus gros bloc
+    restant est désormais `.preset-row` (~290px), coincé ENTRE les onglets
+    et le contenu qu'ils commutent. Deux pistes, non tranchées : (1) le
+    descendre sous le séquenceur — pur réordonnancement, aucune perte, gain
+    immédiat sur la première case ; (2) A6, dédoublonner Vue
+    circulaire/Sauver/Charger qui répètent les menus Fichier et Affichage.
+    La barre de menus continue par ailleurs de se casser en deux lignes sur
+    téléphone (B7), ce qui coûte ~35px.
 - ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
   contrainte des subdivisions différentes par ligne. Vrai parti pris
   visuel, à trancher.

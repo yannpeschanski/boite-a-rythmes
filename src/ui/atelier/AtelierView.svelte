@@ -20,6 +20,11 @@
   import { findClosestPreset } from '../../engine/similarity';
   import { playSystemSound } from '../xp/systemSounds';
 
+  // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
+  // plus de barre de navigation au-dessus de lui, c'est le menu « Mode » de
+  // la ToolBar qui en tient lieu.
+  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live') => void } = $props();
+
   const engine = new AudioEngine(() => pattern.snapshot());
 
   let playing = $state(false);
@@ -31,6 +36,7 @@
   // pendant que Lecture/Stop/Break restent dans la barre sticky au-dessus,
   // donc joignables quel que soit l'onglet actif.
   let activeTab = $state<'rythme' | 'synthe' | 'effets'>('rythme');
+  let tipExpanded = $state(false);
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
   let fileInput: HTMLInputElement;
@@ -260,6 +266,7 @@
 <div class="atelier" data-theme="luna">
   <ToolBar
     bind:circleView
+    {onSwitchView}
     onExport={exportJson}
     onImport={() => fileInput.click()}
     onReset={() => {
@@ -307,7 +314,18 @@
         — le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)
       {/if}
     </p>
-    <p class="hint production-hint">💡 {productionTip}</p>
+    <!-- Le conseil prenait deux à trois lignes pleines dans la barre sticky,
+         donc en permanence sur les trois onglets (audit A1). Ramené à UNE
+         ligne tronquée, dépliable au tap : il reste visible et découvrable
+         — c'était le point de PLAN §7.3, ne pas le cacher aux nouveaux
+         venus — sans occuper la moitié du bandeau à chaque instant. -->
+    <button
+      class="hint production-hint"
+      class:expanded={tipExpanded}
+      aria-expanded={tipExpanded}
+      title={tipExpanded ? 'Réduire le conseil' : 'Lire le conseil en entier'}
+      onclick={() => (tipExpanded = !tipExpanded)}>💡 {productionTip}</button
+    >
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
@@ -436,6 +454,28 @@
     font-size: 11px;
     color: var(--xp-muted);
     margin: 0 0 8px;
+  }
+  /* Une ligne par défaut, tout le texte au tap. Le <button> reprend
+     l'apparence du <p> qu'il remplace — c'est bien une action, mais elle ne
+     doit pas se déguiser en contrôle de plus dans un bandeau déjà chargé. */
+  .production-hint {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 11px;
+    color: var(--xp-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .production-hint.expanded {
+    white-space: normal;
+    overflow: visible;
   }
   /* Raccourcis clavier + « le plus proche » : texte qui n'a pas sa place sur
      mobile (pas de clavier physique, peu de largeur pour du texte à côté des
