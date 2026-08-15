@@ -47,13 +47,21 @@ export interface ClosestMatch {
   score: number;
 }
 
-export function findClosestPreset(state: PatternStateV2): ClosestMatch | null {
-  let best: ClosestMatch | null = null;
+// Classement complet plutôt que le seul gagnant : l'analyseur de l'onglet
+// Production affiche les suivants, ce qui rend le verdict honnête — 62 %
+// contre 58 %, ce n'est pas la même chose que 88 % contre 41 %, et
+// n'afficher que le premier laisserait croire à une certitude qu'on n'a pas.
+// Un seul parcours des 34 presets × 6 permutations pour les deux usages :
+// on garde le meilleur score PAR preset (sinon un même morceau apparaîtrait
+// plusieurs fois dans le classement, une fois par permutation).
+export function rankPresets(state: PatternStateV2): ClosestMatch[] {
+  const out: ClosestMatch[] = [];
   for (const preset of PRESETS) {
     const presetRows = SIMILARITY_ROWS.map((n) => {
       const src = preset[n];
       return { pattern: normalizePattern(src.pattern, src.subdiv), subdiv: src.subdiv };
     });
+    let bestForPreset = -1;
     for (const perm of PERMUTATIONS) {
       let total = 0;
       perm.forEach((rowName, i) => {
@@ -61,8 +69,13 @@ export function findClosestPreset(state: PatternStateV2): ClosestMatch | null {
         total += rowScore(mine.pattern, mine.subdiv, presetRows[i].pattern, presetRows[i].subdiv);
       });
       const score = total / 3;
-      if (!best || score > best.score) best = { preset, score };
+      if (score > bestForPreset) bestForPreset = score;
     }
+    out.push({ preset, score: bestForPreset });
   }
-  return best;
+  return out.sort((a, b) => b.score - a.score);
+}
+
+export function findClosestPreset(state: PatternStateV2): ClosestMatch | null {
+  return rankPresets(state)[0] ?? null;
 }
