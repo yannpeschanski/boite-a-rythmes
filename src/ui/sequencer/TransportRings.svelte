@@ -1,19 +1,34 @@
 <script lang="ts">
-  // Rappel coloré compact du rythme dans la barre de transport — anneau
-  // batterie (Kick/Snare/Hat) et anneau synthé (Basse/Nappe/Mélodie) côte à
-  // côte, à droite de Lecture/Break. Volontairement un aperçu, pas un second
-  // éditeur (ni clic, ni édition) — mais le curseur de lecture, lui, doit
-  // défiler, sinon rien ne dit que ça joue quand on est sur un autre onglet.
-  // Remplace l'idée (abandonnée) d'ancrer tout le séquenceur éditable en
-  // permanence.
+  // Rappel coloré compact du rythme dans la barre de transport, à droite de
+  // Lecture/Break. Volontairement un aperçu, pas un second éditeur (ni clic,
+  // ni édition) — mais le curseur de lecture, lui, doit défiler, sinon rien
+  // ne dit que ça joue quand on est sur un autre onglet.
+  //
+  // REFONTE (retour de Yann : « un petit visuel dynamique qui prend moins de
+  // place — un seul anneau sur le cycle le plus grand avec des barres
+  // étroites, en excluant les lignes qui ne se jouent pas »). Avant : DEUX
+  // canvas de 50px côte à côte (batterie / synthé), chacun à 3 anneaux fixes,
+  // qui affichaient les six lignes même vides — d'où l'anneau synthé quasi
+  // invisible du constat B5 de l'audit, trois teintes pâles délavées sur du
+  // beige pour dire « rien ne joue ». Maintenant : UN canvas, et seules les
+  // lignes qui sonnent réellement y prennent une bande. Le gain de place vient
+  // de là plus que du diamètre.
+  //
+  // Trois règles qui font tout le composant :
+  //  1. Une ligne n'apparaît que si elle a des notes ET n'est pas coupée.
+  //  2. L'anneau représente LE PLUS GRAND CYCLE parmi ces lignes — la batterie
+  //     couvre toujours une mesure, une ligne synthé en couvre `cycleBars`. Un
+  //     motif plus court se répète donc autour de l'anneau, ce qui montre
+  //     exactement ce qu'on entend : le kick qui tourne 4 fois pendant que la
+  //     nappe fait un tour.
+  //  3. Le curseur global est lu sur la ligne de référence — celle dont le
+  //     cycle EST le plus grand. Sa position dans son propre motif est donc
+  //     déjà la position dans l'anneau entier, sans avoir à inventer une
+  //     horloge globale. (`AudioEngine.currentBar` existe mais il est privé
+  //     ET en avance sur le son — c'est la mesure en cours de PROGRAMMATION,
+  //     lookahead compris ; l'utiliser ferait défiler le curseur en avance.)
   import type { DrumRowName, PatternStateV2, SynthRowName } from '../../model/types';
-  import { SYNTH_ROW_NAMES } from '../../model/types';
-
-  // Anneau batterie volontairement limité à kick/snare/hat (PLAN.md §6) — PAS
-  // `DRUM_ROW_NAMES` (élargi à clap/shaker) : sur un canvas de 50px, 3 anneaux
-  // concentriques sont déjà serrés, 5 rendrait l'anneau intérieur illisible.
-  // Même choix que StepCircle (vue circulaire de l'Atelier).
-  const RING_DRUM_ROWS = ['kick', 'snare', 'hat'] as const;
+  import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
   let {
     state,
@@ -26,99 +41,189 @@
   } = $props();
 
   // Mêmes valeurs que --cell-* de tokens.css (StepCircle.FALLBACK,
-  // SynthRowView.PREVIEW_COLOR) — un canvas ne peut pas lire une variable
-  // CSS directement, donc dupliquées ici comme ailleurs dans le code.
-  const DRUM_COLOR = { kick: '#d84315', snare: '#c8881a', hat: '#2b8a8a' } as const;
-  const SYNTH_COLOR = { bass: '#6a7bff', pad: '#b06bff', melody: '#ff6bd6' } as const;
-  // Même bleu Luna que StepCircle.INK pour marquer le pas en cours de lecture.
-  const INK = '#0a246a';
-  const SIZE = 50;
+  // SynthRowView.PREVIEW_COLOR) — un canvas ne peut pas lire une variable CSS
+  // directement, donc dupliquées ici comme ailleurs dans le code. Les huit
+  // lignes y sont désormais, clap et shaker compris : la limitation à
+  // kick/snare/hat n'avait de sens que tant que les anneaux étaient fixes et
+  // tous dessinés en permanence.
+  const COLOR: Record<string, string> = {
+    kick: '#d84315',
+    snare: '#c8881a',
+    hat: '#2b8a8a',
+    clap: '#3fae54',
+    shaker: '#22a6c9',
+    bass: '#6a7bff',
+    pad: '#b06bff',
+    melody: '#ff6bd6',
+  };
+  const INK = '#0a246a'; // bleu Luna, comme StepCircle
+  const SIZE = 46;
 
-  let drumCanvas: HTMLCanvasElement;
-  let synthCanvas: HTMLCanvasElement;
+  let canvasEl: HTMLCanvasElement;
 
-  function mix(hex: string, pct: number): string {
-    const n = parseInt(hex.slice(1), 16);
-    const r = (n >> 16) & 255;
-    const g = (n >> 8) & 255;
-    const b = n & 255;
-    const mr = Math.round(r + (255 - r) * (1 - pct / 100));
-    const mg = Math.round(g + (255 - g) * (1 - pct / 100));
-    const mb = Math.round(b + (255 - b) * (1 - pct / 100));
-    return `rgb(${mr},${mg},${mb})`;
-  }
+  type Band = {
+    color: string;
+    steps: boolean[]; // pas actifs du motif de la ligne
+    bars: number; // durée du motif en mesures
+    pos: number; // pas en cours de lecture (-1 si à l'arrêt)
+  };
 
-  function drawRing(
-    canvas: HTMLCanvasElement,
-    rings: { active: boolean[]; color: string; current: number }[],
-  ) {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = SIZE * dpr;
-    canvas.height = SIZE * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    const cx = SIZE / 2;
-    const cy = SIZE / 2;
-    const radii = [SIZE * 0.46, SIZE * 0.32, SIZE * 0.18];
-    const thickness = SIZE * 0.11;
-    rings.forEach((ring, idx) => {
-      const n = ring.active.length;
-      if (n === 0) return;
-      const r = radii[idx];
-      const gap = Math.min(0.14, ((2 * Math.PI) / n) * 0.24);
-      for (let i = 0; i < n; i++) {
-        const a0 = (i / n) * Math.PI * 2 - Math.PI / 2 + gap / 2;
-        const a1 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2 - gap / 2;
-        const isCurrent = i === ring.current;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, a0, a1);
-        ctx.lineWidth = isCurrent ? thickness * 1.25 : thickness;
-        ctx.strokeStyle = isCurrent ? INK : ring.active[i] ? ring.color : mix(ring.color, 18);
-        ctx.stroke();
-      }
-    });
-  }
-
-  $effect(() => {
-    const drumRings = RING_DRUM_ROWS.map((name) => {
+  // Une ligne « joue » si elle porte au moins une note ET n'est pas coupée.
+  // C'est ce test qui vide l'anneau de tout ce qui ne sonne pas.
+  const bands = $derived.by<Band[]>(() => {
+    const out: Band[] = [];
+    for (const name of DRUM_ROW_NAMES) {
       const row = state.rows[name];
-      return {
-        color: DRUM_COLOR[name],
-        active: row.pattern.slice(0, row.subdiv).map((v) => v > 0),
-        current: playhead[name],
-      };
-    });
-    if (drumCanvas) drawRing(drumCanvas, drumRings);
-
-    const synthRings = SYNTH_ROW_NAMES.map((name) => {
+      if (row.muted) continue;
+      const steps = row.pattern.slice(0, row.subdiv).map((v) => v > 0);
+      if (!steps.some(Boolean)) continue;
+      // Une ligne batterie couvre toujours exactement une mesure
+      // (stepDuration = barDuration / subdiv, cf. engine/groove.ts).
+      out.push({ color: COLOR[name], steps, bars: 1, pos: playhead[name] });
+    }
+    for (const name of SYNTH_ROW_NAMES) {
       const row = state.synthRows[name];
-      const active = row.pattern
+      if (row.muted) continue;
+      const steps = row.pattern
         .slice(0, row.subdivisions)
         .map((v) => (name === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
-      return { color: SYNTH_COLOR[name], active, current: synthPlayhead[name] };
-    });
-    if (synthCanvas) drawRing(synthCanvas, synthRings);
+      if (!steps.some(Boolean)) continue;
+      out.push({ color: COLOR[name], steps, bars: Math.max(1, row.cycleBars), pos: synthPlayhead[name] });
+    }
+    return out;
   });
+
+  const totalBars = $derived(bands.reduce((m, b) => Math.max(m, b.bars), 1));
+
+  function draw() {
+    const ctx = canvasEl?.getContext('2d');
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvasEl.width = SIZE * dpr;
+    canvasEl.height = SIZE * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    const cx = SIZE / 2;
+    const cy = SIZE / 2;
+    const list = bands;
+
+    // Rien ne joue : un anneau fantôme, pour que la zone ne disparaisse pas
+    // d'un coup (un bloc qui apparaît/disparaît fait sauter la mise en page).
+    if (list.length === 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, SIZE * 0.36, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,0,40,0.12)';
+      ctx.stroke();
+      return;
+    }
+
+    // Les bandes se partagent le rayon disponible : à une seule ligne elle est
+    // épaisse et lisible, à huit elles restent séparées. Plafonnée pour qu'une
+    // ligne seule ne devienne pas un disque plein.
+    const rOuter = SIZE * 0.44;
+    const rInner = SIZE * 0.13;
+    const span = (rOuter - rInner) / list.length;
+    const thickness = Math.min(span * 0.72, 5);
+
+    // Repères de mesure, seulement quand l'anneau en couvre plusieurs : sinon
+    // un unique trait à midi n'apprend rien. Même principe que `.beat-grid`
+    // sur la grille linéaire (audit A5) — on ne trace un repère que là où il
+    // informe.
+    if (totalBars > 1) {
+      ctx.strokeStyle = 'rgba(0,0,40,0.20)';
+      ctx.lineWidth = 1;
+      for (let b = 0; b < totalBars; b++) {
+        const a = (b / totalBars) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * rInner, cy + Math.sin(a) * rInner);
+        ctx.lineTo(cx + Math.cos(a) * (rOuter + 2), cy + Math.sin(a) * (rOuter + 2));
+        ctx.stroke();
+      }
+    }
+
+    list.forEach((band, idx) => {
+      const r = rOuter - idx * span;
+      const n = band.steps.length;
+      if (n === 0) return;
+
+      // Trace de fond : dit que la ligne existe et où passe sa bande, sans
+      // peindre les pas vides un par un (c'est ce qui alourdissait l'ancien
+      // rendu à six anneaux).
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0,0,40,0.07)';
+      ctx.stroke();
+
+      // Combien de fois ce motif tourne dans l'anneau. Non entier possible
+      // (une ligne de 3 mesures dans un anneau de 4) : la dernière répétition
+      // est alors tronquée, ce qui est exactement ce qu'on entend.
+      const reps = totalBars / band.bars;
+      const stepArc = (band.bars / totalBars) * ((Math.PI * 2) / n);
+      const gap = Math.min(stepArc * 0.3, 0.05);
+
+      ctx.lineCap = 'butt';
+      for (let rep = 0; rep < Math.ceil(reps); rep++) {
+        for (let i = 0; i < n; i++) {
+          if (!band.steps[i]) continue; // seules les notes sont peintes
+          const f = (rep * band.bars + (i / n) * band.bars) / totalBars;
+          if (f >= 1) break; // répétition tronquée
+          const a0 = f * Math.PI * 2 - Math.PI / 2 + gap / 2;
+          const a1 = Math.min(f + (band.bars / totalBars) / n, 1) * Math.PI * 2 - Math.PI / 2 - gap / 2;
+          if (a1 <= a0) continue;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, a0, a1);
+          ctx.lineWidth = thickness;
+          ctx.strokeStyle = band.color;
+          ctx.stroke();
+        }
+      }
+    });
+
+    // Curseur global : lu sur la ligne de référence, celle dont le cycle EST
+    // le plus grand — sa position dans son propre motif vaut donc position
+    // dans l'anneau entier. Une aiguille plutôt qu'un pas surligné : sur 46px
+    // avec des bandes de 5px, un pas mis en évidence se voit beaucoup moins
+    // bien qu'un trait qui balaie.
+    const ref = list.find((b) => b.bars === totalBars);
+    if (ref && ref.pos >= 0 && ref.steps.length > 0) {
+      const f = ref.pos / ref.steps.length;
+      const a = f * Math.PI * 2 - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a) * (rOuter + 2), cy + Math.sin(a) * (rOuter + 2));
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = INK;
+      ctx.fill();
+    }
+  }
+
+  // Redessin réactif : suit les bandes (motifs, mutes, cycles) et le curseur.
+  $effect(() => {
+    void bands;
+    void totalBars;
+    draw();
+  });
+
+  const title = $derived(
+    bands.length === 0
+      ? 'Aperçu du rythme — rien ne joue pour l’instant'
+      : `Aperçu du rythme — ${bands.length} ligne${bands.length > 1 ? 's' : ''} en cours sur ${totalBars} mesure${totalBars > 1 ? 's' : ''}`,
+  );
 </script>
 
-<div class="rings">
-  <div class="ring-unit" title="Batterie — la mesure en cours (Kick/Snare/Hat)">
-    <canvas bind:this={drumCanvas} style:width="{SIZE}px" style:height="{SIZE}px" aria-hidden="true"></canvas>
-  </div>
-  <div class="ring-unit" title="Synthé — le cycle en cours (Basse/Nappe/Mélodie)">
-    <canvas bind:this={synthCanvas} style:width="{SIZE}px" style:height="{SIZE}px" aria-hidden="true"></canvas>
-  </div>
+<div class="ring" {title}>
+  <canvas bind:this={canvasEl} style:width="{SIZE}px" style:height="{SIZE}px" aria-hidden="true"></canvas>
 </div>
 
 <style>
-  .rings {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .ring-unit canvas {
+  .ring canvas {
     display: block;
   }
 </style>
