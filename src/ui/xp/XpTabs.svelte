@@ -41,12 +41,15 @@
   /* Compressés (padding/police réduits) : ils libèrent la hauteur qu'ont
      prise les anneaux ajoutés à côté de Lecture/Break, dans la même barre
      sticky — la barre entière ne doit pas grossir d'autant. */
+  /* 23px de haut avant l'audit A3, juste sous le minimum de 24 — pour la
+     navigation principale de l'Atelier. Passé à 30px. */
   .tab {
     flex: 1;
     font-family: inherit;
     font-size: 11px;
     font-weight: 700;
-    padding: 4px 6px;
+    padding: 8px 6px;
+    min-height: 30px;
     border: 1px solid var(--xp-line);
     border-radius: 4px;
     background: linear-gradient(180deg, #fff, var(--xp-face-dark));

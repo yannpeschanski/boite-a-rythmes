@@ -37,14 +37,21 @@
     </div>
   </div>
 {:else}
-  <nav class="switcher">
-    <button class:on={view === 'atelier'} onclick={() => (view = 'atelier')}>🥁 Atelier</button>
-    <button class:on={view === 'game'} onclick={() => (view = 'game')}>🎮 Mode jeu</button>
-    <button onclick={() => (view = 'live')}>🎛 Mode Live</button>
-  </nav>
+  <!-- La barre de navigation ne subsiste que pour le Mode jeu (audit A1) :
+       dans l'Atelier elle était la première des QUATRE barres empilées avant
+       la première case jouable, et son contenu tient naturellement dans un
+       menu « Mode » de la barre de menus juste en dessous — un menu de
+       bascule d'écran, c'est exactement ce qu'une barre de menus XP sait
+       faire. Le Mode jeu, lui, n'a pas de barre de menus et dispose de toute
+       la hauteur : il la garde. -->
   {#if view === 'atelier'}
-    <AtelierView />
+    <AtelierView onSwitchView={(v) => (view = v)} />
   {:else}
+    <nav class="switcher">
+      <button onclick={() => (view = 'atelier')}>🥁 Atelier</button>
+      <button class="on" onclick={() => (view = 'game')}>🎮 Mode jeu</button>
+      <button onclick={() => (view = 'live')}>🎛 Mode Live</button>
+    </nav>
     <GameView onGoAtelier={() => (view = 'atelier')} />
   {/if}
 {/if}

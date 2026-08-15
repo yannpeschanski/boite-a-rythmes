@@ -20,6 +20,11 @@
   import { findClosestPreset } from '../../engine/similarity';
   import { playSystemSound } from '../xp/systemSounds';
 
+  // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
+  // plus de barre de navigation au-dessus de lui, c'est le menu « Mode » de
+  // la ToolBar qui en tient lieu.
+  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live') => void } = $props();
+
   const engine = new AudioEngine(() => pattern.snapshot());
 
   let playing = $state(false);
@@ -31,6 +36,7 @@
   // pendant que Lecture/Stop/Break restent dans la barre sticky au-dessus,
   // donc joignables quel que soit l'onglet actif.
   let activeTab = $state<'rythme' | 'synthe' | 'effets'>('rythme');
+  let tipExpanded = $state(false);
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
   let fileInput: HTMLInputElement;
@@ -182,6 +188,24 @@
     }
   }
 
+  // Tap tempo : on garde les intervalles récents et on en prend la moyenne.
+  // Absent de l'original, alors que régler un tempo « à l'oreille » sur un
+  // morceau existant est le cas d'usage le plus courant. Vivait dans
+  // `ToolBar.svelte` jusqu'à l'audit A6/B7 — déplacé ici avec son bouton,
+  // contre le curseur Tempo.
+  let taps: number[] = [];
+  function tapTempo() {
+    const now = performance.now();
+    if (taps.length && now - taps[taps.length - 1] > 2000) taps = []; // trop long : nouvelle série
+    taps.push(now);
+    if (taps.length > 5) taps.shift();
+    if (taps.length < 2) return;
+    const intervals = taps.slice(1).map((t, i) => t - taps[i]);
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const bpm = Math.round(60000 / avg / 10) * 10; // le tempo va par pas de 10
+    pattern.state.tempo = Math.max(40, Math.min(200, bpm));
+  }
+
   async function togglePlay() {
     if (playing) {
       engine.stop();
@@ -260,6 +284,7 @@
 <div class="atelier" data-theme="luna">
   <ToolBar
     bind:circleView
+    {onSwitchView}
     onExport={exportJson}
     onImport={() => fileInput.click()}
     onReset={() => {
@@ -307,7 +332,18 @@
         — le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)
       {/if}
     </p>
-    <p class="hint production-hint">💡 {productionTip}</p>
+    <!-- Le conseil prenait deux à trois lignes pleines dans la barre sticky,
+         donc en permanence sur les trois onglets (audit A1). Ramené à UNE
+         ligne tronquée, dépliable au tap : il reste visible et découvrable
+         — c'était le point de PLAN §7.3, ne pas le cacher aux nouveaux
+         venus — sans occuper la moitié du bandeau à chaque instant. -->
+    <button
+      class="hint production-hint"
+      class:expanded={tipExpanded}
+      aria-expanded={tipExpanded}
+      title={tipExpanded ? 'Réduire le conseil' : 'Lire le conseil en entier'}
+      onclick={() => (tipExpanded = !tipExpanded)}>💡 {productionTip}</button
+    >
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
@@ -316,22 +352,6 @@
       ]}
       bind:active={activeTab}
     />
-  </div>
-
-  <!-- Hors du bloc sticky : réglages ponctuels (vue, sauvegarde, tempo,
-       preset), pas des actions en continu comme lecture/break/onglets. -->
-  <div class="preset-row">
-    <div class="secondary">
-      <button class="xp-btn" onclick={() => (circleView = !circleView)}>
-        {circleView ? '▤ Vue linéaire' : '◎ Vue circulaire'}
-      </button>
-      <button class="xp-btn" onclick={exportJson}>💾 Sauver</button>
-      <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
-      <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
-    </div>
-    <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
-    <PresetPicker onApplied={refreshFx} />
-    <SequenceBank onApplied={refreshFx} />
   </div>
 
   <!-- Le séquenceur pas-à-pas éditable reste sur Rythme, hors de l'onglet
@@ -347,6 +367,14 @@
           <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
         </div>
       {:else}
+        <!-- Règle de temps (audit A5) : affichée UNE fois en tête plutôt que
+             sur chaque ligne — les repères eux-mêmes sont dessinés sur chaque
+             grille par `.beat-grid`, ici on ne fait que les nommer. Elle
+             s'aligne naturellement sur les grilles : `.cells` et cette règle
+             occupent la même largeur dans le corps de la fenêtre. -->
+        <div class="beat-ruler" aria-hidden="true">
+          <span>1</span><span>2</span><span>3</span><span>4</span>
+        </div>
         <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
         <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
@@ -364,6 +392,37 @@
       <GeneralSequencer state={st} {playhead} {synthPlayhead} />
     </XpWindow>
   {/if}
+
+  <!-- Descendu SOUS le séquenceur (audit A1, 2ᵉ passage). Il était coincé
+       entre les onglets et le contenu que les onglets commutent : taper
+       « Synthé » obligeait à traverser tempo + morceau + banque avant
+       d'atteindre le synthé. Rien n'est retiré, c'est un pur
+       réordonnancement — ce qu'on joue vient en premier, ce qu'on charge et
+       ce qu'on règle vient après. Le tempo reste à portée immédiate du
+       séquenceur, et Lecture/Break/onglets n'ont jamais bougé : ils sont
+       dans la barre sticky, joignables de partout. -->
+  <div class="preset-row">
+    <div class="secondary">
+      <button class="xp-btn" onclick={() => (circleView = !circleView)}>
+        {circleView ? '▤ Vue linéaire' : '◎ Vue circulaire'}
+      </button>
+      <button class="xp-btn" onclick={exportJson}>💾 Sauver</button>
+      <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
+      <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
+    </div>
+    <!-- Tap tempo remonté de la barre d'outils (audit A6/B7) : il RÈGLE le
+         tempo, donc sa place est contre le curseur qu'il pilote — on voit
+         désormais la valeur bouger à chaque frappe, ce qui n'était pas le
+         cas quand le bouton vivait trois blocs plus haut. -->
+    <div class="tempo-row">
+      <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+      <button class="xp-btn" onclick={tapTempo} title="Tape le tempo en rythme, au moins deux fois">
+        👆 Tap
+      </button>
+    </div>
+    <PresetPicker onApplied={refreshFx} />
+    <SequenceBank onApplied={refreshFx} />
+  </div>
 
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
@@ -437,6 +496,28 @@
     color: var(--xp-muted);
     margin: 0 0 8px;
   }
+  /* Une ligne par défaut, tout le texte au tap. Le <button> reprend
+     l'apparence du <p> qu'il remplace — c'est bien une action, mais elle ne
+     doit pas se déguiser en contrôle de plus dans un bandeau déjà chargé. */
+  .production-hint {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 11px;
+    color: var(--xp-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .production-hint.expanded {
+    white-space: normal;
+    overflow: visible;
+  }
   /* Raccourcis clavier + « le plus proche » : texte qui n'a pas sa place sur
      mobile (pas de clavier physique, peu de largeur pour du texte à côté des
      anneaux) — masqué sur les appareils tactiles. Sur desktop, où la largeur
@@ -488,6 +569,21 @@
     gap: 6px;
     margin-bottom: 6px;
   }
+  .tempo-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* L'enveloppe de requête de conteneur est la racine de XpSlider : c'est
+     elle l'enfant flex ici (même chose que dans .euclid-row). */
+  .tempo-row :global(.xp-slider-outer) {
+    flex: 1;
+    min-width: 0;
+  }
+  .tempo-row .xp-btn {
+    white-space: nowrap;
+    padding: 8px 12px;
+  }
   .tab-panel {
     background: var(--xp-face);
     border: 1px solid var(--xp-line);
@@ -499,14 +595,18 @@
   .restore button {
     font-family: inherit;
     font-size: 11px;
-    padding: 2px 8px;
+    padding: 6px 10px;
+    min-height: 28px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
     background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
     cursor: pointer;
   }
+  /* Cible tactile (audit A3) : 21px de haut avant — pour Lecture et Break,
+     les deux boutons les plus utilisés de toute l'application. */
   .xp-btn {
-    padding: 5px 14px;
+    padding: 8px 16px;
+    min-height: 32px;
     border: 1px solid #003c74;
     border-radius: 3px;
     background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);

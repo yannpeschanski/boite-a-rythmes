@@ -89,9 +89,11 @@
     display: flex;
     gap: 2px;
   }
+  /* 22×22 avant l'audit A3 — le « _ » replie réellement la fenêtre, ce
+     n'est pas qu'un gag décoratif. Porté au minimum de 24px. */
   .wbtn {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border: 1px solid #fff;
     border-radius: 3px;
     background: linear-gradient(180deg, #7ba2e7 0%, #3d6fe0 50%, #2a54c4 100%);

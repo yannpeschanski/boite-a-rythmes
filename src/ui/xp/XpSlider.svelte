@@ -210,6 +210,14 @@
   }
 </script>
 
+<!-- Enveloppe de requête de conteneur : c'est ELLE qui porte
+     `container-type`, pas `.xp-slider` — un élément ne peut pas interroger
+     sa propre taille pour décider de sa propre grille (référence
+     circulaire). Le curseur s'adapte donc à la largeur de son CONTENEUR
+     (colonne de `.two-col`, fieldset de ligne, barre de preset…) et non à
+     celle de la fenêtre : c'est exactement la variable qui manquait, le
+     même composant vivant dans des boîtes de 148px à 940px. -->
+<div class="xp-slider-outer">
 <div class="xp-slider">
   {#if hint}
     <button type="button" class="lab has-hint">{label}</button>
@@ -272,16 +280,73 @@
     {value}{unit}
   </div>
 </div>
+</div>
 
 <style>
+  .xp-slider-outer {
+    container-type: inline-size;
+    /* `min-width: 0` est indispensable depuis que la grille interne a des
+       colonnes bornées (104 + 110 + 52 + gaps ≈ 274px de min-content) : un
+       élément flex a `min-width: auto` par défaut, donc il REFUSE de
+       descendre sous sa taille de contenu et déborde son conteneur au lieu
+       de rétrécir. C'est ce qui a fait sortir « Nb d'accords » de la fenêtre
+       Synthé. Posé ici, sur la racine du composant, plutôt que répété dans
+       chaque parent flex qui accueille un curseur — sinon le prochain call
+       site oubliera. Une fois rétréci, la requête de conteneur ci-dessous
+       bascule proprement sur deux lignes. */
+    min-width: 0;
+  }
+  /* Proportions (audit A2/B1/B2 du 2026-08-15, rouvre la passe de densité
+     §7.2.1). Trois bornes remplacent les trois largeurs figées :
+     - libellé 104px au lieu de 72 — assez pour « Filtre passe-bas »,
+       « Coups euclidiens », « Vélocité aléatoire », les libellés que la
+       passe précédente tronquait (B2). Fixe, pas `max-content` : c'est ce
+       qui aligne les pistes entre curseurs voisins d'un même encart.
+     - piste bornée des DEUX côtés, 110px minimum et 260px maximum — avant,
+       la même piste allait de 40px (illisible, 2,5 % par pixel) à 818px
+       (25px par cran) selon la boîte qui l'accueillait (A2).
+     - valeur `minmax(52px, max-content)` + `nowrap` : « 20000 Hz » et
+       « 120 BPM » tenaient sur deux lignes dans 36px (B1).
+     `justify-content: start` : l'espace en trop se pose APRÈS la valeur,
+     jamais entre le libellé et sa piste — sinon un curseur dans un
+     fieldset de 940px verrait son libellé à 600px de son contrôle. */
   .xp-slider {
     position: relative;
     display: grid;
-    grid-template-columns: 72px 1fr 36px;
+    grid-template-columns: 104px minmax(110px, 260px) minmax(52px, max-content);
+    justify-content: start;
     align-items: center;
     gap: 4px;
-    margin: 2px 0;
+    margin: 1px 0;
     font-size: 10.5px;
+  }
+  /* Conteneur trop étroit pour une seule ligne (274px minimum) : au lieu
+     d'écraser la piste comme avant, le curseur passe sur DEUX lignes —
+     libellé et valeur en haut, piste sur toute la largeur en dessous. La
+     densité à 2 colonnes voulue par §7.2.1 est donc préservée, mais la
+     piste y gagne toute la largeur de la colonne (~155px) au lieu de 40. */
+  @container (max-width: 300px) {
+    .xp-slider {
+      grid-template-columns: minmax(0, 1fr) auto;
+      justify-content: stretch;
+      column-gap: 6px;
+      row-gap: 0;
+    }
+    .lab,
+    button.lab.has-hint {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .val {
+      grid-column: 2;
+      grid-row: 1;
+      width: auto;
+      min-width: 46px;
+    }
+    .wrap {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
   }
   .lab {
     color: var(--xp-text);
@@ -332,6 +397,11 @@
     position: relative;
     touch-action: none;
     cursor: pointer;
+    /* La piste ne fait que 4px de haut et l'`<input>` 16px : la zone
+       réellement saisissable au doigt passe à 26px sans épaissir le trait,
+       puisque c'est cette enveloppe qui capte tout le geste (cf. en-tête).
+       Compensé par `margin: 1px` au lieu de 2 sur `.xp-slider`. */
+    padding: 5px 0;
   }
   .wrap:focus-visible {
     outline: 1px dotted var(--xp-text);
@@ -388,6 +458,16 @@
     padding: 1px 3px;
     cursor: text;
     width: 100%;
+    /* Ceinture et bretelles avec la colonne `max-content` ci-dessus : même
+       si la place venait à manquer, « 20000 Hz » débordera plutôt que de
+       se replier sur deux lignes (B1). */
+    white-space: nowrap;
+    /* Cible tactile (audit A3) : taper la valeur ouvre la saisie clavier,
+       c'est une vraie action et elle ne faisait que 15px de haut. Gratuit
+       en hauteur de page — la ligne du curseur fait déjà 26px à cause de
+       la zone de préhension de la piste, cette boîte s'y contentait d'être
+       centrée. */
+    min-height: 24px;
   }
   /* Loupe (mêmes cotes et couleurs que l'original : bleu Luna en mode
      rapide, violet en mode précis, petite flèche vers le doigt). */

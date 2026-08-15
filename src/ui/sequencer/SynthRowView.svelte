@@ -159,7 +159,20 @@
     </div>
   {/if}
 
-  <div class="cells" style:--cols={visibleCols.length}>
+  <!-- Repères de temps (audit A5, styles dans styles/global.css). Une ligne
+       synthé couvre `cycleBars` mesures — donc `4 × cycleBars` temps — et non
+       une seule comme la batterie.
+       Volontairement DÉSACTIVÉS en affichage par paquets : un paquet ne montre
+       que 8 pas sur les `subdivisions` du cycle, il commence donc à une
+       fraction quelconque de la mesure. Les traits seraient déphasés, c'est-
+       à-dire faux — mieux vaut aucun repère qu'un repère qui ment. -->
+  <div
+    class="cells"
+    class:beat-grid={!packetized}
+    style:--cols={visibleCols.length}
+    style:--bars={row.cycleBars}
+    style:--beats={4 * row.cycleBars}
+  >
     {#each visibleCols as col (col)}
       {@const v = row.pattern[col]}
       {@const active = isPad ? typeof v === 'number' && v >= 0 : v != null}
@@ -187,17 +200,32 @@
     {/each}
   </div>
 
-  <!-- Un icône par groupe plutôt qu'un seul dépliable général (retour de
-       Yann) : chaque encart se déploie indépendamment. Un paramètre par
-       ligne à l'intérieur (pas de pression d'espace une fois replié par
-       défaut). -->
-  <fieldset data-group="synth-sequence">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.sequence = !openGroups.sequence)}>
-        {openGroups.sequence ? '▾' : '▸'} Séquence
-      </button>
-    </legend>
-    {#if openGroups.sequence}
+  <!-- Chaque groupe se déploie toujours indépendamment (retour de Yann), mais
+       les `<fieldset>` empilés sont devenus UNE rangée de pastilles (audit
+       A4). C'est ici que le gain est le plus fort : cinq groupes par ligne
+       synthé, sept sur la Nappe (arpège + bourdon), soit une vingtaine de
+       bandes vides sur l'onglet Synthé avant cette passe. Arpégiateur et
+       Bourdon restent réservés à la Nappe, comme avant. -->
+  <div class="group-bar">
+    <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
+      onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
+    <button class="chip" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
+      onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Oscillateur</button>
+    <button class="chip" class:on={openGroups.detune} aria-expanded={openGroups.detune}
+      onclick={() => (openGroups.detune = !openGroups.detune)}>Détune</button>
+    <button class="chip" class:on={openGroups.filter} aria-expanded={openGroups.filter}
+      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre</button>
+    <button class="chip" class:on={openGroups.space} aria-expanded={openGroups.space}
+      onclick={() => (openGroups.space = !openGroups.space)}>Espace</button>
+    {#if isPad}
+      <button class="chip" class:on={openGroups.arpege} aria-expanded={openGroups.arpege}
+        onclick={() => (openGroups.arpege = !openGroups.arpege)}>Arpégiateur</button>
+      <button class="chip" class:on={openGroups.drone} aria-expanded={openGroups.drone}
+        onclick={() => (openGroups.drone = !openGroups.drone)}>Bourdon</button>
+    {/if}
+  </div>
+  {#if openGroups.sequence}
+    <div class="group-panel" data-group="synth-sequence">
       <XpSlider label="Cycles (mesures)" min={1} max={16} value={row.cycleBars}
         onchange={(v) => (row.cycleBars = v)} />
       <XpSlider label="Notes du cycle" min={1} max={128} value={row.subdivisions} onchange={resize} />
@@ -210,15 +238,10 @@
         <XpSlider label="Étalement" min={0} max={100} unit="%"
           value={Math.round((row.strum ?? 0) * 100)} onchange={(v) => (row.strum = v / 100)} />
       {/if}
-    {/if}
-  </fieldset>
-  <fieldset data-group="synth-oscillateur">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>
-        {openGroups.oscillator ? '▾' : '▸'} Oscillateur & enveloppe
-      </button>
-    </legend>
-    {#if openGroups.oscillator}
+    </div>
+  {/if}
+  {#if openGroups.oscillator}
+    <div class="group-panel" data-group="synth-oscillateur">
       <label>
         Onde
         <select bind:value={row.voice.type} onchange={() => onChanged?.()}>
@@ -251,15 +274,10 @@
       <XpSlider label="Sub" min={0} max={100} unit="%"
         value={Math.round((row.voice.subGain ?? 0) * 100)}
         onchange={(v) => { row.voice.subGain = v / 100; onChanged?.(); }} />
-    {/if}
-  </fieldset>
-  <fieldset data-group="synth-detune">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.detune = !openGroups.detune)}>
-        {openGroups.detune ? '▾' : '▸'} Détune & modulation
-      </button>
-    </legend>
-    {#if openGroups.detune}
+    </div>
+  {/if}
+  {#if openGroups.detune}
+    <div class="group-panel" data-group="synth-detune">
       <XpSlider label="Détune" min={0} max={30} unit=" c"
         value={row.voice.detuneCents ?? 0}
         onchange={(v) => { row.voice.detuneCents = v; onChanged?.(); }} />
@@ -272,15 +290,10 @@
       <XpSlider label="Vibrato" min={0} max={100} unit="%"
         value={Math.round((row.voice.vibratoDepth ?? 0) * 100)}
         onchange={(v) => { row.voice.vibratoDepth = v / 100; onChanged?.(); }} />
-    {/if}
-  </fieldset>
-  <fieldset data-group="synth-filtre">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.filter = !openGroups.filter)}>
-        {openGroups.filter ? '▾' : '▸'} Filtre
-      </button>
-    </legend>
-    {#if openGroups.filter}
+    </div>
+  {/if}
+  {#if openGroups.filter}
+    <div class="group-panel" data-group="synth-filtre">
       <XpSlider label="Tone" min={0} max={100} unit="%"
         value={row.voice.tone ?? 0}
         onchange={(v) => { row.voice.tone = v; onChanged?.(); }} />
@@ -293,29 +306,19 @@
       <XpSlider label="Ferm. filtre" min={0} max={4000} step={20} unit=" ms"
         value={Math.round((row.voice.filterEnvRelease ?? 0) * 1000)}
         onchange={(v) => { row.voice.filterEnvRelease = v / 1000; onChanged?.(); }} />
-    {/if}
-  </fieldset>
-  <fieldset data-group="synth-espace">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.space = !openGroups.space)}>
-        {openGroups.space ? '▾' : '▸'} Espace
-      </button>
-    </legend>
-    {#if openGroups.space}
+    </div>
+  {/if}
+  {#if openGroups.space}
+    <div class="group-panel" data-group="synth-espace">
       <XpSlider label="Réverbe" min={0} max={100} unit="%"
         value={Math.round(row.reverbSend * 100)} onchange={(v) => { row.reverbSend = v / 100; onChanged?.(); }} />
       <XpSlider label="Delay" min={0} max={100} unit="%"
         value={Math.round(row.delaySend * 100)} onchange={(v) => { row.delaySend = v / 100; onChanged?.(); }} />
-    {/if}
-  </fieldset>
+    </div>
+  {/if}
   {#if isPad}
-    <fieldset data-group="synth-arpege">
-      <legend>
-        <button class="group-toggle" onclick={() => (openGroups.arpege = !openGroups.arpege)}>
-          {openGroups.arpege ? '▾' : '▸'} Arpégiateur
-        </button>
-      </legend>
-      {#if openGroups.arpege}
+    {#if openGroups.arpege}
+      <div class="group-panel" data-group="synth-arpege">
         <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
         <label>
           Motif
@@ -341,15 +344,10 @@
         >
           ✍️ Traduire l'arpège en Mélodie
         </button>
-      {/if}
-    </fieldset>
-    <fieldset data-group="synth-drone">
-      <legend>
-        <button class="group-toggle" onclick={() => (openGroups.drone = !openGroups.drone)}>
-          {openGroups.drone ? '▾' : '▸'} Bourdon
-        </button>
-      </legend>
-      {#if openGroups.drone}
+      </div>
+    {/if}
+    {#if openGroups.drone}
+      <div class="group-panel" data-group="synth-drone">
         <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
         <p class="hint">
           La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord
@@ -358,8 +356,8 @@
           ligne Nappe gardent leur effet habituel, c'est juste la façon dont le son est produit
           qui change.
         </p>
-      {/if}
-    </fieldset>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -387,6 +385,9 @@
     text-transform: uppercase;
     color: var(--xp-accent-violet);
   }
+  /* Cibles tactiles (audit A3) : mute, test et octave se visent en pleine
+     composition — le remplissage passe de 1px à 6px vertical, sans toucher
+     à la police (le gabarit visuel XP reste le même). */
   .mini,
   .octbtn {
     border: 1px solid var(--xp-line);
@@ -395,7 +396,9 @@
     border-radius: 3px;
     cursor: pointer;
     font-size: 10px;
-    padding: 1px 5px;
+    padding: 6px 8px;
+    min-height: 28px;
+    line-height: 1;
   }
   .mini.on {
     box-shadow: var(--xp-bevel-in);
@@ -514,36 +517,54 @@
     gap: 2px;
     justify-content: center;
   }
-  fieldset label {
+  .group-panel label {
     font-size: 12px;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     margin: 2px 0;
   }
-  fieldset select {
+  .group-panel select {
     font-family: var(--xp-font);
     font-size: 12px;
     border: 1px solid var(--xp-line);
     background: #fff;
   }
-  fieldset {
-    border: 1px solid var(--xp-line);
-    margin: 5px 0;
-    padding: 0 6px 4px;
+  /* Rangée de pastilles (audit A4) : remplace jusqu'à sept `<fieldset>`
+     repliés pleine largeur par ligne. Cible tactile conservée à 28px
+     (audit A3). Accent violet, la famille « Synthé ». */
+  .group-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 5px 0 0;
   }
-  legend {
-    padding: 0;
-  }
-  .group-toggle {
-    background: none;
-    border: none;
-    color: var(--xp-accent-violet);
-    font-weight: 700;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 2px 0;
+  .chip {
     font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    min-height: 28px;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--xp-accent-violet) 40%, var(--xp-line));
+    border-radius: 13px;
+    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    color: var(--xp-accent-violet);
+    cursor: pointer;
+    box-shadow: var(--xp-bevel-out);
+  }
+  .chip.on {
+    background: var(--xp-accent-violet);
+    border-color: var(--xp-accent-violet);
+    color: #fff;
+    box-shadow: var(--xp-bevel-in);
+  }
+  .group-panel {
+    border: 1px solid var(--xp-line);
+    border-top: 2px solid var(--xp-accent-violet);
+    background: color-mix(in srgb, var(--xp-accent-violet) 6%, transparent);
+    margin: 4px 0 0;
+    padding: 5px 7px;
   }
   /* Arpège/Bourdon (sous-catégories de la Nappe) : mêmes styles que les
      boutons 🎲/bulle d'aide du reste de l'Atelier, portés ici avec eux. */

@@ -33,8 +33,14 @@ ligne de l'export et le mode jeu. Il reçoit un `BaseAudioContext` en paramètre
 
 **L'aléatoire passe toujours par un `rng` injecté**, jamais `Math.random()` en dur :
 c'est ce qui rend l'export MP3 reproductible à l'octet près. Ne pas changer l'ordre
-d'itération des lignes dans le scheduler (kick → snare → hat → bass → pad → melody),
-il détermine l'ordre de consommation du générateur.
+d'itération des lignes dans le scheduler — réel aujourd'hui : kick → snare → clap →
+hat → shaker → bass → pad → melody (clap partage la boucle de kick/snare, shaker suit
+le hat) — il détermine l'ordre de consommation du générateur. Ne pas non plus insérer
+un appel à `rng()` avant un autre : un tirage de plus, même sans effet audible, décale
+tout ce qui suit. `tests/scheduler.test.ts` verrouille les deux (rejeu du scheduler
+avec de faux kits, sans Web Audio) — si son instantané de référence tombe, la question
+n'est pas « comment le mettre à jour » mais « est-ce que je viens de rendre les
+anciens exports non reproductibles ? ».
 
 **Le format d'état v2 (`src/model/types.ts`) est le contrat central.** Stores, moteur,
 sérialisation, presets et undo/redo parlent tous cette forme. Elle est compatible avec
