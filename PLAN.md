@@ -1137,6 +1137,137 @@ Quatre retours sur des features livrées la veille, plus trois sur le Mode Live 
 
 ---
 
+## Audit de design complet — 2026-08-15
+
+Demandé par Yann (« j'ai des doutes sur le visuel et sur l'ergonomie »).
+Méthode : lecture du code + application réellement lancée et mesurée au
+script Playwright (1280×900 desktop, 390×844 et 360×780 tactile, 844×390
+paysage pour le Live), captures de chaque mode et de chaque onglet, tous
+les dépliables ouverts pour observer la densité réelle. Aucune erreur
+console sur aucun écran. **Constats classés par gravité, rien n'est encore
+codé** — c'est un état des lieux, pas un journal de travaux.
+
+### Constat de fond
+
+Trois modes, trois langages visuels — et **c'est le Mode Live qui est le
+plus abouti**. Fond sombre, LCD verte, gros pavés tactiles, chaque zone a
+un rôle lisible : ça ressemble à un instrument. L'Atelier, lui, ressemble à
+la boîte de dialogue *Propriétés d'affichage* : des rangées de curseurs
+étiquetés, des `<fieldset>`, des menus déroulants. Le design XP n'est pas
+le problème et ne doit pas bouger — le problème est qu'on en a repris la
+grammaire des **panneaux de configuration** pour l'Atelier, alors que le
+Mode Live a repris celle des **lecteurs multimédia** de la même époque
+(Winamp), qui est la bonne référence pour un instrument. XP avait les deux
+grammaires. L'Atelier gagnerait à emprunter à la seconde sans rien perdre
+de l'identité Luna.
+
+### A. Ergonomie — structurel
+
+1. **Le chrome mange l'écran avant le premier pas jouable.** Mesuré : la
+   première case du séquenceur commence à 538px sur un 390×844, soit
+   **64 % du premier écran occupé par de la chrome** ; 56 % sur
+   1280×900. Quatre barres empilées avant le moindre contenu : `nav.switcher`
+   (3 modes, alors que le splash vient de poser ce choix), la menubar
+   Fichier/Édition/Affichage/Aide, la `.sticky-bar` (transport + 2 lignes
+   d'aide + onglets) et la `.preset-row`. La barre sticky à elle seule fait
+   130px = **15 % du viewport, en permanence, sur les trois onglets**. Deux
+   gros contributeurs évitables : le paragraphe explicatif de la Banque de
+   séquences (4 lignes pleines sur mobile, affiché en permanence) et le tip
+   💡 production — le rappel clavier, lui, est déjà masqué en
+   `@media (pointer: coarse)`.
+2. **`XpSlider` n'a aucune largeur de piste sensée : de 40px à 818px sur la
+   même page.** Mesuré sur les 62 curseurs de l'onglet Rythme déplié —
+   mobile min 40px / max 228px, desktop min 58px / max 818px. Deux causes
+   opposées qui se croisent : `.two-col { minmax(148px, 1fr) }` laisse
+   148 − 72 (label) − 36 (valeur) − gaps = **40px de piste** (Swing, Traîne,
+   Rafales, Ghost notes, Vélocité, Intensité du fill) ; à l'inverse, un
+   curseur seul dans un fieldset de ligne reçoit **804px de piste pour un
+   « Pas » qui va de 1 à 32** (25px par cran). 40px pour un 0-100 % : chaque
+   pixel vaut 2,5 %, le réglage fin est impossible en mode rapide. C'est le
+   défaut le plus visible, le plus mesurable, et le moins cher à corriger —
+   un seul fichier pour 62 curseurs.
+3. **Les 15 dépliables sont à la fois le seul chemin d'accès et la plus
+   petite cible de la page.** `.group-toggle` = **61×17px**, ×15 sur le seul
+   onglet Rythme (3 groupes × 5 lignes), ~19 sur Synthé. C'est la navigation
+   principale de l'Atelier depuis la passe « tout replié par défaut », en
+   cible tactile de 17px de haut. Dans le même registre : `.mute` 29×18px,
+   `.wbtn` 22×22px, la barre d'outils 19px. **184 cibles interactives sous
+   32px** au total. À rapprocher du diagnostic ergonomie du Live déjà
+   retenu (« tout ce qui est interactif en live reste large ») : la règle
+   n'a jamais été appliquée à l'Atelier.
+4. **Repliés, les 15 fieldsets forment un mur de rayures identiques.** Un
+   `<fieldset>` vide dessine un rectangle pleine largeur pour ne contenir
+   qu'un mot de `<legend>`. Entre deux lignes de batterie, on traverse 3
+   bandes vides ; les 40px de cases coloriées se perdent au milieu. C'est
+   la cause visuelle directe de « l'Atelier a l'air d'un formulaire ».
+5. **La grille ne dit rien du temps musical.** Aucun repère : pas d'accent
+   tous les 4 pas, pas de numérotation, pas de séparation de mesure. Comme
+   les subdivisions diffèrent par ligne (kick 4, snare 4, hat 3 par défaut),
+   **les colonnes ne s'alignent pas verticalement** d'une ligne à l'autre —
+   c'est le principe polyrythmique assumé du projet, mais sans repère commun
+   on ne peut pas lire la relation entre les lignes. Manque le plus coûteux
+   musicalement ; la vue circulaire répond bien à ça, la vue linéaire pas
+   du tout.
+6. **Mêmes commandes à trois endroits.** Sauver/Charger : menu Fichier
+   *et* boutons `.preset-row`. Vue linéaire/circulaire : menu Affichage
+   *et* bouton `.preset-row`. Partager : menu Fichier *et* barre d'outils.
+   Undo/redo : menu Édition *et* barre d'outils *et* Ctrl+Z. Trois surfaces
+   à maintenir, et de la hauteur consommée au point le plus cher de la page
+   (cf. A1).
+
+### B. Visuel — défauts précis
+
+1. **6 boîtes de valeur débordent sur deux lignes** (colonne figée à 36px) :
+   « 120 BPM » — visible dès le premier écran — et « 20000 Hz » sur les
+   5 lignes de batterie.
+2. **12 libellés tronqués, y compris quand 800px de piste restent vides à
+   côté** : « Coups euclid… », « Filtre passe-… », « Vélocité aléa… »,
+   « Volume géné… », « Rafales spon… », « Taux de rem… », « Feedback
+   de… ». Colonne de label figée à 72px quelle que soit la largeur
+   disponible.
+3. **Cases de proportions extrêmes.** À 4 pas sur 980px : 230×34px, des
+   barres écrasées. La hauteur est fixe (34px), la largeur n'est bornée par
+   rien.
+4. **Vue circulaire : 340px au centre d'une fenêtre de 980px**
+   (`.circle-holder { max-width: 340px }`), entourée de beige vide sur
+   530px de haut. Bien calibré sur mobile, perdu sur desktop. À noter
+   aussi : la limitation volontaire à kick/snare/hat (PLAN §6) est un choix
+   documenté, mais le titre de la fenêtre annonce toujours « Kick / Snare /
+   Hat / Clap / Shaker » et rien n'indique que 2 lignes sur 5 deviennent
+   inéditables en basculant de vue.
+5. **L'anneau synthé du transport est quasi invisible** : couleurs synthé
+   délavées sur un canvas de 50px, fond beige — un halo rose pâle, alors
+   que l'anneau batterie juste à côté est franc.
+6. **Splash et Mode jeu : contenu collé en haut, ~70 % de vide.** Rien
+   n'est centré verticalement nulle part. Le fond Bliss n'a par ailleurs
+   ses collines qu'à 108-112 % de hauteur : sur un écran haut on ne voit
+   qu'un dégradé bleu-vert, jamais la colline qui fait l'identité du fond.
+7. **La menubar se casse en deux lignes sur mobile**, séparant ↶ de ↷.
+8. **Les cases synthé n'affichent qu'un point** : une ligne vide = 4
+   rectangles gris avec un « · » centré, qui ont l'air désactivés à côté
+   des cases batterie franchement colorées.
+9. **Le canvas `FilterCurve` flotte à droite du header de ligne**, ses
+   graduations « 100 / 1k / 10k » chevauchant la courbe, avec un grand vide
+   à sa gauche.
+
+### C. Priorités proposées
+
+**Palier 1 — fort impact, coût faible, zéro risque pour l'identité XP :**
+A2 (plancher/plafond de piste + colonnes label/valeur élastiques dans
+`XpSlider` — corrige du même coup B1 et B2), A1 (dégonfler la chrome :
+explication Banque derrière un ⓘ, tip production repliable, fusion
+nav+menubar), A3 (cibles tactiles des dépliables).
+
+**Palier 2 — demande un vrai parti pris :** A5 (repères de mesure dans la
+grille linéaire), A4 (alléger les fieldsets repliés), A6 (dédoublonner les
+commandes).
+
+**Palier 3 — finitions :** B6 (centrage vertical splash/jeu, collines
+Bliss), B4 (cercle desktop), B5 (anneau synthé), B8 (cases synthé), B3,
+B7, B9.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
