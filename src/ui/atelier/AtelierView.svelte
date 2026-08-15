@@ -11,7 +11,7 @@
   import TransportRings from '../sequencer/TransportRings.svelte';
   import GeneralSequencer from '../sequencer/GeneralSequencer.svelte';
   import SynthModule from './SynthModule.svelte';
-  import PresetNotes from './PresetNotes.svelte';
+  import RhythmAnalyser from './RhythmAnalyser.svelte';
   import SequenceBank from './SequenceBank.svelte';
   import { presetToState } from '../../model/presetAdapter';
   import { sequenceBank } from '../../stores/bank.svelte';
@@ -20,7 +20,7 @@
   import ToolBar from './ToolBar.svelte';
   import { history } from '../../stores/history.svelte';
   import { scheduleAutosave, hasAutosave, restoreAutosave } from '../../stores/share';
-  import { findClosestPreset } from '../../engine/similarity';
+  import { rankPresets, type ClosestMatch } from '../../engine/similarity';
   import { playSystemSound } from '../xp/systemSounds';
 
   // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
@@ -59,8 +59,14 @@
   // Débouncé, pas throttlé : un throttle à early-return abandonnerait la
   // dernière modification d'une rafale (ex. le chargement d'un preset juste
   // après un clic) et laisserait un résultat périmé à l'écran.
-  let closest = $state<{ label: string; score: number } | null>(null);
+  // Alimente l'analyseur de l'onglet Production. Calculé UNIQUEMENT quand cet
+  // onglet est ouvert : c'est 34 presets x 6 permutations, et depuis que la
+  // mention a quitté le bandeau sticky plus personne d'autre ne le lit — le
+  // faire tourner toutes les 300ms pendant qu'on tape sur la grille serait du
+  // travail jeté.
+  let ranking = $state<ClosestMatch[]>([]);
   $effect(() => {
+    if (activeTab !== 'effets') return;
     void pattern.state.rows.kick.pattern;
     void pattern.state.rows.snare.pattern;
     void pattern.state.rows.hat.pattern;
@@ -68,10 +74,7 @@
     void pattern.state.rows.snare.subdiv;
     void pattern.state.rows.hat.subdiv;
     const snapshot = pattern.snapshot();
-    const t = setTimeout(() => {
-      const m = findClosestPreset(snapshot);
-      closest = m ? { label: m.preset.label, score: m.score } : null;
-    }, 300);
+    const t = setTimeout(() => (ranking = rankPresets(snapshot)), 300);
     return () => clearTimeout(t);
   });
 
@@ -193,14 +196,12 @@
 
   // Chargements déclenchés depuis le menu « Fichier » de la barre XP (audit
   // A6). L'état reste ici : `ToolBar` ne fait que déclencher, il n'écrit
-  // jamais dans `pattern`. Le morceau courant est mémorisé pour que l'onglet
-  // Production puisse afficher ses textes historiques — c'est leur nouveau
-  // domicile, ils ne tiennent pas dans un menu.
-  let currentPreset = $state<SongPresetData | null>(null);
+  // jamais dans `pattern`. Rien n'est mémorisé sur le morceau chargé —
+  // l'onglet Production n'affiche plus le morceau CHARGÉ mais le plus PROCHE,
+  // qui se recalcule tout seul depuis le pattern.
   function loadPreset(p: SongPresetData, keepSynthAndTempo: boolean) {
     history.push();
     pattern.replace(presetToState(p, keepSynthAndTempo ? pattern.snapshot() : undefined, keepSynthAndTempo));
-    currentPreset = p;
     refreshFx();
   }
   function loadBankEntry(id: string) {
@@ -353,12 +354,11 @@
       <div class="spacer"></div>
       <TransportRings state={st} {playhead} {synthPlayhead} />
     </div>
-    <p class="hint desktop-hint">
-      Espace : lecture/stop · B : break · Ctrl+Z : annuler
-      {#if closest}
-        — le plus proche : <strong class="closest">{closest.label}</strong> ({Math.round(closest.score * 100)} %)
-      {/if}
-    </p>
+    <!-- « Le plus proche » a quitté ce bandeau pour l'analyseur de l'onglet
+         Production (idée de Yann) : ici il était masqué sur mobile faute de
+         place, donc invisible pour la moitié des usages, et réduit à un nom
+         plus un pourcentage — sans le contexte qui lui donnait un intérêt. -->
+    <p class="hint desktop-hint">Espace : lecture/stop · B : break · Ctrl+Z : annuler</p>
     <!-- Le conseil prenait deux à trois lignes pleines dans la barre sticky,
          donc en permanence sur les trois onglets (audit A1). Ramené à UNE
          ligne tronquée, dépliable au tap : il reste visible et découvrable
@@ -515,8 +515,8 @@
         <SequenceBank />
       </XpWindow>
 
-      <XpWindow title="Le morceau chargé" icon="📖" accent="teal">
-        <PresetNotes preset={currentPreset} />
+      <XpWindow title="Analyseur de rythme" icon="🔍" accent="teal">
+        <RhythmAnalyser state={st} {ranking} />
       </XpWindow>
     {/if}
   </div>
@@ -572,9 +572,6 @@
     .desktop-hint {
       display: none;
     }
-  }
-  .closest {
-    color: var(--xp-accent-amber);
   }
   .restore {
     font-size: 12px;

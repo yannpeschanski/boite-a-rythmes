@@ -1083,13 +1083,13 @@ détail des constats plus bas dans ce document) :
     juste sous la barre sticky = +46px au-dessus de la ligne de
     flottaison ; sous le séquenceur = zéro coût sur les deux. Ce n'est pas
     un contrôle qu'on chevauche comme Lecture ou Break.
-  - **Textes pédagogiques du morceau** : nouveau `PresetNotes.svelte` dans
-    l'onglet Production. C'est la raison pour laquelle le choix du morceau
-    n'a pas été *seulement* basculé en menu : un menu porte 34 noms, pas
-    ~880 lignes de contenu pédagogique, et ce contenu est un atout du
-    projet. Partage retenu : le menu CHARGE (gratuit en hauteur), l'onglet
-    RACONTE (a besoin de place). Différence assumée : on lisait le texte
-    en SÉLECTIONNANT, on le lit maintenant APRÈS avoir chargé.
+  - **Textes pédagogiques du morceau** : d'abord un `PresetNotes.svelte`
+    montrant le morceau CHARGÉ, remplacé le jour même par l'analyseur
+    ci-dessous. C'est la raison pour laquelle le choix du morceau n'a pas
+    été *seulement* basculé en menu : un menu porte 34 noms, pas ~880
+    lignes de contenu pédagogique, et ce contenu est un atout du projet.
+    Partage retenu : le menu CHARGE (gratuit en hauteur), l'onglet RACONTE
+    (a besoin de place).
   - **Gestion de la banque** : dans l'onglet Production, en pleine
     largeur — un CRUD (enregistrer/renommer/supprimer) tient mal dans un
     menu. Le *chargement*, lui, est dans Fichier : le garder aux deux
@@ -1097,6 +1097,36 @@ détail des constats plus bas dans ce document) :
   - **Onglet « Effets » renommé « Production »** : il ne contient plus
     seulement les effets de bus mais tout ce qui n'est pas l'édition des
     notes.
+
+- ✅ **Analyseur de rythme** (2026-08-15, idée de Yann : « un analyseur de
+  son à la place de la section morceau chargé : il indique quel morceau se
+  rapproche le plus et explique le contexte »). Remplace `PresetNotes` —
+  et c'est mieux pour deux raisons : « Le morceau chargé » n'avait rien à
+  dire tant qu'on n'en avait pas chargé un, et devenait carrément FAUX dès
+  qu'on modifiait le pattern (il continuait d'afficher l'histoire d'un
+  morceau qu'on ne jouait plus). Le plus proche, lui, a toujours quelque
+  chose à raconter, y compris sur un rythme parti de rien.
+  - `similarity.ts` gagne `rankPresets()` (classement complet) à côté de
+    `findClosestPreset()`, qui en devient un simple appelant. Un seul
+    parcours des 34 presets × 6 permutations, en gardant le meilleur score
+    PAR preset — sinon un même morceau reviendrait plusieurs fois dans le
+    classement, une fois par permutation.
+  - Le panneau montre : le verdict avec son score, les textes historiques,
+    **les deux suivants avec leurs scores** (62 % contre 58 %, ce n'est pas
+    la même chose que 88 % contre 41 % — n'afficher que le premier
+    laisserait croire à une certitude qu'on n'a pas), une fiche technique
+    du rythme (tempo, signature, lignes qui sonnent, swing), les écarts
+    actionnables avec le style (tempo/swing, seuils larges pour ne
+    signaler que ce qui s'entend), et la **mention honnête** que le score
+    ne porte que sur kick/snare/hat.
+  - **Libère la ligne « le plus proche » du bandeau sticky**, où elle était
+    masquée sur mobile (`@media (pointer: coarse)`) : l'information devient
+    accessible au doigt, ce qu'elle n'était pas, et gagne le contexte qui
+    lui donnait un intérêt.
+  - Effet de bord : le calcul ne tourne plus QUE quand l'onglet Production
+    est ouvert. Avant, 34 presets × 6 permutations toutes les 300ms
+    pendant qu'on tapait sur la grille, pour alimenter une ligne de texte
+    invisible sur mobile.
 
   Résultat mesuré : page par défaut **1 369px → 1 203px** sur téléphone
   (1,6 → 1,4 écran), chrome du premier écran **32 %** sur mobile ET sur
