@@ -12,20 +12,17 @@
   import { SYNTH_VOICE_PRESETS } from '../../model/presets/voices';
   import { translatePadArpToMelody } from '../../engine/generators';
   import XpSlider from '../xp/XpSlider.svelte';
-  import FilterCurve from './FilterCurve.svelte';
 
   let {
     name,
     label,
     playheadCol = -1,
     onChanged,
-    onTest,
   }: {
     name: SynthRowName;
     label: string;
     playheadCol?: number;
     onChanged?: () => void;
-    onTest?: (name: SynthRowName) => void;
   } = $props();
 
   const row = $derived(pattern.state.synthRows[name]);
@@ -33,13 +30,6 @@
   const isPad = $derived(name === 'pad');
   const sg = $derived(pattern.state.synthGlobal);
   const voicePresets = $derived(SYNTH_VOICE_PRESETS[name] ?? []);
-  // Couleurs d'aperçu par ligne — mêmes teintes que SYNTH_WAVE_COLORS de
-  // l'original (boite-a-rythme-69.html l. 2617).
-  const PREVIEW_COLOR: Record<SynthRowName, string> = {
-    bass: '#6a7bff',
-    pad: '#b06bff',
-    melody: '#ff6bd6',
-  };
 
   let openGroups = $state({
     sequence: false,
@@ -171,8 +161,6 @@
       <option value="">— Voix…</option>
       {#each voicePresets as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
     </select>
-    <button class="mini test" onclick={() => onTest?.(name)} title="Joue la voix actuelle de cette ligne">▶ Tester</button>
-    <div class="preview"><FilterCurve voice={row.voice} color={PREVIEW_COLOR[name]} /></div>
   </div>
 
   {#if packetized}
@@ -397,13 +385,6 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 4px;
-  }
-  .row-head .mini.test {
-    font-weight: 700;
-  }
-  .preview {
-    width: 130px;
-    margin-left: auto;
   }
   .row-label {
     font-weight: 700;

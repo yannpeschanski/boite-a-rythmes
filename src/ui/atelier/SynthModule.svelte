@@ -15,11 +15,9 @@
   let {
     playhead,
     onFxChanged,
-    onTest,
   }: {
     playhead: Record<SynthRowName, number>;
     onFxChanged?: () => void;
-    onTest?: (name: SynthRowName) => void;
   } = $props();
 
   const st = $derived(pattern.state);
@@ -74,7 +72,6 @@
         {label}
         playheadCol={playhead[name as SynthRowName]}
         onChanged={onFxChanged}
-        {onTest}
       />
     </div>
   {/each}
