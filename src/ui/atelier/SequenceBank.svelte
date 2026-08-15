@@ -107,11 +107,20 @@
     color: var(--xp-muted);
     margin: 4px 0;
   }
+  /* `flex-wrap` manquant : le select et les quatre boutons ne tiennent pas
+     sur une ligne sous 390px, et les derniers SORTAIENT du cadre — 17px de
+     débordement à 360px, jusqu'à 57px à 320px (repéré sur une capture de
+     Yann ; le balayage automatique ne l'avait pas vu parce qu'il testait le
+     débordement du viewport, pas celui des conteneurs). */
   .picker {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     align-items: center;
     margin-bottom: 6px;
+  }
+  .picker select {
+    flex: 1 1 160px;
   }
   select {
     flex: 1;

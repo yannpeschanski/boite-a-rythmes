@@ -48,14 +48,20 @@
 {/if}
 
 <style>
+  /* Même défaut que dans SequenceBank : sans `flex-wrap`, le bouton sortait
+     du cadre sous 330px. `min-width: 0` sur le select — un enfant flex a
+     `min-width: auto` et refuse de descendre sous la largeur de sa plus
+     longue option, qui est ici un titre de morceau entier. */
   .picker {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     align-items: center;
     margin-bottom: 6px;
   }
   select {
-    flex: 1;
+    flex: 1 1 150px;
+    min-width: 0;
     font-family: var(--xp-font);
     font-size: 13px;
     padding: 3px;
