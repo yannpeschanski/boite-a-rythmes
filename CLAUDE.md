@@ -61,3 +61,42 @@ Un `git push` sur `main` déclenche : types, tests, les deux builds, puis déplo
 sur Vercel **seulement si tout passe**. Une pull request lance les tests sans
 déployer — c'est la voie sûre pour une modification à valider avant mise en ligne.
 Site : <https://boite-a-rythmes.vercel.app>
+
+## Conventions de session (Claude Code)
+
+**Piège git à chaque nouvelle session.** Le squash-merge d'une PR crée un SHA
+différent sur `main` — la branche de travail locale garde l'ancien historique
+(déjà mergé) en plus des nouveaux commits. Avant tout nouveau commit :
+`git fetch origin main && git checkout -B <branche-de-travail> origin/main`,
+puis cherry-pick/rebase le travail en cours dessus. Un `push --force-with-lease`
+qui en résulte est attendu, pas une erreur.
+
+**Workflow PR, sans redemander permission à chaque fois (politique actée par
+Yann) :** ouvrir la PR → `subscribe_pr_activity` → attendre la CI (poll via
+les tools GitHub, jamais de `sleep`) → merger en squash si vert → `unsubscribe_pr_activity`.
+
+**Avant chaque commit :** `npm run check` (0 erreur), `npm test`, `npm run build`
++ `npm run build:singlefile`. Pour un changement d'UI : lancer le serveur de dev
+et vérifier visuellement au moins une fois avec Playwright (headless, Chromium à
+`/opt/pw-browsers/chromium`, driver global à `/opt/node22/lib/node_modules/playwright`)
+avant de considérer le changement terminé.
+
+**Toujours mettre à jour `PLAN.md`** avec un ✅ détaillé (fichiers touchés,
+rationale, écarts de portée assumés) à chaque feature livrée — c'est la mémoire
+du projet d'une session à l'autre, à lire en premier en reprenant le travail.
+
+**Style de travail avec Yann :** instructions courtes (« go », « pars sur… »),
+il attend qu'on avance sans reposer trop de questions. Exceptions : demande
+explicite d'analyser avant de coder, ou fourche à choix multiples sans défaut
+évident (poser la question, recommandation en premier). Quand une demande a une
+portée ambiguë ou plus grosse que prévu, présenter un périmètre scopé et le
+faire confirmer avant de plonger — mais une fois qu'il a dit d'arrêter de
+demander, arrêter.
+
+**Piège Svelte 5 :** `structuredClone()` casse sur un proxy `$state` — utiliser
+`$state.snapshot()`.
+
+**Avant d'étendre un type central** (ex. `DrumRowName`, `SynthRowName`) qui
+touche plusieurs sous-systèmes, faire cartographier tous les points de contact
+(agent Explore ou recherche exhaustive) avant de coder — la surface réelle
+dépasse presque toujours l'estimation initiale.
