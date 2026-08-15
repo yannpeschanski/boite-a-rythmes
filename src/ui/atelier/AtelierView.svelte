@@ -367,6 +367,14 @@
           <StepCircle rows={st.rows} {playhead} onCellTap={tapCell} onCellRoll={rollCell} />
         </div>
       {:else}
+        <!-- Règle de temps (audit A5) : affichée UNE fois en tête plutôt que
+             sur chaque ligne — les repères eux-mêmes sont dessinés sur chaque
+             grille par `.beat-grid`, ici on ne fait que les nommer. Elle
+             s'aligne naturellement sur les grilles : `.cells` et cette règle
+             occupent la même largeur dans le corps de la fenêtre. -->
+        <div class="beat-ruler" aria-hidden="true">
+          <span>1</span><span>2</span><span>3</span><span>4</span>
+        </div>
         <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
         <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}

@@ -24,3 +24,69 @@ body {
 button {
   font-family: inherit;
 }
+
+/* ---------------------------------------------------------------------------
+   Repères de temps sur la grille linéaire (audit A5).
+
+   Le problème : les lignes n'ont pas le même nombre de pas (kick 4, snare 4,
+   hat 3 par défaut), donc leurs colonnes ne s'alignent pas verticalement. Sans
+   repère commun, on ne peut pas lire la relation rythmique entre les lignes —
+   c'était le manque le plus coûteux musicalement de l'audit.
+
+   Ce qui rend la solution simple : `stepDuration = barDuration / subdiv`
+   (engine/groove.ts), donc **toute ligne couvre exactement une mesure**, quel
+   que soit son nombre de pas. Une mesure vaut 4 temps. Les repères tombent
+   donc à 0/25/50/75 % de la LARGEUR de la ligne pour toutes les lignes, et
+   s'alignent parfaitement entre elles même quand les cases, elles, ne
+   s'alignent pas. C'est exactement ce qui rend la polyrythmie lisible : on
+   voit contre quoi chaque case tombe.
+
+   Dessiné par-dessus les cases (`z-index`, `pointer-events: none`) plutôt
+   qu'en fond, parce que les cases sont opaques. Deux couches : les mesures
+   (trait plus marqué) au-dessus des temps.
+
+   `--beats` / `--bars` sont posés par le composant : la batterie couvre
+   1 mesure et 4 temps ; une ligne synthé couvre `cycleBars` mesures, donc
+   `4 × cycleBars` temps.
+
+   Utilitaire global plutôt que dupliqué dans DrumRowView et SynthRowView :
+   le CSS de Svelte est scopé par composant, et le projet souffre déjà d'un
+   `.xp-btn` recopié dans six fichiers (audit C6). */
+.beat-grid {
+  position: relative;
+}
+.beat-grid::after {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+  pointer-events: none;
+  z-index: 3;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(0, 0, 40, 0.42) 0 1.5px,
+      transparent 1.5px calc(100% / var(--bars, 1))
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(0, 0, 40, 0.18) 0 1px,
+      transparent 1px calc(100% / var(--beats, 4))
+    );
+}
+
+/* Règle de temps : la même géométrie que ci-dessus, mais numérotée, affichée
+   une seule fois au-dessus des lignes plutôt que sur chacune. */
+.beat-ruler {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 3px;
+  font-family: var(--xp-mono);
+  font-size: 9px;
+  color: var(--xp-muted);
+  user-select: none;
+}
+.beat-ruler span {
+  border-left: 1px solid var(--xp-line);
+  padding-left: 3px;
+  line-height: 1.2;
+}

@@ -95,7 +95,11 @@
       onclick={() => (row.muted = !row.muted)}>{row.muted ? '🔇' : '🔊'}</button
     >
   </div>
-  <div class="cells" style:--cols={row.subdiv}>
+  <!-- `beat-grid` (audit A5, styles dans styles/global.css) : une ligne drum
+       couvre toujours exactement une mesure de 4 temps, d'où --bars:1 et
+       --beats:4 — les repères tombent aux mêmes x sur toutes les lignes,
+       même quand leurs cases ne s'alignent pas. -->
+  <div class="cells beat-grid" style:--cols={row.subdiv} style:--bars="1" style:--beats="4">
     {#each { length: row.subdiv } as _, col (col)}
       {@const state = row.pattern[col]}
       {@const roll = row.rolls[col]}
@@ -113,17 +117,25 @@
       </button>
     {/each}
   </div>
-  <!-- Un icône par groupe plutôt qu'un seul dépliable général (retour de
-       Yann) : chaque encart se déploie indépendamment. Un paramètre par
-       ligne à l'intérieur (pas de pression d'espace une fois replié par
-       défaut). -->
-  <fieldset data-group="drum-sequence">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.sequence = !openGroups.sequence)}>
-        {openGroups.sequence ? '▾' : '▸'} Séquence
-      </button>
-    </legend>
-    {#if openGroups.sequence}
+  <!-- Chaque groupe se déploie toujours indépendamment (retour de Yann), mais
+       les trois `<fieldset>` empilés sont devenus UNE rangée de pastilles
+       (audit A4) : replié, un fieldset dessinait quand même un rectangle
+       pleine largeur pour ne contenir qu'un mot de légende — trois bandes
+       vides par ligne, quinze sur l'onglet Rythme, au milieu desquelles les
+       cases du séquenceur se perdaient. Une rangée au lieu de trois bandes,
+       et le panneau ne prend de la place que lorsqu'il est réellement
+       ouvert. `data-group` reste sur le conteneur des curseurs : l'aide à la
+       production le retrouve par `closest()` exactement comme avant. -->
+  <div class="group-bar">
+    <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
+      onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
+    <button class="chip" class:on={openGroups.timbre} aria-expanded={openGroups.timbre}
+      onclick={() => (openGroups.timbre = !openGroups.timbre)}>Timbre</button>
+    <button class="chip" class:on={openGroups.space} aria-expanded={openGroups.space}
+      onclick={() => (openGroups.space = !openGroups.space)}>Filtre &amp; espace</button>
+  </div>
+  {#if openGroups.sequence}
+    <div class="group-panel" data-group="drum-sequence">
       <XpSlider label="Pas" min={1} max={32} bind:value={row.subdiv} />
       <XpSlider label="Décalage" min={-50} max={50} unit="%" bind:value={row.shiftPct} />
       <XpSlider label="Volume" min={0} max={100} unit="%"
@@ -139,28 +151,18 @@
           🔵 Répartir
         </button>
       </div>
-    {/if}
-  </fieldset>
-  <fieldset data-group="drum-timbre">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.timbre = !openGroups.timbre)}>
-        {openGroups.timbre ? '▾' : '▸'} Timbre
-      </button>
-    </legend>
-    {#if openGroups.timbre}
+    </div>
+  {/if}
+  {#if openGroups.timbre}
+    <div class="group-panel" data-group="drum-timbre">
       <XpSlider label="Pitch" min={-24} max={24} unit=" ½t" bind:value={row.pitch} />
       <XpSlider label="Attaque" min={0} max={100} bind:value={row.attack} />
       <XpSlider label="Decay" min={-50} max={50} bind:value={row.decay} />
       <XpSlider label="Tone" min={-100} max={100} bind:value={row.tone} />
-    {/if}
-  </fieldset>
-  <fieldset data-group="drum-filtre">
-    <legend>
-      <button class="group-toggle" onclick={() => (openGroups.space = !openGroups.space)}>
-        {openGroups.space ? '▾' : '▸'} Filtre & espace
-      </button>
-    </legend>
-    {#if openGroups.space}
+    </div>
+  {/if}
+  {#if openGroups.space}
+    <div class="group-panel" data-group="drum-filtre">
       <XpSlider label="Filtre passe-bas" min={200} max={20000} step={100} unit=" Hz"
         bind:value={row.filterCutoff} />
       <XpSlider label="Réverbe" min={0} max={100} unit="%"
@@ -169,8 +171,8 @@
       <XpSlider label="Delay" min={0} max={100} unit="%"
         value={Math.round(row.delaySend * 100)}
         onchange={(v) => { row.delaySend = v / 100; onFxChanged?.(); }} />
-    {/if}
-  </fieldset>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -321,30 +323,40 @@
     border-radius: 2px;
     padding: 0 2px;
   }
-  fieldset {
-    border: 1px solid var(--xp-line);
-    margin: 5px 0;
-    padding: 0 6px 4px;
+  /* Rangée de pastilles (audit A4) : remplace trois `<fieldset>` repliés
+     pleine largeur. Cible tactile conservée à 28px (audit A3). */
+  .group-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 5px 0 0;
   }
-  legend {
-    padding: 0;
-  }
-  /* Cible tactile (audit A3) : ces dépliables sont LE chemin d'accès à tous
-     les réglages depuis que tout est replié par défaut — et ils faisaient
-     61×17px, la plus petite cible de la page. Passés à ~28px de haut
-     (recommandation WCAG 2.5.8 : 24px minimum) via le remplissage vertical,
-     sans grossir le texte : le repère visuel ne change pas, seule la zone
-     de tap s'élargit. `padding-right` pour que le doigt puisse viser à côté
-     du libellé sans manquer. */
-  .group-toggle {
-    background: none;
-    border: none;
-    color: var(--xp-accent-amber);
-    font-weight: 700;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 7px 14px 7px 0;
+  .chip {
     font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    min-height: 28px;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--xp-accent-amber) 40%, var(--xp-line));
+    border-radius: 13px;
+    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    color: var(--xp-accent-amber);
+    cursor: pointer;
+    box-shadow: var(--xp-bevel-out);
+  }
+  .chip.on {
+    background: var(--xp-accent-amber);
+    border-color: var(--xp-accent-amber);
+    color: #fff;
+    box-shadow: var(--xp-bevel-in);
+  }
+  .group-panel {
+    border: 1px solid var(--xp-line);
+    border-top: 2px solid var(--xp-accent-amber);
+    background: color-mix(in srgb, var(--xp-accent-amber) 6%, transparent);
+    margin: 4px 0 0;
+    padding: 5px 7px;
   }
   /* Le bouton « 🔵 Répartir » portait `class="xp-btn tiny"` alors que ce
      fichier ne définissait NI l'un NI l'autre : le style de `.xp-btn` est

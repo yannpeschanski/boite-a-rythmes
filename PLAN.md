@@ -1073,8 +1073,38 @@ détail des constats plus bas dans ce document) :
   visuel, à trancher.
 - ⚠️ **A6 — dédoublonner les commandes** entre menus, barre d'outils et
   bloc preset. À trancher : laquelle des trois surfaces garde quoi.
-- **A4** (encarts repliés qui forment un mur de rayures), **B3 · B4 · B5 ·
-  B6 · B7 · B8 · B9** (finitions) — voir le palier 3 de l'audit.
+- ✅ **A4 — le mur d'encarts repliés** (2026-08-15). Replié, un
+  `<fieldset>` dessinait quand même un rectangle pleine largeur pour ne
+  contenir qu'un mot de `<legend>` : trois bandes vides par ligne de
+  batterie (quinze sur l'onglet Rythme), cinq à sept par ligne synthé
+  (une vingtaine sur l'onglet Synthé). Remplacés par **une rangée de
+  pastilles** par ligne, le panneau n'occupant de la place que lorsqu'il
+  est réellement ouvert. `data-group` reste sur le conteneur des
+  curseurs — l'aide à la production le retrouve par `closest()` comme
+  avant (vérifié). Accent ambre côté batterie, violet côté synthé, cible
+  tactile maintenue à 28px (A3).
+  **Hauteur de page par défaut : 2,1 → 1,6 écrans** sur téléphone
+  (1 751px → 1 369px) — les cinq lignes du séquenceur tiennent désormais
+  en un écran et demi au lieu de deux et des poussières.
+- ✅ **A5 — repères de temps dans la grille linéaire** (2026-08-15). Ce
+  qui rend la solution simple, et qui a été vérifié dans le moteur avant
+  de coder : `stepDuration = barDuration / subdiv` (`engine/groove.ts`),
+  donc **toute ligne couvre exactement une mesure**, quel que soit son
+  nombre de pas. Une mesure vaut 4 temps → les repères tombent à
+  0/25/50/75 % de la LARGEUR de chaque ligne, et s'alignent donc
+  parfaitement entre lignes **même quand les cases, elles, ne s'alignent
+  pas**. C'est précisément ce qui rend la polyrythmie lisible : on voit
+  contre quoi chaque case tombe. Plus une règle numérotée 1·2·3·4,
+  affichée une seule fois en tête plutôt que sur chaque ligne.
+  Utilitaire `.beat-grid` dans `styles/global.css` plutôt que dupliqué
+  dans les deux composants (le CSS Svelte est scopé, et le projet souffre
+  déjà d'un `.xp-btn` recopié six fois — audit C6). Lignes synthé :
+  `4 × cycleBars` temps, et repères **désactivés en affichage par
+  paquets** — un paquet commence à une fraction quelconque de la mesure,
+  les traits seraient déphasés, mieux vaut aucun repère qu'un repère qui
+  ment.
+- **B3 · B4 · B5 · B6 · B8 · B9** (finitions) — voir le palier 3 de
+  l'audit. B7 est fait (voir plus bas).
 - ❌ **Accessibilité** (promue depuis §4, audit C5) : `role="grid"`/
   `gridcell`, `aria-pressed`, un libellé par pas (« Kick, pas 5, actif,
   roll ×2 »), `prefers-reduced-motion` sur la loupe et les animations.

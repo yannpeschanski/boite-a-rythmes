@@ -127,6 +127,11 @@
     gap: 8px;
     margin-bottom: 5px;
   }
+  /* Le curseur prend une ligne entière quand la rangée est trop étroite
+     pour lui, au lieu de se tasser à côté des deux listes déroulantes. */
+  .harmony :global(.xp-slider-outer) {
+    flex: 1 1 200px;
+  }
   /* Cible l'enveloppe, devenue la racine de XpSlider depuis qu'il porte
      une requête de conteneur (audit A2). */
   .fill-bar :global(.xp-slider-outer) {

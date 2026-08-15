@@ -285,6 +285,16 @@
 <style>
   .xp-slider-outer {
     container-type: inline-size;
+    /* `min-width: 0` est indispensable depuis que la grille interne a des
+       colonnes bornées (104 + 110 + 52 + gaps ≈ 274px de min-content) : un
+       élément flex a `min-width: auto` par défaut, donc il REFUSE de
+       descendre sous sa taille de contenu et déborde son conteneur au lieu
+       de rétrécir. C'est ce qui a fait sortir « Nb d'accords » de la fenêtre
+       Synthé. Posé ici, sur la racine du composant, plutôt que répété dans
+       chaque parent flex qui accueille un curseur — sinon le prochain call
+       site oubliera. Une fois rétréci, la requête de conteneur ci-dessous
+       bascule proprement sur deux lignes. */
+    min-width: 0;
   }
   /* Proportions (audit A2/B1/B2 du 2026-08-15, rouvre la passe de densité
      §7.2.1). Trois bornes remplacent les trois largeurs figées :
