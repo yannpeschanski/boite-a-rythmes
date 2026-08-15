@@ -1128,6 +1128,34 @@ détail des constats plus bas dans ce document) :
     pendant qu'on tapait sur la grille, pour alimenter une ligne de texte
     invisible sur mobile.
 
+- ✅ **Aiguille de l'anneau au tempo** (retour de Yann : « la barre du
+  nouveau cercle devrait défiler au rythme du tempo »). Elle était calée sur
+  `pos`, l'INDEX du pas en cours : à 4 pas par mesure elle sautait par quarts
+  de tour. Elle interpole désormais entre deux pas.
+  Le repère de temps reste l'arrivée du pas lui-même, pas une horloge partie
+  de zéro : `pos` vient de `consumePlayhead()`, qui ne relâche un événement
+  que lorsque l'horloge AUDIO l'a atteint. On se recale donc sur le son à
+  chaque pas et on n'interpole qu'À L'INTÉRIEUR d'un pas — la dérive de
+  l'horloge murale sur ~0,5 s (120 BPM, 4 pas) ne se voit pas et repart de
+  zéro au pas suivant. Pas d'horloge parallèle au son, donc.
+  Piège rencontré : la prop du composant s'appelle `state`, ce qui entre en
+  conflit avec la rune `$state` (le compilateur lit `$state` comme
+  l'abonnement à un store nommé `state`). `needlePhase` est une variable
+  simple — `draw()` est appelé à la main depuis la boucle d'animation, rien
+  n'a besoin d'y réagir.
+  Vérifié en comptant les images distinctes du canvas pendant la lecture :
+  14/14 sur ~1,1 s (≈2 pas), là où un défilement pas-à-pas en aurait donné
+  2 ou 3.
+- ✅ **Bandeau des lignes synthé allégé** (retour de Yann : « un dessin de
+  filtre qui n'apporte pas grand chose, pas besoin de tester d'ailleurs »).
+  La courbe de filtre (`FilterCurve.svelte`, supprimé — plus aucun appelant)
+  et le bouton ▶ Tester quittent le bandeau ; il ne reste que le libellé, le
+  mute, le choix de voix et le 🎲. C'est le constat **B9** de l'audit (canvas
+  qui flottait à droite, graduations chevauchant la courbe, grand vide à sa
+  gauche), réglé par la suppression plutôt que par le replacement.
+  `AudioEngine.previewSynth()` n'a plus d'appelant côté UI : laissé en place,
+  c'est une capacité légitime du moteur, mais à noter comme non utilisée.
+
   Résultat mesuré : page par défaut **1 369px → 1 203px** sur téléphone
   (1,6 → 1,4 écran), chrome du premier écran **32 %** sur mobile ET sur
   desktop (288px, contre 292 avant), barre sticky inchangée à 122px,

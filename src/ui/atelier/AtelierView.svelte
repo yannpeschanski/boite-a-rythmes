@@ -488,8 +488,7 @@
         </div>
       </XpWindow>
     {:else if activeTab === 'synthe'}
-      <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx}
-        onTest={(n) => !playing && engine.previewSynth(n)} />
+      <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx} />
     {:else}
       <XpWindow title="Effets de bus & mix" icon="🔊" accent="teal">
         <div class="two-col" data-group="effets-bus">

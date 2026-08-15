@@ -27,6 +27,7 @@
   //     horloge globale. (`AudioEngine.currentBar` existe mais il est privé
   //     ET en avance sur le son — c'est la mesure en cours de PROGRAMMATION,
   //     lookahead compris ; l'utiliser ferait défiler le curseur en avance.)
+  import { onMount } from 'svelte';
   import type { DrumRowName, PatternStateV2, SynthRowName } from '../../model/types';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
@@ -189,7 +190,7 @@
     // bien qu'un trait qui balaie.
     const ref = list.find((b) => b.bars === totalBars);
     if (ref && ref.pos >= 0 && ref.steps.length > 0) {
-      const f = ref.pos / ref.steps.length;
+      const f = needlePhase;
       const a = f * Math.PI * 2 - Math.PI / 2;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
@@ -204,11 +205,70 @@
     }
   }
 
-  // Redessin réactif : suit les bandes (motifs, mutes, cycles) et le curseur.
+  // --- Aiguille continue -------------------------------------------------
+  // Retour de Yann : « la barre du nouveau cercle devrait défiler au rythme du
+  // tempo ». Elle était calée sur `pos`, l'INDEX du pas en cours : à 4 pas par
+  // mesure elle sautait donc par quarts de tour. On interpole entre deux pas.
+  //
+  // Le repère de temps est l'arrivée du pas lui-même, pas une horloge partie
+  // de zéro : `pos` est alimenté par `consumePlayhead()`, qui ne relâche un
+  // événement que lorsque l'horloge AUDIO l'a atteint. À chaque changement de
+  // pas on se recale donc sur le son, et on n'interpole qu'À L'INTÉRIEUR d'un
+  // pas — la dérive de l'horloge murale sur une durée aussi courte (~0,5 s à
+  // 120 BPM sur 4 pas) ne se voit pas, et elle est remise à zéro au pas
+  // suivant. C'est ce qui évite de réinventer une horloge parallèle au son.
+  // Variable simple, PAS une rune : `draw()` est appelé à la main depuis la
+  // boucle d'animation, rien n'a besoin de réagir à ce changement. Utiliser
+  // `$state` ici déclencherait en plus le conflit `$state` / prop `state`
+  // signalé par le compilateur (il lirait `$state` comme l'abonnement à un
+  // store nommé `state`).
+  let needlePhase = 0;
+  let raf = 0;
+  let lastStep = -1;
+  let lastStepAt = 0;
+  let dirty = true;
+
+  // Le motif a changé (édition, mute, cycle) : il faudra redessiner même à
+  // l'arrêt, où la boucle ne redessine pas à chaque frame.
   $effect(() => {
     void bands;
     void totalBars;
-    draw();
+    dirty = true;
+  });
+
+  onMount(() => {
+    const frame = () => {
+      raf = requestAnimationFrame(frame);
+      const ref = bands.find((b) => b.bars === totalBars);
+      const steps = ref?.steps.length ?? 0;
+      const pos = ref?.pos ?? -1;
+
+      if (pos < 0 || steps === 0) {
+        lastStep = -1;
+        if (dirty) {
+          dirty = false;
+          draw();
+        }
+        return;
+      }
+      if (pos !== lastStep) {
+        lastStep = pos;
+        lastStepAt = performance.now();
+      }
+      // Une mesure = 240/BPM secondes (engine/groove.ts), l'anneau en couvre
+      // `totalBars`.
+      const cycleMs = (240 / state.tempo) * totalBars * 1000;
+      const stepMs = cycleMs / steps;
+      // Borné à 1 : si l'événement suivant tarde (onglet en arrière-plan,
+      // stop), l'aiguille s'arrête sur son pas au lieu de déborder sur le
+      // suivant puis de reculer.
+      const within = Math.min(1, (performance.now() - lastStepAt) / stepMs);
+      needlePhase = (pos + within) / steps;
+      dirty = false;
+      draw();
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
   });
 
   const title = $derived(
