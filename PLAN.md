@@ -1266,6 +1266,82 @@ commandes).
 Bliss), B4 (cercle desktop), B5 (anneau synthé), B8 (cases synthé), B3,
 B7, B9.
 
+### C. Remise en cause de ce document (demandée par Yann le même jour)
+
+**C1 — Trois constats de l'audit sont le prix d'une décision cochée ✅.**
+La passe « Réduire tous les paramètres » (§7.2.1) a posé trois nombres :
+colonnes `72px/1fr/36px` au lieu de `110/1fr/56`, seuil des grilles
+`auto-fit` à 148px au lieu de 190-260. Ce sont exactement les valeurs
+présentes aujourd'hui dans `XpSlider.svelte` et `AtelierView.svelte`, et
+exactement les causes de A2, B1 et B2. Le marché passé : une colonne de
+curseurs utilisables (~166px de piste sur téléphone) contre deux colonnes
+serrées (40px). Et l'échange n'a pas produit ce qu'il visait — l'onglet
+Rythme déplié fait toujours 3,3 écrans. Suggestion : pas d'annuler la
+passe, mais que **✅ ne veuille pas dire définitif** — cette entrée mérite
+un ⚠️ « à rouvrir » avec son coût mesuré à côté.
+
+**C2 — Ce document n'enlève jamais rien.** Sur ~1 270 lignes, la
+quasi-totalité des entrées ajoutent ; presque aucune ne supprime, ne
+fusionne, ni ne rend son espace. A6 (mêmes commandes à trois endroits) et
+A1 (quatre barres avant la première case) en sont le résultat mécanique.
+Deux garde-fous : une section permanente **dette d'interface** au même
+rang que le backlog de features ; et la règle que **tout nouvel élément
+d'UI permanent nomme ce qu'il remplace, ou d'où vient sa place**.
+Corollaire : chaque ✅ gagnerait une ligne « ce que ça coûte à l'écran »,
+à côté du « pourquoi » déjà très bien tenu.
+
+**C3 — Une partie du backlog XP aggraverait A1.** §2 « Pousser le look XP
+plus loin » et §6 « Grosses » proposent barre des tâches + menu Démarrer,
+fenêtres déplaçables, curseurs souris XP, écran de boot, écran de veille :
+toutes du chrome en plus, alors que le chrome occupe déjà 64 % du premier
+écran mobile. À conditionner explicitement (desktop uniquement, et
+*après* rétablissement du budget d'écran) plutôt qu'à laisser en l'état —
+sinon elles seront codées un jour « parce qu'elles étaient dans le plan ».
+
+**C4 — L'invariant le plus critique du projet n'est protégé que par un
+commentaire.** `CLAUDE.md` interdit de changer l'ordre d'itération des
+lignes du scheduler parce qu'il détermine la reproductibilité de l'export
+à l'octet près. §4 avait prévu le test qui le verrouille — snapshot JSON
+de la liste d'événements schedulés à seed fixe, décrit comme attrapant
+« 95 % des régressions pour presque rien » — **jamais écrit**. État réel
+de `tests/` : un fichier, 131 lignes, trois tests moteur sur des briques
+pures (PRNG, helpers de groove, euclidien) ; zéro sur le scheduler, le
+rendu ou l'UI. Meilleur rapport valeur/effort de tout le document. Dans
+la même veine, les scripts Playwright de vérification sont jetés à chaque
+passe alors qu'ils feraient une suite de fumée engagée pour presque rien.
+
+**C5 — L'accessibilité de §4 n'a jamais été faite et rien ne le signale.**
+Promis : `role="grid"`/`gridcell`, `aria-pressed`, libellé par pas,
+`prefers-reduced-motion`. Compté dans le code : 0, 0, 0, 0 (seul
+`XpSlider` a son `role="slider"`). Le problème n'est pas que ce ne soit
+pas fait, c'est que ce soit écrit au passé dans une liste d'améliorations
+acquises — donc invisible comme reste-à-faire. À promouvoir en entrée de
+backlog, ou à rayer franchement.
+
+**C6 — L'arborescence §1 décrit un dépôt qui n'existe pas.** 26 fichiers
+planifiés n'ont jamais été écrits (`clock.ts`, `sidechain.ts`,
+`theory.ts` → `harmony.ts`, `transport/session/ui.svelte.ts`,
+`XpButton/XpCheckbox/XpSelect/XpBalloon/XpMenuBar`, `StepGrid/StepCell`,
+les 7 modules d'atelier, les 5 composants de jeu, les 2 fichiers de
+thème…). À l'inverse `ui/live/` — ~4 000 lignes, la plus grosse surface
+d'UI du projet — n'y figure pas. Le code a mieux tourné que le plan ; le
+souci est que le bloc s'intitule « Architecture cible » et fait autorité.
+Les trois unifications qui comptent sont déjà dans `CLAUDE.md` : cette
+arborescence peut simplement disparaître.
+
+**C7 — Le cadre « iso-fonctionnalité » a expiré, deux blocages sont
+enterrés dans la prose.** §3 découpe encore le travail en phases avec des
+pourcentages alors que la migration est finie : à archiver. L'original
+reste décrit comme « source unique de vérité » sans borne — c'est vrai
+pour les constantes audio (`CLAUDE.md` le formule bien) mais c'est aussi
+de lui que vient la grammaire « panneau de configuration » critiquée
+ci-dessus : à restreindre explicitement au moteur. Enfin deux vrais
+blocages ne se voient pas : le **capteur d'inclinaison du Mode Live n'a
+jamais été testé sur un téléphone réel** (pour un mode conçu pour le
+paysage sur téléphone), et le **bouton de retour utilisateur attend un
+arbitrage** (formulaire tiers vs fonction serverless) depuis le 13/08.
+Les blocages méritent d'être en tête de document.
+
 ---
 
 ## Fichiers critiques pour l'implémentation
