@@ -191,7 +191,7 @@
     }
   }
 
-  // Chargements déclenchés depuis le menu « Morceaux » de la barre XP (audit
+  // Chargements déclenchés depuis le menu « Fichier » de la barre XP (audit
   // A6). L'état reste ici : `ToolBar` ne fait que déclencher, il n'écrit
   // jamais dans `pattern`. Le morceau courant est mémorisé pour que l'onglet
   // Production puisse afficher ses textes historiques — c'est leur nouveau
@@ -430,7 +430,7 @@
        menus (Vue circulaire → Affichage, Sauver/Charger → Fichier). Les
        autres ont trouvé un domicile qui leur correspond : le tempo dans la
        barre de transport (on le touche en jouant), le choix du morceau et le
-       rappel de séquence dans le menu « Morceaux » (une liste déroulante
+       rappel de séquence dans le menu « Fichier » (une liste déroulante
        reste une liste déroulante, mais gratuite en hauteur), les textes du
        morceau et la gestion de la banque dans l'onglet Production (ils
        demandent de la place, un menu ne peut pas les porter).

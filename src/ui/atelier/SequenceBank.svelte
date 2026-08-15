@@ -3,7 +3,7 @@
   // avec le Mode Live via `stores/bank.svelte.ts`.
   //
   // Depuis l'audit A6, ce composant ne fait plus que la GESTION. Le
-  // chargement est passé dans le menu « Morceaux » de la barre du haut — le
+  // chargement est passé dans le menu « Fichier » de la barre du haut — le
   // garder ici AUSSI aurait recréé exactement le doublon qu'on venait
   // d'enlever ailleurs. Le partage est le même que pour les 34 morceaux :
   // le menu charge (gratuit en hauteur), le panneau gère (ce qu'un menu
@@ -52,7 +52,7 @@
   <button class="xp-btn" disabled={!selected} onclick={remove} title="Supprimer la séquence choisie">🗑</button>
 </div>
 
-<p class="where">Pour rappeler une séquence : menu <strong>Morceaux</strong>, en bas de la liste.</p>
+<p class="where">Pour rappeler une séquence : menu <strong>Fichier</strong>, tout en bas de la liste.</p>
 
 <style>
   .hint,

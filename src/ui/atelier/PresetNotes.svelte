@@ -26,7 +26,7 @@
   </div>
 {:else}
   <p class="empty">
-    Aucun morceau chargé pour l’instant. Ouvre le menu <strong>Morceaux</strong> de la barre du
+    Aucun morceau chargé pour l’instant. Ouvre le menu <strong>Fichier</strong> de la barre du
     haut : les 34 morceaux y sont rangés par style, et leur histoire s’affiche ici une fois chargés.
   </p>
 {/if}

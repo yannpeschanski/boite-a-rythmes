@@ -291,7 +291,7 @@
     color: var(--xp-muted);
     cursor: default;
   }
-  /* Le menu Morceaux compte 34 entrées plus la banque : il défile au lieu de
+  /* Le menu Fichier compte 34 morceaux plus la banque : il défile au lieu de
      déborder de l'écran. Hauteur bornée à la moitié du viewport pour qu'on
      voie toujours ce qu'il y a derrière. */
   .dropdown.tall {
