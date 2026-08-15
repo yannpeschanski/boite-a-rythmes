@@ -387,6 +387,9 @@
     text-transform: uppercase;
     color: var(--xp-accent-violet);
   }
+  /* Cibles tactiles (audit A3) : mute, test et octave se visent en pleine
+     composition — le remplissage passe de 1px à 6px vertical, sans toucher
+     à la police (le gabarit visuel XP reste le même). */
   .mini,
   .octbtn {
     border: 1px solid var(--xp-line);
@@ -395,7 +398,9 @@
     border-radius: 3px;
     cursor: pointer;
     font-size: 10px;
-    padding: 1px 5px;
+    padding: 6px 8px;
+    min-height: 28px;
+    line-height: 1;
   }
   .mini.on {
     box-shadow: var(--xp-bevel-in);
@@ -535,6 +540,9 @@
   legend {
     padding: 0;
   }
+  /* Cible tactile (audit A3) — même traitement que DrumRowView : 61×17px
+     était la plus petite cible de la page alors que c'est le seul chemin
+     d'accès aux réglages. ~28px de haut sans changer le texte. */
   .group-toggle {
     background: none;
     border: none;
@@ -542,7 +550,7 @@
     font-weight: 700;
     font-size: 11px;
     cursor: pointer;
-    padding: 2px 0;
+    padding: 7px 14px 7px 0;
     font-family: inherit;
   }
   /* Arpège/Bourdon (sous-catégories de la Nappe) : mêmes styles que les

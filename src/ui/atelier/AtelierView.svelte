@@ -499,14 +499,18 @@
   .restore button {
     font-family: inherit;
     font-size: 11px;
-    padding: 2px 8px;
+    padding: 6px 10px;
+    min-height: 28px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
     background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
     cursor: pointer;
   }
+  /* Cible tactile (audit A3) : 21px de haut avant — pour Lecture et Break,
+     les deux boutons les plus utilisés de toute l'application. */
   .xp-btn {
-    padding: 5px 14px;
+    padding: 8px 16px;
+    min-height: 32px;
     border: 1px solid #003c74;
     border-radius: 3px;
     background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);

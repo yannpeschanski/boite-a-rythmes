@@ -127,8 +127,11 @@
     gap: 8px;
     margin-bottom: 5px;
   }
-  .fill-bar :global(.xp-slider) {
+  /* Cible l'enveloppe, devenue la racine de XpSlider depuis qu'il porte
+     une requête de conteneur (audit A2). */
+  .fill-bar :global(.xp-slider-outer) {
     min-width: 220px;
+    flex: 1;
   }
   .chords {
     font-family: var(--xp-mono);

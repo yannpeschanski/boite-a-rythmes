@@ -176,12 +176,14 @@
   .menu {
     position: relative;
   }
+  /* Cible tactile (audit A3) : 20px de haut avant, sous le minimum de 24px.
+     Le remplissage vertical suffit — un menu XP garde sa police de 12px. */
   .menu-btn {
     background: none;
     border: none;
     font-family: inherit;
     font-size: 12px;
-    padding: 3px 9px;
+    padding: 7px 11px;
     cursor: pointer;
     color: var(--xp-text);
   }
@@ -224,10 +226,16 @@
   .spacer {
     flex: 1;
   }
+  /* Cible tactile (audit A3) : 19px de haut avant. ↶ et ↷ faisaient 27×19
+     alors qu'ils sont utilisés en rafale — `min-width` leur donne aussi une
+     largeur décente. */
   .tool {
     font-family: inherit;
     font-size: 11px;
-    padding: 2px 8px;
+    padding: 6px 10px;
+    min-height: 28px;
+    min-width: 32px;
+    line-height: 1;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
     background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);

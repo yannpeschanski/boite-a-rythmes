@@ -15,78 +15,23 @@
 
 **Le moteur audio est du TS pur, sans import Svelte.** Il reçoit : (a) un `BaseAudioContext` (live `AudioContext` ou `OfflineAudioContext` — même code), (b) un *snapshot* d'état plain-object (via `$state.snapshot()` côté Svelte), (c) un RNG injecté (Math.random en live, seedé en export). Il ne lit jamais le DOM.
 
-### Arborescence
+### Arborescence — SUPPRIMÉE le 2026-08-15 (audit C6)
 
-```
-boite-a-rythmes/
-├─ index.html
-├─ vite.config.ts              # 2 modes de build (site / singlefile)
-├─ package.json
-├─ src/
-│  ├─ main.ts
-│  ├─ App.svelte               # routing splash / atelier / jeu (switchMode)
-│  │
-│  ├─ model/                   # ---- ÉTAT (types + sérialisation, zéro audio, zéro DOM)
-│  │  ├─ types.ts              # PatternStateV2, DrumRow, SynthRow, SynthGlobal, Voice, GameParams…
-│  │  ├─ defaults.ts           # état initial, NEUTRAL_VOICE, MAXSTEPS=32, bornes
-│  │  ├─ serialize.ts          # exportState/importState : parse, validation, migration v1→v2
-│  │  └─ presets/
-│  │     ├─ songs.ts           # les 34 presets (~880 lignes) + textes pédagogiques
-│  │     ├─ levels.ts          # les 34 définitions de niveaux + mkLevel
-│  │     ├─ voices.ts          # presets de voix synthé (defaultSynthVoice, applyVoicePreset)
-│  │     └─ scales.ts          # SCALE_LIBRARY, 12 tonalités, 5 modes
-│  │
-│  ├─ engine/                  # ---- MOTEUR AUDIO TS PUR (testable, aucun import Svelte/DOM)
-│  │  ├─ AudioEngine.ts        # classe : possède ctx + graphe + état runtime (activeOpenHat, voix)
-│  │  ├─ graph.ts              # buildGraph(ctx, state) → GraphNodes  (UN SEUL builder live+offline)
-│  │  ├─ scheduler.ts          # UN SEUL scheduler : scheduleWindow(from, to, state, rng, emit)
-│  │  ├─ clock.ts              # tick live (setInterval ou Worker) vs boucle offline
-│  │  ├─ voices/
-│  │  │  ├─ drums.ts           # playKick/Snare/Rimshot/Hat + choke + banc 6 osc (l. 3911–4073)
-│  │  │  └─ synth.ts           # playSynthNote/PadChord/PadArp/Bass/Melody, glide, strum, budget 40 voix
-│  │  ├─ fx.ts                 # driveCurve, bitcrushCurve, softClip, compresseur, limiteurs, impulse réverbe
-│  │  ├─ sidechain.ts          # triggerSidechainDuck + ciblage
-│  │  ├─ groove.ts             # swing/drag/shift, breakPhase, isFillBar, ghost/fills/rafales
-│  │  ├─ theory.ts             # midiToFreq, scaleDegreeFreq, buildChordsForScale, justesse, noms de notes
-│  │  ├─ generators.ts         # randomizeSynth/Pad/PitchedLine, progressions, applyRandomRolls
-│  │  ├─ rng.ts                # makeSeededRng + interface Rng injectable
-│  │  ├─ recorder.ts           # enregistrement live (AudioWorklet, remplace ScriptProcessorNode)
-│  │  ├─ render-offline.ts     # renderPattern(state, bars, seed) → AudioBuffer (remplace le hack des 18 globales)
-│  │  └─ encode-mp3.worker.ts  # lamejs en Web Worker
-│  │
-│  ├─ stores/                  # ---- ÉTAT RÉACTIF (runes Svelte 5, fichiers .svelte.ts)
-│  │  ├─ pattern.svelte.ts     # $state<PatternStateV2> — LE store central (drum+synth+fx+mix)
-│  │  ├─ transport.svelte.ts   # isPlaying, currentBar, playhead par ligne, tempo runtime
-│  │  ├─ history.svelte.ts     # undo/redo (pile de snapshots du pattern)
-│  │  ├─ game.svelte.ts        # niveau courant, target, essais, verrous, étoiles, besace, progression
-│  │  ├─ session.svelte.ts     # autosave localStorage + pseudo joueur
-│  │  └─ ui.svelte.ts          # mode (atelier/jeu/splash), fenêtres réduites, vue lin/circulaire
-│  │
-│  ├─ ui/
-│  │  ├─ xp/                   # ---- DESIGN SYSTEM XP (voir §2)
-│  │  │  ├─ tokens.css
-│  │  │  ├─ XpWindow.svelte, XpTitlebar.svelte, XpMenuBar.svelte, XpMenu.svelte
-│  │  │  ├─ XpButton.svelte, XpCheckbox.svelte, XpSelect.svelte, XpTabs.svelte
-│  │  │  ├─ XpSlider.svelte    # port du curseur ergonomique maison (~170 l.)
-│  │  │  ├─ XpBalloon.svelte   # tooltip bulle XP
-│  │  │  └─ actions/longpress.ts, actions/draggable.ts
-│  │  ├─ sequencer/
-│  │  │  ├─ StepGrid.svelte    # grille générique (délégation d'événements, 1 listener/grille)
-│  │  │  ├─ StepCell.svelte / rendu paquets (renderPacketizedRow)
-│  │  │  ├─ StepCircle.svelte  # UN SEUL composant cercle canvas (atelier + jeu, props couleurs/édition)
-│  │  │  ├─ DrumRow.svelte, SynthRow.svelte, PadRow.svelte
-│  │  │  └─ FilterCurve.svelte, VoicePreview.svelte  # les 2 canvas de preview
-│  │  ├─ atelier/
-│  │  │  ├─ AtelierView.svelte, TransportBar.svelte, GrooveModule.svelte,
-│  │  │  ├─ TimbreModule.svelte, FxModule.svelte, SynthModule.svelte (×1, instancié 3 fois !),
-│  │  │  ├─ HarmonyModule.svelte, MixModule.svelte, ExportModule.svelte, PresetPicker.svelte
-│  │  ├─ game/
-│  │  │  ├─ GameView.svelte, GameMap.svelte, LevelBar.svelte, GuessGrid.svelte,
-│  │  │  ├─ ResultDialog.svelte (roasting), BagWindow.svelte
-│  │  └─ splash/SplashView.svelte   # sans l'ambiance dormante — juste déverrouillage audio + choix de mode
-│  └─ styles/ (fonts fontsource, global.css, theme-luna.css, theme-noir.css)
-└─ tests/  (miroir de engine/ et model/)
-```
+> L'arborescence « cible » qui vivait ici décrivait un dépôt qui n'a jamais
+> existé : 26 fichiers planifiés jamais écrits (`clock.ts`, `sidechain.ts`,
+> `theory.ts` — devenu `harmony.ts` —, `transport/session/ui.svelte.ts`,
+> `XpButton/XpCheckbox/XpSelect/XpBalloon/XpMenuBar`, `StepGrid/StepCell`,
+> les 7 modules d'atelier, les 5 composants de jeu, les 2 fichiers de
+> thème…), et à l'inverse aucune mention de `ui/live/` — ~3 270 lignes, la
+> plus grosse surface d'UI du projet. Le code a mieux tourné que le plan ;
+> le problème était qu'un bloc intitulé « Architecture cible » fasse
+> autorité alors qu'il était faux depuis longtemps.
+>
+> **La vraie arborescence se lit dans `src/`**, et les trois unifications
+> qui comptent vraiment sont dans `CLAUDE.md` (un builder de graphe, un
+> scheduler, un modèle d'état) — au bon endroit, celui que tout le monde
+> lit avant de coder. Elles restent détaillées ci-dessous pour le
+> « pourquoi ».
 
 ### Unifications clés (réponses aux duplications)
 
@@ -130,34 +75,45 @@ Le thème se pose sur le conteneur de vue → le mode jeu garde son identité sa
 - **XpSlider** : port fidèle des ~170 lignes maison (loupe flottante, mode précis vertical, tap = saisie clavier) en un composant + une action ; ajouté : flèches clavier, `role="slider"` + `aria-valuenow`.
 - **XpButton, XpCheckbox, XpSelect, XpTabs, XpBalloon**, `actions/longpress.ts` (port du long-press générique).
 
-### Pousser le look XP plus loin (sans casser le mobile)
+### Pousser le look XP plus loin — ⚠️ SOUS CONDITION depuis le 2026-08-15 (audit C3)
 
-- **Fenêtres déplaçables sur desktop uniquement** (`actions/draggable.ts`, activé par media query pointer:fine ; en mobile les fenêtres restent en flux vertical comme aujourd'hui). Bonus faible coût, grand effet.
-- **Sons système synthétisés** (pas de fichiers : petits chirps Web Audio « à la XP » sur ouverture/erreur/étoile gagnée — réutilise `playChime`), désactivables.
-- **Curseurs souris XP** (curseurs CSS inline SVG, desktop uniquement), **bulles d'aide XpBalloon** pour remplacer les tooltips natifs, **écran de démarrage** façon boot pour le splash, éventuellement une **barre des tâches** en bas sur desktop montrant les fenêtres réduites.
-- Police : Tahoma avec fallback ; via fontsource, une pixel-font d'appoint pour les titres si souhaité (auto-hébergée).
+> **Condition d'entrée, à vérifier avant de coder l'une de ces idées.** Elles
+> ajoutent TOUTES du chrome permanent, alors que l'audit de design a mesuré
+> que le chrome occupe déjà **64 % du premier écran mobile** avant la
+> première case jouable (constat A1). Tant que ce budget n'est pas rétabli,
+> aucune n'est à prendre : ce ne sont pas des idées mortes, ce sont des
+> idées **bloquées derrière A1**. Et quand elles reviendront : desktop
+> uniquement, jamais sur la vue tactile.
+>
+> Sans cette condition écrite, elles finiront codées un jour « parce
+> qu'elles étaient dans le plan » — et l'écran mobile empirera d'autant.
+
+- ⚠️ **Fenêtres déplaçables sur desktop uniquement** (`actions/draggable.ts`, activé par media query pointer:fine ; en mobile les fenêtres restent en flux vertical comme aujourd'hui). Bonus faible coût, grand effet.
+- ✅ **Sons système synthétisés** — fait (`ui/xp/systemSounds.ts`, voir §6). Seule entrée de cette liste qui n'ajoutait aucun pixel : c'est aussi pour ça qu'elle a pu passer sans arbitrage.
+- ⚠️ **Curseurs souris XP** (curseurs CSS inline SVG, desktop uniquement), **bulles d'aide XpBalloon** pour remplacer les tooltips natifs — noter que les explications par paramètre (§7.4) ont finalement été rendues *dans* `XpSlider` plutôt que via un composant `XpBalloon` dédié, qui n'existe pas ; **écran de démarrage** façon boot pour le splash, éventuellement une **barre des tâches** en bas sur desktop montrant les fenêtres réduites.
+- Police : Tahoma avec fallback ; via fontsource, une pixel-font d'appoint pour les titres si souhaité (auto-hébergée). *(Neutre en chrome — pas concerné par la condition.)*
 
 ---
 
-## 3. Ordre de migration (chaque phase laisse un état qui tourne)
+## 3. Ordre de migration — ARCHIVÉ le 2026-08-15 (audit C7)
 
-Tailles relatives sur un total 100 %.
-
-**Phase 0 — Socle (≈5 %).** Scaffold Vite + Svelte 5 + TS strict. `vite.config.ts` à deux modes : `build` (site) et `build --mode singlefile` (vite-plugin-singlefile, workers en `?worker&inline`). Fontsource, ESLint/Prettier, Vitest, CI GitHub Actions (lint + test + 2 builds). *Livrable : page vide XP-beige déployée, les deux builds passent.*
-
-**Phase 1 — Données + modèle (≈12 %).** Extraction **quasi telle quelle** : `songs.ts`, `levels.ts`, `scales.ts`, `voices.ts` (copier-coller typé depuis l. 5252+, 7295+ ; garder les textes historiques). Écriture de `model/types.ts` (la forme v2 exacte de l. 6338–6410), `defaults.ts`, `serialize.ts` avec migration v1→v2 (reprendre la logique d'`importState` l. 6423+ : tolérance aux champs manquants, clamp). *Livrable : tests Vitest — round-trip export/import, chargement des 34 presets, migration d'un fichier v1 réel.* C'est la phase qui sécurise tout le reste.
-
-**Phase 2 — Moteur audio pur (≈25 %, la plus grosse).** Port des voix (l. 3630–4073 : quasi tel quel, ce code est bon), fx/courbes (l. 3653–3910), théorie (l. 6668–6786), synthé (l. 6805–7078), groove, générateurs, RNG. Réécriture : `graph.ts` (fusion de `ensureAudio` + du corps d'`exportPatternAsMp3`), `scheduler.ts` (fusion des 3 schedulers), `AudioEngine.ts`. *Livrable : une page de dev « bench » minimaliste (hors design system) qui joue un preset via le moteur ; tests Vitest sur théorie/générateurs/groove ; test de déterminisme : `scheduleWindow` sur tout un pattern avec seed fixe → snapshot de la liste d'événements.*
-
-**Phase 3 — Atelier UI + design system (≈25 %).** Tokens + composants XP, puis les modules atelier branchés sur `pattern.svelte.ts`. Réécriture complète de la couche DOM (fin de l'innerHTML massif et de la reconstruction totale par clic : Svelte ne re-rend que la cellule touchée ; délégation d'événements par grille). `StepCircle.svelte` unifié, previews canvas. *Livrable : Atelier iso-fonctionnel jouable, comparaison A/B possible avec l'original.*
-
-**Phase 4 — Export / import / enregistrement (≈12 %).** `render-offline.ts` (OfflineAudioContext + `buildGraph` partagé + seed), `encode-mp3.worker.ts` (lamejs npm), `recorder.ts` (AudioWorklet), import/export JSON branché sur `serialize.ts`. *Livrable : MP3 identique à l'oreille à l'original ; test de déterminisme par hash de buffer (voir §4) ; export WAV live fonctionnel.*
-
-**Phase 5 — Mode jeu (≈13 %).** Générateur de niveaux (l. 7125–7466, quasi tel quel), similarité (l. 6584+), carte, besace/progression localStorage, roasts, thème noir. Réutilise StepGrid/StepCircle/AudioEngine. *Livrable : campagne 34 niveaux iso-fonctionnelle, progression existante relue (mêmes clés localStorage).*
-
-**Phase 6 — Améliorations (≈8 %).** Undo/redo, autosave, raccourcis, ARIA, fenêtres déplaçables, sons système, PWA optionnelle (détail §4).
-
-**Ratio port/réécriture :** ~55 % du JS se porte quasi tel quel (données, voix, courbes, théorie, générateurs, similarité, textes) ; ~45 % est réécrit (tout le DOM/sync, schedulers, construction de graphe, export).
+> Le découpage en 6 phases avec pourcentages (« Phase 0 — Socle ≈5 % »…)
+> et le ratio port/réécriture 55/45 ont piloté la migration jusqu'à son
+> terme. **La migration est finie** : ces repères ne décrivent plus aucun
+> travail à venir et fausseraient toute lecture du reste du document.
+> Conservé en une ligne pour mémoire : les phases 0 à 6 ont toutes été
+> livrées, et le projet est depuis longtemps allé au-delà (Mode Live,
+> clap/shaker, bourdon, banque de séquences, euclidien, explications par
+> paramètre, sons système).
+>
+> **Conséquence sur la « source unique de vérité ».**
+> `original/boite-a-rythme-69.html` reste la référence **pour les
+> constantes et les choix audio uniquement** (ratios 808/909 du banc du
+> hat, plafonds de release, seuils des limiteurs, valeurs de decay
+> resserrées) — c'est ainsi que `CLAUDE.md` le formule, et c'est la bonne
+> portée. Ce n'est **pas** une référence d'interface : la grammaire
+> « panneau de configuration » critiquée dans l'audit de design du
+> 2026-08-15 vient précisément de là. Ne plus s'y référer pour l'UI.
 
 ---
 
@@ -167,7 +123,14 @@ Tailles relatives sur un total 100 %.
 - **lamejs** : `@breezystack/lamejs` en dépendance npm, importée **dynamiquement dans un Worker** au premier clic export — plus de script CDN bloquant, plus de `typeof lamejs === 'undefined'`. En build singlefile, le worker est inliné.
 - **Polices auto-hébergées** via fontsource (plus de Google Fonts CDN).
 - **Raccourcis clavier** : Espace lecture/stop, B break, Ctrl+Z/Y, 1/2/3 mute lignes, flèches sur cellule focusée, ? = aide-mémoire dans une XpWindow.
-- **Accessibilité** : grille en `role="grid"`/`gridcell` + `aria-pressed`/labels par pas (« Kick, pas 5, actif, roll ×2 »), focus visible XP (pointillé 1px, très dans le thème), sliders ARIA, `prefers-reduced-motion` pour la loupe et les animations.
+- ❌ **Accessibilité — JAMAIS FAITE, sorti des acquis le 2026-08-15 (audit C5).**
+  Cette ligne était écrite au passé au milieu d'améliorations livrées, donc
+  invisible comme reste-à-faire. Compté dans le code le 15/08 :
+  `role="grid"`/`gridcell` → **0**, `aria-pressed` → **0**, label par pas
+  (« Kick, pas 5, actif, roll ×2 ») → **0**, `prefers-reduced-motion` →
+  **0**. Seul `XpSlider` a bien reçu son `role="slider"` + `aria-valuenow`
+  (§2). Le reste est à faire ou à assumer comme non-objectif — mais plus à
+  laisser passer pour acquis. Promu en entrée de backlog : voir §7.5.
 - **Autosave** : snapshot du pattern (format v2) debouncé 1 s dans localStorage + proposition « Restaurer la session précédente ? » au démarrage — sans casser la philosophie actuelle (pas d'écrasement silencieux).
 - **Undo/redo** quasi gratuit : `history.svelte.ts` empile `$state.snapshot(pattern)` (≤100 entrées, coalescence des drags de slider).
 - **Robustesse** : `unhandledrejection` en plus de `onerror`, plus d'`escapeHtml` nécessaire (Svelte échappe par défaut), scheduler optionnellement piloté par un Worker-clock (immunisé au throttling arrière-plan ; on garde la pause sur `visibilitychange` en réglage).
@@ -754,7 +717,28 @@ par URL existant, `stores/share.ts`).
 
 ### 7.2 Atelier
 
-1. **✅ Réduire tous les paramètres.** Passe de densité sur `XpSlider`
+1. **✅ Réduire tous les paramètres — ⚠️ ROUVERT le 2026-08-15 (audit C1).**
+
+   > **Ce que cette passe a coûté**, mesuré trois semaines après :
+   > les trois nombres qu'elle a posés (`72px/1fr/36px` et le seuil
+   > `auto-fit` à 148px) sont les causes exactes des constats **A2**
+   > (pistes de curseur de 40px à 818px sur la même page, facteur 20),
+   > **B1** (6 boîtes de valeur qui débordent sur deux lignes, dont
+   > « 120 BPM » dès le premier écran) et **B2** (12 libellés tronqués, y
+   > compris quand 800px de piste restent vides à côté).
+   >
+   > Le marché passé était : une colonne de curseurs utilisables (~166px
+   > de piste sur téléphone) contre deux colonnes serrées (40px). **Et il
+   > n'a pas produit ce qu'il visait** — l'onglet Rythme déplié fait
+   > toujours 3,3 écrans de haut sur téléphone : la hauteur gagnée sur les
+   > curseurs a été reprise ailleurs.
+   >
+   > Corrigé le 2026-08-15 sans annuler l'intention (la densité mobile
+   > reste un objectif légitime) : voir §7.5. **Leçon à retenir au-delà de
+   > ce cas — un ✅ n'est pas définitif.** Une décision de design a un coût
+   > qui ne se voit qu'à l'usage ; ce document doit pouvoir la rouvrir.
+
+   Passe de densité sur `XpSlider`
    (colonnes 72px/1fr/36px au lieu de 110/1fr/56, piste plus fine, marges
    resserrées) + seuil des grilles `auto-fit` abaissé (148px au lieu de
    190-260 selon les fichiers) dans `AtelierView`, `SynthModule`,
@@ -962,6 +946,54 @@ Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
   détection de morsure (front montant sur `getLineLevels()`) reste sur
   l'horloge murale réelle — c'est le seul repère fiable de ce qui sonne
   vraiment.
+
+### 7.5 Dette d'interface — section permanente (créée le 2026-08-15, audit C2)
+
+> **Pourquoi cette section existe.** Sur ses 1 270 premières lignes, ce
+> document n'a quasiment jamais rien enlevé : chaque entrée ajoute une
+> voix, un mode, un catalogue, un réglage, une bulle. Les constats **A6**
+> (les mêmes commandes à trois endroits) et **A1** (quatre barres avant la
+> première case jouable) en sont le résultat mécanique, pas des accidents.
+> Un backlog qui ne fait que grossir produit exactement l'interface qu'on
+> a mesurée. Cette section est au même rang que le backlog de features, et
+> se lit avant lui.
+
+**Trois règles d'écriture, à appliquer aux prochaines entrées :**
+
+1. **Tout nouvel élément d'UI permanent nomme ce qu'il remplace, ou d'où
+   vient sa place.** Pas de réponse = l'élément n'est pas permanent (il
+   va dans un repli, un menu, une bulle) ou il ne se fait pas.
+2. **Chaque ✅ porte une ligne « ce que ça coûte à l'écran »**, à côté du
+   « pourquoi » déjà très bien tenu. Le coût ne se voit qu'à l'usage :
+   sans cette ligne, il n'est jamais relu (cas d'école : §7.2.1).
+3. **Un ✅ n'est pas définitif.** Une entrée livrée peut être rouverte
+   avec son coût mesuré, sans que ce soit un échec — c'est le seul moyen
+   qu'une décision de design vieillisse correctement.
+
+**Dette ouverte, par ordre de priorité** (issue de l'audit du 2026-08-15,
+détail des constats plus bas dans ce document) :
+
+- ✅ **A2 · B1 · B2 — proportions du curseur** (fait le 2026-08-15, voir
+  plus bas). Rouvre §7.2.1 sans annuler son intention.
+- ✅ **A3 — cibles tactiles** des dépliables, des mutes et de la barre
+  d'outils (fait le 2026-08-15, voir plus bas).
+- ⚠️ **A1 — budget d'écran** : 64 % du premier écran mobile est du chrome.
+  **Demande un arbitrage de Yann** (que couper : nav des 3 modes fondue
+  dans la menubar ? explication de la Banque derrière un ⓘ ? conseil de
+  production repliable ?). C'est le plus gros gain ergonomique restant, et
+  la condition de déblocage du backlog XP de §2.
+- ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
+  contrainte des subdivisions différentes par ligne. Vrai parti pris
+  visuel, à trancher.
+- ⚠️ **A6 — dédoublonner les commandes** entre menus, barre d'outils et
+  bloc preset. À trancher : laquelle des trois surfaces garde quoi.
+- **A4** (encarts repliés qui forment un mur de rayures), **B3 · B4 · B5 ·
+  B6 · B7 · B8 · B9** (finitions) — voir le palier 3 de l'audit.
+- ❌ **Accessibilité** (promue depuis §4, audit C5) : `role="grid"`/
+  `gridcell`, `aria-pressed`, un libellé par pas (« Kick, pas 5, actif,
+  roll ×2 »), `prefers-reduced-motion` sur la loupe et les animations.
+  Tout est à 0 aujourd'hui. À faire, ou à assumer explicitement comme
+  non-objectif du projet — mais plus à laisser passer pour acquis.
 
 ---
 

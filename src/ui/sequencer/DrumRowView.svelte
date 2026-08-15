@@ -189,6 +189,8 @@
     text-transform: uppercase;
     color: var(--row-color, var(--xp-text));
   }
+  /* 29×18px avant l'audit A3 — un bouton qu'on vise en pleine composition,
+     ramené à une vraie cible carrée. */
   .mute {
     border: 1px solid var(--xp-line);
     background: var(--xp-face);
@@ -196,6 +198,9 @@
     border-radius: 3px;
     cursor: pointer;
     font-size: 12px;
+    min-width: 32px;
+    min-height: 28px;
+    line-height: 1;
   }
   .mute.muted {
     box-shadow: var(--xp-bevel-in);
@@ -324,6 +329,13 @@
   legend {
     padding: 0;
   }
+  /* Cible tactile (audit A3) : ces dépliables sont LE chemin d'accès à tous
+     les réglages depuis que tout est replié par défaut — et ils faisaient
+     61×17px, la plus petite cible de la page. Passés à ~28px de haut
+     (recommandation WCAG 2.5.8 : 24px minimum) via le remplissage vertical,
+     sans grossir le texte : le repère visuel ne change pas, seule la zone
+     de tap s'élargit. `padding-right` pour que le doigt puisse viser à côté
+     du libellé sans manquer. */
   .group-toggle {
     background: none;
     border: none;
@@ -331,15 +343,48 @@
     font-weight: 700;
     font-size: 11px;
     cursor: pointer;
-    padding: 2px 0;
+    padding: 7px 14px 7px 0;
     font-family: inherit;
+  }
+  /* Le bouton « 🔵 Répartir » portait `class="xp-btn tiny"` alors que ce
+     fichier ne définissait NI l'un NI l'autre : le style de `.xp-btn` est
+     redéfini localement dans six composants (AtelierView, SynthRowView,
+     GameView, ExportBar, PresetPicker, SequenceBank) et le CSS de Svelte
+     étant scopé par composant, aucun ne l'atteignait ici — le bouton
+     tombait sur le rendu natif du navigateur. Repéré en mesurant les
+     cibles tactiles (audit A3). Styles alignés sur ceux de
+     `SynthRowView`, avec la hauteur de cible en plus.
+     À noter pour plus tard : c'est exactement le composant `XpButton`
+     prévu au §2 du plan et jamais construit (voir aussi C6). */
+  .xp-btn {
+    padding: 4px 12px;
+    border: 1px solid #003c74;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    box-shadow: var(--xp-bevel-out);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .xp-btn:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .xp-btn.tiny {
+    font-size: 11px;
+    padding: 6px 10px;
+    min-height: 28px;
+    line-height: 1;
+    white-space: nowrap;
   }
   .euclid-row {
     display: flex;
     align-items: center;
     gap: 6px;
   }
-  .euclid-row :global(.xp-slider) {
+  /* Cible l'enveloppe, devenue la racine de XpSlider depuis qu'il porte
+     une requête de conteneur (audit A2) — c'est elle l'enfant flex ici. */
+  .euclid-row :global(.xp-slider-outer) {
     flex: 1;
+    min-width: 0;
   }
 </style>
