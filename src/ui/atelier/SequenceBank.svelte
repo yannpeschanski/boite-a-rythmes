@@ -1,27 +1,22 @@
 <script lang="ts">
-  // Banque de séquences (PLAN.md §6) : sauvegarder/rappeler plusieurs
-  // patterns nommés, même liste que celle proposée depuis le Mode Live
-  // (stores/bank.svelte.ts, store partagé). Même charte que PresetPicker
-  // (select + Charger) plutôt qu'une fenêtre XP dédiée — c'est la même
-  // interaction (choisir dans une liste, charger), pas besoin de plus.
+  // Banque de séquences (PLAN.md §6) : plusieurs patterns nommés, partagés
+  // avec le Mode Live via `stores/bank.svelte.ts`.
+  //
+  // Depuis l'audit A6, ce composant ne fait plus que la GESTION. Le
+  // chargement est passé dans le menu « Morceaux » de la barre du haut — le
+  // garder ici AUSSI aurait recréé exactement le doublon qu'on venait
+  // d'enlever ailleurs. Le partage est le même que pour les 34 morceaux :
+  // le menu charge (gratuit en hauteur), le panneau gère (ce qu'un menu
+  // porte mal — enregistrer, renommer, supprimer).
   import { sequenceBank } from '../../stores/bank.svelte';
 
-  let { onApplied }: { onApplied?: () => void } = $props();
-
   let selectedId = $state('');
-  let showHelp = $state(false);
   const selected = $derived(sequenceBank.entries.find((e) => e.id === selectedId) ?? null);
 
   function save() {
     const name = prompt('Nom de la séquence :', `Séquence ${sequenceBank.entries.length + 1}`);
     if (name === null) return; // annulé
     sequenceBank.save(name);
-  }
-
-  function load() {
-    if (!selected) return;
-    sequenceBank.load(selected.id);
-    onApplied?.();
   }
 
   function rename() {
@@ -39,91 +34,54 @@
   }
 </script>
 
-<!-- L'explication était affichée en permanence : quatre lignes pleines sur
-     un téléphone, définitivement, pour un texte qu'on lit une fois (audit
-     A1 — c'était l'un des deux gros contributeurs évitables au chrome).
-     Repliée derrière un ⓘ : le texte reste à un tap, il ne coûte plus une
-     demi-page à ceux qui l'ont déjà lu. -->
-<div class="bank-head">
-  <span class="bank-title">🗄 Banque de séquences</span>
-  <button
-    class="info"
-    class:on={showHelp}
-    aria-expanded={showHelp}
-    title="À quoi sert la banque de séquences ?"
-    onclick={() => (showHelp = !showHelp)}>ⓘ</button
-  >
-</div>
-{#if showHelp}
-  <p class="hint">
-    Enregistre plusieurs versions du pattern actuel sous un nom, pour les rappeler d’un clic —
-    pratique pour préparer plusieurs séquences à l’avance, puis basculer de l’une à l’autre en Mode
-    Live sans repasser par l’Atelier.
-  </p>
-{/if}
+<p class="hint">
+  Enregistre plusieurs versions du pattern actuel sous un nom, pour les rappeler d’un clic —
+  pratique pour préparer plusieurs séquences à l’avance, puis basculer de l’une à l’autre en Mode
+  Live sans repasser par l’Atelier.
+</p>
+
 <div class="picker">
-  <select bind:value={selectedId}>
-    <option value="">— Banque : {sequenceBank.entries.length ? 'choisir une séquence…' : 'vide'}</option>
+  <select bind:value={selectedId} aria-label="Séquence à renommer ou supprimer">
+    <option value="">— {sequenceBank.entries.length ? 'choisir une séquence…' : 'banque vide'}</option>
     {#each sequenceBank.entries as e (e.id)}
       <option value={e.id}>{e.name}</option>
     {/each}
   </select>
-  <button class="xp-btn" disabled={!selected} onclick={load}>Charger</button>
-  <button class="xp-btn" onclick={save} title="Enregistrer le pattern actuel dans la banque">➕</button>
-  <button class="xp-btn" disabled={!selected} onclick={rename} title="Renommer">✏️</button>
-  <button class="xp-btn" disabled={!selected} onclick={remove} title="Supprimer">🗑</button>
+  <button class="xp-btn" onclick={save} title="Enregistrer le pattern actuel dans la banque">➕ Enregistrer</button>
+  <button class="xp-btn" disabled={!selected} onclick={rename} title="Renommer la séquence choisie">✏️</button>
+  <button class="xp-btn" disabled={!selected} onclick={remove} title="Supprimer la séquence choisie">🗑</button>
 </div>
 
+<p class="where">Pour rappeler une séquence : menu <strong>Morceaux</strong>, en bas de la liste.</p>
+
 <style>
-  .bank-head {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .bank-title {
+  .hint,
+  .where {
     font-size: 11px;
     color: var(--xp-muted);
+    line-height: 1.5;
+    margin: 0 0 6px;
+    max-width: 70ch;
   }
-  .info {
-    font-family: inherit;
-    font-size: 12px;
-    line-height: 1;
-    min-width: 26px;
-    min-height: 26px;
-    padding: 0;
-    border: 1px solid var(--xp-line);
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    color: var(--xp-accent-teal);
-    cursor: pointer;
+  .where {
+    margin: 6px 0 0;
   }
-  .info.on {
-    box-shadow: var(--xp-bevel-in);
-    background: var(--xp-face-dark);
-  }
-  .hint {
-    font-size: 11px;
-    color: var(--xp-muted);
-    margin: 4px 0;
-  }
-  /* `flex-wrap` manquant : le select et les quatre boutons ne tiennent pas
-     sur une ligne sous 390px, et les derniers SORTAIENT du cadre — 17px de
+  /* `flex-wrap` : sans lui, le select et les boutons ne tenaient pas sur une
+     ligne sous 390px et les derniers SORTAIENT du cadre — 17px de
      débordement à 360px, jusqu'à 57px à 320px (repéré sur une capture de
      Yann ; le balayage automatique ne l'avait pas vu parce qu'il testait le
-     débordement du viewport, pas celui des conteneurs). */
+     débordement du viewport, pas celui des conteneurs). Le panneau est
+     désormais en pleine largeur dans l'onglet Production, ce qui laisse de
+     toute façon la place aux quatre contrôles. */
   .picker {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     align-items: center;
-    margin-bottom: 6px;
   }
   .picker select {
     flex: 1 1 160px;
-  }
-  select {
-    flex: 1;
+    min-width: 0;
     font-family: var(--xp-font);
     font-size: 13px;
     padding: 3px;
@@ -131,12 +89,14 @@
     background: #fff;
   }
   .xp-btn {
-    padding: 4px 10px;
+    padding: 6px 10px;
+    min-height: 28px;
     border: 1px solid #003c74;
     border-radius: 3px;
     background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
+    font-family: inherit;
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);

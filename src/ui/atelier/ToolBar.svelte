@@ -5,12 +5,16 @@
   import { buildShareUrl } from '../../stores/share';
   import { systemSoundsEnabled, setSystemSoundsEnabled, playSystemSound } from '../xp/systemSounds';
   import { paramHintsSettings } from '../xp/paramHints.svelte';
+  import { PRESETS, PRESET_CATEGORIES, type SongPresetData } from '../../model/presets/songs';
+  import { sequenceBank } from '../../stores/bank.svelte';
 
   let {
     onExport,
     onImport,
     onReset,
     onSwitchView,
+    onLoadPreset,
+    onLoadBank,
     circleView = $bindable(false),
   }: {
     onExport: () => void;
@@ -19,8 +23,24 @@
     // Bascule d'écran, remontée depuis App.svelte : la barre de navigation
     // séparée a disparu de l'Atelier (audit A1), son rôle vit ici.
     onSwitchView?: (v: 'atelier' | 'game' | 'live') => void;
+    // Chargements : la barre de menus ne fait que déclencher, l'état (morceau
+    // courant, rafraîchissement du mix) reste chez AtelierView — ce composant
+    // n'écrit jamais dans `pattern`.
+    onLoadPreset?: (p: SongPresetData, keepSynthAndTempo: boolean) => void;
+    onLoadBank?: (id: string) => void;
     circleView?: boolean;
   } = $props();
+
+  // Chargement d'un morceau depuis la barre de menus (audit A6 : le bloc
+  // preset répétait des commandes déjà présentes dans les menus, et pesait
+  // ~230px). Un `<select>` de 34 entrées EST déjà une liste déroulante :
+  // la passer en menu ne change rien à l'interaction et coûte zéro pixel.
+  // Les catégories deviennent des titres de section, comme les `<optgroup>`
+  // qu'elles remplacent.
+  let keepSynthAndTempo = $state(false);
+  function byCat(cat: string): SongPresetData[] {
+    return PRESETS.filter((p) => p.cat === cat);
+  }
 
   let openMenu = $state('');
   let shareMsg = $state('');
@@ -100,11 +120,39 @@
       }}>Fichier</button
     >
     {#if openMenu === 'file'}
-      <div class="dropdown">
+      <!-- Les morceaux et la banque sont DANS Fichier, pas dans un menu à
+           part (audit B7) : un sixième menu de premier niveau refaisait
+           passer la barre à deux lignes sur téléphone, soit 30px de chrome
+           permanent — pour une entrée qui est de toute façon un « ouvrir ».
+           Le menu défile (`.tall`), les 34 morceaux y tiennent. -->
+      <div class="dropdown tall">
         <button onclick={() => choose(onReset)}>Nouveau rythme</button>
         <button onclick={() => choose(onImport)}>Ouvrir…</button>
         <button onclick={() => choose(onExport)}>Enregistrer sous…</button>
         <button onclick={() => choose(share)}>Partager par lien</button>
+        <button
+          class="opt"
+          onclick={(e) => {
+            // Ne referme PAS le menu : c'est une option du chargement à venir,
+            // pas une action — la refermer obligerait à rouvrir pour choisir.
+            e.stopPropagation();
+            keepSynthAndTempo = !keepSynthAndTempo;
+          }}>{keepSynthAndTempo ? '☑' : '☐'} Garder le synthé et le tempo actuels</button
+        >
+        {#each PRESET_CATEGORIES as cat (cat)}
+          <div class="sep">{cat}</div>
+          {#each byCat(cat) as p (p.id)}
+            <button onclick={() => choose(() => onLoadPreset?.(p, keepSynthAndTempo))}>{p.label}</button>
+          {/each}
+        {/each}
+        <div class="sep">Banque de séquences</div>
+        {#if sequenceBank.entries.length === 0}
+          <div class="empty">Vide — enregistre une séquence depuis l’onglet Production.</div>
+        {:else}
+          {#each sequenceBank.entries as e (e.id)}
+            <button onclick={() => choose(() => onLoadBank?.(e.id))}>{e.name}</button>
+          {/each}
+        {/if}
       </div>
     {/if}
   </div>
@@ -242,6 +290,38 @@
   .dropdown button:disabled {
     color: var(--xp-muted);
     cursor: default;
+  }
+  /* Le menu Morceaux compte 34 entrées plus la banque : il défile au lieu de
+     déborder de l'écran. Hauteur bornée à la moitié du viewport pour qu'on
+     voie toujours ce qu'il y a derrière. */
+  .dropdown.tall {
+    max-height: 50vh;
+    overflow-y: auto;
+    min-width: 210px;
+  }
+  /* Reprend le rôle des <optgroup> du sélecteur remplacé. */
+  .sep {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--xp-muted);
+    padding: 6px 10px 2px;
+    border-top: 1px solid var(--xp-line);
+    margin-top: 2px;
+  }
+  .dropdown .sep:first-child {
+    border-top: 0;
+    margin-top: 0;
+  }
+  .empty {
+    font-size: 11px;
+    color: var(--xp-muted);
+    padding: 4px 10px 6px;
+    max-width: 210px;
+  }
+  .dropdown .opt {
+    font-family: var(--xp-mono);
   }
   .spacer {
     flex: 1;

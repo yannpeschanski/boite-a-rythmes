@@ -1062,12 +1062,50 @@ détail des constats plus bas dans ce document) :
   arrondi au pas de 10 comme prévu), Partager toujours opérant depuis le
   menu Fichier, Annuler toujours à un clic. Zéro erreur console.
 
-  - **Reste ouvert** : A6 côté bloc preset (Vue circulaire / Sauver /
-    Charger répètent les menus Affichage et Fichier) — non traité, il
-    faut trancher laquelle des deux surfaces garde quoi. Nit repéré en
-    testant : taper la valeur d'un curseur pré-remplit le champ sans le
-    sélectionner — il faut effacer à la main avant de saisir. Un
-    `select()` au focus suffirait.
+- ✅ **A6 — le bloc preset supprimé** (2026-08-15, sur cadrage de Yann :
+  « à voir comment réorganiser ce point ? […] audit et propose »). Il
+  pesait 203 à 296px selon la largeur et, sur ses huit éléments, trois
+  n'étaient que des doublons des menus. Chaque famille a rejoint l'endroit
+  qui lui correspond :
+  - **Vue circulaire / Sauver / Charger** : supprimés, ils existaient déjà
+    à l'identique dans Affichage et Fichier.
+  - **Morceaux et banque** : passés dans le menu **Fichier**, en sections
+    après les entrées classiques. Un `<select>` de 34 entrées EST déjà une
+    liste déroulante — la passer en menu ne change rien à l'interaction et
+    coûte zéro pixel. *Essayé et abandonné* : un menu « Morceaux » de
+    premier niveau, qui refaisait passer la barre à deux lignes sur
+    téléphone (30px de chrome permanent) — et « charger un morceau » est
+    de toute façon un « ouvrir ».
+  - **Tempo + Tap** : sous le séquenceur (idée de Yann). Les trois
+    emplacements ont été mesurés : dans la barre sticky = +66px
+    PERMANENTS (il n'y tient pas sur la ligne de Lecture/Break à 390px,
+    donc il y prend sa propre rangée, présente sur les trois onglets) ;
+    juste sous la barre sticky = +46px au-dessus de la ligne de
+    flottaison ; sous le séquenceur = zéro coût sur les deux. Ce n'est pas
+    un contrôle qu'on chevauche comme Lecture ou Break.
+  - **Textes pédagogiques du morceau** : nouveau `PresetNotes.svelte` dans
+    l'onglet Production. C'est la raison pour laquelle le choix du morceau
+    n'a pas été *seulement* basculé en menu : un menu porte 34 noms, pas
+    ~880 lignes de contenu pédagogique, et ce contenu est un atout du
+    projet. Partage retenu : le menu CHARGE (gratuit en hauteur), l'onglet
+    RACONTE (a besoin de place). Différence assumée : on lisait le texte
+    en SÉLECTIONNANT, on le lit maintenant APRÈS avoir chargé.
+  - **Gestion de la banque** : dans l'onglet Production, en pleine
+    largeur — un CRUD (enregistrer/renommer/supprimer) tient mal dans un
+    menu. Le *chargement*, lui, est dans Fichier : le garder aux deux
+    endroits aurait recréé le doublon qu'on venait d'enlever.
+  - **Onglet « Effets » renommé « Production »** : il ne contient plus
+    seulement les effets de bus mais tout ce qui n'est pas l'édition des
+    notes.
+
+  Résultat mesuré : page par défaut **1 369px → 1 203px** sur téléphone
+  (1,6 → 1,4 écran), chrome du premier écran **32 %** sur mobile ET sur
+  desktop (288px, contre 292 avant), barre sticky inchangée à 122px,
+  barre de menus toujours sur une ligne de 360 à 1280px.
+
+  - **Reste ouvert** : nit repéré en testant : taper la valeur d'un
+    curseur pré-remplit le champ sans le sélectionner — il faut effacer à
+    la main avant de saisir. Un `select()` au focus suffirait.
 - ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
   contrainte des subdivisions différentes par ligne. Vrai parti pris
   visuel, à trancher.
