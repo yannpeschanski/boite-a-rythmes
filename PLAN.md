@@ -1164,6 +1164,41 @@ détail des constats plus bas dans ce document) :
   - **Reste ouvert** : nit repéré en testant : taper la valeur d'un
     curseur pré-remplit le champ sans le sélectionner — il faut effacer à
     la main avant de saisir. Un `select()` au focus suffirait.
+- ✅ **Filtre du synthé résumé en deux macros, fusionné avec Espace**
+  (retour de Yann : « filtre on comprend rien, on peut pas résumer en un ou
+  deux paramètres les filtres du synthé, de manière à fusionner avec
+  espace ? »). Le panneau exposait quatre réglages en unités techniques —
+  Tone %, Filtre Hz, Ouv. filtre Hz, Ferm. filtre ms — et en mélangeait deux
+  choses sans rapport : **`voice.tone` n'est pas un filtre du tout**, c'est
+  un drive de waveshaper (`driveCurve`, `voices/synth.ts` l. 121-124), rangé
+  là par accident. Il rejoint « Oscillateur & enveloppe » sous son vrai nom,
+  **Saturation** — dont l'explication existante (« un ampli qu'on pousse un
+  peu fort ») le décrit correctement, contrairement à l'ancienne entrée
+  `Tone`, écrite pour le Tone de la BATTERIE, qui est un vrai réglage de
+  timbre grave/aigu. Une explication juste pour le mauvais paramètre : une
+  raison de plus pour laquelle le panneau ne voulait rien dire.
+  Restent deux macros nommées d'après ce qu'on ENTEND :
+  - **Brillance** → `voice.cutoff`, mappé exponentiellement sur 100-4000 Hz
+    (l'oreille perçoit les fréquences en ratios ; en linéaire tout le haut
+    de la course aurait sonné pareil).
+  - **Mouvement** → `filterEnvAmount` ET `filterEnvRelease` ensemble : à
+    faible ampleur une fermeture longue ne s'entend pas, à forte ampleur
+    une fermeture instantanée fait un clic. Les deux n'ont d'intérêt
+    séparément que pour qui sait déjà ce qu'est une enveloppe de filtre.
+
+  **Aucun champ d'état n'est supprimé** : le format v2 est le contrat central
+  (CLAUDE.md), seule l'UI est résumée. Un preset qui règle finement
+  `filterEnvRelease` continue de sonner à l'identique tant qu'on ne touche
+  pas à la macro. Vérifié que les valeurs des 34 presets tiennent dans les
+  bornes des macros (cutoff 600-3200, filterEnvAmount 1200-3200) : aucune
+  n'est écrasée par un aller-retour d'affichage.
+
+  **Ce que ça coûte à l'écran** (règle n°2) : ça en rend. Sur l'onglet
+  Synthé à 360px, les surfaces Filtre + Espace des 3 lignes ouvertes passent
+  de **1 110px à 723px (−35 %)**, 6 curseurs → 4, et une pastille de moins
+  par ligne (5 → 4 sur basse/mélodie). Page repliée inchangée (1 519px).
+  Les 43 libellés de curseur de l'appli ont toujours une explication
+  (vérifié en ouvrant tous les replis des 3 onglets, pas au jugé).
 - ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
   contrainte des subdivisions différentes par ligne. Vrai parti pris
   visuel, à trancher.

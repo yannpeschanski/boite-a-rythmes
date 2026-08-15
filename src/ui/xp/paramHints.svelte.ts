@@ -37,7 +37,6 @@ export const PARAM_HINTS: Record<string, string> = {
 
   // Synthé — voix (SynthRowView, une entrée par ligne basse/nappe/mélodie)
   'Filtre passe-bas': 'Adoucit le son en coupant les fréquences aiguës au-dessus de ce réglage.',
-  Filtre: 'Adoucit le son en coupant les fréquences aiguës au-dessus de ce réglage.',
   Attaque: 'Le temps que met le son à monter à son volume maximum, dès qu’il est joué.',
   Decay: 'Le temps que met le son à redescendre juste après l’attaque, avant de se stabiliser.',
   Release: 'Le temps que met le son à s’éteindre une fois la note relâchée.',
@@ -48,8 +47,12 @@ export const PARAM_HINTS: Record<string, string> = {
   Vibrato: 'Fait légèrement onduler la hauteur du son, de façon régulière — comme un chant vibré.',
   Tone: 'Équilibre entre les graves et les aigus du timbre, en un seul réglage.',
   Glide: 'La note glisse vers la suivante au lieu de changer net, comme un doigt qui glisse sur une corde.',
-  'Ouv. filtre': 'À quel point le filtre s’ouvre (laisse passer plus d’aigus) au moment précis où la note démarre.',
-  'Ferm. filtre': 'Le temps que met le filtre à se refermer après s’être ouvert au début de la note.',
+  // Deux macros qui remplacent les 4 réglages de filtre d'origine (coupure,
+  // résonance, ouverture d'enveloppe, temps de fermeture) — retour de Yann :
+  // « filtre on comprend rien ». Le libellé décrit ce qu'on ENTEND, pas le
+  // paramètre technique qu'il pilote.
+  Brillance: 'Du plus sourd, comme un son derrière une porte, au plus brillant et présent.',
+  Mouvement: 'Fait s’ouvrir le son au début de chaque note puis se refermer — l’effet « wah » caractéristique des synthés.',
   Étalement: 'Les notes de l’accord ne sont pas jouées pile en même temps, mais très légèrement décalées les unes après les autres.',
 
   // Synthé — séquence (SynthRowView > Séquence)
