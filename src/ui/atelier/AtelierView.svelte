@@ -11,8 +11,11 @@
   import TransportRings from '../sequencer/TransportRings.svelte';
   import GeneralSequencer from '../sequencer/GeneralSequencer.svelte';
   import SynthModule from './SynthModule.svelte';
-  import PresetPicker from './PresetPicker.svelte';
+  import PresetNotes from './PresetNotes.svelte';
   import SequenceBank from './SequenceBank.svelte';
+  import { presetToState } from '../../model/presetAdapter';
+  import { sequenceBank } from '../../stores/bank.svelte';
+  import type { SongPresetData } from '../../model/presets/songs';
   import ExportBar from './ExportBar.svelte';
   import ToolBar from './ToolBar.svelte';
   import { history } from '../../stores/history.svelte';
@@ -188,6 +191,24 @@
     }
   }
 
+  // Chargements déclenchés depuis le menu « Fichier » de la barre XP (audit
+  // A6). L'état reste ici : `ToolBar` ne fait que déclencher, il n'écrit
+  // jamais dans `pattern`. Le morceau courant est mémorisé pour que l'onglet
+  // Production puisse afficher ses textes historiques — c'est leur nouveau
+  // domicile, ils ne tiennent pas dans un menu.
+  let currentPreset = $state<SongPresetData | null>(null);
+  function loadPreset(p: SongPresetData, keepSynthAndTempo: boolean) {
+    history.push();
+    pattern.replace(presetToState(p, keepSynthAndTempo ? pattern.snapshot() : undefined, keepSynthAndTempo));
+    currentPreset = p;
+    refreshFx();
+  }
+  function loadBankEntry(id: string) {
+    history.push();
+    sequenceBank.load(id);
+    refreshFx();
+  }
+
   // Tap tempo : on garde les intervalles récents et on en prend la moyenne.
   // Absent de l'original, alors que régler un tempo « à l'oreille » sur un
   // morceau existant est le cas d'usage le plus courant. Vivait dans
@@ -285,6 +306,8 @@
   <ToolBar
     bind:circleView
     {onSwitchView}
+    onLoadPreset={loadPreset}
+    onLoadBank={loadBankEntry}
     onExport={exportJson}
     onImport={() => fileInput.click()}
     onReset={() => {
@@ -304,11 +327,15 @@
        remonter en haut de page, quel que soit l'onglet actif ou la
        position de scroll — comme la barre de transport fixe de l'original
        (#drumTransportBar), étendue aux onglets pour ne jamais perdre
-       l'accès à Rythme/Synthé/Effets. Les anneaux (batterie + synthé)
-       rappellent le rythme en couleur sans reproduire tout le séquenceur
-       éditable — un aperçu, pas un second éditeur. Le texte (raccourcis
-       clavier, « le plus proche ») n'a pas sa place sur mobile : masqué au
-       toucher, gardé sur desktop où la largeur ne manque pas. -->
+       l'accès à Rythme/Synthé/Effets. L'anneau rappelle le rythme en
+       couleur sans reproduire tout le séquenceur éditable — un aperçu, pas
+       un second éditeur. Le texte (raccourcis clavier, « le plus proche »)
+       n'a pas sa place sur mobile : masqué au toucher, gardé sur desktop où
+       la largeur ne manque pas.
+       Le TEMPO y a rejoint Lecture/Break (audit A6) : c'est le seul réglage
+       du bloc preset supprimé qu'on touche PENDANT que ça joue, donc sa
+       place est ici et pas dans un menu. Il tient dans les 64px rendus par
+       le passage à un seul anneau — un échange, pas un ajout. -->
   <div class="sticky-bar">
     <div class="transport-row">
       <div class="transport">
@@ -344,15 +371,20 @@
       title={tipExpanded ? 'Réduire le conseil' : 'Lire le conseil en entier'}
       onclick={() => (tipExpanded = !tipExpanded)}>💡 {productionTip}</button
     >
+    <!-- « Effets » renommé « Production » (audit A6) : l'onglet ne contient
+         plus seulement les effets de bus mais tout ce qui n'est pas l'édition
+         des notes — mix, export, banque de séquences, et les textes du
+         morceau chargé. -->
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
         { id: 'synthe', label: '🎹 Synthé' },
-        { id: 'effets', label: '🔊 Effets' },
+        { id: 'effets', label: '🎚 Production' },
       ]}
       bind:active={activeTab}
     />
   </div>
+
 
   <!-- Le séquenceur pas-à-pas éditable reste sur Rythme, hors de l'onglet
        exprès (pas besoin d'y revenir pour l'éditer pendant qu'on ajuste
@@ -393,35 +425,36 @@
     </XpWindow>
   {/if}
 
-  <!-- Descendu SOUS le séquenceur (audit A1, 2ᵉ passage). Il était coincé
-       entre les onglets et le contenu que les onglets commutent : taper
-       « Synthé » obligeait à traverser tempo + morceau + banque avant
-       d'atteindre le synthé. Rien n'est retiré, c'est un pur
-       réordonnancement — ce qu'on joue vient en premier, ce qu'on charge et
-       ce qu'on règle vient après. Le tempo reste à portée immédiate du
-       séquenceur, et Lecture/Break/onglets n'ont jamais bougé : ils sont
-       dans la barre sticky, joignables de partout. -->
-  <div class="preset-row">
-    <div class="secondary">
-      <button class="xp-btn" onclick={() => (circleView = !circleView)}>
-        {circleView ? '▤ Vue linéaire' : '◎ Vue circulaire'}
-      </button>
-      <button class="xp-btn" onclick={exportJson}>💾 Sauver</button>
-      <button class="xp-btn" onclick={() => fileInput.click()}>📂 Charger</button>
-      <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
-    </div>
-    <!-- Tap tempo remonté de la barre d'outils (audit A6/B7) : il RÈGLE le
-         tempo, donc sa place est contre le curseur qu'il pilote — on voit
-         désormais la valeur bouger à chaque frappe, ce qui n'était pas le
-         cas quand le bouton vivait trois blocs plus haut. -->
-    <div class="tempo-row">
-      <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
-      <button class="xp-btn" onclick={tapTempo} title="Tape le tempo en rythme, au moins deux fois">
-        👆 Tap
-      </button>
-    </div>
-    <PresetPicker onApplied={refreshFx} />
-    <SequenceBank onApplied={refreshFx} />
+  <!-- Le bloc preset a DISPARU (audit A6). Il pesait 203 à 296px selon la
+       largeur, et sur ses huit éléments trois n'étaient que des doublons des
+       menus (Vue circulaire → Affichage, Sauver/Charger → Fichier). Les
+       autres ont trouvé un domicile qui leur correspond : le tempo dans la
+       barre de transport (on le touche en jouant), le choix du morceau et le
+       rappel de séquence dans le menu « Fichier » (une liste déroulante
+       reste une liste déroulante, mais gratuite en hauteur), les textes du
+       morceau et la gestion de la banque dans l'onglet Production (ils
+       demandent de la place, un menu ne peut pas les porter).
+       Le champ de fichier reste ici : invisible, il n'appartient à aucune
+       zone, et c'est `onImport` du menu Fichier qui le déclenche. -->
+  <input type="file" accept="application/json" hidden bind:this={fileInput} onchange={importJson} />
+
+  <!-- Le tempo est SOUS le séquenceur (idée de Yann : « une section tempo
+       sous le séquenceur drum »), et mesuré comme le meilleur des trois
+       emplacements essayés :
+        - dans la barre sticky : +66px PERMANENTS sur téléphone, il n'y tient
+          pas sur la ligne de Lecture/Break à 390px donc il y prend sa propre
+          rangée, qui reste à l'écran sur les trois onglets ;
+        - juste sous la barre sticky : +46px au-dessus de la ligne de
+          flottaison, le séquenceur redescend d'autant ;
+        - ici : zéro coût sur les deux, et il reste à un pouce du contenu
+          qu'on est en train d'éditer.
+       Ce n'est pas un contrôle qu'on « chevauche » comme Lecture ou Break :
+       on pose un tempo, on le retouche, on n'y revient pas à chaque mesure. -->
+  <div class="tempo-strip">
+    <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+    <button class="xp-btn tap" onclick={tapTempo} title="Tape le tempo en rythme, au moins deux fois">
+      👆 Tap
+    </button>
   </div>
 
   <div class="tab-panel">
@@ -472,6 +505,19 @@
       </XpWindow>
 
       <ExportBar {engine} {playing} {recordLive} />
+
+      <!-- Ce que le bloc preset supprimé (audit A6) a légué à cet onglet :
+           les deux choses qui demandent de la place et qu'un menu ne peut
+           pas porter. La gestion de la banque (enregistrer, renommer,
+           supprimer) est un petit CRUD — en pleine largeur ici, ses quatre
+           boutons ne débordent plus comme dans l'ancien bloc étroit. -->
+      <XpWindow title="Banque de séquences" icon="🗄" accent="teal">
+        <SequenceBank />
+      </XpWindow>
+
+      <XpWindow title="Le morceau chargé" icon="📖" accent="teal">
+        <PresetNotes preset={currentPreset} />
+      </XpWindow>
     {/if}
   </div>
 </div>
@@ -555,34 +601,27 @@
     padding: 8px 10px 10px;
     margin-bottom: 0;
   }
-  .preset-row {
+  /* Bandeau tempo, juste sous la barre sticky. Bordé comme les autres blocs
+     de l'Atelier ; le bouton Tap ne s'étire pas. */
+  .tempo-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     background: var(--xp-face);
     border: 1px solid var(--xp-line);
     border-radius: 8px;
-    padding: 8px 10px;
-    margin: 10px 0;
+    padding: 4px 10px;
+    margin: 8px 0;
     box-shadow: 0 2px 6px rgba(0, 0, 30, 0.12);
   }
-  .secondary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-  .tempo-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  /* L'enveloppe de requête de conteneur est la racine de XpSlider : c'est
-     elle l'enfant flex ici (même chose que dans .euclid-row). */
-  .tempo-row :global(.xp-slider-outer) {
+  .tempo-strip :global(.xp-slider-outer) {
     flex: 1;
     min-width: 0;
   }
-  .tempo-row .xp-btn {
+  .tempo-strip .xp-btn.tap {
     white-space: nowrap;
-    padding: 8px 12px;
+    padding: 8px 10px;
+    flex: none;
   }
   .tab-panel {
     background: var(--xp-face);
