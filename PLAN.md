@@ -3,9 +3,18 @@
 > Contexte : réécriture de `original/boite-a-rythme-69.html` (9 289 lignes, fichier unique).
 > Analyse détaillée de l'original : voir [ANALYSE-ORIGINAL.md](ANALYSE-ORIGINAL.md).
 >
-> **Décisions fermes** : Svelte 5 + TS + Vite · distribution double (site + fichier HTML unique via vite-plugin-singlefile) · périmètre complet Atelier + Mode jeu (iso-fonctionnalités puis améliorations) · abandon du code dormant (ambiance splash, verrouillage des modules) · design Windows XP conservé et assumé davantage.
+> **Décisions fermes** : Svelte 5 + TS + Vite · distribution double (site + fichier HTML unique via vite-plugin-singlefile) · périmètre complet Atelier + Mode jeu (iso-fonctionnalités puis améliorations) · abandon du code dormant (ambiance splash, ~~verrouillage des modules~~ — voir ci-dessous) · design Windows XP conservé et assumé davantage.
 >
-> **En reprenant le travail, lire d'abord le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)**
+> ⚠️ **Correction du 2026-08-16** : le « verrouillage des modules » n'était pas
+> du code dormant mais une fonctionnalité **en attente d'arbitrage**, dite
+> telle quelle dans l'original (`return true` + « TEMPORAIRE… le temps de
+> décider comment relier réellement les modules à la progression du Mode
+> jeu »). Yann vient de trancher cette question (D2) : la fonctionnalité
+> revient. *Dormant* et *abandonné* ne sont pas synonymes — voir
+> [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16).
+>
+> **En reprenant le travail, lire d'abord les [arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16)**
+> (2026-08-16) puis le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)
 > (2026-08-16) : il croise l'audit de design et les remarques de Yann en une
 > seule file, remplace les paliers de priorité de l'audit, et sépare **ce
 > qu'on peut faire tout de suite** des **quatre décisions** dont dépend le
@@ -1965,6 +1974,11 @@ mesure visible aurait été incompréhensible ; ça ne l'est plus.
 
 ### Le vrai goulot : quatre décisions, pas du code
 
+> ✅ **Tranchées le 2026-08-16** — les quatre réponses de Yann, et ce qu'elles
+> changent (dont deux recommandations corrigées), sont dans
+> [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16). Ce qui suit
+> reste la formulation des questions telles qu'elles étaient posées.
+
 Constat qui surprend et qui organise tout le reste : **ce qui reste des deux
 listes est majoritairement bloqué sur des arbitrages, pas sur de la
 difficulté technique.** Tant qu'ils ne sont pas tranchés, s'y mettre c'est
@@ -2070,6 +2084,231 @@ Dans l'ordre. C'est la file de travail ; tout le reste attend D1-D4.
 - **Étage (2) des tests de déterminisme** (hash du rendu offline sous
   Playwright) : toujours pas fait, et moins urgent depuis que l'étage (1)
   existe. À ressortir si R1(b) ou R4 se révèlent scabreux.
+
+---
+
+## Arbitrages de Yann sur D1-D4 — 2026-08-16
+
+Réponses de Yann aux quatre décisions du plan consolidé, et ce qu'elles
+changent. Deux d'entre elles **corrigent une recommandation que j'avais
+faite** : c'est noté explicitement plutôt que réécrit en douce.
+
+### D2 — Le mode jeu : validé, et il devient la colonne vertébrale
+
+> « ok avec la direction. le mode jeu doit permettre d'apprendre et de
+> débloquer l'atelier puis les modules puis le mode live, etc. »
+
+C'est plus qu'un accord sur le 2ᵉ type d'exercice : **le mode jeu cesse
+d'être un des trois modes pour devenir la porte d'entrée qui ouvre les
+autres.** Trois conséquences.
+
+**1. Cette fonctionnalité existait dans l'original, et ce port l'a jetée.**
+`original/boite-a-rythme-69.html` l. 3593-3611 contient
+`MODULE_UNLOCK_LEVEL = { drum: 1, synth: 13, general: 27 }`,
+`moduleUnlocked()`, `refreshModuleLocks()` et deux overlays de verrouillage
+(`#synthLockedOverlay`, `#generalLockedOverlay`). Le tout **désactivé par un
+`return true`**, sous ce commentaire :
+
+> « TEMPORAIRE : rien n'est bloqué pour le moment, le temps de décider comment
+> relier réellement les modules à la progression du Mode jeu. Les seuils
+> ci-dessus et la vraie condition sont prêts, à remettre en route quand ce
+> sera tranché. »
+
+**La décision que Yann vient de prendre est exactement celle que l'original
+attendait.** Nos « Décisions fermes » en tête de ce document listent pourtant
+« abandon du code dormant (ambiance splash, **verrouillage des modules**) » —
+on a supprimé une fonctionnalité en attente d'arbitrage en la prenant pour du
+code mort. À corriger dans cette ligne, et leçon à garder : *dormant* et
+*abandonné* ne sont pas synonymes ; un `return true` avec un commentaire
+d'attente est une question ouverte, pas un déchet.
+
+**2. Les seuils de l'original ne couvrent pas l'échelle demandée.** L'original
+verrouillait des **modules à l'intérieur de l'Atelier** (batterie dès le
+niveau 1, synthé au 13, effets au 27). Yann demande une échelle plus large —
+Atelier, puis modules, puis Mode Live — et **le Mode Live n'existait pas dans
+l'original**, donc aucun seuil n'a jamais été pensé pour lui. La grille est à
+reprendre, pas à porter telle quelle.
+
+**3. Le verrouillage ne demande AUCUN compte.** Point important parce que la
+question est arrivée dans D1 : la progression vit déjà en `localStorage`
+(`game.load()` est appelé au montage de `App.svelte`, `progress.level` est
+disponible partout). Le portail se code avec ce qu'il y a — `App.svelte` fait
+117 lignes et concentre déjà toute la bascule de mode. **Les comptes ne
+servent qu'à faire suivre la progression d'un appareil à l'autre**, ce qui est
+une autre question, et une question ultérieure.
+
+⚠️ **Reste à trancher avant de coder** : la grille de déverrouillage
+elle-même (quel niveau ouvre quoi), et surtout **ce que voit quelqu'un qui
+arrive et ne veut pas jouer**. Un verrou dur sur l'Atelier transforme un
+bac à sable en couloir : à décider si le verrou est réellement bloquant ou
+seulement « à découvrir » (grisé, ouvrable d'un clic « je sais déjà »). La
+version d'origine avait choisi le verrou dur — et ne l'a jamais activé.
+
+### D3 — Cycles fractionnaires : synthé seulement, et c'était l'inverse du problème
+
+> « le cycle fractionné permet de faire des gimmicks de mélodie au sein d'une
+> mesure. ça ne concerne que le synthé. »
+
+**Correction de ma recommandation.** Mon analyse (R5) portait sur les lignes
+**batterie**, et concluait « surtout pas `cycleBars`, ça coûte trop cher ».
+Le périmètre réel étant le **synthé**, cette conclusion tombe : les lignes
+synthé **ont déjà `cycleBars`**, et une valeur fractionnaire y est presque
+gratuite. Le chantier est nettement moins cher que je ne l'ai écrit.
+
+**Pourquoi ça marche déjà.** La boucle synthé du scheduler
+(`scheduler.ts:358-400`) est entièrement générique et **libre** : elle calcule
+`stepDur = stepDurForLine(row, barDur)`, avance `nextStepTime += stepDur` et
+boucle sur `stepIndex % totalSteps`. Contrairement aux lignes batterie, **elle
+ne suppose nulle part qu'une ligne dure une mesure**. Un `cycleBars` de 1/2
+donnerait donc naturellement deux tours de motif par mesure.
+
+**Ce qui bloque, très précisément : deux `Math.round()`.**
+
+| Endroit | Code actuel | Effet sur 1/2 |
+|---|---|---|
+| `model/defaults.ts:57` | `row.cycleBars = Math.max(1, Math.round(cycleBars))` | 0,5 → 0 → **1** |
+| `engine/harmony.ts:47` | `(Math.max(1, Math.round(row.cycleBars)) * barDur) / …` | idem, la durée du pas retombe à une mesure |
+
+Le reste de la surface (cartographiée exhaustivement, conformément à
+`CLAUDE.md`) est de l'arithmétique qui accepte les fractions telle quelle :
+`barPositionForStep` (`stepIdx * cycleBars / subdivisions`),
+`padChordAtBarPosition`, le curseur du scheduler, et la sérialisation — qui
+**ne clampe pas** les lignes synthé (simple fusion d'objet,
+`serialize.ts:95`), donc rien à migrer.
+
+Restent trois points d'UI, tous petits :
+- le curseur « Cycles (mesures) » est `min=1 max=16` entier
+  (`SynthRowView.svelte:281`) → il lui faut les crans fractionnaires ;
+- `beatLines` et `--bars` (`SynthRowView.svelte:68`, `227`) supposent
+  `4 × cycleBars` temps ≥ 1 — à 1/4 de mesure, ça fait **1 temps**, il faut
+  décider quoi dessiner (proposition : plus de repère de temps du tout sous
+  1 mesure, comme en affichage par paquets — « mieux vaut aucun repère qu'un
+  repère qui ment ») ;
+- `TransportRings.svelte:92` prend `Math.max(1, row.cycleBars)` pour le calcul
+  du plus grand cycle : correct par accident (une ligne plus courte qu'une
+  mesure ne doit effectivement pas agrandir l'anneau), mais à commenter comme
+  volontaire.
+
+**Recommandation de périmètre : Basse et Mélodie seulement, pas la Nappe.**
+La Nappe est la source harmonique — `padChordAtBarPosition` lit son motif pour
+décider quel accord tourne. Lui donner un cycle d'1/3 de mesure ferait changer
+l'accord trois fois par mesure, ce qui n'est pas un gimmick mélodique mais un
+autre morceau. Les gimmicks demandés vivent sur Mélodie (et éventuellement
+Basse) ; laisser la Nappe à ≥ 1 mesure évite entièrement de toucher au moteur
+d'harmonie.
+
+### D1 — Trois questions, trois réponses
+
+Yann n'a pas tranché « service ou pas » directement, mais a posé trois
+questions qui la découpent mieux que ma formulation.
+
+#### « Comment simplifier les commentaires / signalement ? »
+
+**En supprimant le texte libre.** Le coût des commentaires n'est pas le code,
+c'est la **modération** — un engagement de temps humain permanent, et la seule
+raison pour laquelle il faut ensuite des signalements, des rôles admin et une
+file de traitement. Un système sans texte libre n'a aucun de ces besoins.
+
+Version simple recommandée, par ordre de sobriété :
+1. **Des réactions, pas des commentaires** (👍 / 🔥 / 🎧 sur une séquence
+   partagée). Rien à modérer, rien à signaler, pas de rôle admin. Couvre le
+   vrai besoin (« est-ce que ça plaît ») sans en ouvrir un second.
+2. **Un seul lien « Signaler »** qui ouvre un mail ou un formulaire tiers.
+   Zéro backend, zéro file.
+3. Le texte libre **seulement si** l'usage mesuré le réclame — et à ce
+   moment-là c'est un choix assumé de tenir une modération, pas un effet de
+   bord d'avoir livré une zone de saisie.
+
+À savoir sur l'ancrage : une séquence partagée **est déjà une URL
+autoportante** (`share.ts` : pattern v2 compressé dans le `#`). Il n'y a pas
+d'identifiant serveur auquel accrocher une réaction — il faudrait le créer
+(par exemple une empreinte du motif). C'est le vrai coût caché de l'étape 1,
+pas le bouton lui-même.
+
+#### « Comment centraliser sur le mode jeu pour débloquer les modules ? »
+
+Voir D2 ci-dessus. Réponse courte : **ça ne relève pas de D1** — la
+progression est déjà locale, le portail se code sans compte ni base. Les
+comptes ne deviennent nécessaires que le jour où la progression doit suivre
+d'un appareil à l'autre.
+
+#### « Comment monitorer les usages ? »
+
+Le plus sobre qui réponde vraiment aux questions qu'on se pose : **Vercel Web
+Analytics** (`@vercel/analytics`), sans cookie, sans identifiant persistant, à
+brancher en une ligne dans `App.svelte` — le projet est déjà déployé sur
+Vercel, il n'y a ni serveur ni base à ajouter.
+
+⚠️ **Piège spécifique à ce projet : le build autonome ne doit pas téléphoner.**
+`build:singlefile` produit un HTML qu'on ouvre hors ligne, qu'on s'envoie par
+mail — y embarquer une balise de mesure enverrait des données depuis la
+machine de quelqu'un qui a explicitement pris la version hors-ligne. **Import
+conditionné au build site**, jamais dans le singlefile. À vérifier par un
+`grep` sur `dist-singlefile/index.html` après build, pas au jugé.
+
+Ce qu'il faut mesurer, formulé en questions plutôt qu'en compteurs — sinon on
+collecte des chiffres qu'on ne relit jamais :
+- **Le mode jeu est-il joué, et jusqu'où ?** (niveau atteint) — c'est ce qui
+  décide si l'investissement de D2 est justifié.
+- **Combien de gens passent le splash, et vers quel mode ?**
+- **Le Mode Live est-il ouvert sur un vrai téléphone ?** — son capteur
+  d'inclinaison n'a **jamais** été testé sur un appareil réel (blocage connu,
+  §7.3) ; savoir si quelqu'un l'utilise change la priorité de ce test.
+- **Quels presets sont chargés** (les 34 ne se valent sûrement pas), et
+  **est-ce que les gens exportent** ?
+
+Deux réserves à lever avant de brancher quoi que ce soit : les événements
+personnalisés (au-delà des pages vues) ne sont pas tous inclus selon le plan
+Vercel — à vérifier ; et une mesure d'audience strictement anonyme est
+généralement dispensée de bandeau de consentement, mais **c'est à confirmer,
+pas à supposer**.
+
+### D4 — Ce qu'est vraiment le problème d'accessibilité
+
+> « je n'ai pas compris ton point, il faut m'expliquer le pb »
+
+Ma formulation était mauvaise : j'ai listé des attributs manquants
+(`role="grid"`, `aria-pressed`…), ce qui décrit une **solution absente**, pas
+un problème. Le problème, mesuré dans l'appli le 2026-08-16 plutôt que déduit
+du code :
+
+**1. La grille du séquenceur ne répond pas au clavier. Du tout.**
+Les cases sont des `<button>` qui n'écoutent que `onpointerdown` /
+`onpointerup` (`DrumRowView.svelte:109-112`). On peut donc atteindre une case
+au Tab, mais :
+
+| Touche | Ce qui devrait arriver | Ce qui arrive vraiment |
+|---|---|---|
+| `Entrée` | activer/désactiver la case | **rien** |
+| `Espace` | activer/désactiver la case | **le morceau démarre** (raccourci global de lecture) |
+| clic souris | activer/désactiver la case | ça marche |
+
+Autrement dit : **sans souris ni écran tactile, on ne peut pas composer une
+seule note.** Ça ne concerne pas que les lecteurs d'écran — ça concerne aussi
+quiconque a une souris cassée, un trackpad qui lâche, ou l'habitude de tout
+faire au clavier.
+
+**2. Un lecteur d'écran n'entend rien d'exploitable.** Une case n'a aucun
+texte, aucun `aria-label`, et son état (allumée/éteinte) n'est porté que par
+une **classe CSS**, donc par une couleur. Compté sur l'onglet Rythme :
+**0 case sur 23** a un libellé, **0 sur 23** annonce son état. Ce qu'entend
+quelqu'un qui parcourt la grille : « bouton, bouton, bouton, bouton… », sans
+jamais savoir laquelle est active. Le `title` (« Clic : activer/changer… ») est
+le seul texte présent, il est identique partout et ne dit pas l'état.
+
+**La décision à prendre n'est pas technique, elle est de périmètre** : est-ce
+que « composer un rythme sans souris » fait partie de ce que l'appli promet ?
+- **Si oui**, le minimum utile est petit — un `onclick` sur la case (qui
+  récupère Entrée gratuitement), un `aria-label` du genre « Kick, pas 5,
+  actif, rafale ×2 », `aria-pressed`, et régler le conflit d'Espace. C'est de
+  loin le meilleur rapport effet/effort du sujet, et ça ne touche à rien
+  d'autre.
+- **Si non**, c'est un choix légitime pour un projet personnel — mais il doit
+  être **écrit** ici, une fois, pour cesser de réapparaître comme une dette à
+  chaque audit.
+
+⚠️ **En attente** : cette réponse-là, uniquement. Il n'y a rien d'autre à
+décider sur D4.
 
 ---
 
