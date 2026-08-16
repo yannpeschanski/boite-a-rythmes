@@ -13,8 +13,9 @@
 > revient. *Dormant* et *abandonné* ne sont pas synonymes — voir
 > [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16).
 >
-> **En reprenant le travail, lire d'abord les [arbitrages (suite) et 3e lot de sujets](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16)**
-> (le plus récent), puis les [arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16)
+> **En reprenant le travail, lire d'abord le [verrou dur des modules + `#boss`](#-verrou-dur-des-modules--accès-boss--2026-08-16)**
+> (dernière livraison), puis les [arbitrages (suite) et 3e lot de sujets](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16),
+> les [arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16)
 > et le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)
 > (2026-08-16) : il croise l'audit de design et les remarques de Yann en une
 > seule file, remplace les paliers de priorité de l'audit, et sépare **ce
@@ -2636,6 +2637,122 @@ Ces sujets ne rentrent pas tous au même endroit :
   le pad d'enregistrement dans l'Atelier.
 - ⚠️ **Attend encore un arbitrage** : verrou dur ou grisé (D2), et la grille
   de déverrouillage proposée ci-dessus — à valider ou corriger.
+
+---
+
+## ✅ Verrou dur des modules + accès `#boss` — 2026-08-16
+
+> « je suis plutôt pour le verrou dur / je propose également que tu crées un
+> url pour que je puisse accéder directement à tout, par exemple
+> https://boite-a-rythmes.vercel.app/#boss »
+
+**Livré.** Premier morceau réel du chantier D2 : la colonne vertébrale du
+déblocage. Le `#boss` ne pouvait pas être livré seul — c'est le contournement
+d'une serrure qui n'existait pas encore.
+
+### Périmètre volontairement réduit aux MODULES
+
+Verrouillés : **Atelier, Synthé, Production, Mode Live**. Le déblocage
+contrôle par contrôle (rafale au 11, swing au 14…) proposé dans le 3ᵉ lot
+**n'est pas fait** : cette grille-là n'a pas encore été validée, et la câbler
+sur une trentaine de contrôles avant validation, c'est du travail à refaire.
+Les seuils posés ici sont ceux qui étaient **déjà décidés**.
+
+| Module | Seuil | D'où il vient |
+|---|---|---|
+| Atelier | 2 | réussir le niveau 1 — arbitrage D2 de Yann |
+| Synthé | 13 | **verbatim de l'original** |
+| Production | 27 | **verbatim de l'original** |
+| Mode Live | 34 | dernier niveau — arbitrage D2 (l'original n'avait pas ce mode) |
+
+### Trois pièges rencontrés, dont deux invisibles à la relecture
+
+**1. Le seuil de l'Atelier ne pouvait pas être 1.** `PlayerProgress.level` est
+le niveau ATTEINT, et un joueur tout neuf démarre déjà à `{ level: 1 }` ; c'est
+réussir le niveau N qui écrit `N + 1`. Un seuil à 1 aurait donc ouvert
+l'Atelier à tout le monde dès la première visite — un verrou qui ne verrouille
+rien, et qui aurait eu l'air de marcher. (L'original portait bien `drum: 1`,
+mais chez lui ça voulait dire « jamais verrouillé », cohérent avec son
+`return true`.) Le seuil est à **2**, et un test tombe si quelqu'un remet 1.
+
+**2. Un seuil au-dessus de `LEVELS.length` casserait « master » en silence.**
+Le pseudo de test renvoie `level = LEVELS.length` (34), et l'original comptait
+là-dessus pour n'avoir « aucun cas particulier à gérer » sur les modules.
+Mettre `live: 35` (« campagne finie ») aurait donc rendu le Mode Live
+inaccessible **au contournement lui-même**, et à quiconque a tout terminé.
+D'où `live: 34`, plus une assertion au chargement du module ET un test.
+
+**3. Le pseudo n'était jamais mémorisé — et ça rendait le verrou absurde.**
+Trouvé **en testant**, pas en relisant : `pseudo = $state('')`, redemandé à
+chaque visite. Or la progression est rangée PAR pseudo. Donc au moindre
+rechargement, `playerProgress` retombait à `{ level: 1 }` et **l'Atelier se
+reverrouillait pour quelqu'un qui l'avait ouvert vingt niveaux plus tôt.**
+Le défaut existait avant (il fallait déjà retaper son nom à l'identique pour
+retrouver ses étoiles), mais il était sans conséquence tant que rien ne
+dépendait de la progression. Corrigé : `boite-a-rythme:pseudo` persiste le
+dernier pseudo.
+- **Conséquence à assumer** : le formulaire de pseudo ne réapparaît plus à
+  chaque visite — or c'est lui qui servait, de fait, à changer de joueur. Le
+  `👤 pseudo` de l'en-tête du jeu est donc devenu cliquable (`clearPseudo()`),
+  souligné en pointillés plutôt que transformé en troisième bouton. La
+  progression et les besaces ne sont pas touchées : elles reviennent en
+  retapant le nom.
+
+### `#boss` — les détails qui comptent
+
+- `#boss` ouvre tout, **`#boss=off`** revient à la vue d'un vrai visiteur.
+  Sans issue, un contournement permanent empêcherait de jamais revoir ce que
+  voit quelqu'un d'autre — c'est-à-dire de tester le verrou qu'on vient
+  d'écrire.
+- **Mémorisé** (`boite-a-rythme:boss`) : une visite suffit, pas besoin de
+  remettre le hash à chaque fois.
+- **Écouteur `hashchange`** : taper `#boss` dans la barre d'adresse d'une page
+  DÉJÀ ouverte ne la recharge pas. Sans ça la bascule n'aurait pris effet
+  qu'au rechargement suivant, et aurait eu l'air cassée. Trouvé en testant
+  `#boss=off`. Couper l'accès depuis un module désormais verrouillé renvoie à
+  l'accueil plutôt que d'y laisser l'utilisateur.
+- Un bandeau discret sur l'accueil rappelle qu'on est en accès total —
+  sinon on teste sans le savoir une appli qui n'est pas celle des autres.
+- Le pseudo **« master »** reste valable et n'est pas remplacé : il sert
+  toujours dans le jeu. `#boss` existe parce que le pseudo se saisit *dans le
+  Mode jeu*, or c'est précisément le chemin qu'un verrou dur sur l'Atelier
+  coupe.
+
+### Un lien de partage continue de fonctionner
+
+`#r=…` ouvre l'Atelier **même verrouillé**, pour cette session et sans rien
+débloquer d'autre. Sinon un lien envoyé à quelqu'un qui n'a jamais joué serait
+tombé sur un écran de verrou : le partage, déjà livré, aurait cessé de
+marcher du jour au lendemain. Le lien EST l'intention d'ouvrir l'Atelier.
+
+### « Dur » porte sur l'accès, pas sur la visibilité
+
+Les entrées verrouillées restent **affichées**, éteintes, avec 🔒 et le niveau
+qui les ouvre. C'est ce que faisait l'original (un overlay de verrouillage, pas
+un module escamoté) : une entrée qui disparaît se lit comme une panne, une
+entrée cadenassée se lit comme une suite. Si Yann veut l'invisibilité totale,
+c'est un `{#if}` à ajouter, pas une reprise.
+
+### Vérifications
+
+- `npm run check` 0 erreur · **21 tests** (7 nouveaux) · les deux builds.
+- **Tests validés par régressions simulées**, comme pour le scheduler : remettre
+  `atelier: 1` fait tomber le test du verrou initial ; passer `live` à 35 fait
+  échouer le chargement du module avec le message attendu. Un test vert sur un
+  verrou qu'on vient d'écrire ne prouve rien tant qu'on ne l'a pas vu rougir.
+- **Parcours réels vérifiés au navigateur** (390×844) : visiteur neuf (Atelier
+  et Live cadenassés, clic sans effet) ; `#boss` (tout ouvert) ; `#boss=off` à
+  chaud sans rechargement ; éjection vers l'accueil quand l'accès est coupé
+  depuis l'Atelier ; joueur « yann » niveau 14 **après rechargement** (Atelier
+  et Synthé ouverts, Production et Live fermés) ; lien de partage reçu par
+  quelqu'un qui n'a jamais joué (Atelier ouvert, Synthé et Production fermés).
+
+### Reste à faire sur D2
+
+- La **grille contrôle par contrôle** du 3ᵉ lot, à valider avant câblage.
+- Le **2ᵉ type d'exercice** (l'accord de fond de D2), pas commencé.
+- Une **explication dans le Mode jeu** de ce que le prochain palier va ouvrir :
+  aujourd'hui le verrou dit « niveau 13 » sans dire ce qu'on y gagne.
 
 ---
 

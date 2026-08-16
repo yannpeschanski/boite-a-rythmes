@@ -3,25 +3,61 @@
   // l'original. Le splash devient un simple choix d'entrée : il servait aussi
   // de geste de déverrouillage audio (politique d'autoplay des navigateurs),
   // rôle conservé puisqu'on n'ouvre l'AudioContext qu'au premier clic.
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import AtelierView from './ui/atelier/AtelierView.svelte';
   import GameView from './ui/game/GameView.svelte';
   import LiveView from './ui/live/LiveView.svelte';
   import { game } from './stores/game.svelte';
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
+  import { unlocks } from './stores/unlocks.svelte';
+  import { unlockLevelFor, type LockedModule } from './model/unlocks';
 
   let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
 
   onMount(() => {
     game.load();
-    // Rythme partagé par URL : on entre directement dans l'Atelier.
-    if (loadFromHash()) view = 'atelier';
+    // Contournement #boss AVANT tout le reste : ce qui suit lit les verrous.
+    unlocks.init(location.hash);
+    // Rythme partagé par URL : on entre directement dans l'Atelier. Le lien
+    // vaut intention, il ouvre l'Atelier même verrouillé (voir model/unlocks).
+    if (loadFromHash()) {
+      unlocks.sharedPattern = true;
+      view = 'atelier';
+    }
     // Lien direct/favori vers le Mode Live (en plus du bouton de nav
     // ci-dessous, pas à sa place) — pratique pour y revenir sans repasser
     // par l'écran d'accueil.
-    if (location.hash === '#mode-live') view = 'live';
+    if (location.hash === '#mode-live' && unlocks.has('live')) view = 'live';
+    // Taper #boss (ou #boss=off) dans la barre d'adresse d'une page DÉJÀ
+    // ouverte ne la recharge pas : sans cet écouteur, la bascule ne prendrait
+    // effet qu'au rechargement suivant — et on croirait qu'elle ne marche
+    // pas. Trouvé en testant #boss=off, pas en relisant le code.
+    window.addEventListener('hashchange', onHashChange);
   });
+  onDestroy(() => window.removeEventListener('hashchange', onHashChange));
+
+  function onHashChange() {
+    unlocks.init(location.hash);
+    // Si on retire l'accès total depuis un module désormais verrouillé, on
+    // ne laisse pas l'utilisateur dedans : retour à l'accueil.
+    if (view === 'atelier' && !unlocks.has('atelier')) view = 'splash';
+    if (view === 'live' && !unlocks.has('live')) view = 'splash';
+  }
+
+  // Verrou DUR (arbitrage D2 de Yann, 2026-08-16) : le module n'est pas
+  // utilisable tant que le Mode jeu ne l'a pas ouvert. Il reste VISIBLE avec
+  // son cadenas et le niveau qui l'ouvre — comme l'original, qui posait un
+  // overlay de verrouillage plutôt que d'escamoter le module. Une entrée qui
+  // disparaît se lit comme une panne ; une entrée cadenassée se lit comme une
+  // suite. « Dur » porte sur l'accès, pas sur la visibilité.
+  function enter(v: 'atelier' | 'game' | 'live', mod?: LockedModule) {
+    if (mod && !unlocks.has(mod)) return;
+    view = v;
+  }
+  function lockTitle(mod: LockedModule): string {
+    return `Se débloque au niveau ${unlockLevelFor(mod)} du Mode jeu`;
+  }
 </script>
 
 {#if view === 'live'}
@@ -31,10 +67,36 @@
     <h1>Boîte à rythmes</h1>
     <p>Un séquenceur rétro, et une campagne pour apprendre le rythme à l’oreille.</p>
     <div class="choices">
-      <button class="big" onclick={() => (view = 'atelier')}>🥁 Atelier<small>Composer librement</small></button>
-      <button class="big" onclick={() => (view = 'game')}>🎮 Mode jeu<small>34 niveaux</small></button>
-      <button class="big" onclick={() => (view = 'live')}>🎛 Mode Live<small>Manette paysage</small></button>
+      <button
+        class="big"
+        class:locked={!unlocks.has('atelier')}
+        disabled={!unlocks.has('atelier')}
+        title={unlocks.has('atelier') ? '' : lockTitle('atelier')}
+        onclick={() => enter('atelier', 'atelier')}
+      >
+        {unlocks.has('atelier') ? '🥁' : '🔒'} Atelier<small
+          >{unlocks.has('atelier') ? 'Composer librement' : `Niveau ${unlockLevelFor('atelier')}`}</small
+        ></button
+      >
+      <button class="big" onclick={() => enter('game')}>🎮 Mode jeu<small>34 niveaux</small></button>
+      <button
+        class="big"
+        class:locked={!unlocks.has('live')}
+        disabled={!unlocks.has('live')}
+        title={unlocks.has('live') ? '' : lockTitle('live')}
+        onclick={() => enter('live', 'live')}
+      >
+        {unlocks.has('live') ? '🎛' : '🔒'} Mode Live<small
+          >{unlocks.has('live') ? 'Manette paysage' : `Niveau ${unlockLevelFor('live')}`}</small
+        ></button
+      >
     </div>
+    {#if !unlocks.has('atelier')}
+      <p class="hint">L’Atelier s’ouvre en réussissant le premier niveau du Mode jeu.</p>
+    {/if}
+    {#if unlocks.boss}
+      <p class="boss">🔓 Accès total (#boss) — <code>#boss=off</code> pour revoir l’appli comme un visiteur.</p>
+    {/if}
   </div>
 {:else}
   <!-- La barre de navigation ne subsiste que pour le Mode jeu (audit A1) :
@@ -48,9 +110,17 @@
     <AtelierView onSwitchView={(v) => (view = v)} />
   {:else}
     <nav class="switcher">
-      <button onclick={() => (view = 'atelier')}>🥁 Atelier</button>
-      <button class="on" onclick={() => (view = 'game')}>🎮 Mode jeu</button>
-      <button onclick={() => (view = 'live')}>🎛 Mode Live</button>
+      <button
+        disabled={!unlocks.has('atelier')}
+        title={unlocks.has('atelier') ? '' : lockTitle('atelier')}
+        onclick={() => enter('atelier', 'atelier')}>{unlocks.has('atelier') ? '🥁' : '🔒'} Atelier</button
+      >
+      <button class="on" onclick={() => enter('game')}>🎮 Mode jeu</button>
+      <button
+        disabled={!unlocks.has('live')}
+        title={unlocks.has('live') ? '' : lockTitle('live')}
+        onclick={() => enter('live', 'live')}>{unlocks.has('live') ? '🎛' : '🔒'} Mode Live</button
+      >
     </nav>
     <GameView onGoAtelier={() => (view = 'atelier')} />
   {/if}
@@ -95,6 +165,36 @@
   .big small {
     font-size: 11px;
     color: var(--xp-muted);
+  }
+  /* Verrouillé : le relief sortant disparaît (rien à enfoncer) et le bouton
+     s'éteint, mais il garde sa taille et sa place — c'est ce qui le fait lire
+     comme « pas encore » et non comme « absent ». */
+  .big.locked {
+    background: linear-gradient(180deg, #f2f0e8, #ddd9cc 45%, #cbc7b8);
+    box-shadow: none;
+    border-color: #9a9686;
+    color: var(--xp-muted);
+    cursor: not-allowed;
+  }
+  .splash .hint {
+    margin: 18px 0 0;
+    font-size: 12.5px;
+    opacity: 0.9;
+  }
+  .splash .boss {
+    margin: 10px 0 0;
+    font-size: 12px;
+    opacity: 0.95;
+  }
+  .splash .boss code {
+    background: rgba(0, 0, 0, 0.25);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .switcher button:disabled {
+    background: linear-gradient(180deg, #f2f0e8, #ddd9cc);
+    color: var(--xp-muted);
+    cursor: not-allowed;
   }
   .switcher {
     display: flex;

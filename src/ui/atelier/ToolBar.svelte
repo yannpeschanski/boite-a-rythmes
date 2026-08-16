@@ -7,6 +7,8 @@
   import { paramHintsSettings } from '../xp/paramHints.svelte';
   import { PRESETS, PRESET_CATEGORIES, type SongPresetData } from '../../model/presets/songs';
   import { sequenceBank } from '../../stores/bank.svelte';
+  import { unlocks } from '../../stores/unlocks.svelte';
+  import { unlockLevelFor } from '../../model/unlocks';
 
   let {
     onExport,
@@ -106,7 +108,12 @@
       <div class="dropdown">
         <button onclick={() => choose(() => onSwitchView?.('atelier'))}>✓ 🥁 Atelier</button>
         <button onclick={() => choose(() => onSwitchView?.('game'))}>&nbsp;&nbsp; 🎮 Mode jeu</button>
-        <button onclick={() => choose(() => onSwitchView?.('live'))}>&nbsp;&nbsp; 🎛 Mode Live</button>
+        <button
+          disabled={!unlocks.has('live')}
+          title={unlocks.has('live') ? '' : `Se débloque au niveau ${unlockLevelFor('live')} du Mode jeu`}
+          onclick={() => choose(() => onSwitchView?.('live'))}
+          >&nbsp;&nbsp; {unlocks.has('live') ? '🎛' : '🔒'} Mode Live</button
+        >
       </div>
     {/if}
   </div>

@@ -9,11 +9,15 @@
   // joignable sans remonter en haut de page, quel que soit l'endroit où on a
   // défilé — d'où un rendu en groupe de boutons XP plutôt qu'en onglets de
   // dossier « collés » au panneau du dessous (qui n'est plus adjacent).
+  // `locked` (2026-08-16) : un onglet peut être verrouillé tant que le Mode
+  // jeu ne l'a pas ouvert (arbitrage D2). Il reste affiché, avec son cadenas
+  // et une infobulle disant quel niveau l'ouvre — cf. le commentaire dans
+  // App.svelte : une entrée qui disparaît se lit comme une panne.
   let {
     tabs,
     active = $bindable(),
   }: {
-    tabs: { id: string; label: string }[];
+    tabs: { id: string; label: string; locked?: boolean; lockHint?: string }[];
     active: string;
   } = $props();
 </script>
@@ -25,9 +29,12 @@
       aria-selected={active === t.id}
       class="tab"
       class:active={active === t.id}
+      class:locked={t.locked}
+      disabled={t.locked}
+      title={t.locked ? (t.lockHint ?? '') : ''}
       onclick={() => (active = t.id)}
     >
-      {t.label}
+      {t.locked ? `🔒 ${t.label}` : t.label}
     </button>
   {/each}
 </div>
@@ -69,5 +76,11 @@
     background: var(--xp-select-blue);
     color: #fff;
     box-shadow: var(--xp-bevel-in);
+  }
+  .tab.locked {
+    background: linear-gradient(180deg, #f2f0e8, #ddd9cc);
+    box-shadow: none;
+    color: var(--xp-muted);
+    cursor: not-allowed;
   }
 </style>

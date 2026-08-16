@@ -35,6 +35,15 @@ export const GAME_DRUM_ROWS: GameDrumRowName[] = ['kick', 'snare', 'hat'];
 
 const KEY_BAG = 'boite-a-rythme:besaces';
 const KEY_PROGRESS = 'boite-a-rythme:progression';
+// Dernier pseudo utilisé (2026-08-16). La progression et la besace étaient
+// déjà persistées PAR PSEUDO, mais le pseudo actif ne l'était pas : à chaque
+// visite on repartait de `pseudo = ''`, donc d'une progression vide, et il
+// fallait retaper son nom à l'identique pour retrouver ses étoiles.
+// Invisible tant que rien ne dépendait de la progression ; depuis le verrou
+// des modules (model/unlocks.ts), ça reverrouillait l'Atelier à chaque
+// rechargement pour quelqu'un qui l'avait ouvert. Trouvé en testant le
+// verrou, pas en relisant le code.
+const KEY_PSEUDO = 'boite-a-rythme:pseudo';
 
 export interface PlayerProgress {
   level: number;
@@ -138,13 +147,40 @@ class GameStore {
   load(): void {
     this.progress = readJson<Record<string, PlayerProgress>>(KEY_PROGRESS, {});
     this.bags = readJson<Record<string, BagItem[]>>(KEY_BAG, {});
+    // Seulement si aucun pseudo n'est actif : `setPseudo` appelle `load()`
+    // APRÈS avoir posé le sien, il ne faut pas l'écraser avec l'ancien.
+    if (!this.pseudo) {
+      try {
+        this.pseudo = localStorage.getItem(KEY_PSEUDO) ?? '';
+      } catch {
+        /* stockage refusé : on redemandera le pseudo, comme avant */
+      }
+    }
   }
 
   setPseudo(name: string): void {
     this.pseudo = name.trim() || 'anonyme';
+    try {
+      localStorage.setItem(KEY_PSEUDO, this.pseudo);
+    } catch {
+      /* stockage refusé : le pseudo vaut pour la session */
+    }
     this.load();
     const prog = this.playerProgress;
     this.startLevel(Math.max(0, Math.min(LEVELS.length - 1, prog.level - 1)));
+  }
+
+  // Repasser par le formulaire de pseudo. Nécessaire depuis que le pseudo est
+  // mémorisé : avant, l'oubli à chaque visite FAISAIT office de changement de
+  // joueur. Ne touche ni à la progression ni aux besaces — elles restent
+  // rangées sous leur pseudo et reviennent en le retapant.
+  clearPseudo(): void {
+    this.pseudo = '';
+    try {
+      localStorage.removeItem(KEY_PSEUDO);
+    } catch {
+      /* rien à retirer */
+    }
   }
 
   startLevel(index: number): void {
