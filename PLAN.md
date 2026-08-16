@@ -5,11 +5,12 @@
 >
 > **Décisions fermes** : Svelte 5 + TS + Vite · distribution double (site + fichier HTML unique via vite-plugin-singlefile) · périmètre complet Atelier + Mode jeu (iso-fonctionnalités puis améliorations) · abandon du code dormant (ambiance splash, verrouillage des modules) · design Windows XP conservé et assumé davantage.
 >
-> **En reprenant le travail, lire d'abord** : la [dette d'interface (§7.5)](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2),
-> puis les [remarques de Yann du 2026-08-15, 2e lot](#remarques-de-yann--2026-08-15-2e-lot--analyse-et-cadrage)
-> (mélodies des presets, mode jeu, comptes/BDD, fill de clap, cycles
-> fractionnaires, pad d'enregistrement) — dont **trois items attendent un
-> arbitrage** et ne doivent pas être commencés sans.
+> **En reprenant le travail, lire d'abord le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)**
+> (2026-08-16) : il croise l'audit de design et les remarques de Yann en une
+> seule file, remplace les paliers de priorité de l'audit, et sépare **ce
+> qu'on peut faire tout de suite** des **quatre décisions** dont dépend le
+> reste. Les sections datées qui le précèdent gardent le détail et les
+> mesures ; le plan consolidé dit quoi faire.
 
 ---
 
@@ -1205,11 +1206,12 @@ détail des constats plus bas dans ce document) :
   par ligne (5 → 4 sur basse/mélodie). Page repliée inchangée (1 519px).
   Les 43 libellés de curseur de l'appli ont toujours une explication
   (vérifié en ouvrant tous les replis des 3 onglets, pas au jugé).
-- ⚠️ **A5 — repères de mesure** dans la grille linéaire, avec la
-  contrainte des subdivisions différentes par ligne. Vrai parti pris
-  visuel, à trancher.
 - ⚠️ **A6 — dédoublonner les commandes** entre menus, barre d'outils et
   bloc preset. À trancher : laquelle des trois surfaces garde quoi.
+  *(A5 était listé ici en ⚠️ « à trancher » alors qu'il a été livré le
+  même jour — son ✅ est juste en dessous. Ligne supprimée le 2026-08-16 :
+  une entrée ouverte qui décrit du travail fait est pire qu'absente, elle
+  fait rouvrir un débat déjà tranché.)*
 - ✅ **A4 — le mur d'encarts repliés** (2026-08-15). Replié, un
   `<fieldset>` dessinait quand même un rectangle pleine largeur pour ne
   contenir qu'un mot de `<legend>` : trois bandes vides par ligne de
@@ -1263,8 +1265,12 @@ détail des constats plus bas dans ce document) :
     pas du tout la même durée. Porté par le libellé existant plutôt que
     par un badge séparé — aucun élément permanent de plus, aucune hauteur
     gagnée (règle du §7.5).
-- **B3 · B4 · B5 · B6 · B8 · B9** (finitions) — voir le palier 3 de
-  l'audit. B7 est fait (voir plus bas).
+- **B3 · B4 · B6 · B8** (finitions) — voir le palier 3 de l'audit.
+  **Mis à jour le 2026-08-16** : B7 (menubar sur deux lignes) est fait ;
+  **B5** (anneau synthé délavé) et **B9** (canvas `FilterCurve` qui flotte)
+  n'existent plus — les deux ont été résolus par *suppression* (un seul
+  anneau au lieu de deux, `FilterCurve.svelte` supprimé), pas par
+  correction. Quatre constats restants sur neuf.
 - ❌ **Accessibilité** (promue depuis §4, audit C5) : `role="grid"`/
   `gridcell`, `aria-pressed`, un libellé par pas (« Kick, pas 5, actif,
   roll ×2 »), `prefers-reduced-motion` sur la loupe et les animations.
@@ -1573,6 +1579,14 @@ commandes).
 **Palier 3 — finitions :** B6 (centrage vertical splash/jeu, collines
 Bliss), B4 (cercle desktop), B5 (anneau synthé), B8 (cases synthé), B3,
 B7, B9.
+
+> **État au 2026-08-16** — ces trois paliers ne sont plus à jour, ils sont
+> conservés tels quels comme trace de l'arbitrage d'origine. Palier 1 livré
+> en entier ; du palier 2, A4 et A5 sont livrés, **seul A6 reste** ; du
+> palier 3, B7/B5/B9 sont réglés (les deux derniers par suppression),
+> **B3/B4/B6/B8 restent**. Le plan à jour, croisé avec les remarques de
+> Yann, est en fin de document :
+> [plan d'action consolidé](#plan-daction-consolidé--2026-08-16).
 
 ### C. Remise en cause de ce document (demandée par Yann le même jour)
 
@@ -1905,6 +1919,157 @@ plus, mais dans un mode qui a de la place, pas dans l'Atelier qui n'en a plus
 Trois items attendent un arbitrage de Yann et ne doivent pas être commencés
 sans : **R2** (quel chantier), **R3** (option 1 vs 2, et modération ou non),
 **R5** (B tout de suite, ou C visé d'emblée).
+
+---
+
+## Plan d'action consolidé — 2026-08-16
+
+Demande de Yann : « remets en perspective mes actions proposées et les
+propositions de ton audit pour voir un plan d'action cohérent ». Ce qui suit
+**remplace** les priorités de l'audit de design (§ « C. Priorités proposées »,
+paliers 1-3) et l'ordre proposé en fin de « Remarques de Yann — 2e lot ». Les
+deux sections restent en place comme trace des arbitrages d'origine ; c'est
+ici qu'on lit ce qu'on fait ensuite.
+
+### Ce que le croisement change
+
+Les deux listes ne parlaient pas de la même chose : **l'audit porte sur la
+façon dont l'appli présente ce qu'elle fait déjà**, les remarques de Yann sur
+**ce qu'elle fait et pour qui**. Elles ne se concurrencent pas sur le fond —
+elles se concurrencent sur l'écran et sur le temps. Trois conséquences en
+sortent, qu'aucune des deux listes ne pouvait donner seule.
+
+**1. Le reste-à-faire de l'audit est deux fois plus petit qu'annoncé.** En
+vérifiant chaque constat dans le code plutôt qu'en relisant les listes :
+palier 1 livré en entier ; A4 et A5 livrés (A5 figurait encore en ⚠️ « à
+trancher » à côté de son propre ✅) ; **B5 et B9 n'existent plus, résolus par
+suppression** — un seul anneau de transport au lieu de deux, `FilterCurve`
+supprimé. Il reste **A6 · B3 · B4 · B6 · B8 · accessibilité**, soit six items
+sur les quinze du 15/08.
+
+**2. Trois des remarques de Yann fusionnent avec des constats de l'audit.**
+Ce ne sont pas des travaux voisins, ce sont les deux faces d'un même défaut :
+
+| Remarque de Yann | Constat d'audit | Ce que ça donne fusionné |
+|---|---|---|
+| **R1** mélodies trop denses | **B8** cases synthé qui ont l'air désactivées | « la partie synthé est opaque » — illisible à l'œil ET à l'oreille. À juger ensemble, sinon on corrige une moitié et le problème persiste. |
+| **R6** pad pour enregistrer | **A6** mêmes commandes à trois endroits | A6 est la *règle* qui répond à « où vit le pad ». Réponse : dans le Mode Live, qui a de la place — pas une 3ᵉ surface dans l'Atelier. |
+| **R2** travailler le mode jeu | **B6** splash/jeu collés en haut, 70 % de vide | Le même écran. Si on ouvre le mode jeu, on fait les deux dans la même passe, pas deux fois. |
+
+**3. R5 est débloqué par du travail déjà livré, et personne ne le savait.**
+Les cycles fractionnaires demandent qu'on voie la mesure ; les repères de temps
+(A5, livré le 15/08, utilitaire `.beat-grid` piloté par `--bars`/`--beats`)
+sont exactement ça. Un multiplicateur de répétition s'y branche sans nouveau
+travail visuel. Proposer des cycles en 1/3 de mesure dans une grille sans
+mesure visible aurait été incompréhensible ; ça ne l'est plus.
+
+### Le vrai goulot : quatre décisions, pas du code
+
+Constat qui surprend et qui organise tout le reste : **ce qui reste des deux
+listes est majoritairement bloqué sur des arbitrages, pas sur de la
+difficulté technique.** Tant qu'ils ne sont pas tranchés, s'y mettre c'est
+risquer de jeter le travail.
+
+- **D1 — Est-ce que la boîte à rythmes devient un service ?** (gouverne R3)
+  Comptes optionnels avec noyau 100 % local, ou appli serveur. Décide aussi du
+  sort de `build:singlefile` : un HTML autonome ne peut authentifier personne.
+  *Recommandation : comptes optionnels (option 1 de R3), le build autonome
+  survit.*
+- **D2 — Le mode jeu, dans quelle direction ?** (gouverne R2 + B6) Un
+  deuxième type d'exercice / une extension au synthé / de la rejouabilité
+  après le niveau 34. *Recommandation : un deuxième type d'exercice — c'est ce
+  qui change le plus la perception pour le moins de code (la campagne cesse
+  d'être une même épreuve répétée 34 fois).*
+- **D3 — Les cycles fractionnaires, jusqu'où ?** (gouverne R5) Multiplicateur
+  de répétition (sûr, gain d'écriture) ou période libre (déphasage réel,
+  casse l'alignement à la mesure). *Recommandation : le multiplicateur
+  d'abord.*
+- **D4 — L'accessibilité est-elle un objectif ?** (gouverne §4/§7.5) Toujours
+  à **0 partout** : pas de `role="grid"`, pas d'`aria-pressed`, pas de libellé
+  par pas, pas de `prefers-reduced-motion`. *Recommandation : la déclarer
+  objectif et lui donner un créneau, OU la déclarer non-objectif assumé — mais
+  décider. La laisser ouverte sans échéance est le scénario que la règle n°3
+  du §7.5 décrit exactement.*
+
+**A6 n'est pas une 5ᵉ décision** mais une règle à appliquer : elle a déjà sa
+réponse par défaut (le §7.5 règle n°1 — tout nouvel élément permanent nomme ce
+qu'il remplace), et c'est elle qui arbitre où atterrissent R4, R5 et R6.
+
+### La tension à ne pas escamoter
+
+Le §7.5 a été créé parce que **le backlog n'avait quasiment jamais rien
+enlevé**, et que la chrome mesurée à 64 % de l'écran en était le résultat
+mécanique. Or les sept remarques du 2ᵉ lot sont **presque toutes des
+ajouts** : un fill de clap, un réglage de cycle, un pad d'enregistrement, des
+comptes, du contenu de jeu.
+
+Ce n'est pas une objection — c'est la raison pour laquelle chacun passe par le
+filtre de la règle n°1 avant d'être codé, et pourquoi le plan ci-dessous
+précise **où** chaque chose atterrit :
+
+- **R4** (fill de clap) → aucun élément permanent : le fill existe déjà comme
+  notion globale (`fillEvery`), le clap s'y branche. Coût écran **nul**.
+- **R5** (cycles) → un curseur de plus dans un panneau **déjà replié**, pas
+  une barre. Coût écran nul au repos.
+- **R6** (pad) → dans le Mode Live, à côté du ⏺ REC existant. **Aucun ajout
+  dans l'Atelier**, qui est la surface saturée.
+- **R1** (mélodies) → zéro UI, c'est du générateur.
+- **R3** (comptes) → nouvelle surface assumée, et c'est précisément pour ça
+  que D1 est une décision et pas une tâche.
+
+### Ce qui peut être fait maintenant, sans aucune décision
+
+Dans l'ordre. C'est la file de travail ; tout le reste attend D1-D4.
+
+1. **R1(a) — densité de la mélodie divisée.** Une ligne dans
+   `generators.ts` (la mélodie reçoit `fillRate` plein pot là où la basse
+   reçoit `fillRate * 0.75`). Effet immédiat sur les 34 presets, où la
+   mélodie est aujourd'hui la ligne la plus dense dans 31 cas sur 34.
+   *Ne change que des arguments : aucun risque sur l'ordre de consommation
+   du générateur.*
+2. **R3 brique 1 — monitoring anonyme seul.** Aucun compte, aucune base :
+   un comptage de pages/presets/exports. **C'est le seul item qui informe
+   les autres** — notamment D2, qu'on tranche aujourd'hui sans savoir si le
+   mode jeu est joué et jusqu'où.
+3. **R6 — enregistrer les notes jouées au pad.** Le geste existe déjà
+   (`playLiveMelodyNote`, mode SOLO MÉLO) ; il manque l'écriture dans la
+   grille. Aucun risque de déterminisme (on écrit de l'état, on n'ajoute pas
+   de tirage). Meilleur rapport effet/effort du lot après le monitoring.
+4. **B8 — cases synthé vides.** Finition visuelle pure, aucun parti pris, et
+   elle fait partie du même problème perçu que R1 (voir tableau ci-dessus) :
+   à faire dans la foulée de R1 pour juger le résultat d'un bloc.
+5. **R4 — fill de clap**, avec le second générateur dérivé de la même graine.
+   Critère de réussite : `tests/scheduler.test.ts` reste vert **sans être mis
+   à jour**.
+6. **R1(b) — mélodie par motif court répété.** Le vrai correctif musical, et
+   le premier item de la file qui change les notes de tous les presets : à
+   annoncer comme tel.
+7. **B3 · B4** — proportions des cases, vue circulaire perdue au milieu du
+   desktop. Finitions sans arbitrage.
+
+### Ce qui attend une décision
+
+| Attend | Chantier | Ce qui tombe avec |
+|---|---|---|
+| **D1** | R3 briques 2-4 : auth, base, banque partagée, commentaires, modération, rôle admin | le sort de `build:singlefile` |
+| **D2** | R2 mode jeu | **B6** (splash/jeu, collines Bliss) — même écran, même passe |
+| **D3** | R5 cycles fractionnaires | rien d'autre (A5 l'a déjà débloqué) |
+| **D4** | accessibilité (§4) | rien d'autre, mais c'est transverse à tout ce qu'on écrira après |
+
+### Ce qui n'est pas dans ce plan, et pourquoi
+
+- **A1** (budget d'écran) est passé de 64 % à **32 %** de chrome sur le
+  premier écran mobile. Objectif atteint pour l'instant ; il redeviendra un
+  sujet le jour où on ajoute une surface permanente — ce que D1 propose
+  justement de faire.
+- **§7.2.1** (passe de densité) reste rouverte, mais son coût a été payé par
+  A2 : plus aucune valeur ne passe à la ligne, plus aucun libellé tronqué.
+- Le **nit du `select()` au focus** des champs de valeur : trois lignes, à
+  prendre en passant dans n'importe quel chantier qui touche `XpSlider`, pas à
+  planifier.
+- **Étage (2) des tests de déterminisme** (hash du rendu offline sous
+  Playwright) : toujours pas fait, et moins urgent depuis que l'étage (1)
+  existe. À ressortir si R1(b) ou R4 se révèlent scabreux.
 
 ---
 
