@@ -13,8 +13,9 @@
 > revient. *Dormant* et *abandonné* ne sont pas synonymes — voir
 > [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16).
 >
-> **En reprenant le travail, lire d'abord les [arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16)**
-> (2026-08-16) puis le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)
+> **En reprenant le travail, lire d'abord les [arbitrages (suite) et 3e lot de sujets](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16)**
+> (le plus récent), puis les [arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16)
+> et le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)
 > (2026-08-16) : il croise l'audit de design et les remarques de Yann en une
 > seule file, remplace les paliers de priorité de l'audit, et sépare **ce
 > qu'on peut faire tout de suite** des **quatre décisions** dont dépend le
@@ -1280,7 +1281,15 @@ détail des constats plus bas dans ce document) :
   n'existent plus — les deux ont été résolus par *suppression* (un seul
   anneau au lieu de deux, `FilterCurve.svelte` supprimé), pas par
   correction. Quatre constats restants sur neuf.
-- ❌ **Accessibilité** (promue depuis §4, audit C5) : `role="grid"`/
+- 🅿️ **Accessibilité — SORTIE de la dette ouverte le 2026-08-16** (arbitrage
+  D4 de Yann : « l'App est pour le moment testée uniquement sur téléphone, le
+  mode ordinateur est en friche »). Le clavier est un sujet d'ordinateur, il
+  repart avec le chantier desktop. Ne plus la compter comme un item d'audit
+  non traité. Deux restes minuscules, à prendre en passant et pas à
+  planifier : un `aria-label` par case (les lecteurs d'écran de TÉLÉPHONE,
+  VoiceOver et TalkBack, sont concernés eux aussi) et le conflit de la barre
+  d'espace. Détail : voir « Arbitrages (suite) et 3e lot ». Ancien contenu de
+  l'entrée, conservé pour mémoire : `role="grid"`/
   `gridcell`, `aria-pressed`, un libellé par pas (« Kick, pas 5, actif,
   roll ×2 »), `prefers-reduced-motion` sur la loupe et les animations.
   Tout est à 0 aujourd'hui. À faire, ou à assumer explicitement comme
@@ -2309,6 +2318,324 @@ que « composer un rythme sans souris » fait partie de ce que l'appli promet ?
 
 ⚠️ **En attente** : cette réponse-là, uniquement. Il n'y a rien d'autre à
 décider sur D4.
+
+---
+
+## Arbitrages (suite) et 3e lot de sujets — 2026-08-16
+
+### D2 (suite) — « accès illimité pour vérifier mes modifications »
+
+**Ça existe déjà, et c'est porté.** Le pseudo **`master`** (insensible à la
+casse) donne tous les niveaux à 3★ et ne sauvegarde pas la progression —
+`game.svelte.ts:124-128` et `:299`. L'original l'avait conçu exactement pour
+ce besoin, en prenant soin de le faire retomber sur le déblocage des modules
+« sans cas particulier à gérer ailleurs » : niveau au maximum ⇒ tout ouvert.
+Il n'y a donc **rien à construire** pour le contournement, seulement à ne pas
+l'oublier en posant le portail.
+
+⚠️ **Un détail à ne pas rater** : le pseudo se saisit *dans le mode jeu*. Si
+l'Atelier est masqué au départ, le chemin vers `master` doit rester
+atteignable **avant** le verrou — sinon le contournement est lui-même
+verrouillé. À prévoir dès la première ligne de code du portail.
+
+### D2 (suite) — proposition de mécanique de déblocage
+
+Demande : « le mode jeu pourrait permettre de découvrir un module sur un
+niveau et d'en disposer dans l'atelier une fois le niveau complété. […] une
+autre idée est d'utiliser les objets gagnés dans la besace pour acheter les
+modules ? »
+
+#### Sur la besace comme monnaie : je déconseille
+
+Trois raisons, dont une qui tient au contenu déjà écrit :
+
+1. **Ça tue la blague.** Les 31 objets sont drôles *parce qu'ils ne valent
+   rien* : « une chaussette dépareillée », « un seau percé », « un ticket de
+   caisse illisible pour un article inconnu » (lot de consolation). Leur
+   donner un taux de change les transforme en jetons : une chaussette qui
+   vaut 3 crédits n'est plus une chaussette inutile, c'est de la monnaie. Le
+   seul contenu purement gratuit du jeu deviendrait utilitaire.
+2. **Mécaniquement, c'est le même compteur avec une couche en plus.** Les
+   objets sont distribués à la complétion (`grantItems`, `game.svelte.ts:288`)
+   — leur nombre est donc une fonction du nombre de niveaux réussis.
+   « Acheter avec des objets » et « débloquer au niveau N » expriment
+   exactement la même chose ; la version monnaie coûte en plus une monnaie,
+   une grille de prix et une boutique.
+3. **Trois éléments d'UI permanents pour zéro information nouvelle** —
+   l'inverse de la règle n°1 du §7.5.
+
+**Ce qu'on peut garder de l'idée** : la besace comme **inventaire**, pas comme
+porte-monnaie. Un écran qui montre à la fois les souvenirs absurdes et les
+vrais acquis (« Swing », « Module synthé ») donne le sentiment de collection
+recherché, sans prix ni transaction.
+
+#### Proposition : débloquer des CONTRÔLES, pas seulement des modules
+
+L'idée d'origine (celle du fichier de 2024) verrouillait trois gros blocs :
+`{ drum: 1, synth: 13, general: 27 }`. Je propose plus fin, **parce que le
+contenu existe déjà** : les 34 niveaux enseignent des notions nommées, et
+l'Atelier a un contrôle pour presque chacune.
+
+| Niveau | Ce qu'il enseigne | Ce qu'il ouvre dans l'Atelier |
+|---|---|---|
+| 1 | poser un rythme | l'Atelier lui-même (kick/snare/hat, lecture, tempo) |
+| 2-10 | subdivisions, polyrythmie douce | le réglage « Pas » par ligne |
+| 11 | **Rafale** | la rafale sur les cases |
+| 12-13 | presets réels | **module Synthé** *(seuil de l'original)* |
+| 14-18 | **Swing**, **Traîne** | les deux curseurs de groove |
+| 20 | **Ghost notes** | le curseur ghost |
+| 21 | **Fill** | fill + intensité |
+| 23 | **Décalage par ligne** | le décalage |
+| 24-32 | polyrythmie | subdivisions libres par ligne |
+| 27 | — | **module Production/effets** *(seuil de l'original)* |
+| 34 | tout combiné | **Mode Live** |
+
+Trois raisons de préférer cette granularité :
+
+- **Chaque déverrouillage est motivé.** On vient d'entendre ce que fait le
+  swing ; on récupère le curseur qui le règle. Un module entier qui apparaît
+  d'un coup n'a pas ce lien de cause à effet.
+- **Ça ne demande aucun contenu nouveau** : le découpage est déjà écrit dans
+  les titres et préambules des niveaux. C'est du câblage, pas de la création.
+- **C'est aussi une réponse à la densité de l'interface** — et c'est le point
+  le plus important. L'Atelier est chargé parce qu'il montre *tout à tout le
+  monde, tout le temps*. Un débutant n'y verrait qu'une grille, un tempo et
+  un bouton lecture. **Le déblocage progressif fait le travail que le §7.5
+  réclame, sans rien supprimer pour ceux qui savent déjà.** Il recoupe
+  directement le sujet « faire de la place dans le synthé » ci-dessous.
+
+⚠️ **Ce qui reste à trancher** : est-ce que le verrou est *dur* (le contrôle
+n'existe pas) ou *visible* (grisé avec « niveau 14 »)? Le grisé enseigne qu'il
+y a une suite et donne envie ; le masquage tient la promesse « interface
+simple ». Recommandation : **grisé pour les contrôles, masqué pour les
+modules entiers** — un curseur grisé au milieu d'un panneau est une promesse,
+une fenêtre entière grisée est une frustration.
+
+### D4 — clos : périmètre téléphone
+
+> « l'App est pour le moment testée uniquement sur téléphone, le mode
+> ordinateur est en friche actuellement, on pourra y réfléchir plus tard. »
+
+**Décision enregistrée.** Le clavier ne concerne que l'ordinateur : le sujet
+part avec le chantier « desktop », pas avant. Il **sort de la dette ouverte**
+et cesse de compter comme un item d'audit non traité.
+
+Deux précisions honnêtes pour que la décision soit prise en connaissance de
+cause, sans rouvrir le débat :
+
+- **Une partie du problème n'est pas desktop.** VoiceOver (iOS) et TalkBack
+  (Android) sont des lecteurs d'écran *de téléphone* : les 0 libellés sur 23
+  cases les concernent aussi. Un `aria-label` par case reste utile sur la
+  plateforme réellement visée — c'est trois lignes, à prendre en passant si
+  on touche `DrumRowView`, pas un chantier.
+- **L'état n'est pas uniformément nul** : `XpSlider` gère déjà les flèches
+  (± un cran, ± dix crans) et porte `role="slider"`. C'est la grille qui est
+  muette, pas l'appli entière.
+
+### N1 — Choix des notes : le vrai coût, mesuré
+
+> « simplifier grandement le choix des notes »
+
+**Le choix d'une note se fait en tapant plusieurs fois sur la case.**
+`cycleCell` (`SynthRowView.svelte:70-85`) fait défiler *silence → degré 1 → 2
+→ … → 7 → silence*. Donc :
+
+- poser un **degré 5** = **5 appuis** ; un degré 7 = 7 appuis ;
+- **corriger** coûte plus cher que poser : passer du degré 6 au degré 3
+  demande de traverser 7, silence, 1, 2 — **5 appuis de plus** ;
+- une petite mélodie de 4 notes (3, 5, 1, 6) = **15 appuis**, sans compter les
+  octaves ;
+- l'octave se règle sur **deux boutons ▲▼ minuscules** qui n'apparaissent que
+  sur les cases actives ;
+- et la Nappe a le même défaut sur les accords.
+
+C'est un choix **itératif** là où l'utilisateur pense **direct** : il ne veut
+pas « avancer d'un degré », il veut « mettre un sol ». Toute correction repasse
+par le silence.
+
+**Proposition** : au lieu de faire défiler, ouvrir un **sélecteur** au contact
+de la case — les 7 degrés en gros, l'octave, et le silence. Deux appuis
+(ouvrir, choisir) au lieu de quatre en moyenne, et surtout **aucun coût de
+correction**. C'est le motif « petit clavier de référence » qu'utilisent les
+apps tactiles de référence (Auxy est la plus citée pour l'entrée de notes au
+doigt), adapté à une grille de degrés plutôt qu'à un piano.
+
+> « pouvoir ouvrir un pad depuis l'atelier pour jouer/enregistrer une mélodie
+> qui s'inscrit dans la grille »
+
+**Décision de Yann, qui remplace ma recommandation.** J'avais proposé de
+loger le pad d'enregistrement dans le Mode Live (au motif que l'Atelier est la
+surface saturée, règle A6). Yann tranche l'inverse : **le pad s'ouvre depuis
+l'Atelier**. C'est cohérent avec son besoin — la grille est là, l'aller-retour
+entre deux modes n'a pas de sens pour écrire une mélodie. La règle du §7.5
+reste satisfaite si le pad est **un panneau qu'on ouvre**, pas une surface
+permanente de plus.
+
+> « sélectionner des notes, les dupliquer, les faire monter en même temps
+> mais je ne vois pas du tout comment […] sur portable »
+
+L'inquiétude est fondée : la multi-sélection tactile coûte cher (mode de
+sélection, poignées, annulation) et c'est exactement le genre d'ajout qui
+regonfle l'interface. **Il y a un raccourci qui donne 80 % du bénéfice pour
+0 % du problème : les opérations sur la LIGNE ENTIÈRE**, sans sélection du
+tout —
+
+- **Transposer** la ligne de ±1 degré / ±1 octave ;
+- **Dupliquer** la première moitié du cycle sur la seconde (le geste qui sert
+  vraiment à faire un gimmick) ;
+- **Décaler** le motif d'un pas, **inverser**, **vider**.
+
+Aucune sélection, aucune poignée : des boutons dans le panneau « Séquence » de
+la ligne. La vraie multi-sélection reste possible plus tard, si l'usage montre
+qu'elle manque.
+
+> « on peut questionner la pertinence du mode rafale »
+
+**Défaut concret trouvé en vérifiant** : sur les lignes synthé, la rafale
+n'est accessible que par `oncontextmenu` (clic droit) —
+`SynthRowView.svelte:241`. Les lignes de batterie, elles, ont un appui long
+(`pressStart`/`pressEnd`, `DrumRowView.svelte:110-112`). **Sur téléphone — la
+seule plateforme testée — la rafale du synthé est donc de fait inatteignable**,
+là où celle de la batterie fonctionne.
+
+Recommandation nuancée plutôt qu'un oui/non : **garder la rafale sur la
+batterie** (elle y est jouable, elle est enseignée au niveau 11, et elle fait
+partie du vocabulaire rythmique), **et la retirer des lignes synthé** — ou la
+ranger dans le futur sélecteur de note comme choix secondaire. Ça supprime un
+état par case sur trois lignes, donc de la complexité dans chaque interaction.
+
+### N2 — Bourdon et release : une seule question, « comment finit la note »
+
+> « il faudrait que bourdon soit une des options du réglage de release. Revoir
+> le release, on ne comprend pas les modes. »
+
+État actuel, qui explique la confusion : la fin d'une note se règle à **trois
+endroits différents** —
+1. le curseur **Release** (0-4000 ms) ;
+2. un menu **« Forme release »** avec deux options, *Naturelle* / *Linéaire*
+   (`SynthRowView.svelte:319-324`) — ce sont ces « modes » qu'on ne comprend
+   pas, et pour cause : c'est le choix entre deux courbes de rampe, une
+   distinction de synthétiseur dont l'effet audible est ténu ;
+3. et, pour la seule Nappe, une **pastille « Bourdon »** avec son panneau et sa
+   case à cocher.
+
+L'idée de Yann est juste : ces trois choses répondent à **une seule question**.
+Proposition — un contrôle unique, « Fin de la note », à crans nommés :
+**Sec · Court · Long · Très long · Tenu (bourdon)**. Le bourdon devient le
+dernier cran, la pastille « Bourdon » et son panneau disparaissent (une
+pastille de moins sur la Nappe, un panneau de moins), et les menus de forme
+quittent l'interface.
+
+⚠️ **À savoir avant de coder : ça unifie l'UI, pas le moteur.** Le bourdon
+n'est pas un release long, c'est un **chemin de code distinct** —
+`syncDroneMode` / `updateDrone` / `stopDrone` (`scheduler.ts`, `voices/synth.ts`)
+tiennent UNE voix qui *glisse* d'un accord à l'autre sans jamais réattaquer.
+Le dernier cran bascule donc de chemin ; il ne pousse pas un curseur au
+maximum. Les champs v2 (`release`, `releaseCurve`, `padDroneEnabled`) restent
+tous, comme pour Brillance/Mouvement.
+
+### N3 — Tempo : la cause est un seul caractère
+
+> « on le règle un peu partout, c'est bizarre et pas cohérent. Il faudrait
+> qu'on puisse le régler à l'unité »
+
+**Pourquoi on ne peut pas le régler à l'unité** : le curseur de l'Atelier est
+déclaré `step={10}` (`AtelierView.svelte:453`), et `XpSlider` **arrondit toute
+valeur au cran**, y compris une valeur tapée au clavier
+(`XpSlider.svelte:72`). Taper « 123 » donne donc 120. Correctif : `step={1}`.
+
+**Pourquoi ça semble incohérent** : le tempo se règle en réalité à deux
+endroits seulement (le bandeau de l'Atelier, et le Mode Live), plus le Tap.
+Mais **les deux ne se comportent pas pareil** : le Mode Live fait déjà ±1 BPM
+à l'unité (`LiveView.svelte:420`). Ce n'est donc pas le nombre d'endroits qui
+gêne, c'est que le même réglage n'obéisse pas aux mêmes règles selon l'écran.
+Les aligner sur l'unité règle les deux griefs d'un coup.
+
+### N4 — Audit des DAW comparables
+
+Demande : « quelles sont daw similaires ? quelles sont leurs visuels ? »
+
+⚠️ **Recadrage à acter avant de lancer l'audit.** `CLAUDE.md` pose que le
+design XP est l'identité du projet, pas un héritage à moderniser. Un audit qui
+revient avec « voilà à quoi ça ressemble ailleurs » produira des références
+inutilisables. **Ce qu'on peut emprunter, ce sont les INTERACTIONS**, pas les
+visuels : comment on saisit une note au doigt, comment on choisit un son,
+comment on navigue entre les pistes sur un écran de téléphone.
+
+Premières références, à confirmer par l'audit :
+- **Dans le navigateur, proches du projet** : orDrumbox, drumbit, Shuffle
+  Drummer, BAP Studio, SEQ-16, ButtonBass Beat Maker. Utiles surtout pour
+  comparer *l'entrée dans l'outil* (que voit-on à la première seconde).
+- **Tactile, pour l'écriture de notes** : Auxy est la référence citée pour un
+  piano roll pensé pour le doigt plutôt que porté de l'ordinateur ; les motifs
+  qui reviennent sont le petit clavier de référence jouable à côté de la
+  grille, et l'appui-glissé pour poser puis ajuster la hauteur.
+- **Grooveboxes matérielles** (pour la logique de pas et de pattern) : la
+  famille Pocket Operator / EP-133, Novation Circuit.
+
+Contrainte à garder en tête pendant l'audit : **il n'y a pas de clic droit ni
+de survol sur téléphone**, et c'est déjà ce qui coûte la rafale du synthé
+(N1). Toute solution empruntée à un logiciel de bureau doit passer ce test.
+
+### N5 — Synthé : faire de la place, comme sur la batterie
+
+> « il faut faire de la place comme pour la drum »
+
+Le travail équivalent sur la batterie (audit A4 : pastilles au lieu de
+`<fieldset>`) est déjà fait sur le synthé — mais le synthé garde **plus de
+panneaux** (Séquence, Oscillateur, Détune, Filtre & espace, plus Arpégiateur
+et Bourdon sur la Nappe) et un **bloc global** au-dessus. Les trois pistes de
+Yann, avec mon avis :
+
+> « questions de l'intérêt des presets de ligne de synthé ? »
+
+**Je recommande de les garder** — 16 voix au total (5 basse, 6 nappe, 5
+mélodie : « 808 profond », « Rhodes chaud », « Pluck trap »…). Ce sont
+l'inverse d'un encombrement : **un seul menu qui remplace trois panneaux de
+curseurs**. Pour quelqu'un qui découvre, choisir « Rhodes chaud » est
+exactement ce qu'on veut qu'il fasse plutôt que d'ouvrir Oscillateur.
+
+Leur vrai défaut est ailleurs : **c'est un contrôle qui écrit sans jamais
+lire.** Une fois un curseur touché, le menu continue d'afficher la voix
+choisie alors que le son a changé — il ne dit jamais où on en est. C'est ça
+qu'il faut corriger, pas les supprimer. (Et ils se marient bien avec le
+déblocage progressif : tant qu'Oscillateur/Détune ne sont pas ouverts, la voix
+est le seul réglage de timbre — l'interface simple sort toute seule.)
+
+> « choix de la tonalité et du nombre d'accord à descendre ? »
+> « remplissage aléatoire : à descendre ligne par ligne uniquement dans la
+> sous-section séquence »
+
+Les deux vont dans le même sens et sont cohérents avec A6 (chaque commande
+sur une seule surface) : le bloc global du haut (`SynthModule.svelte`) porte
+aujourd'hui Tonalité, Nb d'accords, Taux de remplissage, un 🎲 global **et**
+un 🎲 par ligne (l. 47-69). Faire descendre le 🎲 dans le panneau « Séquence »
+de chaque ligne supprime la duplication (le 🎲 par ligne existe déjà en haut,
+loin de la ligne qu'il remplit) et rapproche la commande de son effet.
+
+⚠️ **Une nuance sur la tonalité et le nombre d'accords** : contrairement au
+remplissage, ce ne sont **pas** des réglages de ligne — ils gouvernent
+l'harmonie des **trois** lignes à la fois (`chordsFor`, `padChordAtBarPosition`).
+Les descendre *dans* une ligne serait mentir sur leur portée. Ce qu'on peut
+faire : les descendre **sous** le séquenceur (comme le tempo, déplacé sous la
+grille au 2ᵉ lot) plutôt que dans une ligne — ils restent globaux, mais ils
+cessent d'occuper le haut de l'écran.
+
+### Où ça se range dans la file
+
+Ces sujets ne rentrent pas tous au même endroit :
+
+- **Rejoint la file exécutable** (aucune décision requise) : `step={1}` sur le
+  tempo (une ligne) ; les 🎲 descendus dans les panneaux Séquence ; la
+  correction du menu de voix qui n'affiche pas l'état réel.
+- **Rejoint le chantier « synthé lisible »** (déjà en file avec R1 + B8) : le
+  sélecteur de note, le retrait de la rafale synthé, « Fin de la note ».
+- **Dépend de D2** : tout le déblocage progressif — et c'est lui qui rend les
+  deux points précédents plus faciles, pas l'inverse.
+- **Chantier neuf à cadrer** : l'audit DAW (recadré sur les interactions), et
+  le pad d'enregistrement dans l'Atelier.
+- ⚠️ **Attend encore un arbitrage** : verrou dur ou grisé (D2), et la grille
+  de déverrouillage proposée ci-dessus — à valider ou corriger.
 
 ---
 
