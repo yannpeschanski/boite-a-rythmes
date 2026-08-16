@@ -21,6 +21,8 @@
   import { history } from '../../stores/history.svelte';
   import { scheduleAutosave, hasAutosave, restoreAutosave } from '../../stores/share';
   import { rankPresets, type ClosestMatch } from '../../engine/similarity';
+  import { unlocks } from '../../stores/unlocks.svelte';
+  import { unlockLevelFor } from '../../model/unlocks';
   import { playSystemSound } from '../xp/systemSounds';
 
   // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
@@ -377,8 +379,18 @@
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
-        { id: 'synthe', label: '🎹 Synthé' },
-        { id: 'effets', label: '🎚 Production' },
+        {
+          id: 'synthe',
+          label: '🎹 Synthé',
+          locked: !unlocks.has('synth'),
+          lockHint: `Se débloque au niveau ${unlockLevelFor('synth')} du Mode jeu`,
+        },
+        {
+          id: 'effets',
+          label: '🎚 Production',
+          locked: !unlocks.has('production'),
+          lockHint: `Se débloque au niveau ${unlockLevelFor('production')} du Mode jeu`,
+        },
       ]}
       bind:active={activeTab}
     />

@@ -114,7 +114,9 @@
   {:else}
     <XpWindow title="Niveau {lvl.id} / {LEVELS.length} — {lvl.teach}" icon="🎮" accent="none">
       <div class="head">
-        <span class="player">👤 {game.pseudo}</span>
+        <button class="player" onclick={() => game.clearPseudo()} title="Changer de joueur">
+          👤 {game.pseudo}
+        </button>
         <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Carte</button>
         <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
       </div>
@@ -270,9 +272,23 @@
     gap: 8px;
     margin-bottom: 6px;
   }
+  /* Devenu cliquable (changer de joueur) sans devenir un bouton à l'œil :
+     l'en-tête en compte déjà deux, un troisième relief brouillerait la
+     hiérarchie. Cible tactile tenue à 24px (audit A3). */
   .player {
     font-size: 12px;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
   }
   .preamble {
     font-size: 12px;
