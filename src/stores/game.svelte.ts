@@ -151,7 +151,13 @@ class GameStore {
     // APRÈS avoir posé le sien, il ne faut pas l'écraser avec l'ancien.
     if (!this.pseudo) {
       try {
-        this.pseudo = localStorage.getItem(KEY_PSEUDO) ?? '';
+        const saved = localStorage.getItem(KEY_PSEUDO) ?? '';
+        // « master » n'est jamais restauré, et une valeur héritée est
+        // effacée — voir setPseudo ci-dessous. Sans ce nettoyage, quiconque
+        // a tapé « master » une fois avant le correctif resterait bloqué en
+        // accès total sans rien pour en sortir.
+        if (saved.toLowerCase() === 'master') localStorage.removeItem(KEY_PSEUDO);
+        else this.pseudo = saved;
       } catch {
         /* stockage refusé : on redemandera le pseudo, comme avant */
       }
@@ -161,7 +167,15 @@ class GameStore {
   setPseudo(name: string): void {
     this.pseudo = name.trim() || 'anonyme';
     try {
-      localStorage.setItem(KEY_PSEUDO, this.pseudo);
+      // « master » débloque TOUT (playerProgress renvoie le niveau maximum,
+      // donc tous les modules). Le mémoriser en ferait un accès total
+      // permanent et INVISIBLE : rien à l'écran ne l'expliquerait, et
+      // `#boss=off` n'y changerait rien puisque ça ne passe pas par #boss.
+      // C'est exactement ce qui est arrivé le 2026-08-16 en persistant le
+      // pseudo (retour de Yann : « le boss mode est toujours activé »).
+      // Il redevient donc ce qu'il était : un contournement de SESSION.
+      if (this.pseudo.toLowerCase() === 'master') localStorage.removeItem(KEY_PSEUDO);
+      else localStorage.setItem(KEY_PSEUDO, this.pseudo);
     } catch {
       /* stockage refusé : le pseudo vaut pour la session */
     }
