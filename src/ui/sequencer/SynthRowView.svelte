@@ -6,6 +6,7 @@
   // {degree 1-7, octave -1/0/+1}, la nappe un index d'accord (ou -1).
   // L'indicateur de justesse (point vert = note de l'accord en cours, ambre =
   // note de passage) est purement informatif.
+  import { tick } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import type { SynthRowName, SynthNote } from '../../model/types';
   import { chordsFor, justesseForStep } from '../../engine/harmony';
@@ -36,6 +37,37 @@
   // des degrés, un pad à 7 touches n'y voudrait rien dire). Fermé par défaut :
   // tant qu'il l'est, il ne coûte pas un pixel.
   let padOpen = $state(false);
+  // Curseur du pad, tenu ICI et pas dans le pad (retour de Yann : « difficile
+  // à prendre en main »). C'est ce qui permet à la GRILLE d'entourer la case
+  // visée : sans ça on écrivait à l'aveugle, le seul repère étant un
+  // « pas 3 / 8 » en petit gris dans l'en-tête du pad.
+  let padCursor = $state(0);
+  let padEl = $state<HTMLElement | null>(null);
+
+  async function togglePad() {
+    padOpen = !padOpen;
+    // Ouvrir un panneau qui apparaît SOUS la ligne de flottaison donne
+    // l'impression que le bouton n'a rien fait — mesuré : à 390x900, le pad
+    // de la Mélodie s'ouvrait hors écran, coupé de 30px.
+    // `tick()` et non `queueMicrotask` : Svelte 5 groupe ses mises à jour du
+    // DOM, un microtask s'exécute AVANT que le panneau existe et on ferait
+    // défiler vers un élément encore absent (constaté en mesurant, le pad
+    // restait coupé).
+    if (padOpen) {
+      await tick();
+      padEl?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // Pad ouvert et lecture à l'arrêt : un appui sur une case y AMÈNE le
+  // curseur au lieu de faire défiler la note. C'est la seule façon de viser
+  // un pas — sinon atteindre le pas 5 depuis le pas 1 demandait quatre appuis
+  // sur « ← ». Le défilement par la case reste le comportement dès que le pad
+  // est refermé, et la case visée est entourée, donc le changement se voit.
+  function onCellClick(col: number) {
+    if (padOpen && !isPad && !playing) padCursor = col;
+    else cycleCell(col);
+  }
 
   const row = $derived(pattern.state.synthRows[name]);
   const chords = $derived(chordsFor(pattern.state));
@@ -216,7 +248,7 @@
       <button
         class="mini"
         class:on={padOpen}
-        onclick={() => (padOpen = !padOpen)}
+        onclick={togglePad}
         title="Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"
       >
         🎹
@@ -264,9 +296,12 @@
           class="cell {name}"
           class:active
           class:playing={playheadCol === col}
-          onclick={() => cycleCell(col)}
+          class:padtarget={padOpen && !isPad && !playing && padCursor % Math.max(1, row.subdivisions) === col}
+          onclick={() => onCellClick(col)}
           oncontextmenu={(e) => cycleRoll(col, e)}
-          title="Clic : note suivante — clic droit : rafale"
+          title={padOpen && !isPad && !playing
+            ? 'Clic : viser ce pas avec le pad'
+            : 'Clic : note suivante — clic droit : rafale'}
         >
           <span class="lbl">{cellLabel(col)}</span>
           {#if just}<span class="just {just}"></span>{/if}
@@ -283,15 +318,18 @@
   </div>
 
   {#if padOpen && !isPad}
-    <NotePad
-      name={name as 'bass' | 'melody'}
-      {playing}
-      {playheadCol}
-      {stepStartedAt}
-      onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
-      {onChanged}
-      onClose={() => (padOpen = false)}
-    />
+    <div bind:this={padEl}>
+      <NotePad
+        name={name as 'bass' | 'melody'}
+        {playing}
+        {playheadCol}
+        {stepStartedAt}
+        bind:cursor={padCursor}
+        onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
+        {onChanged}
+        onClose={() => (padOpen = false)}
+      />
+    </div>
   {/if}
 
   <!-- Chaque groupe se déploie toujours indépendamment (retour de Yann), mais
@@ -575,6 +613,14 @@
   }
   .cell.playing {
     outline: 2px solid #ffd54a;
+    outline-offset: -1px;
+  }
+  /* Case visée par le pad. Trait plein et sombre plutôt que la teinte ambre
+     de la tête de lecture : les deux ne se montrent jamais en même temps (le
+     curseur du pad ne sert qu'à l'arrêt), mais s'ils se ressemblaient on
+     confondrait « là où ça joue » et « là où j'écris ». */
+  .cell.padtarget {
+    outline: 2px solid var(--xp-text);
     outline-offset: -1px;
   }
   .just {

@@ -3076,6 +3076,89 @@ désormais leur propre état (clap à 8 pas, deux derniers libres).
 
 ---
 
+## ✅ Pad — reprise en main (2026-08-17)
+
+> « le pad : difficile à prendre en main, on peut mieux faire »
+
+Retour volontairement vague, donc diagnostic avant redesign. Quatre points de
+friction **mesurés dans l'appli**, pas devinés — trois d'entre eux étaient
+invisibles à la relecture du code parce qu'ils tiennent à ce qu'on VOIT, pas à
+ce que le composant fait.
+
+### 1. On écrivait à l'aveugle — c'était le problème principal
+
+Constaté en listant les classes des huit cases de la Mélodie, pad ouvert :
+elles étaient **rigoureusement identiques**. Rien, dans la grille, n'indiquait
+où la prochaine note allait tomber. Le seul repère était un « pas 3 / 8 » en
+petit gris dans l'en-tête du pad — il fallait donc compter les cases pour le
+traduire.
+
+Cause structurelle : le curseur vivait **dans** le pad, la grille ne pouvait
+pas le connaître. Il est remonté dans `SynthRowView` et partagé
+(`bind:cursor`) ; la case visée porte désormais un contour net.
+
+Trait **plein et sombre**, pas la teinte ambre de la tête de lecture : les
+deux ne s'affichent jamais en même temps (le curseur ne sert qu'à l'arrêt),
+mais s'ils se ressemblaient on confondrait « là où ça joue » et « là où
+j'écris ».
+
+### 2. On ne pouvait pas viser un pas
+
+Pour écrire sur le pas 5 en partant du pas 1, il fallait **quatre appuis sur
+« ← »** — et « ← » est désactivé pendant la lecture. Désormais, pad ouvert et
+lecture à l'arrêt, **un appui sur une case y amène le curseur**.
+
+C'est un changement de comportement de la case, assumé : tant que le pad est
+ouvert, la grille sert à viser ; refermé, elle refait défiler les notes comme
+avant. Ce qui rend le mode acceptable, c'est qu'il est **visible** — le pad
+est ouvert à l'écran et la case visée est entourée.
+
+### 3. Les touches étaient des chiffres abstraits
+
+`1 2 3 4 5 6 7`. Un degré de gamme ne dit rien à qui ne pense pas en degrés —
+or l'appli **connaît** la tonalité et le mode, et savait déjà nommer les notes
+(`noteNameForScaleDegree`, qui sert aux libellés d'accords). Les touches
+affichent maintenant **Do Ré Mi Fa Sol La Si**, avec le degré en petit
+dessous : c'est lui qui figure dans la case de la grille, les deux doivent
+pouvoir se raccorder. Les noms suivent la tonalité choisie.
+
+### 4. Le pad s'ouvrait hors écran
+
+Mesuré à 390×900 : le pad de la Mélodie s'ouvrait **sous la ligne de
+flottaison**. On appuyait sur 🎹 et il ne se passait rien de visible. Il
+défile maintenant dans la vue à l'ouverture.
+
+Piège rencontré : `queueMicrotask` ne suffit pas. Svelte 5 groupe ses mises à
+jour du DOM, le microtask s'exécute **avant** que le panneau existe et on
+faisait défiler vers un élément absent — le pad restait coupé de 30px, et ça
+ne se voyait qu'en mesurant. `await tick()` règle le cas.
+
+### Deux mesures qui ont corrigé mes propres réglages
+
+- **Débordement à 320px** : les sept touches sortaient de 14px. Les pistes de
+  grille ont un minimum `auto`, donc elles refusent de descendre sous la
+  largeur de leur contenu — `minmax(0, 1fr)`, le même piège que celui corrigé
+  sur `XpSlider` (audit A2), côté grille plutôt que flexbox.
+- **Seuil de resserrement à 400px et non 360** : à 360 pile, « Sol »
+  débordait encore de 3px. Vérifié ensuite sur **320 / 360 / 390 / 430 /
+  768** — aucun débordement, hauteur de cible tenue à 48px partout.
+
+### Vérifications
+
+`npm run check` 0 erreur · 33 tests · les deux builds. Parcours au navigateur :
+case visée entourée dès l'ouverture · un appui sur la 5ᵉ case donne « pas
+5 / 8 » · une touche écrit le degré et la visée avance · touches lues
+« Do Ré Mi Fa Sol La Si ».
+
+### Ce que je n'ai pas touché, et pourquoi
+
+Le **double comportement** (pas-à-pas à l'arrêt, direct en lecture) est
+conservé : les quatre défauts ci-dessus expliquent la difficulté sans qu'il
+soit en cause, et avec le curseur visible il devient lisible. À rouvrir si la
+gêne persiste — c'est le prochain suspect.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
