@@ -1,0 +1,91 @@
+<!doctype html>
+<meta charset="utf-8"><title>K — Barre de menus assumée</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* K — On ne corrige pas la barre de menus, on la GÉNÉRALISE. Règle unique :
+     tout ce qui est une commande vit dans un menu ; l'écran ne garde que ce
+     qu'on manipule en jouant (les cases, le transport). C'est la leçon de XP
+     poussée au bout — 49 entrées pour 28px, alors on y met les 288. */
+  .dd { position: absolute; background: var(--face); border: 1px solid var(--line);
+        box-shadow: 2px 3px 8px rgba(0,0,0,.45); min-width: 186px; z-index: 5;
+        padding: 3px 0; }
+  .dd .c { display: block; width: 100%; text-align: left; padding: 6px 12px;
+           font: 12px var(--sans); background: none; border: 0; color: var(--text); }
+  .dd .c.sel { background: #3169d4; color: #fff; }
+  .dd .sep { height: 1px; background: var(--line); margin: 4px 0; }
+  .dd .grp { padding: 5px 12px 3px; font: 700 9.5px var(--sans); letter-spacing: .12em;
+             color: var(--muted); text-transform: uppercase; }
+  .dd .sub { float: right; color: var(--muted); }
+</style>
+
+<div class="col">
+  <div class="cap">Débutant<span>Ce que voit quelqu'un qui ouvre l'appli</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack">
+        <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+        <div class="row"><span class="tag" style="color:var(--kick)"><i class="led"></i>KICK</span><span class="cells" style="color:var(--kick)"><i class="on"></i><i></i><i class="on"></i><i></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--snare)"><i class="led"></i>SNARE</span><span class="cells" style="color:var(--snare)"><i></i><i class="on"></i><i></i><i class="on"></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--hat)"><i class="led"></i>HAT</span><span class="cells" style="color:var(--hat)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--clap)"><i class="led off"></i>CLAP</span><span class="cells" style="color:var(--clap)"><i></i><i></i><i></i><i></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--shaker)"><i class="led off"></i>SHAKER</span><span class="cells" style="color:var(--shaker)"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+        <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+      </div>
+    </div>
+    <div class="note">Aucun réglage à l'écran. Cinq mots en haut, une grille, deux boutons.
+      <b>L'écran ne montre que ce qu'on touche en jouant.</b></div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Expert<span>Le même écran, un menu ouvert</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c" style="background:#3169d4;color:#fff;padding:2px 5px">Son</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Vue</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack">
+        <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+        <div class="row"><span class="tag" style="color:var(--kick)"><i class="led"></i>KICK</span><span class="cells" style="color:var(--kick)"><i class="on"></i><i></i><i class="on"></i><i></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--snare)"><i class="led"></i>SNARE</span><span class="cells" style="color:var(--snare)"><i></i><i class="on"></i><i></i><i class="on"></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--hat)"><i class="led"></i>HAT</span><span class="cells" style="color:var(--hat)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--clap)"><i class="led off"></i>CLAP</span><span class="cells" style="color:var(--clap)"><i></i><i></i><i></i><i></i></span></div>
+        <div class="row"><span class="tag" style="color:var(--shaker)"><i class="led off"></i>SHAKER</span><span class="cells" style="color:var(--shaker)"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+      </div>
+    </div>
+
+    <!-- Le menu « Son » : les 288 réglages de ligne rangés par verbe, avec
+         sous-menus. La ligne visée est celle qui est sélectionnée. -->
+    <div class="dd" style="left:52px; top:26px">
+      <div class="grp">Ligne · Kick</div>
+      <button class="c sel">Séquence<span class="sub">▸</span></button>
+      <button class="c">Timbre<span class="sub">▸</span></button>
+      <button class="c">Filtre &amp; espace<span class="sub">▸</span></button>
+      <div class="sep"></div>
+      <div class="grp">Toutes les lignes</div>
+      <button class="c">Générateur euclidien…</button>
+      <button class="c">Swing &amp; décalage…</button>
+      <button class="c">Ghost notes…</button>
+      <button class="c">Remplissage aléatoire</button>
+      <div class="sep"></div>
+      <button class="c">Choisir une voix<span class="sub">▸</span></button>
+    </div>
+    <div class="dd" style="left:236px; top:52px; min-width:140px">
+      <div class="grp">Séquence · Kick</div>
+      <button class="c">Nombre de pas<span class="sub">4</span></button>
+      <button class="c">Rafale<span class="sub">non</span></button>
+      <button class="c">Fill<span class="sub">non</span></button>
+      <button class="c">Décalage<span class="sub">0</span></button>
+      <button class="c">🎲 Remplir</button>
+    </div>
+
+    <div class="note">Profondeur illimitée à coût de pixels nul&nbsp;: un sous-menu de plus
+      ne coûte rien. <b>Mais rien ne se voit</b> — c'est un modèle qui suppose qu'on
+      cherche, donc qu'on sait déjà quoi chercher.</div>
+  </div></div>
+</div>

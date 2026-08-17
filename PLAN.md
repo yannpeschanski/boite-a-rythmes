@@ -3583,7 +3583,79 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
-### Dix maquettes (2026-08-17, « je souhaite que tu fasses 10 propositions »)
+### 2e série — architecture des commandes (2026-08-17)
+
+> « prends bien en compte comment rentrer toutes les fonctionnalités, notamment
+> celles qu'on a mises dans la barre du haut. en ça, XP nous a aidé… »
+> « Credo important : accueillant pour les non initiés, capacité pour aller loin »
+
+Planche : <https://claude.ai/code/artifact/aca306d0-d787-47bc-9e2f-2ee7f0a83845>
+Fichiers `maquettes/arch/k.html` … `t.html`.
+
+⚠️ **Reproche fondé sur la 1re série.** Les dix premières maquettes montraient
+le séquenceur et escamotaient la barre de menus — c'est-à-dire précisément
+l'endroit où XP fait le travail. Cette série ne porte que là-dessus, et toutes
+les maquettes gardent la même peau pour que la seule variable soit
+l'architecture.
+
+**La taille réelle du problème (mesurée) :**
+
+| | |
+|---|---|
+| Barre de menus | **49 entrées** (34 morceaux, 14 commandes, 1 option) en **28px** |
+| Onglet Rythme, replié | **63 commandes** visibles |
+| Onglet Rythme, tout déplié | **288 commandes** sur **3 388px** (4 écrans) |
+
+**Les trois propriétés de la barre de menus à ne pas perdre :** son coût en
+pixels ne dépend pas du nombre d'entrées ; le rangement est stable et nommé
+donc mémorisable ; on peut l'ouvrir pour regarder sans rien déclencher — c'est
+ce qui la rend explorable par quelqu'un qui ne sait pas encore. **Cette
+troisième propriété est la plus facile à perdre** : P (recherche) et Q (roue au
+pouce) sont excellents pour qui sait déjà et ne montrent rien à qui découvre.
+
+| | Architecture | Accueil | Profondeur | Découverte | Tactile |
+|---|---|---|---|---|---|
+| — | *aujourd'hui* | *63* | 4 écrans | bonne | moyen |
+| K | Menus assumés | 11 | illimitée | bonne | **faible** |
+| L | Interface qui pousse | **4** | totale | **excellente** | bon |
+| M | Établi et tiroir | 13 | bonne | bonne | excellent |
+| N | Inspecteur | 11 | constante | bonne | bon |
+| O | Simple / Studio | 5 | totale | **faible** | moyen |
+| P | Palette | 12 | maximale | **nulle** | moyen |
+| Q | Roue au pouce | 11 | 6 par objet | **nulle** | excellent |
+| R | Une chose à la fois | **3** | correcte | excellente | excellent |
+| S | Boutons de mode | 7 | bonne | excellente | excellent |
+| T | Le guide qui parle | 6 | entière | excellente | bon |
+
+**Résultat de la série : aucune ne tient les deux moitiés du credo seule.**
+Celles qui accueillent le mieux (R, L, T) coûtent cher ou imposent un parcours ;
+celles qui vont loin pour rien (P, Q) ne montrent rien. Le credo demande des
+**couches**, pas un choix.
+
+**Empilement recommandé, dans cet ordre :**
+
+1. **S · Boutons de mode** comme squelette — c'est la barre de menus retournée :
+   mêmes trois propriétés, mais tactiles. Quatre mots permanents en bas
+   remplacent cinq mots en haut faits pour une souris.
+2. **N · Inspecteur** dans le mode « Son » — absorbe les 288 réglages de ligne
+   sans jamais faire grandir l'écran.
+3. **L · Interface qui pousse** comme calendrier d'ouverture — les contrôles
+   arrivent un par un, chacun avec l'exercice qui l'explique. Le Mode jeu
+   finance déjà cette moitié du credo.
+4. **P · Palette** en filet de sécurité — une pastille, coût quasi nul, seule
+   réponse au « j'ai oublié où est ce réglage ».
+
+⚠️ **Et une chose à sortir des menus quelle que soit la décision : les 34
+morceaux.** Ils occupent 34 des 49 entrées. Ce n'est pas une liste de commandes
+mais un catalogue à parcourir (noms, familles, envie d'écouter avant de choisir)
+— un menu déroulant est le pire endroit pour ça, sur n'importe laquelle des dix
+architectures.
+
+**R est écartée malgré son meilleur score d'accueil** : elle perd la vue
+d'ensemble, or un rythme s'entend *par* la superposition des lignes. Voir le
+kick sans la snare, c'est ne pas voir le rythme.
+
+### 1re série — dix peaux (2026-08-17, « je souhaite que tu fasses 10 propositions »)
 
 Planche complète : <https://claude.ai/code/artifact/e0aa9107-85d0-49f3-a157-6b70de8b3c42>
 Fichiers `maquettes/a.html` … `j.html`.

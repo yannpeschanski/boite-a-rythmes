@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8"><title>R — Une chose à la fois</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* R — L'écran ne montre qu'UNE ligne, en grand, et on glisse latéralement
+     d'une ligne à l'autre. Accueil maximal : huit contrôles visibles, des
+     cibles énormes. Le prix est lourd et il faut le dire : on perd la vue
+     d'ensemble, or un rythme s'entend PAR la superposition des lignes. */
+  .mini { display: flex; gap: 3px; padding: 7px 9px; }
+  .mini i { flex: 1; height: 16px; border-radius: 2px; background: rgba(255,255,255,.1); }
+  .mini i.on { box-shadow: 0 0 6px currentColor; background: currentColor; }
+  .mini i.cur { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .big { padding: 10px 9px 12px; }
+  .big .hd { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  .big .hd b { font: 700 20px var(--sans); letter-spacing: -.01em; }
+  .big .hd span { font: 10px var(--mono); color: var(--amp-text); opacity: .7; }
+  .bigcells { display: flex; gap: 7px; height: 108px; }
+  .bigcells i { flex: 1; border-radius: 4px; background: var(--lcd-bg);
+                box-shadow: inset 0 2px 4px rgba(0,0,0,.9); }
+  .bigcells i.on { background: currentColor; box-shadow: 0 0 14px currentColor; }
+  .dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 4px; }
+  .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.25); }
+  .dots i.on { background: var(--amber); }
+  .pars { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 0 9px 10px; }
+  .pars .chip { text-align: left; padding: 9px 9px; font-size: 10.5px; }
+</style>
+
+<div class="col">
+  <div class="cap">Débutant<span>Une ligne, plein écran</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Kick — ligne 1 sur 8</span><button class="c">⌄</button></div>
+      <div class="rack">
+        <div class="big"><div class="hd"><b style="color:var(--kick)">KICK</b><span>4 PAS</span></div>
+          <div class="bigcells" style="color:var(--kick)"><i class="on"></i><i></i><i class="on"></i><i></i></div>
+          <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">Quatre cibles de 80&nbsp;px. <b>Impossible de se tromper, impossible d’être perdu.</b> On glisse à droite pour la snare.</div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Expert<span>La même vue, avec la carte et les réglages</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Kick — ligne 1 sur 8</span><button class="c">⌄</button></div>
+      <div class="rack">
+        <div class="mini"><i class="on cur" style="color:var(--kick)"></i><i class="on" style="color:var(--snare)"></i><i class="on" style="color:var(--hat)"></i><i style="color:var(--clap)"></i><i style="color:var(--shaker)"></i><i class="on" style="color:var(--bass)"></i><i class="on" style="color:var(--pad)"></i><i class="on" style="color:var(--melody)"></i></div>
+        <div class="big" style="padding-top:2px"><div class="hd"><b style="color:var(--kick)">KICK</b><span>4 PAS · 808</span></div>
+          <div class="bigcells" style="color:var(--kick)"><i class="on"></i><i></i><i class="on"></i><i></i></div>
+        </div>
+        <div class="pars"><span class="chip c">TON · 42</span><span class="chip c">DÉCLIN · 220</span><span class="chip c">CLIC · 18</span><span class="chip c">RÉVERB · 12 %</span><span class="chip c">DÉCALAGE · 0</span><span class="chip c">🎲 REMPLIR</span></div>
+        <div class="lcd" style="margin-top:6px"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+      </div>
+    </div>
+    <div class="note">La bande du haut est la <b>carte des huit lignes</b> — elle rend la vue d’ensemble, mais en miniature. C’est le compromis, et il n’est pas gratuit.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

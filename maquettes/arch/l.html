@@ -1,0 +1,46 @@
+<!doctype html>
+<meta charset="utf-8"><title>L — Interface qui pousse</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* L — L'interface GRANDIT avec la progression du Mode jeu. Le verrou par
+     module existe déjà (unlocks.svelte) ; ici il descend au grain du contrôle.
+     L'accueil n'est pas un mode qu'on choisit, c'est une conséquence : au
+     niveau 2 il n'y a presque rien à l'écran parce qu'il n'y a presque rien à
+     savoir. Rien n'est caché — ce qui vient est annoncé et daté. */
+  .next { margin-top: 8px; padding: 7px 9px; border: 1px dashed var(--amp-hi);
+          border-radius: 3px; font: 10px var(--mono); color: var(--amp-text);
+          letter-spacing: .05em; opacity: .9; }
+  .next b { color: var(--amber); }
+  .lvl { display: flex; align-items: center; gap: 8px; font: 700 11px var(--sans); }
+  .bar { flex: 1; height: 7px; background: var(--face-dark); border: 1px solid var(--line);
+         border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg,#4d8cf5,#1b5bd4); }
+</style>
+
+<div class="col">
+  <div class="cap">Niveau 2<span>Le jour où l’Atelier s’ouvre</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel lvl"><span>Niveau 2</span><span class="bar"><i style="width:6%"></i></span><span class="btn c" style="padding:5px 9px">🎮</span></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid data-rows="KICK,SNARE"></div><div class="next">Le <b>HAT</b> s’ouvre au niveau 5 · le <b>SYNTHÉ</b> au niveau 13</div></div>
+    </div>
+    <div class="note">Deux lignes, deux boutons. <b>Aucun réglage n’existe encore</b> — ni menu Fichier, ni onglets, ni pastilles. L’écran n’est pas simplifié&nbsp;: il est jeune.</div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Niveau 34<span>Le même écran, quinze heures plus tard</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid="8"></div><div class="lcd" style="margin-top:6px"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div></div>
+    </div>
+    <div class="note">Huit lignes, les menus, les onglets, le synthé. <b>Rien n’a été révélé d’un coup</b>&nbsp;: chaque contrôle est arrivé seul, avec l’exercice qui apprend à s’en servir.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>
