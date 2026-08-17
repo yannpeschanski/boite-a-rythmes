@@ -462,7 +462,16 @@
        Ce n'est pas un contrôle qu'on « chevauche » comme Lecture ou Break :
        on pose un tempo, on le retouche, on n'y revient pas à chaque mesure. -->
   <div class="tempo-strip">
-    <XpSlider label="Tempo" min={40} max={200} step={10} unit=" BPM" bind:value={st.tempo} />
+    <!-- `step` à 1 et non 10 (retour de Yann : « on le règle un peu partout,
+         c'est bizarre et pas cohérent. Il faudrait qu'on puisse le régler à
+         l'unité »). Avec un cran de 10, `XpSlider` arrondissait AUSSI la
+         valeur tapée au clavier — taper « 123 » donnait 120, ce qui rendait
+         le réglage à l'unité littéralement impossible. Et le Mode Live, lui,
+         faisait déjà ±1 BPM : ce n'est donc pas le nombre d'endroits qui
+         gênait, c'est que le même réglage n'obéisse pas aux mêmes règles
+         selon l'écran. Les flèches ↑/↓ font ±1, Page↑/↓ ±10 (XpSlider) —
+         le geste « par dizaines » ne se perd pas. -->
+    <XpSlider label="Tempo" min={40} max={200} step={1} unit=" BPM" bind:value={st.tempo} />
     <button class="xp-btn tap" onclick={tapTempo} title="Tape le tempo en rythme, au moins deux fois">
       👆 Tap
     </button>

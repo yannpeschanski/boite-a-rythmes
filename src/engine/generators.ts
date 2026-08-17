@@ -65,6 +65,27 @@ export function randomizePitchedLine(
         : 1 + Math.floor(rng() * 7);
     return { degree, octave: cfg.defaultOctave };
   });
+  // Filet : une ligne qui se charge ENTIÈREMENT vide a l'air cassée, pas
+  // aérée. Le cas est rare mais réel — chaque pas est un tirage indépendant,
+  // donc sur une ligne à peu de pas (8 sur 4 mesures pour plusieurs presets)
+  // la série peut sortir vide par accident de graine. Constaté sur `clave23`
+  // en baissant la densité de la mélodie (2026-08-17) : le preset se
+  // chargeait sans une seule note de mélodie.
+  //
+  // Posé sur le PREMIER pas, et sur la fondamentale de l'accord actif —
+  // l'endroit et la note qui ne peuvent pas sonner faux. Surtout : AUCUN
+  // tirage supplémentaire (`degrees[0]`, pas `randomChordToneDegree`), donc
+  // le flux du générateur n'est pas décalé et le rendu reste reproductible
+  // à graine égale.
+  // `some(...)` plutôt que `every(v => v == null)` : TypeScript infère un
+  // prédicat de type sur le second et réduit alors `row.pattern` à `null[]`,
+  // ce qui interdit d'y écrire la note qu'on vient justement de fabriquer.
+  if (row.pattern.length > 0 && !row.pattern.some((v) => v != null)) {
+    const chordIdx = padChordAtBarPosition(state, barPositionForStep(row, 0));
+    const degrees = chordIdx >= 0 && chords[chordIdx] ? chords[chordIdx].degrees : null;
+    const deg = degrees && degrees.length > 0 ? ((degrees[0] - 1) % 7) + 1 : 1;
+    row.pattern[0] = { degree: deg, octave: cfg.defaultOctave };
+  }
 }
 
 export function randomizeSynth(state: PatternStateV2, fillRate: number, rng: Rng): void {
@@ -77,9 +98,35 @@ export function randomizeSynth(state: PatternStateV2, fillRate: number, rng: Rng
     resizeSynthLine(state.synthRows[name], state.synthRows.pad.cycleBars, state.synthRows[name].subdivisions, false);
   });
   // Basse : moins dense, très majoritairement des notes d'accord (fondation).
-  // Mélodie : suit le taux réglé, plus de notes de passage (rôle mélodique).
+  // Mélodie : plus de notes de passage (rôle mélodique).
+  //
+  // FACTEUR 0.6 sur la mélodie (2026-08-17, retour de Yann : « les mélodies
+  // des presets ne sont pas très bien réglées et prennent souvent trop de
+  // place »). Elle recevait `fillRate` PLEIN POT là où la basse reçoit
+  // `fillRate * 0.75` — au moment précis où c'est elle qui a la subdivision
+  // la plus fine (melodySubdiv vaut 8 ou 16 selon les presets, contre 4 pour
+  // la nappe). Elle finissait donc ligne la plus dense dans 21 presets sur
+  // 34 : 1,86 note/mesure en moyenne contre 1,15 pour la basse et 0,83 pour
+  // la nappe. (21 et non 31 : le premier relevé, fait à l'œil sur un
+  // tableau, surcomptait — c'est le script qui fait foi.)
+  //
+  // 0.6 et pas moins, mesuré sur les 34 presets plutôt que choisi au jugé :
+  //   facteur 1.00 -> 1,86 note/mesure (pire cas 7,0)
+  //   facteur 0.60 -> 1,12            (pire cas 4,5)   <- ici
+  //   facteur 0.50 -> 0,99            (pire cas 4,5)
+  // 0.6 est le point où la mélodie repasse SOUS la basse (1,12 < 1,15),
+  // c'est-à-dire où elle cesse d'être la ligne la plus chargée ; descendre
+  // à 0.5 ne gagne plus rien sur les pires cas et creuse l'écart sans
+  // raison. Le plus petit changement qui règle le problème.
+  //
+  // Ce que ça change et ce que ça ne change pas : les 34 PRESETS sonnent
+  // désormais avec une mélodie plus aérée (c'est le but). Les morceaux
+  // SAUVEGARDÉS ne bougent pas — la sérialisation stocke les notes, pas la
+  // graine. Et le déterminisme est intact : à graine égale, le résultat
+  // reste reproductible à l'octet près, c'est seulement le résultat qui a
+  // changé, pas sa stabilité.
   randomizePitchedLine(state, 'bass', fillRate * 0.75, 0.85, rng);
-  randomizePitchedLine(state, 'melody', fillRate, 0.7, rng);
+  randomizePitchedLine(state, 'melody', fillRate * 0.6, 0.7, rng);
 }
 
 // Sème des rafales (x2 à x4) sur les pas déjà actifs, probabilité `rate` par
