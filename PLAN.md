@@ -1711,7 +1711,7 @@ Trois causes, mesurées sur les 34 presets (script jetable, densité après
    subdivision la plus fine (`melodySubdiv` vaut 8 sur 23 presets et 16 sur
    11, contre 4 pour la nappe). Résultat moyen : **1,9 note/mesure pour la
    mélodie contre 1,2 pour la basse et 0,9 pour la nappe** — la mélodie est
-   la ligne la plus chargée dans **31 presets sur 34**. Pires cas : Garage 7
+   la ligne la plus chargée dans **21 presets sur 34**. Pires cas : Garage 7
    notes/mesure, House 6, Hard house 6, French touch 5.
 2. **Il n'y a pas de phrase, seulement une densité.** Chaque pas est un
    tirage indépendant (`if (rng() > density) return null`), sans motif, sans
@@ -2048,7 +2048,7 @@ Dans l'ordre. C'est la file de travail ; tout le reste attend D1-D4.
 1. **R1(a) — densité de la mélodie divisée.** Une ligne dans
    `generators.ts` (la mélodie reçoit `fillRate` plein pot là où la basse
    reçoit `fillRate * 0.75`). Effet immédiat sur les 34 presets, où la
-   mélodie est aujourd'hui la ligne la plus dense dans 31 cas sur 34.
+   mélodie est aujourd'hui la ligne la plus dense dans 21 cas sur 34.
    *Ne change que des arguments : aucun risque sur l'ordre de consommation
    du générateur.*
 2. **R3 brique 1 — monitoring anonyme seul.** Aucun compte, aucune base :
@@ -2794,6 +2794,91 @@ automatiquement**, Atelier de nouveau verrouillé · joueur normal niveau 14
 ouvert par sa vraie progression, sans marqueur · « master » tapé en session
 marche mais **ne survit pas au rechargement** · marqueur présent en `#boss`,
 absent pour un joueur normal.
+
+---
+
+## ✅ Tempo à l'unité + densité des mélodies (R1a) — 2026-08-17
+
+Deux premiers items de la file exécutable du plan consolidé.
+
+### Tempo réglable à l'unité
+
+Le curseur de l'Atelier était déclaré `step={10}`, et `XpSlider` arrondit
+**aussi la valeur tapée au clavier** (`XpSlider.svelte:72`) : taper « 123 »
+donnait 120, le réglage à l'unité était littéralement impossible. Passé à
+`step={1}`.
+
+L'impression d'incohérence de Yann (« on le règle un peu partout ») venait
+de là plus que du nombre d'endroits : il n'y en a que deux (bandeau de
+l'Atelier, Mode Live) plus le Tap — mais le Mode Live faisait **déjà** ±1 BPM
+(`LiveView.svelte:420`). Le même réglage n'obéissait pas aux mêmes règles
+selon l'écran. Vérifié au navigateur : saisie « 123 » → 123, ↑ → 124,
+Page↑ → 134 (le geste « par dizaines » ne se perd pas).
+
+### Densité de la mélodie : facteur 0.6
+
+La mélodie recevait `fillRate` **plein pot** là où la basse reçoit
+`fillRate * 0.75`, au moment précis où c'est elle qui a la subdivision la
+plus fine. Elle finissait la ligne la plus dense dans **21 presets sur 34**.
+
+**Correction d'un chiffre déjà écrit ici** : les analyses précédentes
+disaient « 31 presets sur 34 ». C'était un comptage fait à l'œil sur un
+tableau ; le script dit **21**. Corrigé aux deux endroits du document.
+L'argument tient toujours (la mélodie reste la plus dense en moyenne), mais
+le chiffre était faux et il avait déjà été répété.
+
+Facteur choisi **par mesure sur les 34 presets**, pas au jugé :
+
+| facteur | mélodie | pire cas | ligne la plus dense |
+|---|---|---|---|
+| 1.00 (avant) | 1,86 note/mes. | 7,0 | 21/34 |
+| **0.60** | **1,12** | **4,5** | **10/34** |
+| 0.50 | 0,99 | 4,5 | 8/34 |
+
+0.6 est le point où la mélodie repasse **sous la basse** (1,12 < 1,15),
+c'est-à-dire où elle cesse d'être la ligne la plus chargée. Descendre à 0.5
+ne gagne plus rien sur les pires cas et creuse l'écart sans raison — le plus
+petit changement qui règle le problème.
+
+### Le filet qui a manqué de sortir en silence
+
+Avec le facteur seul, **`clave23` se chargeait avec une mélodie entièrement
+vide**. Une ligne vide n'a pas l'air aérée, elle a l'air cassée. Un plafond
+au lieu d'un facteur ne réglait rien (mesuré : le vide réapparaît dès 0,40) —
+parce que ce n'est pas une question de courbe mais **un accident de graine** :
+chaque pas étant un tirage indépendant, une ligne à 8 pas peut sortir vide.
+
+D'où un filet dans `randomizePitchedLine` : si la ligne ressort entièrement
+vide, une note est posée **sur le premier pas**, à la **fondamentale de
+l'accord actif** — l'endroit et la note qui ne peuvent pas sonner faux. Et
+**aucun tirage supplémentaire** (`degrees[0]`, pas `randomChordToneDegree`),
+donc le flux du générateur n'est pas décalé.
+
+### Ce que ça change, et ce que ça ne change pas
+
+- Les **34 presets** sonnent avec une mélodie plus aérée. C'est le but.
+- Les **morceaux sauvegardés ne bougent pas** : la sérialisation stocke les
+  notes, pas la graine.
+- Le **déterminisme est intact** : à graine égale le rendu reste
+  reproductible. C'est le résultat qui change, pas sa stabilité — un test le
+  vérifie sur les 34 presets.
+
+### Vérifications
+
+`npm run check` 0 erreur · **24 tests** (3 nouveaux, `tests/generators.test.ts`)
+· les deux builds. **Tests validés par régressions simulées** : retirer le
+filet fait tomber le test des lignes vides ; remettre la mélodie à plein pot
+fait tomber celui de la densité.
+
+Piège TypeScript à connaître : `pattern.every(v => v == null)` fait inférer
+un prédicat de type et réduit le tableau à `null[]`, ce qui interdit d'y
+écrire ensuite. `!pattern.some(v => v != null)` ne narrow pas.
+
+### Reste de R1
+
+**R1(b)** — la mélodie par motif court répété — n'est pas fait. C'est le vrai
+correctif musical : aujourd'hui chaque pas reste un tirage indépendant, donc
+une texture plus aérée, mais toujours pas une phrase.
 
 ---
 
