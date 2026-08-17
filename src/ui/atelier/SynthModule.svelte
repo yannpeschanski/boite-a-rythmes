@@ -50,6 +50,29 @@
 </script>
 
 <XpWindow title="Synthé — Basse / Nappe / Mélodie" icon="🎹" accent="violet">
+  {#each [['bass', 'Basse'], ['pad', 'Nappe'], ['melody', 'Mélodie']] as [name, label] (name)}
+    <div class="line-block">
+      <button class="xp-btn tiny" onclick={() => randomLine(name as SynthRowName)} title="Remplir cette ligne seulement">🎲</button>
+      <SynthRowView
+        name={name as SynthRowName}
+        {label}
+        playheadCol={playhead[name as SynthRowName]}
+        {playing}
+        stepStartedAt={stepAt?.[name as SynthRowName] ?? 0}
+        {onPreviewDegree}
+        onChanged={onFxChanged}
+      />
+    </div>
+  {/each}
+
+  <!-- Harmonie et remplissage DESCENDUS sous les trois lignes (retour de
+       Yann, 2026-08-17 : « tonalité, nb de notes, ça peut descendre dans une
+       partie plus bas »). Ils occupaient 146px en tête d'un onglet qui en
+       comptait 561 avant la première case jouable — soit 66 % du premier
+       écran de téléphone, là où l'onglet Rythme est à 32 %.
+       Ils restent GLOBAUX (ils gouvernent les trois lignes à la fois, voir
+       `chordsFor`) : les descendre SOUS le séquenceur, comme le tempo au 2e
+       lot, plutôt que DANS une ligne, qui mentirait sur leur portée. -->
   <div class="harmony" data-group="synth-harmonie">
     <label>
       Tonalité
@@ -72,20 +95,6 @@
     <button class="xp-btn" onclick={randomAll}>🎲 Remplissage aléatoire harmonieux</button>
   </div>
 
-  {#each [['bass', 'Basse'], ['pad', 'Nappe'], ['melody', 'Mélodie']] as [name, label] (name)}
-    <div class="line-block">
-      <button class="xp-btn tiny" onclick={() => randomLine(name as SynthRowName)} title="Remplir cette ligne seulement">🎲</button>
-      <SynthRowView
-        name={name as SynthRowName}
-        {label}
-        playheadCol={playhead[name as SynthRowName]}
-        {playing}
-        stepStartedAt={stepAt?.[name as SynthRowName] ?? 0}
-        {onPreviewDegree}
-        onChanged={onFxChanged}
-      />
-    </div>
-  {/each}
 
   <fieldset data-group="synth-sidechain">
     <legend>Sidechain — le synthé « respire » avec la batterie</legend>

@@ -80,8 +80,7 @@
     oscillator: false,
     detune: false,
     filter: false,
-    arpege: false,
-    drone: false,
+    play: false,
   });
 
   // Regroupement par paquets de 8 au-delà de 8 pas (port de
@@ -342,16 +341,18 @@
     <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
       onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
     <button class="chip" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
-      onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Oscillateur</button>
+      onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Timbre</button>
     <button class="chip" class:on={openGroups.detune} aria-expanded={openGroups.detune}
       onclick={() => (openGroups.detune = !openGroups.detune)}>Détune</button>
     <button class="chip" class:on={openGroups.filter} aria-expanded={openGroups.filter}
-      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre &amp; espace</button>
+      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre</button>
     {#if isPad}
-      <button class="chip" class:on={openGroups.arpege} aria-expanded={openGroups.arpege}
-        onclick={() => (openGroups.arpege = !openGroups.arpege)}>Arpégiateur</button>
-      <button class="chip" class:on={openGroups.drone} aria-expanded={openGroups.drone}
-        onclick={() => (openGroups.drone = !openGroups.drone)}>Bourdon</button>
+      <!-- Arpège et Bourdon fondus en une pastille « Jeu » : les six
+           pastilles de la Nappe demandaient 352px pour 322 disponibles, et
+           les deux répondent à la MÊME question — comment la Nappe joue
+           l'accord, égrené ou tenu. -->
+      <button class="chip" class:on={openGroups.play} aria-expanded={openGroups.play}
+        onclick={() => (openGroups.play = !openGroups.play)}>Jeu</button>
     {/if}
   </div>
   {#if openGroups.sequence}
@@ -438,8 +439,9 @@
     </div>
   {/if}
   {#if isPad}
-    {#if openGroups.arpege}
+    {#if openGroups.play}
       <div class="group-panel" data-group="synth-arpege">
+        <p class="sub">Arpège — l'accord est égrené note par note</p>
         <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
         <label>
           Motif
@@ -465,10 +467,7 @@
         >
           ✍️ Traduire l'arpège en Mélodie
         </button>
-      </div>
-    {/if}
-    {#if openGroups.drone}
-      <div class="group-panel" data-group="synth-drone">
+        <p class="sub">Bourdon — l'accord est tenu en continu</p>
         <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
         <p class="hint">
           La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord
@@ -674,19 +673,36 @@
     gap: 4px;
     margin: 5px 0 0;
   }
+  /* Une seule ligne par ligne synthé (retour de Yann, 2026-08-17). Mesuré
+     avant : 324px nécessaires pour 322 disponibles sur Basse/Mélodie — il
+     manquait DEUX pixels — et 484px sur la Nappe, qui en porte six.
+     Le remplissage horizontal se resserre, la HAUTEUR de cible reste à 28px
+     (audit A3). Les libellés raccourcis font le reste : « Oscillateur » ->
+     « Timbre » (le nom qu'utilisent déjà les lignes de batterie pour le même
+     panneau), « Filtre & espace » -> « Filtre », « Arpégiateur » ->
+     « Arpège ». Les titres des panneaux, eux, gardent leur nom complet. */
   .chip {
     font-family: inherit;
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
     min-height: 28px;
-    padding: 6px 10px;
+    padding: 6px 7px;
     border: 1px solid color-mix(in srgb, var(--xp-accent-violet) 40%, var(--xp-line));
     border-radius: 13px;
     background: linear-gradient(180deg, #fff, var(--xp-face-dark));
     color: var(--xp-accent-violet);
     cursor: pointer;
     box-shadow: var(--xp-bevel-out);
+  }
+  /* Sous 340px, la Nappe (cinq pastilles) repassait à deux lignes : un cran
+     de resserrement horizontal de plus, la hauteur de cible ne bougeant
+     toujours pas. */
+  @media (max-width: 339px) {
+    .chip {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
   }
   .chip.on {
     background: var(--xp-accent-violet);
@@ -718,6 +734,19 @@
   .xp-btn.tiny {
     font-size: 11px;
     padding: 1px 6px;
+  }
+  /* Sous-titre à l'intérieur d'un panneau fusionné : sépare arpège et
+     bourdon sans réintroduire deux replis. */
+  .sub {
+    margin: 6px 0 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--xp-accent-violet);
+    grid-column: 1 / -1;
+  }
+  .sub:first-child {
+    margin-top: 0;
   }
   .hint {
     font-size: 11px;

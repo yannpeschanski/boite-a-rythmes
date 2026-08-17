@@ -3159,6 +3159,84 @@ gêne persiste — c'est le prochain suspect.
 
 ---
 
+## ✅ Audit design de l'onglet Synthé — 2026-08-17
+
+> « il faut faire un audit design du synthé ! il y a trop d'espace entre le
+> haut et la partie Séquenceurs. / tempo : est-ce nécessaire de le régler
+> ici ? / tonalité, nb de notes, ça peut descendre dans une partie plus bas /
+> sous sections des lignes de synthé : il faut que ça rentre dans une seule
+> ligne »
+
+### Le constat, chiffré
+
+L'onglet Rythme avait été ramené à **32 %** de chrome sur le premier écran
+(audit A1). **L'onglet Synthé n'avait jamais été mesuré : il était à 66 %.**
+561px avant la première case jouable à 390×844, soit deux tiers de l'écran
+d'un téléphone consommés avant de pouvoir poser une note.
+
+Trois blocs se partageaient ces 561px, et aucun n'avait à être là :
+
+| Bloc | Hauteur | Sort |
+|---|---|---|
+| Bandeau tempo | 66px | retiré de cet onglet |
+| Tonalité / Mode / Nb d'accords | 82px | descendu sous les lignes |
+| Taux de remplissage + 🎲 global | 64px | descendu sous les lignes |
+
+### Tempo : non, il n'a rien à faire ici
+
+Il tombait juste sous la barre sticky **par accident de mise en page** : il
+est placé sous le séquenceur batterie, et sur Synthé il n'y a pas de
+séquenceur batterie au-dessus de lui. Réservé à l'onglet Rythme — on pose un
+tempo avec le rythme, on n'y revient pas en écrivant une mélodie. Il reste
+réglable là-bas, et dans le Mode Live.
+
+### Harmonie et remplissage : descendus, pas déplacés dans une ligne
+
+Ils restent **globaux** — `chordsFor` gouverne les trois lignes à la fois. Les
+mettre *dans* une ligne mentirait sur leur portée. Ils passent donc **sous**
+le séquenceur, exactement comme le tempo au 2ᵉ lot.
+
+### Pastilles sur une seule ligne
+
+Mesuré avant : **324px nécessaires pour 322 disponibles** sur Basse et
+Mélodie — il manquait **deux pixels** — et **484px** sur la Nappe, qui en
+portait six.
+
+- Remplissage horizontal resserré (10px → 7px), hauteur de cible inchangée à
+  28px (audit A3).
+- Libellés raccourcis : « Oscillateur » → **Timbre** (le nom qu'utilisent
+  déjà les lignes de batterie pour le même panneau), « Filtre & espace » →
+  **Filtre**, « Arpégiateur » → **Arpège**. Les titres des panneaux gardent
+  leur nom complet.
+- Ça suffisait pour Basse et Mélodie (229px), **pas pour la Nappe** (352px
+  pour 322). D'où une fusion : **Arpège et Bourdon deviennent une pastille
+  « Jeu »** — les deux répondent à la même question, comment la Nappe joue
+  l'accord, égrené ou tenu. Le panneau les sépare par deux sous-titres au
+  lieu de deux replis. Nappe : **268px, une ligne**.
+
+### Résultat mesuré
+
+| | Avant | Après |
+|---|---|---|
+| Avant la 1re case jouable (390px) | **561px — 66 %** du 1er écran | **323px — 38 %** |
+| Hauteur de page | 1 312px (1,55 écran) | **1 134px (1,34)** |
+| Pastilles par ligne | 2 lignes partout | **1 ligne**, de 320 à 768px |
+
+Vérifié sur **320 / 360 / 390 / 768**. À 320px il a fallu un cran de
+resserrement supplémentaire pour que la Nappe tienne encore sur une ligne.
+
+Les débordements de **+2px** relevés sur `.xp-slider` / `.two-col` sont
+**antérieurs** à cette passe (artefact sous-pixel du `input[type=range]`, déjà
+présent dans les relevés précédents) — ni introduits, ni corrigés ici.
+
+### Reste ouvert
+
+Le **🎲 par ligne** flotte toujours à droite de l'en-tête de ligne ; Yann
+l'avait demandé « dans la sous-section séquence ». Pas fait dans cette passe,
+qui portait sur la hauteur du haut de page.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
