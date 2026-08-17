@@ -54,6 +54,13 @@ desktop est en friche et assumé comme tel. Toute mesure d'interface se fait à
 2. **Le 2ᵉ type d'exercice du mode jeu** — l'accord de principe est donné
    (D2), le contenu ne l'est pas. Les 34 niveaux n'ont qu'un seul verbe :
    reproduire.
+3. **La direction visuelle : A, B ou C.** L'audit design × DAW est fait
+   (2026-08-17, en fin de document). Il mesure que le look XP coûte 3-10 % de
+   la page quand les pastilles répétées en coûtent 31-34 %, et il constate que
+   l'appli parle déjà **trois** langues visuelles — dont le Mode Live, qui est
+   la direction alternative déjà livrée. Recommandation : **B** (cadre XP,
+   plan de travail sombre à la Mode Live). ⚠️ B ou C impose de réécrire
+   `CLAUDE.md`, qui interdit aujourd'hui de remettre XP en cause.
 
 ### Ce qui est exécutable tout de suite (aucune décision requise)
 
@@ -104,6 +111,9 @@ Par ordre de taille :
   recadrage de l'audit DAW.
 - [§7.5 dette d'interface](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2)
   — les trois règles d'écriture, dont « un ✅ n'est pas définitif ».
+- [Audit design × DAW comparables](#audit-design--daw-comparables--2026-08-17)
+  — les mesures, les cinq familles du marché, les trois directions. Rapport
+  visuel : <https://claude.ai/code/artifact/397c1f0b-c76e-4af5-bdc9-36831375ef3c>
 - Les sections `✅` de fin de document — une par livraison, avec ses mesures
   et ses pièges.
 
@@ -3461,6 +3471,130 @@ plus au-delà de 8). Pastilles toujours sur une ligne de 320 à 768px.
 
 Le **🎲 par ligne** flotte encore à droite de l'en-tête, au lieu d'être dans
 la sous-section Séquence comme demandé au 3ᵉ lot.
+
+---
+
+---
+
+## Audit design × DAW comparables — 2026-08-17
+
+> « il me semblait avoir demandé un audit sur le design pour voir les autres
+> types de daw. je souhaite remettre en cause le design XP »
+
+**Rapport visuel complet :** <https://claude.ai/code/artifact/397c1f0b-c76e-4af5-bdc9-36831375ef3c>
+(mesures, planche contact des trois langues visuelles, cinq familles du marché,
+trois directions chiffrées). Ce qui suit en est le résumé exécutable.
+
+### Pourquoi il n'avait pas été fait
+
+Yann avait raison de le chercher : la demande est bien dans ce document, au
+point **N4 — « Audit des DAW comparables »** (2026-08-16), avec sa question
+d'origine citée. Mais N4 **recadre** l'audit avant de l'exécuter : puisque
+`CLAUDE.md` pose que le design XP est l'identité du projet et pas un héritage
+à moderniser, la partie *visuelle* a été retirée du périmètre (« ce qu'on peut
+emprunter, ce sont les INTERACTIONS ») et le reste classé « chantier neuf à
+cadrer ». L'audit n'a donc jamais tourné.
+
+⚠️ **La demande du 2026-08-17 lève cette contrainte.** Si la direction B ou C
+ci-dessous est retenue, `CLAUDE.md` doit être réécrit : en l'état il interdit
+exactement ce qui vient d'être demandé.
+
+### La mesure retourne la question (390×844, lu dans le DOM rendu)
+
+| Onglet | Page | Barres de titre XP | Pastilles répétées | Cases du séquenceur |
+|---|---|---|---|---|
+| Rythme | 1 253px | 2 · 64px · **5 %** | 15 · 420px · **34 %** | 5 rangs · 170px · 14 % |
+| Synthé | 1 160px | 1 · 32px · **3 %** | 13 · 364px · **31 %** | 3 rangs · 96px · 8 % |
+| Production | 1 562px | 5 · 160px · **10 %** | — | — |
+
+1ʳᵉ case jouable à **318px** du haut, soit 38 % du premier écran (le bandeau
+d'astuce sur deux lignes en explique une partie).
+
+**Le look XP coûte 3 à 10 % de la page. Les pastilles répétées
+(`Séquence · Timbre · Filtre & espace · Détune · Jeu`) en coûtent 31 à 34 % —
+deux fois et demie la place donnée aux cases.** Jeter XP ne rendrait donc pas
+l'écran plus utilisable ; le poste de dépense est la répétition de 3 à 5
+boutons identiques sur chacune des huit lignes.
+
+Corollaire pour §7.5 : le constat A1 (« 64 % de chrome ») est **éteint**, le
+travail a été fait. Il est remplacé par un constat neuf, **A1′ — 34 % de
+pastilles**.
+
+### Les cinq familles du marché (ce qu'on en prend)
+
+1. **Grille sombre à LED** (Ableton Note, drumbit, SEQ-16, Shuffle Drummer,
+   orDrumbox, BandLab) — le consensus, devenu indifférencié. *On prend le
+   contraste allumé/éteint, pas le look.*
+2. **Panneau sérigraphié** (TE EP-133 K.O. II, Pocket Operator, Novation
+   Circuit, Polyend Play) — « futurisme cassette × brutalisme », étiquettes au
+   pochoir à même la surface, aucun panneau à ouvrir. *L'antidote direct aux
+   34 %.*
+3. **Anti-tableur tactile** (Auxy) — conçu contre le « spreadsheet
+   music-making ». *Petit clavier de référence à côté de la grille,
+   appui-glissé pour poser puis ajuster — terrain du pad déjà livré.*
+4. **Rack de pads** (Koala Sampler / SP-404) — la surface de jeu est
+   permanente, les réglages sont des surcouches temporaires. *Aujourd'hui
+   c'est l'inverse ici.*
+5. **Rétro assumé** (là où le projet est déjà) — le revival Y2K est un courant
+   actif en 2026. Conseil récurrent : *évoquer l'époque, pas rejouer son
+   ergonomie cassée*.
+
+### Quatre charges contre XP qui tiennent
+
+1. **Le contraste est à l'envers.** Fond beige + ciel Bliss clair, case vide en
+   dégradé pâle. Déjà remonté comme bug (B8), corrigé une fois, sur un terrain
+   qui le reproduira.
+2. **La barre de titre promet ce que le téléphone ne tient pas.** `×` est un
+   gag, `_`/`□` sont un interrupteur en deux boutons : 3 cibles de 24px par
+   fenêtre, **15 sur l'onglet Production**, pour un repli.
+3. **La nostalgie ne pointe pas vers la musique.** 808/909 dans le moteur, un
+   OS à l'écran. XP habille le contenant ; la nostalgie du contenu serait
+   TR-808 / SP-404 / Pocket Operator. Seule charge que la mesure ne tranche pas.
+4. **L'identité n'est déjà pas appliquée** — voir ci-dessous.
+
+Trois charges **tombent** : « le chrome mange l'écran » (mesuré 3-10 %),
+« c'est daté » (2026 : c'est de la différenciation face à huit concurrents
+sombres identiques), « ça coûte trop cher » (à moitié : les reliefs tiennent en
+3 tokens et `data-theme="noir"` existe déjà — ce qui coûte, ce sont les **225
+couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie).
+
+### Le vrai résultat : l'appli parle déjà trois langues
+
+- **Atelier** — Luna beige + Bliss + fenêtres à barre de titre.
+- **Mode jeu** — même grammaire XP, palette `noir` (`GameView.svelte:98`).
+- **Mode Live** — bleu nuit, étiquettes monospace en capitales posées à même la
+  surface, LED de couleur, faders ambre. **Aucune trace de Luna** — et c'est
+  déjà, livré et en ligne, la direction « panneau sérigraphié » de la famille 2.
+
+La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
+langues déjà présentes gagne ? »**.
+
+### Trois directions
+
+- **A — Garder XP, resserrer.** On n'attaque que les 34 %. Plus gros gain
+  d'écran mesurable, aucun risque d'identité, mais ne répond pas à la question
+  posée.
+- **B — Deux couches : cadre XP, plan de travail instrument. ★ recommandée.**
+  XP reste le cadre (splash, menus, fenêtres, dialogues, Mode jeu) ;
+  l'intérieur du séquenceur devient un panneau sombre à la Mode Live. Répond
+  aux charges 1, 3 et 4, rend la nostalgie plus juste (matériel là où l'on
+  joue, système là où l'on range), et **coûte peu parce que le vocabulaire
+  existe déjà en prod**.
+- **C — Sortir de XP.** Cohérence immédiate, mais 225 couleurs, tout
+  `src/ui/xp/`, le splash, le Mode jeu, les sons système — et on dépense
+  l'unique trait distinctif du projet pour ressembler à sept concurrents
+  gratuits.
+
+**Recommandation : B, avec une condition d'ordre.** La première pierre n'est
+pas le thème, c'est les 34 %. Repeindre en sombre sans traiter les pastilles
+donnerait une version sombre du même écran encombré. Ordre proposé :
+(1) pastilles → étiquettes sérigraphiées, panneaux → surcouches ;
+(2) corps du séquenceur sur la palette Live, cases éteintes creusées, cases
+actives émettrices ; (3) barre de titre réduite à un chevron de repli, le gag
+`×` retiré ; (4) `CLAUDE.md` réécrit sur la règle réelle — *XP est le cadre,
+l'instrument est sombre*.
+
+**Rien n'est engagé tant que Yann n'a pas tranché entre A, B et C.**
 
 ---
 
