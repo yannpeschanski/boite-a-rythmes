@@ -98,11 +98,17 @@
     row.pattern[col] = { degree: cur.degree, octave: Math.max(-1, Math.min(1, cur.octave + delta)) };
   }
 
+  // Case vide = AUCUN glyphe (audit B8). Elle affichait un « · », qui est un
+  // signe : il dit « il y a quelque chose ici, en tout petit », alors que le
+  // vide se lit très bien tout seul — c'est exactement ce que font les cases
+  // de batterie, qui ne portent rien quand elles sont éteintes. Le point
+  // était la principale raison pour laquelle une ligne synthé vide avait
+  // l'air désactivée à côté d'une ligne de batterie vide.
   function cellLabel(col: number): string {
     const v = row.pattern[col];
-    if (isPad) return typeof v === 'number' && v >= 0 ? chords[v]?.roman ?? '?' : '·';
+    if (isPad) return typeof v === 'number' && v >= 0 ? (chords[v]?.roman ?? '?') : '';
     const n = v as SynthNote | null;
-    return n ? String(n.degree) : '·';
+    return n ? String(n.degree) : '';
   }
 
   // --- Macros de filtre (retour de Yann : « filtre on comprend rien, on peut
@@ -501,30 +507,37 @@
   }
   /* Cases VIDES teintées par ligne, comme la grille batterie — port de
      #rowBass/#rowPad/#rowMelody .cell-select:not(.active) de l'original
-     (l. 762-764). */
+     (l. 762-764).
+     Dosage RELEVÉ à 18/40 % au lieu des 10/28 % de la batterie (audit B8).
+     Ce n'est pas une incohérence : la recette était bien la même des deux
+     côtés, mais elle ne donne pas le même résultat selon la teinte. À 10 %,
+     l'orange du kick reste franc là où l'indigo/violet/rose des lignes
+     synthé vire au lavande pâle — la même formule produisait une grille
+     éteinte d'un côté et prête de l'autre. On égalise ce qu'on VOIT, pas ce
+     qu'on écrit. */
   .cell.bass:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-bass) 10%, #fff),
-      color-mix(in srgb, var(--cell-bass) 26%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-bass) 18%, #fff),
+      color-mix(in srgb, var(--cell-bass) 40%, var(--xp-face-dark))
     );
-    border-color: color-mix(in srgb, var(--cell-bass) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-bass) 60%, var(--xp-line));
   }
   .cell.pad:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-pad) 10%, #fff),
-      color-mix(in srgb, var(--cell-pad) 26%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-pad) 18%, #fff),
+      color-mix(in srgb, var(--cell-pad) 40%, var(--xp-face-dark))
     );
-    border-color: color-mix(in srgb, var(--cell-pad) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-pad) 60%, var(--xp-line));
   }
   .cell.melody:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-melody) 10%, #fff),
-      color-mix(in srgb, var(--cell-melody) 26%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-melody) 18%, #fff),
+      color-mix(in srgb, var(--cell-melody) 40%, var(--xp-face-dark))
     );
-    border-color: color-mix(in srgb, var(--cell-melody) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-melody) 60%, var(--xp-line));
   }
   .cell.playing {
     outline: 2px solid #ffd54a;
