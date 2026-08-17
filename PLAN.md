@@ -2913,6 +2913,105 @@ les cases actives, ce qui donne une seconde rangée en dents de scie.
 
 ---
 
+## ✅ Pad d'écriture des notes dans l'Atelier (R6 + N1) — 2026-08-17
+
+> « pouvoir ouvrir un pad depuis l'atelier pour jouer/enregistrer une mélodie
+> qui s'inscrit dans la grille » — et, au-dessus, « simplifier grandement le
+> choix des notes ».
+
+`src/ui/sequencer/NotePad.svelte`, ouvert par un 🎹 dans l'en-tête des lignes
+**Basse** et **Mélodie**.
+
+### Ce que ça remplace (§7.5, règle n°1)
+
+Le choix d'une note se faisait en **tapant plusieurs fois sur la case** :
+`cycleCell` fait défiler silence → 1 → 2 … → 7 → silence. Mesuré : poser un
+degré 5 coûtait **5 appuis**, corriger un 6 en 3 en coûtait **5 de plus** (il
+faut retraverser le silence), une mélodie de 4 notes ≈ **15 appuis**. Avec le
+pad, **une note = un appui**. Le défilement par la case reste là pour les
+retouches ponctuelles — on n'enlève rien, on ajoute le chemin direct.
+
+**Coût écran : zéro tant qu'il est fermé.** C'est un panneau, pas une barre —
+la condition posée en acceptant que le pad vive dans l'Atelier plutôt que
+dans le Mode Live (surface déjà saturée).
+
+### Deux comportements, aucun bouton de mode
+
+- **À l'arrêt** : écriture pas-à-pas, le curseur avance tout seul et l'en-tête
+  affiche « pas 3 / 8 ». C'est ce qui répond à « simplifier le choix des
+  notes ».
+- **En lecture** : enregistrement en direct, chaque appui écrit sur le pas le
+  plus proche.
+
+La situation dit déjà lequel s'applique ; un troisième bouton à comprendre
+n'apporterait rien. C'est aussi ce que fait n'importe quelle boîte à rythmes.
+
+### Sept touches, pas un piano
+
+Le modèle d'état n'est pas fait de notes fixes mais de **degrés de gamme 1-7**
+(+ octave). Un clavier de piano obligerait à traduire dans les deux sens et
+laisserait poser des notes hors gamme, que le reste de l'appli s'interdit.
+Sept touches, c'est exactement le modèle — et sur un téléphone, sept cibles de
+48px valent mieux que douze étroites dont cinq noires.
+
+Les degrés qui appartiennent à **l'accord en cours sur le pas visé** sont
+teintés : la même information que le point de justesse des cases, mais donnée
+**avant** de poser la note plutôt qu'après. Une aide, pas une contrainte — les
+autres degrés restent jouables.
+
+### La quantification, et le défaut qu'elle évite
+
+Un doigt tombe toujours un peu après le temps. Écrire sur le pas **en cours**
+rangerait une note jouée juste avant le pas suivant sur le précédent, et tout
+ce qu'on enregistre sonnerait **en retard d'un pas** — un défaut qui ne se
+voit pas, qui s'entend. On arrondit donc au pas le plus proche.
+
+Ça demandait de savoir non pas quel pas joue, mais **depuis combien de temps**.
+`AtelierView` horodate désormais l'arrivée de chaque pas synthé
+(`performance.now()` au moment où le moteur relâche l'événement, donc calé sur
+l'horloge AUDIO comme l'aiguille de l'anneau). Volontairement **pas** un
+`$state` : personne n'a besoin de réagir à cette valeur, elle n'est lue qu'au
+moment d'un appui — en faire un état réactif déclencherait un rendu à chaque
+pas de chaque ligne.
+
+La règle elle-même est sortie du composant dans **`engine/quantize.ts`**, pur
+et testé : c'est le genre de décalage d'un pas qui reste invisible tant que
+personne n'a enregistré une vraie mélodie.
+
+### Moteur
+
+Une méthode ajoutée, `AudioEngine.playDegreePreview(name, degree, octave)` :
+`previewSynth` ne savait jouer que le degré 1, et `playLiveMelodyNote` ne sert
+que la Mélodie et veut une fréquence déjà calculée. Elle reste le seul endroit
+qui connaît le registre de chaque ligne — les −24 demi-tons de la basse sont
+les **mêmes** que ceux du scheduler, pour que le pad sonne comme la grille
+jouera.
+
+### Vérifications
+
+`npm run check` 0 erreur · **31 tests** (7 nouveaux) · les deux builds.
+
+- **Tests de quantification validés par régressions simulées** : écrire
+  toujours sur le pas en cours fait tomber 3 tests ; passer l'inégalité de
+  stricte à large en fait tomber 1 (celui de la frontière exacte).
+- **Parcours réels au navigateur** (390×844). À l'arrêt : 5, 3, 7, silence →
+  motif `5 3 7 ·`, curseur qui avance et se replie, octave +1 appliquée.
+  En lecture (200 BPM, 8 pas) : quatre notes jouées, **écart maximum 1 pas**
+  entre la tête de lecture et le pas écrit — c'est l'arrondi au plus proche,
+  pas une dérive.
+
+### Reste ouvert
+
+- La **Nappe n'a pas de pad** : elle pose des accords, pas des degrés — un pad
+  à 7 touches n'y voudrait rien dire. À traiter séparément si le besoin vient.
+- Les opérations **sur la ligne entière** (transposer, dupliquer la première
+  moitié, décaler, inverser) — le raccourci proposé pour éviter la
+  multi-sélection tactile — ne sont pas faites.
+- Le nit d'octave des cases (les ▲▼ en dents de scie sous les cases actives)
+  reste ouvert ; le pad le contourne sans le supprimer.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
