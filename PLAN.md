@@ -3237,6 +3237,84 @@ qui portait sur la hauteur du haut de page.
 
 ---
 
+## ✅ Pad : délai d'attaque et suppression · bloc du bas rangé — 2026-08-17
+
+### « un petit délai entre la touche et la note qui se joue »
+
+**Cause trouvée, et ce n'était pas l'audio.** Les touches du pad écoutaient
+`onclick`. Sur mobile, un `click` ne part qu'au **relâchement** du doigt : la
+note attendait qu'on lève la main. Le délai ressenti n'était pas une latence
+de moteur, c'était la durée de l'appui.
+
+L'écart était propre au pad : les cases de batterie écoutaient déjà
+`onpointerdown` (`DrumRowView.svelte:109`). Aligné. `preventDefault` empêche
+le click fantôme qui suivrait et rejouerait la note.
+
+*Ce que ce n'était pas*, vérifié avant de conclure : l'aperçu est programmé à
+`currentTime + 0.02` et les attaques des voix vont de 5 à 80ms — de quoi
+expliquer quelques millisecondes, pas un délai perceptible.
+
+### « difficile de supprimer une note »
+
+Le silence était un petit bouton relégué en bas à droite, à côté de « ← ».
+Effacer est pourtant un geste aussi fréquent que poser. Il devient une
+**huitième touche**, au même format que les sept degrés, dans la même rangée :
+`∅ vide`. Supprimer coûte maintenant deux gestes — viser la case, appuyer sur
+∅ — tous deux sur des cibles de 48px.
+
+Vérifié de 320 à 768px : huit touches, aucun débordement, hauteur de cible
+maintenue à 48px.
+
+### « il faudrait aussi que ce soit mieux rangé sous le synthé »
+
+En descendant l'harmonie et le remplissage sous les lignes (passe
+précédente), je les avais laissés **nus** : deux rangées de contrôles
+flottant entre le séquenceur et le cadre « Sidechain », sans titre, alors que
+tout ce qui les entoure en a un. Ils sont désormais dans un
+`<fieldset>` **« Harmonie & remplissage »**, comme Sidechain et Groove — le
+bas de l'onglet redevient une suite de blocs nommés plutôt qu'un ruban.
+
+### ⚠️ Le vrai désordre restant : la ligne à 128 pas
+
+Visible sur la capture de Yann : une Mélodie réglée sur 128 notes affiche
+**seize boutons de paquets sur trois rangées** (1-8, 9-16, … 121-128) avant
+même la grille. C'est de loin le plus gros bloc de l'onglet, et ce n'est pas
+traité ici. Ça relève de la question ci-dessous.
+
+---
+
+## ⚠️ « du fait du clavier, on peut se poser la question du design des lignes de synthé »
+
+Question ouverte par Yann, à trancher — pas de code écrit dessus.
+
+Le pad change la donne : il est désormais le chemin direct pour écrire une
+note (un appui contre jusqu'à sept), et il rend visible ce que la grille
+faisait porter à la case. Trois éléments de la ligne deviennent discutables :
+
+1. **Le défilement au clic sur la case** (`cycleCell`). Sa seule qualité
+   était d'être le SEUL moyen de poser une note. Il reste utile pour une
+   retouche d'un cran, mais ce n'est plus le chemin principal. Pad ouvert, il
+   est d'ailleurs déjà remplacé par « viser ce pas ».
+2. **Les deux boutons d'octave ▲▼ sous chaque case active.** Ils créent une
+   seconde rangée en dents de scie (ils n'existent que sous les cases
+   pleines), et le pad a déjà un réglage d'octave. Candidats sérieux à la
+   suppression.
+3. **Les seize boutons de paquets** d'une ligne longue. Le pad, lui, se
+   déplace pas à pas sans pagination — il n'a pas besoin de voir les 128
+   cases pour en remplir une.
+
+**Ce que je propose de trancher**, dans l'ordre de gain :
+- retirer les ▲▼ des cases (l'octave vit dans le pad) ;
+- remplacer la pagination par paquets par un défilement horizontal de la
+  grille, ou par un affichage compressé quand la ligne dépasse ~32 pas ;
+- garder le défilement au clic, mais comme geste secondaire assumé.
+
+Rien de tout ça n'est fait : ce sont des choix de conception, et le premier
+retire une capacité (régler l'octave case par case) qu'il faut accepter de
+perdre.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
