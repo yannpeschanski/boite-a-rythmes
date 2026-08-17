@@ -3012,6 +3012,70 @@ jouera.
 
 ---
 
+## ✅ Fill de clap (R4) — 2026-08-17
+
+> « Pour les claps : il faudrait proposer un fill de clap »
+
+Le clap traversait les mesures de fill sans rien faire : la zone de fill était
+réservée à la snare (`fillZone = name === 'snare' && …`).
+
+### Le piège, et comment il est évité
+
+Un fill fait sonner des pas aujourd'hui silencieux, donc **des tirages
+aléatoires en plus** — et un tirage de plus, même inaudible, décale tout ce
+qui suit. C'est l'interdit de `CLAUDE.md`, et les anciens exports MP3
+cesseraient d'être reproductibles.
+
+Solution retenue : un **second générateur**, `fillRng`, réservé aux frappes
+ajoutées. Le flux principal consomme exactement ce qu'il consommait avant.
+
+Deux choix qui font que ça tient :
+
+1. **Le fill de clap AJOUTE, il ne remplace pas.** Celui de la snare détourne
+   le chemin normal et fait sonner tous les pas de la zone. Ici on laisse le
+   chemin normal se dérouler intact et on ne garnit **que les pas vides** —
+   d'où l'absence totale de contact avec le flux principal. C'est aussi le
+   bon choix musical : un clap qui double la fin de mesure, pas un clap qui
+   écrase ce qu'on a programmé.
+2. **`fillRng` est OBLIGATOIRE dans le contexte**, pas optionnel avec repli
+   sur `rng` : un repli réintroduirait silencieusement le décalage qu'on
+   cherche à éviter. Le compilateur a d'ailleurs trouvé les trois appelants
+   tout seul (AudioEngine, render-offline, le test).
+
+À l'export, le second flux est dérivé de la **même graine** (`seed ^
+0x9e3779b9`) : reproductible à l'octet près, mais décorrélé du premier —
+sinon les deux avanceraient de concert et le clap suivrait la vélocité des
+autres lignes. En direct, c'est `Math.random` des deux côtés, rien n'y est
+reproductible de toute façon.
+
+### Le critère annoncé est tenu
+
+« `tests/scheduler.test.ts` reste vert **sans être mis à jour** — s'il faut le
+modifier, c'est que la solution est ratée. » L'instantané de référence **n'a
+pas bougé** : le fixture du test a `fillEvery: 0`, aucun fill ne s'y déclenche,
+et surtout le flux principal est intact.
+
+Deux tests ajoutés (33 au total) :
+- un fill de clap garnit bien la fin de la mesure de fill ;
+- **le fill ne consomme rien sur le flux principal** — prouvé en faisant
+  varier UNIQUEMENT la graine du second flux : toutes les autres lignes
+  doivent rester rigoureusement identiques, seuls les claps bougent. Avec son
+  jumeau (deux graines différentes donnent des claps différents), sans quoi le
+  test serait vide de sens.
+
+**Validés par régressions simulées** : faire puiser le fill dans `rng` fait
+tomber le test de non-interférence ; retirer le fill en fait tomber deux.
+
+### Un fixture qui ne prouvait rien, corrigé
+
+Premier jet des tests : ils échouaient. Cause trouvée — `busyState` donne 4
+pas au clap, la zone de fill se réduit donc au **dernier pas seul**, qui porte
+déjà une note ; le fill ne garnissant que les pas vides, il ne se déclenchait
+jamais. C'était le fixture qui était faux, pas la règle. Les tests ont
+désormais leur propre état (clap à 8 pas, deux derniers libres).
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)

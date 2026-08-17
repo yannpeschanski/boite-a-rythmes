@@ -79,10 +79,14 @@ function makeRecorders(events: Ev[]) {
 // par mesure, drum puis synthé, mêmes curseurs initiaux, même RNG seedé. Si
 // cette boucle diverge un jour de celle de l'export, ce test cesse de
 // protéger l'export — le garder aligné fait partie du contrat.
-function renderEvents(state: PatternStateV2, bars: number, seed: number): Ev[] {
+// `fillSeed` : graine du SECOND flux, celui réservé aux frappes ajoutées par
+// le fill de clap. Séparé pour pouvoir le faire varier SEUL — c'est comme ça
+// qu'on prouve qu'il ne touche pas au flux principal.
+function renderEvents(state: PatternStateV2, bars: number, seed: number, fillSeed = 999): Ev[] {
   const events: Ev[] = [];
   const { drum, synth } = makeRecorders(events);
   const rng = makeSeededRng(seed);
+  const fillRng = makeSeededRng(fillSeed);
   const barDur = barDuration(state.tempo);
 
   const cursors: Cursors = {
@@ -107,6 +111,7 @@ function renderEvents(state: PatternStateV2, bars: number, seed: number): Ev[] {
         kit: drum,
         cursors,
         rng,
+        fillRng,
         currentBar: bar,
         breakWindow: null,
         ghostTargetRow: state.ghostRow ?? 'snare',
@@ -228,5 +233,54 @@ describe('déterminisme du scheduler (verrouille la reproductibilité de l’exp
     expect(b.some((e) => e.startsWith('clap') || e.startsWith('shaker'))).toBe(false);
     // ...et les six autres lignes sont rigoureusement identiques.
     expect(b).toEqual(a);
+  });
+  // ---- Fill de clap (2026-08-17) -----------------------------------------
+  // Le piège de cette fonctionnalité n'est pas le son mais le déterminisme :
+  // un fill fait sonner des pas silencieux, donc des tirages en plus, donc un
+  // décalage de tout ce qui suit. D'où un SECOND générateur, et les deux tests
+  // ci-dessous : que le fill existe, et qu'il ne coûte rien au premier flux.
+
+  // Un état dont la ZONE DE FILL du clap est libre. `busyState` ne convient
+  // pas ici : son clap fait 4 pas, la zone de fill se réduit donc au dernier
+  // seul — qui porte déjà une note, et le fill ne garnit que les pas vides.
+  // Le fixture ne prouvait rien, la règle est correcte.
+  function clapFillState(): PatternStateV2 {
+    const s = busyState();
+    s.rows.clap.subdiv = 8;
+    s.rows.clap.pattern = [0, 1, 0, 1, 0, 1, 0, 0]; // les 2 derniers pas libres
+    s.fillEvery = 1; // chaque mesure est une mesure de fill
+    s.fillIntensity = 100;
+    return s;
+  }
+
+  it('un fill de clap garnit la fin de la mesure de fill', () => {
+    const sans = clapFillState();
+    sans.fillEvery = 0;
+    const avec = clapFillState();
+
+    const nbClaps = (evs: Ev[]) => evs.filter((e) => e.startsWith('clap')).length;
+    expect(nbClaps(renderEvents(avec, 2, EXPORT_SEED))).toBeGreaterThan(
+      nbClaps(renderEvents(sans, 2, EXPORT_SEED)),
+    );
+  });
+
+  it('le fill de clap ne consomme RIEN sur le flux principal', () => {
+    // La preuve tient en une comparaison : on fait varier UNIQUEMENT la graine
+    // du second flux. Si le fill puisait dans le premier, la moindre frappe
+    // ajoutée décalerait tous les tirages suivants et TOUTES les autres lignes
+    // changeraient de vélocité. Elles doivent rester rigoureusement
+    // identiques ; seuls les claps doivent bouger.
+    const s = clapFillState();
+    const a = renderEvents(s, 3, EXPORT_SEED, 1);
+    const b = renderEvents(s, 3, EXPORT_SEED, 2);
+
+    const sansClap = (evs: Ev[]) => evs.filter((e) => !e.startsWith('clap'));
+    expect(sansClap(b)).toEqual(sansClap(a));
+    // Et le second flux sert bien à quelque chose : deux graines différentes
+    // donnent des claps différents (sinon le test ci-dessus serait vide de
+    // sens, comme le serait un test de reproductibilité sans son jumeau).
+    const claps = (evs: Ev[]) => evs.filter((e) => e.startsWith('clap'));
+    expect(claps(a).length).toBeGreaterThan(0);
+    expect(claps(b)).not.toEqual(claps(a));
   });
 });
