@@ -1,0 +1,79 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette E — Pocket Operator</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION E — Pocket Operator / calculette. Circuit nu, pas de boîtier :
+     un grand écran LCD monochrome fait tout le travail, la sérigraphie est
+     blanche à même la carte, et les pas sont de petits poussoirs numérotés.
+     Le pari : l'écran ne montre presque rien, et c'est ça qui le rend calme. */
+  :root {
+    --pcb: #121316; --pcb-hi: #1c1e22; --silk: #f2f3f0; --silk-dim: #7e8288;
+    --lcd: #b9c4a4; --lcd-ink: #16180f; --lcd-dim: #8f9a7c;
+    --kick:#f2f3f0;
+  }
+  body { background: var(--pcb); color: var(--silk);
+         font: 11px ui-monospace, 'SF Mono', Menlo, monospace; padding: 16px 14px 20px;
+         letter-spacing: .06em; }
+
+  .head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+  .head .n { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .head .s { font-size: 9px; color: var(--silk-dim); letter-spacing: .22em; margin-left: auto; }
+
+  /* L'écran fait tout : motif, ligne courante, valeurs. */
+  .lcd { background: var(--lcd); color: var(--lcd-ink); border-radius: 2px;
+         padding: 12px 12px 14px; box-shadow: inset 0 0 0 2px #2a2d24, 0 0 0 3px #34383a; }
+  .lcd .top { display: flex; justify-content: space-between; font-size: 9px;
+              color: var(--lcd-dim); letter-spacing: .18em; margin-bottom: 10px; }
+  .lcd .big { font-size: 34px; font-weight: 700; line-height: .9; letter-spacing: -.03em;
+              display: flex; align-items: baseline; gap: 8px; }
+  .lcd .big small { font-size: 10px; font-weight: 400; letter-spacing: .16em; }
+
+  .pat { margin-top: 12px; display: grid; gap: 3px; }
+  .pat .l { display: flex; align-items: center; gap: 7px; }
+  .pat .l span { width: 46px; font-size: 9px; letter-spacing: .16em; }
+  .pat .l i { flex: 1; height: 12px; border: 1px solid var(--lcd-ink); border-radius: 1px; }
+  .pat .l i.on { background: var(--lcd-ink); }
+  .pat .l.mute span, .pat .l.mute i { opacity: .34; }
+
+  /* Poussoirs sérigraphiés : 16 pas numérotés, comme sur la carte. */
+  .keys { margin-top: 16px; display: grid; grid-template-columns: repeat(8,1fr); gap: 6px; }
+  .keys b { aspect-ratio: 1; border: 1px solid #4a4e54; border-radius: 2px;
+            background: linear-gradient(180deg,var(--pcb-hi),#0e0f12);
+            display: grid; place-items: center; font-size: 10px; color: var(--silk-dim);
+            font-weight: 400; }
+  .keys b.on { background: var(--silk); color: var(--pcb); border-color: var(--silk); }
+
+  .bar { margin-top: 16px; display: flex; gap: 6px; }
+  .bar span { flex: 1; text-align: center; padding: 11px 0; border: 1px solid #4a4e54;
+              border-radius: 2px; font-size: 10px; letter-spacing: .14em; }
+  .bar span.on { background: var(--silk); color: var(--pcb); }
+
+  .silkfoot { margin-top: 14px; font-size: 8.5px; color: var(--silk-dim);
+              letter-spacing: .18em; display: flex; justify-content: space-between; }
+</style>
+
+<div class="head"><span class="n">BR-1</span><span class="s">POCKET</span></div>
+
+<div class="lcd">
+  <div class="top"><span>PAT 01</span><span>RYTHME</span><span>4/4</span></div>
+  <div class="big">120 <small>BPM · KICK · TON 42 · DÉCL 220</small></div>
+
+  <div class="pat">
+    <div class="l"><span>KICK</span><i class="on"></i><i></i><i class="on"></i><i></i></div>
+    <div class="l"><span>SNARE</span><i></i><i class="on"></i><i></i><i class="on"></i></div>
+    <div class="l"><span>HAT</span><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <div class="l mute"><span>CLAP</span><i></i><i></i><i></i><i></i></div>
+    <div class="l mute"><span>SHAKER</span><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+</div>
+
+<div class="keys">
+  <b class="on">1</b><b>2</b><b>3</b><b>4</b><b class="on">5</b><b>6</b><b>7</b><b>8</b>
+  <b>9</b><b>10</b><b>11</b><b>12</b><b>13</b><b>14</b><b>15</b><b>16</b>
+</div>
+
+<div class="bar"><span class="on">RYTHME</span><span>SYNTHÉ</span><span>PROD</span></div>
+<div class="bar" style="margin-top:6px"><span>▶ PLAY</span><span>BREAK</span><span>WRITE</span></div>
+
+<div class="silkfoot"><span>BOÎTE À RYTHMES</span><span>REV.1</span></div>

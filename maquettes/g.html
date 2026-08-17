@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette G — Teenage Engineering</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION G — Teenage Engineering / OP-1. Fond blanc, énormes aplats de
+     couleur franche, sans géométrique fin, chiffres traités comme identité
+     graphique. Presque aucun trait : ce sont les blocs qui structurent.
+     Le pari inverse de toutes les autres : la lumière, pas l'obscurité. */
+  :root {
+    --paper: #f0f0ee; --card: #fff; --ink: #16161a; --muted: #9a9a9e;
+    --te-red: #f0432c; --te-blue: #1d5fd8; --te-yellow: #f5c518;
+    --te-green: #2fbf6a; --te-cyan: #17b8d4;
+  }
+  body { background: var(--paper); color: var(--ink);
+         font: 13px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+         padding: 18px 14px 20px; }
+
+  .top { display: flex; align-items: flex-start; margin-bottom: 20px; }
+  .top .num { font-size: 46px; font-weight: 700; letter-spacing: -.05em; line-height: .8; }
+  .top .lbl { font-size: 9px; letter-spacing: .2em; color: var(--muted); margin-top: 4px; }
+  .top .bpm { margin-left: auto; text-align: right; }
+  .top .bpm b { display: block; font-size: 26px; font-weight: 700; letter-spacing: -.03em; }
+  .top .bpm span { font-size: 9px; letter-spacing: .2em; color: var(--muted); }
+
+  .transport { display: flex; gap: 8px; margin-bottom: 8px; }
+  .transport b { flex: 1; text-align: center; padding: 15px 0; border-radius: 3px;
+                 font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #fff; }
+  .play { background: var(--te-green); }
+  .brk  { background: var(--te-yellow); color: var(--ink) !important; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 22px; }
+  .tabs b { flex: 1; text-align: center; padding: 11px 0; border-radius: 3px;
+            font-size: 11px; font-weight: 700; letter-spacing: .08em;
+            background: #fff; color: var(--muted); }
+  .tabs b.on { background: var(--ink); color: #fff; }
+
+  /* Une ligne = un bloc de couleur pleine. Le nom est petit et gris ;
+     c'est la couleur qui identifie, pas le mot. */
+  .row { margin-bottom: 14px; }
+  .rowhead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+  .rowhead .n { font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+  .rowhead .v { margin-left: auto; font-size: 10px; color: var(--muted); letter-spacing: .06em; }
+  .steps { display: flex; gap: 5px; height: 46px; }
+  .steps i { flex: 1; border-radius: 3px; background: #e2e2e0; }
+  .steps i.on { background: currentColor; }
+
+  .foot { margin-top: 24px; padding-top: 14px; border-top: 2px solid var(--ink);
+          display: flex; justify-content: space-between; font-size: 10px;
+          letter-spacing: .16em; color: var(--muted); }
+</style>
+
+<div class="top">
+  <div><div class="num">01</div><div class="lbl">RYTHME</div></div>
+  <div class="bpm"><b>120</b><span>BPM</span></div>
+</div>
+
+<div class="transport"><b class="play">▶ LECTURE</b><b class="brk">BREAK</b></div>
+<div class="tabs"><b class="on">RYTHME</b><b>SYNTHÉ</b><b>PROD</b></div>
+
+<div class="row" style="color:var(--te-red)">
+  <div class="rowhead"><span class="n">KICK</span><span class="v">TON 42 · DÉCLIN 220</span></div>
+  <div class="steps"><i class="on"></i><i></i><i class="on"></i><i></i></div>
+</div>
+
+<div class="row" style="color:var(--te-yellow)">
+  <div class="rowhead"><span class="n">SNARE</span><span class="v">TON 190 · DÉCLIN 140</span></div>
+  <div class="steps"><i></i><i class="on"></i><i></i><i class="on"></i></div>
+</div>
+
+<div class="row" style="color:var(--te-cyan)">
+  <div class="rowhead"><span class="n">HAT</span><span class="v">808 · DÉCLIN 45</span></div>
+  <div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+</div>
+
+<div class="row" style="color:var(--te-green)">
+  <div class="rowhead"><span class="n">CLAP</span><span class="v">ÉTALEMENT 24</span></div>
+  <div class="steps"><i></i><i></i><i></i><i></i></div>
+</div>
+
+<div class="row" style="color:var(--te-blue)">
+  <div class="rowhead"><span class="n">SHAKER</span><span class="v">DÉCLIN 60</span></div>
+  <div class="steps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</div>
+
+<div class="foot"><span>BOÎTE À RYTHMES</span><span>4/4</span></div>

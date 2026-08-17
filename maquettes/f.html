@@ -1,0 +1,95 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette F — Skin Winamp</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION F — skin de lecteur, façon Winamp. C'est le cousin MUSICAL de
+     la nostalgie XP : même époque, même bureau, mais un vocabulaire de
+     matériel audio — chrome biseauté, minuscule type bitmap, LCD vert,
+     analyseur de spectre. Le Mode Live est déjà à mi-chemin (--amp-*). */
+  :root {
+    --chrome-1: #6a6a7c; --chrome-2: #3c3c4a; --chrome-3: #22222c;
+    --edge-hi: #9a9ab0; --edge-lo: #101018;
+    --lcd-bg: #050806; --lcd: #33ff44; --lcd-dim: #145520;
+    --amber: #ffb020;
+    --kick:#ff5a2b; --snare:#ffb020; --hat:#33d9d6; --clap:#5bde72; --shaker:#41c9ef;
+  }
+  body { background: #14141c; color: #cfd0e4;
+         font: 10px ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: .04em;
+         padding: 10px 8px 20px; }
+
+  .skin { background: linear-gradient(180deg,var(--chrome-1),var(--chrome-2) 10%,var(--chrome-3));
+          border: 1px solid var(--edge-lo);
+          box-shadow: inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo),
+                      0 4px 12px rgba(0,0,0,.6); margin-bottom: 8px; }
+
+  .tbar { display: flex; align-items: center; gap: 5px; padding: 3px 5px;
+          background: linear-gradient(180deg,#5a5ad0,#3232a0 45%,#26266e 55%,#3a3a8c);
+          border-bottom: 1px solid var(--edge-lo); }
+  .tbar .grip { flex: 1; height: 7px;
+    background-image: radial-gradient(rgba(255,255,255,.5) 1px, transparent 1.2px);
+    background-size: 3px 3px; }
+  .tbar .t { font-size: 9px; font-weight: 700; letter-spacing: .18em; color: #e6e6ff; }
+  .tbar b { width: 11px; height: 11px; background: #9a9ad0; border: 1px solid var(--edge-lo); }
+
+  .disp { margin: 6px; padding: 7px 8px; background: var(--lcd-bg); color: var(--lcd);
+          box-shadow: inset 1px 1px 0 var(--edge-lo), inset -1px -1px 0 rgba(255,255,255,.12); }
+  .disp .l1 { display: flex; justify-content: space-between; font-size: 9px; }
+  .disp .big { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+  .disp .dim { color: var(--lcd-dim); }
+
+  /* Analyseur de spectre — le motif de la rangée devient une figure animée. */
+  .viz { display: flex; align-items: flex-end; gap: 2px; height: 26px; margin-top: 5px; }
+  .viz i { flex: 1; background: linear-gradient(180deg,var(--lcd),var(--lcd-dim)); }
+
+  .ctl { display: flex; gap: 4px; padding: 0 6px 6px; }
+  .ctl b { flex: 1; text-align: center; padding: 8px 0; font-size: 10px; letter-spacing: .1em;
+           background: linear-gradient(180deg,#8a8aa4,#4a4a5e 55%,#2c2c38);
+           box-shadow: inset 1px 1px 0 var(--edge-hi), inset -1px -1px 0 var(--edge-lo); }
+  .ctl b.on { background: linear-gradient(180deg,#3a3a8c,#26266e); color: var(--amber); }
+
+  .rows { padding: 6px; }
+  .row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .row .tag { width: 50px; font-size: 9px; letter-spacing: .14em; font-weight: 700; }
+  .row .st { flex: 1; display: flex; gap: 2px; height: 22px; }
+  .row .st i { flex: 1; background: var(--lcd-bg);
+               box-shadow: inset 1px 1px 0 var(--edge-lo), inset -1px -1px 0 rgba(255,255,255,.1); }
+  .row .st i.on { background: currentColor; box-shadow: inset 1px 1px 0 rgba(255,255,255,.4); }
+
+  .status { margin: 0 6px 6px; padding: 4px 7px; background: var(--lcd-bg); color: var(--lcd-dim);
+            font-size: 9px; display: flex; justify-content: space-between; }
+</style>
+
+<div class="skin">
+  <div class="tbar"><span class="t">BOÎTE À RYTHMES</span><span class="grip"></span><b></b><b></b></div>
+
+  <div class="disp">
+    <div class="l1"><span>*** RYTHME 01 ***</span><span class="dim">4/4</span></div>
+    <div class="big">120 <span style="font-size:11px">BPM</span></div>
+    <div class="viz">
+      <i style="height:40%"></i><i style="height:75%"></i><i style="height:55%"></i><i style="height:95%"></i>
+      <i style="height:35%"></i><i style="height:65%"></i><i style="height:80%"></i><i style="height:45%"></i>
+      <i style="height:60%"></i><i style="height:30%"></i><i style="height:85%"></i><i style="height:50%"></i>
+      <i style="height:70%"></i><i style="height:25%"></i><i style="height:55%"></i><i style="height:40%"></i>
+    </div>
+  </div>
+
+  <div class="ctl"><b>▶</b><b>■</b><b>BREAK</b><b class="on">RYTHME</b><b>SYNTH</b><b>PROD</b></div>
+</div>
+
+<div class="skin">
+  <div class="tbar"><span class="t">SÉQUENCEUR</span><span class="grip"></span><b></b><b></b></div>
+  <div class="rows">
+    <div class="row" style="color:var(--kick)"><span class="tag">KICK</span>
+      <span class="st"><i class="on"></i><i></i><i class="on"></i><i></i></span></div>
+    <div class="row" style="color:var(--snare)"><span class="tag">SNARE</span>
+      <span class="st"><i></i><i class="on"></i><i></i><i class="on"></i></span></div>
+    <div class="row" style="color:var(--hat)"><span class="tag">HAT</span>
+      <span class="st"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+    <div class="row" style="color:var(--clap)"><span class="tag">CLAP</span>
+      <span class="st"><i></i><i></i><i></i><i></i></span></div>
+    <div class="row" style="color:var(--shaker)"><span class="tag">SHAKER</span>
+      <span class="st"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+  </div>
+  <div class="status"><span>KICK · TON 42 · DÉCLIN 220</span><span>RÉV 12%</span></div>
+</div>

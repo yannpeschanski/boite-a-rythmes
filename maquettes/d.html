@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette D — TR-808</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION D — Roland TR-808. La nostalgie qui correspond au CONTENU :
+     le moteur cite déjà les ratios 808/909. Panneau crème, flancs bois, et
+     surtout la signature de la 808 — les 16 pas en quatre groupes de couleur
+     (rouge, orange, jaune, crème) qui donnent la mesure à l'œil sans chiffre. */
+  :root {
+    --panel: #d8d2c3; --panel-hi: #e8e3d6; --panel-lo: #b9b3a3;
+    --ink: #23211c; --muted: #6d675a;
+    --wood: linear-gradient(100deg,#7d5433,#4e3018 60%,#6b4425);
+    --strip: #1c1a17;
+    --p1: #cf3b23; --p2: #e0761c; --p3: #e6bc21; --p4: #efeade;
+    --kick:#cf3b23; --snare:#e0761c; --hat:#2b8a8a; --clap:#3fae54; --shaker:#22a6c9;
+  }
+  body { background: var(--wood); font: 13px 'Helvetica Neue', Arial, sans-serif;
+         color: var(--ink); padding: 10px 8px 20px; }
+  .case { background: linear-gradient(180deg,var(--panel-hi),var(--panel) 8%,var(--panel) 92%,var(--panel-lo));
+          border: 1px solid #8d8779; border-radius: 3px;
+          box-shadow: 0 3px 10px rgba(0,0,0,.5), inset 0 1px 0 #fff; }
+
+  .brand { background: var(--strip); color: #efeade; padding: 7px 10px;
+           display: flex; align-items: baseline; gap: 8px; border-radius: 2px 2px 0 0; }
+  .brand .b { font: 700 13px 'Helvetica Neue'; letter-spacing: .18em; }
+  .brand .m { font-size: 9px; letter-spacing: .22em; color: #a9a294; margin-left: auto; }
+
+  .rowbar { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--panel-lo); }
+  .knob { width: 44px; text-align: center; }
+  .knob i { display: block; width: 34px; height: 34px; margin: 0 auto 3px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #55524a, #1e1c19 70%);
+            box-shadow: 0 1px 2px rgba(0,0,0,.5), inset 0 0 0 2px #8d8779;
+            position: relative; }
+  .knob i::after { content: ''; position: absolute; left: 50%; top: 4px; width: 2px; height: 12px;
+                   background: #efeade; transform: translateX(-50%); }
+  .knob span { font-size: 8px; letter-spacing: .1em; color: var(--muted); }
+  .go { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .sw { background: linear-gradient(180deg,#f4f0e5,#cfc9b9); border: 1px solid #8d8779;
+        border-radius: 2px; padding: 10px 13px; font: 700 12px 'Helvetica Neue';
+        letter-spacing: .1em; box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,.3); }
+
+  .tabs { display: flex; gap: 4px; padding: 8px 10px; }
+  .tab { flex: 1; text-align: center; padding: 7px; font-size: 11px; letter-spacing: .1em;
+         background: linear-gradient(180deg,#f4f0e5,#d5cfc0); border: 1px solid #8d8779;
+         border-radius: 2px; }
+  .tab.on { background: var(--strip); color: #efeade; }
+
+  .rows { padding: 4px 10px 12px; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 5px 0;
+         border-bottom: 1px dotted #b0aa9a; }
+  .row:last-child { border-bottom: 0; }
+  .tag { width: 56px; flex: none; font: 700 10px 'Helvetica Neue';
+         letter-spacing: .12em; }
+  .lamp { width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+          margin-right: 5px; background: #8d8779; }
+  .lamp.on { background: #ff3b1f; box-shadow: 0 0 5px #ff3b1f; }
+
+  /* La signature 808 : le pas est un poussoir coloré par groupe de temps. */
+  .steps { flex: 1; display: flex; gap: 4px; }
+  /* Sur la vraie 808 le poussoir est en plastique coloré et c'est une LED qui
+     dit l'état ; à l'écran, sans la LED, un pas éteint simplement pâli reste
+     trop proche d'un pas allumé. On garde donc la couleur de groupe comme
+     REPÈRE DE TEMPS, mais l'état passe par la matière : éteint = creux mat. */
+  .steps b { flex: 1; height: 32px; border-radius: 2px; border: 1px solid #8d8779;
+             box-shadow: inset 0 2px 3px rgba(0,0,0,.35); filter: saturate(.18) brightness(.86); }
+  .steps b.on { filter: none;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 0 7px rgba(255,90,40,.55); }
+  .g1 { background: var(--p1); } .g2 { background: var(--p2); }
+  .g3 { background: var(--p3); } .g4 { background: var(--p4); }
+
+  .foot { display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+          background: var(--strip); color: #efeade; border-radius: 0 0 2px 2px;
+          font-size: 10px; letter-spacing: .12em; }
+  .foot .lcd { margin-left: auto; background: #2a2f22; color: #b6d36a; padding: 3px 8px;
+               border-radius: 2px; font: 11px ui-monospace, Menlo, monospace; letter-spacing: .06em; }
+</style>
+
+<div class="case">
+  <div class="brand"><span class="b">RHYTHM COMPOSER</span><span class="m">BOÎTE À RYTHMES</span></div>
+
+  <div class="rowbar">
+    <div class="knob"><i style="transform:rotate(-40deg)"></i><span>TEMPO</span></div>
+    <div class="knob"><i style="transform:rotate(15deg)"></i><span>TON</span></div>
+    <div class="knob"><i style="transform:rotate(60deg)"></i><span>DÉCLIN</span></div>
+    <div class="go"><span class="sw">▶ START</span><span class="sw">BREAK</span></div>
+  </div>
+
+  <div class="tabs"><span class="tab on">RYTHME</span><span class="tab">SYNTHÉ</span><span class="tab">PRODUCTION</span></div>
+
+  <div class="rows">
+    <div class="row">
+      <span class="tag"><i class="lamp on"></i>KICK</span>
+      <span class="steps"><b class="g1 on"></b><b class="g2"></b><b class="g3 on"></b><b class="g4"></b></span>
+    </div>
+    <div class="row">
+      <span class="tag"><i class="lamp on"></i>SNARE</span>
+      <span class="steps"><b class="g1"></b><b class="g2 on"></b><b class="g3"></b><b class="g4 on"></b></span>
+    </div>
+    <div class="row">
+      <span class="tag"><i class="lamp on"></i>HAT</span>
+      <span class="steps"><b class="g1 on"></b><b class="g1 on"></b><b class="g2 on"></b><b class="g2 on"></b><b class="g3 on"></b><b class="g3 on"></b><b class="g4 on"></b><b class="g4 on"></b></span>
+    </div>
+    <div class="row">
+      <span class="tag"><i class="lamp"></i>CLAP</span>
+      <span class="steps"><b class="g1"></b><b class="g2"></b><b class="g3"></b><b class="g4"></b></span>
+    </div>
+    <div class="row">
+      <span class="tag"><i class="lamp"></i>SHAKER</span>
+      <span class="steps"><b class="g1"></b><b class="g1"></b><b class="g2"></b><b class="g2"></b><b class="g3"></b><b class="g3"></b><b class="g4"></b><b class="g4"></b></span>
+    </div>
+  </div>
+
+  <div class="foot"><span>KICK · TON 42 · DÉCLIN 220</span><span class="lcd">120.0 BPM</span></div>
+</div>

@@ -3583,7 +3583,48 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
-### Les trois maquettes (2026-08-17, « j'aimerais voir des propositions »)
+### Dix maquettes (2026-08-17, « je souhaite que tu fasses 10 propositions »)
+
+Planche complète : <https://claude.ai/code/artifact/e0aa9107-85d0-49f3-a157-6b70de8b3c42>
+Fichiers `maquettes/a.html` … `j.html`.
+
+Les sept ajoutées après les trois premières, chacune ancrée sur une famille
+réelle plutôt qu'une déclinaison de sombre :
+
+| | Direction | Référence | Résout | Coût |
+|---|---|---|---|---|
+| D | Rhythm Composer | Roland TR-808/909 | 2·3·4 | élevé |
+| E | Pocket | Pocket Operator, EP-133 | 1·2·3·4 | très élevé |
+| F | Skin | Winamp | 1·2·3·4 | **moyen** |
+| G | Bloc | Teenage Engineering OP-1 | 1·2·4 | élevé |
+| H | Cahier de rythme | papier réglé, portée | 1·2·3·4 | élevé |
+| I | Aqua | revival Y2K 2026 | 1·4 | moyen |
+| J | Tracker | Polyend Tracker, Renoise | 1·2·3·4 + le format | très élevé |
+
+(Charges de l'audit : 1 contraste allumé/éteint · 2 barre de titre inerte ·
+3 nostalgie du contenant · 4 identité pas appliquée.)
+
+**Trois enseignements que les images ajoutent :**
+
+1. **F · Skin est la découverte de la série.** C'est le cousin *musical* de la
+   nostalgie XP — même époque, même bureau, mais vocabulaire d'appareil audio.
+   Elle garde l'atout de XP (rétro reconnaissable en une seconde) et remplace
+   son argument faible (le bureau Windows). Le Mode Live prouve qu'elle tient
+   déjà. F est B poussé d'un cran ; le choix entre les deux revient à décider
+   si le cadre Luna doit survivre.
+2. **D bute sur un problème réel, visible sur l'image.** La couleur y est déjà
+   prise pour marquer le temps (les quatre groupes de la 808), donc l'état
+   allumé/éteint doit passer par la matière. Sur la vraie machine c'est une LED
+   qui tranche ; à l'écran il faut inventer cet équivalent. Première version
+   illisible, corrigée en creux mat contre plein brillant — ça reste le point
+   dur de cette direction.
+3. **J · Tracker est la seule à remettre en cause le FORMAT et pas la peau.**
+   Le temps descend au lieu d'aller à droite : un écran haut et étroit devient
+   le bon format, et le téléphone cesse d'être une contrainte. Même non
+   retenue, l'idée mérite d'être gardée — c'est la seule réponse structurelle à
+   l'arbitrage D4 (test mobile uniquement).
+
+### Les trois premières maquettes
 
 Fichiers : `maquettes/a.html`, `b.html`, `c.html` — **jetables, hors de
 `src/`**, rien n'est branché sur le vrai code. Même écran (onglet Rythme),
