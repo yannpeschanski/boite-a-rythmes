@@ -13,17 +13,102 @@
 > revient. *Dormant* et *abandonné* ne sont pas synonymes — voir
 > [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16).
 >
-> **En reprenant le travail, lire d'abord le [verrou dur des modules + `#boss`](#-verrou-dur-des-modules--accès-boss--2026-08-16)**
-> (dernière livraison), puis les [arbitrages (suite) et 3e lot de sujets](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16),
-> les [arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16)
-> et le [plan d'action consolidé](#plan-daction-consolidé--2026-08-16)
-> (2026-08-16) : il croise l'audit de design et les remarques de Yann en une
-> seule file, remplace les paliers de priorité de l'audit, et sépare **ce
-> qu'on peut faire tout de suite** des **quatre décisions** dont dépend le
-> reste. Les sections datées qui le précèdent gardent le détail et les
-> mesures ; le plan consolidé dit quoi faire.
+
+## 🧭 Brief de reprise — au 2026-08-17
+
+**À lire en premier, en entier. Deux minutes.** Le reste de ce document fait
+3 400 lignes et quatorze sections datées : n'y descends que pour le détail
+d'un point précis, en suivant les liens ci-dessous.
+
+### Où en est le projet
+
+Site en ligne : <https://boite-a-rythmes.vercel.app> · branche de travail
+`claude/design-audit-complet-1xwabg` · tout est mergé sur `main`, arbre propre.
+`npm run check` 0 erreur · **33 tests** · les deux builds passent.
+
+L'appli est **testée uniquement sur téléphone** (arbitrage D4 de Yann) : le
+desktop est en friche et assumé comme tel. Toute mesure d'interface se fait à
+**390×844**, et se vérifie de 320 à 768.
+
+### Ce qui a été livré à la dernière session (14 PR, #61 → #74)
+
+- **Verrou dur des modules** par la progression du Mode jeu (Atelier niv. 2,
+  Synthé 13, Production 27, Live 34), avec l'accès total **`#boss`** /
+  `#boss=off`. Le pseudo « master » marche toujours, mais n'est plus mémorisé.
+- **Pad d'écriture de notes** dans l'Atelier (🎹 sur Basse et Mélodie) : sept
+  degrés nommés Do-Si + une touche silence, écriture pas-à-pas à l'arrêt,
+  enregistrement quantifié en lecture.
+- **Onglet Synthé refondu** : 66 % → **38 %** de chrome avant la première
+  case, pastilles sur une ligne, tempo retiré de cet onglet, harmonie et
+  remplissage descendus dans un cadre, lignes sans boutons d'octave ni
+  pagination (grille qui défile).
+- **Audio** : densité des mélodies des presets ramenée sous celle de la basse,
+  fill de clap, tempo réglable à l'unité, macros de filtre Brillance/Mouvement.
+
+### Ce qui attend une décision de Yann (ne pas coder sans)
+
+1. **La grille de déverrouillage contrôle par contrôle** — le verrou actuel ne
+   gère que les quatre modules. La proposition (rafale au niv. 11, swing au
+   14, ghost au 20, fill au 21, décalage au 23) est écrite et attend d'être
+   validée ou corrigée. Voir « Arbitrages (suite) et 3e lot ».
+2. **Le 2ᵉ type d'exercice du mode jeu** — l'accord de principe est donné
+   (D2), le contenu ne l'est pas. Les 34 niveaux n'ont qu'un seul verbe :
+   reproduire.
+
+### Ce qui est exécutable tout de suite (aucune décision requise)
+
+Par ordre de taille :
+
+- **Le 🎲 par ligne dans la sous-section Séquence** — demandé au 3ᵉ lot, jamais
+  fait ; il flotte encore à droite de l'en-tête de ligne. Petit.
+- **Le menu de voix synthé qui ment** : il continue d'afficher la voix choisie
+  alors qu'un curseur l'a modifiée. Contrôle qui écrit sans jamais lire.
+- **R1(b) — la mélodie par motif court répété.** Le vrai correctif musical :
+  aujourd'hui chaque pas reste un tirage indépendant, donc une texture, pas
+  une phrase. ⚠️ **Change les notes des 34 presets** — à faire quand Yann est
+  prêt à les réécouter.
+- **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Peut
+  dormir avec le chantier desktop.
+
+### Les pièges qui ont coûté du temps
+
+- **Squash-merge** : après chaque merge, `git fetch origin main && git reset
+  --hard origin/main` sur la branche de travail, sinon la PR suivante part
+  avec un historique déjà mergé et la CI bloque (`mergeable_state: dirty`).
+  Un `push --force-with-lease` est attendu, pas une erreur.
+- **Ne jamais conclure sans mesurer.** Sur cette session : « 31 presets sur
+  34 » était faux (21), un test vert sur un verrou qu'on vient d'écrire ne
+  prouve rien tant qu'on ne l'a pas vu rougir, et trois constats d'audit
+  (B5, B9, la teinte de B8) étaient périmés ou mal diagnostiqués.
+- **Svelte 5** : `queueMicrotask` s'exécute avant que le DOM soit à jour —
+  utiliser `tick()`. `structuredClone()` casse sur un proxy `$state` —
+  `$state.snapshot()`. Un prop nommé `state` entre en conflit avec la rune.
+- **CSS** : une piste de grille et un élément flex ont un minimum `auto`, ils
+  refusent de descendre sous leur contenu — `minmax(0, 1fr)` / `min-width: 0`.
+  Un `::after` en `position: absolute` se cale sur la zone **visible** d'un
+  conteneur qui défile, pas sur son contenu.
+- **Déterminisme** : ajouter un tirage `rng()` décale tout ce qui suit et rend
+  les anciens exports non reproductibles. Le fill de clap contourne ça par un
+  **second générateur** (`fillRng`) — le modèle à réutiliser pour toute
+  fonctionnalité qui fait sonner des pas jusque-là silencieux.
+- **Le proxy réseau de l'environnement bloque `vercel.app`** : impossible de
+  vérifier le site déployé depuis la session. Le déploiement se constate par
+  GitHub Actions, pas par une visite.
+
+### Où trouver le détail
+
+- [Plan d'action consolidé](#plan-daction-consolidé--2026-08-16) — la file de
+  travail et les quatre décisions d'origine.
+- [Arbitrages (suite) et 3e lot](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16)
+  — la mécanique de déblocage proposée, l'analyse du choix des notes, le
+  recadrage de l'audit DAW.
+- [§7.5 dette d'interface](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2)
+  — les trois règles d'écriture, dont « un ✅ n'est pas définitif ».
+- Les sections `✅` de fin de document — une par livraison, avec ses mesures
+  et ses pièges.
 
 ---
+
 
 ## 1. Architecture cible
 
