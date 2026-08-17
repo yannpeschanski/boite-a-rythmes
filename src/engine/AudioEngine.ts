@@ -518,6 +518,11 @@ export class AudioEngine {
         kit,
         cursors: this.cursors,
         rng: Math.random,
+        // En direct, rien n'est reproductible de toute façon : le second flux
+        // du fill de clap est simplement Math.random comme le premier. Il ne
+        // devient distinct qu'à l'export (render-offline.ts), là où la
+        // reproductibilité compte.
+        fillRng: Math.random,
         currentBar: this.currentBar,
         breakWindow: this.breakWindow,
         ghostTargetRow: state.ghostRow ?? this.ghostTargetRow,

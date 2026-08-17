@@ -39,6 +39,12 @@ export async function renderPattern(
   const kit = new DrumKit(graph);
   const synth = new SynthKit(graph, true); // offline : jamais de budget de voix
   const rng = makeSeededRng(seed);
+  // Second flux, réservé aux frappes ajoutées par le fill de clap
+  // (scheduler.ts, champ `fillRng`). Dérivé de la MÊME graine pour rester
+  // reproductible à l'octet près, mais décalé par le nombre d'or 32 bits
+  // pour être décorrélé du premier — sinon les deux flux avanceraient de
+  // concert et le clap suivrait la vélocité des autres lignes.
+  const fillRng = makeSeededRng((seed ^ 0x9e3779b9) | 0);
 
   const cursors: Cursors = {
     kick: { stepIndex: 0, nextStepTime: 0 },
@@ -67,6 +73,7 @@ export async function renderPattern(
         kit,
         cursors,
         rng,
+        fillRng,
         currentBar: bar,
         breakWindow: null,
         ghostTargetRow: state.ghostRow ?? 'snare',

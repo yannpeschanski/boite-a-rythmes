@@ -45,6 +45,20 @@ export interface ScheduleContext {
   kit: DrumKit;
   cursors: Cursors;
   rng: Rng;
+  // Second générateur, RÉSERVÉ aux frappes ajoutées par un fill de clap.
+  //
+  // Pourquoi un flux séparé plutôt que `rng` : un fill fait sonner des pas
+  // aujourd'hui silencieux, donc des tirages en plus — et un tirage de plus,
+  // même inaudible, décale TOUT ce qui suit (contrainte CLAUDE.md, verrouillée
+  // par tests/scheduler.test.ts). Les anciens exports MP3 cesseraient d'être
+  // reproductibles. En puisant ailleurs, le flux principal consomme exactement
+  // ce qu'il consommait avant : les patterns existants sonnent à l'identique,
+  // seul le clap gagne quelque chose.
+  //
+  // OBLIGATOIRE, et pas optionnel avec repli sur `rng` : un repli
+  // réintroduirait silencieusement le décalage qu'on cherche à éviter. Mieux
+  // vaut que le compilateur réclame le second flux à chaque appelant.
+  fillRng: Rng;
   currentBar: number;
   breakWindow: BreakWindow | null;
   ghostTargetRow: DrumRowName;
@@ -123,6 +137,33 @@ function triggerKickSnareStep(
     }
     return false;
   }
+  // FILL DE CLAP (retour de Yann : « pour les claps, il faudrait proposer un
+  // fill de clap »). Le clap n'avait aucune montée de fin de mesure — la zone
+  // de fill était réservée à la snare (`fillZone` ci-dessus).
+  //
+  // Deux différences avec le fill de snare, toutes deux volontaires :
+  //  1. il AJOUTE au lieu de remplacer. Le fill de snare détourne le chemin
+  //     normal et fait sonner tous les pas de la zone ; ici on laisse le
+  //     chemin normal se dérouler intact et on ne garnit QUE les pas vides.
+  //     C'est ce qui permet de ne toucher à aucun tirage du flux principal —
+  //     et c'est aussi ce qu'on veut musicalement, un clap qui double la fin
+  //     de mesure plutôt qu'un clap qui écrase ce qu'on a programmé.
+  //  2. ses gains viennent de `cx.fillRng`, jamais de `rng` (voir le champ).
+  //
+  // Pas de `return` : on retombe sur la suite, qui joue le pas programmé s'il
+  // y en a un et consomme le RNG exactement comme avant.
+  if (name === 'clap' && fillNow && isLastSteps(col, row.subdiv) && !row.pattern[col]) {
+    const intensity = state.fillIntensity / 100;
+    if (intensity > 0) {
+      const zoneSize = Math.max(1, Math.round(row.subdiv * 0.25));
+      const posInZone = col - (row.subdiv - zoneSize);
+      // Montée sur la zone, comme la snare : le dernier pas est le plus fort.
+      const ramp = 0.5 + 0.5 * (posInZone / Math.max(1, zoneSize - 1));
+      const g = randomizeGain(row.volume * ramp * intensity, state.randomVelocity / 100, cx.fillRng);
+      kit.playClap(time, g, row);
+    }
+  }
+
   // ROLL×2/3/4 (Mode Live) : forcé exactement comme le ferait un fill — un
   // pas vide se met à sonner tant que le bouton est maintenu, même logique
   // que le hat (triggerHatStep) plutôt qu'un chemin séparé.
