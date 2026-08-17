@@ -94,8 +94,8 @@
     {#if !unlocks.has('atelier')}
       <p class="hint">L’Atelier s’ouvre en réussissant le premier niveau du Mode jeu.</p>
     {/if}
-    {#if unlocks.boss}
-      <p class="boss">🔓 Accès total (#boss) — <code>#boss=off</code> pour revoir l’appli comme un visiteur.</p>
+    {#if unlocks.totalAccess}
+      <p class="boss">🔓 Accès total — <code>{unlocks.totalAccessHint}</code></p>
     {/if}
   </div>
 {:else}

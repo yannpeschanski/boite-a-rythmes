@@ -216,6 +216,16 @@
   </div>
 
   <div class="spacer"></div>
+  <!-- Marqueur d'accès total. N'existe QUE pendant un contournement : zéro
+       pixel pour un visiteur normal, donc rien à échanger au titre de la
+       règle n°1 du §7.5. Il est ici parce que l'accueil n'est pas l'endroit
+       où le doute survient — on est dans l'Atelier quand on se demande si ce
+       qu'on voit est bien ce que voient les autres. -->
+  {#if unlocks.totalAccess}
+    <span class="boss-flag" title={unlocks.totalAccessHint}
+      >🔓 accès total{unlocks.totalAccess === 'master' ? ' (master)' : ''}</span
+    >
+  {/if}
   <!-- Ne restent en accès direct que Annuler/Rétablir (audit A6/B7).
        « 🔗 Partager » est parti : il existait à l'identique dans le menu
        Fichier, et partager un rythme n'est pas un geste qu'on répète — un
@@ -339,6 +349,20 @@
     display: flex;
     flex-wrap: nowrap;
     gap: 2px;
+  }
+  /* Lisible sans être criard : c'est un état à connaître, pas une alerte. */
+  .boss-flag {
+    align-self: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px 6px;
+    margin-right: 4px;
+    border: 1px dashed var(--xp-line);
+    border-radius: 3px;
+    color: var(--xp-muted);
+    white-space: nowrap;
+    cursor: help;
   }
   /* Sur téléphone, les cinq menus + les deux outils ne tiennent sur une seule
      ligne qu'en resserrant les libellés — c'est ce qui supprime la deuxième

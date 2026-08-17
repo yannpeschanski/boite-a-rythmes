@@ -70,6 +70,29 @@ class Unlocks {
   has(name: LockedModule): boolean {
     return moduleUnlocked(name, this.context);
   }
+
+  /**
+   * Pourquoi tout est ouvert, quand ça l'est autrement que par la
+   * progression — `''` si on voit l'appli comme un vrai visiteur.
+   *
+   * Existe parce que l'accès total était INVISIBLE hors de l'accueil : on
+   * testait une appli qui n'était celle de personne d'autre sans avoir de
+   * quoi s'en apercevoir (« le boss mode est toujours activé j'ai
+   * l'impression »). Un doute sur l'état d'un contournement coûte plus cher
+   * que le contournement lui-même.
+   */
+  get totalAccess(): '' | 'url' | 'master' {
+    if (this.boss) return 'url';
+    if (game.pseudo.toLowerCase() === 'master') return 'master';
+    return '';
+  }
+
+  /** Comment en sortir, à afficher tel quel. */
+  get totalAccessHint(): string {
+    if (this.totalAccess === 'url') return '#boss=off pour revoir l’appli comme un visiteur';
+    if (this.totalAccess === 'master') return 'pseudo « master » — change de joueur dans le Mode jeu pour en sortir';
+    return '';
+  }
 }
 
 export const unlocks = new Unlocks();

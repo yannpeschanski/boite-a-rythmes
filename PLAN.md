@@ -2756,6 +2756,47 @@ c'est un `{#if}` à ajouter, pas une reprise.
 
 ---
 
+## Correctif — « master » ne doit pas être mémorisé (2026-08-16)
+
+Signalé par Yann (« le boss mode est toujours activé j'ai l'impression »),
+puis « c'est compris, j'avais mal lu » : le cas qu'il voyait était bien
+`#boss` persisté, annoncé par sa bannière. **Mais la reproduction a mis au
+jour un vrai défaut, introduit la veille en persistant le pseudo.**
+
+`playerProgress` renvoie le niveau MAXIMUM pour le pseudo « master ». Tant
+que le pseudo n'était pas mémorisé, c'était un contournement de session.
+Depuis qu'il l'est, taper « master » une fois débloquait tout **à chaque
+visite ensuite**, avec deux aggravations :
+- **rien à l'écran ne l'expliquait** (la bannière ne couvrait que `#boss`) ;
+- **`#boss=off` n'y pouvait rien**, puisque ça ne passe pas par `#boss`.
+
+Autrement dit, le seul moyen d'en sortir était de vider le stockage local.
+Vérifié en reproduisant : pseudo `master` mémorisé → Atelier ouvert, aucune
+bannière, aucune sortie.
+
+**Correctif :** « master » n'est plus jamais écrit dans
+`boite-a-rythme:pseudo`, et une valeur héritée est **effacée au chargement**
+— sans ce nettoyage, quiconque avait tapé « master » avant le correctif
+resterait bloqué en accès total.
+
+**Et l'accès total devient visible partout** : `unlocks.totalAccess` dit
+*pourquoi* c'est ouvert (`#boss` ou pseudo master) et comment en sortir ; la
+bannière d'accueil le reprend, et un marqueur `🔓 accès total` apparaît dans
+la barre d'outils de l'Atelier. Il n'existe QUE pendant un contournement :
+zéro pixel pour un visiteur normal, donc rien à échanger au titre de la
+règle n°1 du §7.5. Il est là parce que l'accueil n'est pas l'endroit où le
+doute survient — on est dans l'Atelier quand on se demande si ce qu'on voit
+est ce que voient les autres. À retirer sans regret si c'est de trop.
+
+**Vérifié** (390×844, six parcours) : visiteur neuf verrouillé · `#boss`
+ouvert avec sa bannière · `master`/`Master` hérités **nettoyés
+automatiquement**, Atelier de nouveau verrouillé · joueur normal niveau 14
+ouvert par sa vraie progression, sans marqueur · « master » tapé en session
+marche mais **ne survit pas au rechargement** · marqueur présent en `#boss`,
+absent pour un joueur normal.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
