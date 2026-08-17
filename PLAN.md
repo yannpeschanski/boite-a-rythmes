@@ -3076,6 +3076,167 @@ désormais leur propre état (clap à 8 pas, deux derniers libres).
 
 ---
 
+## ✅ Pad — reprise en main (2026-08-17)
+
+> « le pad : difficile à prendre en main, on peut mieux faire »
+
+Retour volontairement vague, donc diagnostic avant redesign. Quatre points de
+friction **mesurés dans l'appli**, pas devinés — trois d'entre eux étaient
+invisibles à la relecture du code parce qu'ils tiennent à ce qu'on VOIT, pas à
+ce que le composant fait.
+
+### 1. On écrivait à l'aveugle — c'était le problème principal
+
+Constaté en listant les classes des huit cases de la Mélodie, pad ouvert :
+elles étaient **rigoureusement identiques**. Rien, dans la grille, n'indiquait
+où la prochaine note allait tomber. Le seul repère était un « pas 3 / 8 » en
+petit gris dans l'en-tête du pad — il fallait donc compter les cases pour le
+traduire.
+
+Cause structurelle : le curseur vivait **dans** le pad, la grille ne pouvait
+pas le connaître. Il est remonté dans `SynthRowView` et partagé
+(`bind:cursor`) ; la case visée porte désormais un contour net.
+
+Trait **plein et sombre**, pas la teinte ambre de la tête de lecture : les
+deux ne s'affichent jamais en même temps (le curseur ne sert qu'à l'arrêt),
+mais s'ils se ressemblaient on confondrait « là où ça joue » et « là où
+j'écris ».
+
+### 2. On ne pouvait pas viser un pas
+
+Pour écrire sur le pas 5 en partant du pas 1, il fallait **quatre appuis sur
+« ← »** — et « ← » est désactivé pendant la lecture. Désormais, pad ouvert et
+lecture à l'arrêt, **un appui sur une case y amène le curseur**.
+
+C'est un changement de comportement de la case, assumé : tant que le pad est
+ouvert, la grille sert à viser ; refermé, elle refait défiler les notes comme
+avant. Ce qui rend le mode acceptable, c'est qu'il est **visible** — le pad
+est ouvert à l'écran et la case visée est entourée.
+
+### 3. Les touches étaient des chiffres abstraits
+
+`1 2 3 4 5 6 7`. Un degré de gamme ne dit rien à qui ne pense pas en degrés —
+or l'appli **connaît** la tonalité et le mode, et savait déjà nommer les notes
+(`noteNameForScaleDegree`, qui sert aux libellés d'accords). Les touches
+affichent maintenant **Do Ré Mi Fa Sol La Si**, avec le degré en petit
+dessous : c'est lui qui figure dans la case de la grille, les deux doivent
+pouvoir se raccorder. Les noms suivent la tonalité choisie.
+
+### 4. Le pad s'ouvrait hors écran
+
+Mesuré à 390×900 : le pad de la Mélodie s'ouvrait **sous la ligne de
+flottaison**. On appuyait sur 🎹 et il ne se passait rien de visible. Il
+défile maintenant dans la vue à l'ouverture.
+
+Piège rencontré : `queueMicrotask` ne suffit pas. Svelte 5 groupe ses mises à
+jour du DOM, le microtask s'exécute **avant** que le panneau existe et on
+faisait défiler vers un élément absent — le pad restait coupé de 30px, et ça
+ne se voyait qu'en mesurant. `await tick()` règle le cas.
+
+### Deux mesures qui ont corrigé mes propres réglages
+
+- **Débordement à 320px** : les sept touches sortaient de 14px. Les pistes de
+  grille ont un minimum `auto`, donc elles refusent de descendre sous la
+  largeur de leur contenu — `minmax(0, 1fr)`, le même piège que celui corrigé
+  sur `XpSlider` (audit A2), côté grille plutôt que flexbox.
+- **Seuil de resserrement à 400px et non 360** : à 360 pile, « Sol »
+  débordait encore de 3px. Vérifié ensuite sur **320 / 360 / 390 / 430 /
+  768** — aucun débordement, hauteur de cible tenue à 48px partout.
+
+### Vérifications
+
+`npm run check` 0 erreur · 33 tests · les deux builds. Parcours au navigateur :
+case visée entourée dès l'ouverture · un appui sur la 5ᵉ case donne « pas
+5 / 8 » · une touche écrit le degré et la visée avance · touches lues
+« Do Ré Mi Fa Sol La Si ».
+
+### Ce que je n'ai pas touché, et pourquoi
+
+Le **double comportement** (pas-à-pas à l'arrêt, direct en lecture) est
+conservé : les quatre défauts ci-dessus expliquent la difficulté sans qu'il
+soit en cause, et avec le curseur visible il devient lisible. À rouvrir si la
+gêne persiste — c'est le prochain suspect.
+
+---
+
+## ✅ Audit design de l'onglet Synthé — 2026-08-17
+
+> « il faut faire un audit design du synthé ! il y a trop d'espace entre le
+> haut et la partie Séquenceurs. / tempo : est-ce nécessaire de le régler
+> ici ? / tonalité, nb de notes, ça peut descendre dans une partie plus bas /
+> sous sections des lignes de synthé : il faut que ça rentre dans une seule
+> ligne »
+
+### Le constat, chiffré
+
+L'onglet Rythme avait été ramené à **32 %** de chrome sur le premier écran
+(audit A1). **L'onglet Synthé n'avait jamais été mesuré : il était à 66 %.**
+561px avant la première case jouable à 390×844, soit deux tiers de l'écran
+d'un téléphone consommés avant de pouvoir poser une note.
+
+Trois blocs se partageaient ces 561px, et aucun n'avait à être là :
+
+| Bloc | Hauteur | Sort |
+|---|---|---|
+| Bandeau tempo | 66px | retiré de cet onglet |
+| Tonalité / Mode / Nb d'accords | 82px | descendu sous les lignes |
+| Taux de remplissage + 🎲 global | 64px | descendu sous les lignes |
+
+### Tempo : non, il n'a rien à faire ici
+
+Il tombait juste sous la barre sticky **par accident de mise en page** : il
+est placé sous le séquenceur batterie, et sur Synthé il n'y a pas de
+séquenceur batterie au-dessus de lui. Réservé à l'onglet Rythme — on pose un
+tempo avec le rythme, on n'y revient pas en écrivant une mélodie. Il reste
+réglable là-bas, et dans le Mode Live.
+
+### Harmonie et remplissage : descendus, pas déplacés dans une ligne
+
+Ils restent **globaux** — `chordsFor` gouverne les trois lignes à la fois. Les
+mettre *dans* une ligne mentirait sur leur portée. Ils passent donc **sous**
+le séquenceur, exactement comme le tempo au 2ᵉ lot.
+
+### Pastilles sur une seule ligne
+
+Mesuré avant : **324px nécessaires pour 322 disponibles** sur Basse et
+Mélodie — il manquait **deux pixels** — et **484px** sur la Nappe, qui en
+portait six.
+
+- Remplissage horizontal resserré (10px → 7px), hauteur de cible inchangée à
+  28px (audit A3).
+- Libellés raccourcis : « Oscillateur » → **Timbre** (le nom qu'utilisent
+  déjà les lignes de batterie pour le même panneau), « Filtre & espace » →
+  **Filtre**, « Arpégiateur » → **Arpège**. Les titres des panneaux gardent
+  leur nom complet.
+- Ça suffisait pour Basse et Mélodie (229px), **pas pour la Nappe** (352px
+  pour 322). D'où une fusion : **Arpège et Bourdon deviennent une pastille
+  « Jeu »** — les deux répondent à la même question, comment la Nappe joue
+  l'accord, égrené ou tenu. Le panneau les sépare par deux sous-titres au
+  lieu de deux replis. Nappe : **268px, une ligne**.
+
+### Résultat mesuré
+
+| | Avant | Après |
+|---|---|---|
+| Avant la 1re case jouable (390px) | **561px — 66 %** du 1er écran | **323px — 38 %** |
+| Hauteur de page | 1 312px (1,55 écran) | **1 134px (1,34)** |
+| Pastilles par ligne | 2 lignes partout | **1 ligne**, de 320 à 768px |
+
+Vérifié sur **320 / 360 / 390 / 768**. À 320px il a fallu un cran de
+resserrement supplémentaire pour que la Nappe tienne encore sur une ligne.
+
+Les débordements de **+2px** relevés sur `.xp-slider` / `.two-col` sont
+**antérieurs** à cette passe (artefact sous-pixel du `input[type=range]`, déjà
+présent dans les relevés précédents) — ni introduits, ni corrigés ici.
+
+### Reste ouvert
+
+Le **🎲 par ligne** flotte toujours à droite de l'en-tête de ligne ; Yann
+l'avait demandé « dans la sous-section séquence ». Pas fait dans cette passe,
+qui portait sur la hauteur du haut de page.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)

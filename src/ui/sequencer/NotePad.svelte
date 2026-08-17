@@ -27,7 +27,8 @@
   // mélodie de 4 notes ~15 appuis. Ici, une note = un appui.
   import { pattern } from '../../stores/pattern.svelte';
   import type { SynthRowName, SynthNote } from '../../model/types';
-  import { chordsFor, stepsForLine, stepDurForLine } from '../../engine/harmony';
+  import { chordsFor, scaleFor, stepsForLine, stepDurForLine } from '../../engine/harmony';
+  import { noteNameForScaleDegree } from '../../model/presets/scales';
   import { barDuration } from '../../engine/groove';
   import { quantizeToStep } from '../../engine/quantize';
 
@@ -36,6 +37,7 @@
     playing = false,
     playheadCol = -1,
     stepStartedAt = 0,
+    cursor = $bindable(0),
     onPreview,
     onChanged,
     onClose,
@@ -45,6 +47,8 @@
     playheadCol?: number;
     /** `performance.now()` de l'arrivée du pas courant — sert à quantifier. */
     stepStartedAt?: number;
+    /** Pas visé à l'arrêt — partagé avec la grille, qui l'entoure. */
+    cursor?: number;
     onPreview?: (degree: number, octave: number) => void;
     onChanged?: () => void;
     onClose?: () => void;
@@ -52,6 +56,17 @@
 
   const row = $derived(pattern.state.synthRows[name as SynthRowName]);
   const chords = $derived(chordsFor(pattern.state));
+  // Nom réel de chaque degré dans la tonalité courante (« Do », « Ré »…).
+  // Un chiffre de degré ne dit rien à qui ne pense pas en degrés — or l'appli
+  // CONNAÎT la tonalité et la gamme, et savait déjà nommer les notes
+  // (`noteNameForScaleDegree`, utilisé pour les libellés d'accords). Le
+  // chiffre reste, en petit : c'est lui qui figure dans la case de la grille,
+  // les deux doivent pouvoir se raccorder.
+  const noms = $derived(
+    [1, 2, 3, 4, 5, 6, 7].map((d) =>
+      noteNameForScaleDegree(scaleFor(pattern.state), pattern.state.synthGlobal.rootMidi, d),
+    ),
+  );
 
   // Curseur d'écriture pas-à-pas, utilisé QUAND LA LECTURE EST À L'ARRÊT.
   // Deux comportements sans bouton de mode, parce que la situation le dit
@@ -59,7 +74,13 @@
   // une machine à écrire), en lecture on joue et ça s'enregistre là où la
   // musique en est. C'est ce que fait n'importe quelle boîte à rythmes, et ça
   // évite un troisième bouton à comprendre.
-  let cursor = $state(0);
+  //
+  // REMONTÉ chez le parent (2026-08-17, retour de Yann : « difficile à
+  // prendre en main »). Il vivait ici, donc la GRILLE ne savait pas où la
+  // prochaine note allait tomber : on écrivait à l'aveugle, avec pour seul
+  // repère un « pas 3 / 8 » en petit gris. Partagé, la case visée peut
+  // s'entourer dans la grille, et un appui sur une case peut y amener le
+  // curseur.
   const steps = $derived(stepsForLine(row));
   // Le curseur ne doit jamais désigner un pas qui n'existe plus (le nombre de
   // pas de la ligne est réglable pendant que le pad est ouvert).
@@ -145,9 +166,10 @@
         class="key"
         class:inchord={chordDegrees.has(d)}
         onclick={() => tap(d)}
-        title={chordDegrees.has(d) ? `Degré ${d} — dans l’accord en cours` : `Degré ${d}`}
+        title={chordDegrees.has(d) ? `${noms[d - 1]} (degré ${d}) — dans l’accord en cours` : `${noms[d - 1]} (degré ${d})`}
       >
-        {d}
+        <span class="nom">{noms[d - 1]}</span>
+        <span class="deg">{d}</span>
       </button>
     {/each}
   </div>
@@ -208,7 +230,12 @@
      parce qu'ici on vise vite et à répétition, pas une fois. */
   .keys {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* minmax(0, 1fr) et non 1fr : une piste de grille a un minimum
+       `auto`, donc elle refuse de descendre sous la largeur de son
+       contenu — « Sol » plus son remplissage. À 320px les sept touches
+       débordaient de 14px. Même piège que celui corrigé sur XpSlider
+       (audit A2), côté grille plutôt que flexbox. */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 4px;
   }
   .key {
@@ -223,9 +250,39 @@
     color: var(--xp-text);
     cursor: pointer;
     touch-action: manipulation;
+    /* Aucun remplissage horizontal : le libellé est centré, le remplissage
+       ne servait qu'à rogner la place disponible pour « Sol ». */
+    padding: 2px 0;
   }
   .key:active {
     box-shadow: var(--xp-bevel-in);
+  }
+  .key .nom {
+    display: block;
+    font-size: 14px;
+    line-height: 1.1;
+  }
+  /* Sur téléphone, sept noms de note ne tiennent qu'en resserrant. Seuil à
+     400px et pas 360 : à 360 pile, « Sol » débordait encore de 3px de sa
+     touche — mesuré, pas supposé. Seul l'horizontal est resserré, la HAUTEUR
+     de cible reste à 48px (audit A3). */
+  @media (max-width: 399px) {
+    .keys {
+      gap: 3px;
+    }
+    .key .nom {
+      font-size: 12.5px;
+    }
+  }
+  /* Le degré reste lisible mais s'efface : c'est le nom qu'on cherche en
+     jouant, le chiffre sert à retrouver la case correspondante dans la
+     grille, qui affiche le degré. */
+  .key .deg {
+    display: block;
+    font-size: 9.5px;
+    font-weight: 400;
+    color: var(--xp-muted);
+    line-height: 1.1;
   }
   /* Degré appartenant à l'accord en cours : même information que le point de
      justesse des cases, au moment où elle sert — avant de poser la note. */

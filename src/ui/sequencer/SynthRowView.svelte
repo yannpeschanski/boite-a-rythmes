@@ -6,6 +6,7 @@
   // {degree 1-7, octave -1/0/+1}, la nappe un index d'accord (ou -1).
   // L'indicateur de justesse (point vert = note de l'accord en cours, ambre =
   // note de passage) est purement informatif.
+  import { tick } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import type { SynthRowName, SynthNote } from '../../model/types';
   import { chordsFor, justesseForStep } from '../../engine/harmony';
@@ -36,6 +37,37 @@
   // des degrés, un pad à 7 touches n'y voudrait rien dire). Fermé par défaut :
   // tant qu'il l'est, il ne coûte pas un pixel.
   let padOpen = $state(false);
+  // Curseur du pad, tenu ICI et pas dans le pad (retour de Yann : « difficile
+  // à prendre en main »). C'est ce qui permet à la GRILLE d'entourer la case
+  // visée : sans ça on écrivait à l'aveugle, le seul repère étant un
+  // « pas 3 / 8 » en petit gris dans l'en-tête du pad.
+  let padCursor = $state(0);
+  let padEl = $state<HTMLElement | null>(null);
+
+  async function togglePad() {
+    padOpen = !padOpen;
+    // Ouvrir un panneau qui apparaît SOUS la ligne de flottaison donne
+    // l'impression que le bouton n'a rien fait — mesuré : à 390x900, le pad
+    // de la Mélodie s'ouvrait hors écran, coupé de 30px.
+    // `tick()` et non `queueMicrotask` : Svelte 5 groupe ses mises à jour du
+    // DOM, un microtask s'exécute AVANT que le panneau existe et on ferait
+    // défiler vers un élément encore absent (constaté en mesurant, le pad
+    // restait coupé).
+    if (padOpen) {
+      await tick();
+      padEl?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // Pad ouvert et lecture à l'arrêt : un appui sur une case y AMÈNE le
+  // curseur au lieu de faire défiler la note. C'est la seule façon de viser
+  // un pas — sinon atteindre le pas 5 depuis le pas 1 demandait quatre appuis
+  // sur « ← ». Le défilement par la case reste le comportement dès que le pad
+  // est refermé, et la case visée est entourée, donc le changement se voit.
+  function onCellClick(col: number) {
+    if (padOpen && !isPad && !playing) padCursor = col;
+    else cycleCell(col);
+  }
 
   const row = $derived(pattern.state.synthRows[name]);
   const chords = $derived(chordsFor(pattern.state));
@@ -48,8 +80,7 @@
     oscillator: false,
     detune: false,
     filter: false,
-    arpege: false,
-    drone: false,
+    play: false,
   });
 
   // Regroupement par paquets de 8 au-delà de 8 pas (port de
@@ -216,7 +247,7 @@
       <button
         class="mini"
         class:on={padOpen}
-        onclick={() => (padOpen = !padOpen)}
+        onclick={togglePad}
         title="Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"
       >
         🎹
@@ -264,9 +295,12 @@
           class="cell {name}"
           class:active
           class:playing={playheadCol === col}
-          onclick={() => cycleCell(col)}
+          class:padtarget={padOpen && !isPad && !playing && padCursor % Math.max(1, row.subdivisions) === col}
+          onclick={() => onCellClick(col)}
           oncontextmenu={(e) => cycleRoll(col, e)}
-          title="Clic : note suivante — clic droit : rafale"
+          title={padOpen && !isPad && !playing
+            ? 'Clic : viser ce pas avec le pad'
+            : 'Clic : note suivante — clic droit : rafale'}
         >
           <span class="lbl">{cellLabel(col)}</span>
           {#if just}<span class="just {just}"></span>{/if}
@@ -283,15 +317,18 @@
   </div>
 
   {#if padOpen && !isPad}
-    <NotePad
-      name={name as 'bass' | 'melody'}
-      {playing}
-      {playheadCol}
-      {stepStartedAt}
-      onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
-      {onChanged}
-      onClose={() => (padOpen = false)}
-    />
+    <div bind:this={padEl}>
+      <NotePad
+        name={name as 'bass' | 'melody'}
+        {playing}
+        {playheadCol}
+        {stepStartedAt}
+        bind:cursor={padCursor}
+        onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
+        {onChanged}
+        onClose={() => (padOpen = false)}
+      />
+    </div>
   {/if}
 
   <!-- Chaque groupe se déploie toujours indépendamment (retour de Yann), mais
@@ -304,16 +341,18 @@
     <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
       onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
     <button class="chip" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
-      onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Oscillateur</button>
+      onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Timbre</button>
     <button class="chip" class:on={openGroups.detune} aria-expanded={openGroups.detune}
       onclick={() => (openGroups.detune = !openGroups.detune)}>Détune</button>
     <button class="chip" class:on={openGroups.filter} aria-expanded={openGroups.filter}
-      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre &amp; espace</button>
+      onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre</button>
     {#if isPad}
-      <button class="chip" class:on={openGroups.arpege} aria-expanded={openGroups.arpege}
-        onclick={() => (openGroups.arpege = !openGroups.arpege)}>Arpégiateur</button>
-      <button class="chip" class:on={openGroups.drone} aria-expanded={openGroups.drone}
-        onclick={() => (openGroups.drone = !openGroups.drone)}>Bourdon</button>
+      <!-- Arpège et Bourdon fondus en une pastille « Jeu » : les six
+           pastilles de la Nappe demandaient 352px pour 322 disponibles, et
+           les deux répondent à la MÊME question — comment la Nappe joue
+           l'accord, égrené ou tenu. -->
+      <button class="chip" class:on={openGroups.play} aria-expanded={openGroups.play}
+        onclick={() => (openGroups.play = !openGroups.play)}>Jeu</button>
     {/if}
   </div>
   {#if openGroups.sequence}
@@ -400,8 +439,9 @@
     </div>
   {/if}
   {#if isPad}
-    {#if openGroups.arpege}
+    {#if openGroups.play}
       <div class="group-panel" data-group="synth-arpege">
+        <p class="sub">Arpège — l'accord est égrené note par note</p>
         <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
         <label>
           Motif
@@ -427,10 +467,7 @@
         >
           ✍️ Traduire l'arpège en Mélodie
         </button>
-      </div>
-    {/if}
-    {#if openGroups.drone}
-      <div class="group-panel" data-group="synth-drone">
+        <p class="sub">Bourdon — l'accord est tenu en continu</p>
         <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
         <p class="hint">
           La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord
@@ -577,6 +614,14 @@
     outline: 2px solid #ffd54a;
     outline-offset: -1px;
   }
+  /* Case visée par le pad. Trait plein et sombre plutôt que la teinte ambre
+     de la tête de lecture : les deux ne se montrent jamais en même temps (le
+     curseur du pad ne sert qu'à l'arrêt), mais s'ils se ressemblaient on
+     confondrait « là où ça joue » et « là où j'écris ». */
+  .cell.padtarget {
+    outline: 2px solid var(--xp-text);
+    outline-offset: -1px;
+  }
   .just {
     position: absolute;
     top: 2px;
@@ -628,19 +673,36 @@
     gap: 4px;
     margin: 5px 0 0;
   }
+  /* Une seule ligne par ligne synthé (retour de Yann, 2026-08-17). Mesuré
+     avant : 324px nécessaires pour 322 disponibles sur Basse/Mélodie — il
+     manquait DEUX pixels — et 484px sur la Nappe, qui en porte six.
+     Le remplissage horizontal se resserre, la HAUTEUR de cible reste à 28px
+     (audit A3). Les libellés raccourcis font le reste : « Oscillateur » ->
+     « Timbre » (le nom qu'utilisent déjà les lignes de batterie pour le même
+     panneau), « Filtre & espace » -> « Filtre », « Arpégiateur » ->
+     « Arpège ». Les titres des panneaux, eux, gardent leur nom complet. */
   .chip {
     font-family: inherit;
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
     min-height: 28px;
-    padding: 6px 10px;
+    padding: 6px 7px;
     border: 1px solid color-mix(in srgb, var(--xp-accent-violet) 40%, var(--xp-line));
     border-radius: 13px;
     background: linear-gradient(180deg, #fff, var(--xp-face-dark));
     color: var(--xp-accent-violet);
     cursor: pointer;
     box-shadow: var(--xp-bevel-out);
+  }
+  /* Sous 340px, la Nappe (cinq pastilles) repassait à deux lignes : un cran
+     de resserrement horizontal de plus, la hauteur de cible ne bougeant
+     toujours pas. */
+  @media (max-width: 339px) {
+    .chip {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
   }
   .chip.on {
     background: var(--xp-accent-violet);
@@ -672,6 +734,19 @@
   .xp-btn.tiny {
     font-size: 11px;
     padding: 1px 6px;
+  }
+  /* Sous-titre à l'intérieur d'un panneau fusionné : sépare arpège et
+     bourdon sans réintroduire deux replis. */
+  .sub {
+    margin: 6px 0 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--xp-accent-violet);
+    grid-column: 1 / -1;
+  }
+  .sub:first-child {
+    margin-top: 0;
   }
   .hint {
     font-size: 11px;

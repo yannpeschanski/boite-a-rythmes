@@ -142,7 +142,7 @@
     { id: 'synth-oscillateur', label: 'Oscillateur & enveloppe' },
     { id: 'synth-detune', label: 'Détune & modulation' },
     { id: 'synth-filtre', label: 'Filtre & espace (Synthé)' },
-    { id: 'synth-arpege', label: 'Arpégiateur de nappe' },
+    { id: 'synth-arpege', label: 'Jeu de la nappe (arpège & bourdon)' },
     { id: 'synth-sidechain', label: 'Sidechain' },
     { id: 'synth-groove', label: 'Groove synthé & espace' },
     { id: 'effets-bus', label: 'Effets de bus & mix' },
@@ -475,6 +475,13 @@
           qu'on est en train d'éditer.
        Ce n'est pas un contrôle qu'on « chevauche » comme Lecture ou Break :
        on pose un tempo, on le retouche, on n'y revient pas à chaque mesure. -->
+  <!-- Réservé à l'onglet Rythme (retour de Yann, 2026-08-17 : « tempo :
+       est-ce nécessaire de le régler ici ? » — non). Sur Synthé, il tombait
+       juste sous la barre sticky, faute de séquenceur batterie au-dessus de
+       lui : 66px de chrome en tête d'un onglet qui en comptait déjà 561
+       avant la première case jouable. Le tempo se pose avec le rythme, on
+       n'y revient pas en écrivant une mélodie. -->
+  {#if activeTab === 'rythme'}
   <div class="tempo-strip">
     <!-- `step` à 1 et non 10 (retour de Yann : « on le règle un peu partout,
          c'est bizarre et pas cohérent. Il faudrait qu'on puisse le régler à
@@ -490,6 +497,7 @@
       👆 Tap
     </button>
   </div>
+  {/if}
 
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
