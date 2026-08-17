@@ -3501,24 +3501,38 @@ exactement ce qui vient d'être demandé.
 
 ### La mesure retourne la question (390×844, lu dans le DOM rendu)
 
-| Onglet | Page | Barres de titre XP | Pastilles répétées | Cases du séquenceur |
-|---|---|---|---|---|
-| Rythme | 1 253px | 2 · 64px · **5 %** | 15 · 420px · **34 %** | 5 rangs · 170px · 14 % |
-| Synthé | 1 160px | 1 · 32px · **3 %** | 13 · 364px · **31 %** | 3 rangs · 96px · 8 % |
-| Production | 1 562px | 5 · 160px · **10 %** | — | — |
+⚠️ **Chiffre corrigé le jour même.** La première version de cette section
+annonçait « 31 à 34 % de pastilles ». **Faux d'un facteur trois** : j'avais
+sommé la hauteur de *chaque* pastille alors que trois d'entre elles partagent
+une même ligne. L'emprise verticale réelle est de 11 % (Rythme) et 7 %
+(Synthé). Le piège est exactement celui que ce document nomme déjà — « ne
+jamais conclure sans mesurer » — sauf qu'ici la mesure elle-même était mal
+posée. Comptabilité complète refaite ci-dessous, poste par poste.
 
-1ʳᵉ case jouable à **318px** du haut, soit 38 % du premier écran (le bandeau
-d'astuce sur deux lignes en explique une partie).
+**Onglet Rythme, page = 1 253px :**
 
-**Le look XP coûte 3 à 10 % de la page. Les pastilles répétées
-(`Séquence · Timbre · Filtre & espace · Détune · Jeu`) en coûtent 31 à 34 % —
-deux fois et demie la place donnée aux cases.** Jeter XP ne rendrait donc pas
-l'écran plus utilisable ; le poste de dépense est la répétition de 3 à 5
-boutons identiques sur chacune des huit lignes.
+| Poste | Hauteur | Part |
+|---|---|---|
+| Barre de menus | 64px | 5 % |
+| Transport + astuce + onglets | 142px | 11 % |
+| **Barres de titre XP** (2) | **64px** | **5 %** |
+| **Cases du séquenceur** (5 rangs) | **170px** | **14 %** |
+| **Pastilles** (5 bandes) | **140px** | **11 %** |
+| En-têtes de ligne (5) | 140px | 11 % |
+| Bandeau tempo + panneau du bas | 353px | 28 % |
+
+**Anatomie d'une ligne de batterie — 99px :** `row-head` 28px (nom + 🔊) ·
+`cells` **34px** · `group-bar` 28px (les 3 pastilles) · 9px de marges.
+
+**Le look XP coûte 5 % de la page (10 % sur Production, qui empile cinq
+fenêtres). Chaque ligne fait 99px et n'en consacre que 34 à la musique.**
+Jeter XP ne rendrait donc pas l'écran plus utilisable ; le poste de dépense
+est que chaque ligne dépense deux fois plus de hauteur à se présenter qu'à se
+laisser jouer.
 
 Corollaire pour §7.5 : le constat A1 (« 64 % de chrome ») est **éteint**, le
-travail a été fait. Il est remplacé par un constat neuf, **A1′ — 34 % de
-pastilles**.
+travail a été fait. Il est remplacé par un constat neuf, **A1′ — 65px de tour
+de taille par ligne, pour 34px de cases**.
 
 ### Les cinq familles du marché (ce qu'on en prend)
 
@@ -3568,6 +3582,42 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
+
+### Les trois maquettes (2026-08-17, « j'aimerais voir des propositions »)
+
+Fichiers : `maquettes/a.html`, `b.html`, `c.html` — **jetables, hors de
+`src/`**, rien n'est branché sur le vrai code. Même écran (onglet Rythme),
+contenu tenu constant : mêmes 5 lignes, mêmes nombres de pas, même motif
+(kick 1&3, snare 2&4, hat plein, clap et shaker vides). Seule la langue
+visuelle change.
+
+| | Page | Part des cases |
+|---|---|---|
+| Aujourd'hui | 1 253px (1,5 écran) | 14 % |
+| A · XP resserré | **844px** (1 écran) | 26 % |
+| B · Cadre XP + instrument | **844px** | 24 % |
+| C · Rupture | **844px** | 25 % |
+
+⚠️ **Le gain d'écran est commun aux trois et ne vient d'aucune des trois
+identités** — il vient du traitement de la ligne, identique partout. C'est la
+démonstration visuelle du résultat de mesure : la question du look et la
+question de la place sont deux sujets distincts.
+
+Ce que les images apprennent en plus :
+
+- **A** — l'écran respire, mais la charge n°1 est intacte : sur fond beige, une
+  case vide reste un rectangle pâle en relief, indiscernable d'un contrôle
+  désactivé. A règle un problème de place, pas un problème de lecture.
+- **B** — cadre strictement identique à aujourd'hui (Bliss, panneaux Luna,
+  barre de titre, onglets) ; seul le corps de la fenêtre bascule sur les
+  tokens `--amp-*` de `LiveView.svelte:1842-1852`. Pas éteint = creux noir, pas
+  actif = émission dans la couleur de la ligne, bandeau LCD vert à la place des
+  trois pastilles. Le clap et le shaker vides se lisent enfin « rien ici » et
+  non « interdit ».
+- **C** — propre, compétent, et **anonyme**. Retire le titre en haut à gauche
+  et c'est n'importe laquelle des sept boîtes à rythmes en ligne gratuites de
+  la revue. Le coût de C ne se voit pas dans ce qu'elle ajoute, il se voit dans
+  ce qu'elle efface.
 
 ### Trois directions
 

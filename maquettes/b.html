@@ -1,0 +1,133 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette B</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION B — cadre XP, plan de travail instrument.
+     Le chrome (fond Bliss, panneaux Luna, barre de titre, onglets) est
+     inchangé. Seul le CORPS de la fenêtre séquenceur bascule sur la palette
+     du Mode Live (--amp-*, lue dans LiveView.svelte:1842-1852) : c'est la
+     langue n°3 déjà en production, pas une invention. */
+  :root {
+    --face: #ece9d8; --face-dark: #d6d2c2; --line: #aca899;
+    --text: #1a1a1a; --muted: #6f6d64; --white: #fff; --shadow: #808080;
+    --title: linear-gradient(180deg,#0997ff 0%,#0053ee 8%,#0050ee 40%,#06f 88%,#003dd7 93%,#0997ff 100%);
+    --out: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white);
+    --bliss:
+      radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79,152,56,0) 60%),
+      radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87,163,61,0) 62%),
+      linear-gradient(180deg,#2f71d1 0%,#5f9be6 45%,#a9cdf5 70%,#cfe6fa 100%);
+
+    /* Palette Mode Live, reprise telle quelle */
+    --amp-bg-1: #6a6a9c; --amp-bg-2: #3a3a64; --amp-bg-3: #1c1c34;
+    --amp-line: #0a0a18; --amp-hi: #9a9ad0;
+    --amp-lcd-bg: #050806; --amp-lcd-fg: #33ff44; --amp-lcd-dim: #145520;
+    --amp-amber: #ffb020; --amp-text: #cfd0f0;
+
+    --kick:#d84315; --snare:#c8881a; --hat:#2b8a8a; --clap:#3fae54; --shaker:#22a6c9;
+  }
+  body { background: var(--bliss); background-attachment: fixed;
+         font: 13px Tahoma, 'Noto Sans', Verdana, sans-serif; color: var(--text);
+         padding: 12px 10px 20px; }
+  .panel { background: var(--face); border: 1px solid var(--line);
+           box-shadow: var(--out); border-radius: 4px; padding: 8px 10px; margin-bottom: 10px; }
+  .menubar { display: flex; gap: 14px; align-items: center; }
+  .menubar b { font-weight: 400; }
+  .transport { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn { background: linear-gradient(180deg,#fff,var(--face) 45%,var(--face-dark));
+         border: 1px solid var(--line); border-radius: 3px; box-shadow: var(--out);
+         padding: 9px 14px; font: 700 14px Tahoma, sans-serif; }
+  .tabs { display: flex; gap: 6px; }
+  .tab { flex: 1; text-align: center; padding: 9px 4px; border: 1px solid var(--line);
+         border-radius: 3px; background: linear-gradient(180deg,#fff,var(--face) 45%,var(--face-dark));
+         box-shadow: var(--out); font-size: 12px; }
+  .tab.on { background: linear-gradient(180deg,#4d8cf5,#1b5bd4); color: #fff; font-weight: 700; }
+
+  .win { border: 1px solid #0831d9; border-radius: 8px 8px 3px 3px;
+         box-shadow: 0 4px 14px rgba(0,0,30,.35); overflow: hidden; }
+  .titlebar { display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+              background: var(--title); color: #fff; font-weight: 700; font-size: 13px;
+              text-shadow: 1px 1px 1px rgba(0,0,40,.6); }
+  .titlebar .t { flex: 1; }
+  .wbtn { width: 24px; height: 24px; border: 1px solid #fff; border-radius: 3px;
+          background: linear-gradient(180deg,#7ba2e7,#3d6fe0 50%,#2a54c4); color: #fff;
+          font: 700 13px Tahoma; }
+
+  /* ---- le plan de travail : face d'ampli ---- */
+  .rack { background: linear-gradient(180deg, var(--amp-bg-1), var(--amp-bg-2) 12%, var(--amp-bg-3));
+          border-top: 1px solid var(--amp-hi); padding: 10px 10px 12px;
+          font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; color: var(--amp-text); }
+
+  .ruler { margin-bottom: 6px; padding-left: 66px; }
+  .ruler span { color: var(--amp-amber); font-size: 9px; letter-spacing: .1em;
+                border-left: 1px solid rgba(255,176,32,.4); padding-left: 4px; }
+
+  .row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  /* Étiquette sérigraphiée : nom + LED d'état, posée à même la surface. */
+  .tag { width: 58px; flex: none; display: flex; align-items: center; gap: 5px;
+         font-size: 10px; font-weight: 700; letter-spacing: .1em; }
+  .led { width: 7px; height: 7px; border-radius: 50%; flex: none;
+         box-shadow: 0 0 5px currentColor; background: currentColor; }
+  .led.off { background: #2a2a40; box-shadow: none; }
+
+  /* Un pas éteint est un TROU (creux, sombre), pas un bouton pâle : c'est la
+     charge n°1 de l'audit. Un pas actif ÉMET. */
+  .cells { flex: 1; display: flex; gap: 3px; height: 40px; }
+  .cells i { flex: 1; border-radius: 2px; background: var(--amp-lcd-bg);
+             box-shadow: inset 0 1px 2px rgba(0,0,0,.9), inset 0 -1px 0 rgba(255,255,255,.06); }
+  .cells i.on { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 0 7px currentColor;
+                background: currentColor; }
+  .beat { border-left: 1px solid rgba(154,154,208,.28); }
+
+  .lcd { margin-top: 4px; padding: 5px 7px; background: var(--amp-lcd-bg);
+         border-radius: 3px; color: var(--amp-lcd-fg); font-size: 9.5px;
+         letter-spacing: .08em; display: flex; justify-content: space-between; }
+  .lcd .dim { color: var(--amp-lcd-dim); }
+
+  .tempo { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .tempo input { flex: 1; }
+</style>
+
+<div class="panel menubar"><b>Mode</b><b>Fichier</b><b>Édition</b><b>Affichage</b><b>Aide</b></div>
+
+<div class="panel">
+  <div class="transport"><span class="btn">▶ Lecture</span><span class="btn">🫨 Break</span></div>
+  <div class="tabs"><span class="tab on">🥁 Rythme</span><span class="tab">🎹 Synthé</span><span class="tab">🎚 Production</span></div>
+</div>
+
+<div class="win">
+  <div class="titlebar"><span>🥁</span><span class="t">Séquenceur — Kick / Snare / Hat…</span><button class="wbtn">⌄</button></div>
+  <div class="rack">
+    <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+
+    <div class="row">
+      <div class="tag" style="color:var(--kick)"><i class="led"></i>KICK</div>
+      <div class="cells" style="color:var(--kick)">
+        <i class="on"></i><i></i><i class="on beat"></i><i></i></div>
+    </div>
+    <div class="row">
+      <div class="tag" style="color:var(--snare)"><i class="led"></i>SNARE</div>
+      <div class="cells" style="color:var(--snare)">
+        <i></i><i class="on"></i><i class="beat"></i><i class="on"></i></div>
+    </div>
+    <div class="row">
+      <div class="tag" style="color:var(--hat)"><i class="led"></i>HAT</div>
+      <div class="cells" style="color:var(--hat)">
+        <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on beat"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    </div>
+    <div class="row">
+      <div class="tag" style="color:var(--clap)"><i class="led off"></i>CLAP</div>
+      <div class="cells" style="color:var(--clap)">
+        <i></i><i></i><i class="beat"></i><i></i></div>
+    </div>
+    <div class="row">
+      <div class="tag" style="color:var(--shaker)"><i class="led off"></i>SHAKER</div>
+      <div class="cells" style="color:var(--shaker)">
+        <i></i><i></i><i></i><i></i><i class="beat"></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+  </div>
+</div>
+
+<div class="panel tempo" style="margin-top:10px"><span>Tempo</span><input type="range" value="40"><b>120</b></div>
