@@ -44,6 +44,11 @@
   let tipExpanded = $state(false);
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
+  // Horodatage de l'arrivée du pas courant, par ligne synthé (voir `loop`).
+  // Volontairement PAS un `$state` : personne n'a besoin de réagir à sa
+  // valeur, elle n'est lue qu'au moment d'un appui sur le pad. En faire un
+  // état réactif déclencherait un rendu à chaque pas de chaque ligne.
+  const synthStepAt: Record<SynthRowName, number> = { bass: 0, pad: 0, melody: 0 };
   let fileInput: HTMLInputElement;
 
   // Curseur visuel : consommé à chaque frame contre l'horloge audio.
@@ -51,7 +56,16 @@
   function loop() {
     for (const ev of engine.consumePlayhead()) {
       if (ev.name in playhead) playhead[ev.name as DrumRowName] = ev.col;
-      else synthPlayhead[ev.name as SynthRowName] = ev.col;
+      else {
+        synthPlayhead[ev.name as SynthRowName] = ev.col;
+        // Instant d'arrivée du pas, pour quantifier ce qu'on joue au pad :
+        // savoir QUEL pas joue ne suffit pas, il faut savoir depuis combien
+        // de temps pour décider si un appui est « en retard sur celui-ci »
+        // ou « en avance sur le suivant ». Repère pris sur l'horloge murale
+        // au moment où le moteur relâche l'événement — donc calé sur
+        // l'horloge AUDIO, comme l'aiguille de l'anneau de transport.
+        synthStepAt[ev.name as SynthRowName] = performance.now();
+      }
     }
     breakArmed = engine.breakPending;
     raf = requestAnimationFrame(loop);
@@ -508,7 +522,13 @@
         </div>
       </XpWindow>
     {:else if activeTab === 'synthe'}
-      <SynthModule playhead={synthPlayhead} onFxChanged={refreshFx} />
+      <SynthModule
+        playhead={synthPlayhead}
+        {playing}
+        stepAt={synthStepAt}
+        onPreviewDegree={(n, d, o) => engine.playDegreePreview(n, d, o)}
+        onFxChanged={refreshFx}
+      />
     {:else}
       <XpWindow title="Effets de bus & mix" icon="🔊" accent="teal">
         <div class="two-col" data-group="effets-bus">

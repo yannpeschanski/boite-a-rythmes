@@ -12,18 +12,30 @@
   import { SYNTH_VOICE_PRESETS } from '../../model/presets/voices';
   import { translatePadArpToMelody } from '../../engine/generators';
   import XpSlider from '../xp/XpSlider.svelte';
+  import NotePad from './NotePad.svelte';
 
   let {
     name,
     label,
     playheadCol = -1,
+    playing = false,
+    stepStartedAt = 0,
+    onPreviewDegree,
     onChanged,
   }: {
     name: SynthRowName;
     label: string;
     playheadCol?: number;
+    playing?: boolean;
+    stepStartedAt?: number;
+    onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
     onChanged?: () => void;
   } = $props();
+
+  // Pad d'écriture (Basse/Mélodie seulement — la Nappe pose des ACCORDS, pas
+  // des degrés, un pad à 7 touches n'y voudrait rien dire). Fermé par défaut :
+  // tant qu'il l'est, il ne coûte pas un pixel.
+  let padOpen = $state(false);
 
   const row = $derived(pattern.state.synthRows[name]);
   const chords = $derived(chordsFor(pattern.state));
@@ -200,6 +212,16 @@
     <button class="mini" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
       {row.muted ? '🔇' : '🔊'}
     </button>
+    {#if !isPad}
+      <button
+        class="mini"
+        class:on={padOpen}
+        onclick={() => (padOpen = !padOpen)}
+        title="Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"
+      >
+        🎹
+      </button>
+    {/if}
     <select
       class="voice-select"
       onchange={(e) => applyVoicePreset((e.currentTarget as HTMLSelectElement).value)}
@@ -259,6 +281,18 @@
       </div>
     {/each}
   </div>
+
+  {#if padOpen && !isPad}
+    <NotePad
+      name={name as 'bass' | 'melody'}
+      {playing}
+      {playheadCol}
+      {stepStartedAt}
+      onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
+      {onChanged}
+      onClose={() => (padOpen = false)}
+    />
+  {/if}
 
   <!-- Chaque groupe se déploie toujours indépendamment (retour de Yann), mais
        les `<fieldset>` empilés sont devenus UNE rangée de pastilles (audit

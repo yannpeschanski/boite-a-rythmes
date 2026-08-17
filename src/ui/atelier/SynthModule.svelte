@@ -14,9 +14,17 @@
 
   let {
     playhead,
+    playing = false,
+    stepAt,
+    onPreviewDegree,
     onFxChanged,
   }: {
     playhead: Record<SynthRowName, number>;
+    /** Lecture en cours : décide si le pad écrit pas-à-pas ou en direct. */
+    playing?: boolean;
+    /** `performance.now()` de l'arrivée du pas courant, par ligne. */
+    stepAt?: Record<SynthRowName, number>;
+    onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
     onFxChanged?: () => void;
   } = $props();
 
@@ -71,6 +79,9 @@
         name={name as SynthRowName}
         {label}
         playheadCol={playhead[name as SynthRowName]}
+        {playing}
+        stepStartedAt={stepAt?.[name as SynthRowName] ?? 0}
+        {onPreviewDegree}
         onChanged={onFxChanged}
       />
     </div>

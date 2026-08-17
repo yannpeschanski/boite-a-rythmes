@@ -683,6 +683,29 @@ export class AudioEngine {
     }
   }
 
+  // Aperçu d'un DEGRÉ précis sur Basse/Mélodie — pour le pad d'écriture de
+  // l'Atelier (retour de Yann : « pouvoir ouvrir un pad depuis l'atelier pour
+  // jouer/enregistrer une mélodie qui s'inscrit dans la grille »).
+  //
+  // `previewSynth` ne savait jouer que le degré 1, et `playLiveMelodyNote`
+  // ne sert que la Mélodie et veut une fréquence déjà calculée : ni l'un ni
+  // l'autre ne répond à « fais-moi entendre le degré 5 de la Basse ». D'où
+  // cette méthode, qui reste le seul endroit connaissant le registre de
+  // chaque ligne — les -24 demi-tons de la basse sont les MÊMES que ceux du
+  // scheduler (scheduler.ts, `name === 'bass' ? -24 : 0`), pour que le pad
+  // sonne exactement comme la grille jouera.
+  playDegreePreview(name: 'bass' | 'melody', degree: number, octave: number): void {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    void ctx.resume();
+    const state = this.getState();
+    const row = state.synthRows[name];
+    const freq = degreeFreq(state, degree, octave, name === 'bass' ? -24 : 0);
+    const t = ctx.currentTime + 0.02;
+    if (name === 'bass') this.synth!.playBassNote(freq, t, 0.45, 0.45, row.voice, null);
+    else this.synth!.playMelodyNote(freq, t, 0.45, 0.4, row.voice, null);
+  }
+
   // Son de victoire du Mode jeu (original playChime/playWinSound,
   // l. 8321-8340, jamais porté — PLAN.md §7.3). Connecté à `finalGain`
   // plutôt qu'au « masterGain » de l'original : là-bas ce nom désigne en
