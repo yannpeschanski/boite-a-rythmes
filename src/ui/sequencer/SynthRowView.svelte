@@ -83,18 +83,24 @@
     play: false,
   });
 
-  // Regroupement par paquets de 8 au-delà de 8 pas (port de
-  // renderPacketizedRow) : une grille de 128 notes d'un bloc est illisible.
-  const PACKET_SIZE = 8;
-  const PACKET_THRESHOLD = 8;
-  let openPacket = $state(0);
-  const packetCount = $derived(Math.ceil(row.subdivisions / PACKET_SIZE));
-  const packetized = $derived(row.subdivisions > PACKET_THRESHOLD);
-  const visibleCols = $derived.by(() => {
-    if (!packetized) return Array.from({ length: row.subdivisions }, (_, i) => i);
-    const start = openPacket * PACKET_SIZE;
-    return Array.from({ length: Math.min(PACKET_SIZE, row.subdivisions - start) }, (_, i) => start + i);
-  });
+  // La grille montre TOUS les pas, et défile horizontalement quand ils ne
+  // tiennent pas (2026-08-17). Avant : un regroupement par paquets de 8, donc
+  // seize boutons « 1-8 · 9-16 … 121-128 » sur trois rangées pour une ligne à
+  // 128 pas — de loin le plus gros bloc de l'onglet, et pour ne montrer que
+  // huit cases à la fois.
+  //
+  // Le défilement fait mieux que remplacer la pagination : il REND les repères
+  // de temps, qu'elle interdisait. Un paquet commençait à une fraction
+  // quelconque de la mesure, les traits auraient été déphasés — donc faux —
+  // et ils étaient désactivés dès qu'une ligne dépassait huit pas (audit A5).
+  // Une grille complète qui défile garde la mesure entière sous les yeux : les
+  // repères redeviennent justes.
+  const visibleCols = $derived(Array.from({ length: row.subdivisions }, (_, i) => i));
+  // Au-delà de ce nombre de pas, les cases cessent de se partager la largeur
+  // et prennent une taille fixe : c'est ce qui déclenche le défilement plutôt
+  // que des cases de trois pixels.
+  const SCROLL_THRESHOLD = 16;
+  const scrolls = $derived(row.subdivisions > SCROLL_THRESHOLD);
 
   // Densité des repères de temps (correctif A5). Un temps ne mérite un trait
   // que s'il reste plus espacé que les cases : sinon on ne marque plus le
@@ -134,11 +140,19 @@
     if (active) row.rolls[col] = (row.rolls[col] % 4) + 1;
   }
 
-  function shiftOctave(col: number, delta: number, e: Event) {
-    e.stopPropagation();
-    const cur = row.pattern[col] as SynthNote | null;
-    if (!cur) return;
-    row.pattern[col] = { degree: cur.degree, octave: Math.max(-1, Math.min(1, cur.octave + delta)) };
+
+
+  // Marque d'octave sur la case. Les deux boutons ▲▼ qui vivaient sous chaque
+  // case active sont partis (arbitrage de Yann, 2026-08-17 : « oui, tu peux
+  // lâcher ») — l'octave se règle au pad. Mais retirer le CONTRÔLE ne doit pas
+  // retirer l'INFORMATION : sans cette marque, une note à l'octave supérieure
+  // serait indistinguable d'une note normale, et plus rien nulle part ne le
+  // dirait.
+  function octaveMark(col: number): string {
+    if (isPad) return '';
+    const n = row.pattern[col] as SynthNote | null;
+    if (!n || !n.octave) return '';
+    return n.octave > 0 ? '▴' : '▾';
   }
 
   // Case vide = AUCUN glyphe (audit B8). Elle affichait un « · », qui est un
@@ -210,7 +224,8 @@
     row.subdivisions = n;
     row.pattern = pat;
     row.rolls = rolls;
-    if (openPacket >= Math.ceil(n / PACKET_SIZE)) openPacket = 0;
+    // Le curseur du pad ne doit pas désigner un pas qui vient de disparaître.
+    if (padCursor >= n) padCursor = 0;
   }
 
   // Arpège/Bourdon (PLAN.md §6) : sous-catégories de la ligne Nappe (retour
@@ -262,15 +277,6 @@
     </select>
   </div>
 
-  {#if packetized}
-    <div class="packets">
-      {#each { length: packetCount } as _, p (p)}
-        <button class="mini" class:on={openPacket === p} onclick={() => (openPacket = p)}>
-          {p * PACKET_SIZE + 1}–{Math.min((p + 1) * PACKET_SIZE, row.subdivisions)}
-        </button>
-      {/each}
-    </div>
-  {/if}
 
   <!-- Repères de temps (audit A5, styles dans styles/global.css). Une ligne
        synthé couvre `cycleBars` mesures — donc `4 × cycleBars` temps — et non
@@ -279,9 +285,16 @@
        que 8 pas sur les `subdivisions` du cycle, il commence donc à une
        fraction quelconque de la mesure. Les traits seraient déphasés, c'est-
        à-dire faux — mieux vaut aucun repère qu'un repère qui ment. -->
+  <!-- Conteneur de défilement SÉPARÉ de la grille. Les repères de temps sont
+       dessinés par un `::after` en `position: absolute`, qui se cale sur la
+       zone VISIBLE d'un élément qui défile — sur une ligne longue, les traits
+       seraient restés fixes pendant que les cases glissent dessous, c'est-à-
+       dire auraient menti. La grille intérieure fait la largeur de son
+       contenu (`max-content`), ses repères couvrent donc le cycle entier et
+       défilent avec lui. -->
+  <div class="cells-wrap" class:scrolls>
   <div
-    class="cells"
-    class:beat-grid={!packetized}
+    class="cells beat-grid"
     style:--cols={visibleCols.length}
     style:--bars={row.cycleBars}
     style:--beats={beatLines}
@@ -303,17 +316,13 @@
             : 'Clic : note suivante — clic droit : rafale'}
         >
           <span class="lbl">{cellLabel(col)}</span>
+          {#if octaveMark(col)}<span class="oct-mark">{octaveMark(col)}</span>{/if}
           {#if just}<span class="just {just}"></span>{/if}
           {#if row.rolls[col] > 1}<span class="roll">×{row.rolls[col]}</span>{/if}
         </button>
-        {#if !isPad && active}
-          <div class="oct">
-            <button class="octbtn" onclick={(e) => shiftOctave(col, 1, e)} title="Octave +">▲</button>
-            <button class="octbtn" onclick={(e) => shiftOctave(col, -1, e)} title="Octave −">▼</button>
-          </div>
-        {/if}
       </div>
     {/each}
+  </div>
   </div>
 
   {#if padOpen && !isPad}
@@ -507,8 +516,7 @@
   /* Cibles tactiles (audit A3) : mute, test et octave se visent en pleine
      composition — le remplissage passe de 1px à 6px vertical, sans toucher
      à la police (le gabarit visuel XP reste le même). */
-  .mini,
-  .octbtn {
+  .mini {
     border: 1px solid var(--xp-line);
     background: var(--xp-face);
     box-shadow: var(--xp-bevel-out);
@@ -539,6 +547,29 @@
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 3px;
+  }
+  /* Ligne longue : cases à largeur fixe, le CONTENEUR défile. `touch-action`
+     autorise le défilement horizontal du doigt tout en laissant la page
+     défiler verticalement. */
+  .cells-wrap.scrolls {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    padding-bottom: 4px;
+  }
+  .cells-wrap.scrolls > .cells {
+    grid-template-columns: repeat(var(--cols), 34px);
+    width: max-content;
+  }
+  /* Marque d'octave — discrète : c'est un rappel, pas une valeur qu'on lit
+     en premier. */
+  .oct-mark {
+    position: absolute;
+    top: 1px;
+    left: 3px;
+    font-size: 9px;
+    line-height: 1;
+    opacity: 0.75;
   }
   .cell-wrap {
     display: flex;
@@ -645,11 +676,6 @@
     color: #222;
     border-radius: 2px;
     padding: 0 2px;
-  }
-  .oct {
-    display: flex;
-    gap: 2px;
-    justify-content: center;
   }
   .group-panel label {
     font-size: 12px;
