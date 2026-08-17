@@ -1276,7 +1276,7 @@ détail des constats plus bas dans ce document) :
     pas du tout la même durée. Porté par le libellé existant plutôt que
     par un badge séparé — aucun élément permanent de plus, aucune hauteur
     gagnée (règle du §7.5).
-- **B3 · B4 · B6 · B8** (finitions) — voir le palier 3 de l'audit.
+- **B3 · B4 · B6** (finitions) — voir le palier 3 de l'audit. **B8 fait le 2026-08-17** (voir plus bas).
   **Mis à jour le 2026-08-16** : B7 (menubar sur deux lignes) est fait ;
   **B5** (anneau synthé délavé) et **B9** (canvas `FilterCurve` qui flotte)
   n'existent plus — les deux ont été résolus par *suppression* (un seul
@@ -2879,6 +2879,37 @@ un prédicat de type et réduit le tableau à `null[]`, ce qui interdit d'y
 **R1(b)** — la mélodie par motif court répété — n'est pas fait. C'est le vrai
 correctif musical : aujourd'hui chaque pas reste un tirage indépendant, donc
 une texture plus aérée, mais toujours pas une phrase.
+
+---
+
+## ✅ B8 — les cases synthé vides n'ont plus l'air désactivées (2026-08-17)
+
+Dernier constat visuel de l'audit qui restait sur les lignes synthé : « une
+ligne vide = des rectangles gris avec un « · » centré, qui ont l'air
+désactivés à côté des cases batterie franchement colorées ».
+
+**Vérifié avant de coder** (deux constats de l'audit s'étaient déjà révélés
+périmés) : celui-ci est réel, mais **pas pour la raison écrite**. La teinte
+des cases vides n'était pas absente — le port l'avait bien faite, avec la
+MÊME recette que la batterie (10 % / 26-28 %, bordure à 45 %). Deux autres
+causes, trouvées en comparant les deux grilles au pixel :
+
+1. **Le « · ».** C'est un signe : il dit « il y a quelque chose ici, en tout
+   petit ». Le vide, lui, se lit très bien tout seul — c'est exactement ce
+   que font les cases de batterie éteintes, qui ne portent rien. Supprimé.
+2. **La même recette ne donne pas le même résultat selon la teinte.** À
+   10 %, l'orange du kick reste franc ; l'indigo, le violet et le rose des
+   lignes synthé virent au lavande pâle. Une formule identique produisait donc
+   une grille prête d'un côté et éteinte de l'autre. Relevé à **18 % / 40 %,
+   bordure 60 %** sur les trois lignes synthé — on égalise **ce qu'on voit**,
+   pas ce qu'on écrit.
+
+**Ce que ça ne change pas** : aucune hauteur, aucun élément ajouté ou retiré
+de l'écran (un glyphe en moins, deux pourcentages changés). Aucun coût.
+
+**Reste ouvert sur ces cases**, et qui relève du chantier « choix des notes »
+(N1) plutôt que de B8 : les deux boutons d'octave ▲▼ n'apparaissent que sous
+les cases actives, ce qui donne une seconde rangée en dents de scie.
 
 ---
 
