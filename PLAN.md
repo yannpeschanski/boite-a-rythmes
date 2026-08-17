@@ -3315,6 +3315,70 @@ perdre.
 
 ---
 
+## ✅ Design des lignes de synthé, après le pad — 2026-08-17
+
+> « oui, tu peux lâcher » (les boutons d'octave par case)
+
+Arbitrage rendu, les trois nettoyages proposés sont faits.
+
+### Les ▲▼ d'octave quittent les cases
+
+Deux boutons apparaissaient sous **chaque case pleine**, donc une seconde
+rangée en dents de scie qui n'existait qu'à moitié. L'octave se règle
+désormais au pad, et `shiftOctave` (plus aucun appelant) est supprimé, avec
+ses styles.
+
+**Retirer le contrôle ne devait pas retirer l'information.** Sans rien, une
+note à l'octave supérieure serait devenue indistinguable d'une note normale —
+et plus rien nulle part ne l'aurait dit. Les cases portent donc une marque
+discrète **▴ / ▾** quand l'octave n'est pas neutre.
+
+### Les seize boutons de paquets disparaissent
+
+Une ligne à 128 pas affichait **seize boutons « 1-8 · 9-16 … 121-128 » sur
+trois rangées**, pour ne montrer que huit cases à la fois. Remplacés par un
+**défilement horizontal** de la grille complète, au-delà de 16 pas.
+
+**Et ça rend les repères de temps, que la pagination interdisait.** Un paquet
+commençait à une fraction quelconque de la mesure : les traits auraient été
+déphasés, donc faux, et ils étaient désactivés dès qu'une ligne dépassait huit
+pas (audit A5 : « mieux vaut aucun repère qu'un repère qui ment »). Une grille
+complète garde la mesure entière sous les yeux.
+
+⚠️ **Piège rencontré, qui aurait rendu ma propre affirmation fausse.** Les
+repères sont dessinés par un `::after` en `position: absolute` : il se cale
+sur la zone **visible** d'un élément qui défile. Posé tel quel, les traits
+seraient restés **fixes pendant que les cases glissent dessous** — exactement
+le repère menteur qu'A5 refusait. D'où un conteneur de défilement séparé de la
+grille, celle-ci prenant la largeur de son contenu (`max-content`) pour que
+ses repères couvrent le cycle entier et défilent avec lui. Vérifié sur le
+`::after`, pas sur l'élément.
+
+### Le défilement au clic reste
+
+Geste secondaire assumé : il sert à retoucher d'un cran sans ouvrir le pad.
+Pad ouvert, il est déjà remplacé par « viser ce pas ».
+
+### Résultat mesuré (390px)
+
+| | Avant | Après |
+|---|---|---|
+| Ligne Mélodie à 128 pas | 221px | **101px** (−54 %) |
+| Ligne Basse, notes actives | 127px | **97px** (−24 %) |
+| Page de l'onglet Synthé | 1 314px | **1 164px** |
+| Boutons de paquets | 16 sur 3 rangées | **0** |
+| Boutons ▲▼ | 2 par case pleine | **0** |
+
+Repères de temps actifs sur une ligne à 128 pas : **oui** (ils ne l'étaient
+plus au-delà de 8). Pastilles toujours sur une ligne de 320 à 768px.
+
+### Reste ouvert
+
+Le **🎲 par ligne** flotte encore à droite de l'en-tête, au lieu d'être dans
+la sous-section Séquence comme demandé au 3ᵉ lot.
+
+---
+
 ## Fichiers critiques pour l'implémentation
 
 - `original/boite-a-rythme-69.html` — source unique de vérité pendant toute la migration (notamment l. 3630–4073 voix, 4197+ scheduler, 4583+ export, 6338+ sérialisation)
