@@ -73,7 +73,9 @@
        Ils restent GLOBAUX (ils gouvernent les trois lignes à la fois, voir
        `chordsFor`) : les descendre SOUS le séquenceur, comme le tempo au 2e
        lot, plutôt que DANS une ligne, qui mentirait sur leur portée. -->
-  <div class="harmony" data-group="synth-harmonie">
+  <fieldset data-group="synth-harmonie">
+    <legend>Harmonie &amp; remplissage</legend>
+  <div class="harmony">
     <label>
       Tonalité
       <select bind:value={sg.rootMidi}>
@@ -94,6 +96,7 @@
     <XpSlider label="Taux de remplissage" min={0} max={100} unit="%" bind:value={fillRate} />
     <button class="xp-btn" onclick={randomAll}>🎲 Remplissage aléatoire harmonieux</button>
   </div>
+  </fieldset>
 
 
   <fieldset data-group="synth-sidechain">

@@ -160,18 +160,42 @@
     <button class="mini" onclick={onClose} title="Fermer le pad">✕</button>
   </div>
 
+  <!-- `onpointerdown` et non `onclick` (retour de Yann, 2026-08-17 : « il y a
+       un petit délai entre la touche de la case et la note qui se joue »).
+       Sur mobile, un `click` ne part qu'au RELÂCHEMENT du doigt : la note
+       attendait qu'on lève la main. Les cases de batterie écoutaient déjà
+       `onpointerdown` — l'écart était chez le pad. `preventDefault` empêche
+       le click fantôme qui suivrait et jouerait la note une seconde fois. -->
   <div class="keys">
     {#each [1, 2, 3, 4, 5, 6, 7] as d (d)}
       <button
         class="key"
         class:inchord={chordDegrees.has(d)}
-        onclick={() => tap(d)}
+        onpointerdown={(e) => {
+          e.preventDefault();
+          tap(d);
+        }}
         title={chordDegrees.has(d) ? `${noms[d - 1]} (degré ${d}) — dans l’accord en cours` : `${noms[d - 1]} (degré ${d})`}
       >
         <span class="nom">{noms[d - 1]}</span>
         <span class="deg">{d}</span>
       </button>
     {/each}
+    <!-- Le silence est une TOUCHE, pas un petit bouton relégué en bas
+         (retour de Yann : « difficile de supprimer une note »). Effacer est
+         un geste aussi fréquent que poser : il mérite la même cible que les
+         sept degrés, au même endroit, dans le même geste. -->
+    <button
+      class="key silence"
+      onpointerdown={(e) => {
+        e.preventDefault();
+        silence();
+      }}
+      title="Effacer ce pas et avancer"
+    >
+      <span class="nom">∅</span>
+      <span class="deg">vide</span>
+    </button>
   </div>
 
   <div class="bar">
@@ -184,8 +208,7 @@
       {/each}
     </div>
     <div class="acts">
-      <button class="mini" onclick={silence} title="Laisser ce pas vide et avancer">silence</button>
-      <button class="mini" onclick={back} disabled={playing} title="Reculer d’un pas">←</button>
+      <button class="mini" onclick={back} disabled={playing} title="Reculer d’un pas">← pas précédent</button>
     </div>
   </div>
 
@@ -235,7 +258,7 @@
        contenu — « Sol » plus son remplissage. À 320px les sept touches
        débordaient de 14px. Même piège que celui corrigé sur XpSlider
        (audit A2), côté grille plutôt que flexbox. */
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 4px;
   }
   .key {
@@ -286,6 +309,13 @@
   }
   /* Degré appartenant à l'accord en cours : même information que le point de
      justesse des cases, au moment où elle sert — avant de poser la note. */
+  /* Le silence se distingue des degrés sans crier : c'est une touche du même
+     format, mais neutre — elle ne joue rien. */
+  .key.silence {
+    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    border-style: dashed;
+    color: var(--xp-muted);
+  }
   .key.inchord {
     background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--cell-melody) 34%, var(--xp-face-dark)));
     border-color: color-mix(in srgb, var(--cell-melody) 60%, var(--xp-line));
