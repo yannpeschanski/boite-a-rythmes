@@ -585,7 +585,7 @@
     flex: 1;
   }
   .hint {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
     margin: 0 0 8px;
   }
@@ -600,7 +600,7 @@
     border: none;
     padding: 0;
     font: inherit;
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
     cursor: pointer;
     white-space: nowrap;
@@ -631,7 +631,7 @@
     }
   }
   .restore {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     background: var(--xp-lcd-bg);
     color: var(--xp-accent-amber);
     border: 1px solid var(--xp-accent-amber);
@@ -688,7 +688,7 @@
   }
   .restore button {
     font-family: inherit;
-    font-size: 11px;
+    font-size: 9px;
     padding: 6px 10px;
     min-height: 28px;
     border: 1px solid var(--xp-line);
@@ -703,7 +703,10 @@
   .xp-btn {
     padding: 8px 16px;
     min-height: 32px;
-    font-size: 13px;
+    /* Lecture et Break gardent la taille de la maquette comme les autres :
+       c'est le remplissage et la hauteur minimale qui les distinguent, pas
+       un corps plus gros. */
+    font-size: var(--xp-size-btn);
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);
@@ -735,11 +738,11 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
   }
   select {
     font-family: var(--xp-font);
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);
     color: var(--xp-text);

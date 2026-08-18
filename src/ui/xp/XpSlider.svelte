@@ -318,7 +318,7 @@
     align-items: center;
     gap: 4px;
     margin: 1px 0;
-    font-size: 10.5px;
+    font-size: var(--xp-size-small);
   }
   /* Conteneur trop étroit pour une seule ligne (274px minimum) : au lieu
      d'écraser la piste comme avant, le curseur passe sur DEUX lignes —
@@ -394,7 +394,7 @@
     border: 1px solid var(--xp-lcd-dim);
     box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
     padding: 4px 6px;
-    font-size: 10.5px;
+    font-size: var(--xp-size-small);
     line-height: 1.4;
     white-space: normal;
   }
@@ -472,7 +472,7 @@
   }
   .val {
     font-family: var(--xp-mono);
-    font-size: 10px;
+    font-size: var(--xp-size-small);
     text-align: right;
     background: var(--xp-field-bg);
     color: var(--xp-lcd);
@@ -504,7 +504,7 @@
       background 0.15s ease;
     background: var(--xp-select-blue);
     color: var(--xp-title-text);
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 700;
     padding: 5px 10px;
     border-radius: 5px;

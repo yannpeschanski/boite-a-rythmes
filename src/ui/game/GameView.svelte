@@ -253,7 +253,7 @@
     color: var(--xp-text);
   }
   .lead {
-    font-size: 13px;
+    font-size: 10px;
   }
   .pseudo-form {
     display: flex;
@@ -262,7 +262,7 @@
   input {
     flex: 1;
     font-family: var(--xp-font);
-    font-size: 13px;
+    font-size: 10px;
     padding: 4px;
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);
@@ -278,7 +278,7 @@
      l'en-tête en compte déjà deux, un troisième relief brouillerait la
      hiérarchie. Cible tactile tenue à 24px (audit A3). */
   .player {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     font-weight: 700;
     display: inline-flex;
     align-items: center;
@@ -293,7 +293,7 @@
     text-underline-offset: 3px;
   }
   .preamble {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     background: rgba(255, 255, 255, 0.06);
     border-left: 3px solid var(--xp-accent-teal);
     padding: 6px 8px;
@@ -315,7 +315,7 @@
     color: var(--xp-text);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
   }
   .map-cell.locked {
     opacity: 0.45;
@@ -331,7 +331,7 @@
   .bag {
     max-height: 180px;
     overflow-y: auto;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     margin-bottom: 10px;
     background: rgba(0, 0, 0, 0.15);
     padding: 6px;
@@ -344,7 +344,7 @@
   }
   .muted {
     color: var(--xp-muted);
-    font-size: 11px;
+    font-size: 9px;
   }
   .transport {
     display: flex;
@@ -363,7 +363,7 @@
     cursor: default;
   }
   .xp-btn.tiny {
-    font-size: 11px;
+    font-size: var(--xp-size-small);
     padding: 2px 8px;
   }
   .row {
@@ -373,7 +373,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 11px;
+    font-size: 9px;
     margin-bottom: 3px;
   }
   .row-label {
@@ -472,7 +472,7 @@
   .roast,
   .context,
   .loot {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     margin: 4px 0;
   }
   .context {

@@ -118,8 +118,7 @@
   }
   /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
-    padding: 5px 14px;
-    font-size: 13px;
+    padding: 9px 14px;
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);
@@ -129,14 +128,14 @@
     cursor: progress;
   }
   .status {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     margin: 8px 0 0;
     display: flex;
     align-items: center;
     gap: 8px;
   }
   .note {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
     margin: 6px 0 0;
   }

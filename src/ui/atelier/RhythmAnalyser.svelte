@@ -112,16 +112,16 @@
   }
   .verdict {
     margin: 0;
-    font-size: 13px;
+    font-size: 10px;
     line-height: 1.5;
     color: var(--xp-text);
   }
   .verdict strong {
-    font-size: 14px;
+    font-size: 11px;
   }
   .cat {
     color: var(--xp-muted);
-    font-size: 11px;
+    font-size: 9px;
     margin-left: 4px;
   }
   .score {
@@ -132,7 +132,7 @@
     background: var(--xp-accent-teal);
     color: var(--xp-lcd-bg);
     font-family: var(--xp-mono);
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 700;
   }
   .history,
@@ -142,7 +142,7 @@
   .caveat,
   .empty {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     line-height: 1.5;
     max-width: 70ch;
   }
@@ -153,13 +153,13 @@
     color: var(--xp-muted);
   }
   .caveat {
-    font-size: 11px;
+    font-size: 9px;
     border-top: 1px solid var(--xp-line);
     padding-top: 6px;
   }
   .alt {
     font-family: var(--xp-mono);
-    font-size: 11px;
+    font-size: 9px;
   }
   .gaps {
     background: color-mix(in srgb, var(--xp-accent-teal) 10%, transparent);
@@ -178,7 +178,7 @@
     min-width: 0;
   }
   .facts dt {
-    font-size: 10px;
+    font-size: var(--xp-size-small);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -186,7 +186,7 @@
   }
   .facts dd {
     margin: 1px 0 0;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     font-family: var(--xp-mono);
     color: var(--xp-text);
   }

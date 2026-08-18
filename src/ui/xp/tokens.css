@@ -79,12 +79,42 @@
      (3 usages, tous vérifiés), donc n'importe quel fond sombre convient. */
   --xp-select-blue: #2a2a66;
 
-  --xp-font: Tahoma, 'Noto Sans', Verdana, 'Segoe UI', sans-serif;
   /* Auto-hébergée depuis l'étape 1 (voir styles/fonts.css). La pile de repli
      reste complète : si la fonte tarde ou échoue, on retombe sur une chasse
      fixe correcte plutôt que sur le monospace par défaut du navigateur. */
   --xp-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
     'DejaVu Sans Mono', monospace;
+  /* L'étape 1 avait auto-hébergé la chasse fixe, mais ne l'avait câblée que sur
+     les afficheurs LCD : l'interface restait en Tahoma, c'est-à-dire en XP. La
+     maquette de référence (maquettes/atelier/winamp-modes.html) est en chasse
+     fixe de bout en bout — c'est la moitié de la grammaire, l'autre étant le
+     biseau. `--xp-font` est donc devenu un alias : le nom du token est conservé
+     parce que ~10 composants le lisent. */
+  --xp-font: var(--xp-mono);
+
+  /* ── L'échelle typographique de la maquette ──────────────────────────────
+     Winamp lit à 8,5-9px en petites capitales espacées. C'est un rapport de
+     1,3 avec ce que faisait l'ancienne peau XP (12-14px, bas de casse, sans
+     interlettrage) — et ce n'est pas une coquetterie : à cette taille, la
+     chasse fixe ET l'interlettrage sont ce qui rend le mot lisible. Retirer
+     l'un des deux casse les deux.
+     Taille et interlettrage séparés plutôt qu'un raccourci `font` : celui-ci
+     réinitialise `line-height`, dont plusieurs boutons dépendent. */
+  --xp-size-menu: 9px;
+  --xp-ls-menu: 0.1em;
+  --xp-size-tab: 9px;
+  --xp-ls-tab: 0.12em;
+  --xp-size-btn: 9px;
+  --xp-ls-btn: 0.12em;
+  --xp-size-title: 8.5px;
+  --xp-ls-title: 0.22em;
+  --xp-size-tag: 8.5px;
+  --xp-ls-tag: 0.14em;
+  /* Le texte courant — libellés de curseurs, aides, sous-titres. La maquette
+     le pose à 9-9,5px ; il n'est ni en capitales ni espacé, c'est du texte à
+     lire et non une étiquette à reconnaître. */
+  --xp-size-body: 9.5px;
+  --xp-size-small: 8.5px;
 
   /* Le fond de page. Winamp n'a pas de papier peint : la fenêtre flotte sur du
      noir. Remplace la colline Bliss ; le nom du token est conservé pour ne pas

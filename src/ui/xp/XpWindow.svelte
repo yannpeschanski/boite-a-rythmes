@@ -41,7 +41,10 @@
     padding: 4px 6px;
     background: var(--xp-title-grad);
     color: var(--xp-title-text);
+    font-size: var(--xp-size-title);
     font-weight: 700;
+    letter-spacing: var(--xp-ls-title);
+    text-transform: uppercase;
     text-shadow: 1px 1px 1px rgba(0, 0, 40, 0.6);
     user-select: none;
   }

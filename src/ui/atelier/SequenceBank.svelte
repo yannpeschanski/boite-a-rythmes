@@ -57,7 +57,7 @@
 <style>
   .hint,
   .where {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
     line-height: 1.5;
     margin: 0 0 6px;
@@ -83,7 +83,7 @@
     flex: 1 1 160px;
     min-width: 0;
     font-family: var(--xp-font);
-    font-size: 13px;
+    font-size: 10px;
     padding: 3px;
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);

@@ -3926,6 +3926,78 @@ Rythme affichait « Séquenceur — Kick / Snare / Hat / … », il affiche main
 **Vérifié :** `check` 0 erreur (aucun sélecteur CSS orphelin signalé) · 33 tests ·
 les deux builds · cibles tactiles inchangées (Rythme 15, Mode jeu 0) · capture.
 
+### ✅ Étape 8 — la typographie, l'autre moitié de la grammaire (2026-08-18)
+
+> Née d'une question de Yann : « j'espère que ça colle exactement au moodboard ».
+> Vérification faite plutôt qu'espérée — et non, ça ne collait pas.
+
+**Le constat.** La palette était juste : 12 des 13 valeurs du moodboard reprises
+telles quelles (seule dérive assumée, `--xp-muted`, remonté pour le contraste).
+La typographie, elle, n'avait pas bougé :
+
+| | maquette | avant l'étape 8 |
+|---|---|---|
+| menu | 700 **9px** CAPS, ls .1em | 12px 400, bas de casse |
+| onglet | 700 **9px** CAPS, ls .12em | 11px 700, bas de casse |
+| bouton | 700 **9px** CAPS, ls .12em | 13px 700, bas de casse |
+| barre de titre | 700 **8,5px** CAPS, ls .22em | 14px 700, bas de casse |
+| pastille | 700 **8,5px**, ls .14em | 11px 700 |
+
+**Et surtout, la famille.** `--xp-font` valait encore
+`Tahoma, 'Noto Sans', Verdana…` — l'étape 1 avait auto-hébergé JetBrains Mono
+mais ne l'avait câblée que sur `--xp-mono`, c'est-à-dire sur les douze
+afficheurs LCD. **L'interface entière était restée en Tahoma, donc en XP.** La
+chasse fixe est la moitié de la grammaire, l'autre étant le biseau ; on n'en
+avait posé qu'une. `--xp-font` devient un alias sur `--xp-mono` — le nom du
+token est conservé, une dizaine de composants le lisent.
+
+**Ce que ça change en pratique.** Onze tokens d'échelle (`--xp-size-menu`,
+`--xp-ls-menu`, … `--xp-size-body`, `--xp-size-small`) posés dans `tokens.css`,
+appliqués aux six familles de chrome : menu, onglets, boutons, barre de titre,
+pastilles, noms de ligne — plus le sélecteur de mode du Mode jeu, qui remplit la
+même fonction que les onglets. Taille et interlettrage séparés plutôt qu'un
+raccourci `font` : celui-ci réinitialise `line-height`, dont plusieurs boutons
+dépendent.
+
+Les **68 déclarations `font-size` restantes** (texte courant, sous-titres,
+aides, verdicts de l'analyseur) sont passées par le rapport de 1,3 que le
+moodboard nomme lui-même — 14→11, 13→10, 12→9,5, 11→9, 10→8,5. La hiérarchie
+relative est conservée : un titre reste plus gros qu'un sous-titre, tout descend
+du même facteur. Le splash garde son gros titre, c'est un moment délibéré.
+
+**Un ajout hors périmètre, assumé :** `color-scheme: dark` sur `body`. Les cases
+à cocher, les listes déroulantes et les ascenseurs sont dessinés par le
+navigateur, pas par nous — sans ce mot, il les peignait en clair, et les seules
+zones claires de l'écran devenaient des widgets natifs au milieu du verre noir.
+Un mot pour aligner tout ce qu'on ne dessine pas.
+
+**Piège évité de justesse :** quatre `.xp-btn.tiny` étaient figés à 11px. Le
+bouton de base passant à 9px, « tiny » serait devenu **plus gros** que la base.
+Même chose pour l'`.xp-btn` à 13px d'`ExportBar` et celui à 10px d'`AtelierView`
+(Lecture/Break). Tous ramenés sur les tokens ; ce qui distingue Lecture et Break,
+c'est leur remplissage et leur hauteur minimale, pas un corps plus gros.
+
+**Vérifié** — et c'était le vrai risque, une chasse fixe étant plus large par
+caractère :
+
+- **débordement horizontal : 0px** sur les trois onglets, à 390 comme à 1280.
+  Seul texte tronqué : `.production-hint`, dont c'est le comportement voulu
+  (une ligne, déplié au tap).
+- **contraste** : plus aucun texte ne bénéficie de l'exemption « grand texte »
+  à cette échelle, le seuil passe donc à 4,5:1 partout. Un seul cas sous le
+  seuil, et c'est le faux positif connu (l'émoji 🔊 du bouton muet, dont la
+  couleur calculée ne s'applique pas au glyphe).
+- **cibles tactiles inchangées** : Rythme 15, Synthé 8, Production 5, Mode jeu 0,
+  Live 28. Le remplissage des boutons est monté de 5 à 9px pour compenser le
+  corps plus petit — la cible ne rétrécit pas avec le mot.
+- `check` 0 erreur · 33 tests · les deux builds · captures des six écrans.
+
+**Ce qui reste hors de cette étape, et qui est la vraie suite :** la *structure*
+de la maquette. Le grand afficheur BPM vert du transport, le bandeau LCD d'état
+en bas de fenêtre (`KICK · TON 42 · DÉCLIN 220 · REV 12 %`), et les LED rondes
+devant chaque nom de ligne (l'appli a un bouton 🔊 à la place). Ça touche le
+balisage, pas seulement le CSS — c'est une étape à part entière.
+
 ### Chantiers ouverts
 
 - **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on

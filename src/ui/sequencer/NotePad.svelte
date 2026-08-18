@@ -237,15 +237,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
   }
   .note-pad-head strong {
-    font-size: 11.5px;
+    font-size: 9px;
   }
   .where {
     flex: 1;
     color: var(--xp-muted);
-    font-size: 11px;
+    font-size: 9px;
     font-variant-numeric: tabular-nums;
   }
   /* Sept touches larges plutôt qu'un clavier : sur 390px chacune fait ~48px
@@ -268,7 +268,7 @@
     background: var(--xp-btn-face);
     box-shadow: var(--xp-bevel-out);
     font-family: var(--xp-mono);
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--xp-text);
     cursor: pointer;
@@ -282,7 +282,7 @@
   }
   .key .nom {
     display: block;
-    font-size: 14px;
+    font-size: 11px;
     line-height: 1.1;
   }
   /* Sur téléphone, sept noms de note ne tiennent qu'en resserrant. Seuil à
@@ -336,7 +336,7 @@
     margin-left: auto;
   }
   .lab {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
   }
   .mini {
@@ -347,7 +347,7 @@
     background: var(--xp-btn-face);
     box-shadow: var(--xp-bevel-out);
     font-family: inherit;
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-text);
     cursor: pointer;
   }
@@ -361,7 +361,7 @@
   }
   .hint {
     margin: 0;
-    font-size: 10.5px;
+    font-size: var(--xp-size-small);
     color: var(--xp-muted);
   }
   /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de

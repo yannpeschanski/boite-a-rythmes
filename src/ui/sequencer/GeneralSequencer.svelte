@@ -80,7 +80,7 @@
     gap: 6px;
   }
   .seq-label {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
