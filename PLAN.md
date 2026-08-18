@@ -3583,7 +3583,62 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
-### 7e série — 4 croisements des finalistes (2026-08-17)
+### ⭐ Moodboard des deux finalistes — Cassette et Winamp 2.x (2026-08-18)
+
+> « fais moi un moodboard détaillé des deux finalistes »
+> « les deux finalistes, ce sont cassette et winamp 2.x sans croisement »
+
+Moodboard : <https://claude.ai/code/artifact/51cc5fb9-e9b6-4b98-a343-0dbab615de12>
+Sources `maquettes/atelier/build_moodboard.py` + `mood.tpl.html`.
+
+⚠️ **Les 4 croisements de la 7e série sont écartés.** Yann a tranché : les deux
+finalistes sont les **originales**, sans hybridation. H1-H4 restent consultables
+mais ne sont plus dans la course.
+
+**Le moodboard contient, pour chacune :** palette complète (fonds / encres /
+traits / accent, chaque valeur avec son rôle), les 8 teintes de lignes, l'échelle
+typographique en 10 rôles (taille, graisse, approche, casse), les états d'un pas,
+une planche de composants (barre de titre, bouton, menu déroulant, champ, pastille,
+cadre + légende, case à cocher, curseur, bandeau d'état, cases), les références
+culturelles et les risques. **Les spécimens sont du CSS vivant**, rendus dans les
+tokens réels lus dans `variants_b.py` / `variants_c.py` — pas des captures.
+
+**Ce que le moodboard établit :** ces deux-là ne sont pas deux variantes d'une même
+idée, ce sont **deux objets différents — un imprimé et un logiciel**. Cassette se
+fabrique et se tient dans la main ; Winamp se télécharge et n'a jamais existé
+qu'à l'écran. Elles partagent la chasse fixe et rien d'autre.
+
+| | Cassette | Winamp 2.x |
+|---|---|---|
+| Fond | papier #f4f1e8 | verre noir #050806 sur bureau #000 |
+| Relief | aucun — ombres portées dures | biseau d'1 px, partout |
+| Échelle | 11-12 px | 8,5-9 px (rapport 1,3) |
+| Accent | vermillon #c94f2e | vert LCD #2ee23c |
+| Teintes de lignes | désaturées vers l'encre | saturées, couleurs d'écran |
+| Contraste allumé/éteint | réglé à 80 % | réglé à 100 % |
+| Écran Synthé | 744px | **657px** |
+
+**Risques principaux.** *Cassette* : le Mode Live est un écran de scène et un plan
+clair éblouit en pénombre ; c'est aussi la plus haute des cinq ; et son vermillon
+est **aussi la teinte du kick** (risque de confusion « piste » / « actif »).
+*Winamp* : cibles de 1998 (capitales 8,5px, reliefs d'1px) à agrandir sans
+agrandir le dessin ; le biseau d'1px s'épaissit sur écran haute densité, à
+vérifier tôt sur un vrai appareil ; et c'est une citation littérale qu'une partie
+du public ne reconnaîtra pas.
+
+**Coût en code — ce qui les distingue :**
+1. **La police** : les deux exigent une chasse fixe auto-hébergée (fontsource) —
+   Courier New n'existe pas partout et le rendu change du tout au tout selon la
+   plateforme. **Seul poste qui alourdit le fichier livré**, identique pour les deux.
+2. **Le thème sombre existe déjà** (`data-theme="noir"`, utilisé par le Mode jeu) :
+   Winamp s'y branche presque directement, Cassette demande un 3e thème clair.
+3. **Le relief** : Cassette *supprime* les 3 tokens de biseau au profit d'un filet
+   (simplification) ; Winamp les garde mais en fait la grammaire unique, appliquée
+   partout — un peu plus de travail, mieux balisé.
+4. Le poste principal est le même dans les deux cas : les **225 couleurs en dur**
+   dans 18 `.svelte` à passer en tokens.
+
+### 7e série — 4 croisements des finalistes (2026-08-17) — ⛔ ÉCARTÉE
 
 Planche : <https://claude.ai/code/artifact/98863af1-a8a5-4b0f-8836-4a1e4f1769e0>
 Fichiers `maquettes/atelier/variants_d.py` + `build_hybrides.py` -> `hybrides.html`.
