@@ -42,12 +42,14 @@
   // que la grille linéaire), lus au montage ; repli sur les valeurs de
   // tokens.css si la variable est absente (canvas hors d'un thème).
   const FALLBACK: Record<CircleRowName, string> = {
-    kick: '#d84315',
-    snare: '#c8881a',
-    hat: '#2b8a8a',
+    kick: '#ff5a2b',
+    snare: '#ffb020',
+    hat: '#2ee23c',
   };
-  // Bleu "luna" de l'original : curseur de lecture, cases vides, rafales, texte.
-  const INK = '#0a246a';
+  // Curseur de lecture, cases vides, rafales, texte. Lu depuis --xp-playhead au
+  // montage ; la constante n'est plus qu'un repli (elle valait le bleu Luna et
+  // ne correspondait donc plus à rien après le passage à Winamp 2.x).
+  let INK = '#ffd54a';
 
   // Constantes d'interaction (identiques à l'original)
   const LONG_PRESS_MS = 480;
@@ -110,13 +112,13 @@
         ctx.arc(cx, cy, r, a0, a1);
         ctx.lineWidth = isAlt ? thickness * 0.5 : thickness;
         if (row.muted) {
-          ctx.strokeStyle = active ? 'rgba(10,36,106,0.4)' : 'rgba(10,36,106,0.15)';
+          ctx.strokeStyle = active ? 'rgba(200,200,216,0.4)' : 'rgba(200,200,216,0.14)';
           ctx.globalAlpha = 1;
         } else if (active) {
           ctx.strokeStyle = isCurrent ? INK : ringColor[name];
           ctx.globalAlpha = isCurrent ? 1 : isAlt ? 0.6 : 0.9;
         } else {
-          ctx.strokeStyle = isCurrent ? 'rgba(10,36,106,0.45)' : 'rgba(10,36,106,0.22)';
+          ctx.strokeStyle = isCurrent ? 'rgba(200,200,216,0.45)' : 'rgba(200,200,216,0.18)';
           ctx.globalAlpha = 1;
         }
         ctx.stroke();
@@ -134,7 +136,7 @@
 
     // Signature polyrythmique au centre (kick:snare:hat)
     ctx.font = '600 10px JetBrains Mono, monospace';
-    ctx.fillStyle = 'rgba(10,36,106,0.6)';
+    ctx.fillStyle = 'rgba(200,200,216,0.6)';
     ctx.textAlign = 'center';
     ctx.fillText(`${rows.kick.subdiv}:${rows.snare.subdiv}:${rows.hat.subdiv}`, cx, cy + 4);
   }
@@ -233,6 +235,8 @@
       const v = cs.getPropertyValue(`--cell-${name}`).trim();
       if (v) ringColor[name] = v;
     }
+    const ink = cs.getPropertyValue('--xp-playhead').trim();
+    if (ink) INK = ink;
     const redraw = () => {
       resize();
       draw();

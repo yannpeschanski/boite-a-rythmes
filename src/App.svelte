@@ -130,7 +130,7 @@
   .splash {
     text-align: center;
     padding: 48px 12px;
-    color: #fff;
+    color: var(--xp-title-text);
     text-shadow: 0 2px 6px rgba(0, 0, 40, 0.5);
   }
   h1 {
@@ -154,9 +154,10 @@
     padding: 18px 28px;
     font-size: 18px;
     font-family: inherit;
-    border: 1px solid #003c74;
+    border: 1px solid var(--xp-line);
     border-radius: 6px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
     box-shadow: var(--xp-bevel-out), 0 4px 14px rgba(0, 0, 30, 0.35);
     cursor: pointer;
     color: var(--xp-text);
@@ -170,9 +171,9 @@
      s'éteint, mais il garde sa taille et sa place — c'est ce qui le fait lire
      comme « pas encore » et non comme « absent ». */
   .big.locked {
-    background: linear-gradient(180deg, #f2f0e8, #ddd9cc 45%, #cbc7b8);
+    background: var(--xp-face-dark);
     box-shadow: none;
-    border-color: #9a9686;
+    border-color: var(--xp-line);
     color: var(--xp-muted);
     cursor: not-allowed;
   }
@@ -192,7 +193,7 @@
     border-radius: 3px;
   }
   .switcher button:disabled {
-    background: linear-gradient(180deg, #f2f0e8, #ddd9cc);
+    background: var(--xp-face-dark);
     color: var(--xp-muted);
     cursor: not-allowed;
   }
@@ -203,9 +204,10 @@
   }
   .switcher button {
     padding: 5px 14px;
-    border: 1px solid #003c74;
+    border: 1px solid var(--xp-line);
     border-radius: 3px 3px 0 0;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
     cursor: pointer;
     font-size: 13px;
     font-family: inherit;

@@ -622,7 +622,8 @@
   }
   .restore {
     font-size: 12px;
-    background: #fffbe6;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-accent-amber);
     border: 1px solid var(--xp-accent-amber);
     padding: 5px 8px;
     margin: 0 0 8px;
@@ -701,7 +702,8 @@
     font-weight: 700;
   }
   .xp-btn.armed {
-    background: linear-gradient(180deg, #ffe9a8, #f4c542);
+    background: linear-gradient(180deg, #e0a52b, #a86f10);
+    color: var(--xp-lcd-bg);
   }
   .circle-holder {
     max-width: 340px;
@@ -729,6 +731,7 @@
     font-family: var(--xp-font);
     font-size: 12px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
 </style>

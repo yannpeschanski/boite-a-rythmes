@@ -67,6 +67,10 @@
   --xp-accent-teal: #3f9c96;
   --xp-accent-teal-soft: #14301a;
 
+  /* Fond des champs de saisie et des menus déroulants. Un champ est creusé,
+     pas posé : c'est le pendant du bouton, dont le relief sort. */
+  --xp-field-bg: #101016;
+
   /* Face de bouton. Token plutôt que valeur recopiée : trois classes
      différentes portent le même relief (`.xp-btn`, `.tool`, `.restore button`)
      sans partager de classe commune. */
@@ -93,6 +97,10 @@
   --xp-lcd-bg: #050806;
   --xp-lcd: #2ee23c;
   --xp-lcd-dim: #0f5c17;
+
+  /* Tête de lecture. C'est de l'ÉTAT, donc elle reste vive — contrairement aux
+     trois accents de module, qui sont du chrome et ont été désaturés. */
+  --xp-playhead: #ffd54a;
 
   /* Couleurs de lignes — saturées, ce sont des couleurs d'ÉCRAN : elles ne
      tiennent que parce que le fond est presque noir. Reprises de la maquette

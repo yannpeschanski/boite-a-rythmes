@@ -218,8 +218,8 @@
     height: 34px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fdfcf8, var(--xp-face-dark));
-    box-shadow: var(--xp-bevel-out);
+    background: var(--xp-lcd-bg);
+    box-shadow: var(--xp-bevel-in);
     cursor: pointer;
     padding: 0;
     touch-action: manipulation;
@@ -228,15 +228,19 @@
     -webkit-touch-callout: none;
   }
   .cell:active {
-    box-shadow: var(--xp-bevel-in);
+    box-shadow: var(--xp-bevel-out);
   }
   .cell.playing {
-    outline: 2px solid #ffd54a;
+    outline: 2px solid var(--xp-playhead);
     outline-offset: -1px;
   }
+  /* Le relief s'INVERSE par rapport à l'ancienne lecture XP (« actif = bouton
+     enfoncé »). Ici un pas actif émet : il est bombé, la lumière passe en haut
+     à gauche. Un pas vide reste creusé — c'est un trou, pas un bouton pâle.
+     C'est le reproche n°1 de l'audit de design, et le cœur de la direction. */
   .cell.state-1,
   .cell.state-2 {
-    box-shadow: var(--xp-bevel-in);
+    box-shadow: var(--xp-bevel-out);
   }
   .cell.kick.state-1 {
     background: var(--cell-kick);
@@ -245,13 +249,13 @@
     background: var(--cell-snare);
   }
   .cell.snare.state-2 {
-    background: color-mix(in srgb, var(--cell-snare) 55%, white);
+    background: color-mix(in srgb, var(--cell-snare) 45%, var(--xp-lcd-bg));
   }
   .cell.hat.state-1 {
     background: var(--cell-hat);
   }
   .cell.hat.state-2 {
-    background: color-mix(in srgb, var(--cell-hat) 55%, white);
+    background: color-mix(in srgb, var(--cell-hat) 45%, var(--xp-lcd-bg));
   }
   .cell.clap.state-1 {
     background: var(--cell-clap);
@@ -266,42 +270,42 @@
   .cell.kick.state-0 {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-kick) 10%, #fff),
-      color-mix(in srgb, var(--cell-kick) 28%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-kick) 20%, var(--xp-lcd-bg)),
+      color-mix(in srgb, var(--cell-kick) 9%, var(--xp-lcd-bg))
     );
-    border-color: color-mix(in srgb, var(--cell-kick) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-kick) 30%, var(--xp-line));
   }
   .cell.snare.state-0 {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-snare) 10%, #fff),
-      color-mix(in srgb, var(--cell-snare) 28%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-snare) 20%, var(--xp-lcd-bg)),
+      color-mix(in srgb, var(--cell-snare) 9%, var(--xp-lcd-bg))
     );
-    border-color: color-mix(in srgb, var(--cell-snare) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-snare) 30%, var(--xp-line));
   }
   .cell.hat.state-0 {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-hat) 10%, #fff),
-      color-mix(in srgb, var(--cell-hat) 28%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-hat) 20%, var(--xp-lcd-bg)),
+      color-mix(in srgb, var(--cell-hat) 9%, var(--xp-lcd-bg))
     );
-    border-color: color-mix(in srgb, var(--cell-hat) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-hat) 30%, var(--xp-line));
   }
   .cell.clap.state-0 {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-clap) 10%, #fff),
-      color-mix(in srgb, var(--cell-clap) 28%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-clap) 20%, var(--xp-lcd-bg)),
+      color-mix(in srgb, var(--cell-clap) 9%, var(--xp-lcd-bg))
     );
-    border-color: color-mix(in srgb, var(--cell-clap) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-clap) 30%, var(--xp-line));
   }
   .cell.shaker.state-0 {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-shaker) 10%, #fff),
-      color-mix(in srgb, var(--cell-shaker) 28%, var(--xp-face-dark))
+      color-mix(in srgb, var(--cell-shaker) 20%, var(--xp-lcd-bg)),
+      color-mix(in srgb, var(--cell-shaker) 9%, var(--xp-lcd-bg))
     );
-    border-color: color-mix(in srgb, var(--cell-shaker) 45%, var(--xp-line));
+    border-color: color-mix(in srgb, var(--cell-shaker) 30%, var(--xp-line));
   }
   .alt {
     position: absolute;
@@ -310,7 +314,7 @@
     place-items: center;
     font-weight: 800;
     font-size: 12px;
-    color: #333;
+    color: var(--xp-lcd-bg);
   }
   .roll {
     position: absolute;
@@ -318,8 +322,8 @@
     bottom: 1px;
     font-size: 9px;
     font-family: var(--xp-mono);
-    color: #222;
-    background: rgba(255, 255, 255, 0.75);
+    color: var(--xp-lcd);
+    background: rgba(0, 0, 0, 0.55);
     border-radius: 2px;
     padding: 0 2px;
   }
@@ -340,7 +344,7 @@
     padding: 6px 10px;
     border: 1px solid color-mix(in srgb, var(--xp-accent-amber) 40%, var(--xp-line));
     border-radius: 13px;
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     color: var(--xp-accent-amber);
     cursor: pointer;
     box-shadow: var(--xp-bevel-out);
@@ -348,7 +352,7 @@
   .chip.on {
     background: var(--xp-accent-amber);
     border-color: var(--xp-accent-amber);
-    color: #fff;
+    color: var(--xp-lcd-bg);
     box-shadow: var(--xp-bevel-in);
   }
   .group-panel {

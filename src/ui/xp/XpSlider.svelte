@@ -377,9 +377,9 @@
     z-index: 50;
     max-width: 220px;
     width: max-content;
-    background: #ffffe1;
-    color: #000;
-    border: 1px solid #000;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd);
+    border: 1px solid var(--xp-lcd-dim);
     box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
     padding: 4px 6px;
     font-size: 10.5px;
@@ -429,8 +429,8 @@
     height: 16px;
     margin-top: -6px;
     border-radius: 3px;
-    background: linear-gradient(180deg, #fefefe, #d6d2c2 45%, #b8b2a0);
-    border: 1px solid #7a7768;
+    background: var(--xp-btn-face);
+    border: 1px solid var(--xp-line);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
   }
@@ -444,15 +444,16 @@
     width: 11px;
     height: 16px;
     border-radius: 3px;
-    background: linear-gradient(180deg, #fefefe, #d6d2c2 45%, #b8b2a0);
-    border: 1px solid #7a7768;
+    background: var(--xp-btn-face);
+    border: 1px solid var(--xp-line);
     cursor: pointer;
   }
   .val {
     font-family: var(--xp-mono);
     font-size: 10px;
     text-align: right;
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-lcd);
     border: 1px solid var(--xp-line);
     box-shadow: var(--xp-bevel-in);
     padding: 1px 3px;
@@ -479,8 +480,8 @@
     transition:
       opacity 0.1s ease,
       background 0.15s ease;
-    background: #0a246a;
-    color: #fff;
+    background: var(--xp-select-blue);
+    color: var(--xp-title-text);
     font-size: 14px;
     font-weight: 700;
     padding: 5px 10px;
@@ -493,7 +494,7 @@
     opacity: 1;
   }
   .magnifier.precise {
-    background: #8a3fd8;
+    background: var(--xp-accent-violet);
   }
   .magnifier::after {
     content: '';
@@ -502,9 +503,9 @@
     bottom: -5px;
     transform: translateX(-50%);
     border: 5px solid transparent;
-    border-top-color: #0a246a;
+    border-top-color: var(--xp-select-blue);
   }
   .magnifier.precise::after {
-    border-top-color: #8a3fd8;
+    border-top-color: var(--xp-accent-violet);
   }
 </style>

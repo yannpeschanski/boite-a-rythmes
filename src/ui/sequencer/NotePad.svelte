@@ -265,7 +265,7 @@
     min-height: 48px;
     border: 1px solid var(--xp-line);
     border-radius: 4px;
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     box-shadow: var(--xp-bevel-out);
     font-family: var(--xp-mono);
     font-size: 16px;
@@ -312,12 +312,12 @@
   /* Le silence se distingue des degrés sans crier : c'est une touche du même
      format, mais neutre — elle ne joue rien. */
   .key.silence {
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     border-style: dashed;
     color: var(--xp-muted);
   }
   .key.inchord {
-    background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--cell-melody) 34%, var(--xp-face-dark)));
+    background: color-mix(in srgb, var(--cell-melody) 34%, var(--xp-face));
     border-color: color-mix(in srgb, var(--cell-melody) 60%, var(--xp-line));
   }
   .bar {
@@ -344,7 +344,7 @@
     padding: 2px 8px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     box-shadow: var(--xp-bevel-out);
     font-family: inherit;
     font-size: 11px;

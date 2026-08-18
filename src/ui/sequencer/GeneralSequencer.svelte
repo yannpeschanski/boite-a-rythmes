@@ -106,7 +106,7 @@
     background: var(--seq-color);
   }
   .seq-cell.current {
-    outline: 1px solid #0a246a;
+    outline: 1px solid var(--xp-playhead);
     outline-offset: -1px;
   }
 </style>

@@ -275,7 +275,7 @@
   .menu-btn.on,
   .menu-btn:hover {
     background: var(--xp-select-blue);
-    color: #fff;
+    color: var(--xp-title-text);
   }
   .dropdown {
     position: absolute;
@@ -302,7 +302,7 @@
   }
   .dropdown button:hover:not(:disabled) {
     background: var(--xp-select-blue);
-    color: #fff;
+    color: var(--xp-title-text);
   }
   .dropdown button:disabled {
     color: var(--xp-muted);
@@ -404,7 +404,8 @@
   }
   .share-msg {
     font-size: 12px;
-    background: #fffbe6;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-accent-amber);
     border: 1px solid var(--xp-accent-amber);
     padding: 5px 8px;
     margin: 0 0 8px;

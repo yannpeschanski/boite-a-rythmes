@@ -535,7 +535,8 @@
     font-family: var(--xp-font);
     font-size: 11px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
   .packets {
     display: flex;
@@ -581,17 +582,18 @@
     height: 32px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fdfcf8, var(--xp-face-dark));
-    box-shadow: var(--xp-bevel-out);
+    background: var(--xp-lcd-bg);
+    box-shadow: var(--xp-bevel-in);
     cursor: pointer;
     padding: 0;
     font-family: var(--xp-mono);
     font-size: 12px;
     touch-action: manipulation;
   }
+  /* Relief inversé, comme sur la batterie : un pas actif émet. */
   .cell.active {
-    box-shadow: var(--xp-bevel-in);
-    color: #fff;
+    box-shadow: var(--xp-bevel-out);
+    color: var(--xp-lcd-bg);
   }
   /* Une couleur par ligne (au lieu du même violet pour les 3) — port de
      .cell-select.active.bass/pad/melody de l'original (--indigo/--violet/
@@ -601,8 +603,8 @@
     background: var(--cell-bass);
   }
   .cell.pad.active {
-    background: color-mix(in srgb, var(--cell-pad) 78%, white);
-    color: #16101f;
+    background: color-mix(in srgb, var(--cell-pad) 88%, white);
+    color: var(--xp-lcd-bg);
   }
   .cell.melody.active {
     background: var(--cell-melody);
@@ -620,7 +622,7 @@
   .cell.bass:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-bass) 18%, #fff),
+      color-mix(in srgb, var(--cell-bass) 20%, var(--xp-lcd-bg)),
       color-mix(in srgb, var(--cell-bass) 40%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-bass) 60%, var(--xp-line));
@@ -628,7 +630,7 @@
   .cell.pad:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-pad) 18%, #fff),
+      color-mix(in srgb, var(--cell-pad) 20%, var(--xp-lcd-bg)),
       color-mix(in srgb, var(--cell-pad) 40%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-pad) 60%, var(--xp-line));
@@ -636,13 +638,13 @@
   .cell.melody:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-melody) 18%, #fff),
+      color-mix(in srgb, var(--cell-melody) 20%, var(--xp-lcd-bg)),
       color-mix(in srgb, var(--cell-melody) 40%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-melody) 60%, var(--xp-line));
   }
   .cell.playing {
-    outline: 2px solid #ffd54a;
+    outline: 2px solid var(--xp-playhead);
     outline-offset: -1px;
   }
   /* Case visée par le pad. Trait plein et sombre plutôt que la teinte ambre
@@ -672,8 +674,8 @@
     right: 2px;
     bottom: 0;
     font-size: 9px;
-    background: rgba(255, 255, 255, 0.8);
-    color: #222;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--xp-lcd);
     border-radius: 2px;
     padding: 0 2px;
   }
@@ -688,7 +690,8 @@
     font-family: var(--xp-font);
     font-size: 12px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
   /* Rangée de pastilles (audit A4) : remplace jusqu'à sept `<fieldset>`
      repliés pleine largeur par ligne. Cible tactile conservée à 28px
@@ -716,7 +719,7 @@
     padding: 6px 7px;
     border: 1px solid color-mix(in srgb, var(--xp-accent-violet) 40%, var(--xp-line));
     border-radius: 13px;
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     color: var(--xp-accent-violet);
     cursor: pointer;
     box-shadow: var(--xp-bevel-out);
@@ -733,7 +736,7 @@
   .chip.on {
     background: var(--xp-accent-violet);
     border-color: var(--xp-accent-violet);
-    color: #fff;
+    color: var(--xp-lcd-bg);
     box-shadow: var(--xp-bevel-in);
   }
   .group-panel {

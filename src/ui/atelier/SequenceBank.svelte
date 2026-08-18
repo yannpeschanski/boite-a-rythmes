@@ -86,7 +86,8 @@
     font-size: 13px;
     padding: 3px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
   /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {

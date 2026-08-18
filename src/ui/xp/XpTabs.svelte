@@ -74,7 +74,7 @@
   }
   .tab.active {
     background: var(--xp-select-blue);
-    color: #fff;
+    color: var(--xp-title-text);
     box-shadow: var(--xp-bevel-in);
   }
   .tab.locked {
