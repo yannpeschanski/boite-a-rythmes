@@ -139,7 +139,7 @@
   }
   .splash p {
     margin: 0 0 24px;
-    font-size: 14px;
+    font-size: 11px;
   }
   .choices {
     display: flex;
@@ -164,7 +164,7 @@
     text-shadow: none;
   }
   .big small {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
   }
   /* Verrouillé : le relief sortant disparaît (rien à enfoncer) et le bouton
@@ -184,7 +184,7 @@
   }
   .splash .boss {
     margin: 10px 0 0;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     opacity: 0.95;
   }
   .splash .boss code {
@@ -209,7 +209,12 @@
     background: var(--xp-btn-face);
     color: var(--xp-text);
     cursor: pointer;
-    font-size: 13px;
+    /* Même traitement que les onglets de l'Atelier : c'est la même fonction,
+       naviguer entre les grandes parties de l'appli. */
+    font-size: var(--xp-size-tab);
+    font-weight: 700;
+    letter-spacing: var(--xp-ls-tab);
+    text-transform: uppercase;
     font-family: inherit;
   }
   .switcher button.on {

@@ -53,9 +53,11 @@
   .tab {
     flex: 1;
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--xp-size-tab);
     font-weight: 700;
-    padding: 8px 6px;
+    letter-spacing: var(--xp-ls-tab);
+    text-transform: uppercase;
+    padding: 9px 4px;
     min-height: 30px;
     border: 1px solid var(--xp-line);
     border-radius: 4px;

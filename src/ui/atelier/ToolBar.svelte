@@ -267,8 +267,11 @@
     background: none;
     border: none;
     font-family: inherit;
-    font-size: 12px;
-    padding: 7px 11px;
+    font-size: var(--xp-size-menu);
+    font-weight: 700;
+    letter-spacing: var(--xp-ls-menu);
+    text-transform: uppercase;
+    padding: 9px 11px;
     cursor: pointer;
     color: var(--xp-text);
   }
@@ -295,7 +298,7 @@
     background: none;
     border: none;
     font-family: inherit;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     padding: 4px 10px;
     cursor: pointer;
     color: var(--xp-text);
@@ -318,7 +321,7 @@
   }
   /* Reprend le rôle des <optgroup> du sélecteur remplacé. */
   .sep {
-    font-size: 10px;
+    font-size: var(--xp-size-small);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -332,7 +335,7 @@
     margin-top: 0;
   }
   .empty {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
     padding: 4px 10px 6px;
     max-width: 210px;
@@ -353,7 +356,7 @@
   /* Lisible sans être criard : c'est un état à connaître, pas une alerte. */
   .boss-flag {
     align-self: center;
-    font-size: 10px;
+    font-size: var(--xp-size-small);
     font-weight: 700;
     letter-spacing: 0.02em;
     padding: 2px 6px;
@@ -383,7 +386,7 @@
      largeur décente. */
   .tool {
     font-family: inherit;
-    font-size: 11px;
+    font-size: 9px;
     padding: 6px 10px;
     min-height: 28px;
     min-width: 32px;
@@ -403,7 +406,7 @@
     cursor: default;
   }
   .share-msg {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     background: var(--xp-lcd-bg);
     color: var(--xp-accent-amber);
     border: 1px solid var(--xp-accent-amber);

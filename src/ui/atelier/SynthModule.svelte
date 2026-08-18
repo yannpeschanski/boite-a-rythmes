@@ -160,18 +160,18 @@
   }
   .chords {
     font-family: var(--xp-mono);
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
   }
   label {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     display: inline-flex;
     align-items: center;
     gap: 4px;
   }
   select {
     font-family: var(--xp-font);
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);
     color: var(--xp-text);
@@ -184,7 +184,7 @@
     box-shadow: var(--xp-bevel-in);
   }
   .xp-btn.tiny {
-    font-size: 11px;
+    font-size: var(--xp-size-small);
     padding: 1px 6px;
     float: right;
   }
@@ -198,7 +198,7 @@
     padding: 4px 6px;
   }
   legend {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 700;
     color: var(--xp-accent-violet);
   }
@@ -207,7 +207,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     margin-right: 10px;
   }
   .chk-row {

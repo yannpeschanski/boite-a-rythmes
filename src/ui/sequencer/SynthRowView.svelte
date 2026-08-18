@@ -503,7 +503,7 @@
   }
   .row-label {
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     text-transform: uppercase;
     color: var(--xp-accent-violet);
   }
@@ -511,7 +511,7 @@
     font-weight: 400;
     text-transform: none;
     color: var(--xp-muted);
-    font-size: 11px;
+    font-size: 9px;
   }
   /* Cibles tactiles (audit A3) : mute, test et octave se visent en pleine
      composition — le remplissage passe de 1px à 6px vertical, sans toucher
@@ -522,7 +522,7 @@
     box-shadow: var(--xp-bevel-out);
     border-radius: 3px;
     cursor: pointer;
-    font-size: 10px;
+    font-size: var(--xp-size-small);
     padding: 6px 8px;
     min-height: 28px;
     line-height: 1;
@@ -533,7 +533,7 @@
   }
   .voice-select {
     font-family: var(--xp-font);
-    font-size: 11px;
+    font-size: 9px;
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);
     color: var(--xp-text);
@@ -587,7 +587,7 @@
     cursor: pointer;
     padding: 0;
     font-family: var(--xp-mono);
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     touch-action: manipulation;
   }
   /* Relief inversé, comme sur la batterie : un pas actif émet. */
@@ -680,7 +680,7 @@
     padding: 0 2px;
   }
   .group-panel label {
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -688,7 +688,7 @@
   }
   .group-panel select {
     font-family: var(--xp-font);
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);
     color: var(--xp-text);
@@ -712,8 +712,9 @@
      « Arpège ». Les titres des panneaux, eux, gardent leur nom complet. */
   .chip {
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--xp-size-tag);
     font-weight: 700;
+    letter-spacing: var(--xp-ls-tag);
     line-height: 1;
     min-height: 28px;
     padding: 6px 7px;
@@ -756,14 +757,14 @@
     box-shadow: var(--xp-bevel-in);
   }
   .xp-btn.tiny {
-    font-size: 11px;
+    font-size: var(--xp-size-small);
     padding: 1px 6px;
   }
   /* Sous-titre à l'intérieur d'un panneau fusionné : sépare arpège et
      bourdon sans réintroduire deux replis. */
   .sub {
     margin: 6px 0 2px;
-    font-size: 10.5px;
+    font-size: var(--xp-size-small);
     font-weight: 700;
     letter-spacing: 0.02em;
     color: var(--xp-accent-violet);
@@ -773,7 +774,7 @@
     margin-top: 0;
   }
   .hint {
-    font-size: 11px;
+    font-size: 9px;
     color: var(--xp-muted);
     margin: 4px 0 0;
   }

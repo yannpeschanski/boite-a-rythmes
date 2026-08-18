@@ -15,7 +15,12 @@ body {
   color: var(--xp-text);
   background: var(--xp-bliss);
   background-attachment: fixed;
-  font-size: 14px;
+  font-size: var(--xp-size-body);
+  /* Les listes déroulantes, les cases à cocher et les ascenseurs sont dessinés
+     par le navigateur, pas par nous : sans cette ligne il les peint en clair,
+     et la seule zone claire de l'écran devient un widget natif au milieu du
+     verre noir. Un mot pour aligner tout ce qu'on ne dessine pas. */
+  color-scheme: dark;
 }
 #app {
   max-width: 980px;
@@ -104,7 +109,6 @@ button {
    Les composants ne gardent désormais que leurs surcharges de TAILLE
    (padding, min-height, font-size) ; l'apparence vit ici. */
 .xp-btn {
-  padding: 5px 12px;
   border: 1px solid var(--xp-line);
   border-radius: 2px;
   background: var(--xp-btn-face);
@@ -112,7 +116,14 @@ button {
   box-shadow: var(--xp-bevel-out);
   cursor: pointer;
   font-family: inherit;
-  font-size: 12px;
+  /* L'échelle de la maquette : 9px en capitales espacées. Le remplissage
+     vertical monte de 5 à 9px pour compenser — le bouton garde sa hauteur,
+     c'est le mot qui rapetisse, pas la cible. */
+  font-size: var(--xp-size-btn);
+  font-weight: 700;
+  letter-spacing: var(--xp-ls-btn);
+  text-transform: uppercase;
+  padding: 9px 11px;
 }
 /* Le biseau s'inverse à l'appui : c'est la grammaire de la skin, un poussoir
    qui s'enfonce. */

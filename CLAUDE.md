@@ -17,7 +17,10 @@ npm run build:singlefile # fichier HTML autonome  -> dist-singlefile/index.html
 
 **Le design est une skin Winamp 2.x, et c'est un choix, pas un héritage.**
 Chrome gris-violet biseauté d'un pixel, bandeau de fenêtre indigo, afficheurs LCD
-verts, chasse fixe en petites capitales espacées. Retenu par Yann en août 2026 au
+verts, chasse fixe en petites capitales espacées. **L'échelle vit dans les tokens
+`--xp-size-*` / `--xp-ls-*` (`src/ui/xp/tokens.css`)** : 8,5-9px pour le chrome,
+9,5px pour le texte courant, et `--xp-font` est un alias sur `--xp-mono` — la
+chasse fixe est la moitié de la grammaire, le biseau est l'autre. Retenu par Yann en août 2026 au
 terme d'un audit de 29 directions maquettées (voir PLAN.md, « audit design × DAW »
 et les séries suivantes). Ne propose pas de l'« aplatir » ou de le « moderniser » :
 **le biseau d'un pixel EST la grammaire**, c'est lui qui dit ce qui est en relief,

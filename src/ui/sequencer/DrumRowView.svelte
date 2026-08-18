@@ -187,7 +187,8 @@
   }
   .row-label {
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--xp-size-tag);
+    letter-spacing: var(--xp-ls-tag);
     text-transform: uppercase;
     color: var(--row-color, var(--xp-text));
   }
@@ -199,7 +200,7 @@
     box-shadow: var(--xp-bevel-out);
     border-radius: 3px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     min-width: 32px;
     min-height: 28px;
     line-height: 1;
@@ -313,7 +314,7 @@
     display: grid;
     place-items: center;
     font-weight: 800;
-    font-size: 12px;
+    font-size: var(--xp-size-body);
     color: var(--xp-lcd-bg);
   }
   .roll {
@@ -337,8 +338,9 @@
   }
   .chip {
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--xp-size-tag);
     font-weight: 700;
+    letter-spacing: var(--xp-ls-tag);
     line-height: 1;
     min-height: 28px;
     padding: 6px 10px;
@@ -380,7 +382,7 @@
     box-shadow: var(--xp-bevel-in);
   }
   .xp-btn.tiny {
-    font-size: 11px;
+    font-size: var(--xp-size-small);
     padding: 6px 10px;
     min-height: 28px;
     line-height: 1;
