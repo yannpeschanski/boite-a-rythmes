@@ -3583,6 +3583,55 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
+### 5e série — 9 écrans sans aucune trace de XP (2026-08-17)
+
+> « peux tu ajouter 3 propositions de chaque idée suivante : winamp totale
+> (aucun XP) / analogique-mécanique / cyberpunk »
+
+Planche : <https://claude.ai/code/artifact/5c400f39-5990-43bb-994e-c4bbc5069a19>
+Fichier `maquettes/atelier/variants_c.py` — même système de tokens, `build.py`
+assemble maintenant **29 écrans**.
+
+| | Écran | Référence | Barre | 1re case |
+|---|---|---|---|---|
+| W1 | Winamp 2.x | la skin d'origine, poignée à points | 53 | **204** |
+| W2 | Skin de nuit | custom de skins.winamp.com | 59 | 225 |
+| W3 | Winamp 5 | « modern skin », brossée et ronde | 64 | 243 |
+| A1 | Bakélite | magnétophone à lampes, vumètre à aiguille | 68 | 258 |
+| A2 | Mécanique | palettes de tableau d'affichage | 58 | 233 |
+| A3 | Eurorack | modulaire, jacks ronds, sérigraphie | 64 | 232 |
+| C1 | Néon | ruelle de Kowloon, magenta/cyan | 63 | 238 |
+| C2 | Phosphore | terminal cathodique vert | 65 | 239 |
+| C3 | HUD | surcouche tactique cyan + ambre | 63 | 235 |
+
+**Le fil qui relie les trois pistes, non cherché :** elles cessent toutes de
+faire porter l'état d'un pas par sa *couleur*. La palette mécanique le fait par
+la **position**, le phosphore par l'**intensité**, le jack eurorack par la
+**lumière**. C'est la réponse la plus solide à la charge n°1 de l'audit (le
+contraste à l'envers) — et elle vient de contraintes physiques, pas d'un choix
+graphique. À rapprocher de System 7, qui faisait la même chose par la trame.
+
+**Retenues :**
+1. **C3 · HUD** — une seule couleur d'état (l'ambre), un seul niveau de halo,
+   des équerres qui cadrent la zone de travail au lieu de l'entourer d'un cadre.
+   Le cyberpunk le plus lisible à 390px et celui qui vieillira le mieux.
+2. **A2 · Mécanique** — la plus originale : règle le contraste sans couleur ni
+   lumière, et promet un mouvement (le retournement de la palette au pas
+   suivant) qu'aucune autre n'a.
+3. **W1 · Winamp 2.x** — record de densité des 29 (1re case à **204px** contre
+   318 aujourd'hui). Prix : des cibles de 1998, il faudrait W3 pour le tactile.
+
+⚠️ **Deux réserves :** C2 Phosphore perd les 8 couleurs de lignes, qui sont du
+*contenu* et pas de l'habillage. A1 Bakélite est la seule des 29 qui engage du
+**code d'animation** — une aiguille de vumètre qui ne bouge pas n'est pas un
+vumètre, c'est un dessin de vumètre.
+
+**Deux pièges CSS à retenir** (les deux ont produit un rendu faux avant
+correction) : `.s-c2 .screen` ne matche rien, l'écran **est** `.screen.s-c2` et
+pas un descendant — les lignes de balayage n'apparaissaient jamais. Et
+`border-radius: 50%` sur un élément flex étiré donne une **ellipse**, pas un
+cercle : les jacks eurorack ont dû passer en taille fixe + `space-around`.
+
 ### 4e série — 20 écrans d'Atelier complets (2026-08-17)
 
 > « mais il faut me montrer pas seulement la barre fichier mais aussi l'atelier »

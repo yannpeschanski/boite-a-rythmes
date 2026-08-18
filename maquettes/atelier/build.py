@@ -3,10 +3,10 @@
 import io, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import base as B
-import variants_a, variants_b
+import variants_a, variants_b, variants_c
 
-V = variants_a.V + variants_b.V
-assert len(V) == 20, len(V)
+V = variants_a.V + variants_b.V + variants_c.V
+assert len(V) == 29, len(V)
 
 cards = ''.join(
     '<div class="cell" data-k="%s">\n  <div class="cap"><b>%s</b><span>%s</span></div>\n  %s\n</div>\n'
