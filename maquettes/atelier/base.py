@@ -60,7 +60,13 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
 .cap span { display: block; font-size: 12px; color: #98a0aa; margin-top: 2px; }
 
 /* ---- structure commune, sans une seule couleur ---- */
-.screen { width: 390px; height: 844px; overflow: hidden; padding: var(--pad, 10px 9px);
+.screen {
+  --c-bass: var(--c-hat); --c-pad: var(--c-clap); --c-melody: var(--c-snare);
+  --font-field: var(--font-tempo);
+  --font-pill: var(--font-tag);
+  --font-legend: var(--font-tag);
+  --font-deg: var(--font-lcd);
+  width: 390px; height: 844px; overflow: hidden; padding: var(--pad, 10px 9px);
   background: var(--bg); color: var(--ink); font-family: var(--font);
   display: flex; flex-direction: column; gap: var(--gap, 9px); }
 
@@ -147,4 +153,117 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   border-radius: var(--radius); background: var(--knob-bg, var(--surf2));
   border: var(--knob-border, 1px solid var(--edge)); box-shadow: var(--bevel); }
 .tempo b { font-variant-numeric: tabular-nums; }
+"""
+
+
+# ============================================================ écran Synthé
+# Deuxième écran, volontairement le plus dense de l'appli : c'est celui qui
+# contient les contrôles de formulaire (menus déroulants, cases à cocher,
+# cadres, curseurs numérotés) qu'aucune des 29 premières maquettes ne montrait
+# — et c'est exactement là qu'un habillage lourd casse.
+
+SYNTH_ROWS = [
+    ('BASSE', 'bass', [1, 0, 0, 1], '808 profond', ['Séquence', 'Timbre', 'Détune', 'Filtre']),
+    ('NAPPE', 'pad', [1, 0, 1, 0], 'Rhodes chaud', ['Séquence', 'Timbre', 'Détune', 'Filtre', 'Jeu']),
+    ('MÉLODIE', 'melody', [0, 1, 0, 1], 'Pluck trap', ['Séquence', 'Timbre', 'Détune', 'Filtre']),
+]
+
+def synth_rows_html():
+    out = []
+    for name, key, pat, voice, pills in SYNTH_ROWS:
+        cells = ''.join('<i class="%s"></i>' % ('on' if v else '') for v in pat)
+        chips = ''.join('<span class="pill">%s</span>' % p for p in pills)
+        out.append(
+            '<div class="srow" style="--h:var(--c-%s)">'
+            '<div class="shead"><span class="tag"><i class="led"></i>%s</span>'
+            '<button class="mini">🎹</button>'
+            '<span class="sel">%s <b>▾</b></span>'
+            '<button class="mini">🎲</button></div>'
+            '<div class="cells">%s</div>'
+            '<div class="pills">%s</div></div>' % (key, name, voice, cells, chips))
+    return '\n        '.join(out)
+
+def screen_synth(key):
+    return '''<div class="screen s-%s">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab">🥁 Rythme</button><button class="tab on">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🎹</span><span class="t">Synthé — Basse / Nappe / Mélodie</span><button class="wb">⌄</button></div>
+    <div class="work">
+      %s
+      <fieldset class="fs">
+        <legend>Harmonie &amp; remplissage</legend>
+        <div class="frow"><label>Tonalité</label><span class="sel">Do <b>▾</b></span>
+          <label>Mode</label><span class="sel">Majeur <b>▾</b></span></div>
+        <div class="frow"><label>Nb d'accords</label><span class="slider"><i></i></span><span class="num">4</span>
+          <span class="deg">I · IV · V · vi</span></div>
+        <div class="frow"><label>Remplissage</label><span class="slider"><i style="left:62%%"></i></span><span class="num">65 %%</span></div>
+        <button class="btn wide">🎲 Remplissage aléatoire harmonieux</button>
+      </fieldset>
+      <fieldset class="fs">
+        <legend>Sidechain</legend>
+        <div class="frow"><label>Déclencheurs</label>
+          <span class="chk on"><i>✓</i>Kick</span><span class="chk"><i></i>Snare</span></div>
+      </fieldset>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>''' % (key, synth_rows_html())
+
+
+# CSS additionnel pour l'écran Synthé — toujours sans une seule couleur en dur.
+SYNTH_CSS = """
+.srow { margin-bottom: var(--srow-gap, 10px); }
+.shead { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.shead .tag { width: auto; }
+.mini { width: 26px; height: 24px; flex: none; display: grid; place-items: center;
+  border: var(--ic-border, 1px solid var(--edge)); border-radius: var(--radius);
+  background: var(--ic-bg, var(--surf2)); color: var(--ink); font-size: 12px;
+  box-shadow: var(--ic-shadow, none); cursor: default; }
+.shead .mini:last-child { margin-left: auto; }
+
+/* Le menu déroulant : le contrôle que les 29 premières maquettes n'avaient pas. */
+.sel { display: inline-flex; align-items: center; gap: 6px; padding: var(--sel-pad, 5px 8px);
+  border: var(--sel-border, 1px solid var(--edge)); border-radius: var(--sel-radius, var(--radius));
+  background: var(--sel-bg, var(--white-field, var(--surf2))); color: var(--sel-ink, var(--ink));
+  font: var(--font-field); white-space: nowrap; }
+.sel b { font-weight: 400; opacity: .7; margin-left: auto; }
+.shead .sel { flex: 1; min-width: 0; overflow: hidden; }
+
+.pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.pill { font: var(--font-pill); letter-spacing: var(--pill-ls, .06em);
+  text-transform: var(--pill-tf, none); padding: var(--pill-pad, 5px 9px);
+  border: var(--pill-border, 1px solid var(--edge)); border-radius: var(--pill-radius, 999px);
+  background: var(--pill-bg, transparent); color: var(--pill-ink, var(--muted)); }
+
+.fs { margin-top: 10px; border: var(--fs-border, 1px solid var(--edge));
+  border-radius: var(--radius); padding: var(--fs-pad, 8px 10px 10px); }
+.fs legend { font: var(--font-legend); color: var(--legend-ink, var(--muted));
+  letter-spacing: var(--legend-ls, .1em); text-transform: var(--legend-tf, none);
+  padding: 0 5px; }
+.frow { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font: var(--font-field); }
+.frow:last-of-type { margin-bottom: 0; }
+.frow label { color: var(--label-ink, var(--muted)); white-space: nowrap; }
+.frow .num { font-variant-numeric: tabular-nums; min-width: 34px; text-align: right;
+  padding: 3px 6px; border: var(--sel-border, 1px solid var(--edge));
+  background: var(--sel-bg, var(--white-field, var(--surf2))); color: var(--sel-ink, var(--ink));
+  border-radius: var(--radius); }
+.frow .deg { margin-left: auto; font: var(--font-deg); color: var(--label-ink, var(--muted)); white-space: nowrap; }
+.btn.wide { display: block; width: 100%; margin-top: 9px; text-align: center; }
+
+/* Case à cocher : l'autre contrôle absent des 29 premières. */
+.chk { display: inline-flex; align-items: center; gap: 6px; color: var(--work-ink, var(--ink)); }
+.chk i { width: 15px; height: 15px; display: grid; place-items: center; font-size: 10px;
+  border: var(--sel-border, 1px solid var(--edge)); border-radius: var(--chk-radius, 2px);
+  background: var(--sel-bg, var(--white-field, var(--surf2))); color: var(--chk-ink, var(--accent-ink, var(--ink))); }
+.chk.on i { background: var(--chk-on-bg, var(--tab-on-bg)); color: var(--chk-on-ink, var(--tab-on-ink));
+  border-color: var(--chk-on-edge, var(--edge)); }
 """

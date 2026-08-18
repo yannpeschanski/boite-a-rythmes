@@ -3583,6 +3583,57 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
+### ⭐ Shortlist de Yann + test sur écran dense (2026-08-17)
+
+> « pour le moment, voici celles que j'aime bien : winamp 2.x, skin de nuit,
+> neon, turbo et cassette »
+
+Planche : <https://claude.ai/code/artifact/47334e5f-201b-41b2-9c4b-21d34036ec7a>
+Fichier `maquettes/atelier/build_synth.py` -> `finalistes.html` (5 directions ×
+2 écrans).
+
+**🔑 Ce que la sélection révèle — à retenir pour toute la suite du projet.**
+Les 29 écrans se répartissent en deux moitiés selon la typographie des menus :
+**12 en chasse fixe, 17 en proportionnelle**. Les cinq choix de Yann sont
+**5/5 en chasse fixe, 0/17 en proportionnelle** (vérifié par comptage, pas à
+l'œil). Et **aucune des cinq n'est une machine** : ni TR-808, ni rack, ni
+eurorack, ni console, ni OP-1 — ce sont quatre *écrans* et un *imprimé*.
+
+**La piste du projet est donc : écran + chasse fixe.** La couleur vient après.
+
+⚠️ **Mes trois recommandations successives sont toutes éliminées** : Amp
+(« la direction B complète »), Console (« la plus intéressante des vingt »),
+HUD (« la plus solide des neuf »). Je jugeais sur la cohérence de l'état et la
+justesse de la métaphore instrumentale — ce n'est pas le critère de Yann. Amp
+avait pourtant ses menus en chasse fixe, mais son *cadre* restait Luna, ce qui
+suffit à la sortir.
+
+**Le test que les 29 premières maquettes ne faisaient pas.** Elles montraient
+toutes l'onglet Rythme : cinq lignes, des cases, **aucun menu déroulant, aucune
+case à cocher, aucun cadre de réglages**. L'écran Synthé a donc été construit
+(`base.py` → `screen_synth()` + `SYNTH_CSS`) : 3 lignes avec sélecteur de voix,
+4-5 pastilles chacune, cadre « Harmonie & remplissage » (2 menus, 2 curseurs
+numérotés, bouton pleine largeur), cadre « Sidechain » avec cases à cocher.
+
+| | Écran Synthé | Tenue sous charge |
+|---|---|---|
+| **Winamp 2.x** | **657px** | Tient très bien ; champs et boutons tombent dans la grammaire de skin. Défaut tactile (capitales 9px, cibles de 1998), réparable via Winamp 5. |
+| **Skin de nuit** | 710px | Tient. Le halo se multiplie sur l'écran dense : il faudra décider *une seule* chose qui a le droit de briller. |
+| **Néon** | 724px | Tient, mais le magenta est partout : le bouton « Remplissage aléatoire » rayonne comme une action principale alors qu'il n'en est pas une. Problème de hiérarchie. |
+| **Turbo** | 740px | ⚠️ **A cassé** — libellés secondaires en gris foncé sur le bleu, illisibles. La palette DOS a 16 couleurs et **aucun ton intermédiaire**. Réparé (gris clair sur bleu, champs gris moyen) mais chaque nouvel élément demandera une assignation explicite. |
+| **Cassette** | 744px | **C'est elle que l'écran dense avantage** : pas de halo, et menus/cases/cadres se lisent nativement — ce sont des objets imprimés. Mais la plus haute, et elle perd le contraste allumé/éteint gratuit du fond noir. |
+
+**Bug corrigé au passage :** `--c-bass/--c-pad/--c-melody` n'étaient définis
+nulle part — les lignes synthé sortaient invisibles. Défauts ajoutés dans
+`base.py` pour que ça ne puisse plus passer inaperçu, plus des teintes propres
+par variante.
+
+**Reste à trancher avant de coder :** une seule direction, ou un croisement ?
+Les cinq partagent déjà la chasse fixe ; ce qui les sépare est la couleur de
+fond et le traitement des bords. Un croisement est réaliste (densité de Winamp
+2.x + noir de Skin de nuit + hiérarchie de couleur de Cassette) mais c'est un
+choix, pas une évidence.
+
 ### 5e série — 9 écrans sans aucune trace de XP (2026-08-17)
 
 > « peux tu ajouter 3 propositions de chaque idée suivante : winamp totale

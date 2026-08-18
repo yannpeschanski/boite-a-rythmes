@@ -38,6 +38,7 @@ V.append(('w1', 'Winamp 2.x', 'la skin d’origine, au pixel',
   --led-off:#33333f; --lcd-bg:#050806; --lcd-ink:#2ee23c; --lcd-dim:#0f5c17;
   --slider-bg:#1a1a22; --knob-bg: linear-gradient(180deg,#7d7d92,#33333f);
   --c-kick:#ff5a2b; --c-snare:#ffb020; --c-hat:#2ee23c; --c-clap:#33d9d6; --c-shaker:#8a8ad8;
+  --c-bass:#4f8cff; --c-pad:#c06bff; --c-melody:#ff5ac8;
 }
 /* La poignée à points de la barre de titre : la signature de la skin. */
 .s-w1 .bar { position: relative; padding-right: 60px; }
@@ -82,6 +83,7 @@ V.append(('w2', 'Skin de nuit', 'une skin custom de skins.winamp.com',
   --lcd-border:1px solid #1c2c38;
   --slider-bg:#101016; --knob-bg:#ff3ff0; --knob-border:0;
   --c-kick:#ff2f6a; --c-snare:#ff8a1f; --c-hat:#3ff0ff; --c-clap:#4fff9a; --c-shaker:#a8a8ff;
+  --c-bass:#6a6aff; --c-pad:#ff3ff0; --c-melody:#ff8ad6;
 }
 .s-w2 .bar .m { text-shadow: 0 0 8px rgba(168,168,255,.45); }
 .s-w2 .flag { color:#ff3ff0; }
@@ -321,6 +323,7 @@ V.append(('c1', 'Néon', 'ruelle de Kowloon, magenta et cyan',
   --lcd-border:1px solid rgba(0,229,255,.25);
   --slider-bg: rgba(255,255,255,.06); --knob-bg:#ff0080; --knob-border:0;
   --c-kick:#ff0080; --c-snare:#ff8a00; --c-hat:#00e5ff; --c-clap:#39ff88; --c-shaker:#b14bff;
+  --c-bass:#4d7bff; --c-pad:#b14bff; --c-melody:#ff4dc4;
 }
 .s-c1 .bar .m { text-shadow: 0 0 10px rgba(255,0,128,.6); color:#ff3ba0; }
 .s-c1 .flag { color:#00e5ff; text-shadow: 0 0 10px rgba(0,229,255,.6); }

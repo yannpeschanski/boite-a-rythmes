@@ -10,7 +10,13 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
 .cap span { display: block; font-size: 12px; color: #98a0aa; margin-top: 2px; }
 
 /* ---- structure commune, sans une seule couleur ---- */
-.screen { width: 390px; height: 844px; overflow: hidden; padding: var(--pad, 10px 9px);
+.screen {
+  --c-bass: var(--c-hat); --c-pad: var(--c-clap); --c-melody: var(--c-snare);
+  --font-field: var(--font-tempo);
+  --font-pill: var(--font-tag);
+  --font-legend: var(--font-tag);
+  --font-deg: var(--font-lcd);
+  width: 390px; height: 844px; overflow: hidden; padding: var(--pad, 10px 9px);
   background: var(--bg); color: var(--ink); font-family: var(--font);
   display: flex; flex-direction: column; gap: var(--gap, 9px); }
 
@@ -305,6 +311,7 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   --cell-off:#000055; --cell-border:1px solid #000; --led-off:#333366;
   --lcd-bg:#000; --lcd-ink:#55ff55; --lcd-dim:#00aa00;
   --c-kick:#ff5555; --c-snare:#ffff55; --c-hat:#55ffff; --c-clap:#55ff55; --c-shaker:#5555ff;
+  --c-bass:#5555ff; --c-pad:#ff55ff; --c-melody:#ffffff;
 }
 .s-tui .flag { background:#55ffff; padding:1px 6px; color:#000; }
 .s-tui .tempo, .s-tui .transport, .s-tui .bar { border:1px solid #000; }
@@ -657,6 +664,7 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   --led-off:#bdb6a8; --lcd-bg:#e6e1d4; --lcd-ink:#7a736a; --lcd-dim:#a8a094;
   --lcd-border:1px solid #23211c;
   --c-kick:#c94f2e; --c-snare:#c99a2e; --c-hat:#2e8c88; --c-clap:#4a8c3e; --c-shaker:#3e6f9c;
+  --c-bass:#3e5f9c; --c-pad:#7a4e8c; --c-melody:#a8465e;
 }
 /* Le filet coloré à gauche : sur une jaquette, c'est lui qui dit la face. */
 .s-cassette .bar, .s-cassette .transport, .s-cassette .tempo { border-left: 7px solid #c94f2e; }
@@ -791,6 +799,7 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   --led-off:#33333f; --lcd-bg:#050806; --lcd-ink:#2ee23c; --lcd-dim:#0f5c17;
   --slider-bg:#1a1a22; --knob-bg: linear-gradient(180deg,#7d7d92,#33333f);
   --c-kick:#ff5a2b; --c-snare:#ffb020; --c-hat:#2ee23c; --c-clap:#33d9d6; --c-shaker:#8a8ad8;
+  --c-bass:#4f8cff; --c-pad:#c06bff; --c-melody:#ff5ac8;
 }
 /* La poignée à points de la barre de titre : la signature de la skin. */
 .s-w1 .bar { position: relative; padding-right: 60px; }
@@ -833,6 +842,7 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   --lcd-border:1px solid #1c2c38;
   --slider-bg:#101016; --knob-bg:#ff3ff0; --knob-border:0;
   --c-kick:#ff2f6a; --c-snare:#ff8a1f; --c-hat:#3ff0ff; --c-clap:#4fff9a; --c-shaker:#a8a8ff;
+  --c-bass:#6a6aff; --c-pad:#ff3ff0; --c-melody:#ff8ad6;
 }
 .s-w2 .bar .m { text-shadow: 0 0 8px rgba(168,168,255,.45); }
 .s-w2 .flag { color:#ff3ff0; }
@@ -1060,6 +1070,7 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   --lcd-border:1px solid rgba(0,229,255,.25);
   --slider-bg: rgba(255,255,255,.06); --knob-bg:#ff0080; --knob-border:0;
   --c-kick:#ff0080; --c-snare:#ff8a00; --c-hat:#00e5ff; --c-clap:#39ff88; --c-shaker:#b14bff;
+  --c-bass:#4d7bff; --c-pad:#b14bff; --c-melody:#ff4dc4;
 }
 .s-c1 .bar .m { text-shadow: 0 0 10px rgba(255,0,128,.6); color:#ff3ba0; }
 .s-c1 .flag { color:#00e5ff; text-shadow: 0 0 10px rgba(0,229,255,.6); }

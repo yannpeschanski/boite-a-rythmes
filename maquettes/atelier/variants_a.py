@@ -223,6 +223,10 @@ V.append(('tui', 'Turbo', 'menus texte, lettre d’accès', """
   --cell-off:#000055; --cell-border:1px solid #000; --led-off:#333366;
   --lcd-bg:#000; --lcd-ink:#55ff55; --lcd-dim:#00aa00;
   --c-kick:#ff5555; --c-snare:#ffff55; --c-hat:#55ffff; --c-clap:#55ff55; --c-shaker:#5555ff;
+  --c-bass:#5555ff; --c-pad:#ff55ff; --c-melody:#ffffff;
+  --label-ink:#aaaaaa; --legend-ink:#55ffff; --pill-ink:#aaaaaa;
+  --pill-border:1px solid #5555aa; --sel-bg:#aaaaaa; --sel-ink:#000; --sel-border:1px solid #000;
+  --chk-on-bg:#000; --chk-on-ink:#55ff55; --chk-on-edge:#000;
 }
 .s-tui .flag { background:#55ffff; padding:1px 6px; color:#000; }
 .s-tui .tempo, .s-tui .transport, .s-tui .bar { border:1px solid #000; }

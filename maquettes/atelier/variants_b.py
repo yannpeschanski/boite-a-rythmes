@@ -251,6 +251,7 @@ V.append(('cassette', 'Cassette', 'la jaquette d’une K7', """
   --led-off:#bdb6a8; --lcd-bg:#e6e1d4; --lcd-ink:#7a736a; --lcd-dim:#a8a094;
   --lcd-border:1px solid #23211c;
   --c-kick:#c94f2e; --c-snare:#c99a2e; --c-hat:#2e8c88; --c-clap:#4a8c3e; --c-shaker:#3e6f9c;
+  --c-bass:#3e5f9c; --c-pad:#7a4e8c; --c-melody:#a8465e;
 }
 /* Le filet coloré à gauche : sur une jaquette, c'est lui qui dit la face. */
 .s-cassette .bar, .s-cassette .transport, .s-cassette .tempo { border-left: 7px solid #c94f2e; }
