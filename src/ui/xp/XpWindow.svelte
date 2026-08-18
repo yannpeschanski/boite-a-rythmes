@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { playSystemSound } from './systemSounds';
 
   let {
     title,
@@ -13,55 +12,22 @@
     accent?: 'amber' | 'violet' | 'teal' | 'none';
     children: Snippet;
   } = $props();
-
-  let collapsed = $state(false);
-  let shutdown = $state(false);
-
-  // Boutons de fenêtre détournés, comme l'original : _ replie, □ déplie,
-  // × = gag « Extinction en cours… » qui se referme tout seul. Chirp système
-  // (PLAN.md §2/§6) sur repli/dépliage — gardé derrière un test d'état pour
-  // qu'un clic répété sur le même bouton (déjà replié/déjà déplié) ne
-  // rejoue pas le son pour rien.
-  function collapse() {
-    if (collapsed) return;
-    collapsed = true;
-    playSystemSound('close');
-  }
-  function expand() {
-    if (!collapsed) return;
-    collapsed = false;
-    playSystemSound('open');
-  }
-  function fakeShutdown() {
-    shutdown = true;
-    setTimeout(() => (shutdown = false), 1800);
-  }
 </script>
 
 <section class="xp-window accent-{accent}">
   <header class="titlebar">
     <span class="icon">{icon}</span>
     <span class="title">{title}</span>
-    <span class="buttons">
-      <button class="wbtn" title="Replier" onclick={collapse}>_</button>
-      <button class="wbtn" title="Déplier" onclick={expand}>□</button>
-      <button class="wbtn close" title="Fermer" onclick={fakeShutdown}>×</button>
-    </span>
   </header>
-  {#if !collapsed}
-    <div class="body">
-      {@render children()}
-    </div>
-  {/if}
-  {#if shutdown}
-    <div class="shutdown">Extinction en cours…</div>
-  {/if}
+  <div class="body">
+    {@render children()}
+  </div>
 </section>
 
 <style>
   .xp-window {
-    background: var(--xp-face);
-    border: 1px solid #0831d9;
+    background: linear-gradient(180deg, #4b4b57, #2e2e38 55%, #1e1e26);
+    border: 1px solid var(--xp-line);
     border-radius: 8px 8px 3px 3px;
     box-shadow: 0 4px 14px rgba(0, 0, 30, 0.35);
     margin-bottom: 14px;
@@ -85,30 +51,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .buttons {
-    display: flex;
-    gap: 2px;
-  }
-  /* 22×22 avant l'audit A3 — le « _ » replie réellement la fenêtre, ce
-     n'est pas qu'un gag décoratif. Porté au minimum de 24px. */
-  .wbtn {
-    width: 24px;
-    height: 24px;
-    border: 1px solid #fff;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #7ba2e7 0%, #3d6fe0 50%, #2a54c4 100%);
-    color: #fff;
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-    text-shadow: none;
-  }
-  .wbtn.close {
-    background: var(--xp-close-grad);
-  }
-  .wbtn:active {
-    filter: brightness(0.85);
-  }
   .body {
     padding: 10px;
   }
@@ -123,15 +65,5 @@
   .accent-teal .body {
     border-top: 3px solid var(--xp-accent-teal);
     background: linear-gradient(180deg, var(--xp-accent-teal-soft), var(--xp-face) 60px);
-  }
-  .shutdown {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background: #04246a;
-    color: #fff;
-    font-size: 18px;
-    z-index: 5;
   }
 </style>

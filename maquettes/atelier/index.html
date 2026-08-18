@@ -1,0 +1,1984 @@
+<!doctype html>
+<meta charset="utf-8"><title>20 Ateliers</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 24px;
+       font-family: system-ui, sans-serif; }
+.cell { width: 390px; }
+.cap { color: #eef1f4; margin-bottom: 9px; }
+.cap b { font: 700 13px system-ui; letter-spacing: .1em; text-transform: uppercase; }
+.cap span { display: block; font-size: 12px; color: #98a0aa; margin-top: 2px; }
+
+/* ---- structure commune, sans une seule couleur ---- */
+.screen {
+  --c-bass: var(--c-hat); --c-pad: var(--c-clap); --c-melody: var(--c-snare);
+  --font-field: var(--font-tempo);
+  --font-pill: var(--font-tag);
+  --font-legend: var(--font-tag);
+  --font-deg: var(--font-lcd);
+  width: 390px; height: 844px; overflow: hidden; padding: var(--pad, 10px 9px);
+  background: var(--bg); color: var(--ink); font-family: var(--font);
+  display: flex; flex-direction: column; gap: var(--gap, 9px); }
+
+.bar { display: flex; align-items: center; flex-wrap: wrap; row-gap: 4px;
+  gap: var(--bar-gap, 13px); padding: var(--bar-pad, 5px 8px);
+  background: var(--bar-bg, var(--surf)); border: var(--bar-border, 1px solid var(--edge));
+  border-radius: var(--bar-radius, var(--radius)); box-shadow: var(--bar-shadow, var(--bevel)); }
+.bar .m { border: 0; background: none; font: var(--font-menu); color: var(--ink);
+  letter-spacing: var(--menu-ls, 0); text-transform: var(--menu-tf, none); cursor: default; }
+.tools { display: flex; gap: 4px; margin-left: auto; }
+.bar .ic { width: 28px; height: 24px; display: grid; place-items: center; line-height: 1;
+  border: var(--ic-border, 1px solid var(--edge)); border-radius: var(--radius);
+  background: var(--ic-bg, var(--surf2)); color: var(--ink); font-size: 13px; cursor: default;
+  box-shadow: var(--ic-shadow, none); }
+.flag { margin-left: 8px; white-space: nowrap; font: var(--font-flag); color: var(--muted);
+  letter-spacing: var(--flag-ls, .04em); }
+
+.transport { display: flex; align-items: center; gap: 8px; padding: var(--pan-pad, 7px 9px);
+  background: var(--pan-bg, var(--surf)); border: var(--pan-border, 1px solid var(--edge));
+  border-radius: var(--radius); box-shadow: var(--bevel); }
+.btn { font: var(--font-btn); color: var(--btn-ink, var(--ink)); padding: var(--btn-pad, 10px 14px);
+  border: var(--btn-border, 1px solid var(--edge)); border-radius: var(--btn-radius, var(--radius));
+  background: var(--btn-bg, var(--surf2)); box-shadow: var(--btn-shadow, var(--bevel));
+  letter-spacing: var(--btn-ls, 0); text-transform: var(--btn-tf, none); cursor: default; }
+.btn.play { background: var(--play-bg, var(--btn-bg, var(--surf2))); color: var(--play-ink, var(--btn-ink, var(--ink))); }
+.bpm { margin-left: auto; font: var(--font-bpm); color: var(--bpm-ink, var(--ink));
+  display: flex; align-items: baseline; gap: 4px; }
+.bpm small { font: var(--font-small); color: var(--muted); }
+
+.tabs { display: flex; gap: var(--tab-gap, 5px); padding: var(--tabs-pad, 0);
+  background: var(--tabs-bg, transparent); }
+.tab { flex: 1; text-align: center; font: var(--font-tab); padding: var(--tab-pad, 9px 3px);
+  border: var(--tab-border, 1px solid var(--edge)); border-radius: var(--tab-radius, var(--radius));
+  background: var(--tab-bg, var(--surf2)); color: var(--tab-ink, var(--ink));
+  box-shadow: var(--tab-shadow, var(--bevel)); letter-spacing: var(--tab-ls, 0);
+  text-transform: var(--tab-tf, none); cursor: default; }
+.tab.on { background: var(--tab-on-bg); color: var(--tab-on-ink); font-weight: 700;
+  border-color: var(--tab-on-edge, var(--edge)); box-shadow: var(--tab-on-shadow, none); }
+
+.win { border: var(--win-border, 1px solid var(--edge)); border-radius: var(--win-radius, var(--radius));
+  overflow: hidden; box-shadow: var(--win-shadow, none); }
+.tt { display: flex; align-items: center; gap: 6px; padding: var(--tt-pad, 4px 6px);
+  background: var(--tt-bg); color: var(--tt-ink); font: var(--font-title);
+  letter-spacing: var(--tt-ls, 0); text-transform: var(--tt-tf, none);
+  text-shadow: var(--tt-shadow, none); }
+.tt .t { flex: 1; }
+.tt .wb { width: 24px; height: 22px; border: var(--wb-border, 1px solid var(--edge));
+  border-radius: var(--radius); background: var(--wb-bg, var(--surf2)); color: var(--wb-ink, var(--ink));
+  font-size: 12px; cursor: default; }
+.tt .tic { font-size: 14px; }
+
+.work { padding: var(--work-pad, 9px); background: var(--work-bg);
+  border-top: var(--work-top, 0); color: var(--work-ink); }
+.ruler { display: flex; margin: 0 0 6px calc(var(--tag-w, 60px) + 8px); }
+.ruler span { flex: 1; font: var(--font-ruler); color: var(--ruler-ink, var(--muted));
+  border-left: var(--ruler-line, 1px solid var(--edge)); padding-left: 4px; letter-spacing: .08em; }
+
+.row { display: flex; align-items: center; gap: 8px; margin-bottom: var(--row-gap, 6px); }
+.tag { width: var(--tag-w, 60px); flex: none; display: flex; align-items: center; gap: 5px;
+  font: var(--font-tag); color: var(--tag-ink, var(--h)); letter-spacing: var(--tag-ls, .1em);
+  text-transform: var(--tag-tf, none); }
+.led { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--h);
+  box-shadow: 0 0 5px var(--h); }
+.led.off { background: var(--led-off, #999); box-shadow: none; }
+.cells { flex: 1; display: flex; gap: var(--cell-gap, 3px); height: var(--cell-h, 38px); }
+.cells i { flex: 1; border-radius: var(--cell-radius, 2px); background: var(--cell-off);
+  border: var(--cell-border, 0); box-shadow: var(--cell-off-shadow, none); }
+.cells i.on { background: var(--h); border-color: var(--h);
+  box-shadow: var(--cell-on-shadow, none); }
+
+.lcd { margin-top: 7px; padding: var(--lcd-pad, 5px 7px); background: var(--lcd-bg);
+  color: var(--lcd-ink); border-radius: var(--lcd-radius, 3px); font: var(--font-lcd);
+  letter-spacing: var(--lcd-ls, .06em); display: flex; justify-content: space-between;
+  border: var(--lcd-border, 0); }
+.lcd .dim { color: var(--lcd-dim); }
+
+.tempo { display: flex; align-items: center; gap: 10px; padding: var(--pan-pad, 7px 9px);
+  background: var(--pan-bg, var(--surf)); border: var(--pan-border, 1px solid var(--edge));
+  border-radius: var(--radius); box-shadow: var(--bevel); font: var(--font-tempo); }
+.tempo .tl { color: var(--muted); }
+.tempo .slider { flex: 1; height: 6px; border-radius: 3px; background: var(--slider-bg, var(--surf2));
+  border: var(--slider-border, 1px solid var(--edge)); position: relative; }
+.tempo .slider i { position: absolute; left: 42%; top: -5px; width: 13px; height: 15px;
+  border-radius: var(--radius); background: var(--knob-bg, var(--surf2));
+  border: var(--knob-border, 1px solid var(--edge)); box-shadow: var(--bevel); }
+.tempo b { font-variant-numeric: tabular-nums; }
+
+.s-luna {
+  --bg: radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79,152,56,0) 60%),radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87,163,61,0) 62%),linear-gradient(180deg,#2f71d1 0%,#5f9be6 45%,#a9cdf5 70%,#cfe6fa 100%); --surf:#ece9d8; --surf2: linear-gradient(180deg,#fff,#ece9d8 45%,#d6d2c2);
+  --edge:#aca899; --ink:#1a1a1a; --muted:#6f6d64; --radius:4px;
+  --bevel: inset -1px -1px 0 #808080, inset 1px 1px 0 #fff;
+  --font: Tahoma,'DejaVu Sans',sans-serif; --font-menu: 13px Tahoma,'DejaVu Sans',sans-serif;
+  --font-flag: 11px Tahoma,'DejaVu Sans',sans-serif; --font-btn: 700 14px Tahoma,'DejaVu Sans',sans-serif;
+  --font-bpm: 700 15px Tahoma,'DejaVu Sans',sans-serif; --font-small: 9px Tahoma,'DejaVu Sans',sans-serif;
+  --font-tab: 12px Tahoma,'DejaVu Sans',sans-serif; --font-title: 700 13px Tahoma,'DejaVu Sans',sans-serif;
+  --font-ruler: 10px Tahoma,'DejaVu Sans',sans-serif; --font-tag: 700 11px Tahoma,'DejaVu Sans',sans-serif;
+  --font-lcd: 10px Tahoma,'DejaVu Sans',sans-serif; --font-tempo: 12px Tahoma,'DejaVu Sans',sans-serif;
+  --tab-on-bg: linear-gradient(180deg,#4d8cf5,#1b5bd4); --tab-on-ink:#fff;
+  --win-border:1px solid #0831d9; --win-radius:8px 8px 3px 3px;
+  --win-shadow: 0 4px 14px rgba(0,0,30,.35);
+  --tt-bg: linear-gradient(180deg,#0997ff,#0053ee 8%,#0050ee 40%,#06f 88%,#003dd7 93%,#0997ff);
+  --tt-ink:#fff; --tt-shadow: 1px 1px 1px rgba(0,0,40,.6);
+  --wb-bg: linear-gradient(180deg,#7ba2e7,#3d6fe0 50%,#2a54c4); --wb-ink:#fff; --wb-border:1px solid #fff;
+  --work-bg: linear-gradient(180deg,#f4e3c2,#ece9d8 60px); --work-top:3px solid #c8881a;
+  --work-ink:#1a1a1a; --cell-off: linear-gradient(180deg,#fff,#e8e2d4);
+  --cell-border: 1px solid #aca899; --cell-off-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #fff;
+  --led-off:#c3bfae; --lcd-bg:#ece9d8; --lcd-ink:#6f6d64; --lcd-dim:#9a968a;
+  --lcd-border:1px solid #d6d2c2;
+  --c-kick:#d84315; --c-snare:#c8881a; --c-hat:#2b8a8a; --c-clap:#3fae54; --c-shaker:#22a6c9;
+}
+.s-luna .flag { border:1px dashed #aca899; border-radius:3px; padding:3px 7px; }
+
+
+.s-luna2 {
+  --bg: radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79,152,56,0) 60%),radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87,163,61,0) 62%),linear-gradient(180deg,#2f71d1 0%,#5f9be6 45%,#a9cdf5 70%,#cfe6fa 100%); --surf: linear-gradient(180deg,#fdfcf7,#ece9d8 60%);
+  --surf2: linear-gradient(180deg,#fff,#ece9d8 45%,#d6d2c2);
+  --edge:#aca899; --ink:#1a1a1a; --muted:#6f6d64; --radius:3px;
+  --bevel: inset -1px -1px 0 #808080, inset 1px 1px 0 #fff;
+  --bar-pad: 0 6px; --bar-gap: 0;
+  --font: Tahoma,'DejaVu Sans',sans-serif; --font-menu: 12px Tahoma,'DejaVu Sans',sans-serif;
+  --font-flag: 10px Tahoma,'DejaVu Sans',sans-serif; --font-btn: 700 13px Tahoma,'DejaVu Sans',sans-serif;
+  --font-bpm: 700 15px Tahoma,'DejaVu Sans',sans-serif; --font-small: 9px Tahoma,'DejaVu Sans',sans-serif;
+  --font-tab: 12px Tahoma,'DejaVu Sans',sans-serif; --font-title: 700 12px Tahoma,'DejaVu Sans',sans-serif;
+  --font-ruler: 10px Tahoma,'DejaVu Sans',sans-serif; --font-tag: 700 11px Tahoma,'DejaVu Sans',sans-serif;
+  --font-lcd: 10px Tahoma,'DejaVu Sans',sans-serif; --font-tempo: 12px Tahoma,'DejaVu Sans',sans-serif;
+  --tab-on-bg: linear-gradient(180deg,#4d8cf5,#1b5bd4); --tab-on-ink:#fff;
+  --win-border:1px solid #0831d9; --win-radius:6px 6px 3px 3px;
+  --win-shadow: 0 4px 14px rgba(0,0,30,.35);
+  --tt-bg: linear-gradient(180deg,#0997ff,#0053ee 8%,#0050ee 40%,#06f 88%,#003dd7 93%,#0997ff);
+  --tt-ink:#fff; --tt-shadow: 1px 1px 1px rgba(0,0,40,.6);
+  --wb-bg: linear-gradient(180deg,#7ba2e7,#3d6fe0 50%,#2a54c4); --wb-ink:#fff; --wb-border:1px solid #fff;
+  --work-bg: linear-gradient(180deg,#f4e3c2,#ece9d8 60px); --work-top:3px solid #c8881a;
+  --work-ink:#1a1a1a; --cell-off: linear-gradient(180deg,#fff,#e8e2d4);
+  --cell-border: 1px solid #aca899; --cell-off-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #fff;
+  --led-off:#c3bfae; --lcd-bg:#ece9d8; --lcd-ink:#6f6d64; --lcd-dim:#9a968a;
+  --lcd-border:1px solid #d6d2c2;
+  --c-kick:#d84315; --c-snare:#c8881a; --c-hat:#2b8a8a; --c-clap:#3fae54; --c-shaker:#22a6c9;
+}
+/* Zones cliquables jointives, comme dans un vrai menu Windows : c'est ça qui
+   fait passer la barre de 72 à 40px, pas un rétrécissement de la police. */
+.s-luna2 .bar .m { padding: 7px 9px; }
+.s-luna2 .bar .ic { width: 26px; height: 22px; border-color: transparent; background: none; }
+.s-luna2 .flag { color:#4c6ea8; }
+
+
+.s-aqua {
+  --bg: radial-gradient(120% 70% at 15% 0%, #3aa8ff 0%, rgba(58,168,255,0) 55%),
+        radial-gradient(110% 60% at 90% 8%, #7b5bff 0%, rgba(123,91,255,0) 50%),
+        linear-gradient(180deg,#0b3f8f,#061a4a 55%,#030d28);
+  --surf: linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,.12) 45%, rgba(255,255,255,.07));
+  --surf2: linear-gradient(180deg,#fff,#bcd9f5 55%,#7fb0e6);
+  --edge: rgba(255,255,255,.4); --ink:#f2f7ff; --muted:#b9d2f2; --radius:12px;
+  --bevel: 0 6px 18px rgba(0,10,50,.4), inset 0 1px 0 rgba(255,255,255,.7);
+  --bar-radius: 999px; --bar-pad: 7px 14px;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif; --font-menu: 600 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-flag: 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --font-btn: 700 14px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-bpm: 700 16px 'Helvetica Neue','DejaVu Sans',sans-serif; --font-small: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 600 12px 'Helvetica Neue','DejaVu Sans',sans-serif; --font-title: 700 13px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --font-tag: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-lcd: 10.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --font-tempo: 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-radius: 999px; --btn-ink:#06214d; --btn-bg: linear-gradient(180deg,#fff,#c9e0f7 55%,#8ab9ec);
+  --play-bg: linear-gradient(180deg,#8ef07a,#2fbf4a 55%,#159a34); --play-ink:#06214d;
+  --tab-radius: 999px; --tab-bg: rgba(255,255,255,.1); --tab-ink:#b9d2f2;
+  --tab-border: 1px solid rgba(255,255,255,.25); --tab-shadow: none;
+  --tab-on-bg: linear-gradient(180deg,#e8f4ff,#9ccdff 55%,#5aa6ee); --tab-on-ink:#06214d;
+  --win-radius:14px; --win-border:1px solid rgba(255,255,255,.4);
+  --win-shadow: 0 8px 24px rgba(0,10,50,.5);
+  --tt-bg: linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,.12)); --tt-ink:#eaf3ff;
+  --wb-bg: rgba(255,255,255,.2); --wb-ink:#fff; --wb-border:1px solid rgba(255,255,255,.45);
+  --work-bg: rgba(4,14,44,.42); --work-ink:#eaf3ff;
+  --cell-radius: 8px; --cell-off: rgba(255,255,255,.08);
+  --cell-border: 1px solid rgba(255,255,255,.2);
+  --cell-off-shadow: inset 0 2px 5px rgba(0,10,40,.5);
+  --cell-on-shadow: 0 0 14px var(--h), inset 0 1px 0 rgba(255,255,255,.8);
+  --led-off:#3d5versa; --led-off:#40608c;
+  --lcd-bg: rgba(4,14,44,.55); --lcd-ink:#b9d2f2; --lcd-dim:#7fa3d0; --lcd-radius:10px;
+  --lcd-border:1px solid rgba(255,255,255,.22);
+  --slider-bg: rgba(255,255,255,.14); --knob-bg: linear-gradient(180deg,#fff,#8ab9ec);
+  --c-kick:#ff4d3d; --c-snare:#ffb01f; --c-hat:#25e0d8; --c-clap:#4ff06a; --c-shaker:#43b6ff;
+}
+.s-aqua .flag { background: rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.35);
+  padding:3px 9px; border-radius:999px; }
+
+
+.s-system7 {
+  --bg: #8c8c8c; --surf:#fff; --surf2:#fff; --edge:#000; --ink:#000; --muted:#555;
+  --radius:0; --bevel: none; --bar-pad: 3px 8px; --bar-gap: 16px;
+  --bar-border: 0; --bar-shadow: 0 1px 0 #000;
+  --font: Geneva,Verdana,'DejaVu Sans',sans-serif; --font-menu: 12px Geneva,Verdana,'DejaVu Sans',sans-serif;
+  --font-flag: 10px Geneva,Verdana,'DejaVu Sans',sans-serif; --font-btn: 12px Geneva,Verdana,'DejaVu Sans',sans-serif;
+  --font-bpm: 700 14px Geneva,Verdana,'DejaVu Sans',sans-serif; --font-small: 9px Geneva,Verdana,'DejaVu Sans',sans-serif;
+  --font-tab: 12px Geneva,Verdana,'DejaVu Sans',sans-serif; --font-title: 700 12px Geneva,Verdana,'DejaVu Sans',sans-serif;
+  --font-ruler: 9px Geneva,Verdana,'DejaVu Sans',sans-serif; --font-tag: 700 10px Geneva,Verdana,'DejaVu Sans',sans-serif;
+  --font-lcd: 10px Geneva,Verdana,'DejaVu Sans',sans-serif; --font-tempo: 11px Geneva,Verdana,'DejaVu Sans',sans-serif;
+  --btn-radius: 6px; --btn-shadow: 2px 2px 0 rgba(0,0,0,.85);
+  --tab-shadow: 1px 1px 0 rgba(0,0,0,.8); --tab-on-bg:#000; --tab-on-ink:#fff;
+  --win-shadow: 3px 3px 0 rgba(0,0,0,.85);
+  --tt-bg: repeating-linear-gradient(180deg,#000 0 1px,#fff 1px 3px); --tt-ink:#000;
+  --wb-bg:#fff; --work-bg:#fff; --work-ink:#000; --work-top:1px solid #000;
+  --cell-off:#fff; --cell-border:1px solid #000; --led-off:#bbb;
+  --lcd-bg:#fff; --lcd-ink:#555; --lcd-dim:#999; --lcd-border:1px solid #000;
+  --c-kick:#000; --c-snare:#555; --c-hat:#000; --c-clap:#555; --c-shaker:#000;
+}
+/* Le Mac de 1991 n'a pas la couleur : la ligne se distingue par sa TRAME,
+   pas par sa teinte. C'est la contrainte de l'époque, et elle tient. */
+.s-system7 .row:nth-child(2) .cells i.on { background: #000; }
+.s-system7 .row:nth-child(3) .cells i.on { background: repeating-linear-gradient(45deg,#000 0 2px,#fff 2px 4px); }
+.s-system7 .row:nth-child(4) .cells i.on { background: repeating-linear-gradient(0deg,#000 0 1px,#fff 1px 3px); }
+.s-system7 .tt .t { background:#fff; padding:0 5px; }
+.s-system7 .tt .tic { background:#fff; }
+
+
+.s-amiga {
+  --bg:#0055aa; --surf:#aaaaaa; --surf2:#aaaaaa; --edge:#000; --ink:#000; --muted:#333;
+  --radius:0; --bevel: inset 1px 1px 0 #fff, inset -1px -1px 0 #555;
+  --bar-pad: 4px 8px; --bar-gap: 15px; --bar-border: 0; --bar-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #555;
+  --font: 'Courier New','DejaVu Sans Mono',monospace;
+  --font-menu: 700 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-flag: 700 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-btn: 700 13px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-bpm: 700 15px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-small: 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tab: 700 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-title: 700 12px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-ruler: 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tag: 700 10px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-lcd: 10px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tempo: 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --tab-on-bg:#0055aa; --tab-on-ink:#fff; --tab-on-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #555;
+  --win-border:0; --win-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #555, 3px 3px 0 rgba(0,0,0,.4);
+  --tt-bg:#0055aa; --tt-ink:#fff; --wb-bg:#aaa; --wb-border:0;
+  --work-bg:#aaaaaa; --work-ink:#000;
+  --cell-off:#8d8d8d; --cell-off-shadow: inset 1px 1px 0 #555, inset -1px -1px 0 #bbb;
+  --cell-on-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #555;
+  --led-off:#777; --lcd-bg:#000; --lcd-ink:#ff8800; --lcd-dim:#8a4b00;
+  --c-kick:#ff8800; --c-snare:#ffffff; --c-hat:#0055aa; --c-clap:#00aa55; --c-shaker:#aa00aa;
+}
+.s-amiga .flag { color:#ff8800; }
+
+
+.s-motif {
+  --bg:#6b7b8c; --surf:#b8c0c8; --surf2:#b8c0c8; --edge:#5d666f; --ink:#10161c; --muted:#3c4650;
+  --radius:0; --bevel: inset 2px 2px 0 #e2e8ee, inset -2px -2px 0 #5d666f;
+  --bar-pad: 4px 7px; --bar-gap: 4px; --bar-border: 0;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-flag: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-btn: 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-bpm: 700 15px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-small: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-title: 700 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-lcd: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tempo: 11px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-border: 0; --btn-pad: 9px 14px;
+  --tab-border: 0; --tab-on-bg:#8f99a3; --tab-on-ink:#10161c;
+  --tab-on-shadow: inset -2px -2px 0 #e2e8ee, inset 2px 2px 0 #5d666f;
+  --win-border:0; --win-shadow: inset 2px 2px 0 #e2e8ee, inset -2px -2px 0 #5d666f;
+  --tt-bg:#8f99a3; --tt-ink:#10161c; --wb-bg:#b8c0c8; --wb-border:0;
+  --work-bg:#9aa4ae; --work-ink:#10161c;
+  --cell-off:#7d8892; --cell-off-shadow: inset 2px 2px 0 #5d666f, inset -2px -2px 0 #aeb8c2;
+  --cell-on-shadow: inset 2px 2px 0 rgba(255,255,255,.4);
+  --led-off:#6b7681; --lcd-bg:#10161c; --lcd-ink:#9fd0a0; --lcd-dim:#4a6a4b;
+  --c-kick:#c0392b; --c-snare:#b8860b; --c-hat:#2b7a7a; --c-clap:#3d8b4a; --c-shaker:#2b6d8b;
+}
+.s-motif .bar .m { padding: 3px 9px; }
+.s-motif .flag { margin-left: 6px; }
+
+
+.s-tui {
+  --bg:#0000aa; --surf:#aaaaaa; --surf2:#aaaaaa; --edge:#000; --ink:#000; --muted:#333;
+  --radius:0; --bevel: none; --bar-pad: 3px 8px; --bar-gap: 14px; --bar-border:0;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 12px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-flag: 11px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 12px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-bpm: 700 14px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 12px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-title: 12px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-ruler: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 11px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-lcd: 11px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 11px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-shadow: 2px 1px 0 rgba(0,0,0,.5); --btn-pad: 8px 12px;
+  --tab-shadow: 2px 1px 0 rgba(0,0,0,.5); --tab-on-bg:#000; --tab-on-ink:#55ff55;
+  --win-shadow: 4px 2px 0 rgba(0,0,0,.45); --tt-bg:#000; --tt-ink:#55ffff;
+  --wb-bg:#aaa; --wb-ink:#000; --work-bg:#0000aa; --work-ink:#aaa;
+  --ruler-ink:#55ffff; --ruler-line: 1px solid #5555aa;
+  --cell-off:#000055; --cell-border:1px solid #000; --led-off:#333366;
+  --lcd-bg:#000; --lcd-ink:#55ff55; --lcd-dim:#00aa00;
+  --c-kick:#ff5555; --c-snare:#ffff55; --c-hat:#55ffff; --c-clap:#55ff55; --c-shaker:#5555ff;
+  --c-bass:#5555ff; --c-pad:#ff55ff; --c-melody:#ffffff;
+}
+.s-tui .flag { background:#55ffff; padding:1px 6px; color:#000; }
+.s-tui .tempo, .s-tui .transport, .s-tui .bar { border:1px solid #000; }
+
+
+.s-amp {
+  --bg: radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79,152,56,0) 60%),radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87,163,61,0) 62%),linear-gradient(180deg,#2f71d1 0%,#5f9be6 45%,#a9cdf5 70%,#cfe6fa 100%); --surf:#ece9d8; --surf2: linear-gradient(180deg,#fff,#ece9d8 45%,#d6d2c2);
+  --edge:#aca899; --ink:#1a1a1a; --muted:#6f6d64; --radius:3px;
+  --bevel: inset -1px -1px 0 #808080, inset 1px 1px 0 #fff;
+  --bar-bg: linear-gradient(180deg,#6a6a9c,#3a3a64 14%,#1c1c34); --bar-border:1px solid #0a0a18;
+  --bar-shadow: inset 0 1px 0 #9a9ad0; --bar-pad: 6px 8px; --bar-gap: 11px;
+  --font: Tahoma,'DejaVu Sans',sans-serif;
+  --font-menu: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.12em; --menu-tf: uppercase;
+  --font-flag: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 700 14px Tahoma,'DejaVu Sans',sans-serif;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 12px Tahoma,'DejaVu Sans',sans-serif;
+  --font-title: 700 13px Tahoma,'DejaVu Sans',sans-serif;
+  --font-ruler: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-lcd: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 12px Tahoma,'DejaVu Sans',sans-serif;
+  --tab-on-bg: linear-gradient(180deg,#4d8cf5,#1b5bd4); --tab-on-ink:#fff;
+  --win-border:1px solid #0831d9; --win-radius:8px 8px 3px 3px;
+  --win-shadow: 0 4px 14px rgba(0,0,30,.35);
+  --tt-bg: linear-gradient(180deg,#0997ff,#0053ee 8%,#0050ee 40%,#06f 88%,#003dd7 93%,#0997ff);
+  --tt-ink:#fff; --tt-shadow: 1px 1px 1px rgba(0,0,40,.6);
+  --wb-bg: linear-gradient(180deg,#7ba2e7,#3d6fe0 50%,#2a54c4); --wb-ink:#fff; --wb-border:1px solid #fff;
+  --work-bg: linear-gradient(180deg,#6a6a9c,#3a3a64 12%,#1c1c34); --work-top:1px solid #9a9ad0;
+  --work-ink:#cfd0f0; --ruler-ink:#ffb020; --ruler-line:1px solid rgba(255,176,32,.4);
+  --cell-off:#050806; --cell-off-shadow: inset 0 1px 2px rgba(0,0,0,.9);
+  --cell-on-shadow: 0 0 7px var(--h), inset 0 1px 0 rgba(255,255,255,.35);
+  --led-off:#2a2a40; --lcd-bg:#050806; --lcd-ink:#33ff44; --lcd-dim:#145520;
+  --c-kick:#d84315; --c-snare:#c8881a; --c-hat:#2b8a8a; --c-clap:#3fae54; --c-shaker:#22a6c9;
+}
+.s-amp .bar .m { color:#cfd0f0; }
+.s-amp .bar .ic { border-color:#9a9ad0; background: linear-gradient(180deg,#9a9ad0,#3a3a64 55%,#1c1c34); color:#cfd0f0; }
+.s-amp .flag { color:#33ff44; background:#050806; padding:3px 7px; border-radius:2px; }
+
+
+.s-skin {
+  --bg:#14141c; --surf: linear-gradient(180deg,#8a8aa4,#4a4a5e 52%,#2c2c38);
+  --surf2: linear-gradient(180deg,#8a8aa4,#3c3c4a); --edge:#101018; --ink:#e6e6ff; --muted:#9a9ab0;
+  --radius:0; --bevel: inset 1px 1px 0 #9a9ab0, inset -1px -1px 0 #101018;
+  --bar-pad: 4px 6px; --bar-gap: 8px; --bar-border:0;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.1em; --menu-tf: uppercase;
+  --font-flag: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.1em; --btn-tf: uppercase;
+  --font-bpm: 700 16px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.1em; --tab-tf: uppercase;
+  --font-title: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.18em; --tt-tf: uppercase;
+  --font-ruler: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.14em;
+  --font-lcd: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-border:0; --btn-pad: 10px 12px;
+  --tab-border:0; --tab-on-bg: linear-gradient(180deg,#3a3a8c,#26266e); --tab-on-ink:#ffb020;
+  --tab-on-shadow: inset 1px 1px 0 #101018;
+  --win-border:0; --win-shadow: inset 1px 1px 0 #9a9ab0, inset -1px -1px 0 #101018;
+  --tt-bg: linear-gradient(180deg,#5a5ad0,#3232a0 45%,#26266e 55%,#3a3a8c); --tt-ink:#e6e6ff;
+  --wb-bg: linear-gradient(180deg,#8a8aa4,#3c3c4a); --wb-border:0;
+  --work-bg:#2c2c38; --work-ink:#cfd0e4; --ruler-ink:#ffb020; --ruler-line:1px solid #4a4a5e;
+  --cell-off:#050806; --cell-off-shadow: inset 1px 1px 0 #101018, inset -1px -1px 0 rgba(255,255,255,.1);
+  --cell-on-shadow: inset 1px 1px 0 rgba(255,255,255,.4);
+  --led-off:#3c3c4a; --lcd-bg:#050806; --lcd-ink:#33ff44; --lcd-dim:#145520;
+  --c-kick:#ff5a2b; --c-snare:#ffb020; --c-hat:#33d9d6; --c-clap:#5bde72; --c-shaker:#41c9ef;
+}
+.s-skin .flag { color:#33ff44; background:#050806; padding:3px 6px; box-shadow: inset 1px 1px 0 #101018; }
+
+
+.s-tr808 {
+  --bg: linear-gradient(100deg,#7d5433,#4e3018 60%,#6b4425);
+  --surf: linear-gradient(180deg,#e8e3d6,#d8d2c3 8%,#d8d2c3 92%,#b9b3a3);
+  --surf2: linear-gradient(180deg,#f4f0e5,#cfc9b9); --edge:#8d8779; --ink:#23211c; --muted:#6d675a;
+  --radius:2px; --bevel: inset 0 1px 0 #fff, 0 1px 2px rgba(0,0,0,.25);
+  --bar-bg:#1c1a17; --bar-border:0; --bar-shadow: 0 2px 0 #cf3b23; --bar-pad: 8px 10px; --bar-gap: 15px;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.18em; --menu-tf: uppercase;
+  --font-flag: 8px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.16em;
+  --font-btn: 700 12px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.1em; --btn-tf: uppercase;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.1em; --tab-tf: uppercase;
+  --font-title: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.16em; --tt-tf: uppercase;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.12em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 11px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --tab-on-bg:#1c1a17; --tab-on-ink:#efeade;
+  --tt-bg:#1c1a17; --tt-ink:#efeade; --wb-bg: linear-gradient(180deg,#f4f0e5,#cfc9b9); --wb-ink:#23211c;
+  --work-bg:#d8d2c3; --work-ink:#23211c; --ruler-line:1px solid #b0aa9a;
+  --cell-off:#c3bdae; --cell-border:1px solid #8d8779;
+  --cell-off-shadow: inset 0 2px 3px rgba(0,0,0,.28);
+  --cell-on-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 0 6px rgba(255,90,40,.45);
+  --led-off:#8d8779; --lcd-bg:#2a2f22; --lcd-ink:#b6d36a; --lcd-dim:#5c6b3a;
+  --c-kick:#cf3b23; --c-snare:#e0761c; --c-hat:#e6bc21; --c-clap:#8a9a4a; --c-shaker:#a08a6a;
+}
+.s-tr808 .bar .m { color:#efeade; }
+.s-tr808 .bar .ic { border-color:#6d675a; }
+.s-tr808 .flag { color:#a9a294; }
+/* Signature 808 : les pas sont colorés par groupe de temps, pas par ligne.
+   La couleur dit OÙ on est dans la mesure ; l'état dit la matière. */
+.s-tr808 .cells i:nth-child(4n+1).on { background:#cf3b23; }
+.s-tr808 .cells i:nth-child(4n+2).on { background:#e0761c; }
+.s-tr808 .cells i:nth-child(4n+3).on { background:#e6bc21; }
+.s-tr808 .cells i:nth-child(4n+4).on { background:#efeade; }
+
+
+.s-pocket {
+  --bg:#121316; --surf:#1c1e22; --surf2:#1c1e22; --edge:#4a4e54; --ink:#f2f3f0; --muted:#7e8288;
+  --radius:2px; --bevel:none; --bar-pad: 8px 4px; --bar-gap: 16px; --bar-border:0;
+  --bar-shadow: 0 1px 0 #34383a; --bar-bg: transparent;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 10px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.16em; --menu-tf: uppercase;
+  --font-flag: 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --flag-ls:.2em;
+  --font-btn: 10px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.14em; --btn-tf: uppercase;
+  --font-bpm: 700 20px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 10px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.14em; --tab-tf: uppercase;
+  --font-title: 9px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.2em; --tt-tf: uppercase;
+  --font-ruler: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 9px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.16em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --pan-bg: transparent; --pan-border: 0; --pan-pad: 4px 0;
+  --btn-pad: 12px 0; --tab-pad: 11px 0;
+  --tab-on-bg:#f2f3f0; --tab-on-ink:#121316; --tab-on-edge:#f2f3f0;
+  --win-border:0; --win-radius:2px;
+  --tt-bg: transparent; --tt-ink:#7e8288;
+  --wb-bg:#1c1e22; --wb-ink:#7e8288;
+  /* L'écran LCD porte le motif : la fenêtre EST l'afficheur. */
+  --work-bg:#b9c4a4; --work-ink:#16180f; --work-pad: 12px;
+  --ruler-ink:#8f9a7c; --ruler-line:1px solid rgba(22,24,15,.35);
+  --cell-off: transparent; --cell-border:1px solid #16180f; --cell-radius:1px;
+  --cell-h: 22px; --row-gap: 5px; --led-off: rgba(22,24,15,.25);
+  --lcd-bg: transparent; --lcd-ink:#16180f; --lcd-dim:#6d7a5a;
+  --lcd-border:1px solid rgba(22,24,15,.35);
+  --slider-bg:#1c1e22; --knob-bg:#f2f3f0;
+  --c-kick:#16180f; --c-snare:#16180f; --c-hat:#16180f; --c-clap:#16180f; --c-shaker:#16180f;
+}
+.s-pocket .btn { flex: 1; text-align: center; }
+.s-pocket .work { box-shadow: inset 0 0 0 2px #2a2d24, 0 0 0 3px #34383a; }
+.s-pocket .tag { color:#16180f; }
+.s-pocket .bpm { color:#f2f3f0; }
+
+
+.s-rack {
+  --bg:#17191c;
+  --surf: repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px),
+          linear-gradient(180deg,#5a5f66,#3b4046 40%,#2c3036);
+  --surf2: linear-gradient(180deg,#767c85,#33373d); --edge:#14161a; --ink:#d6dae0; --muted:#8d949c;
+  --radius:2px; --bevel: inset 0 1px 0 #767c85, 0 1px 2px rgba(0,0,0,.5);
+  --bar-pad: 10px 26px; --bar-gap: 14px;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.2em; --menu-tf: uppercase;
+  --font-flag: 8px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.18em;
+  --font-btn: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.16em; --btn-tf: uppercase;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.16em; --tab-tf: uppercase;
+  --font-title: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.2em; --tt-tf: uppercase;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.16em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --tab-on-bg: linear-gradient(180deg,#ffc95a,#ffb020); --tab-on-ink:#1a1c20; --tab-on-edge:#8a6010;
+  --tt-bg: linear-gradient(180deg,#4a4f57,#33373d); --tt-ink:#d6dae0;
+  --work-bg: linear-gradient(180deg,#33373d,#22252a); --work-top:1px solid #5a5f66;
+  --work-ink:#d6dae0; --ruler-ink:#ffb020; --ruler-line:1px solid #4a4f57;
+  --cell-off:#15171a; --cell-off-shadow: inset 0 2px 4px rgba(0,0,0,.85);
+  --cell-on-shadow: 0 0 8px var(--h); --led-off:#3a3e45;
+  --lcd-bg:#0e1013; --lcd-ink:#ffb020; --lcd-dim:#7a5410;
+  --c-kick:#d84315; --c-snare:#c8881a; --c-hat:#2b8a8a; --c-clap:#3fae54; --c-shaker:#22a6c9;
+}
+/* Les deux vis de la plaque : elles ne servent à rien, et c'est exactement ce
+   qui fait qu'on lit « appareil » plutôt que « logiciel ». */
+.s-rack .bar { position: relative; }
+.s-rack .bar::before, .s-rack .bar::after { content:''; position:absolute; top:50%;
+  width:11px; height:11px; margin-top:-5.5px; border-radius:50%;
+  background: radial-gradient(circle at 35% 30%, #9aa0a8, #33373d 70%);
+  box-shadow: inset 0 -1px 1px rgba(0,0,0,.6); }
+.s-rack .bar::before { left:7px; } .s-rack .bar::after { right:7px; }
+
+
+.s-led {
+  --bg:#0c0d10; --surf:#121418; --surf2:#16181d; --edge:#23262c; --ink:#ff6a1f; --muted:#7a4418;
+  --radius:3px; --bevel:none; --bar-pad: 9px 10px; --bar-gap: 13px;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.14em; --menu-tf: uppercase;
+  --font-flag: 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --flag-ls:.16em;
+  --font-btn: 700 11px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.14em; --btn-tf: uppercase;
+  --font-bpm: 700 18px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 10px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.14em; --tab-tf: uppercase;
+  --font-title: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.18em; --tt-tf: uppercase;
+  --font-ruler: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.14em;
+  --font-lcd: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-ink:#ff6a1f; --tab-ink:#c9560f;
+  --tab-on-bg:#16181d; --tab-on-ink:#ffd23f; --tab-on-edge:#4a3418;
+  --tt-bg:#16181d; --tt-ink:#ffd23f; --wb-bg:#16181d; --wb-ink:#ff6a1f;
+  --work-bg:#0f1114; --work-top:1px solid #23262c; --work-ink:#ff6a1f;
+  --ruler-ink:#7a4418; --ruler-line:1px solid #23262c;
+  --cell-off:#15171b; --cell-off-shadow: inset 0 0 0 1px #1e2127;
+  --cell-on-shadow: 0 0 12px var(--h); --led-off:#2c1a0c;
+  --lcd-bg:#0a0b0e; --lcd-ink:#ff6a1f; --lcd-dim:#5f3410;
+  --c-kick:#ff4a1f; --c-snare:#ffb020; --c-hat:#ffd23f; --c-clap:#ff8a2f; --c-shaker:#ff6a1f;
+}
+/* La trame de points : tout ce qui est « allumé » est affiché, pas imprimé. */
+.s-led .bar, .s-led .tt, .s-led .cells i.on { position: relative; }
+.s-led .bar::after, .s-led .tt::after, .s-led .cells i.on::after {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image: radial-gradient(rgba(0,0,0,.5) 45%, transparent 46%);
+  background-size: 3px 3px; }
+.s-led .bar .m, .s-led .tt { text-shadow: 0 0 7px rgba(255,106,31,.7); }
+
+
+.s-console {
+  --bg:#1a1d21; --surf: linear-gradient(180deg,#31353b,#22252a);
+  --surf2: linear-gradient(180deg,#4a4f57,#2a2e34); --edge:#0e1013; --ink:#b9bfc7; --muted:#6f767f;
+  --radius:2px; --bevel: inset 0 1px 0 #4a4f57;
+  --bar-pad: 8px 10px; --bar-gap: 0; --bar-border:0;
+  --bar-shadow: inset 0 1px 0 #4a4f57, 0 2px 0 #0e1013;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.2em; --menu-tf: uppercase;
+  --font-flag: 8px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.18em;
+  --font-btn: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.16em; --btn-tf: uppercase;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.16em; --tab-tf: uppercase;
+  --font-title: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.2em; --tt-tf: uppercase;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.14em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --tab-on-bg: linear-gradient(180deg,#2a3e2c,#1a2d1e); --tab-on-ink:#6be07a; --tab-on-edge:#0e1013;
+  --tt-bg: linear-gradient(180deg,#3a3f46,#2a2e34); --tt-ink:#c6ccd4;
+  --work-bg: linear-gradient(180deg,#2a2e34,#1f2227); --work-top:1px solid #4a4f57;
+  --work-ink:#c6ccd4; --ruler-ink:#6f767f; --ruler-line:1px solid #3a3f46;
+  --cell-off:#14171b; --cell-off-shadow: inset 0 1px 3px rgba(0,0,0,.8);
+  --cell-on-shadow: 0 0 6px var(--h); --led-off:#343a41;
+  --lcd-bg:#0e1013; --lcd-ink:#6be07a; --lcd-dim:#2c6634;
+  --c-kick:#d84315; --c-snare:#c8881a; --c-hat:#2b8a8a; --c-clap:#3fae54; --c-shaker:#22a6c9;
+}
+/* Chaque menu est une tranche séparée par un filet, et l'état actif est une
+   LED au-dessus — pas un fond bleu. C'est la trouvaille de la série barre. */
+.s-console .bar .m { padding: 0 11px; border-right: 1px solid #14171b;
+  box-shadow: 1px 0 0 #43484f; position: relative; }
+.s-console .bar .m:first-child { padding-left: 0; }
+.s-console .bar .m:nth-child(2) { color:#6be07a; }
+.s-console .bar .m:nth-child(2)::before { content:''; position:absolute; left:50%; top:-6px;
+  width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:#6be07a;
+  box-shadow: 0 0 6px #6be07a; }
+
+
+.s-te {
+  --bg:#f0f0ee; --surf:#fff; --surf2:#e2e2e0; --edge:transparent; --ink:#16161a; --muted:#9a9a9e;
+  --radius:3px; --bevel:none; --bar-pad: 10px 2px; --bar-gap: 18px;
+  --bar-bg: transparent; --bar-border:0; --bar-shadow: 0 2px 0 #16161a;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-flag: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.16em;
+  --font-btn: 700 12px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.1em; --btn-tf: uppercase;
+  --font-bpm: 700 24px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-small: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.08em; --tab-tf: uppercase;
+  --font-title: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.14em; --tt-tf: uppercase;
+  --font-ruler: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.14em; --tag-tf: uppercase;
+  --font-lcd: 11px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tempo: 11px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --pan-bg: transparent; --pan-border:0; --pan-pad: 4px 0;
+  --btn-border:0; --btn-pad: 14px 18px; --btn-ink:#fff; --btn-bg:#f5c518;
+  --play-bg:#2fbf6a; --play-ink:#fff;
+  --tab-border:0; --tab-bg:#fff; --tab-ink:#9a9a9e; --tab-pad: 11px 0;
+  --tab-on-bg:#16161a; --tab-on-ink:#fff;
+  --win-border:0; --win-radius:3px; --tt-bg:#16161a; --tt-ink:#fff;
+  --wb-bg:#3a3a3e; --wb-ink:#fff; --wb-border:0;
+  --work-bg:#fff; --work-ink:#16161a; --work-pad: 12px 10px;
+  --ruler-ink:#9a9a9e; --ruler-line:0;
+  --cell-off:#e2e2e0; --cell-radius:3px; --cell-h: 42px; --cell-gap: 5px; --row-gap: 9px;
+  --led-off:#d2d2d0; --lcd-bg:#f0f0ee; --lcd-ink:#16161a; --lcd-dim:#9a9a9e;
+  --slider-bg:#e2e2e0; --slider-border:0; --knob-bg:#16161a; --knob-border:0;
+  --c-kick:#f0432c; --c-snare:#f5c518; --c-hat:#17b8d4; --c-clap:#2fbf6a; --c-shaker:#1d5fd8;
+}
+.s-te .flag { background:#f0432c; color:#fff; padding:4px 8px; border-radius:3px; }
+.s-te .bar .ic { background:#e2e2e0; border:0; }
+
+
+.s-cahier {
+  --bg:#f6f1e4; --surf: transparent; --surf2:#efe8d6; --edge:#cfc4a8; --ink:#23201a; --muted:#6a6153;
+  --radius:2px; --bevel:none; --bar-pad: 7px 2px; --bar-gap: 18px;
+  --bar-border:0; --bar-shadow: 0 2px 0 #23201a;
+  --font: Georgia,'DejaVu Serif',serif; --font-menu: 13px Georgia,'DejaVu Serif',serif;
+  --font-flag: italic 11px Georgia,'DejaVu Serif',serif;
+  --font-btn: 14px Georgia,'DejaVu Serif',serif;
+  --font-bpm: 17px Georgia,'DejaVu Serif',serif;
+  --font-small: italic 10px Georgia,'DejaVu Serif',serif;
+  --font-tab: 13px Georgia,'DejaVu Serif',serif;
+  --font-title: 15px Georgia,'DejaVu Serif',serif;
+  --font-ruler: italic 11px Georgia,'DejaVu Serif',serif;
+  --font-tag: 12px Georgia,'DejaVu Serif',serif; --tag-ls:.04em;
+  --font-lcd: italic 11.5px Georgia,'DejaVu Serif',serif;
+  --font-tempo: 12px Georgia,'DejaVu Serif',serif;
+  --pan-bg: transparent; --pan-border:0; --pan-pad: 5px 0;
+  --btn-border: 1.5px solid #23201a; --btn-bg:#efe8d6; --btn-pad: 9px 16px;
+  --tab-border:0; --tab-bg: transparent; --tab-shadow:none; --tab-ink:#6a6153;
+  --tab-on-bg: transparent; --tab-on-ink:#23201a; --tab-on-shadow: 0 8px 0 -6px #b4342a;
+  --win-border: 1.5px solid #23201a; --win-shadow: 3px 3px 0 rgba(35,32,26,.16);
+  --tt-bg:#efe8d6; --tt-ink:#23201a; --wb-bg:#f6f1e4; --wb-border:1px solid #23201a;
+  --work-bg:#fdfaf2; --work-ink:#23201a; --work-top:1px solid #23201a; --work-pad: 11px 10px;
+  --ruler-ink:#6a6153; --ruler-line:1px solid #cfc4a8;
+  --cell-off: transparent; --cell-border:1px solid #cfc4a8; --cell-radius:1px; --cell-h: 36px;
+  --led-off:#cfc4a8; --lcd-bg: transparent; --lcd-ink:#6a6153; --lcd-dim:#a89e88;
+  --lcd-border:1px solid #cfc4a8;
+  --slider-bg:#efe8d6; --knob-bg:#23201a; --knob-border:0;
+  --c-kick:#9c3b1f; --c-snare:#a8791b; --c-hat:#2f6f6c; --c-clap:#3d7a45; --c-shaker:#2a6e86;
+}
+.s-cahier { background-image: repeating-linear-gradient(0deg, transparent 0 27px, #e2d9c1 27px 28px); }
+.s-cahier .tag { font-variant: small-caps; }
+
+
+.s-cassette {
+  --bg:#d8d2c6; --surf:#f4f1e8; --surf2:#f4f1e8; --edge:#23211c; --ink:#23211c; --muted:#7a736a;
+  --radius:0; --bevel:none; --bar-pad: 7px 10px; --bar-gap: 14px;
+  --bar-shadow: none;
+  --font: 'Courier New','DejaVu Sans Mono',monospace;
+  --font-menu: 11px 'Courier New','DejaVu Sans Mono',monospace; --menu-ls:.06em;
+  --font-flag: 9px 'Courier New','DejaVu Sans Mono',monospace; --flag-ls:.1em;
+  --font-btn: 12px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-bpm: 700 15px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-small: 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tab: 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-title: 700 12px 'Courier New','DejaVu Sans Mono',monospace; --tt-ls:.12em;
+  --font-ruler: 10px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tag: 700 10px 'Courier New','DejaVu Sans Mono',monospace; --tag-ls:.1em;
+  --font-lcd: 10px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tempo: 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --btn-pad: 9px 14px;
+  --tab-on-bg:#23211c; --tab-on-ink:#f4f1e8;
+  --win-shadow: 4px 4px 0 rgba(35,33,28,.2); --tt-bg:#23211c; --tt-ink:#f4f1e8;
+  --wb-bg:#f4f1e8; --wb-ink:#23211c;
+  --work-bg:#f4f1e8; --work-ink:#23211c; --work-top:1px solid #23211c;
+  --ruler-line:1px solid rgba(35,33,28,.35);
+  --cell-off:#e6e1d4; --cell-border:1px solid #23211c; --cell-radius:0;
+  --led-off:#bdb6a8; --lcd-bg:#e6e1d4; --lcd-ink:#7a736a; --lcd-dim:#a8a094;
+  --lcd-border:1px solid #23211c;
+  --c-kick:#c94f2e; --c-snare:#c99a2e; --c-hat:#2e8c88; --c-clap:#4a8c3e; --c-shaker:#3e6f9c;
+  --c-bass:#3e5f9c; --c-pad:#7a4e8c; --c-melody:#a8465e;
+}
+/* Le filet coloré à gauche : sur une jaquette, c'est lui qui dit la face. */
+.s-cassette .bar, .s-cassette .transport, .s-cassette .tempo { border-left: 7px solid #c94f2e; }
+.s-cassette .win { border-left: 7px solid #c94f2e; }
+
+
+.s-dymo {
+  --bg:#2a2622; --surf:#1d1a17; --surf2:#4a463f; --edge:#0f0d0b; --ink:#fff; --muted:#8d8471;
+  --radius:2px; --bevel: inset 0 1px 0 rgba(255,255,255,.25);
+  --bar-pad: 7px 8px; --bar-gap: 6px; --bar-border:0;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.16em; --menu-tf: uppercase;
+  --font-flag: 700 8px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.16em;
+  --font-btn: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.16em; --btn-tf: uppercase;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.16em; --tab-tf: uppercase;
+  --font-title: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.18em; --tt-tf: uppercase;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.14em;
+  --font-lcd: 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tempo: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-border:0; --btn-bg:#3d6fb5; --btn-ink:#fff; --btn-pad: 11px 14px;
+  --play-bg:#2f8a4a;
+  --tab-border:0; --tab-bg:#4a463f; --tab-ink:#fff; --tab-pad: 10px 2px;
+  --tab-on-bg:#c0392b; --tab-on-ink:#fff;
+  --win-border:0; --tt-bg:#c0392b; --tt-ink:#fff; --wb-bg:#4a463f; --wb-border:0;
+  --work-bg:#241f1b; --work-ink:#d8cfbf;
+  --ruler-ink:#8d8471; --ruler-line:1px solid #3a3630;
+  --cell-off:#3a3630; --cell-off-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+  --cell-on-shadow: inset 0 1px 0 rgba(255,255,255,.3); --led-off:#4a463f;
+  --lcd-bg:#3a3630; --lcd-ink:#d9cfa8; --lcd-dim:#8d8471;
+  --c-kick:#c0392b; --c-snare:#c9922b; --c-hat:#2b8f8a; --c-clap:#3f9a4e; --c-shaker:#3d6fb5;
+}
+/* Chaque libellé EST une étiquette embossée, y compris dans la barre. */
+.s-dymo .bar .m { background:#3d6fb5; padding:5px 8px; border-radius:2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 1px 2px rgba(0,0,0,.5); }
+.s-dymo .flag { background:#d9cfa8; color:#1d1a17; padding:4px 7px; border-radius:2px; }
+.s-dymo .tag { background:#3a3630; padding:4px 5px; border-radius:2px; width:56px; }
+
+
+.s-tracker {
+  --bg:#0a0b0d; --surf:#101216; --surf2:#0a0b0d; --edge:#2a2f38; --ink:#c8cdd6; --muted:#5a6068;
+  --radius:0; --bevel:none; --bar-pad: 7px 10px; --bar-gap: 14px;
+  --bar-border:0; --bar-shadow: 0 1px 0 #1d2026;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 11px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-flag: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 11px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.1em; --btn-tf: uppercase;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 10.5px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.1em; --tab-tf: uppercase;
+  --font-title: 10px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.14em; --tt-tf: uppercase;
+  --font-ruler: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 10px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.1em;
+  --font-lcd: 10.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --pan-bg:#101216; --pan-border:1px solid #1d2026;
+  --btn-bg:#16191f; --btn-border:1px solid #2a2f38; --btn-pad: 10px 13px;
+  --tab-bg:#101216; --tab-border:1px solid #1d2026; --tab-ink:#5a6068; --tab-shadow:none;
+  --tab-on-bg:#c8cdd6; --tab-on-ink:#0a0b0d; --tab-on-edge:#c8cdd6;
+  --win-border:1px solid #1d2026; --tt-bg:#101216; --tt-ink:#b48cff;
+  --wb-bg:#16191f; --wb-ink:#5a6068;
+  --work-bg:#0a0b0d; --work-ink:#c8cdd6; --ruler-ink:#b48cff; --ruler-line:1px solid #1d2026;
+  --cell-off:#131519; --cell-border:0; --cell-radius:0; --cell-gap:2px;
+  --led-off:#23262c; --lcd-bg:#101216; --lcd-ink:#c8cdd6; --lcd-dim:#5a6068;
+  --lcd-border:1px solid #1d2026; --lcd-radius:0;
+  --c-kick:#ff6a45; --c-snare:#ffc043; --c-hat:#3ad6cf; --c-clap:#63e07a; --c-shaker:#4bb6ff;
+}
+.s-tracker .flag { color:#b48cff; }
+
+
+.s-plat {
+  --bg:#f5f6f7; --surf:#fff; --surf2:#f1f3f5; --edge:#e3e5e8; --ink:#111418; --muted:#8b939d;
+  --radius:10px; --bevel: 0 1px 2px rgba(15,20,28,.06);
+  --bar-pad: 9px 10px; --bar-gap: 16px; --bar-border:0;
+  --bar-shadow: 0 1px 0 #e3e5e8;
+  --font: -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 500 13px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-flag: 11px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-btn: 600 14px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-bpm: 600 16px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-small: 10px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 500 13px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-title: 600 14px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-ruler: 10px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 600 11px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif; --tag-tf: uppercase;
+  --font-lcd: 11.5px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tempo: 12.5px -apple-system,'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-border:0; --btn-radius: 10px; --btn-bg:#f1f3f5; --btn-pad: 13px 18px;
+  --play-bg:#111418; --play-ink:#fff;
+  --tab-border:0; --tab-radius: 8px; --tab-bg:#f1f3f5; --tab-ink:#5b6470; --tab-shadow:none;
+  --tab-on-bg:#111418; --tab-on-ink:#fff;
+  --win-border:0; --win-radius:12px; --win-shadow: 0 2px 8px rgba(15,20,28,.08);
+  --tt-bg:#fff; --tt-ink:#111418; --wb-bg:#f1f3f5; --wb-border:0;
+  --work-bg:#fff; --work-ink:#111418; --work-top:1px solid #eceef1;
+  --ruler-ink:#8b939d; --ruler-line:0;
+  --cell-off:#f1f3f5; --cell-radius:6px; --cell-h: 40px; --cell-gap:4px;
+  --led-off:#d8dce1; --lcd-bg:#f8f9fa; --lcd-ink:#5b6470; --lcd-dim:#8b939d; --lcd-radius:8px;
+  --slider-bg:#e9ecef; --slider-border:0; --knob-bg:#111418; --knob-border:0;
+  --c-kick:#ef5a2b; --c-snare:#e0a021; --c-hat:#22b0ae; --c-clap:#3cc866; --c-shaker:#2fa8e3;
+}
+
+
+.s-w1 {
+  --bg:#000; --surf: linear-gradient(180deg,#4b4b57,#2e2e38 55%,#1e1e26);
+  --surf2: linear-gradient(180deg,#5c5c6a,#333340); --edge:#0a0a10; --ink:#c8c8d8; --muted:#75758a;
+  --radius:0; --bevel: inset 1px 1px 0 #7d7d92, inset -1px -1px 0 #0a0a10;
+  --pad: 8px 7px; --gap: 6px; --bar-pad: 3px 5px; --bar-gap: 9px; --bar-border:0;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.1em; --menu-tf: uppercase;
+  --font-flag: 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.12em; --btn-tf: uppercase;
+  --font-bpm: 700 22px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.12em; --tab-tf: uppercase;
+  --font-title: 700 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.22em; --tt-tf: uppercase;
+  --font-ruler: 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.14em; --tag-w: 52px;
+  --font-lcd: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-border:0; --btn-pad: 9px 11px;
+  --tab-border:0; --tab-on-bg:#0b1a0d; --tab-on-ink:#2ee23c; --tab-on-shadow: inset 1px 1px 0 #0a0a10;
+  --win-border:0; --win-shadow: inset 1px 1px 0 #7d7d92, inset -1px -1px 0 #0a0a10;
+  --tt-bg: linear-gradient(180deg,#3a3a8c,#1c1c46 50%,#2a2a66); --tt-ink:#b8b8e8;
+  --wb-bg: linear-gradient(180deg,#5c5c6a,#2e2e38); --wb-border:0; --wb-ink:#c8c8d8;
+  --work-bg:#25252e; --work-ink:#c8c8d8; --work-pad: 7px;
+  --ruler-ink:#2ee23c; --ruler-line:1px solid #3d3d4a;
+  --cell-off:#050806; --cell-h: 30px; --cell-gap:2px; --row-gap:4px;
+  --cell-off-shadow: inset 1px 1px 0 #0a0a10, inset -1px -1px 0 rgba(255,255,255,.09);
+  --cell-on-shadow: inset 1px 1px 0 rgba(255,255,255,.35);
+  --led-off:#33333f; --lcd-bg:#050806; --lcd-ink:#2ee23c; --lcd-dim:#0f5c17;
+  --slider-bg:#1a1a22; --knob-bg: linear-gradient(180deg,#7d7d92,#33333f);
+  --c-kick:#ff5a2b; --c-snare:#ffb020; --c-hat:#2ee23c; --c-clap:#33d9d6; --c-shaker:#8a8ad8;
+  --c-bass:#4f8cff; --c-pad:#c06bff; --c-melody:#ff5ac8;
+}
+/* La poignée à points de la barre de titre : la signature de la skin. */
+.s-w1 .bar { position: relative; padding-right: 60px; }
+.s-w1 .bar::after { content:''; position:absolute; right:8px; top:50%; width:44px; height:7px;
+  margin-top:-3.5px; background-image: radial-gradient(rgba(255,255,255,.45) 1px, transparent 1.2px);
+  background-size: 3px 3px; }
+.s-w1 .flag { color:#2ee23c; background:#050806; padding:2px 5px;
+  box-shadow: inset 1px 1px 0 #0a0a10; }
+.s-w1 .bpm { color:#2ee23c; text-shadow: 0 0 6px rgba(46,226,60,.5); }
+
+
+.s-w2 {
+  --bg:#050507; --surf: linear-gradient(180deg,#16161c,#0b0b0f); --surf2:#101016;
+  --edge:#26263a; --ink:#d6d6ee; --muted:#6a6a8c; --radius:0;
+  --bevel: inset 0 1px 0 #34344e, inset 0 -1px 0 #000;
+  --pad: 8px 7px; --gap: 7px; --bar-pad: 6px 8px; --bar-gap: 11px;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.14em; --menu-tf: uppercase;
+  --font-flag: 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --flag-ls:.14em;
+  --font-btn: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.16em; --btn-tf: uppercase;
+  --font-bpm: 700 20px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.16em; --tab-tf: uppercase;
+  --font-title: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.24em; --tt-tf: uppercase;
+  --font-ruler: 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.16em;
+  --font-lcd: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-border:1px solid #2c2c46; --btn-pad: 10px 13px; --btn-ink:#a8a8ff;
+  --tab-border:1px solid #2c2c46; --tab-ink:#6a6a8c;
+  --tab-on-bg:#1a0a24; --tab-on-ink:#ff3ff0; --tab-on-edge:#ff3ff0;
+  --win-border:1px solid #2c2c46; --win-shadow: 0 0 24px rgba(255,63,240,.12);
+  --tt-bg: linear-gradient(90deg,#1a0a24,#0b0b0f 70%); --tt-ink:#ff3ff0;
+  --wb-bg:#101016; --wb-ink:#a8a8ff; --wb-border:1px solid #2c2c46;
+  --work-bg:#08080c; --work-ink:#d6d6ee; --work-top:1px solid #2c2c46;
+  --ruler-ink:#3ff0ff; --ruler-line:1px solid #1c2c38;
+  --cell-off:#0d0d14; --cell-border:1px solid #1a1a28;
+  --cell-on-shadow: 0 0 12px var(--h), inset 0 0 6px rgba(255,255,255,.25);
+  --led-off:#23233a; --lcd-bg:#08080c; --lcd-ink:#3ff0ff; --lcd-dim:#1c5c66;
+  --lcd-border:1px solid #1c2c38;
+  --slider-bg:#101016; --knob-bg:#ff3ff0; --knob-border:0;
+  --c-kick:#ff2f6a; --c-snare:#ff8a1f; --c-hat:#3ff0ff; --c-clap:#4fff9a; --c-shaker:#a8a8ff;
+  --c-bass:#6a6aff; --c-pad:#ff3ff0; --c-melody:#ff8ad6;
+}
+.s-w2 .bar .m { text-shadow: 0 0 8px rgba(168,168,255,.45); }
+.s-w2 .flag { color:#ff3ff0; }
+.s-w2 .bpm { color:#3ff0ff; text-shadow: 0 0 10px rgba(63,240,255,.6); }
+
+
+.s-w3 {
+  --bg: linear-gradient(180deg,#1b2027,#0e1116);
+  --surf: linear-gradient(180deg,#3d4650,#252c34 55%,#1b2027);
+  --surf2: linear-gradient(180deg,#4d5761,#2a323b); --edge:#0d1116; --ink:#cdd5dd; --muted:#7a8794;
+  --radius:6px; --bevel: inset 0 1px 0 rgba(255,255,255,.16), 0 1px 3px rgba(0,0,0,.5);
+  --pad: 10px 9px; --gap: 8px; --bar-pad: 7px 10px; --bar-gap: 13px; --bar-radius: 8px;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 600 11.5px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-flag: 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.1em;
+  --font-btn: 700 12px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-bpm: 700 19px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 600 11.5px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-title: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.14em; --tt-tf: uppercase;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.1em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 11px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-radius: 20px; --btn-pad: 11px 16px; --btn-border:1px solid #10151b;
+  --play-bg: linear-gradient(180deg,#ffb84d,#e07f10); --play-ink:#1b2027;
+  --tab-radius: 16px; --tab-ink:#8f9caa;
+  --tab-on-bg: linear-gradient(180deg,#ffb84d,#e07f10); --tab-on-ink:#1b2027;
+  --win-radius:10px; --win-border:1px solid #0d1116; --win-shadow: 0 6px 18px rgba(0,0,0,.55);
+  --tt-bg: linear-gradient(180deg,#4d5761,#2a323b); --tt-ink:#e8eef4;
+  --wb-bg: linear-gradient(180deg,#5a6470,#333c46); --wb-ink:#cdd5dd;
+  --work-bg: linear-gradient(180deg,#131820,#0c1015); --work-ink:#cdd5dd;
+  --work-top:1px solid #3d4650;
+  --ruler-ink:#e07f10; --ruler-line:1px solid #2a323b;
+  --cell-off:#0a0e13; --cell-radius:5px; --cell-off-shadow: inset 0 2px 4px rgba(0,0,0,.8);
+  --cell-on-shadow: 0 0 10px var(--h), inset 0 1px 0 rgba(255,255,255,.3);
+  --led-off:#39424c; --lcd-bg:#0a0e13; --lcd-ink:#ffb84d; --lcd-dim:#7a5518; --lcd-radius:6px;
+  --slider-bg:#141a21; --knob-bg: linear-gradient(180deg,#ffb84d,#e07f10); --knob-border:0;
+  --c-kick:#ff6a45; --c-snare:#ffb84d; --c-hat:#4fd6d2; --c-clap:#6ee07a; --c-shaker:#63b6ff;
+}
+.s-w3 .bpm { color:#ffb84d; }
+.s-w3 .flag { color:#8f9caa; }
+
+
+.s-a1 {
+  --bg: linear-gradient(160deg,#3b2317,#241209 55%,#33200f);
+  --surf: linear-gradient(180deg,#f1e6cd,#ddcfae 60%,#c9b992);
+  --surf2: linear-gradient(180deg,#fdf6e6,#dccfae); --edge:#8a7550; --ink:#2a2013; --muted:#7a6844;
+  --radius:3px; --bevel: inset 0 1px 0 rgba(255,255,255,.8), 0 1px 2px rgba(0,0,0,.35);
+  --pad: 11px 9px; --gap: 9px; --bar-pad: 7px 10px; --bar-gap: 14px;
+  --bar-bg: linear-gradient(180deg,#4a2f1c,#2c1a0d); --bar-border:1px solid #120a04;
+  --bar-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+  --font: Georgia,'DejaVu Serif',serif;
+  --font-menu: 12px Georgia,'DejaVu Serif',serif; --menu-ls:.06em;
+  --font-flag: italic 10px Georgia,'DejaVu Serif',serif;
+  --font-btn: 700 12px Georgia,'DejaVu Serif',serif; --btn-ls:.1em; --btn-tf: uppercase;
+  --font-bpm: 700 17px Georgia,'DejaVu Serif',serif;
+  --font-small: italic 9px Georgia,'DejaVu Serif',serif;
+  --font-tab: 11px Georgia,'DejaVu Serif',serif; --tab-ls:.12em; --tab-tf: uppercase;
+  --font-title: 700 12px Georgia,'DejaVu Serif',serif; --tt-ls:.2em; --tt-tf: uppercase;
+  --font-ruler: italic 10px Georgia,'DejaVu Serif',serif;
+  --font-tag: 700 10px Georgia,'DejaVu Serif',serif; --tag-ls:.1em;
+  --font-lcd: 10px Georgia,'DejaVu Serif',serif;
+  --font-tempo: 11px Georgia,'DejaVu Serif',serif;
+  --btn-pad: 10px 15px; --btn-border:1px solid #8a7550;
+  --play-bg: linear-gradient(180deg,#e8d9b4,#c2a86f); 
+  --tab-on-bg: linear-gradient(180deg,#8c1f14,#5e1108); --tab-on-ink:#f1e6cd; --tab-on-edge:#3d0b05;
+  --win-border:1px solid #8a7550; --win-shadow: 0 4px 12px rgba(0,0,0,.45);
+  --tt-bg: linear-gradient(180deg,#4a2f1c,#2c1a0d); --tt-ink:#e8d9b4;
+  --wb-bg: linear-gradient(180deg,#e8d9b4,#c2a86f); --wb-ink:#2a2013;
+  --work-bg: linear-gradient(180deg,#e6d9bb,#d3c39c); --work-ink:#2a2013;
+  --work-top:2px solid #8c1f14;
+  --ruler-ink:#7a6844; --ruler-line:1px solid #b8a67e;
+  --cell-off: linear-gradient(180deg,#cbbb95,#b7a781); --cell-border:1px solid #8a7550;
+  --cell-off-shadow: inset 0 2px 3px rgba(60,40,15,.4);
+  --cell-on-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 2px rgba(0,0,0,.35);
+  --led-off:#a2916c; --lcd-bg:#2c1a0d; --lcd-ink:#e8b34d; --lcd-dim:#8a6420;
+  --slider-bg: linear-gradient(180deg,#c9b992,#e0d2b0); --knob-bg: linear-gradient(180deg,#fdf6e6,#b8a67e);
+  --c-kick:#8c1f14; --c-snare:#a8701a; --c-hat:#4a6b4a; --c-clap:#5c7a3d; --c-shaker:#3d5f6b;
+}
+/* Le vumètre : cadran ivoire, aiguille, échelle rouge. Il remplace le BPM nu —
+   c'est le seul cadran de la série qui BOUGE au son. */
+.s-a1 .bpm { position: relative; width: 104px; height: 44px; border-radius: 3px;
+  background: linear-gradient(180deg,#fdf6e6,#e6d6ae); border: 1px solid #8a7550;
+  box-shadow: inset 0 2px 5px rgba(90,65,25,.35); overflow: hidden;
+  display: block; padding: 0; font-size: 10px; color:#7a6844; }
+.s-a1 .bpm small { position: absolute; right: 5px; bottom: 2px; font-size: 8px; }
+/* L'échelle : arc clair, zone rouge à droite comme sur un vrai vumètre. */
+.s-a1 .bpm::before { content:''; position:absolute; left:9px; right:9px; top:8px; height:22px;
+  border-top: 1.5px solid #7a6844; border-right: 1.5px solid #8c1f14;
+  border-radius: 50% / 100% 100% 0 0; }
+.s-a1 .bpm::after { content:''; position:absolute; left:50%; bottom:4px; width:1.5px; height:30px;
+  background:#2a2013; transform-origin: bottom center; transform: rotate(-24deg); }
+.s-a1 .bpm { padding-left: 6px; padding-top: 2px; }
+.s-a1 .flag { color:#e0c893; }
+.s-a1 .bar .m { color:#e8d9b4; }
+.s-a1 .bar .ic { background: linear-gradient(180deg,#e8d9b4,#c2a86f); border-color:#120a04; color:#2a2013; }
+
+
+.s-a2 {
+  --bg:#1c1e22; --surf: linear-gradient(180deg,#3c4046,#2a2e34); --surf2: linear-gradient(180deg,#4a4f57,#33383f);
+  --edge:#14161a; --ink:#e8e6e0; --muted:#8e948c; --radius:2px;
+  --bevel: inset 0 1px 0 rgba(255,255,255,.14), 0 1px 2px rgba(0,0,0,.5);
+  --pad: 10px 9px; --gap: 8px; --bar-pad: 0; --bar-gap: 3px; --bar-border:0; --bar-bg: transparent;
+  --bar-shadow: none;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.12em; --menu-tf: uppercase;
+  --font-flag: 8.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.14em;
+  --font-btn: 700 11px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.14em; --btn-tf: uppercase;
+  --font-bpm: 700 20px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-small: 8px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.14em; --tab-tf: uppercase;
+  --font-title: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.2em; --tt-tf: uppercase;
+  --font-ruler: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.14em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-pad: 11px 14px;
+  --tab-on-bg: linear-gradient(180deg,#f0efe9,#cfcdc4); --tab-on-ink:#1c1e22; --tab-on-edge:#14161a;
+  --win-border:1px solid #14161a; --win-shadow: 0 3px 9px rgba(0,0,0,.5);
+  --tt-bg: linear-gradient(180deg,#4a4f57,#2f343a); --tt-ink:#e8e6e0;
+  --wb-bg: linear-gradient(180deg,#4a4f57,#33383f); --wb-ink:#e8e6e0;
+  --work-bg:#22252a; --work-ink:#e8e6e0; --work-top:1px solid #4a4f57;
+  --ruler-ink:#8e948c; --ruler-line:1px solid #3a3f46;
+  --cell-h: 36px; --cell-gap: 4px;
+  --led-off:#4a4f57; --lcd-bg:#14161a; --lcd-ink:#e8e6e0; --lcd-dim:#6b7169;
+  --slider-bg:#14161a; --knob-bg: linear-gradient(180deg,#f0efe9,#c9c7be); --knob-border:1px solid #14161a;
+  --c-kick:#e8e6e0; --c-snare:#e8e6e0; --c-hat:#e8e6e0; --c-clap:#e8e6e0; --c-shaker:#e8e6e0;
+}
+/* La palette : deux demi-cartes séparées par la charnière. Éteint = face noire,
+   allumé = face claire. Il n'y a pas de couleur, il y a une POSITION. */
+.s-a2 .cells i { background:#111316; border:1px solid #000; border-radius:2px;
+  position: relative; box-shadow: inset 0 -6px 10px rgba(0,0,0,.55); }
+.s-a2 .cells i::after { content:''; position:absolute; left:0; right:0; top:50%; height:1px;
+  background:#000; box-shadow: 0 1px 0 rgba(255,255,255,.09); }
+.s-a2 .cells i.on { background: linear-gradient(180deg,#f4f3ee,#d8d6cc 49%,#c2c0b6 51%,#e6e4da);
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,.15); }
+.s-a2 .cells i.on::after { background: rgba(0,0,0,.45); box-shadow: 0 1px 0 rgba(255,255,255,.5); }
+/* Les menus sont des touches mécaniques, pas des mots. */
+.s-a2 .bar .m { background: linear-gradient(180deg,#4a4f57,#2f343a); padding: 9px 8px;
+  border-radius: 3px; border: 1px solid #14161a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 0 #14161a; }
+.s-a2 .flag { color:#c9a24a; }
+
+
+.s-a3 {
+  --bg:#0e0f11; --surf: linear-gradient(180deg,#26282c,#191b1e); --surf2:#202226;
+  --edge:#000; --ink:#e6e8ea; --muted:#878c92; --radius:1px;
+  --bevel: inset 0 1px 0 rgba(255,255,255,.09);
+  --pad: 9px 8px; --gap: 7px; --bar-pad: 8px 10px; --bar-gap: 12px;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.22em; --menu-tf: uppercase;
+  --font-flag: 7.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --flag-ls:.2em;
+  --font-btn: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.2em; --btn-tf: uppercase;
+  --font-bpm: 700 15px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 7.5px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tab: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.2em; --tab-tf: uppercase;
+  --font-title: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.26em; --tt-tf: uppercase;
+  --font-ruler: 8px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-tag: 700 8.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --tag-ls:.18em; --tag-w: 64px;
+  --font-lcd: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 9px 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --btn-pad: 11px 13px; --btn-border:1px solid #000;
+  --tab-on-bg:#e6e8ea; --tab-on-ink:#0e0f11; --tab-on-edge:#e6e8ea;
+  --win-border:1px solid #000; --win-shadow: 0 3px 10px rgba(0,0,0,.6);
+  --tt-bg: linear-gradient(180deg,#26282c,#141518); --tt-ink:#e6e8ea;
+  --wb-bg:#202226; --wb-ink:#878c92;
+  --work-bg: linear-gradient(180deg,#1b1d20,#131417); --work-ink:#e6e8ea;
+  --work-top:1px solid #3a3d42; --work-pad: 11px 9px;
+  --ruler-ink:#878c92; --ruler-line:1px solid #2c2f33;
+  --cell-off:#0a0b0d; --cell-radius:50%; --cell-h: 26px; --cell-gap: 6px;
+  --cell-border:2px solid #3a3d42;
+  --cell-off-shadow: inset 0 2px 4px rgba(0,0,0,.9);
+  --cell-on-shadow: 0 0 10px var(--h), inset 0 0 0 3px #0a0b0d;
+  --led-off:#2c2f33; --lcd-bg:#0a0b0d; --lcd-ink:#8de0ff; --lcd-dim:#2a5c70;
+  --lcd-border:1px solid #2c2f33;
+  --slider-bg:#0a0b0d; --knob-bg: radial-gradient(circle at 35% 30%, #6d737a, #1a1c1f 72%);
+  --knob-border:1px solid #000;
+  --c-kick:#ff5a3c; --c-snare:#ffc73c; --c-hat:#3cd6c8; --c-clap:#7ce03c; --c-shaker:#5ba8ff;
+}
+/* Les pas deviennent des JACKS : un trou noir cerclé, allumé quand il est
+   patché. La ligne porte son nom en sérigraphie, à gauche du panneau. */
+.s-a3 .row { border-bottom: 1px solid #24262a; padding-bottom: 7px; }
+/* Un jack est rond, pas ovale : taille fixe et répartition régulière, ce qui
+   garde les positions rythmiques justes aussi bien à 4 pas qu'à 8. */
+.s-a3 .cells { gap: 0; justify-content: space-around; }
+.s-a3 .cells i { flex: 0 0 26px; width: 26px; height: 26px; }
+.s-a3 .tag { color:#e6e8ea; }
+.s-a3 .led { border-radius: 0; width: 5px; height: 5px; }
+.s-a3 .flag { color:#8de0ff; }
+
+
+.s-c1 {
+  --bg: radial-gradient(120% 60% at 80% 0%, rgba(255,0,128,.16), rgba(0,0,0,0) 60%),
+        radial-gradient(100% 50% at 10% 100%, rgba(0,229,255,.14), rgba(0,0,0,0) 60%),
+        #05030a;
+  --surf: rgba(255,255,255,.03); --surf2: rgba(255,255,255,.06);
+  --edge: rgba(255,0,128,.35); --ink:#f2e9ff; --muted:#8a72a8; --radius:0;
+  --bevel: 0 0 0 1px rgba(255,0,128,.12);
+  --pad: 10px 9px; --gap: 8px; --bar-pad: 7px 10px; --bar-gap: 12px;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.18em; --menu-tf: uppercase;
+  --font-flag: 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --flag-ls:.18em;
+  --font-btn: 700 10.5px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.2em; --btn-tf: uppercase;
+  --font-bpm: 700 22px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.18em; --tab-tf: uppercase;
+  --font-title: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.3em; --tt-tf: uppercase;
+  --font-ruler: 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.18em;
+  --font-lcd: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-border:1px solid #ff0080; --btn-ink:#ff0080; --btn-bg: rgba(255,0,128,.07);
+  --btn-pad: 11px 14px; --play-bg: rgba(0,229,255,.09); --play-ink:#00e5ff;
+  --tab-border:1px solid rgba(255,0,128,.3); --tab-bg: transparent; --tab-ink:#8a72a8;
+  --tab-on-bg: rgba(255,0,128,.16); --tab-on-ink:#ff3ba0; --tab-on-edge:#ff0080;
+  --win-border:1px solid rgba(255,0,128,.4); --win-shadow: 0 0 30px rgba(255,0,128,.18);
+  --tt-bg: linear-gradient(90deg, rgba(255,0,128,.25), rgba(0,0,0,0) 70%); --tt-ink:#ff3ba0;
+  --wb-bg: transparent; --wb-ink:#00e5ff; --wb-border:1px solid rgba(0,229,255,.4);
+  --work-bg: rgba(0,0,0,.55); --work-ink:#f2e9ff; --work-top:1px solid rgba(255,0,128,.3);
+  --ruler-ink:#00e5ff; --ruler-line:1px solid rgba(0,229,255,.25);
+  --cell-off: rgba(255,255,255,.035); --cell-border:1px solid rgba(255,255,255,.09);
+  --cell-on-shadow: 0 0 16px var(--h), 0 0 40px var(--h), inset 0 0 8px rgba(255,255,255,.4);
+  --led-off:#2a1c3a; --lcd-bg: rgba(0,0,0,.6); --lcd-ink:#00e5ff; --lcd-dim:#2a6a78;
+  --lcd-border:1px solid rgba(0,229,255,.25);
+  --slider-bg: rgba(255,255,255,.06); --knob-bg:#ff0080; --knob-border:0;
+  --c-kick:#ff0080; --c-snare:#ff8a00; --c-hat:#00e5ff; --c-clap:#39ff88; --c-shaker:#b14bff;
+  --c-bass:#4d7bff; --c-pad:#b14bff; --c-melody:#ff4dc4;
+}
+.s-c1 .bar .m { text-shadow: 0 0 10px rgba(255,0,128,.6); color:#ff3ba0; }
+.s-c1 .flag { color:#00e5ff; text-shadow: 0 0 10px rgba(0,229,255,.6); }
+.s-c1 .bpm { color:#ff3ba0; text-shadow: 0 0 14px rgba(255,0,128,.7); }
+/* Lignes de balayage : l'écran est filmé, pas affiché. */
+.s-c1 .win { position: relative; }
+.s-c1 .win::after { content:''; position:absolute; inset:0; pointer-events:none;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px); }
+
+
+.s-c2 {
+  --bg:#000; --surf: rgba(0,255,102,.04); --surf2: rgba(0,255,102,.07);
+  --edge: rgba(0,255,102,.35); --ink:#00ff66; --muted:#0a8a3a; --radius:0;
+  --bevel: none; --pad: 10px 9px; --gap: 7px; --bar-pad: 6px 9px; --bar-gap: 13px;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 11.5px ui-monospace,'DejaVu Sans Mono',monospace; --menu-tf: uppercase; --menu-ls:.08em;
+  --font-flag: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 11.5px ui-monospace,'DejaVu Sans Mono',monospace; --btn-tf: uppercase; --btn-ls:.12em;
+  --font-bpm: 700 20px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 11px ui-monospace,'DejaVu Sans Mono',monospace; --tab-tf: uppercase; --tab-ls:.12em;
+  --font-title: 11px ui-monospace,'DejaVu Sans Mono',monospace; --tt-tf: uppercase; --tt-ls:.24em;
+  --font-ruler: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 10.5px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.1em;
+  --font-lcd: 10.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-border:1px solid rgba(0,255,102,.5); --btn-ink:#00ff66; --btn-pad: 10px 13px;
+  --tab-border:1px solid rgba(0,255,102,.3); --tab-ink:#0a8a3a; --tab-bg: transparent;
+  --tab-on-bg:#00ff66; --tab-on-ink:#000; --tab-on-edge:#00ff66;
+  --win-border:1px solid rgba(0,255,102,.5); --win-shadow: 0 0 26px rgba(0,255,102,.12);
+  --tt-bg: rgba(0,255,102,.12); --tt-ink:#00ff66;
+  --wb-bg: transparent; --wb-ink:#00ff66; --wb-border:1px solid rgba(0,255,102,.4);
+  --work-bg:#000; --work-ink:#00ff66; --work-top:1px solid rgba(0,255,102,.3);
+  --ruler-ink:#0a8a3a; --ruler-line:1px solid rgba(0,255,102,.2);
+  --cell-off: transparent; --cell-border:1px solid rgba(0,255,102,.25);
+  --cell-on-shadow: 0 0 14px rgba(0,255,102,.7), inset 0 0 10px rgba(0,255,102,.35);
+  --led-off:#063a1a; --lcd-bg: transparent; --lcd-ink:#00ff66; --lcd-dim:#0a8a3a;
+  --lcd-border:1px solid rgba(0,255,102,.3);
+  --slider-bg: transparent; --slider-border:1px solid rgba(0,255,102,.4);
+  --knob-bg:#00ff66; --knob-border:0;
+  --c-kick:#00ff66; --c-snare:#00ff66; --c-hat:#00ff66; --c-clap:#00ff66; --c-shaker:#00ff66;
+}
+/* Un seul phosphore, donc l'état ne peut pas passer par la teinte : il passe
+   par l'INTENSITÉ. C'est la même contrainte que System 7, en luminance. */
+.s-c2 .cells i.on { background: rgba(0,255,102,.85); }
+.screen.s-c2 { position: relative; }
+.screen.s-c2::after { content:''; position:absolute; inset:0; pointer-events:none; z-index:5;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.35) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 100% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.65) 100%); }
+.s-c2 .bar .m, .s-c2 .bpm, .s-c2 .tt { text-shadow: 0 0 8px rgba(0,255,102,.55); }
+
+
+.s-c3 {
+  --bg: linear-gradient(180deg,#05090e,#02050a);
+  --surf: rgba(10,30,45,.55); --surf2: rgba(10,30,45,.75);
+  --edge: rgba(90,200,235,.32); --ink:#cfeaf5; --muted:#5a8ba0; --radius:0;
+  --bevel: none; --pad: 10px 9px; --gap: 8px; --bar-pad: 7px 10px; --bar-gap: 12px;
+  --font: 'Helvetica Neue','DejaVu Sans',sans-serif;
+  --font-menu: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --menu-ls:.22em; --menu-tf: uppercase;
+  --font-flag: 8px ui-monospace,'DejaVu Sans Mono',monospace; --flag-ls:.18em;
+  --font-btn: 700 10px 'Helvetica Neue','DejaVu Sans',sans-serif; --btn-ls:.22em; --btn-tf: uppercase;
+  --font-bpm: 700 21px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 7.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 700 9.5px 'Helvetica Neue','DejaVu Sans',sans-serif; --tab-ls:.2em; --tab-tf: uppercase;
+  --font-title: 700 9px 'Helvetica Neue','DejaVu Sans',sans-serif; --tt-ls:.3em; --tt-tf: uppercase;
+  --font-ruler: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.16em;
+  --font-lcd: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-border:1px solid rgba(90,200,235,.5); --btn-ink:#7fd4ec; --btn-bg: rgba(20,60,85,.4);
+  --btn-pad: 11px 14px; --play-bg: rgba(255,170,40,.13); --play-ink:#ffaa28;
+  --tab-border:1px solid rgba(90,200,235,.25); --tab-bg: transparent; --tab-ink:#5a8ba0;
+  --tab-on-bg: rgba(255,170,40,.14); --tab-on-ink:#ffaa28; --tab-on-edge:#ffaa28;
+  --win-border:1px solid rgba(90,200,235,.4); --win-shadow: 0 0 26px rgba(40,140,180,.16);
+  --tt-bg: rgba(20,60,85,.55); --tt-ink:#7fd4ec;
+  --wb-bg: transparent; --wb-ink:#7fd4ec; --wb-border:1px solid rgba(90,200,235,.4);
+  --work-bg: rgba(3,12,20,.75); --work-ink:#cfeaf5; --work-top:1px solid rgba(90,200,235,.3);
+  --ruler-ink:#ffaa28; --ruler-line:1px solid rgba(255,170,40,.25);
+  --cell-off: rgba(90,200,235,.05); --cell-border:1px solid rgba(90,200,235,.22);
+  --cell-on-shadow: 0 0 12px var(--h), inset 0 0 0 1px rgba(255,255,255,.35);
+  --led-off:#1b3a48; --lcd-bg: rgba(20,60,85,.4); --lcd-ink:#7fd4ec; --lcd-dim:#3d6f84;
+  --lcd-border:1px solid rgba(90,200,235,.3);
+  --slider-bg: rgba(90,200,235,.1); --slider-border:1px solid rgba(90,200,235,.3);
+  --knob-bg:#ffaa28; --knob-border:0;
+  --c-kick:#ff6a4a; --c-snare:#ffaa28; --c-hat:#4fd8ff; --c-clap:#5fe8a8; --c-shaker:#7f9fff;
+}
+/* Les équerres d'angle : la marque du HUD. Elles cadrent la zone active
+   au lieu de la border. */
+.s-c3 .win { position: relative; }
+.s-c3 .win::before, .s-c3 .win::after { content:''; position:absolute; width:16px; height:16px;
+  border-color:#ffaa28; border-style:solid; pointer-events:none; z-index:4; }
+.s-c3 .win::before { left:-1px; top:-1px; border-width:2px 0 0 2px; }
+.s-c3 .win::after { right:-1px; bottom:-1px; border-width:0 2px 2px 0; }
+.s-c3 .bar { position: relative; }
+.s-c3 .bar::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:#ffaa28; }
+.s-c3 .flag { color:#ffaa28; }
+.s-c3 .bpm { color:#7fd4ec; }
+</style>
+<div class="cell" data-k="luna">
+  <div class="cap"><b>Luna</b><span>l'actuelle — référence</span></div>
+  <div class="screen s-luna">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="luna2">
+  <div class="cap"><b>Luna resserrée</b><span>même langue, densité corrigée</span></div>
+  <div class="screen s-luna2">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="aqua">
+  <div class="cap"><b>Aqua</b><span>revival Y2K 2026</span></div>
+  <div class="screen s-aqua">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="system7">
+  <div class="cap"><b>System 7</b><span>Macintosh, 1991</span></div>
+  <div class="screen s-system7">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="amiga">
+  <div class="cap"><b>Workbench</b><span>Amiga — la machine des trackers</span></div>
+  <div class="screen s-amiga">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="motif">
+  <div class="cap"><b>Motif</b><span>stations Unix, gris et angles</span></div>
+  <div class="screen s-motif">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="tui">
+  <div class="cap"><b>Turbo</b><span>menus texte, lettre d’accès</span></div>
+  <div class="screen s-tui">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="amp">
+  <div class="cap"><b>Amp</b><span>la langue du Mode Live</span></div>
+  <div class="screen s-amp">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="skin">
+  <div class="cap"><b>Skin</b><span>Winamp</span></div>
+  <div class="screen s-skin">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="tr808">
+  <div class="cap"><b>Rhythm Composer</b><span>Roland TR-808</span></div>
+  <div class="screen s-tr808">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="pocket">
+  <div class="cap"><b>Pocket</b><span>Pocket Operator / EP-133</span></div>
+  <div class="screen s-pocket">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="rack">
+  <div class="cap"><b>Rack 19″</b><span>plaque brossée, vis, gravure</span></div>
+  <div class="screen s-rack">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="led">
+  <div class="cap"><b>Afficheur</b><span>matrice à points de façade</span></div>
+  <div class="screen s-led">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="console">
+  <div class="cap"><b>Console</b><span>sérigraphie sur table de mixage</span></div>
+  <div class="screen s-console">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="te">
+  <div class="cap"><b>Bloc</b><span>Teenage Engineering OP-1</span></div>
+  <div class="screen s-te">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="cahier">
+  <div class="cap"><b>Cahier</b><span>papier réglé, encre</span></div>
+  <div class="screen s-cahier">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="cassette">
+  <div class="cap"><b>Cassette</b><span>la jaquette d’une K7</span></div>
+  <div class="screen s-cassette">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="dymo">
+  <div class="cap"><b>Étiqueteuse</b><span>ruban embossé de home studio</span></div>
+  <div class="screen s-dymo">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="tracker">
+  <div class="cap"><b>Tracker</b><span>Polyend / Renoise</span></div>
+  <div class="screen s-tracker">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="plat">
+  <div class="cap"><b>Plat</b><span>la version sans style — témoin</span></div>
+  <div class="screen s-plat">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="w1">
+  <div class="cap"><b>Winamp 2.x</b><span>la skin d’origine, au pixel</span></div>
+  <div class="screen s-w1">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="w2">
+  <div class="cap"><b>Skin de nuit</b><span>une skin custom de skins.winamp.com</span></div>
+  <div class="screen s-w2">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="w3">
+  <div class="cap"><b>Winamp 5</b><span>la « modern skin », brossée et ronde</span></div>
+  <div class="screen s-w3">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="a1">
+  <div class="cap"><b>Bakélite</b><span>magnétophone à lampes, vumètre à aiguille</span></div>
+  <div class="screen s-a1">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="a2">
+  <div class="cap"><b>Mécanique</b><span>palettes de tableau d’affichage, cartes perforées</span></div>
+  <div class="screen s-a2">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="a3">
+  <div class="cap"><b>Eurorack</b><span>modulaire : jacks, câbles, sérigraphie blanche</span></div>
+  <div class="screen s-a3">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="c1">
+  <div class="cap"><b>Néon</b><span>ruelle de Kowloon, magenta et cyan</span></div>
+  <div class="screen s-c1">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="c2">
+  <div class="cap"><b>Phosphore</b><span>terminal cathodique, vert sur noir</span></div>
+  <div class="screen s-c2">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>
+<div class="cell" data-k="c3">
+  <div class="cap"><b>HUD</b><span>surcouche tactique, cyan filaire et alerte ambre</span></div>
+  <div class="screen s-c3">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div>
+</div>

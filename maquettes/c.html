@@ -1,0 +1,95 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette C</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION C — rupture. Plus de Bliss, plus de Luna, plus de barre de
+     titre, plus de reliefs : la grille sombre du secteur (Ableton Note,
+     drumbit, BandLab). Les seules couleurs conservées sont les 8 teintes de
+     lignes, qui sont du contenu et pas de l'habillage. */
+  :root {
+    --bg: #0e0f12; --surf: #17191e; --surf-2: #1f232a;
+    --line: #2a2f38; --text: #e8eaee; --muted: #868e9c;
+    --kick:#ff5a2b; --snare:#e5a021; --hat:#33b0ae; --clap:#4cc866; --shaker:#2fbde3;
+  }
+  body { background: var(--bg); color: var(--text);
+         font: 14px -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+         padding: 0 0 20px; }
+
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+            border-bottom: 1px solid var(--line); }
+  .topbar .brand { font-weight: 700; letter-spacing: -.01em; flex: 1; font-size: 15px; }
+  .icn { width: 30px; height: 30px; border-radius: 8px; background: var(--surf-2);
+         display: grid; place-items: center; font-size: 14px; color: var(--muted); }
+
+  .transport { display: flex; align-items: center; gap: 10px; padding: 14px; }
+  .play { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+          background: var(--text); color: var(--bg); border-radius: 10px;
+          padding: 13px; font-weight: 700; font-size: 15px; }
+  .ghost { background: var(--surf-2); color: var(--text); border-radius: 10px;
+           padding: 13px 16px; font-weight: 600; font-size: 14px; }
+  .bpm { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+
+  .tabs { display: flex; gap: 4px; padding: 0 14px 14px; }
+  .tab { flex: 1; text-align: center; padding: 9px; border-radius: 8px;
+         background: var(--surf); color: var(--muted); font-size: 13px; font-weight: 600; }
+  .tab.on { background: var(--surf-2); color: var(--text); }
+
+  .grid { padding: 4px 14px 0; }
+  .ruler { padding-left: 62px; margin-bottom: 8px; }
+  .ruler span { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: .06em; }
+
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .tag { width: 52px; flex: none; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+         text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+
+  .cells { flex: 1; display: flex; gap: 4px; height: 42px; }
+  .cells i { flex: 1; border-radius: 6px; background: var(--surf); }
+  .cells i.on { background: currentColor; }
+  .beat { outline: 1px solid rgba(255,255,255,.06); }
+
+  .meta { padding: 10px 14px 0; color: var(--muted); font-size: 12px;
+          display: flex; gap: 14px; }
+  .meta b { color: var(--text); font-weight: 600; }
+</style>
+
+<div class="topbar">
+  <span class="brand">Boîte à rythmes</span>
+  <span class="icn">↶</span><span class="icn">↷</span><span class="icn">⋯</span>
+</div>
+
+<div class="transport">
+  <span class="play">▶ Lecture</span>
+  <span class="ghost">Break</span>
+  <span class="bpm">120<br>BPM</span>
+</div>
+
+<div class="tabs"><span class="tab on">Rythme</span><span class="tab">Synthé</span><span class="tab">Production</span></div>
+
+<div class="grid">
+  <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+
+  <div class="row">
+    <div class="tag" style="color:var(--kick)"><i class="dot"></i>Kick</div>
+    <div class="cells" style="color:var(--kick)"><i class="on"></i><i></i><i class="on beat"></i><i></i></div>
+  </div>
+  <div class="row">
+    <div class="tag" style="color:var(--snare)"><i class="dot"></i>Snare</div>
+    <div class="cells" style="color:var(--snare)"><i></i><i class="on"></i><i class="beat"></i><i class="on"></i></div>
+  </div>
+  <div class="row">
+    <div class="tag" style="color:var(--hat)"><i class="dot"></i>Hat</div>
+    <div class="cells" style="color:var(--hat)"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on beat"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+  </div>
+  <div class="row">
+    <div class="tag" style="color:var(--clap)"><i class="dot"></i>Clap</div>
+    <div class="cells" style="color:var(--clap)"><i></i><i></i><i class="beat"></i><i></i></div>
+  </div>
+  <div class="row">
+    <div class="tag" style="color:var(--shaker)"><i class="dot"></i>Shaker</div>
+    <div class="cells" style="color:var(--shaker)"><i></i><i></i><i></i><i></i><i class="beat"></i><i></i><i></i><i></i></div>
+  </div>
+</div>
+
+<div class="meta"><span>Kick · <b>Ton 42</b></span><span>Déclin <b>220</b></span><span>Réverb <b>12 %</b></span></div>

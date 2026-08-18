@@ -255,12 +255,12 @@
           >&nbsp;· {row.cycleBars} mes.</span
         >{/if}</span
     >
-    <button class="mini" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
+    <button class="mini tap44" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
       {row.muted ? '🔇' : '🔊'}
     </button>
     {#if !isPad}
       <button
-        class="mini"
+        class="mini tap44"
         class:on={padOpen}
         onclick={togglePad}
         title="Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"
@@ -305,7 +305,7 @@
       {@const just = isPad ? null : justesseForStep(pattern.state, chords, row, col, v as SynthNote | null)}
       <div class="cell-wrap">
         <button
-          class="cell {name}"
+          class="cell tap44-y {name}"
           class:active
           class:playing={playheadCol === col}
           class:padtarget={padOpen && !isPad && !playing && padCursor % Math.max(1, row.subdivisions) === col}
@@ -347,20 +347,20 @@
        bandes vides sur l'onglet Synthé avant cette passe. Arpégiateur et
        Bourdon restent réservés à la Nappe, comme avant. -->
   <div class="group-bar">
-    <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
+    <button class="chip tap44" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
       onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
-    <button class="chip" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
+    <button class="chip tap44" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
       onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Timbre</button>
-    <button class="chip" class:on={openGroups.detune} aria-expanded={openGroups.detune}
+    <button class="chip tap44" class:on={openGroups.detune} aria-expanded={openGroups.detune}
       onclick={() => (openGroups.detune = !openGroups.detune)}>Détune</button>
-    <button class="chip" class:on={openGroups.filter} aria-expanded={openGroups.filter}
+    <button class="chip tap44" class:on={openGroups.filter} aria-expanded={openGroups.filter}
       onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre</button>
     {#if isPad}
       <!-- Arpège et Bourdon fondus en une pastille « Jeu » : les six
            pastilles de la Nappe demandaient 352px pour 322 disponibles, et
            les deux répondent à la MÊME question — comment la Nappe joue
            l'accord, égrené ou tenu. -->
-      <button class="chip" class:on={openGroups.play} aria-expanded={openGroups.play}
+      <button class="chip tap44" class:on={openGroups.play} aria-expanded={openGroups.play}
         onclick={() => (openGroups.play = !openGroups.play)}>Jeu</button>
     {/if}
   </div>
@@ -451,7 +451,7 @@
     {#if openGroups.play}
       <div class="group-panel" data-group="synth-arpege">
         <p class="sub">Arpège — l'accord est égrené note par note</p>
-        <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
+        <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
         <label>
           Motif
           <select bind:value={sg.padArpPattern}>
@@ -477,7 +477,7 @@
           ✍️ Traduire l'arpège en Mélodie
         </button>
         <p class="sub">Bourdon — l'accord est tenu en continu</p>
-        <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
+        <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
         <p class="hint">
           La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord
           programmé sur sa grille = un drone fixe ; plusieurs accords = le même son qui glisse de
@@ -535,7 +535,8 @@
     font-family: var(--xp-font);
     font-size: 11px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
   .packets {
     display: flex;
@@ -581,17 +582,18 @@
     height: 32px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fdfcf8, var(--xp-face-dark));
-    box-shadow: var(--xp-bevel-out);
+    background: var(--xp-lcd-bg);
+    box-shadow: var(--xp-bevel-in);
     cursor: pointer;
     padding: 0;
     font-family: var(--xp-mono);
     font-size: 12px;
     touch-action: manipulation;
   }
+  /* Relief inversé, comme sur la batterie : un pas actif émet. */
   .cell.active {
-    box-shadow: var(--xp-bevel-in);
-    color: #fff;
+    box-shadow: var(--xp-bevel-out);
+    color: var(--xp-lcd-bg);
   }
   /* Une couleur par ligne (au lieu du même violet pour les 3) — port de
      .cell-select.active.bass/pad/melody de l'original (--indigo/--violet/
@@ -601,8 +603,8 @@
     background: var(--cell-bass);
   }
   .cell.pad.active {
-    background: color-mix(in srgb, var(--cell-pad) 78%, white);
-    color: #16101f;
+    background: color-mix(in srgb, var(--cell-pad) 88%, white);
+    color: var(--xp-lcd-bg);
   }
   .cell.melody.active {
     background: var(--cell-melody);
@@ -620,7 +622,7 @@
   .cell.bass:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-bass) 18%, #fff),
+      color-mix(in srgb, var(--cell-bass) 20%, var(--xp-lcd-bg)),
       color-mix(in srgb, var(--cell-bass) 40%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-bass) 60%, var(--xp-line));
@@ -628,7 +630,7 @@
   .cell.pad:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-pad) 18%, #fff),
+      color-mix(in srgb, var(--cell-pad) 20%, var(--xp-lcd-bg)),
       color-mix(in srgb, var(--cell-pad) 40%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-pad) 60%, var(--xp-line));
@@ -636,13 +638,13 @@
   .cell.melody:not(.active) {
     background: linear-gradient(
       180deg,
-      color-mix(in srgb, var(--cell-melody) 18%, #fff),
+      color-mix(in srgb, var(--cell-melody) 20%, var(--xp-lcd-bg)),
       color-mix(in srgb, var(--cell-melody) 40%, var(--xp-face-dark))
     );
     border-color: color-mix(in srgb, var(--cell-melody) 60%, var(--xp-line));
   }
   .cell.playing {
-    outline: 2px solid #ffd54a;
+    outline: 2px solid var(--xp-playhead);
     outline-offset: -1px;
   }
   /* Case visée par le pad. Trait plein et sombre plutôt que la teinte ambre
@@ -672,8 +674,8 @@
     right: 2px;
     bottom: 0;
     font-size: 9px;
-    background: rgba(255, 255, 255, 0.8);
-    color: #222;
+    background: rgba(0, 0, 0, 0.55);
+    color: var(--xp-lcd);
     border-radius: 2px;
     padding: 0 2px;
   }
@@ -688,7 +690,8 @@
     font-family: var(--xp-font);
     font-size: 12px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
   /* Rangée de pastilles (audit A4) : remplace jusqu'à sept `<fieldset>`
      repliés pleine largeur par ligne. Cible tactile conservée à 28px
@@ -716,7 +719,7 @@
     padding: 6px 7px;
     border: 1px solid color-mix(in srgb, var(--xp-accent-violet) 40%, var(--xp-line));
     border-radius: 13px;
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     color: var(--xp-accent-violet);
     cursor: pointer;
     box-shadow: var(--xp-bevel-out);
@@ -733,7 +736,7 @@
   .chip.on {
     background: var(--xp-accent-violet);
     border-color: var(--xp-accent-violet);
-    color: #fff;
+    color: var(--xp-lcd-bg);
     box-shadow: var(--xp-bevel-in);
   }
   .group-panel {
@@ -745,14 +748,9 @@
   }
   /* Arpège/Bourdon (sous-catégories de la Nappe) : mêmes styles que les
      boutons 🎲/bulle d'aide du reste de l'Atelier, portés ici avec eux. */
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 4px 12px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
-    font-size: 12px;
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);
@@ -778,5 +776,22 @@
     font-size: 11px;
     color: var(--xp-muted);
     margin: 4px 0 0;
+  }
+  /* Chantier tactile — même rythme que les lignes de batterie (voir
+     DrumRowView et styles/global.css). */
+  @media (pointer: coarse) {
+    .synth-row {
+      margin-bottom: 24px;
+    }
+    .row-head {
+      margin-bottom: 15px;
+      gap: 16px;
+    }
+    .group-bar {
+      margin-top: 16px;
+    }
+    .chk {
+      margin: 10px 0;
+    }
   }
 </style>

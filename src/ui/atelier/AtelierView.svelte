@@ -545,7 +545,7 @@
           <XpSlider label="Bitcrush" min={0} max={100} unit="%" bind:value={st.globalBitcrush} onchange={refreshFx} />
           <XpSlider label="Volume général" min={50} max={150} unit="%" bind:value={st.finalVolume} onchange={refreshFx} />
         </div>
-        <label class="chk" data-group="effets-bus">
+        <label class="chk tap44-y" data-group="effets-bus">
           <input type="checkbox" bind:checked={st.synthGlobal.limitersEnabled} onchange={refreshFx} />
           Limiteurs de sécurité
         </label>
@@ -607,6 +607,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Chantier tactile : `overflow: hidden` (l'ellipse d'une seule ligne)
+     recadre le pseudo-élément de `.tap44-y`, qui ne sert donc à rien ici. Le
+     remplissage, lui, vit DANS la boîte recadrée. Compensé par une marge
+     négative : la bande passe à 45px, le bandeau ne bouge pas d'un pixel. */
+  @media (pointer: coarse) {
+    .production-hint {
+      padding: 16px 0;
+      margin: -16px 0;
+    }
+  }
   .production-hint.expanded {
     white-space: normal;
     overflow: visible;
@@ -622,7 +632,8 @@
   }
   .restore {
     font-size: 12px;
-    background: #fffbe6;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-accent-amber);
     border: 1px solid var(--xp-accent-amber);
     padding: 5px 8px;
     margin: 0 0 8px;
@@ -682,19 +693,16 @@
     min-height: 28px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
     cursor: pointer;
   }
   /* Cible tactile (audit A3) : 21px de haut avant — pour Lecture et Break,
      les deux boutons les plus utilisés de toute l'application. */
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 8px 16px;
     min-height: 32px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
     font-size: 13px;
   }
   .xp-btn:active {
@@ -704,7 +712,8 @@
     font-weight: 700;
   }
   .xp-btn.armed {
-    background: linear-gradient(180deg, #ffe9a8, #f4c542);
+    background: linear-gradient(180deg, #e0a52b, #a86f10);
+    color: var(--xp-lcd-bg);
   }
   .circle-holder {
     max-width: 340px;
@@ -732,6 +741,20 @@
     font-family: var(--xp-font);
     font-size: 12px;
     border: 1px solid var(--xp-line);
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` se marchent dessus dès que deux commandes sont voisines à
+     quelques pixels. On écarte sous pointeur grossier — l'espace n'est pas
+     du dessin, et sur un téléphone la page défile de toute façon. */
+  @media (pointer: coarse) {
+    .transport-row {
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    .transport {
+      gap: 14px;
+    }
   }
 </style>

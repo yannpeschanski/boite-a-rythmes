@@ -257,7 +257,7 @@
     />
   {:else}
     <button
-      class="val"
+      class="val tap44"
       title="Cliquer pour saisir une valeur"
       onclick={() => {
         editValue = String(value);
@@ -368,6 +368,18 @@
     border-bottom: 1px dotted var(--xp-muted);
     cursor: help;
   }
+  /* Chantier tactile — le seul reste assumé de la passe, avec la largeur des
+     cases. Ce libellé n'est pas une commande : il annote le curseur d'à côté
+     et son appui n'ouvre qu'une bulle d'aide. Lui donner 44px de haut, ce
+     serait les prendre à la piste qu'il annote — un doigt qui vise le réglage
+     tomberait sur l'explication. On double la bande sans déplacer le texte
+     (remplissage compensé par une marge négative), et on s'arrête là. */
+  @media (pointer: coarse) {
+    button.lab.has-hint {
+      padding: 8px 0;
+      margin: -8px 0;
+    }
+  }
   .hint-bubble {
     display: none;
     position: absolute;
@@ -377,9 +389,9 @@
     z-index: 50;
     max-width: 220px;
     width: max-content;
-    background: #ffffe1;
-    color: #000;
-    border: 1px solid #000;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd);
+    border: 1px solid var(--xp-lcd-dim);
     box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
     padding: 4px 6px;
     font-size: 10.5px;
@@ -402,6 +414,16 @@
        puisque c'est cette enveloppe qui capte tout le geste (cf. en-tête).
        Compensé par `margin: 1px` au lieu de 2 sur `.xp-slider`. */
     padding: 5px 0;
+  }
+  /* Chantier tactile (cf. styles/global.css) : la piste ne peut pas recevoir
+     le pseudo-élément de `.tap44` — c'est elle qui capte le geste de glissé,
+     et deux curseurs empilés verraient leurs enveloppes invisibles se
+     recouvrir. On épaissit donc la vraie enveloppe, qui ne dessine rien :
+     16px d'`<input>` + 2 × 14px = 44. Le trait de 4px, lui, ne bouge pas. */
+  @media (pointer: coarse) {
+    .wrap {
+      padding: 14px 0;
+    }
   }
   .wrap:focus-visible {
     outline: 1px dotted var(--xp-text);
@@ -429,8 +451,8 @@
     height: 16px;
     margin-top: -6px;
     border-radius: 3px;
-    background: linear-gradient(180deg, #fefefe, #d6d2c2 45%, #b8b2a0);
-    border: 1px solid #7a7768;
+    background: var(--xp-btn-face);
+    border: 1px solid var(--xp-line);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
   }
@@ -444,15 +466,16 @@
     width: 11px;
     height: 16px;
     border-radius: 3px;
-    background: linear-gradient(180deg, #fefefe, #d6d2c2 45%, #b8b2a0);
-    border: 1px solid #7a7768;
+    background: var(--xp-btn-face);
+    border: 1px solid var(--xp-line);
     cursor: pointer;
   }
   .val {
     font-family: var(--xp-mono);
     font-size: 10px;
     text-align: right;
-    background: #fff;
+    background: var(--xp-field-bg);
+    color: var(--xp-lcd);
     border: 1px solid var(--xp-line);
     box-shadow: var(--xp-bevel-in);
     padding: 1px 3px;
@@ -479,8 +502,8 @@
     transition:
       opacity 0.1s ease,
       background 0.15s ease;
-    background: #0a246a;
-    color: #fff;
+    background: var(--xp-select-blue);
+    color: var(--xp-title-text);
     font-size: 14px;
     font-weight: 700;
     padding: 5px 10px;
@@ -493,7 +516,7 @@
     opacity: 1;
   }
   .magnifier.precise {
-    background: #8a3fd8;
+    background: var(--xp-accent-violet);
   }
   .magnifier::after {
     content: '';
@@ -502,9 +525,9 @@
     bottom: -5px;
     transform: translateX(-50%);
     border: 5px solid transparent;
-    border-top-color: #0a246a;
+    border-top-color: var(--xp-select-blue);
   }
   .magnifier.precise::after {
-    border-top-color: #8a3fd8;
+    border-top-color: var(--xp-accent-violet);
   }
 </style>

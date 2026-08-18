@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8"><title>Q — Roue au pouce</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* Q — Appui long sur une ligne : six actions apparaissent AUTOUR du doigt,
+     on glisse vers l'une, on relâche. Zéro chrome permanent, et le geste est
+     natif du tactile — c'est la réponse directe au constat « pas de clic droit
+     ni de survol sur téléphone ». Défaut : rien ne se voit tant qu'on n'a pas
+     appuyé, donc la découverte doit venir d'ailleurs. */
+  .scrim { position: absolute; inset: 0; background: rgba(6,10,20,.55); }
+  .rad { position: absolute; left: 195px; top: 470px; width: 0; height: 0; }
+  .hub { position: absolute; transform: translate(-50%,-50%); width: 74px; height: 74px;
+         border-radius: 50%; background: rgba(28,28,52,.95); border: 2px solid var(--amber);
+         color: var(--amber); font: 700 10px var(--mono); letter-spacing: .1em;
+         display: grid; place-items: center; }
+  .sat { position: absolute; transform: translate(-50%,-50%) rotate(var(--a)) translate(96px) rotate(calc(-1 * var(--a)));
+         width: 66px; height: 66px; border-radius: 50%; background: var(--face);
+         border: 1px solid var(--line); box-shadow: 0 3px 10px rgba(0,0,20,.5);
+         display: grid; place-items: center; align-content: center; gap: 1px; }
+  .sat b { font-size: 17px; font-weight: 400; }
+  .sat span { font: 9.5px var(--sans); color: var(--muted); }
+  .thumb { position: absolute; transform: translate(-50%,-50%); width: 46px; height: 46px;
+           border-radius: 50%; border: 2px dashed rgba(255,255,255,.5); }
+</style>
+
+<div class="col">
+  <div class="cap">Au repos<span>Aucun réglage à l’écran, du tout</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid="8"></div><div class="lcd" style="margin-top:6px"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div></div>
+    </div>
+    <div class="note">Huit lignes, et <b>pas un seul bouton de réglage</b>. Toute la profondeur est dans un geste, pas dans un pixel.</div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Appui long sur Snare<span>Six actions sous le pouce</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid="8" data-sel="SNARE"></div></div>
+    </div>
+    <div class="scrim"></div>
+    <div class="rad">
+      <div class="hub">SNARE</div>
+      <div class="sat" style="--a:-90deg"><b>🎲</b><span>Remplir</span></div>
+      <div class="sat" style="--a:-30deg"><b>♪</b><span>Voix</span></div>
+      <div class="sat" style="--a:30deg"><b>◐</b><span>Timbre</span></div>
+      <div class="sat" style="--a:90deg"><b>~</b><span>Filtre</span></div>
+      <div class="sat" style="--a:150deg"><b>⇥</b><span>Décaler</span></div>
+      <div class="sat" style="--a:210deg"><b>🔇</b><span>Muet</span></div>
+      <div class="thumb"></div>
+    </div>
+    <div class="note">Les actions arrivent <b>là où est déjà le doigt</b>, jamais en haut de l’écran. Mais rien ne s’annonce&nbsp;: sans un tutoriel, la roue n’existe pas.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

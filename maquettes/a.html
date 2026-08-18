@@ -1,0 +1,117 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette A</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION A — XP resserré. Palette et reliefs strictement ceux de
+     tokens.css. Seul changement : la group-bar de 28px disparaît, ses trois
+     pastilles deviennent une étiquette sérigraphiée dans l'en-tête de ligne,
+     et les 34px gagnés vont aux cases. */
+  :root {
+    --face: #ece9d8; --face-dark: #d6d2c2; --line: #aca899;
+    --text: #1a1a1a; --muted: #6f6d64; --white: #fff; --shadow: #808080;
+    --title: linear-gradient(180deg,#0997ff 0%,#0053ee 8%,#0050ee 40%,#06f 88%,#003dd7 93%,#0997ff 100%);
+    --out: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white);
+    --amber: #c8881a;
+    --kick:#d84315; --snare:#c8881a; --hat:#2b8a8a; --clap:#3fae54; --shaker:#22a6c9;
+    --bliss:
+      radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79,152,56,0) 60%),
+      radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87,163,61,0) 62%),
+      linear-gradient(180deg,#2f71d1 0%,#5f9be6 45%,#a9cdf5 70%,#cfe6fa 100%);
+  }
+  body { background: var(--bliss); background-attachment: fixed;
+         font: 13px Tahoma, 'Noto Sans', Verdana, sans-serif; color: var(--text);
+         padding: 12px 10px 20px; }
+  .panel { background: var(--face); border: 1px solid var(--line);
+           box-shadow: var(--out); border-radius: 4px; padding: 8px 10px; margin-bottom: 10px; }
+  .menubar { display: flex; gap: 14px; align-items: center; font-size: 13px; }
+  .menubar b { font-weight: 400; }
+  .transport { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .btn { background: linear-gradient(180deg,#fff,var(--face) 45%,var(--face-dark));
+         border: 1px solid var(--line); border-radius: 3px; box-shadow: var(--out);
+         padding: 9px 14px; font: 700 14px Tahoma, sans-serif; }
+  .tabs { display: flex; gap: 6px; }
+  .tab { flex: 1; text-align: center; padding: 9px 4px; border: 1px solid var(--line);
+         border-radius: 3px; background: linear-gradient(180deg,#fff,var(--face) 45%,var(--face-dark));
+         box-shadow: var(--out); font-size: 12px; }
+  .tab.on { background: linear-gradient(180deg,#4d8cf5,#1b5bd4); color: #fff; font-weight: 700; }
+  .win { background: var(--face); border: 1px solid #0831d9; border-radius: 8px 8px 3px 3px;
+         box-shadow: 0 4px 14px rgba(0,0,30,.35); overflow: hidden; }
+  .titlebar { display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+              background: var(--title); color: #fff; font-weight: 700; font-size: 13px;
+              text-shadow: 1px 1px 1px rgba(0,0,40,.6); }
+  .titlebar .t { flex: 1; }
+  /* Charge n°2 : trois cibles pour un repli deviennent une seule. */
+  .wbtn { width: 24px; height: 24px; border: 1px solid #fff; border-radius: 3px;
+          background: linear-gradient(180deg,#7ba2e7,#3d6fe0 50%,#2a54c4); color: #fff;
+          font: 700 13px Tahoma; }
+  .wbody { padding: 10px; border-top: 3px solid var(--amber);
+           background: linear-gradient(180deg,#f4e3c2,var(--face) 60px); }
+  .ruler { margin-bottom: 4px; }
+  .ruler span { border-left: 1px solid var(--line); padding-left: 3px; color: var(--muted); }
+
+  .row { margin-bottom: 12px; }
+  .head { display: flex; align-items: baseline; gap: 8px; height: 20px; }
+  .head .name { font: 700 13px Tahoma; letter-spacing: .06em; }
+  /* L'étiquette sérigraphiée : les 3 pastilles deviennent du texte qui DIT
+     l'état, et qui reste tappable pour ouvrir la surcouche. */
+  .silk { flex: 1; font: 10px ui-monospace, Menlo, monospace; color: var(--muted);
+          letter-spacing: .02em; text-align: right; }
+  .cells { display: flex; gap: 4px; height: 44px; margin-top: 4px; }
+  .cells i { flex: 1; border: 1px solid var(--line); border-radius: 2px; box-shadow: var(--out); }
+  .k-on { background: var(--kick); } .k-off { background: linear-gradient(180deg,#fff,#f6d9d0); }
+  .s-on { background: var(--snare); } .s-off { background: linear-gradient(180deg,#fff,#f2e6cd); }
+  .h-on { background: var(--hat); } .h-off { background: linear-gradient(180deg,#fff,#d9ecec); }
+  .c-off { background: linear-gradient(180deg,#fff,#dff0e2); }
+  .sh-off { background: linear-gradient(180deg,#fff,#dceef4); }
+  .tempo { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .tempo input { flex: 1; }
+</style>
+
+<div class="panel menubar"><b>Mode</b><b>Fichier</b><b>Édition</b><b>Affichage</b><b>Aide</b></div>
+
+<div class="panel">
+  <div class="transport">
+    <span class="btn">▶ Lecture</span><span class="btn">🫨 Break</span>
+  </div>
+  <div class="tabs"><span class="tab on">🥁 Rythme</span><span class="tab">🎹 Synthé</span><span class="tab">🎚 Production</span></div>
+</div>
+
+<div class="win">
+  <div class="titlebar"><span>🥁</span><span class="t">Séquenceur — Kick / Snare / Hat…</span><button class="wbtn">⌄</button></div>
+  <div class="wbody">
+    <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+
+    <div class="row">
+      <div class="head"><span class="name" style="color:var(--kick)">KICK</span>
+        <span class="silk">🔊 · TON 42 · DÉCLIN 220 · RÉV 12 % · ⚙</span></div>
+      <div class="cells"><i class="k-on"></i><i class="k-off"></i><i class="k-on"></i><i class="k-off"></i></div>
+    </div>
+
+    <div class="row">
+      <div class="head"><span class="name" style="color:var(--snare)">SNARE</span>
+        <span class="silk">🔊 · TON 190 · DÉCLIN 140 · RÉV 28 % · ⚙</span></div>
+      <div class="cells"><i class="s-off"></i><i class="s-on"></i><i class="s-off"></i><i class="s-on"></i></div>
+    </div>
+
+    <div class="row">
+      <div class="head"><span class="name" style="color:var(--hat)">HAT</span>
+        <span class="silk">🔊 · 808 · DÉCLIN 45 · RÉV 8 % · ⚙</span></div>
+      <div class="cells"><i class="h-on"></i><i class="h-on"></i><i class="h-on"></i><i class="h-on"></i><i class="h-on"></i><i class="h-on"></i><i class="h-on"></i><i class="h-on"></i></div>
+    </div>
+
+    <div class="row">
+      <div class="head"><span class="name" style="color:var(--clap)">CLAP</span>
+        <span class="silk">🔊 · ÉTALEMENT 24 · RÉV 40 % · ⚙</span></div>
+      <div class="cells"><i class="c-off"></i><i class="c-off"></i><i class="c-off"></i><i class="c-off"></i></div>
+    </div>
+
+    <div class="row">
+      <div class="head"><span class="name" style="color:var(--shaker)">SHAKER</span>
+        <span class="silk">🔊 · DÉCLIN 60 · RÉV 15 % · ⚙</span></div>
+      <div class="cells"><i class="sh-off"></i><i class="sh-off"></i><i class="sh-off"></i><i class="sh-off"></i><i class="sh-off"></i><i class="sh-off"></i><i class="sh-off"></i><i class="sh-off"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel tempo" style="margin-top:10px"><span>Tempo</span><input type="range" value="40"><b>120</b></div>

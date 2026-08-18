@@ -1,78 +1,128 @@
-/* Design system XP — tokens. Thème "luna" (Atelier, beige clair) posé sur le
-   conteneur de vue ; le futur mode jeu posera data-theme="noir". Tout le look
-   (reliefs, dégradés Luna, Bliss) vit ici en variables — plus de bataille de
-   spécificité comme dans l'original. */
+/* Design system — tokens.
+   Skin Winamp 2.x (voir CLAUDE.md et PLAN.md, « DÉCISION — Winamp 2.x pour
+   tous les modes »). Étape 2 du plan : les VALEURS changent, les NOMS restent.
+   C'est ce qui permet à toute l'appli de basculer d'un seul commit, sans
+   toucher à un seul composant.
+
+   La grammaire tient en une règle : un biseau d'un pixel, lumière en haut à
+   gauche, ombre en bas à droite. C'est lui qui dit ce qui est en relief
+   (`--xp-bevel-out`), ce qui est creusé (`--xp-bevel-in`) — et par contraste,
+   ce qui est un écran (fond noir verdâtre, texte vert). */
+
 :root,
 [data-theme='luna'] {
-  --xp-face: #ece9d8;
-  --xp-face-dark: #d6d2c2;
-  --xp-line: #aca899;
-  --xp-text: #1a1a1a;
-  --xp-muted: #6f6d64;
-  --xp-white: #fff;
-  --xp-shadow: #808080;
+  /* Le chrome. --xp-face doit rester une COULEUR UNIE : elle sert de point
+     d'arrivée aux trois dégradés de module plus bas, et un dégradé ne peut pas
+     s'imbriquer dans un dégradé. Le dégradé vertical des panneaux appartient
+     donc aux composants (étape 3), pas au token. */
+  --xp-face: #34343f;
+  --xp-face-dark: #24242c;
+  --xp-line: #0a0a10;
+  --xp-text: #c8c8d8;
+  /* Remonté de #75758a à l'étape 3 : cette valeur était calibrée pour le fond
+     clair de Luna et tombait à 2,49:1 sur la face de bouton sombre. À #a5a5b8
+     elle passe à 4,63:1 sur le bouton et 5,08:1 sur --xp-face, tout en restant
+     nettement en retrait de --xp-text. */
+  --xp-muted: #a5a5b8;
 
-  /* Barre de titre Luna : dégradé bleu en plusieurs stops */
+  /* Ces deux-là ne servent QUE dans les deux formules de biseau ci-dessous
+     (vérifié : 2 usages chacun, tous les deux ici). Leurs noms sont hérités de
+     XP ; leur rôle réel est « la lumière » et « l'ombre » du relief d'un pixel.
+     --xp-white n'est donc plus du blanc, et c'est voulu. */
+  --xp-white: #7d7d92;
+  --xp-shadow: #0a0a10;
+
+  /* Bandeau de fenêtre : l'indigo de la 2.x, sombre et mat, là où Luna était
+     un bleu vif. C'est ce qui permet d'empiler trois fenêtres sur l'onglet
+     Production sans que l'écran crie. */
   --xp-title-grad: linear-gradient(
     180deg,
-    #0997ff 0%,
-    #0053ee 8%,
-    #0050ee 40%,
-    #06f 88%,
-    #003dd7 93%,
-    #0997ff 100%
+    #3a3a8c 0%,
+    #2f2f74 40%,
+    #1c1c46 55%,
+    #33337e 100%
   );
-  --xp-title-text: #fff;
-  --xp-close-grad: linear-gradient(180deg, #e5a899 0%, #d44e2a 45%, #b13317 100%);
+  --xp-title-text: #b8b8e8;
 
-  /* Reliefs boutons/cases (in/out) */
+  /* Reliefs boutons/cases (in/out) — formules inchangées depuis l'origine :
+     elles se contentent de lire la lumière et l'ombre ci-dessus. */
   --xp-bevel-out: inset -1px -1px 0 var(--xp-shadow), inset 1px 1px 0 var(--xp-white);
   --xp-bevel-in: inset 1px 1px 0 var(--xp-shadow), inset -1px -1px 0 var(--xp-white);
 
-  /* Les 3 familles de modules : ambre = Drum, violet = Synthé, teal = Général */
-  --xp-accent-amber: #c8881a;
-  --xp-accent-amber-soft: #f4e3c2;
-  --xp-accent-violet: #7b5ea7;
-  --xp-accent-violet-soft: #e6ddf2;
-  --xp-accent-teal: #2b8a8a;
-  --xp-accent-teal-soft: #d3ecec;
+  /* Les 3 familles de modules : ambre = Drum, violet = Synthé, teal = Général.
+     Les variantes `-soft` servaient de haut de dégradé sur fond clair ; elles
+     deviennent des teintes SOMBRES, sinon les corps de fenêtre s'allumeraient
+     en pastel sur un chrome sombre.
 
-  --xp-select-blue: #3169d4;
+     ⚠️ Ces trois accents sont du CHROME : ils doivent rester plus calmes que
+     les couleurs de contenu (les lignes) et ne jamais emprunter le vert de
+     l'afficheur, qui est réservé à l'ÉTAT. Un liseré de module en #2ee23c
+     entrait en concurrence avec les diodes et les bandeaux — c'est le reproche
+     qu'on faisait à la direction « Néon », il valait aussi ici. */
+  --xp-accent-amber: #d9931c;
+  --xp-accent-amber-soft: #38301c;
+  --xp-accent-violet: #8a7cc0;
+  --xp-accent-violet-soft: #2c2840;
+  --xp-accent-teal: #3f9c96;
+  --xp-accent-teal-soft: #14301a;
+
+  /* Fond des champs de saisie et des menus déroulants. Un champ est creusé,
+     pas posé : c'est le pendant du bouton, dont le relief sort. */
+  --xp-field-bg: #101016;
+
+  /* Face de bouton. Token plutôt que valeur recopiée : trois classes
+     différentes portent le même relief (`.xp-btn`, `.tool`, `.restore button`)
+     sans partager de classe commune. */
+  --xp-btn-face: linear-gradient(180deg, #5c5c6a, #3a3a46 52%, #2b2b34);
+
+  /* Sélection de menu. Toujours accompagnée d'un `color: #fff` côté composant
+     (3 usages, tous vérifiés), donc n'importe quel fond sombre convient. */
+  --xp-select-blue: #2a2a66;
+
   --xp-font: Tahoma, 'Noto Sans', Verdana, 'Segoe UI', sans-serif;
-  --xp-mono: 'JetBrains Mono', monospace;
+  /* Auto-hébergée depuis l'étape 1 (voir styles/fonts.css). La pile de repli
+     reste complète : si la fonte tarde ou échoue, on retombe sur une chasse
+     fixe correcte plutôt que sur le monospace par défaut du navigateur. */
+  --xp-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    'DejaVu Sans Mono', monospace;
 
-  /* Fond "colline Bliss" en dégradés CSS purs (aucune image) */
-  --xp-bliss:
-    radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79, 152, 56, 0) 60%),
-    radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87, 163, 61, 0) 62%),
-    linear-gradient(180deg, #2f71d1 0%, #5f9be6 45%, #a9cdf5 70%, #cfe6fa 100%);
+  /* Le fond de page. Winamp n'a pas de papier peint : la fenêtre flotte sur du
+     noir. Remplace la colline Bliss ; le nom du token est conservé pour ne pas
+     toucher au composant qui le lit. */
+  --xp-bliss: #000;
 
-  --cell-kick: #d84315;
-  --cell-snare: #c8881a;
-  --cell-hat: #2b8a8a;
-  /* Clap/shaker (PLAN.md §6) : vert et cyan — les deux teintes encore
-     libres sur la roue chromatique entre les 3 couleurs batterie
-     (rouge-orangé/ambre/sarcelle) et les 3 couleurs synthé (bleu-violet/
-     violet/rose) ci-dessous, pour rester distinctes des 6 déjà prises. */
-  --cell-clap: #3fae54;
-  --cell-shaker: #22a6c9;
+  /* Verre : le fond des afficheurs et des cases vides. Un pas éteint est un
+     TROU, pas un bouton pâle — c'était le reproche n°1 de l'audit de design. */
+  --xp-lcd-bg: #050806;
+  --xp-lcd: #2ee23c;
+  --xp-lcd-dim: #0f5c17;
+
+  /* Tête de lecture. C'est de l'ÉTAT, donc elle reste vive — contrairement aux
+     trois accents de module, qui sont du chrome et ont été désaturés. */
+  --xp-playhead: #ffd54a;
+
+  /* Couleurs de lignes — saturées, ce sont des couleurs d'ÉCRAN : elles ne
+     tiennent que parce que le fond est presque noir. Reprises de la maquette
+     validée (maquettes/atelier, variante `w1`).
+     Clap/shaker (PLAN.md §6) : les deux teintes encore libres sur la roue
+     chromatique entre les 3 couleurs batterie et les 3 couleurs synthé. */
+  --cell-kick: #ff5a2b;
+  --cell-snare: #ffb020;
+  --cell-hat: #2ee23c;
+  --cell-clap: #33d9d6;
+  --cell-shaker: #8a8ad8;
 
   /* Couleurs des 3 lignes synthé — mêmes valeurs que PREVIEW_COLOR dans
      SynthRowView.svelte (courbe de filtre) : la ligne dessinée sur le canvas
-     et la couleur de ses cases doivent rester la même teinte. Reprises de
-     SYNTH_WAVE_COLORS/--indigo/--violet/--pink de l'original (l. 15-16). */
-  --cell-bass: #6a7bff;
-  --cell-pad: #b06bff;
-  --cell-melody: #ff6bd6;
+     et la couleur de ses cases doivent rester la même teinte. */
+  --cell-bass: #4f8cff;
+  --cell-pad: #c06bff;
+  --cell-melody: #ff5ac8;
 }
 
-[data-theme='noir'] {
-  --xp-face: #3b3b46;
-  --xp-face-dark: #2c2c35;
-  --xp-line: #55555f;
-  --xp-text: #eaeaf0;
-  --xp-muted: #9a9aa6;
-  --xp-white: #5b5b68;
-  --xp-shadow: #17171d;
-  --xp-title-grad: linear-gradient(180deg, #3d4f7c 0%, #232f52 50%, #1a2340 100%);
-}
+/* [data-theme='noir'] a disparu (étape 5) : le Mode jeu ne pose plus
+   l'attribut et parle la langue commune. Les onze tokens --amp-* du Mode Live
+   sont devenus des alias sur ce jeu-ci dans LiveView.svelte.
+
+   L'appli parlait TROIS langues visuelles ; elle n'en parle plus qu'une. C'est
+   le 4e reproche de l'audit de design, et l'argument principal du choix. */

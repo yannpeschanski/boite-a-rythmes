@@ -1385,14 +1385,14 @@
       <div class="titlebar">
         <span class="grip"></span>
         <span class="app-name">BOÎTE À RYTHMES — LIVE</span>
-        <button class="win-dots" onclick={onExit} title="Quitter le Mode Live" aria-label="Quitter">
+        <button class="win-dots tap44" onclick={onExit} title="Quitter le Mode Live" aria-label="Quitter">
           <span></span><span></span><span></span>
         </button>
       </div>
       <div class="topbar">
-        <button class="amp-btn stop" onclick={togglePlay}>{playing ? '■ STOP' : '▶ PLAY'}</button>
+        <button class="amp-btn stop tap44" onclick={togglePlay}>{playing ? '■ STOP' : '▶ PLAY'}</button>
         <button
-          class="amp-btn rec"
+          class="amp-btn rec tap44"
           class:on={recording}
           disabled={!playing}
           onclick={toggleRecord}
@@ -1403,7 +1403,7 @@
         <div class="lcd-block">
           <div class="lcd-tempo">
             <button
-              class="tempo-btn"
+              class="tempo-btn tap44"
               onpointerdown={() => tempoPointerDown(-1)}
               onpointerup={tempoPointerUp}
               onpointerleave={tempoPointerUp}
@@ -1411,7 +1411,7 @@
             >−</button>
             <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}</span>
             <button
-              class="tempo-btn"
+              class="tempo-btn tap44"
               onpointerdown={() => tempoPointerDown(1)}
               onpointerup={tempoPointerUp}
               onpointerleave={tempoPointerUp}
@@ -1421,7 +1421,7 @@
           <span class="lcd-sub">TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD</span>
         </div>
         <div
-          class="vol-slider"
+          class="vol-slider tap44"
           role="slider"
           aria-label="Volume"
           aria-valuenow={Math.round(axisValues['volume'] * 100)}
@@ -1435,13 +1435,13 @@
           <div class="vol-fill" style:width="{axisValues['volume'] * 100}%"></div>
           <span class="vol-val">{Math.round(axisValues['volume'] * 100)}%</span>
         </div>
-        <button class="tilt-btn" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
+        <button class="tilt-btn tap44" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
           <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
         </button>
-        <button class="amp-btn shuffle" onclick={shuffleAssignments} title="Brasser — réassigne tout le catalogue au hasard">
+        <button class="amp-btn shuffle tap44" onclick={shuffleAssignments} title="Brasser — réassigne tout le catalogue au hasard">
           🔀
         </button>
-        <button class="amp-btn gear" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
+        <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
       <!-- Remplace l'ex-seekbar décorative façon Winamp (retour de Yann,
            2026-08-14 : « un curseur vert que je ne comprends pas entre le
@@ -1451,13 +1451,13 @@
            charge tout de suite. -->
       <div class="seq-bar">
         <button
-          class="seq-nav"
+          class="seq-nav tap44"
           onclick={() => cycleBankSequence(-1)}
           disabled={sequenceBank.entries.length < 2}
           title="Séquence précédente"
         >‹</button>
         <button
-          class="seq-current"
+          class="seq-current tap44"
           onclick={() => cycleBankSequence(1)}
           disabled={sequenceBank.entries.length === 0}
           title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
@@ -1465,7 +1465,7 @@
           🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Choisir une séquence…' : 'Aucune séquence')}
         </button>
         <button
-          class="seq-nav"
+          class="seq-nav tap44"
           onclick={() => cycleBankSequence(1)}
           disabled={sequenceBank.entries.length < 2}
           title="Séquence suivante"
@@ -1740,7 +1740,7 @@
               {/each}
             </div>
 
-            <button class="amp-btn assign-close" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>
+            <button class="amp-btn assign-close tap44" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>
           </div>
 
           {#if picker}
@@ -1825,7 +1825,7 @@
                   {/each}
                 {/if}
               </div>
-              <button class="amp-btn picker-close" onclick={() => (picker = null)}>FERMÉ</button>
+              <button class="amp-btn picker-close tap44" onclick={() => (picker = null)}>FERMÉ</button>
             </div>
           {/if}
         </div>
@@ -1839,17 +1839,29 @@
     position: fixed;
     inset: 0;
     z-index: 100;
-    --amp-bg-1: #6a6a9c;
-    --amp-bg-2: #3a3a64;
-    --amp-bg-3: #1c1c34;
-    --amp-line: #0a0a18;
-    --amp-hi: #9a9ad0;
-    --amp-title-grad: linear-gradient(180deg, #5a5ad0 0%, #3232a0 45%, #26266e 55%, #3a3a8c 100%);
-    --amp-lcd-bg: #050806;
-    --amp-lcd-fg: #33ff44;
-    --amp-lcd-dim: #145520;
-    --amp-amber: #ffb020;
-    --amp-text: #cfd0f0;
+    /* ÉTAPE 5 — fusion des palettes. Le Mode Live avait ici sa PROPRE langue
+       visuelle : l'appli en parlait trois (Atelier en Luna, Mode jeu en thème
+       « noir », Live avec ces onze tokens). C'était le 4e reproche de l'audit
+       de design, et c'est l'argument principal du choix de Winamp 2.x.
+
+       Ces onze déclarations deviennent des ALIAS sur les tokens partagés. Le
+       choix est délibéré : 82 sites d'appel utilisent `var(--amp-*)` dans ce
+       fichier, et les renommer serait du churn à risque pour zéro gain visuel.
+       La palette est fusionnée — c'est ce qui compte ; les noms locaux ne sont
+       plus qu'une façade au-dessus du jeu commun. */
+    --amp-bg-1: #4b4b57;
+    --amp-bg-2: #2e2e38;
+    --amp-bg-3: #1e1e26;
+    --amp-line: var(--xp-line);
+    --amp-hi: var(--xp-white);
+    --amp-title-grad: var(--xp-title-grad);
+    --amp-lcd-bg: var(--xp-lcd-bg);
+    --amp-lcd-fg: var(--xp-lcd);
+    --amp-lcd-dim: var(--xp-lcd-dim);
+    /* L'ambre du Live (faders, verrous) est de l'ÉTAT, pas du chrome : il
+       rejoint la tête de lecture plutôt que l'accent de module désaturé. */
+    --amp-amber: var(--xp-playhead);
+    --amp-text: var(--xp-text);
     font-family: ui-monospace, 'JetBrains Mono', monospace;
   }
 
@@ -2725,5 +2737,18 @@
     line-height: 1.5;
     padding: 0 4px 6px;
     margin: 0;
+  }
+  /* Chantier tactile (cf. styles/global.css). En paysage la largeur est le
+     seul luxe du Mode Live : on écarte horizontalement, ce qui débloque les
+     cibles collées à leur voisine. La hauteur, elle, ne se prend nulle part —
+     les 22px de la barre supérieure et de la barre de séquence sont ce qui
+     reste après les pads, et les pads SONT l'instrument. Reste documenté. */
+  @media (pointer: coarse) {
+    .topbar {
+      gap: 14px;
+    }
+    .seq-bar {
+      gap: 12px;
+    }
   }
 </style>

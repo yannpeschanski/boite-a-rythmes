@@ -116,13 +116,9 @@
     flex-wrap: wrap;
     margin-top: 6px;
   }
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 5px 14px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
     font-size: 13px;
   }
   .xp-btn:active {
@@ -143,5 +139,15 @@
     font-size: 11px;
     color: var(--xp-muted);
     margin: 6px 0 0;
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` se marchent dessus dès que deux commandes sont voisines à
+     quelques pixels. On écarte sous pointeur grossier — l'espace n'est pas
+     du dessin, et sur un téléphone la page défile de toute façon. */
+  @media (pointer: coarse) {
+    .btns {
+      gap: 20px;
+      margin-top: 20px;
+    }
   }
 </style>

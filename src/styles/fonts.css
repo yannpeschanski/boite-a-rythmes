@@ -1,0 +1,33 @@
+/* Fonte de l'interface — étape 1 du passage à la skin Winamp 2.x (PLAN.md).
+
+   Pourquoi auto-héberger : toute la direction repose sur une chasse fixe, et
+   aucune police système ne rend pareil d'une plateforme à l'autre. `--xp-mono`
+   déclarait déjà 'JetBrains Mono' et l'utilisait à onze endroits, mais la
+   fonte n'a jamais été installée : elle retombait silencieusement sur le
+   monospace générique du navigateur depuis le début du projet.
+
+   Pourquoi nos propres @font-face plutôt que la CSS de fontsource : celle-ci
+   référence aussi un `.woff` de repli, inutile pour les navigateurs que ce
+   projet vise (Web Audio, Svelte 5) — et surtout, le build monofichier inline
+   les binaires en base64, donc chaque octet inutile y compte double.
+
+   Sous-ensemble latin uniquement, deux graisses (400 et 700) : ce sont les
+   seules que le design system utilise. 2 × ~21 Ko en woff2. */
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2')
+    format('woff2');
+}

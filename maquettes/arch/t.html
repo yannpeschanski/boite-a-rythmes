@@ -1,0 +1,51 @@
+<!doctype html>
+<meta charset="utf-8"><title>T — Le guide qui parle</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* T — L'accueil n'est pas une réduction, c'est un CONTENU. Un bandeau
+     propose la prochaine action pertinente et donne deux boutons pour la
+     faire ; tout le reste de l'appli est atteignable par ce fil. Le projet a
+     déjà la matière (paramHints, le bandeau d'astuce, les 34 niveaux) — c'est
+     l'extension de ce qui existe, pas une invention. */
+  .guide { background: linear-gradient(180deg,#fffbe8,#f6eec8); border: 1px solid #d9c98a;
+           border-radius: 5px; padding: 9px 10px; margin-bottom: 9px;
+           box-shadow: 0 2px 5px rgba(0,0,20,.2); }
+  .guide .top { display: flex; gap: 7px; align-items: flex-start; }
+  .guide .top b { font-size: 15px; line-height: 1.2; }
+  .guide p { font-size: 12px; line-height: 1.45; color: #3e3a28; }
+  .guide .acts { display: flex; gap: 5px; margin-top: 8px; }
+  .guide .acts .c { flex: 1; text-align: center; font-size: 11.5px; padding: 8px 4px; }
+  .mini2 { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--muted); }
+  .mini2 .dot { width: 9px; height: 9px; border-radius: 50%; background: #d9a020; flex: none; }
+</style>
+
+<div class="col">
+  <div class="cap">Débutant<span>Le guide ouvert, une action proposée</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel guide"><div class="top"><b>💡</b><p><b>Ton kick est seul.</b> Un rythme tient debout quand une snare répond sur les temps 2 et 4. Tu veux essayer&nbsp;?</p></div>
+      <div class="acts"><span class="btn c">Poser la snare</span><span class="btn c">Écouter d’abord</span><span class="btn c">Plus tard</span></div>
+    </div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid data-rows="KICK,SNARE"></div></div>
+    </div>
+    <div class="note">Rien n’est caché parce que rien n’a encore été demandé. <b>Le guide ne simplifie pas l’interface&nbsp;: il propose la suite</b>, et l’interface arrive avec elle.</div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Expert<span>Le guide replié en une pastille</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel mini2"><span class="dot"></span>Guide en veille<span class="btn c" style="margin-left:auto;padding:4px 9px;font-size:11px">Réveiller</span></div>
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid="8"></div><div class="lcd" style="margin-top:6px"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div></div>
+    </div>
+    <div class="note">Le guide se retire quand il n’a plus rien à apprendre, et laisse l’interface complète. <b>Il faut qu’il sache se taire</b> — c’est là que ce modèle se joue.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

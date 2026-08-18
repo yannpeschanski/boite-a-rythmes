@@ -1,0 +1,71 @@
+<!doctype html>
+<meta charset="utf-8"><title>P — Palette de commandes</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* P — Un seul champ atteint les 288 réglages par leur nom, où qu'ils vivent.
+     Coût en pixels : une pastille. Profondeur : totale, et elle traverse les
+     onglets — « rev » ramène la réverb du kick ET celle du bus, qui sont
+     aujourd'hui à quatre écrans l'une de l'autre. Défaut symétrique : on ne
+     trouve que ce qu'on sait déjà nommer. À coupler, jamais seule. */
+  .find { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .scrim { position: absolute; inset: 0; background: rgba(6,10,20,.55); }
+  .pal { position: absolute; left: 12px; right: 12px; top: 60px; background: var(--face);
+         border: 1px solid var(--line); border-radius: 6px;
+         box-shadow: 0 10px 30px rgba(0,0,20,.55); overflow: hidden; }
+  .q { display: flex; align-items: center; gap: 8px; padding: 11px 12px;
+       border-bottom: 1px solid var(--line); font-size: 15px; }
+  .q b { font-weight: 400; }
+  .q i { width: 1px; height: 17px; background: var(--text); }
+  .res .hit { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px;
+              font-size: 12px; border-bottom: 1px solid #e4e1d4; }
+  .res .hit.on { background: #3169d4; color: #fff; }
+  .res .hit .k { font: 700 9.5px var(--sans); letter-spacing: .1em; text-transform: uppercase;
+                 color: var(--muted); width: 46px; flex: none; }
+  .res .hit.on .k, .res .hit.on .w { color: #cfe0ff; }
+  .res .hit em { font-style: normal; font-family: var(--mono); font-size: 11px; }
+  .res .hit .w { margin-left: auto; font-size: 10px; color: var(--muted); }
+  .foot2 { padding: 8px 12px; font-size: 10.5px; color: var(--muted); background: var(--face-dark); }
+</style>
+
+<div class="col">
+  <div class="cap">Au repos<span>Le coût total à l’écran</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid></div><div class="lcd" style="margin-top:6px"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div></div>
+    </div>
+    <div class="panel find"><span class="btn c" style="padding:7px 11px">🔎</span> Chercher une commande…</div>
+    <div class="note">Une pastille. <b>C’est tout ce que la profondeur coûte à l’écran.</b></div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">« rev »<span>Trois lettres, six réglages de trois onglets différents</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid></div></div>
+    </div>
+    <div class="scrim"></div>
+    <div class="pal">
+      <div class="q"><span>🔎</span><b>rev</b><i></i></div>
+      <div class="res">
+        <div class="hit"><span class="k">Kick</span>Réverb <em>12 %</em><span class="w">ligne</span></div>
+        <div class="hit on"><span class="k">Snare</span>Réverb <em>28 %</em><span class="w">ligne</span></div>
+        <div class="hit"><span class="k">Hat</span>Réverb <em>8 %</em><span class="w">ligne</span></div>
+        <div class="hit"><span class="k">Bus</span>Taille de la réverb<span class="w">production</span></div>
+        <div class="hit"><span class="k">Bus</span>Réverb générale <em>18 %</em><span class="w">production</span></div>
+        <div class="hit"><span class="k">Nappe</span>Réverb <em>44 %</em><span class="w">synthé</span></div>
+      </div>
+      <div class="foot2">↑↓ choisir · ⏎ régler · <b>288 commandes indexées</b></div>
+    </div>
+    <div class="note">La recherche <b>traverse les onglets</b>&nbsp;: la réverb du kick et celle du bus sont aujourd’hui à quatre écrans l’une de l’autre. Mais on ne trouve que ce qu’on sait nommer.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

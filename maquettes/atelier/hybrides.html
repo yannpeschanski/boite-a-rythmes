@@ -1,0 +1,567 @@
+<!doctype html>
+<meta charset="utf-8"><title>4 croisements</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 24px;
+       font-family: system-ui, sans-serif; }
+.cell { width: 390px; }
+.cap { color: #eef1f4; margin-bottom: 9px; }
+.cap b { font: 700 13px system-ui; letter-spacing: .1em; text-transform: uppercase; }
+.cap span { display: block; font-size: 12px; color: #98a0aa; margin-top: 2px; }
+
+/* ---- structure commune, sans une seule couleur ---- */
+.screen {
+  --c-bass: var(--c-hat); --c-pad: var(--c-clap); --c-melody: var(--c-snare);
+  --font-field: var(--font-tempo);
+  --font-pill: var(--font-tag);
+  --font-legend: var(--font-tag);
+  --font-deg: var(--font-lcd);
+  width: 390px; height: 844px; overflow: hidden; padding: var(--pad, 10px 9px);
+  background: var(--bg); color: var(--ink); font-family: var(--font);
+  display: flex; flex-direction: column; gap: var(--gap, 9px); }
+
+.bar { display: flex; align-items: center; flex-wrap: wrap; row-gap: 4px;
+  gap: var(--bar-gap, 13px); padding: var(--bar-pad, 5px 8px);
+  background: var(--bar-bg, var(--surf)); border: var(--bar-border, 1px solid var(--edge));
+  border-radius: var(--bar-radius, var(--radius)); box-shadow: var(--bar-shadow, var(--bevel)); }
+.bar .m { border: 0; background: none; font: var(--font-menu); color: var(--ink);
+  letter-spacing: var(--menu-ls, 0); text-transform: var(--menu-tf, none); cursor: default; }
+.tools { display: flex; gap: 4px; margin-left: auto; }
+.bar .ic { width: 28px; height: 24px; display: grid; place-items: center; line-height: 1;
+  border: var(--ic-border, 1px solid var(--edge)); border-radius: var(--radius);
+  background: var(--ic-bg, var(--surf2)); color: var(--ink); font-size: 13px; cursor: default;
+  box-shadow: var(--ic-shadow, none); }
+.flag { margin-left: 8px; white-space: nowrap; font: var(--font-flag); color: var(--muted);
+  letter-spacing: var(--flag-ls, .04em); }
+
+.transport { display: flex; align-items: center; gap: 8px; padding: var(--pan-pad, 7px 9px);
+  background: var(--pan-bg, var(--surf)); border: var(--pan-border, 1px solid var(--edge));
+  border-radius: var(--radius); box-shadow: var(--bevel); }
+.btn { font: var(--font-btn); color: var(--btn-ink, var(--ink)); padding: var(--btn-pad, 10px 14px);
+  border: var(--btn-border, 1px solid var(--edge)); border-radius: var(--btn-radius, var(--radius));
+  background: var(--btn-bg, var(--surf2)); box-shadow: var(--btn-shadow, var(--bevel));
+  letter-spacing: var(--btn-ls, 0); text-transform: var(--btn-tf, none); cursor: default; }
+.btn.play { background: var(--play-bg, var(--btn-bg, var(--surf2))); color: var(--play-ink, var(--btn-ink, var(--ink))); }
+.bpm { margin-left: auto; font: var(--font-bpm); color: var(--bpm-ink, var(--ink));
+  display: flex; align-items: baseline; gap: 4px; }
+.bpm small { font: var(--font-small); color: var(--muted); }
+
+.tabs { display: flex; gap: var(--tab-gap, 5px); padding: var(--tabs-pad, 0);
+  background: var(--tabs-bg, transparent); }
+.tab { flex: 1; text-align: center; font: var(--font-tab); padding: var(--tab-pad, 9px 3px);
+  border: var(--tab-border, 1px solid var(--edge)); border-radius: var(--tab-radius, var(--radius));
+  background: var(--tab-bg, var(--surf2)); color: var(--tab-ink, var(--ink));
+  box-shadow: var(--tab-shadow, var(--bevel)); letter-spacing: var(--tab-ls, 0);
+  text-transform: var(--tab-tf, none); cursor: default; }
+.tab.on { background: var(--tab-on-bg); color: var(--tab-on-ink); font-weight: 700;
+  border-color: var(--tab-on-edge, var(--edge)); box-shadow: var(--tab-on-shadow, none); }
+
+.win { border: var(--win-border, 1px solid var(--edge)); border-radius: var(--win-radius, var(--radius));
+  overflow: hidden; box-shadow: var(--win-shadow, none); }
+.tt { display: flex; align-items: center; gap: 6px; padding: var(--tt-pad, 4px 6px);
+  background: var(--tt-bg); color: var(--tt-ink); font: var(--font-title);
+  letter-spacing: var(--tt-ls, 0); text-transform: var(--tt-tf, none);
+  text-shadow: var(--tt-shadow, none); }
+.tt .t { flex: 1; }
+.tt .wb { width: 24px; height: 22px; border: var(--wb-border, 1px solid var(--edge));
+  border-radius: var(--radius); background: var(--wb-bg, var(--surf2)); color: var(--wb-ink, var(--ink));
+  font-size: 12px; cursor: default; }
+.tt .tic { font-size: 14px; }
+
+.work { padding: var(--work-pad, 9px); background: var(--work-bg);
+  border-top: var(--work-top, 0); color: var(--work-ink); }
+.ruler { display: flex; margin: 0 0 6px calc(var(--tag-w, 60px) + 8px); }
+.ruler span { flex: 1; font: var(--font-ruler); color: var(--ruler-ink, var(--muted));
+  border-left: var(--ruler-line, 1px solid var(--edge)); padding-left: 4px; letter-spacing: .08em; }
+
+.row { display: flex; align-items: center; gap: 8px; margin-bottom: var(--row-gap, 6px); }
+.tag { width: var(--tag-w, 60px); flex: none; display: flex; align-items: center; gap: 5px;
+  font: var(--font-tag); color: var(--tag-ink, var(--h)); letter-spacing: var(--tag-ls, .1em);
+  text-transform: var(--tag-tf, none); }
+.led { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--h);
+  box-shadow: 0 0 5px var(--h); }
+.led.off { background: var(--led-off, #999); box-shadow: none; }
+.cells { flex: 1; display: flex; gap: var(--cell-gap, 3px); height: var(--cell-h, 38px); }
+.cells i { flex: 1; border-radius: var(--cell-radius, 2px); background: var(--cell-off);
+  border: var(--cell-border, 0); box-shadow: var(--cell-off-shadow, none); }
+.cells i.on { background: var(--h); border-color: var(--h);
+  box-shadow: var(--cell-on-shadow, none); }
+
+.lcd { margin-top: 7px; padding: var(--lcd-pad, 5px 7px); background: var(--lcd-bg);
+  color: var(--lcd-ink); border-radius: var(--lcd-radius, 3px); font: var(--font-lcd);
+  letter-spacing: var(--lcd-ls, .06em); display: flex; justify-content: space-between;
+  border: var(--lcd-border, 0); }
+.lcd .dim { color: var(--lcd-dim); }
+
+.tempo { display: flex; align-items: center; gap: 10px; padding: var(--pan-pad, 7px 9px);
+  background: var(--pan-bg, var(--surf)); border: var(--pan-border, 1px solid var(--edge));
+  border-radius: var(--radius); box-shadow: var(--bevel); font: var(--font-tempo); }
+.tempo .tl { color: var(--muted); }
+/* Règle générique : la glissière n'était stylée que dans le bandeau tempo, si
+   bien que celles des écrans Synthé, Production et Live ne se voyaient pas. */
+.slider { flex: 1; height: 6px; border-radius: 3px; background: var(--slider-bg, var(--surf2));
+  border: var(--slider-border, 1px solid var(--edge)); position: relative; }
+.slider i { position: absolute; left: 42%; top: -5px; width: 13px; height: 15px;
+  border-radius: var(--radius); background: var(--knob-bg, var(--surf2));
+  border: var(--knob-border, 1px solid var(--edge)); box-shadow: var(--bevel); }
+.tempo b { font-variant-numeric: tabular-nums; }
+
+.srow { margin-bottom: var(--srow-gap, 10px); }
+.shead { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.shead .tag { width: auto; }
+.mini { width: 26px; height: 24px; flex: none; display: grid; place-items: center;
+  border: var(--ic-border, 1px solid var(--edge)); border-radius: var(--radius);
+  background: var(--ic-bg, var(--surf2)); color: var(--ink); font-size: 12px;
+  box-shadow: var(--ic-shadow, none); cursor: default; }
+.shead .mini:last-child { margin-left: auto; }
+
+/* Le menu déroulant : le contrôle que les 29 premières maquettes n'avaient pas. */
+.sel { display: inline-flex; align-items: center; gap: 6px; padding: var(--sel-pad, 5px 8px);
+  border: var(--sel-border, 1px solid var(--edge)); border-radius: var(--sel-radius, var(--radius));
+  background: var(--sel-bg, var(--white-field, var(--surf2))); color: var(--sel-ink, var(--ink));
+  font: var(--font-field); white-space: nowrap; }
+.sel b { font-weight: 400; opacity: .7; margin-left: auto; }
+.shead .sel { flex: 1; min-width: 0; overflow: hidden; }
+
+.pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.pill { font: var(--font-pill); letter-spacing: var(--pill-ls, .06em);
+  text-transform: var(--pill-tf, none); padding: var(--pill-pad, 5px 9px);
+  border: var(--pill-border, 1px solid var(--edge)); border-radius: var(--pill-radius, 999px);
+  background: var(--pill-bg, transparent); color: var(--pill-ink, var(--muted)); }
+
+.fs { margin-top: 10px; border: var(--fs-border, 1px solid var(--edge));
+  border-radius: var(--radius); padding: var(--fs-pad, 8px 10px 10px); }
+.fs legend { font: var(--font-legend); color: var(--legend-ink, var(--muted));
+  letter-spacing: var(--legend-ls, .1em); text-transform: var(--legend-tf, none);
+  padding: 0 5px; }
+.frow { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font: var(--font-field); }
+.frow:last-of-type { margin-bottom: 0; }
+.frow label { color: var(--label-ink, var(--muted)); white-space: nowrap; }
+.frow .num { font-variant-numeric: tabular-nums; min-width: 34px; text-align: right;
+  padding: 3px 6px; border: var(--sel-border, 1px solid var(--edge));
+  background: var(--sel-bg, var(--white-field, var(--surf2))); color: var(--sel-ink, var(--ink));
+  border-radius: var(--radius); }
+.frow .deg { margin-left: auto; font: var(--font-deg); color: var(--label-ink, var(--muted)); white-space: nowrap; }
+.btn.wide { display: block; width: 100%; margin-top: 9px; text-align: center; }
+
+/* Case à cocher : l'autre contrôle absent des 29 premières. */
+.chk { display: inline-flex; align-items: center; gap: 6px; color: var(--work-ink, var(--ink)); }
+.chk i { width: 15px; height: 15px; display: grid; place-items: center; font-size: 10px;
+  border: var(--sel-border, 1px solid var(--edge)); border-radius: var(--chk-radius, 2px);
+  background: var(--sel-bg, var(--white-field, var(--surf2))); color: var(--chk-ink, var(--accent-ink, var(--ink))); }
+.chk.on i { background: var(--chk-on-bg, var(--tab-on-bg)); color: var(--chk-on-ink, var(--tab-on-ink));
+  border-color: var(--chk-on-edge, var(--edge)); }
+
+.s-h1 {
+  --bg:#08090b; --surf:#101318; --surf2:#161a21; --edge:#232830; --ink:#d6dae2; --muted:#6b7480;
+  --radius:2px; --bevel:none; --pad: 8px 7px; --gap: 6px; --bar-pad: 6px 8px; --bar-gap: 11px;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace; --menu-ls:.14em; --menu-tf: uppercase;
+  --font-flag: 8.5px ui-monospace,'DejaVu Sans Mono',monospace; --flag-ls:.14em;
+  --font-btn: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --btn-ls:.16em; --btn-tf: uppercase;
+  --font-bpm: 700 21px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 8px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace; --tab-ls:.16em; --tab-tf: uppercase;
+  --font-title: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.26em; --tt-tf: uppercase;
+  --font-ruler: 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 9px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.16em;
+  --font-lcd: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-pill: 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-field: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-legend: 700 8.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-pad: 9px 12px; --btn-border:1px solid #2c323c; --btn-bg:#161a21; --btn-ink:#aeb6c2;
+  --play-bg:#161a21; --play-ink:#3ff0ff;
+  --tab-border:1px solid #232830; --tab-bg:#101318; --tab-ink:#6b7480; --tab-pad: 8px 3px;
+  --tab-on-bg:#161a21; --tab-on-ink:#3ff0ff; --tab-on-edge:#3ff0ff;
+  --win-border:1px solid #232830; --win-radius:2px;
+  --tt-bg:#101318; --tt-ink:#8f98a6; --wb-bg:#161a21; --wb-ink:#6b7480; --wb-border:1px solid #232830;
+  --work-bg:#0a0c10; --work-ink:#d6dae2; --work-top:1px solid #232830; --work-pad: 8px;
+  --ruler-ink:#4d5866; --ruler-line:1px solid #1c212a;
+  --cell-off:#0d1015; --cell-border:1px solid #1a1f27; --cell-h: 32px; --cell-gap:3px; --row-gap:5px;
+  /* le seul halo de tout l'écran */
+  --cell-on-shadow: 0 0 12px var(--h), 0 0 3px var(--h);
+  --led-off:#232830; --lcd-bg:#0d1015; --lcd-ink:#3ff0ff; --lcd-dim:#2a5c66;
+  --lcd-border:1px solid #1c2a30;
+  --sel-bg:#0d1015; --sel-border:1px solid #2c323c; --sel-ink:#d6dae2; --sel-pad: 6px 8px;
+  --pill-border:1px solid #2c323c; --pill-ink:#8f98a6; --pill-radius:2px; --pill-pad: 5px 8px;
+  --fs-border:1px solid #232830; --legend-ink:#3ff0ff; --legend-ls:.16em;
+  --chk-on-bg:#3ff0ff; --chk-on-ink:#08090b; --chk-on-edge:#3ff0ff;
+  --slider-bg:#0d1015; --knob-bg:#3ff0ff; --knob-border:0;
+  --c-kick:#ff3d5e; --c-snare:#ff9a2b; --c-hat:#3ff0ff; --c-clap:#4fff9a; --c-shaker:#7aa8ff;
+  --c-bass:#6a6aff; --c-pad:#c04dff; --c-melody:#ff5ac8;
+}
+.s-h1 .bpm { color:#3ff0ff; }
+.s-h1 .flag { color:#6b7480; }
+
+
+.s-h2 {
+  --bg:#00006e; --surf:#c4c4d0; --surf2:#d8d8e2; --edge:#000; --ink:#0b0b1a; --muted:#4a4a66;
+  --radius:0; --bevel: inset 1px 1px 0 #fff, inset -1px -1px 0 #6a6a86;
+  --pad: 9px 8px; --gap: 7px; --bar-pad: 4px 8px; --bar-gap: 13px;
+  --font: ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-menu: 11.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-flag: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-btn: 11.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-bpm: 700 17px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-small: 9px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tab: 11px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-title: 700 11px ui-monospace,'DejaVu Sans Mono',monospace; --tt-ls:.16em;
+  --font-ruler: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tag: 700 10px ui-monospace,'DejaVu Sans Mono',monospace; --tag-ls:.1em;
+  --font-lcd: 10px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-tempo: 10.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-pill: 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-field: 10.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --font-legend: 700 9.5px ui-monospace,'DejaVu Sans Mono',monospace;
+  --btn-pad: 9px 13px; --btn-shadow: 2px 2px 0 rgba(0,0,0,.55);
+  --tab-shadow: 2px 2px 0 rgba(0,0,0,.5); --tab-on-bg:#0b0b1a; --tab-on-ink:#7dff7d;
+  --win-shadow: 4px 4px 0 rgba(0,0,0,.5); --tt-bg:#0b0b1a; --tt-ink:#8fe8ff;
+  --wb-bg:#c4c4d0; --wb-ink:#0b0b1a;
+  /* l'échelle qui manquait : trois bleus, deux gris-bleus lisibles dessus */
+  --work-bg:#151538; --work-ink:#e2e2f2; --work-top:1px solid #000;
+  --label-ink:#9a9ac4; --legend-ink:#8fe8ff; --pill-ink:#b6b6dc;
+  --ruler-ink:#8fe8ff; --ruler-line:1px solid #3a3a6e;
+  --cell-off:#0d0d28; --cell-border:1px solid #2e2e5c; --cell-h: 34px;
+  --led-off:#3a3a6e; --lcd-bg:#000; --lcd-ink:#7dff7d; --lcd-dim:#2a7a2a;
+  --sel-bg:#c4c4d0; --sel-ink:#0b0b1a; --sel-border:1px solid #000; --sel-pad: 5px 8px;
+  --pill-border:1px solid #4a4a86; --pill-radius:0; --pill-pad: 5px 8px;
+  --fs-border:1px solid #4a4a86;
+  --chk-on-bg:#0b0b1a; --chk-on-ink:#7dff7d; --chk-on-edge:#000;
+  --slider-bg:#0d0d28; --slider-border:1px solid #000; --knob-bg:#c4c4d0; --knob-border:1px solid #000;
+  --c-kick:#ff6b6b; --c-snare:#ffe066; --c-hat:#66e8ff; --c-clap:#7dff7d; --c-shaker:#8f9aff;
+  --c-bass:#6b6bff; --c-pad:#e06bff; --c-melody:#ffffff;
+}
+.s-h2 .flag { background:#8fe8ff; color:#0b0b1a; padding:1px 6px; }
+
+
+.s-h3 {
+  --bg:#e6e0d2; --surf:#f7f3ea; --surf2:#efe9dc; --edge:#23211c; --ink:#23211c; --muted:#7a736a;
+  --radius:0; --bevel:none; --pad: 9px 8px; --gap: 7px; --bar-pad: 5px 9px; --bar-gap: 13px;
+  --font: 'Courier New','DejaVu Sans Mono',monospace;
+  --font-menu: 11.5px 'Courier New','DejaVu Sans Mono',monospace; --menu-ls:.04em;
+  --font-flag: 9.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-btn: 700 11.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-bpm: 700 17px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-small: 8.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tab: 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-title: 700 11.5px 'Courier New','DejaVu Sans Mono',monospace; --tt-ls:.14em;
+  --font-ruler: 9.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tag: 700 9.5px 'Courier New','DejaVu Sans Mono',monospace; --tag-ls:.1em;
+  --font-lcd: 9.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tempo: 10.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-pill: 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-field: 10px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-legend: 700 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --btn-pad: 8px 12px; --btn-shadow: 2px 2px 0 rgba(35,33,28,.22);
+  --tab-shadow:none; --tab-pad: 7px 3px; --tab-on-bg:#23211c; --tab-on-ink:#f7f3ea;
+  --win-shadow: 3px 3px 0 rgba(35,33,28,.16);
+  --tt-bg:#23211c; --tt-ink:#f7f3ea; --wb-bg:#f7f3ea; --wb-ink:#23211c;
+  --work-bg:#fbf8f1; --work-ink:#23211c; --work-top:1px solid #23211c; --work-pad: 8px;
+  --ruler-line:1px solid #c6bfae;
+  --cell-off:#ece6d8; --cell-border:1px solid #b4ad9c; --cell-h: 32px; --cell-gap:3px; --row-gap:5px;
+  --led-off:#c6bfae; --lcd-bg:#ece6d8; --lcd-ink:#7a736a; --lcd-dim:#a89f90;
+  --lcd-border:1px solid #23211c;
+  --sel-bg:#fff; --sel-border:1px solid #23211c; --sel-pad: 5px 8px;
+  --pill-border:1px solid #b4ad9c; --pill-radius:0; --pill-ink:#5c564d; --pill-pad: 4px 8px;
+  --fs-border:1px solid #b4ad9c; --legend-ink:#c94f2e; --legend-ls:.16em; --legend-tf: uppercase;
+  --chk-on-bg:#c94f2e; --chk-on-ink:#fff; --chk-on-edge:#23211c;
+  --slider-bg:#ece6d8; --knob-bg:#23211c; --knob-border:0;
+  --c-kick:#c94f2e; --c-snare:#c99a2e; --c-hat:#2e8c88; --c-clap:#4a8c3e; --c-shaker:#3e6f9c;
+  --c-bass:#3e5f9c; --c-pad:#7a4e8c; --c-melody:#a8465e;
+}
+/* Le filet rouge ne borde plus tous les blocs : il ne marque QUE l'actif. */
+.s-h3 .tab.on { box-shadow: inset 3px 0 0 #c94f2e; }
+.s-h3 .win { border-left: 3px solid #c94f2e; }
+
+
+.s-h4 {
+  --bg:#0b0b0d; --surf:#131316; --surf2:#1a1a1e; --edge:#e8e6e0; --ink:#e8e6e0; --muted:#86847c;
+  --radius:0; --bevel:none; --pad: 9px 8px; --gap: 7px; --bar-pad: 5px 9px; --bar-gap: 13px;
+  --bar-border:1px solid #3a3a40;
+  --font: 'Courier New','DejaVu Sans Mono',monospace;
+  --font-menu: 11.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-flag: 9.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-btn: 700 11.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-bpm: 700 17px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-small: 8.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tab: 11px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-title: 700 11.5px 'Courier New','DejaVu Sans Mono',monospace; --tt-ls:.14em;
+  --font-ruler: 9.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tag: 700 9.5px 'Courier New','DejaVu Sans Mono',monospace; --tag-ls:.1em;
+  --font-lcd: 9.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-tempo: 10.5px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-pill: 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-field: 10px 'Courier New','DejaVu Sans Mono',monospace;
+  --font-legend: 700 9px 'Courier New','DejaVu Sans Mono',monospace;
+  --btn-border:1px solid #4a4a52; --btn-bg:#1a1a1e; --btn-pad: 8px 12px;
+  --btn-shadow: 2px 2px 0 rgba(0,0,0,.7);
+  --tab-border:1px solid #3a3a40; --tab-bg:#131316; --tab-ink:#86847c; --tab-shadow:none;
+  --tab-pad: 7px 3px; --tab-on-bg:#e8e6e0; --tab-on-ink:#0b0b0d; --tab-on-edge:#e8e6e0;
+  --win-border:1px solid #3a3a40; --win-shadow: 3px 3px 0 rgba(0,0,0,.6);
+  --tt-bg:#e8e6e0; --tt-ink:#0b0b0d; --wb-bg:#131316; --wb-ink:#e8e6e0; --wb-border:1px solid #4a4a52;
+  --work-bg:#0d0d10; --work-ink:#e8e6e0; --work-top:1px solid #3a3a40; --work-pad: 8px;
+  --ruler-line:1px solid #2a2a30;
+  --cell-off:#141418; --cell-border:1px solid #33333a; --cell-h: 32px; --cell-gap:3px; --row-gap:5px;
+  --led-off:#33333a; --lcd-bg:#141418; --lcd-ink:#86847c; --lcd-dim:#4d4c46;
+  --lcd-border:1px solid #33333a;
+  --sel-bg:#0b0b0d; --sel-border:1px solid #4a4a52; --sel-ink:#e8e6e0; --sel-pad: 5px 8px;
+  --pill-border:1px solid #3a3a40; --pill-radius:0; --pill-ink:#9a988e; --pill-pad: 4px 8px;
+  --fs-border:1px solid #33333a; --legend-ink:#e2603c; --legend-ls:.16em; --legend-tf: uppercase;
+  --chk-on-bg:#e2603c; --chk-on-ink:#0b0b0d; --chk-on-edge:#4a4a52;
+  --slider-bg:#141418; --knob-bg:#e8e6e0; --knob-border:0;
+  --c-kick:#e2603c; --c-snare:#d8a83c; --c-hat:#3ca8a2; --c-clap:#5aa84e; --c-shaker:#4e88bc;
+  --c-bass:#5878bc; --c-pad:#9a68ac; --c-melody:#c2586e;
+}
+.s-h4 .tab.on { box-shadow: inset 3px 0 0 #e2603c; }
+.s-h4 .win { border-left: 3px solid #e2603c; }
+
+.pair { display:flex; gap:14px; } .cell { width:794px; }</style>
+<div class="cell" data-k="h1">
+  <div class="cap"><b>Skin dense</b><span>Winamp 2.x × Skin de nuit × Néon</span></div>
+  <div class="pair"><div class="screen s-h1">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div><div class="screen s-h1">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab">🥁 Rythme</button><button class="tab on">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🎹</span><span class="t">Synthé — Basse / Nappe / Mélodie</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="srow" style="--h:var(--c-bass)"><div class="shead"><span class="tag"><i class="led"></i>BASSE</span><button class="mini">🎹</button><span class="sel">808 profond <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+        <div class="srow" style="--h:var(--c-pad)"><div class="shead"><span class="tag"><i class="led"></i>NAPPE</span><button class="mini">🎹</button><span class="sel">Rhodes chaud <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span><span class="pill">Jeu</span></div></div>
+        <div class="srow" style="--h:var(--c-melody)"><div class="shead"><span class="tag"><i class="led"></i>MÉLODIE</span><button class="mini">🎹</button><span class="sel">Pluck trap <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+      <fieldset class="fs">
+        <legend>Harmonie &amp; remplissage</legend>
+        <div class="frow"><label>Tonalité</label><span class="sel">Do <b>▾</b></span>
+          <label>Mode</label><span class="sel">Majeur <b>▾</b></span></div>
+        <div class="frow"><label>Nb d'accords</label><span class="slider"><i></i></span><span class="num">4</span>
+          <span class="deg">I · IV · V · vi</span></div>
+        <div class="frow"><label>Remplissage</label><span class="slider"><i style="left:62%"></i></span><span class="num">65 %</span></div>
+        <button class="btn wide">🎲 Remplissage aléatoire harmonieux</button>
+      </fieldset>
+      <fieldset class="fs">
+        <legend>Sidechain</legend>
+        <div class="frow"><label>Déclencheurs</label>
+          <span class="chk on"><i>✓</i>Kick</span><span class="chk"><i></i>Snare</span></div>
+      </fieldset>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div></div>
+</div>
+<div class="cell" data-k="h2">
+  <div class="cap"><b>Terminal bleu</b><span>Turbo × Winamp 2.x × Cassette</span></div>
+  <div class="pair"><div class="screen s-h2">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div><div class="screen s-h2">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab">🥁 Rythme</button><button class="tab on">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🎹</span><span class="t">Synthé — Basse / Nappe / Mélodie</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="srow" style="--h:var(--c-bass)"><div class="shead"><span class="tag"><i class="led"></i>BASSE</span><button class="mini">🎹</button><span class="sel">808 profond <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+        <div class="srow" style="--h:var(--c-pad)"><div class="shead"><span class="tag"><i class="led"></i>NAPPE</span><button class="mini">🎹</button><span class="sel">Rhodes chaud <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span><span class="pill">Jeu</span></div></div>
+        <div class="srow" style="--h:var(--c-melody)"><div class="shead"><span class="tag"><i class="led"></i>MÉLODIE</span><button class="mini">🎹</button><span class="sel">Pluck trap <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+      <fieldset class="fs">
+        <legend>Harmonie &amp; remplissage</legend>
+        <div class="frow"><label>Tonalité</label><span class="sel">Do <b>▾</b></span>
+          <label>Mode</label><span class="sel">Majeur <b>▾</b></span></div>
+        <div class="frow"><label>Nb d'accords</label><span class="slider"><i></i></span><span class="num">4</span>
+          <span class="deg">I · IV · V · vi</span></div>
+        <div class="frow"><label>Remplissage</label><span class="slider"><i style="left:62%"></i></span><span class="num">65 %</span></div>
+        <button class="btn wide">🎲 Remplissage aléatoire harmonieux</button>
+      </fieldset>
+      <fieldset class="fs">
+        <legend>Sidechain</legend>
+        <div class="frow"><label>Déclencheurs</label>
+          <span class="chk on"><i>✓</i>Kick</span><span class="chk"><i></i>Snare</span></div>
+      </fieldset>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div></div>
+</div>
+<div class="cell" data-k="h3">
+  <div class="cap"><b>Papier machine</b><span>Cassette × Winamp 2.x</span></div>
+  <div class="pair"><div class="screen s-h3">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div><div class="screen s-h3">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab">🥁 Rythme</button><button class="tab on">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🎹</span><span class="t">Synthé — Basse / Nappe / Mélodie</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="srow" style="--h:var(--c-bass)"><div class="shead"><span class="tag"><i class="led"></i>BASSE</span><button class="mini">🎹</button><span class="sel">808 profond <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+        <div class="srow" style="--h:var(--c-pad)"><div class="shead"><span class="tag"><i class="led"></i>NAPPE</span><button class="mini">🎹</button><span class="sel">Rhodes chaud <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span><span class="pill">Jeu</span></div></div>
+        <div class="srow" style="--h:var(--c-melody)"><div class="shead"><span class="tag"><i class="led"></i>MÉLODIE</span><button class="mini">🎹</button><span class="sel">Pluck trap <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+      <fieldset class="fs">
+        <legend>Harmonie &amp; remplissage</legend>
+        <div class="frow"><label>Tonalité</label><span class="sel">Do <b>▾</b></span>
+          <label>Mode</label><span class="sel">Majeur <b>▾</b></span></div>
+        <div class="frow"><label>Nb d'accords</label><span class="slider"><i></i></span><span class="num">4</span>
+          <span class="deg">I · IV · V · vi</span></div>
+        <div class="frow"><label>Remplissage</label><span class="slider"><i style="left:62%"></i></span><span class="num">65 %</span></div>
+        <button class="btn wide">🎲 Remplissage aléatoire harmonieux</button>
+      </fieldset>
+      <fieldset class="fs">
+        <legend>Sidechain</legend>
+        <div class="frow"><label>Déclencheurs</label>
+          <span class="chk on"><i>✓</i>Kick</span><span class="chk"><i></i>Snare</span></div>
+      </fieldset>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div></div>
+</div>
+<div class="cell" data-k="h4">
+  <div class="cap"><b>Nuit imprimée</b><span>Cassette × Skin de nuit</span></div>
+  <div class="pair"><div class="screen s-h4">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab on">🥁 Rythme</button><button class="tab">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🥁</span><span class="t">Séquenceur</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="ruler"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="row" style="--h:var(--c-kick)"><span class="tag"><i class="led"></i>KICK</span><span class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-snare)"><span class="tag"><i class="led"></i>SNARE</span><span class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-hat)"><span class="tag"><i class="led"></i>HAT</span><span class="cells"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+        <div class="row" style="--h:var(--c-clap)"><span class="tag"><i class="led off"></i>CLAP</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+        <div class="row" style="--h:var(--c-shaker)"><span class="tag"><i class="led off"></i>SHAKER</span><span class="cells"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></div>
+      <div class="lcd"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div><div class="screen s-h4">
+  <div class="bar">
+    <button class="m">Mode</button><button class="m">Fichier</button><button class="m">Édition</button><button class="m">Affichage</button><button class="m">Aide</button>
+    <span class="tools"><button class="ic">↶</button><button class="ic">↷</button></span>
+    <span class="flag">🔒 accès total</span>
+  </div>
+  <div class="transport">
+    <button class="btn play">▶ Lecture</button><button class="btn">🫨 Break</button>
+    <span class="bpm">120<small>BPM</small></span>
+  </div>
+  <div class="tabs"><button class="tab">🥁 Rythme</button><button class="tab on">🎹 Synthé</button><button class="tab">🎚 Production</button></div>
+  <div class="win">
+    <div class="tt"><span class="tic">🎹</span><span class="t">Synthé — Basse / Nappe / Mélodie</span><button class="wb">⌄</button></div>
+    <div class="work">
+      <div class="srow" style="--h:var(--c-bass)"><div class="shead"><span class="tag"><i class="led"></i>BASSE</span><button class="mini">🎹</button><span class="sel">808 profond <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+        <div class="srow" style="--h:var(--c-pad)"><div class="shead"><span class="tag"><i class="led"></i>NAPPE</span><button class="mini">🎹</button><span class="sel">Rhodes chaud <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class="on"></i><i class=""></i><i class="on"></i><i class=""></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span><span class="pill">Jeu</span></div></div>
+        <div class="srow" style="--h:var(--c-melody)"><div class="shead"><span class="tag"><i class="led"></i>MÉLODIE</span><button class="mini">🎹</button><span class="sel">Pluck trap <b>▾</b></span><button class="mini">🎲</button></div><div class="cells"><i class=""></i><i class="on"></i><i class=""></i><i class="on"></i></div><div class="pills"><span class="pill">Séquence</span><span class="pill">Timbre</span><span class="pill">Détune</span><span class="pill">Filtre</span></div></div>
+      <fieldset class="fs">
+        <legend>Harmonie &amp; remplissage</legend>
+        <div class="frow"><label>Tonalité</label><span class="sel">Do <b>▾</b></span>
+          <label>Mode</label><span class="sel">Majeur <b>▾</b></span></div>
+        <div class="frow"><label>Nb d'accords</label><span class="slider"><i></i></span><span class="num">4</span>
+          <span class="deg">I · IV · V · vi</span></div>
+        <div class="frow"><label>Remplissage</label><span class="slider"><i style="left:62%"></i></span><span class="num">65 %</span></div>
+        <button class="btn wide">🎲 Remplissage aléatoire harmonieux</button>
+      </fieldset>
+      <fieldset class="fs">
+        <legend>Sidechain</legend>
+        <div class="frow"><label>Déclencheurs</label>
+          <span class="chk on"><i>✓</i>Kick</span><span class="chk"><i></i>Snare</span></div>
+      </fieldset>
+    </div>
+  </div>
+  <div class="tempo"><span class="tl">Tempo</span><span class="slider"><i></i></span><b>120</b></div>
+</div></div>
+</div>

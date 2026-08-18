@@ -41,23 +41,24 @@
     synthPlayhead: Record<SynthRowName, number>;
   } = $props();
 
-  // Mêmes valeurs que --cell-* de tokens.css (StepCircle.FALLBACK,
-  // SynthRowView.PREVIEW_COLOR) — un canvas ne peut pas lire une variable CSS
-  // directement, donc dupliquées ici comme ailleurs dans le code. Les huit
-  // lignes y sont désormais, clap et shaker compris : la limitation à
-  // kick/snare/hat n'avait de sens que tant que les anneaux étaient fixes et
-  // tous dessinés en permanence.
+  // ⚠️ Ces valeurs étaient RECOPIÉES depuis tokens.css, et se sont donc
+  // désynchronisées au passage à la skin Winamp 2.x (étape 2) : les anneaux
+  // dessinaient encore la palette Luna. Elles ne servent plus que de repli si
+  // la variable est absente ; les vraies sont lues au montage, comme le fait
+  // déjà StepCircle. Un canvas ne peut pas lire une variable CSS directement,
+  // mais `getComputedStyle` sur l'élément, si.
   const COLOR: Record<string, string> = {
-    kick: '#d84315',
-    snare: '#c8881a',
-    hat: '#2b8a8a',
-    clap: '#3fae54',
-    shaker: '#22a6c9',
-    bass: '#6a7bff',
-    pad: '#b06bff',
-    melody: '#ff6bd6',
+    kick: '#ff5a2b',
+    snare: '#ffb020',
+    hat: '#2ee23c',
+    clap: '#33d9d6',
+    shaker: '#8a8ad8',
+    bass: '#4f8cff',
+    pad: '#c06bff',
+    melody: '#ff5ac8',
   };
-  const INK = '#0a246a'; // bleu Luna, comme StepCircle
+  // Tête de lecture. Idem : lue depuis --xp-playhead au montage.
+  let INK = '#ffd54a';
   const SIZE = 46;
 
   let canvasEl: HTMLCanvasElement;
@@ -237,6 +238,17 @@
   });
 
   onMount(() => {
+    // Les couleurs viennent des tokens, pas des constantes ci-dessus : c'est
+    // ce qui garantit qu'un changement de thème ne laisse pas les anneaux en
+    // arrière (le bug corrigé ici).
+    const cs = getComputedStyle(canvasEl);
+    for (const name of Object.keys(COLOR)) {
+      const v = cs.getPropertyValue(`--cell-${name}`).trim();
+      if (v) COLOR[name] = v;
+    }
+    const ink = cs.getPropertyValue('--xp-playhead').trim();
+    if (ink) INK = ink;
+
     const frame = () => {
       raf = requestAnimationFrame(frame);
       const ref = bands.find((b) => b.bars === totalBars);

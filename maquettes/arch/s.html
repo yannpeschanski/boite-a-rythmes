@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8"><title>S — Boutons de mode</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* S — Le vocabulaire du matériel appliqué à l'ARCHITECTURE et pas à la peau.
+     Quatre boutons de mode en bas, comme sur une groovebox : chacun repeint
+     entièrement la même surface. Il n'y a jamais deux catégories de réglages à
+     l'écran, donc jamais de défilement — et la main reste au même endroit. */
+  .modebar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 4px;
+             padding: 8px 9px 12px; background: rgba(20,22,28,.92);
+             border-top: 1px solid var(--amp-hi); }
+  .modebar .c { flex: 1; padding: 12px 0; border-radius: 4px; border: 1px solid #4a4e60;
+                background: linear-gradient(180deg,#4a4c60,#26283a);
+                color: #c9ccdc; font: 700 10.5px var(--mono); letter-spacing: .12em; }
+  .modebar .c.on { background: var(--amber); color: #1c1c34; border-color: var(--amber); }
+  .pickrow { display: flex; gap: 4px; margin-bottom: 12px; }
+  .pickrow .chip { flex: 1; text-align: center; }
+  .knobs { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px 6px; }
+  .kn { text-align: center; }
+  .kn i { display: block; width: 50px; height: 50px; margin: 0 auto 5px; border-radius: 50%;
+          background: radial-gradient(circle at 36% 30%, #6f7288, #1a1c28 72%);
+          box-shadow: inset 0 0 0 2px #8b8fa8, 0 2px 4px rgba(0,0,0,.5);
+          position: relative; transform: rotate(var(--r)); }
+  .kn i::after { content:''; position:absolute; left:50%; top:5px; width:2px; height:14px;
+                 background: var(--amber); transform: translateX(-50%); }
+  .kn span { display: block; font: 9px var(--mono); letter-spacing: .1em; opacity: .75; }
+  .kn b { font: 700 12px var(--mono); color: var(--amber); }
+  /* L'annotation doit passer AU-DESSUS de la barre de mode, pas dessous :
+     c'est justement elle qu'il faut voir dans cette proposition. */
+  .note { bottom: 68px; }
+</style>
+
+<div class="col">
+  <div class="cap">MOTIF<span>Le mode d’accueil</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Motif</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid="8"></div></div>
+    </div>
+    <div class="modebar"><button class="c on">MOTIF</button><button class="c">SON</button><button class="c">MIX</button><button class="c">MORCEAU</button></div>
+    <div class="note">Quatre mots en bas, à portée de pouce. <b>Un seul est actif à la fois</b> — l’écran n’a donc jamais à contenir deux familles de réglages.</div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">SON<span>Même surface, autre contenu</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Son</span><button class="c">⌄</button></div>
+      <div class="rack" style="padding-bottom:12px">
+        <div class="pickrow"><span class="chip c on">KICK</span><span class="chip c">SNARE</span><span class="chip c">HAT</span><span class="chip c">CLAP</span><span class="chip c">SHK</span></div>
+        <div class="knobs">
+          <div class="kn"><i style="--r:-50deg"></i><span>TON</span><b>42</b></div>
+          <div class="kn"><i style="--r:35deg"></i><span>DÉCLIN</span><b>220</b></div>
+          <div class="kn"><i style="--r:-70deg"></i><span>CLIC</span><b>18</b></div>
+          <div class="kn"><i style="--r:-100deg"></i><span>RÉVERB</span><b>12</b></div>
+          <div class="kn"><i style="--r:10deg"></i><span>COUPURE</span><b>80</b></div>
+          <div class="kn"><i style="--r:0deg"></i><span>VOLUME</span><b>100</b></div>
+        </div>
+        <div class="lcd" style="margin-top:10px"><span>KICK · VOIX 808 PROFOND</span><span class="dim">PAGE 1/2</span></div>
+      </div>
+    </div>
+    <div class="modebar"><button class="c">MOTIF</button><button class="c on">SON</button><button class="c">MIX</button><button class="c">MORCEAU</button></div>
+    <div class="note">Six potentiomètres, jamais de défilement, la main au même endroit. <b>C’est la barre de menus retournée&nbsp;: quatre mots au lieu de cinq, mais en bas et permanents.</b></div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

@@ -130,7 +130,7 @@
     padding: 1px 7px;
     border-radius: 10px;
     background: var(--xp-accent-teal);
-    color: #fff;
+    color: var(--xp-lcd-bg);
     font-family: var(--xp-mono);
     font-size: 11px;
     font-weight: 700;

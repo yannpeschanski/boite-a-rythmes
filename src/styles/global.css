@@ -1,3 +1,4 @@
+@import './fonts.css';
 @import '../ui/xp/tokens.css';
 
 * {
@@ -89,4 +90,107 @@ button {
   border-left: 1px solid var(--xp-line);
   padding-left: 3px;
   line-height: 1.2;
+}
+
+
+/* ---------------------------------------------------------------------------
+   Bouton — définition UNIQUE (étape 3 du passage à Winamp 2.x).
+
+   Il était recopié dans sept composants, à l'identique à la taille près : même
+   bordure `#003c74`, même dégradé clair, même biseau. C'était le constat C6 de
+   l'audit de design, et c'est ce qui a fait que l'étape 2 a laissé sept séries
+   de boutons clairs sur un chrome sombre.
+
+   Les composants ne gardent désormais que leurs surcharges de TAILLE
+   (padding, min-height, font-size) ; l'apparence vit ici. */
+.xp-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--xp-line);
+  border-radius: 2px;
+  background: var(--xp-btn-face);
+  color: var(--xp-text);
+  box-shadow: var(--xp-bevel-out);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+}
+/* Le biseau s'inverse à l'appui : c'est la grammaire de la skin, un poussoir
+   qui s'enfonce. */
+.xp-btn:active:not(:disabled) {
+  box-shadow: var(--xp-bevel-in);
+}
+.xp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Cibles tactiles — le chantier ouvert de la direction Winamp 2.x.
+
+   La contrainte est dans CLAUDE.md et elle est littérale : « toute zone
+   touchable doit monter à 44 px SANS QUE LE DESSIN GRANDISSE ». Des capitales
+   de 8,5 px et des reliefs d'un pixel sont dessinés pour une souris ; les
+   agrandir, c'est perdre la skin pour gagner le doigt.
+
+   D'où le pseudo-élément : `::after` est centré sur le bouton, transparent, et
+   le test de collision d'un pseudo-élément renvoie SON ÉLÉMENT D'ORIGINE. Le
+   doigt qui tombe dans la marge invisible clique donc bien le bouton, alors
+   que le bouton lui-même n'a pas bougé d'un pixel. Un `padding` aurait poussé
+   le dessin, un `transform: scale` l'aurait déformé.
+
+   Sous `pointer: coarse` uniquement : à la souris, la densité de l'écran est
+   un acquis de la direction, pas un défaut à corriger.
+
+   Deux variantes, parce que les deux axes ne se valent pas :
+   - `.tap44`   — les deux axes. Pour les boutons isolés (transport, fenêtre,
+                  outils, pastilles de repli), qui ont de la place autour.
+   - `.tap44-y` — la hauteur seulement. Pour ce qui vit dans une grille dont
+                  la largeur est dictée par le nombre de pas : à 16 pas sur un
+                  écran de 390 px, 16 × 44 = 704 px, la contrainte est
+                  physiquement insoluble en largeur. La hauteur, elle, est à
+                  nous. On la prend.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (pointer: coarse) {
+  .tap44,
+  .tap44-y {
+    position: relative;
+  }
+  .tap44::after,
+  .tap44-y::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    height: max(100%, 44px);
+    width: 100%;
+  }
+  .tap44::after {
+    width: max(100%, 44px);
+  }
+  /* Un `<select>` est un élément remplacé : Chromium n'y rend aucun `::after`,
+     l'astuce de l'enveloppe invisible ne marche pas. Écart assumé, le seul de
+     la passe : c'est la boîte elle-même qui grandit. Elle n'a ni biseau ni
+     petites capitales à préserver — la grammaire de la skin ne se joue pas
+     là — et une liste déroulante haute est ce que fait tout le monde sur
+     téléphone. */
+  select,
+  input[type='text'],
+  input:not([type]) {
+    min-height: 44px;
+  }
+  /* `.xp-btn` porte la règle directement : c'est une classe globale, tous ses
+     appels la veulent, aucun ne gagnerait à devoir y penser. */
+  .xp-btn {
+    position: relative;
+  }
+  .xp-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    height: max(100%, 44px);
+    width: max(100%, 44px);
+  }
 }

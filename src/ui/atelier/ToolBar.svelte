@@ -97,7 +97,7 @@
        hauteur en plus. -->
   <div class="menu">
     <button
-      class="menu-btn"
+      class="menu-btn tap44"
       class:on={openMenu === 'mode'}
       onclick={(e) => {
         e.stopPropagation();
@@ -119,7 +119,7 @@
   </div>
   <div class="menu">
     <button
-      class="menu-btn"
+      class="menu-btn tap44"
       class:on={openMenu === 'file'}
       onclick={(e) => {
         e.stopPropagation();
@@ -165,7 +165,7 @@
   </div>
   <div class="menu">
     <button
-      class="menu-btn"
+      class="menu-btn tap44"
       class:on={openMenu === 'edit'}
       onclick={(e) => {
         e.stopPropagation();
@@ -181,7 +181,7 @@
   </div>
   <div class="menu">
     <button
-      class="menu-btn"
+      class="menu-btn tap44"
       class:on={openMenu === 'view'}
       onclick={(e) => {
         e.stopPropagation();
@@ -201,7 +201,7 @@
   </div>
   <div class="menu">
     <button
-      class="menu-btn"
+      class="menu-btn tap44"
       class:on={openMenu === 'help'}
       onclick={(e) => {
         e.stopPropagation();
@@ -239,8 +239,8 @@
        accès à un clic. Groupés dans un conteneur `nowrap` pour ne plus
        jamais être séparés l'un de l'autre par un retour à la ligne. -->
   <div class="tools">
-    <button class="tool" disabled={!history.canUndo} onclick={() => history.undo()} title="Annuler (Ctrl+Z)">↶</button>
-    <button class="tool" disabled={!history.canRedo} onclick={() => history.redo()} title="Rétablir (Ctrl+Y)">↷</button>
+    <button class="tool tap44" disabled={!history.canUndo} onclick={() => history.undo()} title="Annuler (Ctrl+Z)">↶</button>
+    <button class="tool tap44" disabled={!history.canRedo} onclick={() => history.redo()} title="Rétablir (Ctrl+Y)">↷</button>
   </div>
 </div>
 {#if shareMsg}<p class="share-msg">{shareMsg}</p>{/if}
@@ -275,7 +275,7 @@
   .menu-btn.on,
   .menu-btn:hover {
     background: var(--xp-select-blue);
-    color: #fff;
+    color: var(--xp-title-text);
   }
   .dropdown {
     position: absolute;
@@ -302,7 +302,7 @@
   }
   .dropdown button:hover:not(:disabled) {
     background: var(--xp-select-blue);
-    color: #fff;
+    color: var(--xp-title-text);
   }
   .dropdown button:disabled {
     color: var(--xp-muted);
@@ -390,7 +390,8 @@
     line-height: 1;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
   }
@@ -403,9 +404,28 @@
   }
   .share-msg {
     font-size: 12px;
-    background: #fffbe6;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-accent-amber);
     border: 1px solid var(--xp-accent-amber);
     padding: 5px 8px;
     margin: 0 0 8px;
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` débordent des boutons, donc elles se marchent dessus dès que
+     deux commandes sont voisines à 2px — et c'est la dernière du DOM qui
+     gagne le point, pas la plus probable. On écarte donc le rythme vertical
+     sous pointeur grossier. Aucun dessin ne change : l'espace n'est pas
+     dessiné, et sur un téléphone il ne coûte rien puisque la page défile. */
+  @media (pointer: coarse) {
+    .menubar {
+      /* Deux valeurs : à 390px la barre passe à deux rangées, et c'est
+         l'écart VERTICAL qui empêche « Aide » de manger la cible de ↶. */
+      gap: 18px 8px;
+      margin-bottom: 14px;
+      padding: 2px 10px;
+    }
+    .tools {
+      gap: 14px;
+    }
   }
 </style>

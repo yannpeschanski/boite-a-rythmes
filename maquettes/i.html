@@ -1,0 +1,103 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette I — Aqua Y2K</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION I — le contraire d'un recul : on POUSSE l'époque au lieu de la
+     retirer. Gel brillant, chrome liquide, panneaux translucides, couleurs
+     saturées — le revival Y2K tel qu'il tourne en 2026, pas le XP de 2001.
+     Même famille de nostalgie que le projet, mais assumée jusqu'au bout. */
+  :root {
+    --deep-1: #061a4a; --deep-2: #0b3f8f; --deep-3: #1b7bd6;
+    --glass: rgba(255,255,255,.16); --glass-2: rgba(255,255,255,.28);
+    --ink: #f2f7ff; --ink-dim: #b9d2f2;
+    --kick:#ff4d3d; --snare:#ffb01f; --hat:#25e0d8; --clap:#4ff06a; --shaker:#43b6ff;
+  }
+  body {
+    background:
+      radial-gradient(120% 70% at 15% 0%, #3aa8ff 0%, rgba(58,168,255,0) 55%),
+      radial-gradient(110% 60% at 90% 8%, #7b5bff 0%, rgba(123,91,255,0) 50%),
+      linear-gradient(180deg, var(--deep-2) 0%, var(--deep-1) 55%, #030d28 100%);
+    background-attachment: fixed;
+    color: var(--ink); font: 13px 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    padding: 16px 12px 22px;
+  }
+
+  .glass { background: linear-gradient(180deg, var(--glass-2), var(--glass) 40%, rgba(255,255,255,.07));
+           border: 1px solid rgba(255,255,255,.4); border-radius: 14px;
+           box-shadow: 0 8px 24px rgba(0,10,50,.5), inset 0 1px 0 rgba(255,255,255,.7);
+           backdrop-filter: blur(6px); padding: 12px; margin-bottom: 12px; }
+
+  .title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  /* Le texte en dégradé découpé disparaissait sur le verre clair : titre plein,
+     et le brillant passe dans l'ombre portée plutôt que dans la lettre. */
+  .title h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; color: #fff;
+              text-shadow: 0 1px 0 rgba(0,20,60,.55), 0 0 14px rgba(150,210,255,.6); }
+  .title .chip { margin-left: auto; font-size: 10px; letter-spacing: .14em;
+                 padding: 5px 10px; border-radius: 999px;
+                 background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4); }
+
+  /* Bouton gel : la spéculaire du haut est la signature de l'époque. */
+  .gel { position: relative; border-radius: 999px; padding: 14px 20px; font-weight: 700;
+         font-size: 14px; text-align: center; overflow: hidden; color: #06214d;
+         border: 1px solid rgba(255,255,255,.6);
+         box-shadow: 0 4px 12px rgba(0,10,50,.45), inset 0 -6px 12px rgba(0,0,0,.18); }
+  .gel::before { content:''; position:absolute; left:6%; right:6%; top:4%; height:42%;
+                 border-radius: 999px;
+                 background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,0)); }
+  .gel span { position: relative; }
+  .g-play { background: linear-gradient(180deg,#8ef07a,#2fbf4a 55%,#159a34); }
+  .g-brk  { background: linear-gradient(180deg,#ffd88a,#ffab1f 55%,#e08a00); }
+  .transport { display: flex; gap: 10px; }
+  .transport .gel { flex: 1; }
+
+  .tabs { display: flex; gap: 8px; margin-top: 12px; }
+  .tabs b { flex: 1; text-align: center; padding: 10px 0; border-radius: 999px;
+            font-size: 12px; font-weight: 600; color: var(--ink-dim);
+            background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); }
+  .tabs b.on { color: #06214d; border-color: rgba(255,255,255,.7);
+               background: linear-gradient(180deg,#e8f4ff,#9ccdff 55%,#5aa6ee); }
+
+  .row { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+  .tag { width: 54px; flex: none; font-size: 10px; font-weight: 700; letter-spacing: .12em;
+         text-shadow: 0 1px 2px rgba(0,10,40,.6); }
+  .steps { flex: 1; display: flex; gap: 5px; height: 40px; }
+  /* Pas éteint = verre creux. Pas actif = pastille de gel qui brille. */
+  .steps i { flex: 1; border-radius: 8px; background: rgba(255,255,255,.08);
+             border: 1px solid rgba(255,255,255,.2);
+             box-shadow: inset 0 2px 5px rgba(0,10,40,.5); position: relative; }
+  .steps i.on { background: linear-gradient(180deg, color-mix(in srgb, currentColor 55%, #fff),
+                                             currentColor 60%, color-mix(in srgb, currentColor 70%, #000));
+                border-color: rgba(255,255,255,.65);
+                box-shadow: 0 0 14px currentColor, inset 0 1px 0 rgba(255,255,255,.8); }
+  .steps i.on::before { content:''; position:absolute; left:14%; right:14%; top:8%; height:34%;
+                        border-radius: 999px;
+                        background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,0)); }
+
+  .lcd { margin-top: 4px; padding: 8px 12px; border-radius: 10px;
+         background: rgba(4,14,44,.55); border: 1px solid rgba(255,255,255,.22);
+         font-size: 11px; color: var(--ink-dim); display: flex; justify-content: space-between; }
+</style>
+
+<div class="glass">
+  <div class="title"><h1>Boîte à rythmes</h1><span class="chip">120 BPM</span></div>
+  <div class="transport">
+    <div class="gel g-play"><span>▶ Lecture</span></div>
+    <div class="gel g-brk"><span>Break</span></div>
+  </div>
+  <div class="tabs"><b class="on">Rythme</b><b>Synthé</b><b>Production</b></div>
+</div>
+
+<div class="glass">
+  <div class="row" style="color:var(--kick)"><span class="tag">KICK</span>
+    <span class="steps"><i class="on"></i><i></i><i class="on"></i><i></i></span></div>
+  <div class="row" style="color:var(--snare)"><span class="tag">SNARE</span>
+    <span class="steps"><i></i><i class="on"></i><i></i><i class="on"></i></span></div>
+  <div class="row" style="color:var(--hat)"><span class="tag">HAT</span>
+    <span class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div>
+  <div class="row" style="color:var(--clap)"><span class="tag">CLAP</span>
+    <span class="steps"><i></i><i></i><i></i><i></i></span></div>
+  <div class="row" style="color:var(--shaker)"><span class="tag">SHAKER</span>
+    <span class="steps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+  <div class="lcd"><span>Kick · Ton 42 · Déclin 220</span><span>Réverb 12 %</span></div>
+</div>

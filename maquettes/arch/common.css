@@ -1,0 +1,100 @@
+/* Série « architecture des commandes » — 2e lot de propositions.
+   Toutes les maquettes partagent LA MÊME PEAU (direction B : cadre XP,
+   plan de travail instrument) pour que la seule variable soit l'endroit où
+   vivent les fonctions. Chaque fichier montre deux états côte à côte :
+   ce que voit quelqu'un qui découvre, et ce qu'atteint quelqu'un qui sait.
+   Tout élément qui compte comme une commande porte la classe .c — le script
+   de rendu les compte, les chiffres affichés ne sont pas déclaratifs. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --face: #ece9d8; --face-dark: #d6d2c2; --line: #aca899;
+  --text: #1a1a1a; --muted: #6f6d64; --white: #fff; --shadow: #808080;
+  --title: linear-gradient(180deg,#0997ff 0%,#0053ee 8%,#0050ee 40%,#06f 88%,#003dd7 93%,#0997ff 100%);
+  --out: inset -1px -1px 0 var(--shadow), inset 1px 1px 0 var(--white);
+  --bliss:
+    radial-gradient(120% 80% at 20% 108%, #3a7d2c 0%, #4f9838 28%, rgba(79,152,56,0) 60%),
+    radial-gradient(150% 90% at 85% 112%, #2e6b24 0%, #57a33d 30%, rgba(87,163,61,0) 62%),
+    linear-gradient(180deg,#2f71d1 0%,#5f9be6 45%,#a9cdf5 70%,#cfe6fa 100%);
+  --amp-1: #6a6a9c; --amp-2: #3a3a64; --amp-3: #1c1c34;
+  --amp-hi: #9a9ad0; --amp-text: #cfd0f0;
+  --lcd-bg: #050806; --lcd: #33ff44; --lcd-dim: #145520; --amber: #ffb020;
+  --kick:#d84315; --snare:#c8881a; --hat:#2b8a8a; --clap:#3fae54; --shaker:#22a6c9;
+  --bass:#6a7bff; --pad:#b06bff; --melody:#ff6bd6;
+  --sans: Tahoma, 'Noto Sans', Verdana, sans-serif;
+  --mono: ui-monospace, 'JetBrains Mono', Menlo, monospace;
+}
+
+body { background: #23262b; font-family: var(--sans); padding: 22px;
+       display: flex; gap: 22px; align-items: flex-start; }
+
+/* --- cadre de comparaison --- */
+.col { width: 390px; flex: none; }
+.cap { color: #e8eaee; font: 700 12px var(--sans); letter-spacing: .14em;
+       text-transform: uppercase; margin-bottom: 3px; }
+.cap span { display: block; font-weight: 400; letter-spacing: .02em;
+            text-transform: none; font-size: 12px; color: #9aa0a8; margin-top: 3px; }
+.phone { width: 390px; height: 844px; overflow: hidden; position: relative;
+         border: 1px solid #3a3f46; background: var(--bliss); background-attachment: local;
+         margin-top: 10px; }
+.pad { padding: 10px 9px; }
+
+/* --- chrome XP partagé --- */
+.panel { background: var(--face); border: 1px solid var(--line); box-shadow: var(--out);
+         border-radius: 4px; padding: 7px 9px; margin-bottom: 9px; }
+.menubar { display: flex; gap: 13px; font-size: 13px; align-items: center; }
+.menubar .c { background: none; border: 0; font: 13px var(--sans); color: var(--text); }
+.btn { display: inline-block; background: linear-gradient(180deg,#fff,var(--face) 45%,var(--face-dark));
+       border: 1px solid var(--line); border-radius: 3px; box-shadow: var(--out);
+       padding: 9px 13px; font: 700 13px var(--sans); color: var(--text); }
+.tabs { display: flex; gap: 5px; }
+.tabs .c { flex: 1; text-align: center; padding: 8px 3px; border: 1px solid var(--line);
+           border-radius: 3px; font-size: 12px;
+           background: linear-gradient(180deg,#fff,var(--face) 45%,var(--face-dark));
+           box-shadow: var(--out); }
+.tabs .c.on { background: linear-gradient(180deg,#4d8cf5,#1b5bd4); color: #fff; font-weight: 700; }
+
+.win { border: 1px solid #0831d9; border-radius: 8px 8px 3px 3px; overflow: hidden;
+       box-shadow: 0 4px 14px rgba(0,0,30,.35); }
+.titlebar { display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+            background: var(--title); color: #fff; font: 700 13px var(--sans);
+            text-shadow: 1px 1px 1px rgba(0,0,40,.6); }
+.titlebar .t { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.titlebar .c { width: 24px; height: 24px; border: 1px solid #fff; border-radius: 3px;
+               background: linear-gradient(180deg,#7ba2e7,#3d6fe0 50%,#2a54c4);
+               color: #fff; font: 700 13px var(--sans); }
+
+/* --- plan de travail instrument --- */
+.rack { background: linear-gradient(180deg,var(--amp-1),var(--amp-2) 12%,var(--amp-3));
+        border-top: 1px solid var(--amp-hi); padding: 9px; color: var(--amp-text);
+        font-family: var(--mono); }
+.ruler { display: flex; margin: 0 0 6px 62px; }
+.ruler span { flex: 1; color: var(--amber); font-size: 9px; letter-spacing: .1em;
+              border-left: 1px solid rgba(255,176,32,.4); padding-left: 4px; }
+.row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tag { width: 54px; flex: none; display: flex; align-items: center; gap: 5px;
+       font: 700 10px var(--mono); letter-spacing: .1em; }
+.led { width: 7px; height: 7px; border-radius: 50%; flex: none;
+       background: currentColor; box-shadow: 0 0 5px currentColor; }
+.led.off { background: #2a2a40; box-shadow: none; }
+.cells { flex: 1; display: flex; gap: 3px; height: 38px; }
+.cells i { flex: 1; border-radius: 2px; background: var(--lcd-bg);
+           box-shadow: inset 0 1px 2px rgba(0,0,0,.9); }
+.cells i.on { background: currentColor; box-shadow: 0 0 7px currentColor,
+              inset 0 1px 0 rgba(255,255,255,.35); }
+.lcd { padding: 5px 7px; background: var(--lcd-bg); color: var(--lcd); border-radius: 3px;
+       font: 9.5px var(--mono); letter-spacing: .07em;
+       display: flex; justify-content: space-between; }
+.lcd .dim { color: var(--lcd-dim); }
+
+/* --- pastille de commande générique dans le rack --- */
+.chip { border: 1px solid var(--amp-hi); border-radius: 3px; padding: 5px 8px;
+        background: rgba(255,255,255,.06); color: var(--amp-text);
+        font: 9.5px var(--mono); letter-spacing: .08em; }
+.chip.on { background: var(--amber); color: #1c1c34; border-color: var(--amber); font-weight: 700; }
+
+/* --- annotation --- */
+.note { position: absolute; left: 9px; right: 9px; bottom: 9px;
+        background: rgba(8,10,14,.9); color: #dfe4ea; border-left: 3px solid var(--amber);
+        padding: 8px 10px; font: 11px var(--sans); line-height: 1.5; }
+.note b { color: var(--amber); }

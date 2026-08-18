@@ -1,0 +1,399 @@
+<title>Cassette contre Winamp</title>
+<style>
+  :root {
+    --ground:#f0f2f1; --surface:#fff; --surface-2:#e7eae8;
+    --ink:#14181a; --ink-soft:#4d5755; --ink-faint:#7d8785;
+    --rule:#d5dad7; --rule-strong:#b6bebb;
+    --accent:#22706f; --accent-soft:#d3ecec; --alarm:#b93a12;
+    --display:'Helvetica Neue',Helvetica,Arial,sans-serif;
+    --body:Georgia,'Iowan Old Style','Times New Roman',serif;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --ground:#0f1414; --surface:#171d1d; --surface-2:#1f2726;
+      --ink:#e6ecea; --ink-soft:#a5b1ae; --ink-faint:#77837f;
+      --rule:#2b3433; --rule-strong:#3d4948;
+      --accent:#58c2bf; --accent-soft:#12302f; --alarm:#f0714a;
+    }
+  }
+  :root[data-theme='dark'] {
+    --ground:#0f1414; --surface:#171d1d; --surface-2:#1f2726;
+    --ink:#e6ecea; --ink-soft:#a5b1ae; --ink-faint:#77837f;
+    --rule:#2b3433; --rule-strong:#3d4948;
+    --accent:#58c2bf; --accent-soft:#12302f; --alarm:#f0714a;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--ground); color:var(--ink); font-family:var(--body);
+         font-size:17px; line-height:1.62; margin:0; padding:0 20px 96px;
+         -webkit-text-size-adjust:100%; }
+  .wrap { max-width:960px; margin:0 auto; }
+  header { padding:56px 0 0; }
+  .eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.16em;
+             text-transform:uppercase; color:var(--ink-faint); margin:0 0 18px; }
+  h1 { font-family:var(--display); font-size:clamp(40px,10vw,68px); font-weight:800;
+       letter-spacing:-.035em; line-height:.98; margin:0; text-wrap:balance; }
+  .deck { font-size:20px; line-height:1.5; color:var(--ink-soft); margin:20px 0 0;
+          max-width:33em; text-wrap:pretty; }
+  .method { font-family:var(--mono); font-size:12.5px; line-height:1.75; color:var(--ink-faint);
+            margin:22px 0 0; border-top:1px solid var(--rule); padding-top:14px; }
+  h2 { font-family:var(--display); font-size:clamp(24px,5.5vw,32px); font-weight:800;
+       letter-spacing:-.025em; line-height:1.12; margin:0; text-wrap:balance; }
+  h3 { font-family:var(--display); font-size:18px; font-weight:700; margin:34px 0 10px; }
+  h4 { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+       color:var(--ink-faint); font-weight:400; margin:0 0 10px; }
+  p { margin:14px 0; text-wrap:pretty; }
+  code { font-family:var(--mono); font-size:.86em; }
+  section { margin:64px 0 0; }
+
+  /* ---- bandeau d'identité de chaque direction ---- */
+  .dir { margin-top:70px; padding-top:32px; border-top:3px solid var(--ink); }
+  .dirhead { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .dirhead .no { font-family:var(--mono); font-size:12px; letter-spacing:.18em;
+                 color:var(--accent); font-weight:700; }
+  .dirhead .ref { margin-left:auto; font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); }
+  .these { font-size:19px; line-height:1.5; margin:14px 0 0; max-width:38em; }
+  .these b { font-family:var(--display); }
+
+  .screens { display:flex; gap:14px; overflow-x:auto; padding:4px 0 12px; margin-top:24px; }
+  .screens figure { margin:0; flex:none; width:250px; }
+  .screens img { display:block; width:100%; height:auto; border:1px solid var(--rule-strong); }
+  .screens figcaption { font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); margin-top:7px; }
+
+  .two { display:grid; gap:26px; margin-top:8px; }
+  @media (min-width:760px) { .two { grid-template-columns:1fr 1fr; } }
+
+  /* ---- palette ---- */
+  .pgroup { margin-bottom:18px; }
+  .chips { display:grid; gap:8px; }
+  .chip { display:flex; gap:11px; align-items:flex-start; }
+  .chip i { width:38px; height:38px; flex:none; border:1px solid var(--rule-strong); }
+  .chip b { display:block; font-family:var(--display); font-size:14px; font-weight:700; }
+  .chip code { display:block; font-size:11px; color:var(--ink-faint); }
+  .chip span { display:block; font-size:13.5px; color:var(--ink-soft); line-height:1.45; margin-top:2px; }
+  .hues { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; margin-top:8px; }
+  .hue i { display:block; height:30px; border:1px solid var(--rule-strong); }
+  .hue b { display:block; font-family:var(--display); font-size:12px; margin-top:4px; }
+  .hue code { font-size:10.5px; color:var(--ink-faint); }
+
+  /* ---- échelle typographique ---- */
+  table.sc { border-collapse:collapse; width:100%; min-width:430px; margin-top:8px; font-size:13px; }
+  table.sc td { border-bottom:1px solid var(--rule); padding:9px 8px; vertical-align:middle; }
+  table.sc td.n { font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+                  text-align:right; white-space:nowrap; }
+  table.sc td.sp { width:150px; }
+  table.sc tr:last-child td { border-bottom:0; }
+
+  /* ---- états ---- */
+  .etat { display:flex; gap:12px; align-items:flex-start; margin-bottom:14px; }
+  .etat b { display:block; font-family:var(--display); font-size:14px; }
+  .etat span { display:block; font-size:13.5px; color:var(--ink-soft); line-height:1.45; }
+  .cellspec { width:52px; height:34px; flex:none; border:1px solid transparent; }
+
+  /* ---- planches de spécimens : la surface de chaque direction ---- */
+  /* La table d'échelle et les planches de composants sont larges : elles
+     défilent DANS leur propre cadre, jamais le corps de la page. */
+  .spec { padding:16px; margin-top:8px; overflow-x:auto; }
+  .spec + .spec { margin-top:14px; }
+  .specrow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; min-width:330px; }
+  .specrow + .specrow { margin-top:12px; }
+
+  ul.plain { margin:8px 0 0; padding-left:20px; }
+  ul.plain li { margin-bottom:9px; font-size:15.5px; color:var(--ink-soft); }
+  ul.plain li b { color:var(--ink); font-family:var(--display); }
+  ul.refs { margin:8px 0 0; padding:0; list-style:none; }
+  ul.refs li { font-size:15.5px; color:var(--ink-soft); padding:7px 0 7px 18px;
+               border-bottom:1px solid var(--rule); position:relative; }
+  ul.refs li::before { content:'—'; position:absolute; left:0; color:var(--ink-faint); }
+  ul.refs li:last-child { border-bottom:0; }
+
+  .note { background:var(--surface); border:1px solid var(--rule); border-left:4px solid var(--accent);
+          padding:20px 22px; margin:26px 0 0; }
+  .note p { margin:0; font-size:16.5px; }
+  .note p + p { margin-top:10px; color:var(--ink-soft); font-size:15.5px; }
+  .dcols { display:grid; gap:26px; margin-top:24px; }
+  @media (min-width:760px) { .dcols { grid-template-columns:1fr 1fr; } }
+  .dhalf h3 { margin-top:0; }
+
+  /* ================= CASSETTE — tokens réels ================= */
+  .mb-ca { background:#f4f1e8; color:#23211c;
+           font-family:'Courier New','DejaVu Sans Mono',monospace;
+           border:1px solid #23211c; box-shadow:4px 4px 0 rgba(35,33,28,.2);
+           border-left:7px solid #c94f2e; }
+  .mb-ca .tt { font:700 12px 'Courier New',monospace; letter-spacing:.12em;
+               background:#23211c; color:#f4f1e8; padding:3px 8px; display:inline-block; }
+  .mb-ca .menu { font:11px 'Courier New',monospace; letter-spacing:.06em; }
+  .mb-ca .tabon { font:700 11px 'Courier New',monospace; background:#23211c; color:#f4f1e8; padding:3px 9px; }
+  .mb-ca .tag { font:700 10px 'Courier New',monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .mb-ca .btn { font:12px 'Courier New',monospace; }
+  .mb-ca .leg { font:700 9px 'Courier New',monospace; letter-spacing:.2em; text-transform:uppercase; color:#c94f2e; }
+  .mb-ca .field { font:10px 'Courier New',monospace; }
+  .mb-ca .pill { font:9px 'Courier New',monospace; letter-spacing:.06em; color:#7a736a; }
+  .mb-ca .lcd { font:10px 'Courier New',monospace; letter-spacing:.06em; color:#7a736a; }
+  .mb-ca .num { font:700 15px 'Courier New',monospace; }
+  .mb-ca .a-tt { background:#23211c; color:#f4f1e8; padding:4px 8px;
+                 font:700 12px 'Courier New',monospace; letter-spacing:.12em; }
+  .mb-ca .a-btn { background:#f4f1e8; border:1px solid #23211c; padding:9px 14px;
+                  font:12px 'Courier New',monospace; }
+  .mb-ca .a-sel { background:#f4f1e8; border:1px solid #23211c; padding:5px 9px;
+                  font:10px 'Courier New',monospace; display:inline-flex; gap:10px; }
+  .mb-ca .a-num { background:#f4f1e8; border:1px solid #23211c; padding:4px 9px;
+                  font:10px 'Courier New',monospace; }
+  .mb-ca .a-pill { border:1px solid #23211c; padding:5px 10px;
+                   font:9px 'Courier New',monospace; letter-spacing:.06em; }
+  .mb-ca .a-fs { border:1px solid #23211c; padding:10px 12px 12px; margin-top:12px; }
+  .mb-ca .a-fs legend { font:700 9px 'Courier New',monospace; letter-spacing:.2em;
+                        text-transform:uppercase; color:#c94f2e; padding:0 6px; }
+  .mb-ca .a-chk { width:16px; height:16px; border:1px solid #23211c; background:#f4f1e8;
+                  display:inline-grid; place-items:center; font-size:10px; }
+  .mb-ca .a-chk.on { background:#c94f2e; color:#fff; }
+  .mb-ca .a-sl { flex:1; height:6px; background:#e6e1d4; border:1px solid #23211c; position:relative; }
+  .mb-ca .a-sl i { position:absolute; left:44%; top:-5px; width:12px; height:14px; background:#23211c; }
+  .mb-ca .a-lcd { background:#e6e1d4; border:1px solid #23211c; padding:5px 9px; color:#7a736a;
+                  font:10px 'Courier New',monospace; letter-spacing:.06em;
+                  display:flex; justify-content:space-between; }
+  .mb-ca .a-cell { width:100%; height:32px; background:#e6e1d4; border:1px solid #23211c; }
+
+  /* ================= WINAMP 2.x — tokens réels ================= */
+  .mb-w1 { background:linear-gradient(180deg,#4b4b57,#2e2e38 55%,#1e1e26); color:#c8c8d8;
+           font-family:ui-monospace,'DejaVu Sans Mono',monospace;
+           box-shadow:inset 1px 1px 0 #7d7d92, inset -1px -1px 0 #0a0a10; }
+  .mb-w1 .tt { font:700 8.5px ui-monospace,monospace; letter-spacing:.22em; text-transform:uppercase;
+               background:linear-gradient(180deg,#3a3a8c,#1c1c46 50%,#2a2a66); color:#b8b8e8;
+               padding:3px 8px; display:inline-block; }
+  .mb-w1 .menu { font:700 9px ui-monospace,monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .mb-w1 .tabon { font:700 9px ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase;
+                  background:#0b1a0d; color:#2ee23c; padding:4px 9px; }
+  .mb-w1 .tag { font:700 8.5px ui-monospace,monospace; letter-spacing:.14em; text-transform:uppercase; }
+  .mb-w1 .btn { font:700 9px ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; }
+  .mb-w1 .leg { font:700 8.5px ui-monospace,monospace; letter-spacing:.16em;
+                text-transform:uppercase; color:#2ee23c; }
+  .mb-w1 .field { font:9.5px ui-monospace,monospace; }
+  .mb-w1 .pill { font:8.5px ui-monospace,monospace; letter-spacing:.06em; color:#75758a; }
+  .mb-w1 .lcd { font:9px ui-monospace,monospace; letter-spacing:.06em; color:#2ee23c; }
+  .mb-w1 .num { font:700 22px ui-monospace,monospace; color:#2ee23c; }
+  .mb-w1 .a-tt { background:linear-gradient(180deg,#3a3a8c,#1c1c46 50%,#2a2a66); color:#b8b8e8;
+                 padding:4px 8px; font:700 8.5px ui-monospace,monospace;
+                 letter-spacing:.22em; text-transform:uppercase; }
+  .mb-w1 .a-btn { background:linear-gradient(180deg,#5c5c6a,#333340); padding:9px 13px;
+                  font:700 9px ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase;
+                  color:#c8c8d8; box-shadow:inset 1px 1px 0 #7d7d92, inset -1px -1px 0 #0a0a10; }
+  .mb-w1 .a-sel { background:#050806; padding:5px 9px; font:9.5px ui-monospace,monospace;
+                  color:#c8c8d8; display:inline-flex; gap:10px;
+                  box-shadow:inset 1px 1px 0 #0a0a10, inset -1px -1px 0 rgba(255,255,255,.1); }
+  .mb-w1 .a-num { background:#050806; padding:4px 9px; font:9.5px ui-monospace,monospace; color:#2ee23c;
+                  box-shadow:inset 1px 1px 0 #0a0a10, inset -1px -1px 0 rgba(255,255,255,.1); }
+  .mb-w1 .a-pill { padding:5px 10px; font:8.5px ui-monospace,monospace; letter-spacing:.06em;
+                   color:#c8c8d8; background:linear-gradient(180deg,#5c5c6a,#333340);
+                   box-shadow:inset 1px 1px 0 #7d7d92, inset -1px -1px 0 #0a0a10; }
+  .mb-w1 .a-fs { border:1px solid #3d3d4a; padding:10px 12px 12px; margin-top:12px; }
+  .mb-w1 .a-fs legend { font:700 8.5px ui-monospace,monospace; letter-spacing:.16em;
+                        text-transform:uppercase; color:#2ee23c; padding:0 6px; }
+  .mb-w1 .a-chk { width:16px; height:16px; background:#050806; display:inline-grid; place-items:center;
+                  font-size:10px; color:#2ee23c;
+                  box-shadow:inset 1px 1px 0 #0a0a10, inset -1px -1px 0 rgba(255,255,255,.1); }
+  .mb-w1 .a-chk.on { background:#0b1a0d; }
+  .mb-w1 .a-sl { flex:1; height:6px; background:#1a1a22; position:relative;
+                 box-shadow:inset 1px 1px 0 #0a0a10; }
+  .mb-w1 .a-sl i { position:absolute; left:44%; top:-5px; width:12px; height:14px;
+                   background:linear-gradient(180deg,#7d7d92,#33333f);
+                   box-shadow:inset 1px 1px 0 #9a9ab0, inset -1px -1px 0 #0a0a10; }
+  .mb-w1 .a-lcd { background:#050806; padding:5px 9px; color:#2ee23c;
+                  font:9px ui-monospace,monospace; letter-spacing:.06em;
+                  display:flex; justify-content:space-between;
+                  box-shadow:inset 1px 1px 0 #0a0a10; }
+  .mb-w1 .a-cell { width:100%; height:32px; background:#050806;
+                   box-shadow:inset 1px 1px 0 #0a0a10, inset -1px -1px 0 rgba(255,255,255,.09); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Audit de design · moodboard · 2026-08-18</p>
+    <h1>Cassette contre Winamp</h1>
+    <p class="deck">Les deux finalistes, sans croisement. Palette complète, échelle typographique,
+      états, planche de composants et risques — de quoi décider, puis de quoi coder.</p>
+    <p class="method">Les pastilles de couleur, les spécimens de typo et les composants de cette
+      page ne sont pas des captures&nbsp;: ce sont les <strong>tokens réels</strong> des deux
+      directions, rendus en direct. Les valeurs sont lues dans
+      <code>variants_b.py</code> et <code>variants_c.py</code>. Seuls les deux écrans complets
+      sont des images.</p>
+  </header>
+
+  <section>
+    <h2>Une chose avant de commencer</h2>
+    <div class="note">
+      <p>Ces deux-là ne sont pas deux variantes d'une même idée. <strong>Ce sont deux objets
+        différents&nbsp;: un imprimé et un logiciel.</strong></p>
+      <p>Cassette est une chose qu'on fabrique et qu'on tient dans la main&nbsp;; Winamp&nbsp;2.x
+        est une chose qu'on télécharge et qui n'a jamais existé qu'à l'écran. Elles partagent la
+        chasse fixe et rien d'autre — et c'est pour ça que le choix entre les deux est un vrai
+        choix, pas un arbitrage de nuance.</p>
+    </div>
+  </section>
+
+  <!-- ============================== CASSETTE ============================== -->
+  <div class="dir">
+    <div class="dirhead"><span class="no">01</span><h2>Cassette</h2>
+      <span class="ref">la jaquette d’une K7</span></div>
+    <p class="these"><b>Le principe&nbsp;:</b> l'écran est une fiche qu'on a remplie soi-même.
+      Un seul papier, une seule encre, un filet de couleur pour dire la face. Tout est à plat&nbsp;;
+      la profondeur n'existe que sous forme d'ombre portée, dure et décalée, comme deux feuilles
+      posées l'une sur l'autre.</p>
+
+    <div class="screens">
+      <figure><img src="__IMG_CAR__" alt="Écran Rythme en direction Cassette : fond crème, filet rouge à gauche, cases pleines à l’encre"><figcaption>Rythme</figcaption></figure>
+      <figure><img src="__IMG_CAS__" alt="Écran Synthé en direction Cassette : menus déroulants encadrés de noir, cadres de réglages, cases à cocher"><figcaption>Synthé — l’écran dense</figcaption></figure>
+    </div>
+
+    <h3>Références</h3>
+    <ul class="refs">__REFS_CA__</ul>
+
+    <div class="two">
+      <div>
+        <h3>Palette</h3>
+        __SWATCH_CA__
+      </div>
+      <div>
+        <h3>Les huit teintes de lignes</h3>
+        <p style="font-size:14.5px;margin-top:0;color:var(--ink-soft)">Désaturées vers l'encre&nbsp;:
+          ce sont des couleurs d'imprimerie, pas de lumière. Aucune ne dépasse la valeur du
+          vermillon de l'accent.</p>
+        <div class="hues">__HUES_CA__</div>
+        <h3>États d’un pas</h3>
+        __ETATS_CA__
+      </div>
+    </div>
+
+    <h3>Échelle typographique</h3>
+    <p style="font-size:14.5px;color:var(--ink-soft);margin-top:0">Une seule famille — Courier —
+      et dix rôles obtenus par la taille, la graisse et l'espacement.</p>
+    <div class="spec mb-ca">
+      <table class="sc">__SCALE_CA__</table>
+    </div>
+
+    <h3>Planche de composants</h3>
+    <div class="spec mb-ca">
+      <div class="specrow"><span class="a-tt">SÉQUENCEUR</span>
+        <span class="a-btn">▶ Lecture</span><span class="a-btn">Break</span>
+        <span class="tabon">Rythme</span></div>
+      <div class="specrow"><span class="a-sel">Rhodes chaud <b>▾</b></span>
+        <span class="a-num">65 %</span>
+        <span class="a-pill">Séquence</span><span class="a-pill">Timbre</span></div>
+      <div class="specrow"><span class="a-chk on">✓</span><span class="field">Kick</span>
+        <span class="a-chk"></span><span class="field">Snare</span>
+        <span class="a-sl"><i></i></span><span class="num">120</span></div>
+      <fieldset class="a-fs"><legend>Harmonie</legend>
+        <div class="specrow"><span class="field">Tonalité</span><span class="a-sel">Do <b>▾</b></span>
+          <span class="field">Mode</span><span class="a-sel">Majeur <b>▾</b></span></div>
+      </fieldset>
+      <div class="specrow" style="margin-top:14px"><span class="a-lcd" style="flex:1"><span>KICK · TON 42 · DÉCLIN 220</span><span>RÉV 12 %</span></span></div>
+      <div class="specrow"><span class="a-cell" style="flex:1"></span>
+        <span class="a-cell" style="flex:1;background:#c94f2e"></span>
+        <span class="a-cell" style="flex:1"></span>
+        <span class="a-cell" style="flex:1;background:#c94f2e"></span></div>
+    </div>
+
+    <h3>Risques</h3>
+    <ul class="plain">__RISQ_CA__</ul>
+  </div>
+
+  <!-- ============================== WINAMP ============================== -->
+  <div class="dir">
+    <div class="dirhead"><span class="no">02</span><h2>Winamp 2.x</h2>
+      <span class="ref">la skin d’origine, au pixel</span></div>
+    <p class="these"><b>Le principe&nbsp;:</b> l'écran est un appareil posé sur un bureau noir.
+      Tout est construit sur un biseau d'un seul pixel — lumière en haut à gauche, ombre en bas
+      à droite — et cette règle suffit à dire ce qui est en relief, ce qui est creusé, ce qui est
+      un écran. Le vert n'est pas une couleur de marque&nbsp;: c'est du verre allumé.</p>
+
+    <div class="screens">
+      <figure><img src="__IMG_W1R__" alt="Écran Rythme en direction Winamp 2.x : chrome gris-violet biseauté, LCD vert, cases saturées sur fond noir"><figcaption>Rythme</figcaption></figure>
+      <figure><img src="__IMG_W1S__" alt="Écran Synthé en direction Winamp 2.x : menus déroulants creusés, cadres, cases à cocher"><figcaption>Synthé — l’écran dense</figcaption></figure>
+    </div>
+
+    <h3>Références</h3>
+    <ul class="refs">__REFS_W1__</ul>
+
+    <div class="two">
+      <div>
+        <h3>Palette</h3>
+        __SWATCH_W1__
+      </div>
+      <div>
+        <h3>Les huit teintes de lignes</h3>
+        <p style="font-size:14.5px;margin-top:0;color:var(--ink-soft)">Saturées et lumineuses&nbsp;:
+          ce sont des couleurs d'écran. Elles ne tiennent que parce que le fond est presque noir.</p>
+        <div class="hues">__HUES_W1__</div>
+        <h3>États d’un pas</h3>
+        __ETATS_W1__
+      </div>
+    </div>
+
+    <h3>Échelle typographique</h3>
+    <p style="font-size:14.5px;color:var(--ink-soft);margin-top:0">Tout est petit et tout est en
+      capitales espacées, sauf les champs et les chiffres. L'écart entre le plus petit texte
+      (8,5&nbsp;px) et le plus grand chiffre (22&nbsp;px) est le plus fort des deux directions.</p>
+    <div class="spec mb-w1">
+      <table class="sc">__SCALE_W1__</table>
+    </div>
+
+    <h3>Planche de composants</h3>
+    <div class="spec mb-w1">
+      <div class="specrow"><span class="a-tt">SÉQUENCEUR</span>
+        <span class="a-btn">▶ Lecture</span><span class="a-btn">Break</span>
+        <span class="tabon">Rythme</span></div>
+      <div class="specrow"><span class="a-sel">Rhodes chaud <b>▾</b></span>
+        <span class="a-num">65 %</span>
+        <span class="a-pill">Séquence</span><span class="a-pill">Timbre</span></div>
+      <div class="specrow"><span class="a-chk on">✓</span><span class="field">Kick</span>
+        <span class="a-chk"></span><span class="field">Snare</span>
+        <span class="a-sl"><i></i></span><span class="num">120</span></div>
+      <fieldset class="a-fs"><legend>Harmonie</legend>
+        <div class="specrow"><span class="field">Tonalité</span><span class="a-sel">Do <b>▾</b></span>
+          <span class="field">Mode</span><span class="a-sel">Majeur <b>▾</b></span></div>
+      </fieldset>
+      <div class="specrow" style="margin-top:14px"><span class="a-lcd" style="flex:1"><span>KICK · TON 42 · DÉCLIN 220</span><span>RÉV 12 %</span></span></div>
+      <div class="specrow"><span class="a-cell" style="flex:1"></span>
+        <span class="a-cell" style="flex:1;background:#ff5a2b;box-shadow:inset 1px 1px 0 rgba(255,255,255,.35)"></span>
+        <span class="a-cell" style="flex:1"></span>
+        <span class="a-cell" style="flex:1;background:#ff5a2b;box-shadow:inset 1px 1px 0 rgba(255,255,255,.35)"></span></div>
+    </div>
+
+    <h3>Risques</h3>
+    <ul class="plain">__RISQ_W1__</ul>
+  </div>
+
+  <section>
+    <h2>Ce qui les rapproche, ce qui les sépare</h2>
+    <div class="dcols">__DIFF__</div>
+  </section>
+
+  <section>
+    <h2>Ce que chacune coûte en code</h2>
+    <p>Les deux demandent le même travail de fond, et il est déjà connu&nbsp;: les
+      <strong>225 couleurs écrites en dur</strong> dans 18 fichiers <code>.svelte</code> doivent
+      passer en tokens. C'est le poste principal, et il est identique dans les deux cas.</p>
+    <p>Ce qui les distingue tient en trois points&nbsp;:</p>
+    <ul class="plain">
+      <li><b>La police.</b> Les deux reposent sur une chasse fixe, et aucune des deux ne peut se
+        contenter des polices du système — Courier New n'existe pas partout, et le rendu change
+        du tout au tout entre les plateformes. Il faut une fonte auto-hébergée
+        (via fontsource, comme le prévoyait déjà le plan). <strong>C'est le seul poste qui
+        alourdit le fichier livré</strong>, et il concerne les deux.</li>
+      <li><b>Le thème sombre existe déjà.</b> <code>data-theme="noir"</code> est en place et sert
+        au Mode jeu&nbsp;: <b>Winamp</b> s'y branche presque directement. <b>Cassette</b> demande
+        un troisième thème clair, distinct de Luna.</li>
+      <li><b>Le relief.</b> Cassette supprime les trois tokens de biseau et les remplace par un
+        filet — c'est une simplification. Winamp les conserve mais en inverse la logique&nbsp;: le
+        biseau devient la seule grammaire, appliquée partout, y compris là où XP ne l'utilisait
+        pas. Un peu plus de travail, mais mieux balisé.</li>
+    </ul>
+    <div class="note">
+      <p><strong>Prochaine étape, quelle que soit celle que tu retiens&nbsp;:</strong> la décliner
+        sur les écrans qui ne ressemblent pas à l'Atelier.</p>
+      <p>Le splash, le Mode jeu, et surtout le <strong>Mode Live en paysage</strong>. C'est là
+        qu'une identité casse — et dans le cas de Cassette, c'est précisément là que se pose la
+        question de l'écran clair en pénombre.</p>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,61 @@
+<!doctype html>
+<meta charset="utf-8"><title>N — Inspecteur contextuel</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* N — Un seul panneau dans toute l'appli : celui de l'objet sélectionné.
+     Les ~288 réglages ne sont jamais tous à l'écran, seulement les douze de la
+     ligne visée. La barre du bas ne change pas de place, elle change de
+     contenu — donc la position d'un réglage s'apprend une fois. */
+  .insp { background: var(--face); border-top: 2px solid #1b5bd4; padding: 8px 10px 10px; }
+  .insp .hd { display: flex; align-items: baseline; gap: 7px; margin-bottom: 7px; }
+  .insp .hd b { font-size: 13px; }
+  .insp .hd span { font-size: 10.5px; color: var(--muted); }
+  .par { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11.5px; }
+  .par label { width: 62px; flex: none; color: var(--muted); }
+  .par .sl { flex: 1; height: 5px; background: var(--face-dark); border: 1px solid var(--line);
+             border-radius: 3px; position: relative; }
+  .par .sl i { position: absolute; top: -4px; width: 11px; height: 13px; border-radius: 2px;
+               background: linear-gradient(180deg,#fff,var(--face-dark)); border: 1px solid var(--line); }
+  .par b { width: 36px; text-align: right; font: 11px var(--mono); }
+  .empty { padding: 16px 10px; text-align: center; font-size: 12px; color: var(--muted);
+           background: var(--face); border-top: 2px solid var(--line); }
+  .more { display: flex; gap: 5px; margin-top: 8px; }
+  .more .c { flex: 1; text-align: center; font-size: 10.5px; padding: 7px 2px; }
+</style>
+
+<div class="col">
+  <div class="cap">Rien de sélectionné<span>L’écran au repos</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="panel tabs"><span class="c on">🥁 Rythme</span><span class="c">🎹 Synthé</span><span class="c">🎚 Production</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid></div></div>
+    </div>
+    <div class="empty">Touche une ligne pour la régler.</div>
+    <div class="note">Zéro réglage permanent&nbsp;: la page tient en un écran quel que soit le nombre de lignes. <b>Huit lignes ou trente, l’écran ne grandit pas.</b></div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Kick sélectionné<span>Un seul panneau, celui de l’objet visé</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel menubar"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid data-sel="KICK"></div></div>
+    </div>
+    <div class="insp">
+      <div class="hd"><b style="color:var(--kick)">■</b><b>Kick</b><span>ligne 1 · 4 pas</span><span class="btn c" style="margin-left:auto;padding:3px 7px;font-size:10.5px">🎲</span></div>
+      <div class="par"><label>Ton</label><span class="sl"><i style="left:28%"></i></span><b>42</b></div>
+      <div class="par"><label>Déclin</label><span class="sl"><i style="left:62%"></i></span><b>220</b></div>
+      <div class="par"><label>Clic</label><span class="sl"><i style="left:18%"></i></span><b>18</b></div>
+      <div class="par"><label>Réverb</label><span class="sl"><i style="left:12%"></i></span><b>12%</b></div>
+      <div class="more"><span class="btn c">Séquence</span><span class="btn c">Filtre</span><span class="btn c">Voix</span><span class="btn c">⋯</span></div>
+    </div>
+    <div class="note">Le panneau ne se déplie pas, il se <b>remplace</b>. C’est le modèle d’Ableton et de Figma&nbsp;: un objet visé, un inspecteur, toujours au même endroit.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

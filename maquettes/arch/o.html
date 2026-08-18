@@ -1,0 +1,45 @@
+<!doctype html>
+<meta charset="utf-8"><title>O — Simple / Studio</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* O — Deux interfaces déclarées, un interrupteur global. La plus grossière
+     des dix, et la plus franche : au lieu de doser la complexité contrôle par
+     contrôle, on assume deux produits dans le même code. Risque connu :
+     personne ne bascule jamais, et la moitié du travail ne se voit pas. */
+  .seg { display: flex; background: var(--face-dark); border: 1px solid var(--line);
+         border-radius: 999px; padding: 2px; }
+  .seg .c { flex: 1; border: 0; background: none; padding: 6px 0; border-radius: 999px;
+            font: 700 11.5px var(--sans); color: var(--muted); }
+  .seg .c.on { background: #1b5bd4; color: #fff; }
+  .pillrow { display: flex; gap: 4px; margin-top: 5px; }
+  .pillrow .chip { flex: 1; text-align: center; }
+</style>
+
+<div class="col">
+  <div class="cap">Simple<span>Réglage par défaut à la première ouverture</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel"><div class="seg"><button class="c on">Simple</button><button class="c">Studio</button></div></div>
+    <div class="panel"><span class="btn c">▶ Lecture</span> <span class="btn c">🫨 Break</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid data-rows="KICK,SNARE,HAT"></div></div>
+    </div>
+    <div class="note">Trois lignes, deux boutons, un interrupteur. <b>Onze commandes en tout.</b> Ni menus, ni onglets, ni pastilles&nbsp;: le Synthé et la Production n’existent pas dans ce mode.</div>
+  </div></div>
+</div>
+
+<div class="col">
+  <div class="cap">Studio<span>Le même écran, interrupteur basculé</span></div>
+  <div class="phone"><div class="pad">
+    <div class="panel" style="padding:5px 7px"><div class="seg"><button class="c">Simple</button><button class="c on">Studio</button></div></div>
+    <div class="panel menubar" style="padding:5px 7px"><button class="c">Mode</button><button class="c">Fichier</button><button class="c">Édition</button><button class="c">Affichage</button><button class="c">Aide</button></div>
+    <div class="panel" style="padding:5px 7px"><span class="btn c" style="padding:6px 9px">▶</span> <span class="btn c" style="padding:6px 9px">🫨</span> <span class="btn c" style="padding:6px 9px">⏺</span> <span class="btn c" style="padding:6px 9px">🎲</span> <span class="btn c" style="padding:6px 9px">↶</span> <span class="btn c" style="padding:6px 9px">↷</span></div>
+    <div class="panel tabs" style="padding:5px 7px"><span class="c on">🥁</span><span class="c">🎹</span><span class="c">🎚</span><span class="c">🎛</span></div>
+    <div class="win">
+      <div class="titlebar"><span>🥁</span><span class="t">Séquenceur</span><button class="c">⌄</button></div>
+      <div class="rack"><div data-grid="8"></div><div class="pillrow"><span class="chip c">SÉQ</span><span class="chip c">TIMBRE</span><span class="chip c">FILTRE</span><span class="chip c">VOIX</span><span class="chip c">DÉ</span></div><div class="lcd" style="margin-top:6px"><span>KICK · TON 42 · DÉCLIN 220</span><span class="dim">RÉV 12 %</span></div></div>
+    </div>
+    <div class="note">Tout revient d’un coup. <b>Le danger de ce modèle&nbsp;: la marche est verticale</b> — on passe de onze commandes à deux cents sans palier intermédiaire.</div>
+  </div></div>
+</div>
+<script src="grid.js"></script>

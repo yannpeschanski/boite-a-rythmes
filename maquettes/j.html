@@ -1,0 +1,92 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Maquette J — Tracker</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* DIRECTION J — tracker / terminal. Historiquement la plus légitime pour un
+     séquenceur : le motif se LIT en colonnes de texte, pas en cases. Le temps
+     descend au lieu d'aller vers la droite, ce qui règle d'un coup le problème
+     du téléphone — un écran haut et étroit est exactement la bonne forme.
+     Références : Polyend Tracker, Renoise, les trackers Amiga. */
+  :root {
+    --bg: #0a0b0d; --bg-2: #101216; --line: #1d2026;
+    --fg: #c8cdd6; --dim: #5a6068; --cursor: #1b2b3a;
+    --kick:#ff6a45; --snare:#ffc043; --hat:#3ad6cf; --clap:#63e07a; --shaker:#4bb6ff;
+    --key:#b48cff;
+  }
+  body { background: var(--bg); color: var(--fg);
+         font: 12px ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+         padding: 0 0 20px; letter-spacing: .02em; }
+
+  .bar { display: flex; gap: 14px; padding: 9px 12px; border-bottom: 1px solid var(--line);
+         background: var(--bg-2); font-size: 11px; }
+  .bar .k { color: var(--dim); }
+  .bar b { color: var(--fg); font-weight: 400; }
+  .bar .r { margin-left: auto; color: var(--key); }
+
+  .tabs { display: flex; border-bottom: 1px solid var(--line); }
+  .tabs span { padding: 8px 14px; font-size: 11px; color: var(--dim);
+               border-right: 1px solid var(--line); }
+  .tabs span.on { color: var(--bg); background: var(--fg); }
+
+  /* En-tête de colonnes : une colonne par ligne du séquenceur. */
+  .grid { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .grid th { font-weight: 400; font-size: 10px; letter-spacing: .12em; text-align: left;
+             padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  .grid td { padding: 3px 4px; font-size: 12px; border-bottom: 1px solid rgba(29,32,38,.5); }
+  .grid .n { color: var(--dim); width: 30px; padding-left: 10px; }
+  /* Le temps fort porte un liseré : la mesure se lit sans compter. */
+  .beat td { border-top: 1px solid var(--line); }
+  .beat .n { color: var(--fg); }
+  .cur td { background: var(--cursor); }
+  .off { color: #23262c; }
+
+  .hint { padding: 10px 12px; color: var(--dim); font-size: 10.5px; line-height: 1.7;
+          border-top: 1px solid var(--line); }
+  .hint b { color: var(--key); font-weight: 400; }
+
+  .status { position: sticky; bottom: 0; display: flex; gap: 12px; padding: 8px 12px;
+            background: var(--bg-2); border-top: 1px solid var(--line); font-size: 10.5px; }
+  .status .r { margin-left: auto; color: var(--dim); }
+</style>
+
+<div class="bar">
+  <span><span class="k">PAT</span> <b>01</b></span>
+  <span><span class="k">BPM</span> <b>120</b></span>
+  <span><span class="k">LEN</span> <b>16</b></span>
+  <span class="r">▶ PLAY</span>
+</div>
+
+<div class="tabs"><span class="on">RYTHME</span><span>SYNTHÉ</span><span>PRODUCTION</span></div>
+
+<table class="grid">
+  <tr>
+    <th class="n"></th>
+    <th style="color:var(--kick)">KCK</th>
+    <th style="color:var(--snare)">SNR</th>
+    <th style="color:var(--hat)">HAT</th>
+    <th style="color:var(--clap)">CLP</th>
+    <th style="color:var(--shaker)">SHK</th>
+  </tr>
+  <tr class="beat cur"><td class="n">00</td><td style="color:var(--kick)">C-2 7F</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">01</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">02</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">03</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr class="beat"><td class="n">04</td><td class="off">--- --</td><td style="color:var(--snare)">D-3 7F</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">05</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">06</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">07</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr class="beat"><td class="n">08</td><td style="color:var(--kick)">C-2 7F</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">09</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">10</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">11</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr class="beat"><td class="n">12</td><td class="off">--- --</td><td style="color:var(--snare)">D-3 7F</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">13</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">14</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 5A</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+  <tr><td class="n">15</td><td class="off">--- --</td><td class="off">--- --</td><td style="color:var(--hat)">F#3 3C</td><td class="off">--- --</td><td class="off">--- --</td></tr>
+</table>
+
+<div class="hint">Appui long sur une case&nbsp;: <b>poser / retirer</b>. Glissé vertical&nbsp;:
+  <b>vélocité</b>. Deux doigts&nbsp;: <b>changer de piste</b>.</div>
+
+<div class="status"><span>KCK · TON 42 · DÉCL 220</span><span class="r">RÉV 12%</span></div>
