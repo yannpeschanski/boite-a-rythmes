@@ -121,8 +121,9 @@
   --cell-melody: #ff5ac8;
 }
 
-/* [data-theme='noir'] n'a plus de valeurs propres : tout est sombre désormais,
-   et le Mode jeu doit parler la même langue que le reste. Le bloc est vidé
-   plutôt que supprimé pour que l'attribut, encore posé par GameView, retombe
-   simplement sur :root. Le retrait de l'attribut lui-même appartient à
-   l'étape 5, avec la fusion des tokens --amp-* du Mode Live. */
+/* [data-theme='noir'] a disparu (étape 5) : le Mode jeu ne pose plus
+   l'attribut et parle la langue commune. Les onze tokens --amp-* du Mode Live
+   sont devenus des alias sur ce jeu-ci dans LiveView.svelte.
+
+   L'appli parlait TROIS langues visuelles ; elle n'en parle plus qu'une. C'est
+   le 4e reproche de l'audit de design, et l'argument principal du choix. */

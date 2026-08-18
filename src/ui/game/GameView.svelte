@@ -95,7 +95,9 @@
   const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
 </script>
 
-<div class="game" data-theme="noir">
+<!-- ÉTAPE 5 : data-theme="noir" retiré. Le Mode jeu avait son propre
+     thème sombre ; il parle désormais la langue commune. -->
+<div class="game">
   {#if !game.pseudo}
     <XpWindow title="Boîte à rythmes — Mode jeu" icon="🎮" accent="none">
       <p class="lead">Choisis ton pseudo pour commencer la campagne.</p>
@@ -263,8 +265,8 @@
     font-size: 13px;
     padding: 4px;
     border: 1px solid var(--xp-line);
-    background: #fff;
-    color: #111;
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
   }
   .head {
     display: flex;
@@ -320,11 +322,11 @@
     cursor: default;
   }
   .map-cell.current {
-    outline: 2px solid #ffd54a;
+    outline: 2px solid var(--xp-playhead);
   }
   .stars {
     font-size: 9px;
-    color: #ffce3d;
+    color: var(--xp-playhead);
   }
   .bag {
     max-height: 180px;
@@ -354,7 +356,7 @@
   }
   .xp-btn.primary {
     font-weight: 700;
-    background: linear-gradient(180deg, #4d8f4d, #2f6b2f 50%, #235023);
+    background: linear-gradient(180deg, #2f8a3c, #1c5a24 50%, #123f18);
   }
   .xp-btn:disabled {
     opacity: 0.5;
@@ -383,10 +385,10 @@
     color: var(--xp-muted);
   }
   .count.ok {
-    color: #6ce06c;
+    color: var(--xp-lcd);
   }
   .badge {
-    color: #ffce3d;
+    color: var(--xp-playhead);
   }
   .cells {
     display: grid;
@@ -398,7 +400,7 @@
     height: 34px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #55555f, #3a3a44);
+    background: var(--xp-btn-face);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
     padding: 0;
@@ -417,10 +419,10 @@
     cursor: default;
   }
   .cell.revealed {
-    outline: 2px dashed #ffce3d;
+    outline: 2px dashed var(--xp-playhead);
   }
   .cell.playing {
-    outline: 2px solid #ffd54a;
+    outline: 2px solid var(--xp-playhead);
     outline-offset: -1px;
   }
   /* Flash de victoire (original, l. 441-442) : 3 pulsations de luminosité,
@@ -443,7 +445,7 @@
     display: grid;
     place-items: center;
     font-weight: 800;
-    color: #fff;
+    color: var(--xp-title-text);
   }
   .roll {
     position: absolute;
@@ -451,7 +453,7 @@
     bottom: 0;
     font-size: 9px;
     font-family: var(--xp-mono);
-    color: #fff;
+    color: var(--xp-title-text);
   }
   .result {
     border: 1px solid var(--xp-line);
@@ -460,11 +462,11 @@
     margin-top: 10px;
   }
   .result.won {
-    border-color: #4d8f4d;
+    border-color: var(--xp-lcd-dim);
   }
   .stars-big {
     font-size: 24px;
-    color: #ffce3d;
+    color: var(--xp-playhead);
     margin: 0 0 4px;
   }
   .roast,

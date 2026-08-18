@@ -1839,17 +1839,29 @@
     position: fixed;
     inset: 0;
     z-index: 100;
-    --amp-bg-1: #6a6a9c;
-    --amp-bg-2: #3a3a64;
-    --amp-bg-3: #1c1c34;
-    --amp-line: #0a0a18;
-    --amp-hi: #9a9ad0;
-    --amp-title-grad: linear-gradient(180deg, #5a5ad0 0%, #3232a0 45%, #26266e 55%, #3a3a8c 100%);
-    --amp-lcd-bg: #050806;
-    --amp-lcd-fg: #33ff44;
-    --amp-lcd-dim: #145520;
-    --amp-amber: #ffb020;
-    --amp-text: #cfd0f0;
+    /* ÉTAPE 5 — fusion des palettes. Le Mode Live avait ici sa PROPRE langue
+       visuelle : l'appli en parlait trois (Atelier en Luna, Mode jeu en thème
+       « noir », Live avec ces onze tokens). C'était le 4e reproche de l'audit
+       de design, et c'est l'argument principal du choix de Winamp 2.x.
+
+       Ces onze déclarations deviennent des ALIAS sur les tokens partagés. Le
+       choix est délibéré : 82 sites d'appel utilisent `var(--amp-*)` dans ce
+       fichier, et les renommer serait du churn à risque pour zéro gain visuel.
+       La palette est fusionnée — c'est ce qui compte ; les noms locaux ne sont
+       plus qu'une façade au-dessus du jeu commun. */
+    --amp-bg-1: #4b4b57;
+    --amp-bg-2: #2e2e38;
+    --amp-bg-3: #1e1e26;
+    --amp-line: var(--xp-line);
+    --amp-hi: var(--xp-white);
+    --amp-title-grad: var(--xp-title-grad);
+    --amp-lcd-bg: var(--xp-lcd-bg);
+    --amp-lcd-fg: var(--xp-lcd);
+    --amp-lcd-dim: var(--xp-lcd-dim);
+    /* L'ambre du Live (faders, verrous) est de l'ÉTAT, pas du chrome : il
+       rejoint la tête de lecture plutôt que l'accent de module désaturé. */
+    --amp-amber: var(--xp-playhead);
+    --amp-text: var(--xp-text);
     font-family: ui-monospace, 'JetBrains Mono', monospace;
   }
 
