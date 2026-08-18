@@ -3627,12 +3627,8 @@ leur retire une exception.
 
 1. ✅ **La fonte — FAIT le 2026-08-18.** Voir ci-dessous.
    ~~chasse fixe auto-hébergée (fontsource)~~
-2. **Les tokens** — réécrire `src/ui/xp/tokens.css` avec le jeu Winamp **en
-   gardant les noms existants** (`--xp-face`, `--xp-title-grad`…). L'appli change
-   d'aspect d'un seul commit, vérifiable immédiatement. **C'est le point de
-   bascule**, et le moment de tester sur un vrai téléphone.
-3. **Les trois composants de base** : `XpWindow` (bandeau indigo, biseau 1px),
-   `XpSlider`, `XpTabs`.
+2. ✅ **Les tokens — FAIT le 2026-08-18.** Voir ci-dessous.
+3. ✅ **Les composants de base — FAIT le 2026-08-18.** Voir ci-dessous.
 4. **Les 225 couleurs en dur** (18 `.svelte`) en tokens, fichier par fichier.
 5. **Fusion des thèmes** : retirer `data-theme="noir"` et les `--amp-*` du Live.
    C'est ce qui transforme le choix esthétique en simplification réelle.
@@ -3696,6 +3692,88 @@ repose dessus.
 **Non fait à cette étape, volontairement** : `--xp-font` (le corps de texte)
 reste en Tahoma. Le basculement général appartient à l'étape 2, pour que chaque
 étape reste vérifiable seule.
+
+### ✅ Étapes 2 et 3 — tokens et composants (2026-08-18)
+
+**Étape 2 — `src/ui/xp/tokens.css` réécrit.** Les valeurs changent, les noms
+restent : toute l'appli bascule d'un seul commit sans qu'un composant soit
+touché.
+
+Trois vérifications ont guidé l'écriture, et chacune a évité une casse :
+
+- `--xp-white` et `--xp-shadow` ne servent **que** dans les deux formules de
+  biseau (2 usages chacun, tous les deux dans le fichier). Leurs noms sont
+  hérités de XP, leur rôle réel est « la lumière » et « l'ombre » du relief.
+  **`--xp-white` n'est donc plus du blanc**, et c'est voulu.
+- **`--xp-face` doit rester une couleur UNIE** : elle termine trois dégradés de
+  module (`linear-gradient(…, var(--xp-accent-X-soft), var(--xp-face) 60px)`) et
+  un dégradé ne s'imbrique pas. Le dégradé vertical des panneaux appartient donc
+  au composant, pas au token.
+- `--xp-select-blue` est toujours accompagné d'un `color: #fff` côté composant
+  (3 usages vérifiés) : n'importe quel fond sombre convient.
+
+Les variantes `-soft` des accents de module deviennent des teintes **sombres** :
+elles servent de haut de dégradé aux corps de fenêtre ; en pastel elles se
+seraient allumées sur un chrome sombre.
+
+`[data-theme='noir']` est **vidé de ses valeurs** plutôt que supprimé, pour que
+l'attribut encore posé par `GameView` retombe sur `:root`. Le retrait de
+l'attribut appartient à l'étape 5.
+
+**Étape 3 — les composants, et le constat C6 enfin fermé.**
+
+⚠️ **`.xp-btn` était recopié dans SEPT fichiers**, à l'identique à la taille
+près : même bordure `#003c74`, même dégradé clair, même biseau. C'était le
+constat **C6** de l'audit de design, et c'est ce qui a fait que l'étape 2 a
+laissé sept séries de boutons clairs sur un chrome sombre. Une **définition
+unique** vit désormais dans `styles/global.css` ; les composants ne gardent que
+leurs surcharges de *taille* (padding, min-height, font-size).
+
+Deux autres classes portaient le même relief sans partager de classe
+(`.tool` dans ToolBar, `.restore button` dans AtelierView) : d'où un token
+**`--xp-btn-face`**, une seule source de vérité pour la face de bouton.
+
+`XpWindow` : bordure `#0831d9` → `--xp-line`, corps en dégradé vertical Winamp,
+boutons de fenêtre débarrassés de leur liseré blanc et de leur bleu Luna, écran
+d'extinction passé au noir verdâtre de l'afficheur. **Plus une seule couleur
+Luna en dur dans le fichier.**
+
+**Deux bugs réels trouvés par la vérification, pas à l'œil :**
+
+1. **`XpTabs` — régression de contraste.** `.tab` avait
+   `linear-gradient(180deg, #fff, var(--xp-face-dark))` : un dégradé blanc →
+   presque noir, avec du texte gris dessus. Les onglets inactifs étaient
+   illisibles après l'étape 2.
+2. **`--xp-muted` était calibré pour le fond clair de Luna.** À `#75758a` il
+   tombait à **2,49:1** sur la face de bouton sombre. Remonté à `#a5a5b8` :
+   **4,63:1** sur le bouton, **5,08:1** sur `--xp-face`, tout en restant
+   nettement en retrait de `--xp-text`.
+
+**Une correction de grammaire :** le liseré de module utilisait le vert LCD
+`#2ee23c`, alors que **ce vert doit rester réservé à l'ÉTAT** — c'est exactement
+le reproche fait à la direction « Néon ». Les trois accents de module sont du
+*chrome* : ils sont désaturés (`#d9931c`, `#8a7cc0`, `#3f9c96`) pour rester plus
+calmes que les couleurs de contenu.
+
+**Mesure de contraste : 13 éléments sous 3:1 après l'étape 2 → 1 après
+l'étape 3** (un bouton d'emoji, faux positif : la couleur du texte ne s'applique
+pas à un emoji).
+
+⚠️ **Angle mort de la sonde de contraste, à connaître** : elle lit
+`backgroundColor`, qui est **transparent quand le fond est un dégradé** — elle
+remonte alors au parent et sur-signale. Les `.xp-btn` étaient des faux positifs.
+Pour les cas réels, calculer le ratio sur les valeurs de tokens plutôt que sur
+le DOM.
+
+⚠️ **`npm run check` ne suffit pas.** Un commentaire CSS mal refermé dans
+`tokens.css` passait `svelte-check` sans un mot et cassait `npm run build`
+(postcss). **Toujours lancer les deux builds**, comme le dit la convention.
+
+**Reste visible après l'étape 3, et c'est le périmètre de l'étape 4** : les
+cases vides sont encore des dégradés pâles (`#fff` → teinte claire) dans
+`DrumRowView`/`SynthRowView` — or « un pas éteint est un trou » est le cœur de
+la direction ; et les champs numériques et menus déroulants natifs restent
+blancs (10 `background: #fff` codés en dur).
 
 ### Chantiers ouverts
 

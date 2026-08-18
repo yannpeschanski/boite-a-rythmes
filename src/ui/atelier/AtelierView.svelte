@@ -682,19 +682,16 @@
     min-height: 28px;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
     cursor: pointer;
   }
   /* Cible tactile (audit A3) : 21px de haut avant — pour Lecture et Break,
      les deux boutons les plus utilisés de toute l'application. */
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 8px 16px;
     min-height: 32px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
     font-size: 13px;
   }
   .xp-btn:active {

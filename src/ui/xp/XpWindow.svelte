@@ -60,8 +60,8 @@
 
 <style>
   .xp-window {
-    background: var(--xp-face);
-    border: 1px solid #0831d9;
+    background: linear-gradient(180deg, #4b4b57, #2e2e38 55%, #1e1e26);
+    border: 1px solid var(--xp-line);
     border-radius: 8px 8px 3px 3px;
     box-shadow: 0 4px 14px rgba(0, 0, 30, 0.35);
     margin-bottom: 14px;
@@ -94,10 +94,10 @@
   .wbtn {
     width: 24px;
     height: 24px;
-    border: 1px solid #fff;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #7ba2e7 0%, #3d6fe0 50%, #2a54c4 100%);
-    color: #fff;
+    border: 1px solid var(--xp-line);
+    border-radius: 2px;
+    background: var(--xp-btn-face);
+    color: var(--xp-title-text);
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
@@ -129,8 +129,8 @@
     inset: 0;
     display: grid;
     place-items: center;
-    background: #04246a;
-    color: #fff;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd);
     font-size: 18px;
     z-index: 5;
   }

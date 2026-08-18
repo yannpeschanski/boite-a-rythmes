@@ -368,15 +368,9 @@
      `SynthRowView`, avec la hauteur de cible en plus.
      À noter pour plus tard : c'est exactement le composant `XpButton`
      prévu au §2 du plan et jamais construit (voir aussi C6). */
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 4px 12px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
-    font-size: 12px;
-    font-family: inherit;
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);

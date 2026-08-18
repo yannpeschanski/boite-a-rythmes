@@ -59,7 +59,7 @@
     min-height: 30px;
     border: 1px solid var(--xp-line);
     border-radius: 4px;
-    background: linear-gradient(180deg, #fff, var(--xp-face-dark));
+    background: var(--xp-btn-face);
     box-shadow: var(--xp-bevel-out);
     color: var(--xp-muted);
     cursor: pointer;
@@ -78,7 +78,7 @@
     box-shadow: var(--xp-bevel-in);
   }
   .tab.locked {
-    background: linear-gradient(180deg, #f2f0e8, #ddd9cc);
+    background: var(--xp-face-dark);
     box-shadow: none;
     color: var(--xp-muted);
     cursor: not-allowed;

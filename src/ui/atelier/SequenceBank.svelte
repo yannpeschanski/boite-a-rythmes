@@ -88,15 +88,10 @@
     border: 1px solid var(--xp-line);
     background: #fff;
   }
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 6px 10px;
     min-height: 28px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
-    font-family: inherit;
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);

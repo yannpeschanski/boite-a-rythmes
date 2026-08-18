@@ -745,14 +745,9 @@
   }
   /* Arpège/Bourdon (sous-catégories de la Nappe) : mêmes styles que les
      boutons 🎲/bulle d'aide du reste de l'Atelier, portés ici avec eux. */
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 4px 12px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
-    font-size: 12px;
   }
   .xp-btn:active {
     box-shadow: var(--xp-bevel-in);

@@ -91,3 +91,35 @@ button {
   padding-left: 3px;
   line-height: 1.2;
 }
+
+
+/* ---------------------------------------------------------------------------
+   Bouton — définition UNIQUE (étape 3 du passage à Winamp 2.x).
+
+   Il était recopié dans sept composants, à l'identique à la taille près : même
+   bordure `#003c74`, même dégradé clair, même biseau. C'était le constat C6 de
+   l'audit de design, et c'est ce qui a fait que l'étape 2 a laissé sept séries
+   de boutons clairs sur un chrome sombre.
+
+   Les composants ne gardent désormais que leurs surcharges de TAILLE
+   (padding, min-height, font-size) ; l'apparence vit ici. */
+.xp-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--xp-line);
+  border-radius: 2px;
+  background: var(--xp-btn-face);
+  color: var(--xp-text);
+  box-shadow: var(--xp-bevel-out);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+}
+/* Le biseau s'inverse à l'appui : c'est la grammaire de la skin, un poussoir
+   qui s'enfonce. */
+.xp-btn:active:not(:disabled) {
+  box-shadow: var(--xp-bevel-in);
+}
+.xp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

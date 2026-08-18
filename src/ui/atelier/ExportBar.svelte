@@ -116,13 +116,9 @@
     flex-wrap: wrap;
     margin-top: 6px;
   }
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
   .xp-btn {
     padding: 5px 14px;
-    border: 1px solid #003c74;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
     font-size: 13px;
   }
   .xp-btn:active {

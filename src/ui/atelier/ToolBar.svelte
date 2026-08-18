@@ -390,7 +390,8 @@
     line-height: 1;
     border: 1px solid var(--xp-line);
     border-radius: 3px;
-    background: linear-gradient(180deg, #fff, #ece9d8 45%, #d6d2c2);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
     box-shadow: var(--xp-bevel-out);
     cursor: pointer;
   }

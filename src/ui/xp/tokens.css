@@ -19,7 +19,11 @@
   --xp-face-dark: #24242c;
   --xp-line: #0a0a10;
   --xp-text: #c8c8d8;
-  --xp-muted: #75758a;
+  /* Remonté de #75758a à l'étape 3 : cette valeur était calibrée pour le fond
+     clair de Luna et tombait à 2,49:1 sur la face de bouton sombre. À #a5a5b8
+     elle passe à 4,63:1 sur le bouton et 5,08:1 sur --xp-face, tout en restant
+     nettement en retrait de --xp-text. */
+  --xp-muted: #a5a5b8;
 
   /* Ces deux-là ne servent QUE dans les deux formules de biseau ci-dessous
      (vérifié : 2 usages chacun, tous les deux ici). Leurs noms sont hérités de
@@ -49,13 +53,24 @@
   /* Les 3 familles de modules : ambre = Drum, violet = Synthé, teal = Général.
      Les variantes `-soft` servaient de haut de dégradé sur fond clair ; elles
      deviennent des teintes SOMBRES, sinon les corps de fenêtre s'allumeraient
-     en pastel sur un chrome sombre. */
-  --xp-accent-amber: #ffb020;
+     en pastel sur un chrome sombre.
+
+     ⚠️ Ces trois accents sont du CHROME : ils doivent rester plus calmes que
+     les couleurs de contenu (les lignes) et ne jamais emprunter le vert de
+     l'afficheur, qui est réservé à l'ÉTAT. Un liseré de module en #2ee23c
+     entrait en concurrence avec les diodes et les bandeaux — c'est le reproche
+     qu'on faisait à la direction « Néon », il valait aussi ici. */
+  --xp-accent-amber: #d9931c;
   --xp-accent-amber-soft: #38301c;
-  --xp-accent-violet: #a08ad8;
+  --xp-accent-violet: #8a7cc0;
   --xp-accent-violet-soft: #2c2840;
-  --xp-accent-teal: #2ee23c;
+  --xp-accent-teal: #3f9c96;
   --xp-accent-teal-soft: #14301a;
+
+  /* Face de bouton. Token plutôt que valeur recopiée : trois classes
+     différentes portent le même relief (`.xp-btn`, `.tool`, `.restore button`)
+     sans partager de classe commune. */
+  --xp-btn-face: linear-gradient(180deg, #5c5c6a, #3a3a46 52%, #2b2b34);
 
   /* Sélection de menu. Toujours accompagnée d'un `color: #fff` côté composant
      (3 usages, tous vérifiés), donc n'importe quel fond sombre convient. */

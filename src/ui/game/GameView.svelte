@@ -349,19 +349,7 @@
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 10px;
-  }
-  .xp-btn {
-    padding: 5px 12px;
-    border: 1px solid #1b2440;
-    border-radius: 3px;
-    background: linear-gradient(180deg, #6a6a7a, #43434f 50%, #35353f);
-    color: #fff;
-    box-shadow: var(--xp-bevel-out);
-    cursor: pointer;
-    font-size: 12px;
-    font-family: inherit;
-  }
-  .xp-btn:active {
+  }  .xp-btn:active {
     box-shadow: var(--xp-bevel-in);
   }
   .xp-btn.primary {
