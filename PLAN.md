@@ -3820,13 +3820,17 @@ bouton n'a pas bougé d'un pixel. Un `padding` aurait poussé le dessin, un
 uniquement — à la souris, la densité de l'écran est un acquis de la direction,
 pas un défaut à corriger.
 
-**Trois variantes, parce que les trois cas ne se valent pas :**
+**Deux variantes, parce que les deux axes ne se valent pas :**
 
 | classe | ce qu'elle fait | pour quoi |
 |---|---|---|
-| `.tap44` | les deux axes | boutons isolés (transport, outils, pastilles, fenêtre) |
+| `.tap44` | les deux axes | boutons isolés (transport, outils, pastilles) |
 | `.tap44-y` | la hauteur seule | ce qui vit dans une grille dont la largeur est dictée par le nombre de pas |
-| `.tap44-d` | descend au lieu de s'étaler | ce qui est collé sous un bord qui recadre (boutons de fenêtre) |
+
+> Une troisième variante `.tap44-d` (l'enveloppe descend au lieu de s'étaler) a
+> existé le temps de l'étape 6 : elle servait uniquement aux trois boutons de
+> fenêtre, coincés sous un bord qui les recadrait. Elle est partie avec eux à
+> l'étape 7.
 
 **Le piège qui a coûté trois itérations.** Les enveloppes invisibles débordent,
 donc elles **se marchent dessus** dès que deux commandes sont voisines à 2px — et
@@ -3891,6 +3895,36 @@ subie :
 
 **Vérifié :** `npm run check` 0 erreur · 33 tests · les deux builds · captures
 Playwright à 1280 (souris — densité **inchangée**) et 390 (doigt).
+
+### ✅ Étape 7 — la barre de titre perd son chrome XP (2026-08-18)
+
+> « cette barre n'est plus utile, on n'a plus besoin de faire référence à XP
+> ici comme ça »
+
+Le triplet `_ □ ×` est **la** citation Windows de l'appli : minimiser, agrandir,
+fermer. Il part, avec ce qui pendait au bout — le gag « Extinction en cours… »
+derrière la croix, et les deux appels à `playSystemSound` sur le repli/dépliage.
+Le bandeau indigo garde son icône et son titre : c'est la seule zone colorée du
+chrome dans le moodboard, elle n'est pas en cause.
+
+**Ce que ça emporte, et c'est voulu :** le repli des fenêtres disparaît (`_` le
+faisait réellement, ce n'était pas qu'un décor) — état `collapsed`, état
+`shutdown`, et les trois fonctions qui allaient avec. `XpWindow` passe de 8 à 0
+ligne de logique : c'est un conteneur, plus un composant.
+
+**Deux orphelins débusqués et retirés dans la foulée :** le token
+`--xp-close-grad` (le rouge de la croix, plus aucun consommateur) et la variante
+tactile `.tap44-d`, créée à l'étape 6 pour ces seuls trois boutons.
+`ui/xp/systemSounds.ts` **reste** — `AtelierView` et `ToolBar` s'en servent
+encore (son d'erreur, réglage) ; son sort est une décision à part, toujours dans
+les chantiers ouverts.
+
+**Effet de bord agréable :** les 90px libérés rendent le titre entier — l'écran
+Rythme affichait « Séquenceur — Kick / Snare / Hat / … », il affiche maintenant
+« Séquenceur — Kick / Snare / Hat / Clap / Shaker ».
+
+**Vérifié :** `check` 0 erreur (aucun sélecteur CSS orphelin signalé) · 33 tests ·
+les deux builds · cibles tactiles inchangées (Rythme 15, Mode jeu 0) · capture.
 
 ### Chantiers ouverts
 

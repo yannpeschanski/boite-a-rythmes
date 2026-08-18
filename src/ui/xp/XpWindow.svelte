@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { playSystemSound } from './systemSounds';
 
   let {
     title,
@@ -13,49 +12,16 @@
     accent?: 'amber' | 'violet' | 'teal' | 'none';
     children: Snippet;
   } = $props();
-
-  let collapsed = $state(false);
-  let shutdown = $state(false);
-
-  // Boutons de fenêtre détournés, comme l'original : _ replie, □ déplie,
-  // × = gag « Extinction en cours… » qui se referme tout seul. Chirp système
-  // (PLAN.md §2/§6) sur repli/dépliage — gardé derrière un test d'état pour
-  // qu'un clic répété sur le même bouton (déjà replié/déjà déplié) ne
-  // rejoue pas le son pour rien.
-  function collapse() {
-    if (collapsed) return;
-    collapsed = true;
-    playSystemSound('close');
-  }
-  function expand() {
-    if (!collapsed) return;
-    collapsed = false;
-    playSystemSound('open');
-  }
-  function fakeShutdown() {
-    shutdown = true;
-    setTimeout(() => (shutdown = false), 1800);
-  }
 </script>
 
 <section class="xp-window accent-{accent}">
   <header class="titlebar">
     <span class="icon">{icon}</span>
     <span class="title">{title}</span>
-    <span class="buttons">
-      <button class="wbtn tap44-d" title="Replier" onclick={collapse}>_</button>
-      <button class="wbtn tap44-d" title="Déplier" onclick={expand}>□</button>
-      <button class="wbtn close tap44-d" title="Fermer" onclick={fakeShutdown}>×</button>
-    </span>
   </header>
-  {#if !collapsed}
-    <div class="body">
-      {@render children()}
-    </div>
-  {/if}
-  {#if shutdown}
-    <div class="shutdown">Extinction en cours…</div>
-  {/if}
+  <div class="body">
+    {@render children()}
+  </div>
 </section>
 
 <style>
@@ -85,30 +51,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .buttons {
-    display: flex;
-    gap: 2px;
-  }
-  /* 22×22 avant l'audit A3 — le « _ » replie réellement la fenêtre, ce
-     n'est pas qu'un gag décoratif. Porté au minimum de 24px. */
-  .wbtn {
-    width: 24px;
-    height: 24px;
-    border: 1px solid var(--xp-line);
-    border-radius: 2px;
-    background: var(--xp-btn-face);
-    color: var(--xp-title-text);
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-    text-shadow: none;
-  }
-  .wbtn.close {
-    background: var(--xp-close-grad);
-  }
-  .wbtn:active {
-    filter: brightness(0.85);
-  }
   .body {
     padding: 10px;
   }
@@ -123,37 +65,5 @@
   .accent-teal .body {
     border-top: 3px solid var(--xp-accent-teal);
     background: linear-gradient(180deg, var(--xp-accent-teal-soft), var(--xp-face) 60px);
-  }
-  .shutdown {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background: var(--xp-lcd-bg);
-    color: var(--xp-lcd);
-    font-size: 18px;
-    z-index: 5;
-  }
-  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
-     `.tap44` débordent des boutons, donc elles se marchent dessus dès que
-     deux commandes sont voisines à 2px — et c'est la dernière du DOM qui
-     gagne le point, pas la plus probable. On écarte donc le rythme vertical
-     sous pointeur grossier. Aucun dessin ne change : l'espace n'est pas
-     dessiné, et sur un téléphone il ne coûte rien puisque la page défile. */
-  @media (pointer: coarse) {
-    .titlebar {
-      padding: 4px 12px;
-    }
-    /* Ce sont les boutons qui ont besoin d'air, pas le titre : l'écart vit
-       sur leur conteneur direct, sinon il s'insère entre le titre et eux. */
-    .buttons {
-      gap: 20px;
-    }
-    /* Les 20px que `.tap44-d` va chercher sous la barre de titre tombent dans
-       ce remplissage : il doit exister avant que la première commande du
-       corps ne se présente. */
-    .body {
-      padding-top: 26px;
-    }
   }
 </style>

@@ -43,7 +43,6 @@
     #33337e 100%
   );
   --xp-title-text: #b8b8e8;
-  --xp-close-grad: linear-gradient(180deg, #a8443a 0%, #7a2018 55%, #5c1610 100%);
 
   /* Reliefs boutons/cases (in/out) — formules inchangées depuis l'origine :
      elles se contentent de lire la lumière et l'ombre ci-dessus. */

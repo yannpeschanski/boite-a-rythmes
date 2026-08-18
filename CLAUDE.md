@@ -28,7 +28,7 @@ retirés : l'appli parlait **trois langues visuelles** (Atelier en Luna, Mode je
 en `noir`, Mode Live avec ses tokens `--amp-*`), elle n'en parle plus qu'une.
 C'est l'argument principal du choix, et il n'est pas esthétique.
 
-**Le tactile passe par `.tap44` / `.tap44-y` / `.tap44-d`** (`src/styles/global.css`).
+**Le tactile passe par `.tap44` / `.tap44-y`** (`src/styles/global.css`).
 Capitales de 8,5 px et reliefs d'un pixel sont dessinés pour une souris : une zone
 touchable monte à 44 px **sans que le dessin grandisse**, grâce à un pseudo-élément
 transparent centré sur le bouton, sous `@media (pointer: coarse)` seulement. Deux

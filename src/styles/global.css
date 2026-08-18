@@ -168,24 +168,6 @@ button {
   .tap44::after {
     width: max(100%, 44px);
   }
-  /* `.tap44-d` — l'enveloppe descend au lieu de s'étaler des deux côtés. Pour
-     ce qui est collé sous un bord qui clippe : les trois boutons de fenêtre
-     vivent dans une barre de titre que `.xp-window` recadre, l'espace au-
-     dessus d'eux n'existe pas. En dessous, le corps de la fenêtre commence
-     par du remplissage — c'est là qu'on va chercher les 20px manquants,
-     plutôt que d'épaissir le bandeau indigo sur CHAQUE fenêtre de l'écran. */
-  .tap44-d::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    translate: -50% 0;
-    height: max(100%, 44px);
-    width: max(100%, 44px);
-  }
-  .tap44-d {
-    position: relative;
-  }
   /* Un `<select>` est un élément remplacé : Chromium n'y rend aucun `::after`,
      l'astuce de l'enveloppe invisible ne marche pas. Écart assumé, le seul de
      la passe : c'est la boîte elle-même qui grandit. Elle n'a ni biseau ni
