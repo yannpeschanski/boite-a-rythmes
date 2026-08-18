@@ -3583,6 +3583,36 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
+### 7e série — 4 croisements des finalistes (2026-08-17)
+
+Planche : <https://claude.ai/code/artifact/98863af1-a8a5-4b0f-8836-4a1e4f1769e0>
+Fichiers `maquettes/atelier/variants_d.py` + `build_hybrides.py` -> `hybrides.html`.
+
+Yann n'ayant pas de préférence sur la suite, j'ai pris ma recommandation :
+croiser les cinq. **Chaque hybride règle un défaut précis relevé au test sur
+écran dense**, pas un mélange de goûts. Tous gardent la chasse fixe, seul point
+commun avéré de la shortlist.
+
+| | Croisement | Défaut visé | Synthé |
+|---|---|---|---|
+| **H1** Skin dense | Winamp 2.x × Skin de nuit × Néon | le halo du Néon partout → **une seule chose brille : le pas actif** | 687px |
+| **H2** Terminal bleu | Turbo × Winamp 2.x × Cassette | les 16 couleurs DOS sans ton intermédiaire → **une vraie échelle de bleus**, le fond signature conservé | 709px |
+| **H3** Papier machine | Cassette × Winamp 2.x | cassette la plus haute (744) → **684px**, et le filet rouge ne marque plus que l'actif | 684px |
+| **H4** Nuit imprimée | Cassette × Skin de nuit | *pas un compromis, une question* | 684px |
+
+**H4 est le vrai instrument de cette série.** H3 et H4 sont rigoureusement le
+même dessin à la couleur de fond près. La cassette est dans la shortlist pour
+son **papier** ou pour sa **typographie** ? Si H4 plaît autant que H3, c'était
+la typo — et toute la branche claire peut être abandonnée. Si H4 plaît moins,
+c'était bien le papier, et il faut garder une direction claire dans la course.
+
+Repères : Winamp 2.x tenait le Synthé en **657px** (record), Cassette en **744**.
+Les quatre croisements atterrissent entre 684 et 709.
+
+**Prochaine étape utile**, une fois réduit à un ou deux : décliner le vainqueur
+sur les écrans qui ne se ressemblent pas — splash, Mode jeu, et surtout **Mode
+Live en paysage**. C'est là qu'une identité casse, pas sur l'Atelier.
+
 ### ⭐ Shortlist de Yann + test sur écran dense (2026-08-17)
 
 > « pour le moment, voici celles que j'aime bien : winamp 2.x, skin de nuit,
