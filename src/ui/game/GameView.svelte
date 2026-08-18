@@ -485,4 +485,10 @@
     flex-wrap: wrap;
     margin-top: 8px;
   }
+  /* Chantier tactile (cf. styles/global.css). */
+  @media (pointer: coarse) {
+    .pseudo-form {
+      gap: 14px;
+    }
+  }
 </style>

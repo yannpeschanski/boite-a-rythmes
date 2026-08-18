@@ -545,7 +545,7 @@
           <XpSlider label="Bitcrush" min={0} max={100} unit="%" bind:value={st.globalBitcrush} onchange={refreshFx} />
           <XpSlider label="Volume général" min={50} max={150} unit="%" bind:value={st.finalVolume} onchange={refreshFx} />
         </div>
-        <label class="chk" data-group="effets-bus">
+        <label class="chk tap44-y" data-group="effets-bus">
           <input type="checkbox" bind:checked={st.synthGlobal.limitersEnabled} onchange={refreshFx} />
           Limiteurs de sécurité
         </label>
@@ -606,6 +606,16 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  /* Chantier tactile : `overflow: hidden` (l'ellipse d'une seule ligne)
+     recadre le pseudo-élément de `.tap44-y`, qui ne sert donc à rien ici. Le
+     remplissage, lui, vit DANS la boîte recadrée. Compensé par une marge
+     négative : la bande passe à 45px, le bandeau ne bouge pas d'un pixel. */
+  @media (pointer: coarse) {
+    .production-hint {
+      padding: 16px 0;
+      margin: -16px 0;
+    }
   }
   .production-hint.expanded {
     white-space: normal;
@@ -733,5 +743,18 @@
     border: 1px solid var(--xp-line);
     background: var(--xp-field-bg);
     color: var(--xp-text);
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` se marchent dessus dès que deux commandes sont voisines à
+     quelques pixels. On écarte sous pointeur grossier — l'espace n'est pas
+     du dessin, et sur un téléphone la page défile de toute façon. */
+  @media (pointer: coarse) {
+    .transport-row {
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    .transport {
+      gap: 14px;
+    }
   }
 </style>

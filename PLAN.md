@@ -3775,9 +3775,129 @@ cases vides sont encore des dégradés pâles (`#fff` → teinte claire) dans
 la direction ; et les champs numériques et menus déroulants natifs restent
 blancs (10 `background: #fff` codés en dur).
 
+### ✅ Étapes 4 et 5 — les couleurs en dur, puis la fusion des trois langues (2026-08-18)
+
+**Étape 4** — 182 → 113 couleurs codées en dur. Deux prises qui comptent :
+
+- `DrumRowView` : les cases vides ne sont plus des dégradés pâles mais du verre
+  (`--xp-lcd-bg`) teinté à 20 % de la couleur de la ligne via
+  `color-mix()`. C'est là que le **biseau s'inverse** : `.cell` est creusé
+  (`--xp-bevel-in`), `.cell.state-1/2` est bombé (`--xp-bevel-out`). L'ancienne
+  lecture XP (« actif = bouton enfoncé ») est retournée : **un pas actif émet,
+  donc il est en relief**. C'est le reproche n°1 de l'audit, et le cœur de la
+  direction.
+- `TransportRings` et `StepCircle` sont des canvas : ils ne peuvent pas lire une
+  variable CSS. Ils recopiaient donc les couleurs de lignes en constantes JS —
+  restées en Luna après l'étape 2. Ils les lisent maintenant au montage
+  (`getComputedStyle(el).getPropertyValue('--cell-' + name)`), les constantes ne
+  servant plus que de repli.
+
+**Étape 5** — les 11 déclarations `--amp-*` du Mode Live deviennent des **alias**
+sur les tokens partagés (`--amp-lcd-fg: var(--xp-lcd)`, `--amp-amber:
+var(--xp-playhead)`…). Choix délibéré : les 82 points d'appel ne bougent pas.
+La palette fusionne, le risque de régression est nul. `GameView` perd son
+attribut `data-theme="noir"`. **L'appli ne parle plus qu'une langue visuelle** —
+c'était l'argument principal de la décision, et il n'était pas esthétique.
+
+### ✅ Étape 6 — le tactile, 44px de zone et 0px de dessin (2026-08-18)
+
+> ⚠️ C'était **le** chantier ouvert de la direction, celui que `CLAUDE.md`
+> énonce littéralement : « toute zone touchable doit monter à 44px **sans que
+> le dessin grandisse** ».
+
+**Le mécanisme.** Un pseudo-élément transparent, centré sur le bouton
+(`styles/global.css`, classes `.tap44`, `.tap44-y`, `.tap44-d`) :
+
+```css
+.tap44::after { position: absolute; top: 50%; left: 50%; translate: -50% -50%;
+                height: max(100%, 44px); width: max(100%, 44px); }
+```
+
+Le test de collision d'un pseudo-élément **renvoie son élément d'origine** : le
+doigt qui tombe dans la marge invisible clique bien le bouton, alors que le
+bouton n'a pas bougé d'un pixel. Un `padding` aurait poussé le dessin, un
+`transform: scale` l'aurait déformé. Le tout sous `@media (pointer: coarse)`
+uniquement — à la souris, la densité de l'écran est un acquis de la direction,
+pas un défaut à corriger.
+
+**Trois variantes, parce que les trois cas ne se valent pas :**
+
+| classe | ce qu'elle fait | pour quoi |
+|---|---|---|
+| `.tap44` | les deux axes | boutons isolés (transport, outils, pastilles, fenêtre) |
+| `.tap44-y` | la hauteur seule | ce qui vit dans une grille dont la largeur est dictée par le nombre de pas |
+| `.tap44-d` | descend au lieu de s'étaler | ce qui est collé sous un bord qui recadre (boutons de fenêtre) |
+
+**Le piège qui a coûté trois itérations.** Les enveloppes invisibles débordent,
+donc elles **se marchent dessus** dès que deux commandes sont voisines à 2px — et
+en cas de recouvrement c'est la **dernière du DOM** qui gagne le point, pas la
+plus probable. Le pseudo-élément seul faisait donc passer `.cell` de 34 à 40px,
+pas à 44 : la pastille « Séquence » juste en dessous lui volait le bas. La
+seconde moitié de l'étape est donc un **écartement du rythme vertical** sous
+pointeur grossier (`.row-head`, `.drum-row`, `.group-bar`, `.menubar`,
+`.transport`, `.btns`, `.chk-row`, `.buttons`, `.body`…). L'espace n'est pas du
+dessin, et sur un téléphone il ne coûte rien puisque la page défile.
+
+**Second piège, plus bête :** un bloc `@media (pointer: coarse)` posé au milieu
+d'un `<style>` Svelte est **écrasé par les règles de même spécificité écrites
+plus bas** dans le même fichier. Trois réglages n'ont rien fait tant que les
+blocs n'ont pas été déplacés en **fin** de `<style>`. Ils y sont tous.
+
+**Éléments remplacés.** `<select>` et `<input type="text">` ne rendent aucun
+`::after` dans Chromium : l'astuce ne marche pas. Écart assumé, le seul de la
+passe — c'est la boîte elle-même qui passe à `min-height: 44px`. Elle n'a ni
+biseau ni petites capitales à préserver, la grammaire de la skin ne se joue pas
+là. Même logique pour `.production-hint`, dont l'`overflow: hidden` (l'ellipse
+d'une seule ligne) recadre le pseudo-élément : remplissage vertical compensé par
+une marge négative.
+
+**Mesure — la seule qui compte.** `getBoundingClientRect()` **ne voit pas** le
+pseudo-élément : il fallait sonder la zone réellement touchée avec
+`elementFromPoint` autour de chaque contrôle. Deux pièges dans le script de
+mesure lui-même : un élément sous la ligne de flottaison renvoie `null` (d'où le
+`scrollIntoView` avant chaque sonde), et une case à cocher est un élément
+remplacé dont le doigt vise en réalité le `<label>`.
+
+| écran (390×844, `hasTouch`) | avant | après |
+|---|---|---|
+| Atelier · Rythme | 93 | **15** |
+| Atelier · Synthé | — | **8** |
+| Atelier · Production | — | **5** |
+| Mode jeu | 4 | **0** |
+| Mode Live (paysage 844×390) | 33 | **28** |
+
+**Ce qui reste, et pourquoi ça reste** — trois exceptions revendiquées, aucune
+subie :
+
+1. **La largeur des cases (8 × 41px).** 16 pas × 44px = 704px sur un écran de
+   390. La contrainte est *physiquement* insoluble en largeur. La hauteur, elle,
+   est à nous : elle est prise, les cases font 45px de zone pour 34px de dessin.
+2. **Les libellés d'aide (20 × 30px de haut).** `.lab.has-hint` n'est pas une
+   commande : il annote le curseur d'à côté et son appui n'ouvre qu'une bulle.
+   Lui donner 44px, ce serait les prendre à la piste qu'il annote — un doigt qui
+   vise le réglage tomberait sur l'explication. Bande doublée (13 → 30px), on
+   s'arrête là.
+3. **Le Mode Live (21 `.corner-icon` + 7 commandes de 22px).** Les icônes de coin
+   sont **posées sur** les pads : les agrandir revient à voler la surface du pad,
+   c'est-à-dire de l'instrument. Et en paysage la largeur est le seul luxe — elle
+   a été prise (`.topbar`, `.seq-bar`), la hauteur des barres de 22px est ce qui
+   reste après les pads. C'est le seul écran où le chantier n'est pas clos.
+
+**Fichiers touchés :** `styles/global.css` (l'utilitaire + `.xp-btn` + `select` /
+`input`), `App.svelte`, `ui/xp/{XpWindow,XpTabs,XpSlider}.svelte`,
+`ui/sequencer/{DrumRowView,SynthRowView,NotePad}.svelte`,
+`ui/atelier/{ToolBar,AtelierView,ExportBar,SynthModule}.svelte`,
+`ui/live/LiveView.svelte`, `ui/game/GameView.svelte`.
+
+**Vérifié :** `npm run check` 0 erreur · 33 tests · les deux builds · captures
+Playwright à 1280 (souris — densité **inchangée**) et 390 (doigt).
+
 ### Chantiers ouverts
 
-- **Le tactile** — 44px minimum sans agrandir le dessin. Le vrai chantier.
+- **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on
+  ne peut pas agrandir sans manger le pad. Le reste de l'appli est à 0 hors les
+  deux exceptions revendiquées ci-dessus.
+
 - **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. À vérifier sur
   un vrai appareil **avant** l'étape 4, pas après.
 - **Le visualiseur** — le panneau « Barres » du Live est vide ; Winamp avait son

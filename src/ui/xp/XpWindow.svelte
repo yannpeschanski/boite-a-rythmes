@@ -43,9 +43,9 @@
     <span class="icon">{icon}</span>
     <span class="title">{title}</span>
     <span class="buttons">
-      <button class="wbtn" title="Replier" onclick={collapse}>_</button>
-      <button class="wbtn" title="Déplier" onclick={expand}>□</button>
-      <button class="wbtn close" title="Fermer" onclick={fakeShutdown}>×</button>
+      <button class="wbtn tap44-d" title="Replier" onclick={collapse}>_</button>
+      <button class="wbtn tap44-d" title="Déplier" onclick={expand}>□</button>
+      <button class="wbtn close tap44-d" title="Fermer" onclick={fakeShutdown}>×</button>
     </span>
   </header>
   {#if !collapsed}
@@ -133,5 +133,27 @@
     color: var(--xp-lcd);
     font-size: 18px;
     z-index: 5;
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` débordent des boutons, donc elles se marchent dessus dès que
+     deux commandes sont voisines à 2px — et c'est la dernière du DOM qui
+     gagne le point, pas la plus probable. On écarte donc le rythme vertical
+     sous pointeur grossier. Aucun dessin ne change : l'espace n'est pas
+     dessiné, et sur un téléphone il ne coûte rien puisque la page défile. */
+  @media (pointer: coarse) {
+    .titlebar {
+      padding: 4px 12px;
+    }
+    /* Ce sont les boutons qui ont besoin d'air, pas le titre : l'écart vit
+       sur leur conteneur direct, sinon il s'insère entre le titre et eux. */
+    .buttons {
+      gap: 20px;
+    }
+    /* Les 20px que `.tap44-d` va chercher sous la barre de titre tombent dans
+       ce remplissage : il doit exister avant que la première commande du
+       corps ne se présente. */
+    .body {
+      padding-top: 26px;
+    }
   }
 </style>

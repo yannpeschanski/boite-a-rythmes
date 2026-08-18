@@ -89,7 +89,7 @@
   <div class="row-head">
     <span class="row-label" style:--row-color="var(--cell-{name})">{label}</span>
     <button
-      class="mute"
+      class="mute tap44"
       class:muted={row.muted}
       title={row.muted ? 'Réactiver' : 'Couper'}
       onclick={() => (row.muted = !row.muted)}>{row.muted ? '🔇' : '🔊'}</button
@@ -104,7 +104,7 @@
       {@const state = row.pattern[col]}
       {@const roll = row.rolls[col]}
       <button
-        class="cell state-{state} {name}"
+        class="cell tap44-y state-{state} {name}"
         class:playing={playheadCol === col}
         onpointerdown={(e) => pressStart(col, e)}
         onpointerup={() => pressEnd(col, true)}
@@ -127,11 +127,11 @@
        ouvert. `data-group` reste sur le conteneur des curseurs : l'aide à la
        production le retrouve par `closest()` exactement comme avant. -->
   <div class="group-bar">
-    <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
+    <button class="chip tap44" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
       onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
-    <button class="chip" class:on={openGroups.timbre} aria-expanded={openGroups.timbre}
+    <button class="chip tap44" class:on={openGroups.timbre} aria-expanded={openGroups.timbre}
       onclick={() => (openGroups.timbre = !openGroups.timbre)}>Timbre</button>
-    <button class="chip" class:on={openGroups.space} aria-expanded={openGroups.space}
+    <button class="chip tap44" class:on={openGroups.space} aria-expanded={openGroups.space}
       onclick={() => (openGroups.space = !openGroups.space)}>Filtre &amp; espace</button>
   </div>
   {#if openGroups.sequence}
@@ -396,5 +396,22 @@
   .euclid-row :global(.xp-slider-outer) {
     flex: 1;
     min-width: 0;
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` débordent des boutons, donc elles se marchent dessus dès que
+     deux commandes sont voisines à 2px — et c'est la dernière du DOM qui
+     gagne le point, pas la plus probable. On écarte donc le rythme vertical
+     sous pointeur grossier. Aucun dessin ne change : l'espace n'est pas
+     dessiné, et sur un téléphone il ne coûte rien puisque la page défile. */
+  @media (pointer: coarse) {
+    .drum-row {
+      margin-bottom: 22px;
+    }
+    .row-head {
+      margin-bottom: 15px;
+    }
+    .group-bar {
+      margin-top: 16px;
+    }
   }
 </style>

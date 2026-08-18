@@ -140,4 +140,14 @@
     color: var(--xp-muted);
     margin: 6px 0 0;
   }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` se marchent dessus dès que deux commandes sont voisines à
+     quelques pixels. On écarte sous pointeur grossier — l'espace n'est pas
+     du dessin, et sur un téléphone la page défile de toute façon. */
+  @media (pointer: coarse) {
+    .btns {
+      gap: 20px;
+      margin-top: 20px;
+    }
+  }
 </style>

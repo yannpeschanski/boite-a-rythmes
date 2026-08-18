@@ -216,4 +216,24 @@
     font-weight: 700;
     box-shadow: var(--xp-bevel-in);
   }
+  /* Chantier tactile (cf. styles/global.css) : la navigation principale entre
+     les trois modes — la cible la plus importante de l'écran d'accueil. */
+  @media (pointer: coarse) {
+    .switcher {
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .switcher button {
+      position: relative;
+    }
+    .switcher button::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      translate: -50% -50%;
+      height: max(100%, 44px);
+      width: max(100%, 44px);
+    }
+  }
 </style>

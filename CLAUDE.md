@@ -28,9 +28,16 @@ retirés : l'appli parlait **trois langues visuelles** (Atelier en Luna, Mode je
 en `noir`, Mode Live avec ses tokens `--amp-*`), elle n'en parle plus qu'une.
 C'est l'argument principal du choix, et il n'est pas esthétique.
 
-⚠️ **Le chantier ouvert de cette direction, c'est le tactile** : capitales de
-8,5 px et reliefs d'un pixel sont dessinés pour une souris. Toute zone touchable
-doit monter à 44 px **sans que le dessin grandisse**.
+**Le tactile passe par `.tap44` / `.tap44-y` / `.tap44-d`** (`src/styles/global.css`).
+Capitales de 8,5 px et reliefs d'un pixel sont dessinés pour une souris : une zone
+touchable monte à 44 px **sans que le dessin grandisse**, grâce à un pseudo-élément
+transparent centré sur le bouton, sous `@media (pointer: coarse)` seulement. Deux
+règles qui coûtent cher si on les oublie : ces enveloppes **débordent et se marchent
+dessus** (d'où l'écartement du rythme vertical dans les mêmes blocs `coarse`), et un
+bloc `@media` posé au milieu d'un `<style>` Svelte est **écrasé par les règles écrites
+plus bas** — les mettre en fin de `<style>`. `getBoundingClientRect()` ne voit pas le
+pseudo-élément : mesurer avec `elementFromPoint`. Trois exceptions revendiquées
+(largeur des cases, libellés d'aide, Mode Live) sont documentées dans PLAN.md, étape 6.
 
 ⚠️ **Les maquettes de référence sont dans `maquettes/atelier/`** — `build_modes.py`
 produit les six écrans (accueil, Rythme, Synthé, Production, Mode jeu, Mode Live

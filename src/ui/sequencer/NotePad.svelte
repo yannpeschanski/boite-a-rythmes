@@ -157,7 +157,7 @@
         pas {target + 1} / {steps}
       {/if}
     </span>
-    <button class="mini" onclick={onClose} title="Fermer le pad">✕</button>
+    <button class="mini tap44" onclick={onClose} title="Fermer le pad">✕</button>
   </div>
 
   <!-- `onpointerdown` et non `onclick` (retour de Yann, 2026-08-17 : « il y a
@@ -202,13 +202,13 @@
     <div class="oct">
       <span class="lab">Octave</span>
       {#each [-1, 0, 1] as o (o)}
-        <button class="mini" class:on={octave === o} onclick={() => (octave = o)}>
+        <button class="mini tap44" class:on={octave === o} onclick={() => (octave = o)}>
           {o === 0 ? '0' : o > 0 ? '+1' : '−1'}
         </button>
       {/each}
     </div>
     <div class="acts">
-      <button class="mini" onclick={back} disabled={playing} title="Reculer d’un pas">← pas précédent</button>
+      <button class="mini tap44" onclick={back} disabled={playing} title="Reculer d’un pas">← pas précédent</button>
     </div>
   </div>
 
@@ -363,5 +363,14 @@
     margin: 0;
     font-size: 10.5px;
     color: var(--xp-muted);
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` se marchent dessus dès que deux commandes sont voisines à
+     quelques pixels. On écarte sous pointeur grossier — l'espace n'est pas
+     du dessin, et sur un téléphone la page défile de toute façon. */
+  @media (pointer: coarse) {
+    .mini {
+      margin: 6px;
+    }
   }
 </style>

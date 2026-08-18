@@ -27,7 +27,7 @@
     <button
       role="tab"
       aria-selected={active === t.id}
-      class="tab"
+      class="tab tap44-y"
       class:active={active === t.id}
       class:locked={t.locked}
       disabled={t.locked}
@@ -82,5 +82,17 @@
     box-shadow: none;
     color: var(--xp-muted);
     cursor: not-allowed;
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` débordent des boutons, donc elles se marchent dessus dès que
+     deux commandes sont voisines à 2px — et c'est la dernière du DOM qui
+     gagne le point, pas la plus probable. On écarte donc le rythme vertical
+     sous pointeur grossier. Aucun dessin ne change : l'espace n'est pas
+     dessiné, et sur un téléphone il ne coûte rien puisque la page défile. */
+  @media (pointer: coarse) {
+    .xp-tabs {
+      gap: 10px;
+      margin-top: 12px;
+    }
   }
 </style>

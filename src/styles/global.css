@@ -123,3 +123,92 @@ button {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Cibles tactiles — le chantier ouvert de la direction Winamp 2.x.
+
+   La contrainte est dans CLAUDE.md et elle est littérale : « toute zone
+   touchable doit monter à 44 px SANS QUE LE DESSIN GRANDISSE ». Des capitales
+   de 8,5 px et des reliefs d'un pixel sont dessinés pour une souris ; les
+   agrandir, c'est perdre la skin pour gagner le doigt.
+
+   D'où le pseudo-élément : `::after` est centré sur le bouton, transparent, et
+   le test de collision d'un pseudo-élément renvoie SON ÉLÉMENT D'ORIGINE. Le
+   doigt qui tombe dans la marge invisible clique donc bien le bouton, alors
+   que le bouton lui-même n'a pas bougé d'un pixel. Un `padding` aurait poussé
+   le dessin, un `transform: scale` l'aurait déformé.
+
+   Sous `pointer: coarse` uniquement : à la souris, la densité de l'écran est
+   un acquis de la direction, pas un défaut à corriger.
+
+   Deux variantes, parce que les deux axes ne se valent pas :
+   - `.tap44`   — les deux axes. Pour les boutons isolés (transport, fenêtre,
+                  outils, pastilles de repli), qui ont de la place autour.
+   - `.tap44-y` — la hauteur seulement. Pour ce qui vit dans une grille dont
+                  la largeur est dictée par le nombre de pas : à 16 pas sur un
+                  écran de 390 px, 16 × 44 = 704 px, la contrainte est
+                  physiquement insoluble en largeur. La hauteur, elle, est à
+                  nous. On la prend.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (pointer: coarse) {
+  .tap44,
+  .tap44-y {
+    position: relative;
+  }
+  .tap44::after,
+  .tap44-y::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    height: max(100%, 44px);
+    width: 100%;
+  }
+  .tap44::after {
+    width: max(100%, 44px);
+  }
+  /* `.tap44-d` — l'enveloppe descend au lieu de s'étaler des deux côtés. Pour
+     ce qui est collé sous un bord qui clippe : les trois boutons de fenêtre
+     vivent dans une barre de titre que `.xp-window` recadre, l'espace au-
+     dessus d'eux n'existe pas. En dessous, le corps de la fenêtre commence
+     par du remplissage — c'est là qu'on va chercher les 20px manquants,
+     plutôt que d'épaissir le bandeau indigo sur CHAQUE fenêtre de l'écran. */
+  .tap44-d::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    translate: -50% 0;
+    height: max(100%, 44px);
+    width: max(100%, 44px);
+  }
+  .tap44-d {
+    position: relative;
+  }
+  /* Un `<select>` est un élément remplacé : Chromium n'y rend aucun `::after`,
+     l'astuce de l'enveloppe invisible ne marche pas. Écart assumé, le seul de
+     la passe : c'est la boîte elle-même qui grandit. Elle n'a ni biseau ni
+     petites capitales à préserver — la grammaire de la skin ne se joue pas
+     là — et une liste déroulante haute est ce que fait tout le monde sur
+     téléphone. */
+  select,
+  input[type='text'],
+  input:not([type]) {
+    min-height: 44px;
+  }
+  /* `.xp-btn` porte la règle directement : c'est une classe globale, tous ses
+     appels la veulent, aucun ne gagnerait à devoir y penser. */
+  .xp-btn {
+    position: relative;
+  }
+  .xp-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+    height: max(100%, 44px);
+    width: max(100%, 44px);
+  }
+}

@@ -257,7 +257,7 @@
     />
   {:else}
     <button
-      class="val"
+      class="val tap44"
       title="Cliquer pour saisir une valeur"
       onclick={() => {
         editValue = String(value);
@@ -368,6 +368,18 @@
     border-bottom: 1px dotted var(--xp-muted);
     cursor: help;
   }
+  /* Chantier tactile — le seul reste assumé de la passe, avec la largeur des
+     cases. Ce libellé n'est pas une commande : il annote le curseur d'à côté
+     et son appui n'ouvre qu'une bulle d'aide. Lui donner 44px de haut, ce
+     serait les prendre à la piste qu'il annote — un doigt qui vise le réglage
+     tomberait sur l'explication. On double la bande sans déplacer le texte
+     (remplissage compensé par une marge négative), et on s'arrête là. */
+  @media (pointer: coarse) {
+    button.lab.has-hint {
+      padding: 8px 0;
+      margin: -8px 0;
+    }
+  }
   .hint-bubble {
     display: none;
     position: absolute;
@@ -402,6 +414,16 @@
        puisque c'est cette enveloppe qui capte tout le geste (cf. en-tête).
        Compensé par `margin: 1px` au lieu de 2 sur `.xp-slider`. */
     padding: 5px 0;
+  }
+  /* Chantier tactile (cf. styles/global.css) : la piste ne peut pas recevoir
+     le pseudo-élément de `.tap44` — c'est elle qui capte le geste de glissé,
+     et deux curseurs empilés verraient leurs enveloppes invisibles se
+     recouvrir. On épaissit donc la vraie enveloppe, qui ne dessine rien :
+     16px d'`<input>` + 2 × 14px = 44. Le trait de 4px, lui, ne bouge pas. */
+  @media (pointer: coarse) {
+    .wrap {
+      padding: 14px 0;
+    }
   }
   .wrap:focus-visible {
     outline: 1px dotted var(--xp-text);

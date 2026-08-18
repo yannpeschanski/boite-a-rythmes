@@ -103,14 +103,14 @@
     <legend>Sidechain — le synthé « respire » avec la batterie</legend>
     <div class="chk-row">
       <span>Déclencheurs :</span>
-      <label class="chk"><input type="checkbox" bind:checked={sg.sidechainTriggerKick} /> Kick</label>
-      <label class="chk"><input type="checkbox" bind:checked={sg.sidechainTriggerSnare} /> Snare</label>
+      <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.sidechainTriggerKick} /> Kick</label>
+      <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.sidechainTriggerSnare} /> Snare</label>
     </div>
     <div class="chk-row">
       <span>Cibles :</span>
-      <label class="chk"><input type="checkbox" bind:checked={sg.sidechainTargetBass} /> Basse</label>
-      <label class="chk"><input type="checkbox" bind:checked={sg.sidechainTargetPad} /> Nappe</label>
-      <label class="chk"><input type="checkbox" bind:checked={sg.sidechainTargetMelody} /> Mélodie</label>
+      <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.sidechainTargetBass} /> Basse</label>
+      <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.sidechainTargetPad} /> Nappe</label>
+      <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.sidechainTargetMelody} /> Mélodie</label>
     </div>
     <div class="two-col">
       <XpSlider label="Profondeur" min={0} max={100} unit="%" bind:value={sg.sidechainDepth} />
@@ -219,5 +219,21 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
     gap: 0 10px;
+  }
+  /* Chantier tactile (cf. styles/global.css) : les enveloppes invisibles de
+     `.tap44` se marchent dessus dès que deux commandes sont voisines à
+     quelques pixels. On écarte sous pointeur grossier — l'espace n'est pas
+     du dessin, et sur un téléphone la page défile de toute façon. */
+  @media (pointer: coarse) {
+    .chk,
+    .chk-row {
+      gap: 12px;
+    }
+    .chk {
+      margin: 9px 10px 9px 0;
+    }
+    .chk-row {
+      margin-bottom: 12px;
+    }
   }
 </style>

@@ -255,12 +255,12 @@
           >&nbsp;· {row.cycleBars} mes.</span
         >{/if}</span
     >
-    <button class="mini" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
+    <button class="mini tap44" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
       {row.muted ? '🔇' : '🔊'}
     </button>
     {#if !isPad}
       <button
-        class="mini"
+        class="mini tap44"
         class:on={padOpen}
         onclick={togglePad}
         title="Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"
@@ -305,7 +305,7 @@
       {@const just = isPad ? null : justesseForStep(pattern.state, chords, row, col, v as SynthNote | null)}
       <div class="cell-wrap">
         <button
-          class="cell {name}"
+          class="cell tap44-y {name}"
           class:active
           class:playing={playheadCol === col}
           class:padtarget={padOpen && !isPad && !playing && padCursor % Math.max(1, row.subdivisions) === col}
@@ -347,20 +347,20 @@
        bandes vides sur l'onglet Synthé avant cette passe. Arpégiateur et
        Bourdon restent réservés à la Nappe, comme avant. -->
   <div class="group-bar">
-    <button class="chip" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
+    <button class="chip tap44" class:on={openGroups.sequence} aria-expanded={openGroups.sequence}
       onclick={() => (openGroups.sequence = !openGroups.sequence)}>Séquence</button>
-    <button class="chip" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
+    <button class="chip tap44" class:on={openGroups.oscillator} aria-expanded={openGroups.oscillator}
       onclick={() => (openGroups.oscillator = !openGroups.oscillator)}>Timbre</button>
-    <button class="chip" class:on={openGroups.detune} aria-expanded={openGroups.detune}
+    <button class="chip tap44" class:on={openGroups.detune} aria-expanded={openGroups.detune}
       onclick={() => (openGroups.detune = !openGroups.detune)}>Détune</button>
-    <button class="chip" class:on={openGroups.filter} aria-expanded={openGroups.filter}
+    <button class="chip tap44" class:on={openGroups.filter} aria-expanded={openGroups.filter}
       onclick={() => (openGroups.filter = !openGroups.filter)}>Filtre</button>
     {#if isPad}
       <!-- Arpège et Bourdon fondus en une pastille « Jeu » : les six
            pastilles de la Nappe demandaient 352px pour 322 disponibles, et
            les deux répondent à la MÊME question — comment la Nappe joue
            l'accord, égrené ou tenu. -->
-      <button class="chip" class:on={openGroups.play} aria-expanded={openGroups.play}
+      <button class="chip tap44" class:on={openGroups.play} aria-expanded={openGroups.play}
         onclick={() => (openGroups.play = !openGroups.play)}>Jeu</button>
     {/if}
   </div>
@@ -451,7 +451,7 @@
     {#if openGroups.play}
       <div class="group-panel" data-group="synth-arpege">
         <p class="sub">Arpège — l'accord est égrené note par note</p>
-        <label class="chk"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
+        <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.padArpEnabled} /> Actif</label>
         <label>
           Motif
           <select bind:value={sg.padArpPattern}>
@@ -477,7 +477,7 @@
           ✍️ Traduire l'arpège en Mélodie
         </button>
         <p class="sub">Bourdon — l'accord est tenu en continu</p>
-        <label class="chk"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
+        <label class="chk tap44-y"><input type="checkbox" bind:checked={sg.padDroneEnabled} /> Actif</label>
         <p class="hint">
           La Nappe devient un son tenu en continu, qui ne s'arrête jamais : un seul accord
           programmé sur sa grille = un drone fixe ; plusieurs accords = le même son qui glisse de
@@ -776,5 +776,22 @@
     font-size: 11px;
     color: var(--xp-muted);
     margin: 4px 0 0;
+  }
+  /* Chantier tactile — même rythme que les lignes de batterie (voir
+     DrumRowView et styles/global.css). */
+  @media (pointer: coarse) {
+    .synth-row {
+      margin-bottom: 24px;
+    }
+    .row-head {
+      margin-bottom: 15px;
+      gap: 16px;
+    }
+    .group-bar {
+      margin-top: 16px;
+    }
+    .chk {
+      margin: 10px 0;
+    }
   }
 </style>
