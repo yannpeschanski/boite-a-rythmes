@@ -3583,6 +3583,79 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
+## 🏁 DÉCISION — Winamp 2.x pour tous les modes (2026-08-18)
+
+> « on va partir sur winamp 2.x pour tous les modes »
+
+Planche des six écrans + plan d'implémentation :
+<https://claude.ai/code/artifact/65d53f3f-00b0-4baa-8327-3eeed181b72e>
+Maquettes : `maquettes/atelier/build_modes.py` -> `winamp-modes.html`.
+
+**L'audit de design est clos.** `CLAUDE.md` a été réécrit : la règle qui posait
+le design XP comme identité intouchable est remplacée par la règle Winamp 2.x.
+
+### Le gain principal n'est pas esthétique
+
+L'audit avait relevé dès le premier jour que l'appli parlait **trois langues
+visuelles** — Atelier en Luna beige, Mode jeu en `data-theme="noir"`, Mode Live
+avec ses propres tokens `--amp-*`. C'était le 4e reproche, et le seul non chiffré.
+
+| | |
+|---|---|
+| Langues visuelles | **3 → 1** |
+| Thèmes à maintenir | **−1** (`data-theme="noir"` n'a plus de raison d'être) |
+| Tokens propres au Live | **−12** (`--amp-*` fusionnent) |
+
+Les deux écrans les plus éloignés de l'Atelier étaient **déjà sombres**, chacun
+dans son coin : une langue sombre unique ne leur demande aucun sacrifice, elle
+leur retire une exception.
+
+### Ce que la déclinaison sur les six écrans a appris
+
+- **Accueil** : le fond Bliss disparaît, la fenêtre flotte sur du noir pur. C'est
+  littéralement l'écran d'accueil de Winamp, rien à inventer.
+- **Production** : c'est là que la langue gagne le plus contre Luna. Trois
+  bandeaux indigo sombres s'empilent bien mieux que trois bandeaux bleu vif —
+  **l'écran le plus chargé devient le plus calme des six**.
+- **Mode jeu** : rejoint la langue commune sans rien perdre ; carte de
+  progression et bandeau d'essais deviennent des afficheurs.
+- **Mode Live (paysage)** : le vrai test. Pads biseautés, afficheurs verts,
+  faders ambre — tout était déjà du vocabulaire Winamp. Le pad XY et sa bille
+  verte n'ont pas eu besoin d'être retouchés.
+
+### Plan d'implémentation, dans l'ordre
+
+1. **La fonte** — chasse fixe auto-hébergée (fontsource). Aucune police système
+   ne rend pareil d'une plateforme à l'autre et toute la direction repose dessus.
+   *Seul poste qui alourdit le fichier livré.*
+2. **Les tokens** — réécrire `src/ui/xp/tokens.css` avec le jeu Winamp **en
+   gardant les noms existants** (`--xp-face`, `--xp-title-grad`…). L'appli change
+   d'aspect d'un seul commit, vérifiable immédiatement. **C'est le point de
+   bascule**, et le moment de tester sur un vrai téléphone.
+3. **Les trois composants de base** : `XpWindow` (bandeau indigo, biseau 1px),
+   `XpSlider`, `XpTabs`.
+4. **Les 225 couleurs en dur** (18 `.svelte`) en tokens, fichier par fichier.
+5. **Fusion des thèmes** : retirer `data-theme="noir"` et les `--amp-*` du Live.
+   C'est ce qui transforme le choix esthétique en simplification réelle.
+6. **Les cibles tactiles**, en dernier, une fois le dessin stabilisé.
+
+### Chantiers ouverts
+
+- **Le tactile** — 44px minimum sans agrandir le dessin. Le vrai chantier.
+- **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. À vérifier sur
+  un vrai appareil **avant** l'étape 4, pas après.
+- **Le visualiseur** — le panneau « Barres » du Live est vide ; Winamp avait son
+  analyseur de spectre. Occasion offerte par la direction, pas trou à combler.
+- **Les sons système** — `ui/xp/systemSounds.ts` synthétise des sons XP. Ils ne
+  collent plus : à remplacer ou retirer. C'est une décision, pas un détail.
+
+⚠️ **Bug corrigé dans les maquettes :** `.slider` n'était stylé que sous
+`.tempo`, donc **toutes les glissières des écrans Synthé, Production et Live
+étaient invisibles** depuis leur création. Règle rendue générique dans
+`base.py` ; le moodboard a été republié avec les images corrigées.
+
+---
+
 ### ⭐ Moodboard des deux finalistes — Cassette et Winamp 2.x (2026-08-18)
 
 > « fais moi un moodboard détaillé des deux finalistes »

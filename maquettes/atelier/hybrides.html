@@ -97,9 +97,11 @@ body { background: #202429; padding: 20px; display: flex; flex-wrap: wrap; gap: 
   background: var(--pan-bg, var(--surf)); border: var(--pan-border, 1px solid var(--edge));
   border-radius: var(--radius); box-shadow: var(--bevel); font: var(--font-tempo); }
 .tempo .tl { color: var(--muted); }
-.tempo .slider { flex: 1; height: 6px; border-radius: 3px; background: var(--slider-bg, var(--surf2));
+/* Règle générique : la glissière n'était stylée que dans le bandeau tempo, si
+   bien que celles des écrans Synthé, Production et Live ne se voyaient pas. */
+.slider { flex: 1; height: 6px; border-radius: 3px; background: var(--slider-bg, var(--surf2));
   border: var(--slider-border, 1px solid var(--edge)); position: relative; }
-.tempo .slider i { position: absolute; left: 42%; top: -5px; width: 13px; height: 15px;
+.slider i { position: absolute; left: 42%; top: -5px; width: 13px; height: 15px;
   border-radius: var(--radius); background: var(--knob-bg, var(--surf2));
   border: var(--knob-border, 1px solid var(--edge)); box-shadow: var(--bevel); }
 .tempo b { font-variant-numeric: tabular-nums; }

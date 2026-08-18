@@ -15,9 +15,26 @@ npm run build:singlefile # fichier HTML autonome  -> dist-singlefile/index.html
 
 ## Règles importantes
 
-**Le design Windows XP est voulu, pas un héritage à moderniser.** Barres de titre
-Luna, reliefs, fond « Bliss » : c'est l'identité du projet. Ne propose pas de le
-« rafraîchir ».
+**Le design est une skin Winamp 2.x, et c'est un choix, pas un héritage.**
+Chrome gris-violet biseauté d'un pixel, bandeau de fenêtre indigo, afficheurs LCD
+verts, chasse fixe en petites capitales espacées. Retenu par Yann en août 2026 au
+terme d'un audit de 29 directions maquettées (voir PLAN.md, « audit design × DAW »
+et les séries suivantes). Ne propose pas de l'« aplatir » ou de le « moderniser » :
+**le biseau d'un pixel EST la grammaire**, c'est lui qui dit ce qui est en relief,
+creusé, ou allumé.
+
+Le fond Bliss, les barres de titre Luna et le thème `noir` du Mode jeu sont
+retirés : l'appli parlait **trois langues visuelles** (Atelier en Luna, Mode jeu
+en `noir`, Mode Live avec ses tokens `--amp-*`), elle n'en parle plus qu'une.
+C'est l'argument principal du choix, et il n'est pas esthétique.
+
+⚠️ **Le chantier ouvert de cette direction, c'est le tactile** : capitales de
+8,5 px et reliefs d'un pixel sont dessinés pour une souris. Toute zone touchable
+doit monter à 44 px **sans que le dessin grandisse**.
+
+⚠️ **Les maquettes de référence sont dans `maquettes/atelier/`** — `build_modes.py`
+produit les six écrans (accueil, Rythme, Synthé, Production, Mode jeu, Mode Live
+en paysage) dans la langue retenue. S'y référer avant de dessiner un écran neuf.
 
 **`original/boite-a-rythme-69.html` est la source de vérité.** Ses commentaires
 expliquent le *pourquoi* de chaque choix audio — ratios 808/909 du banc
