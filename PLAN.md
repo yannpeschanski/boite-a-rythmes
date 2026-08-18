@@ -3583,6 +3583,67 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
+### 4e série — 20 écrans d'Atelier complets (2026-08-17)
+
+> « mais il faut me montrer pas seulement la barre fichier mais aussi l'atelier »
+
+Planche : <https://claude.ai/code/artifact/181e852c-3818-4d8d-b474-20f1a41a714c>
+Fichiers `maquettes/atelier/` (`base.py` + `variants_a/b.py` -> `build.py`).
+
+Les vingt habillages de la 3e série, appliqués à **l'écran entier** : barre,
+transport, onglets, fenêtre du séquenceur, tempo. Organisation inchangée.
+
+**Architecture des maquettes à réutiliser :** `base.py` porte la structure et
+un CSS **sans une seule couleur** — tout passe par des tokens. Chaque variante
+tient alors en ~30 lignes, plus quelques extras quand sa langue a une
+particularité structurelle (vis du rack, trame de points de l'afficheur, filet
+de la jaquette, LED de la console, coloration par groupe de temps de la 808).
+C'est ce qui a rendu 20 écrans complets réalisables.
+
+**Périmètre du cadre :** barre + transport + onglets + séquenceur + tempo. **Pas**
+le bandeau d'astuce ni le panneau du bas (banque, analyseur), soit 353px de plus
+en réel. La comparaison honnête est donc la hauteur de la 1re case jouable :
+**318px aujourd'hui**, 224 à 261 dans les vingt — dont une part vient du bandeau
+d'astuce absent, pas seulement de la barre.
+
+| Écran | Barre | 1re case | | Écran | Barre | 1re case |
+|---|---|---|---|---|---|---|
+| Luna (actuelle) | 70 | 255 | | Rhythm Composer | 66 | 244 |
+| **Luna resserrée** | **41** | **225** | | Pocket | 67 | 242 |
+| Aqua | 67 | 248 | | Rack 19″ | 71 | 247 |
+| System 7 | 57 | 237 | | Afficheur | 68 | 244 |
+| Workbench | 58 | 237 | | **Console** | **50** | **226** |
+| Motif | 56 | 228 | | Bloc | 80 | 261 |
+| Turbo | 61 | 237 | | Cahier | 71 | 249 |
+| Amp | 65 | 247 | | Cassette | 66 | 245 |
+| **Skin** | 56 | **224** | | Étiqueteuse | 65 | 239 |
+| | | | | Tracker | 63 | 241 |
+| | | | | Plat (témoin) | 73 | 258 |
+
+**Ce que l'écran entier apprend, et que la barre seule ne disait pas :**
+
+1. **Amp est enfin cohérente.** La 3e série laissait une barre Luna sur un plan
+   de travail sombre ; ici barre et corps parlent la même langue, et la fenêtre
+   cesse d'avoir une tête et un corps dissociés. C'est ça, la direction B
+   complète.
+2. **Console devient la plus intéressante des vingt.** La LED au-dessus du menu
+   ouvert *et* l'onglet actif au même vert font que tout l'écran signale l'état
+   de la même façon. 50px de barre. À instruire en premier si on quitte Luna
+   sans vouloir de pastiche.
+3. **Rhythm Composer est réparée.** Le problème de lisibilité de la 1re série
+   (couleur prise par le repère de temps) est réglé en colorant les pas **par
+   groupe de temps** et en faisant porter l'état par la matière (mat/creux vs
+   plein/brillant). C'est devenu une vraie candidate.
+4. **System 7 démontre qu'on peut se passer de couleur** : chaque ligne est
+   distinguée par sa **trame** (plein / hachures / rayures) et le motif reste
+   lisible. Utile à garder en tête pour l'accessibilité.
+
+⚠️ **Deux chantiers que l'habillage ne touche pas**, quelle que soit la
+direction : le menu Fichier mélange toujours 4 commandes et 34 morceaux, et
+l'anatomie de la ligne (99px dont 34 de musique) n'est traitée dans aucune de
+ces maquettes, qui affichent une ligne simplifiée. Ce sont les deux vrais
+chantiers mesurés de l'audit.
+
 ### 3e série — 20 habillages de la barre de menus (2026-08-17)
 
 > « je ne souhaite pas remettre en cause l'organisation de fonctionnalités. je
