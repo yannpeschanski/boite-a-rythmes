@@ -3583,7 +3583,63 @@ couleurs en dur dans 18 `.svelte`**, dette indépendante de la direction choisie
 La question n'est donc pas « faut-il quitter XP ? » mais **« laquelle des trois
 langues déjà présentes gagne ? »**.
 
-### 2e série — architecture des commandes (2026-08-17)
+### 3e série — 20 habillages de la barre de menus (2026-08-17)
+
+> « je ne souhaite pas remettre en cause l'organisation de fonctionnalités. je
+> pense qu'il faut garder la barre fichier mais adapter son design à chaque
+> fois. peux tu me montrer 20 propositions ? »
+
+Planche : <https://claude.ai/code/artifact/a576f1e1-86e9-4e07-aa0d-9b722c58eb6a>
+Fichiers `maquettes/barre/` (`build.py` génère `index.html`).
+
+**Arbitrage acté : l'organisation des fonctionnalités ne bouge pas.** La 2e
+série (architecture des commandes) est donc classée — elle reste consultable,
+mais aucune de ses dix propositions n'est à instruire. La barre de menus est
+conservée telle quelle ; c'est son habillage qui s'adapte à chaque direction
+visuelle.
+
+⚠️ **Chiffre corrigé (2e fois sur cet audit).** J'ai écrit deux fois que la
+barre range 49 entrées dans **28px**. C'est la hauteur d'*un* rang de menus. La
+barre complète fait **64px** : à 390px, les cinq mots + le drapeau « accès
+total » + annuler/rétablir ne tiennent pas sur une ligne et se replient sur deux
+rangs. Chaque variante de cette série se replie comme la vraie, et sa hauteur
+est mesurée dans le DOM.
+
+**Résultat le plus actionnable, indépendant de toute direction :**
+**« Luna resserrée » passe de 72 à 40px sans changer de langue visuelle** — en
+rendant les zones cliquables jointives comme dans un vrai menu Windows au lieu
+d'espacer des mots. ~24px repris sur la barre réelle, sur tous les écrans.
+
+| Famille | Variantes (hauteur en px) |
+|---|---|
+| Nostalgies d'interface | Luna 72 · **Luna resserrée 40** · Aqua 74 · System 7 53 · Workbench 56 · Motif 48 · Turbo 53 |
+| Nostalgies de matériel | Amp 64 · Skin 53 · Rhythm Composer 66 · Pocket 66 · Rack 19″ 65 · Afficheur 64 · **Console 49** |
+| Ailleurs | Bloc 83 · Cahier 73 · Cassette 62 · Étiqueteuse 65 · Tracker 61 · Plat 74 |
+
+**À retenir :**
+
+1. **Luna resserrée** — à faire quoi qu'il arrive, aucun débat à ouvrir.
+2. **Amp** — la barre qui va avec la direction B ; si le plan de travail devient
+   un instrument, la barre doit suivre sous peine d'une fenêtre à tête et corps
+   dissociés.
+3. **Console** — trouvaille de la série : une LED au-dessus du menu ouvert
+   remplace le fond bleu de sélection. Plus juste pour un produit musical, tient
+   en 49px, et donne à la barre un rôle d'afficheur.
+4. **Skin** et **Workbench** — gardent le rétro sans garder Windows ; Workbench
+   a l'argument que les autres n'ont pas (la machine où la musique à motifs est
+   née).
+
+⚠️ **Défaut partagé par les vingt, qu'aucun habillage ne répare** : le menu
+Fichier mélange 4 commandes et 34 morceaux. Sur chacune des vingt images, la
+moitié basse du déroulant est un catalogue coincé dans une liste de commandes.
+Le problème est dans le contenu, pas dans le style — c'est le seul point de la
+2e série qui survit à l'arbitrage.
+
+**Limite de rendu à connaître :** la machine n'a ni Tahoma, ni Helvetica Neue,
+ni Georgia ; les polices retombent sur DejaVu/Liberation. Structures et couleurs
+justes, personnalité typographique aplatie sur les captures.
+
+### 2e série — architecture des commandes (2026-08-17) — ⛔ CLASSÉE le 2026-08-17
 
 > « prends bien en compte comment rentrer toutes les fonctionnalités, notamment
 > celles qu'on a mises dans la barre du haut. en ça, XP nous a aidé… »
