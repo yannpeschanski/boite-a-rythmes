@@ -39,7 +39,11 @@
 
   --xp-select-blue: #3169d4;
   --xp-font: Tahoma, 'Noto Sans', Verdana, 'Segoe UI', sans-serif;
-  --xp-mono: 'JetBrains Mono', monospace;
+  /* Auto-hébergée depuis l'étape 1 (voir styles/fonts.css). La pile de repli
+     reste complète : si la fonte tarde ou échoue, on retombe sur une chasse
+     fixe correcte plutôt que sur le monospace par défaut du navigateur. */
+  --xp-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas,
+    'DejaVu Sans Mono', monospace;
 
   /* Fond "colline Bliss" en dégradés CSS purs (aucune image) */
   --xp-bliss:

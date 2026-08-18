@@ -3625,9 +3625,8 @@ leur retire une exception.
 
 ### Plan d'implémentation, dans l'ordre
 
-1. **La fonte** — chasse fixe auto-hébergée (fontsource). Aucune police système
-   ne rend pareil d'une plateforme à l'autre et toute la direction repose dessus.
-   *Seul poste qui alourdit le fichier livré.*
+1. ✅ **La fonte — FAIT le 2026-08-18.** Voir ci-dessous.
+   ~~chasse fixe auto-hébergée (fontsource)~~
 2. **Les tokens** — réécrire `src/ui/xp/tokens.css` avec le jeu Winamp **en
    gardant les noms existants** (`--xp-face`, `--xp-title-grad`…). L'appli change
    d'aspect d'un seul commit, vérifiable immédiatement. **C'est le point de
@@ -3638,6 +3637,65 @@ leur retire une exception.
 5. **Fusion des thèmes** : retirer `data-theme="noir"` et les `--amp-*` du Live.
    C'est ce qui transforme le choix esthétique en simplification réelle.
 6. **Les cibles tactiles**, en dernier, une fois le dessin stabilisé.
+
+### ✅ Étape 1 — fonte auto-hébergée (2026-08-18)
+
+**Fichiers :** `src/styles/fonts.css` (nouveau), `src/styles/global.css`,
+`src/ui/xp/tokens.css`, `package.json`.
+
+**Découverte en ouvrant le chantier :** `--xp-mono: 'JetBrains Mono', monospace`
+était déclaré dans `tokens.css` et utilisé à **11 endroits** (`DrumRowView`,
+`SynthRowView`, `NotePad`, `GameView` ×2, `RhythmAnalyser` ×3, `SynthModule`,
+`ToolBar`, `.beat-ruler`)… mais **la fonte n'a jamais été installée**. Elle
+retombait silencieusement sur le monospace générique du navigateur depuis le
+début du projet. L'étape 1 corrige donc un bug dormant en plus d'installer la
+fonte.
+
+**Choix : `@fontsource/jetbrains-mono`, sous-ensemble latin, graisses 400 et 700.**
+JetBrains Mono était déjà le nom déclaré dans le projet ; c'est aussi la chasse
+fixe la mieux dessinée pour les petites tailles (grande hauteur d'x, contreformes
+ouvertes), ce dont la direction Winamp a besoin — elle lit à 8,5-9 px.
+
+⚠️ **`@font-face` écrits à la main plutôt que d'importer la CSS de fontsource.**
+Celle-ci référence aussi un `.woff` de repli, inutile pour les navigateurs visés
+(Web Audio, Svelte 5) — et surtout **le build monofichier inline les binaires en
+base64**, donc chaque octet inutile y compte double. Vite résout les chemins de
+paquet dans `url()`, donc pas besoin de copier les binaires dans le dépôt.
+
+**Coût mesuré** (c'est le poste que le plan annonçait comme le seul à alourdir
+le fichier livré) :
+
+| | avant | après | écart |
+|---|---|---|---|
+| `dist/` (assets) | 532 676 o | 575 566 o | **+42 890 o (+8,1 %)** |
+| monofichier | 534 975 o | 592 756 o | **+57 781 o (+10,8 %)** |
+
+Soit 522 Ko → 578 Ko pour le monofichier. Les deux woff2 pèsent 21,2 et 21,9 Ko.
+
+**Vérifications faites :**
+- le woff2 400 est bien téléchargé au chargement (200), et la face 700 se charge
+  **à la demande** — normal, aucun texte mono en gras sur l'écran d'accueil ;
+  vérifié explicitement via `document.fonts.load('700 12px …')` → `loaded`.
+- `getComputedStyle` sur `.beat-ruler span` renvoie bien `"JetBrains Mono"` en tête.
+- comparaison de pixels avant/après sur la règle de temps : **captures différentes**,
+  donc le dessin des glyphes a réellement changé.
+- ⚠️ *Piège de mesure* : comparer la largeur d'un `.beat-ruler span` ne prouve rien,
+  c'est une cellule de grille dont la largeur est imposée par la grille. Et comparer
+  la chasse ne prouve pas grand-chose non plus — JetBrains Mono et DejaVu Sans Mono
+  ont toutes deux une approche de ~0,6 em, donc 0,36 px d'écart sur 15 caractères.
+  **La seule preuve solide est la comparaison de pixels.**
+
+**Pile de repli conservée** : `'JetBrains Mono', ui-monospace, SFMono-Regular,
+Menlo, Consolas, 'DejaVu Sans Mono', monospace` — si la fonte tarde ou échoue, on
+retombe sur une chasse fixe correcte et pas sur le monospace par défaut.
+
+`font-display: swap` : la fonte est légère et auto-hébergée, le clignotement est
+bref, et `optional` risquerait de ne jamais l'afficher — or toute l'identité
+repose dessus.
+
+**Non fait à cette étape, volontairement** : `--xp-font` (le corps de texte)
+reste en Tahoma. Le basculement général appartient à l'étape 2, pour que chaque
+étape reste vérifiable seule.
 
 ### Chantiers ouverts
 
