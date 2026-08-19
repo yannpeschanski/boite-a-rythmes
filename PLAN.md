@@ -83,21 +83,13 @@ est la référence** à consulter avant de dessiner un écran neuf.
 
 Par ordre de taille :
 
-- **Le tactile en Mode Live** — 28 cibles sous 44px. Sept sont des commandes de
-  22px dans les barres du haut, et 21 sont les icônes de coin **posées sur les
-  pads** : les agrandir revient à voler la surface de l'instrument. Ce n'est
-  donc pas un réglage de taille mais un déplacement à concevoir. Seul écran où
-  le chantier tactile n'est pas clos.
-- **R1(b) — la mélodie par motif court répété.** Le vrai correctif musical :
-  aujourd'hui chaque pas reste un tirage indépendant, donc une texture, pas une
-  phrase. ⚠️ **Change les notes des 34 presets** — à faire quand Yann est prêt à
-  les réécouter.
-- **Le menu de voix synthé qui ment** (`SynthRowView`, `.voice-select`) : il n'a
-  aucune liaison de valeur, il retombe donc toujours sur « — Voix… » et n'a
-  jamais dit quelle voix est réellement en place. Contrôle qui écrit sans jamais
-  lire. Vérifié le 2026-08-19, toujours vrai.
-- **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Peut
-  dormir avec le chantier desktop.
+- **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Seul
+  reste de la file, et il dort avec le chantier desktop : celui-ci est hors
+  périmètre par l'arbitrage D4 (testé sur téléphone uniquement). À rouvrir avec
+  le desktop, pas avant.
+
+✅ **Vidés le 2026-08-19** (voir les étapes 13 à 15 en fin de document) : le
+tactile du Mode Live, R1(b), et le menu de voix.
 
 ⛔ **Abandonné le 2026-08-19 : le 🎲 par ligne dans la sous-section « Séquence ».**
 Demandé au 3ᵉ lot, jamais fait, et Yann l'a déclaré **obsolète**. Il reste donc
@@ -4278,17 +4270,115 @@ BPM se cale à droite.
 sous le seuil · débordement de page 0px sur les trois onglets à 390 et 1280 ·
 cibles tactiles inchangées · captures à 390, 430 et 1280 en lecture.
 
+### ✅ Étape 13 — Mode Live : 28 cibles tactiles, il n'en reste aucune (2026-08-19)
+
+**Deux mouvements, et le premier corrige une conclusion trop rapide de l'étape 6.**
+
+Les **21 icônes de coin** (verrou, 🎲, assignation) faisaient 22px, posées SUR
+les pads. Mesuré : 3 × 44 = 132px pour un bouton large de 128 — elles ne
+pouvaient pas atteindre la cible sans manger la surface qu'on frappe en jouant.
+Mais l'overlay ⚙ **portait déjà les trois, en pleine taille** : c'était un
+doublon, pas un raccourci indispensable. Elles partent, une seule surface de
+réglage reste (règle A6), et le pad redevient entièrement jouable. Verrouiller
+ou rebrasser un bouton est un geste de préparation, pas un geste de scène.
+
+⚠️ Le verrou et le 🎲 **du pad XY**, eux, n'existaient nulle part ailleurs : ils
+descendent dans l'overlay AVANT la suppression, sinon on perdait deux fonctions.
+
+**Second mouvement.** L'étape 6 avait conclu que la hauteur ne se prenait nulle
+part parce que « les pads SONT l'instrument ». C'était faux, et c'est la mesure
+qui le dit : les deux barres coûtent 44px sur 390, les pads passent de 94 à
+**81px** de haut — presque le double de la cible minimale. **PLAY, lui, était à
+34px.** Le bouton le plus important de l'écran ne peut pas être celui qu'on rate.
+
+| | avant | après |
+|---|---|---|
+| Mode Live | 28 cibles sous 44×44 | **0** |
+| hauteur d'un pad | 94px | 81px |
+
+Le Mode jeu était déjà à 0 ; l'Atelier n'a plus que ses deux exceptions
+revendiquées (largeur des cases, libellés d'aide). **L'application entière est
+tactile.**
+
+### ✅ Étape 14 — R1(b) : la mélodie devient un motif (2026-08-19)
+
+> Le vrai correctif musical, ouvert depuis l'audit et repoussé parce qu'il
+> change les notes des 34 presets.
+
+**Le diagnostic tenait en une mesure, faite avant d'écrire une ligne :** sur les
+34 presets, **aucune** mesure de mélodie n'était identique à une autre — 0 sur
+94, silences exclus. Chaque pas était un tirage indépendant. Une mélodie se
+reconnaît parce qu'elle revient ; celle-ci ne revenait jamais.
+
+On tire donc **un motif d'une mesure et on le répète**. Le piège qui distingue
+une vraie répétition d'un copier-coller : la nappe change d'accord d'une mesure
+à l'autre, des degrés recopiés sonneraient faux dès le deuxième accord. Le motif
+mémorise donc des **rôles** (« la n-ième note de l'accord en cours ») et non des
+degrés ; un rôle se résout contre l'accord en vigueur à l'endroit où il tombe.
+Le motif garde sa forme et suit l'harmonie — ce que fait n'importe quel thème
+transposé. La dernière mesure varie : une phrase qui se répète à l'identique
+jusqu'au bout est une boucle.
+
+**Deux défauts trouvés en mesurant, pas en relisant :**
+
+1. **Un motif court sort vide bien plus souvent qu'une ligne entière** — une
+   fois sur trois à 2 pas — et le filet ne posait alors qu'UNE note pour tout le
+   morceau. `boombap` et `trapmodern` étaient exactement dans ce cas, constaté
+   sur la sortie du générateur. La tête du motif porte donc toujours une note :
+   le cas disparaît par construction, et la phrase se pose sur le temps fort.
+2. **Avec cette note garantie, le facteur 0.6 hérité du tirage pas à pas
+   remontait la mélodie à 1,40 note/mesure**, au-dessus de la basse (1,15) —
+   très exactement le défaut que 0.6 avait corrigé en août. Re-balayé sur les
+   34 presets :
+   `0.35 → 1,14 (pire 3,0)` · `0.40 → 1,22 (pire 3,5)` · `0.60 → 1,40 (pire 5,0)`.
+
+| | avant | après |
+|---|---|---|
+| périodicité de la mélodie | **0 %** | **100 %** |
+| densité | 1,13 note/mesure | 1,08 (sous la basse, 1,15) |
+| pire cas | 4,5 | 4,0 |
+
+Trois tests permanents (`tests/melody-motif.test.ts`) verrouillent la
+périodicité, le fait que la mélodie reste sous la basse, et le filet
+anti-ligne-vide.
+
+**Portée assumée, dite explicitement :** les mélodies des 34 presets changent,
+et **les rafales des trois lignes de synthé avec elles** — `applyRandomRolls`
+poursuit le même générateur après le remplissage. La basse et la nappe gardent
+leurs notes (elles sont tirées avant la mélodie). Les morceaux **sauvegardés ne
+bougent pas** : la sérialisation stocke les notes, pas la graine.
+
+### ✅ Étape 15 — le menu de voix synthé (2026-08-19)
+
+Deux défauts, **et le second était plus grave que celui qui était noté au plan**.
+
+1. Le menu n'avait aucune liaison de valeur : il retombait toujours sur
+   « — Voix… » et n'a jamais dit quelle voix était en place. Il affiche
+   maintenant le preset en place, ou « — Voix modifiée » quand les curseurs ont
+   écarté la voix de tout preset. Ce troisième cas est celui qui manquait : sans
+   lui, afficher encore « Rhodes chaud » après un tour de curseur aurait été un
+   mensonge de plus, dans l'autre sens.
+2. **Le patch d'un preset était fusionné sur la voix COURANTE** au lieu de la
+   voix par défaut de la ligne. La bibliothèque dit pourtant noir sur blanc « un
+   champ non précisé revient au défaut » : choisir « Pincée » (filterEnvAmount
+   1200) puis « 808 profond » (qui n'y touche pas) laissait l'enveloppe de
+   filtre de Pincée sur un son censé être rond. `resolveVoicePreset` faisait
+   déjà le bon calcul — il n'était appelé que par le moteur, jamais par l'UI.
+
+Six tests ajoutés sur ces deux contrats.
+
+**Piège rencontré en vérifiant :** `XpSlider` ignore les événements du
+`<input type=range>`, qui est purement visuel (`pointer-events: none`) — c'est
+l'enveloppe `.wrap` qui capte le geste. Un `dispatchEvent` sur le range ne change
+rien, il faut glisser pour de vrai. Une vérification qui passait « sans rien
+changer » ne prouvait donc rien.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
 qui l'a fermé.*
 
-- **Le tactile en Mode Live** — 28 cibles sous 44px. Sept sont des commandes de
-  22px dans les barres du haut ; 21 sont les icônes de coin **posées sur les
-  pads**, et les agrandir revient à voler la surface de l'instrument. Ce n'est
-  donc pas un réglage de taille mais un déplacement à concevoir. Seul écran où
-  le chantier tactile n'est pas clos ; le reste de l'appli est à zéro, hors les
-  deux exceptions revendiquées à l'étape 6.
+- ~~Le tactile en Mode Live~~ — **clos à l'étape 13** : 28 → 0.
 - **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. Toujours pas
   vérifié sur un vrai appareil ; toutes les mesures de cette session sont des
   mesures Playwright à `devicePixelRatio` 1 à 3.
