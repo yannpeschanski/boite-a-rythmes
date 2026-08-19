@@ -4267,16 +4267,31 @@ cibles tactiles inchangées · captures à 390, 430 et 1280 en lecture.
 
 ### Chantiers ouverts
 
-- **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on
-  ne peut pas agrandir sans manger le pad. Le reste de l'appli est à 0 hors les
-  deux exceptions revendiquées ci-dessus.
+*Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
+qui l'a fermé.*
 
-- **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. À vérifier sur
-  un vrai appareil **avant** l'étape 4, pas après.
-- **Le visualiseur** — le panneau « Barres » du Live est vide ; Winamp avait son
-  analyseur de spectre. Occasion offerte par la direction, pas trou à combler.
+- **Le tactile en Mode Live** — 28 cibles sous 44px. Sept sont des commandes de
+  22px dans les barres du haut ; 21 sont les icônes de coin **posées sur les
+  pads**, et les agrandir revient à voler la surface de l'instrument. Ce n'est
+  donc pas un réglage de taille mais un déplacement à concevoir. Seul écran où
+  le chantier tactile n'est pas clos ; le reste de l'appli est à zéro, hors les
+  deux exceptions revendiquées à l'étape 6.
+- **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. Toujours pas
+  vérifié sur un vrai appareil ; toutes les mesures de cette session sont des
+  mesures Playwright à `devicePixelRatio` 1 à 3.
 - **Les sons système** — `ui/xp/systemSounds.ts` synthétise des sons XP. Ils ne
-  collent plus : à remplacer ou retirer. C'est une décision, pas un détail.
+  collent plus à la direction, mais `AtelierView` (son d'erreur) et `ToolBar`
+  (réglage dans le menu Affichage) s'en servent encore : les retirer sans les
+  remplacer enlève un retour à l'utilisateur. C'est une décision, pas un détail.
+- **La densité face à la maquette** — la maquette tient cinq lignes de batterie
+  plus le bandeau d'état en 430px là où l'appli en prend 844. L'écart vient
+  **entièrement** des pastilles « Séquence / Timbre / Filtre & espace » sous
+  chaque ligne, que la maquette n'a pas. C'est de l'organisation de
+  fonctionnalités, donc l'arbitrage de Yann.
+
+**Fermés depuis :** le visualiseur (étape 11 — le panneau « Barres » du Live
+affichait un faux spectre construit sur un classement supposé du registre de
+chaque son ; c'est une mesure maintenant, et l'analyseur sert aussi l'Atelier).
 
 ⚠️ **Bug corrigé dans les maquettes :** `.slider` n'était stylé que sous
 `.tempo`, donc **toutes les glissières des écrans Synthé, Production et Live
