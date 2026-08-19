@@ -4181,6 +4181,59 @@ visualiseur vivant). `check` 0 erreur · 33 tests, **instantané du scheduler
 compris** : aucun tirage aléatoire n'a été ajouté, les exports restent
 reproductibles · les deux builds · captures Atelier et Live en lecture.
 
+### ✅ Étape 12 — la barre de transport, répartition et dimensionnement (2026-08-19)
+
+> « répartition/dimensionnement des espaces à revoir »
+
+Mesuré avant de toucher quoi que ce soit, et le diagnostic était pire que ce
+que la capture laissait voir. **Deux défauts, une seule cause** — un
+`.spacer { flex: 1 }` qui poussait tout à droite pendant que `.transport`
+était en `flex-wrap: wrap` :
+
+| largeur | avant | après |
+|---|---|---|
+| 360-430px | barre **78px**, Lecture et Break **empilés** | 32px, sur une ligne |
+| 768px | 301px de vide au milieu | 90px, en une seule coupure |
+| 1280px | **492px** de vide au milieu | 302px, en une seule coupure |
+
+**1. Lecture et Break ne se séparent plus jamais** (`flex-wrap: nowrap`). Sous
+500px ils passaient l'un sous l'autre : la barre doublait de hauteur, sur les
+écrans où la hauteur est justement comptée, et pour les deux boutons les plus
+utilisés de l'application.
+
+**2. L'analyseur absorbe la place libre** au lieu qu'un `.spacer` la laisse
+vide : `flex: 1 1 0` à la place d'une largeur figée. Le vide disparaît par
+construction — c'est aussi ce que fait la fenêtre de Winamp, le visualiseur
+occupe ce qui reste.
+
+**3. Le reste de l'espace se regroupe en UNE coupure**, via `margin-left: auto`
+sur l'afficheur BPM. La barre se lit désormais en deux blocs — transport à
+gauche, afficheur + analyseur à droite — au lieu de trois îlots séparés par des
+trous de tailles arbitraires.
+
+**Le nombre de barres suit la largeur, pas l'inverse.** Le composant reçoit une
+largeur de barre visée (8px) et en déduit le nombre : à 1280 la boîte fait
+380px, sur un téléphone une soixantaine. Un nombre fixe aurait donné des barres
+de 26px d'un côté et de 2px de l'autre.
+
+**Défaut débusqué en le faisant :** l'analyseur paraissait à moitié vide à
+1280px. Ce n'était pas le contenu — c'était **104 barres pour 74 bandes utiles**,
+donc trente barres qui répétaient la dernière valeur, silencieuse. D'où
+`barresMax()` : le nombre de barres est plafonné par le nombre de bandes
+réellement distinctes du spectre. Et `max-width: 380px`, parce que le spectre
+d'une boîte à rythmes vit dans les graves — étalé sur 520px il restait clairsemé
+en permanence, et 380 est de toute façon l'ordre de grandeur du visualiseur de
+Winamp, qui était une petite fenêtre à côté de l'afficheur, pas un bandeau.
+
+**Un renoncement assumé :** sous 400px, ce qui reste après Lecture/Break et
+l'afficheur fait une quarantaine de pixels. À cette largeur un analyseur ne dit
+plus rien, il ressemble à un rectangle noir oublié — il s'efface, et l'afficheur
+BPM se cale à droite.
+
+**Vérifié :** `check` 0 erreur · 33 tests · les deux builds · contraste aucun cas
+sous le seuil · débordement de page 0px sur les trois onglets à 390 et 1280 ·
+cibles tactiles inchangées · captures à 390, 430 et 1280 en lecture.
+
 ### Chantiers ouverts
 
 - **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on

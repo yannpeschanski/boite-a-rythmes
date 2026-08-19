@@ -367,7 +367,6 @@
           onclick={() => engine.requestBreak()}>🫨 Break</button
         >
       </div>
-      <div class="spacer"></div>
       <!-- L'afficheur de la maquette : le tempo se lit d'un coup d'œil pendant
            qu'on joue, sans aller chercher la glissière sous le séquenceur.
            C'est un AFFICHEUR, pas un réglage — la glissière reste la commande,
@@ -382,8 +381,7 @@
         <SpectrumAnalyser
           getSpectrum={(out) => engine.getSpectrum(out)}
           size={engine.spectrumSize}
-          bars={20}
-          height={34}
+          height={32}
         />
       </div>
     </div>
@@ -595,18 +593,27 @@
     gap: 10px;
     margin-bottom: 4px;
   }
+  /* `nowrap` : Lecture et Break ne se séparent JAMAIS. En `wrap`, sous 500px,
+     ils passaient l'un sous l'autre et la barre doublait de hauteur — 78px au
+     lieu de 34, exactement là où la hauteur est comptée. Ce sont les deux
+     boutons les plus utilisés de l'application ; les empiler pour gagner de la
+     largeur, c'est payer au mauvais endroit. */
   .transport {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex: none;
     gap: 6px;
-  }
-  .spacer {
-    flex: 1;
   }
   /* 22px : la seule grande typographie de l'Atelier, et c'est voulu — un ampli
      a un afficheur, et c'est le nombre qu'on lit de loin. Vert LCD, l'unité en
      retrait, alignés sur la ligne de base comme sur un vrai cadran. */
   .bpm {
+    /* L'espace libre se regroupe ICI, en une seule coupure entre le transport
+       à gauche et le bloc afficheur+analyseur à droite. Avant, il était
+       réparti au hasard : 492px de trou entre les boutons et un analyseur
+       collé au bord droit. Une barre d'appareil se lit en deux blocs, pas en
+       trois îlots. */
+    margin-left: auto;
     display: flex;
     align-items: baseline;
     gap: 4px;
@@ -620,11 +627,35 @@
     font-weight: 400;
     color: var(--xp-muted);
   }
-  /* Une largeur bornée : l'analyseur prend la place que les anneaux prenaient,
-     pas plus. Il ne doit jamais pousser Lecture/Break hors de leur ligne. */
+  /* L'analyseur ABSORBE la place libre au lieu qu'un `.spacer` la laisse vide.
+     Un `flex: 1` à la place d'une largeur figée, et le vide disparaît par
+     construction : il valait 32px sur téléphone et jusqu'à 492px à 1280, ce
+     qui coupait la barre en deux îlots séparés par rien. C'est aussi ce que
+     fait la fenêtre de Winamp — le visualiseur occupe ce qui reste.
+     `min-width: 0` est indispensable : un élément flex refuse par défaut de
+     descendre sous sa taille de contenu, et pousserait la barre au lieu de
+     rétrécir. Le nombre de barres, lui, s'adapte à la largeur obtenue (voir
+     SpectrumAnalyser). */
   .viz {
-    flex: none;
-    width: clamp(96px, 22vw, 190px);
+    flex: 1 1 0;
+    min-width: 0;
+    /* Borné, et pas seulement pour la mesure : le spectre d'une boîte à
+       rythmes vit dans les graves, les barres du haut du registre ne
+       s'allument qu'aux coups de hat. Étalé sur 520px, l'afficheur paraissait
+       à moitié vide en permanence. À 380 il est dense — et c'est aussi
+       l'ordre de grandeur du visualiseur de Winamp, qui était une petite
+       fenêtre à côté de l'afficheur, pas un bandeau. */
+    max-width: 380px;
+  }
+  /* Sous 400px, ce qui reste après Lecture/Break et l'afficheur fait une
+     quarantaine de pixels : à cette largeur un analyseur ne dit plus rien, il
+     ressemble à un rectangle noir oublié. Il s'efface, et l'afficheur BPM se
+     cale à droite — la barre reste lisible au lieu d'être encombrée par un
+     élément décoratif. C'est le seul écran où on renonce au visualiseur. */
+  @media (max-width: 400px) {
+    .viz {
+      display: none;
+    }
   }
   .hint {
     font-size: 9px;
@@ -799,7 +830,7 @@
       margin-bottom: 10px;
     }
     .transport {
-      gap: 14px;
+      gap: 10px;
     }
   }
 </style>
