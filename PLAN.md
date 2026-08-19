@@ -83,10 +83,16 @@ est la référence** à consulter avant de dessiner un écran neuf.
 
 Par ordre de taille :
 
-- **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Seul
-  reste de la file, et il dort avec le chantier desktop : celui-ci est hors
-  périmètre par l'arbitrage D4 (testé sur téléphone uniquement). À rouvrir avec
-  le desktop, pas avant.
+- 🔜 **Le Mode jeu**, décidé par Yann le 2026-08-19 : « on s'attaquera une fois
+  pour toute au mode jeu ». C'est le prochain gros morceau. Deux décisions
+  l'attendent (voir la section précédente) : la grille de déverrouillage
+  contrôle par contrôle, et le 2ᵉ type d'exercice.
+- 🔜 **PUIS le Mode Live, à revoir** — demandé par Yann le 2026-08-19,
+  explicitement **après** le Mode jeu. Voir « Le Mode Live est à reprendre »
+  dans les chantiers ouverts pour ce qui s'y est accumulé.
+- **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Il
+  dort avec le chantier desktop : celui-ci est hors périmètre par l'arbitrage D4
+  (testé sur téléphone uniquement). À rouvrir avec le desktop, pas avant.
 
 ✅ **Vidés le 2026-08-19** (voir les étapes 13 à 15 en fin de document) : le
 tactile du Mode Live, R1(b), et le menu de voix.
@@ -4421,6 +4427,26 @@ qui l'a fermé.*
   collent plus à la direction, mais `AtelierView` (son d'erreur) et `ToolBar`
   (réglage dans le menu Affichage) s'en servent encore : les retirer sans les
   remplacer enlève un retour à l'utilisateur. C'est une décision, pas un détail.
+- 🔜 **Le Mode Live est à reprendre — APRÈS le Mode jeu.** Demandé par Yann le
+  2026-08-19, avec cet ordre explicite. Le périmètre n'est pas défini : c'est à
+  lui de le donner. Ce qui est connu et qui pèsera dans la reprise :
+
+  - **beaucoup a bougé en une session, sans passe d'ensemble.** Les icônes de
+    coin ont disparu (étape 13), les barres du haut et de séquence sont montées
+    à 44px et les pads sont descendus de 94 à 81px, le verrou et le brassage
+    total ont été retirés au profit d'un dé par chose (étape 16), et le
+    visualiseur « BARRES » est passé d'un faux spectre à une vraie mesure
+    (étape 11). Chaque changement a été vérifié seul ; **l'écran entier ne l'a
+    pas été**.
+  - **l'overlay ⚙ est devenu la seule surface de réglage** et il s'allonge :
+    six boutons, le pad, l'inclinaison, le visualiseur, la banque, les
+    snapshots. C'est là que se posera la question de l'organisation.
+  - **le panneau du visualiseur est bien plus haut que ce que le spectre
+    remplit** — l'analyseur y dessine dans le bas du cadre. Jamais retouché
+    depuis que le contenu a changé de nature.
+  - **rien n'a été essayé sur un vrai téléphone en paysage**, qui est pourtant
+    le seul contexte d'usage de ce mode.
+
 - **La densité face à la maquette** — la maquette tient cinq lignes de batterie
   plus le bandeau d'état en 430px là où l'appli en prend 844. L'écart vient
   **entièrement** des pastilles « Séquence / Timbre / Filtre & espace » sous
