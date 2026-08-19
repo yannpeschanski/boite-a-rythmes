@@ -6,7 +6,16 @@
  * saurait.
  */
 import { describe, it, expect } from 'vitest';
-import { comparerGrilles, colonnesDeMesure, type Grille, type Rafales } from '../src/model/exercises';
+import {
+  comparerGrilles,
+  colonnesDeTranche,
+  ecartAuCoup,
+  justesseDesFrappes,
+  PARFAIT_MS,
+  TOLERANCE_MS,
+  type Grille,
+  type Rafales,
+} from '../src/model/exercises';
 import { LEVELS } from '../src/model/presets/levels';
 import type { GameDrumRowName } from '../src/model/presets/levels';
 import type { DrumStep } from '../src/model/types';
@@ -57,24 +66,24 @@ describe('comparerGrilles — la restriction par colonnes', () => {
   });
 });
 
-describe('colonnesDeMesure — chaque ligne a sa propre subdivision', () => {
-  it('découpe une ligne à 8 pas en 2 mesures de 4', () => {
-    expect(colonnesDeMesure(8, 0, 2)).toEqual([0, 1, 2, 3]);
-    expect(colonnesDeMesure(8, 1, 2)).toEqual([4, 5, 6, 7]);
+describe('colonnesDeTranche — chaque ligne a sa propre subdivision', () => {
+  it('découpe une ligne à 8 pas en 2 tranches de 4', () => {
+    expect(colonnesDeTranche(8, 0, 2)).toEqual([0, 1, 2, 3]);
+    expect(colonnesDeTranche(8, 1, 2)).toEqual([4, 5, 6, 7]);
   });
 
   it('découpe une ligne à 6 pas (polyrythmie) sans déborder', () => {
-    // 6 pas sur 2 mesures : 3 par mesure, et surtout aucun index hors bornes —
+    // 6 pas en 2 tranches : 3 par tranche, et surtout aucun index hors bornes —
     // c'est le cas que découper « au même index partout » casserait.
-    expect(colonnesDeMesure(6, 0, 2)).toEqual([0, 1, 2]);
-    expect(colonnesDeMesure(6, 1, 2)).toEqual([3, 4, 5]);
+    expect(colonnesDeTranche(6, 0, 2)).toEqual([0, 1, 2]);
+    expect(colonnesDeTranche(6, 1, 2)).toEqual([3, 4, 5]);
   });
 
   it('ne renvoie jamais d’index hors de la ligne', () => {
     for (const subdiv of [1, 3, 4, 5, 6, 8, 12, 16]) {
-      for (const mesures of [1, 2, 4]) {
-        for (let m = 0; m < mesures; m++) {
-          for (const col of colonnesDeMesure(subdiv, m, mesures)) {
+      for (const tranches of [1, 2, 4]) {
+        for (let m = 0; m < tranches; m++) {
+          for (const col of colonnesDeTranche(subdiv, m, tranches)) {
             expect(col).toBeGreaterThanOrEqual(0);
             expect(col).toBeLessThan(subdiv);
           }
@@ -84,9 +93,61 @@ describe('colonnesDeMesure — chaque ligne a sa propre subdivision', () => {
   });
 });
 
-describe('les 34 niveaux existants', () => {
-  it('sont tous « reproduire » — la charpente n’en change aucun', () => {
-    expect(LEVELS).toHaveLength(34);
-    for (const l of LEVELS) expect(l.exercise).toBe('reproduire');
+describe('ecartAuCoup — en retard sur le précédent ou en avance sur le suivant', () => {
+  it('juste après le coup : en retard, écart positif', () => {
+    expect(ecartAuCoup(30, 500)).toBe(30);
+  });
+
+  it('juste avant le suivant : en avance, écart négatif', () => {
+    expect(ecartAuCoup(470, 500)).toBe(-30);
+  });
+
+  it('le basculement se fait à la moitié, pas ailleurs', () => {
+    expect(ecartAuCoup(250, 500)).toBe(250);
+    expect(ecartAuCoup(251, 500)).toBe(-249);
+  });
+});
+
+describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au bon moment »', () => {
+  it('parfait sous le seuil d’indiscernable, nul au-delà de la tolérance', () => {
+    expect(justesseDesFrappes([0, PARFAIT_MS, -PARFAIT_MS], 3)).toBe(100);
+    expect(justesseDesFrappes([TOLERANCE_MS, -TOLERANCE_MS, 300], 3)).toBe(0);
+  });
+
+  it('une seule frappe très juste ne suffit pas quand trois sont attendues', () => {
+    // Sans le diviseur « au moins le nombre attendu », ce serait 100 % — et
+    // le niveau se gagnerait en tapant une fois puis en s’arrêtant.
+    expect(justesseDesFrappes([0], 3)).toBe(33);
+  });
+
+  it('marteler le pad fait BAISSER la note, pas monter', () => {
+    const propre = justesseDesFrappes([0, 0, 0], 3);
+    const martele = justesseDesFrappes([0, 0, 0, 300, 300, 300], 3);
+    expect(propre).toBe(100);
+    expect(martele).toBeLessThan(propre);
+  });
+
+  it('décroît linéairement entre les deux seuils', () => {
+    const milieu = (PARFAIT_MS + TOLERANCE_MS) / 2;
+    expect(justesseDesFrappes([milieu], 1)).toBe(50);
+  });
+
+  it('renvoie 0 si rien n’est attendu — jamais une division par zéro', () => {
+    expect(justesseDesFrappes([0, 0], 0)).toBe(0);
+  });
+});
+
+describe('les niveaux', () => {
+  it('la campagne reste 34 « reproduire » — ni la charpente ni les pilotes n’y touchent', () => {
+    const campagne = LEVELS.slice(0, 34);
+    expect(campagne).toHaveLength(34);
+    for (const l of campagne) expect(l.exercise).toBe('reproduire');
+  });
+
+  it('un pilote de chaque nouveau verbe existe', () => {
+    const verbes = new Set(LEVELS.map((l) => l.exercise));
+    expect(verbes.has('completer')).toBe(true);
+    expect(verbes.has('intrus')).toBe(true);
+    expect(verbes.has('jouer')).toBe(true);
   });
 });

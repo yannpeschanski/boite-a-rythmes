@@ -93,8 +93,13 @@ describe('presets', () => {
     }
   });
 
-  it('les 34 niveaux du jeu sont présents', () => {
-    expect(LEVELS).toHaveLength(34);
+  it('la campagne fait toujours 34 niveaux, les pilotes en plus', () => {
+    // Le chiffre qui compte est celui de la CAMPAGNE, pas celui du tableau :
+    // les pilotes des nouveaux verbes sont posés après le 34 et n'en font pas
+    // partie. Compter le tableau entier laisserait passer un niveau de
+    // campagne supprimé pour peu qu'un pilote soit ajouté le même jour.
+    expect(LEVELS.filter((l) => l.exercise === 'reproduire')).toHaveLength(34);
+    expect(LEVELS.slice(0, 34).every((l) => l.exercise === 'reproduire')).toBe(true);
   });
 });
 

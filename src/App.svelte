@@ -7,7 +7,7 @@
   import AtelierView from './ui/atelier/AtelierView.svelte';
   import GameView from './ui/game/GameView.svelte';
   import LiveView from './ui/live/LiveView.svelte';
-  import { game } from './stores/game.svelte';
+  import { game, LEVELS } from './stores/game.svelte';
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
@@ -78,7 +78,7 @@
           >{unlocks.has('atelier') ? 'Composer librement' : `Niveau ${unlockLevelFor('atelier')}`}</small
         ></button
       >
-      <button class="big" onclick={() => enter('game')}>🎮 Mode jeu<small>34 niveaux</small></button>
+      <button class="big" onclick={() => enter('game')}>🎮 Mode jeu<small>{LEVELS.length} niveaux</small></button>
       <button
         class="big"
         class:locked={!unlocks.has('live')}
