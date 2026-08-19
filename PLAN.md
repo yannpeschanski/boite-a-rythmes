@@ -4373,6 +4373,41 @@ l'enveloppe `.wrap` qui capte le geste. Un `dispatchEvent` sur le range ne chang
 rien, il faut glisser pour de vrai. Une vérification qui passait « sans rien
 changer » ne prouvait donc rien.
 
+### ✅ Étape 16 — plus de verrou, plus de brassage total : un dé par chose (2026-08-19)
+
+> « je pense que le dé par touche permet de se passer d'un brassage total. dans
+> ce cas, on peut faire sauter le principe de verrou par bouton. par conséquent,
+> il faut un dé pour le pad aussi. »
+
+**La chaîne se tient, et elle enlève trois concepts pour en garder un.** Le dé
+par bouton rend le brassage total (🔀) inutile ; or le verrou n'existait QUE
+pour protéger du brassage ; sans brassage, il ne protège de rien. Ce qui reste
+s'explique en une phrase : **un dé par chose assignable, et rien d'autre.**
+
+Partent : le bouton 🔀 de la barre supérieure, `shuffleAssignments`,
+`slotLocked`, `padLocked`, `toggleSlotLock`, `togglePadLock`, et les huit
+boutons de verrou de l'overlay.
+
+**Ce que la demande ne couvrait pas, et qu'il fallait voir :** l'inclinaison
+n'était rebrassée **que** par 🔀 — elle n'a jamais eu de dé. Sans correctif,
+elle serait devenue la seule assignation qu'on ne peut plus tirer au hasard.
+Elle reçoit le sien (`randomizeTilt`). Le pad avait déjà le sien, descendu dans
+l'overlay à l'étape 13.
+
+Total : **8 dés** — six boutons, le pad (X+Y ensemble), l'inclinaison.
+
+**Compatibilité des réglages enregistrés.** `LiveAssignments` est persisté en
+`localStorage` et le validateur RÉCLAMAIT `slotLocked` et `padLocked` : les
+retirer du type sans les retirer du validateur aurait rejeté chaque réglage
+existant, donc réinitialisé l'assignation de tout le monde. Ils sortent des deux
+ensemble ; les clés en trop d'un ancien enregistrement sont simplement ignorées.
+Vérifié en semant un réglage à l'ancien format dans le navigateur avant de
+charger : il se recharge intact, sans erreur.
+
+**Vérifié :** `check` 0 erreur · 42 tests · les deux builds · Mode Live toujours
+à 0 cible sous 44×44 · scénario Playwright — 🔀 absent, 0 verrou, 8 dés, un tir
+qui change bien l'assignation (BREAK → ROLL K×3), aucune erreur console.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
