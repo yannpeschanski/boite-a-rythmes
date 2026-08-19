@@ -4067,6 +4067,58 @@ courante : il annonce le morceau (`120 BPM · 3 LIGNES EN JEU`).
 Un texte réservé aux lecteurs d'écran EST recadré exprès — c'est la technique,
 pas un défaut. Le détecteur ignore désormais ce qui porte un `clip-path`.
 
+### ✅ Étape 10 — la barre de menus (2026-08-19)
+
+> « pas fan de cette barre : manque de cohérence / indication "accès total" un
+> peu superflue / prend trop de place, ça doit tenir en 1 ligne »
+
+**Trois langues dans une barre de sept éléments.** Les menus étaient du texte
+plat, le marqueur d'accès un cadre pointillé, et Annuler/Rétablir des poussoirs
+biseautés avec leur dégradé. Une barre de menus n'a qu'un seul registre : du
+libellé posé sur la face du chrome, qui s'allume au survol. ↶ et ↷ le
+rejoignent — même famille, même corps de 9px, même surlignage bleu. **Le biseau
+reste réservé à ce qui est vraiment un bouton ailleurs sur l'écran** ; dans une
+barre de menus, il faisait du bruit.
+
+**« Accès total » déménage dans le menu Aide.** Le raisonnement qui le mettait
+dans l'Atelier plutôt que sur l'accueil tient toujours — c'est ici qu'on se
+demande si ce qu'on voit est bien ce que voient les autres — mais il occupait
+une **rangée entière de chrome permanent** pour une information qu'on consulte
+une fois. Un menu est le bon domicile de ce qu'on va *chercher*.
+
+**Une ligne, garantie par `nowrap`.** La barre passait à deux rangées dès que la
+place manquait. Elle ne se replie plus ; c'est le remplissage horizontal qui
+absorbe l'étroitesse, en deux crans : 5px de part et d'autre des libellés sous
+460px, 3px sous 360px. Mesuré à six largeurs :
+
+| | avant | après |
+|---|---|---|
+| hauteur de la barre | 64px (deux rangées) | **36px, à toutes les largeurs** |
+| débordement de page | — | **0px de 320 à 1280** |
+
+Le « débordement de barre » résiduel de 5px que rapporte la sonde est
+l'enveloppe tactile invisible du dernier bouton, pas du dessin : aucun élément
+ne dépasse le bord (vérifié élément par élément).
+
+**Défaut débusqué en chemin :** la liste du menu Aide, ancrée à gauche de son
+libellé avec 190px de large, partait **au-delà du bord de l'écran** sur
+téléphone et se faisait couper. Le défaut préexistait ; il est devenu visible en
+ajoutant une entrée à ce menu-là. Le dernier menu s'ancre désormais à droite.
+
+**Le prix, dit clairement.** Deux cibles tactiles passent sous 44px, **en
+largeur seulement** : un `.menu-btn` à 40×45 et un `.tool` à 38×44, sous 460px.
+C'est le coût direct de la ligne unique — les libellés sont côte à côte sans
+blanc, donc leurs enveloppes se recouvrent et c'est la dernière du DOM qui
+gagne le point. Arbitrage assumé : entre deux libellés de menu, une frappe qui
+dérape ouvre le mauvais menu, on le referme et il ne s'est rien passé. C'est
+pour ça que le seul écart qui subsiste dans la barre est **entre Annuler et
+Rétablir** (8px) : ce sont les deux seules commandes dont l'erreur coûte
+quelque chose.
+
+**Vérifié :** `check` 0 erreur · 33 tests · les deux builds · contraste **aucun
+cas** sous le seuil · débordement de page 0px sur les trois onglets à 390 et
+1280 · captures de la barre à 390 et 1280, et du menu Aide ouvert.
+
 ### Chantiers ouverts
 
 - **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on
