@@ -4119,6 +4119,68 @@ quelque chose.
 cas** sous le seuil · débordement de page 0px sur les trois onglets à 390 et
 1280 · captures de la barre à 390 et 1280, et du menu Aide ouvert.
 
+### ✅ Étape 11 — l'analyseur de spectre (2026-08-19)
+
+> « il faut en effet l'analyseur de spectre winamp / mode atelier : à droite de
+> "break", on peut supprimer la vision circulaire / dans le mode live, s'il y a
+> une place toute indiquée, allons y »
+
+**Un vrai analyseur, pas une animation.** `graph.ts` gagne un `AnalyserNode`
+maître branché en tap sur `finalGain` — donc sur **ce qu'on entend**, après le
+limiteur, l'écrêteur doux et le volume général. C'est ce qui le distingue des
+`lineAnalyser` existants : ceux-là mesurent un niveau par ligne (fftSize 32, un
+chiffre par frame), celui-ci rend un spectre du mix. Tap seulement, jamais
+connecté en aval : aucun effet sur le son, ni en direct ni au rendu hors ligne.
+
+`AudioEngine` expose `getSpectrum(out)` — il **remplit** un tableau fourni par
+l'appelant au lieu d'en renvoyer un : le visualiseur tourne à 60 Hz, allouer
+256 octets par frame ferait travailler le ramasse-miettes pour rien.
+
+**Les anneaux de transport disparaissent** (`TransportRings.svelte` supprimé).
+Ils redisaient la position de lecture, que la tête de lecture montre déjà sur
+chaque grille, ligne par ligne et au pas près. L'analyseur, lui, montre ce
+qu'aucun autre élément de l'écran ne montre : le son qui sort.
+
+**Le Mode Live y gagne aussi**, et c'est là que le remplacement est le plus
+net. Son mode « BARRES » répartissait les six niveaux de ligne sur 22 barres
+via une cloche centrée sur la position *supposée* de chaque élément dans le
+spectre. Joli relief, mais construit sur un **classement arbitraire** : un kick
+filtré en aigu s'y affichait toujours dans les graves. C'est maintenant une
+mesure.
+
+**Trois réglages qui font la différence entre « ça marche » et « ça ressemble à
+Winamp »**, tous trouvés à l'œil sur captures successives :
+
+1. **Répartition géométrique des bandes**, plafonnée à 30 % des bins (≈7 kHz).
+   La première version montait à 78 % : la moitié droite de l'afficheur restait
+   vide en permanence, et un afficheur à moitié vide se lit comme cassé.
+2. **Pente croissante vers l'aigu** (×1 à ×2,5). Un spectre musical décroît
+   d'environ 3 dB par octave ; sans compensation le hat s'entend mais ne se voit
+   pas. Correction d'affichage assumée — un analyseur d'ampli n'a jamais été un
+   instrument de mesure.
+3. **Fenêtre de décibels resserrée** (-72 à -18 au lieu de -84 à -12) : c'est la
+   plage utile d'un mix, pas la plage théorique du format.
+
+Plus le **capuchon** qui monte d'un coup et retombe en ~0,75 s. C'est ce
+détail-là qui fait « analyseur » plutôt que « barres animées » : sans lui on ne
+voit que le présent, avec lui on voit le maximum récent.
+
+Le dégradé est peint sur la **colonne** et non sur la barre — vert en bas, ambre
+au milieu, rouge en haut. Une barre haute traverse donc les trois zones, et
+c'est ce qui fait qu'on lit un niveau et pas une teinte.
+
+**Facteur commun extrait** (`ui/xp/spectrumBands.ts`) : la lecture d'une barre
+sert à deux dessins différents — le composant de l'Atelier et le canvas du Live.
+Le projet s'est déjà fait avoir par un `.xp-btn` recopié dans six fichiers
+(constat C6), on ne recommence pas avec la répartition des bandes.
+
+**Vérifié :** l'analyseur **bouge vraiment** — scénario Playwright qui compare
+la signature du canvas à l'arrêt puis en lecture, puis deux frames consécutives
+en lecture (une capture unique ne distingue pas un visualiseur figé d'un
+visualiseur vivant). `check` 0 erreur · 33 tests, **instantané du scheduler
+compris** : aucun tirage aléatoire n'a été ajouté, les exports restent
+reproductibles · les deux builds · captures Atelier et Live en lecture.
+
 ### Chantiers ouverts
 
 - **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on

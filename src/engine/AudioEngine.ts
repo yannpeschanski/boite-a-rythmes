@@ -481,6 +481,24 @@ export class AudioEngine {
     return levels;
   }
 
+  // Spectre du mix — 0..1 par bande, du grave à l'aigu. Rempli DANS un tableau
+  // fourni par l'appelant plutôt que renvoyé : le visualiseur tourne à 60 Hz,
+  // allouer 256 octets par frame ferait travailler le ramasse-miettes pour
+  // rien. Le moteur ne le lit jamais lui-même.
+  // `Uint8Array<ArrayBuffer>` et non `Uint8Array` tout court : depuis que les
+  // types DOM paramètrent les tableaux typés par leur tampon, `getByteFrequency
+  // Data` refuse un tableau qui pourrait être adossé à un SharedArrayBuffer.
+  getSpectrum(out: Uint8Array<ArrayBuffer>): boolean {
+    if (!this.graph) return false;
+    this.graph.spectrum.getByteFrequencyData(out);
+    return true;
+  }
+
+  // Taille attendue du tableau ci-dessus (fftSize / 2).
+  get spectrumSize(): number {
+    return this.graph ? this.graph.spectrum.frequencyBinCount : 0;
+  }
+
   // Réglages de mix/fx appliqués en direct sans reconstruire le graphe.
   refreshMixSettings(): void {
     if (this.graph) applyMixSettings(this.graph, this.getState());

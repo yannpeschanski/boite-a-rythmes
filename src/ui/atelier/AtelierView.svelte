@@ -8,7 +8,7 @@
   import XpTabs from '../xp/XpTabs.svelte';
   import DrumRowView from '../sequencer/DrumRowView.svelte';
   import StepCircle from '../sequencer/StepCircle.svelte';
-  import TransportRings from '../sequencer/TransportRings.svelte';
+  import SpectrumAnalyser from '../xp/SpectrumAnalyser.svelte';
   import StatusLcd from '../sequencer/StatusLcd.svelte';
   import GeneralSequencer from '../sequencer/GeneralSequencer.svelte';
   import SynthModule from './SynthModule.svelte';
@@ -373,7 +373,19 @@
            C'est un AFFICHEUR, pas un réglage — la glissière reste la commande,
            et il n'y a donc rien à désambiguïser entre les deux. -->
       <span class="bpm" aria-hidden="true">{st.tempo}<small>BPM</small></span>
-      <TransportRings state={st} {playhead} {synthPlayhead} />
+      <!-- Les anneaux de transport occupaient cette place : ils redisaient la
+           position de lecture, que la tête de lecture montre déjà sur chaque
+           grille, ligne par ligne et au pas près. L'analyseur, lui, montre ce
+           qu'AUCUN autre élément de l'écran ne montre — le son qui sort. Et
+           c'est le visualiseur de Winamp, donc il est chez lui. -->
+      <div class="viz">
+        <SpectrumAnalyser
+          getSpectrum={(out) => engine.getSpectrum(out)}
+          size={engine.spectrumSize}
+          bars={20}
+          height={34}
+        />
+      </div>
     </div>
     <!-- « Le plus proche » a quitté ce bandeau pour l'analyseur de l'onglet
          Production (idée de Yann) : ici il était masqué sur mobile faute de
@@ -607,6 +619,12 @@
     font-size: var(--xp-size-small);
     font-weight: 400;
     color: var(--xp-muted);
+  }
+  /* Une largeur bornée : l'analyseur prend la place que les anneaux prenaient,
+     pas plus. Il ne doit jamais pousser Lecture/Break hors de leur ligne. */
+  .viz {
+    flex: none;
+    width: clamp(96px, 22vw, 190px);
   }
   .hint {
     font-size: 9px;
