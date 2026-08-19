@@ -1474,6 +1474,14 @@
       {/if}
       <div class="main">
         <div class="buttons">
+          <!-- Les six boutons n'ont plus d'icônes de coin. Elles portaient le
+               verrou, le 🎲 et l'assignation en 22px posés SUR le pad : trois
+               cibles qu'on ne pouvait pas amener à 44px sans manger la surface
+               qu'on frappe en jouant — 3 × 44 = 132px pour un bouton large de
+               128. Or l'overlay ⚙ portait déjà les trois, en pleine taille. On
+               garde donc une seule surface de réglage (règle A6), et le pad
+               redevient entièrement jouable. Verrouiller ou rebrasser un bouton
+               est un geste de préparation, pas un geste de scène. -->
           {#each assignments.slots as actionIds, i (i)}
             {@const mode = assignments.slotModes[i]}
             <div class="abtn-wrap">
@@ -1520,54 +1528,6 @@
                   {#if defs.length === 1}<span class="assign-label">{defs[0].desc}</span>{/if}
                 </button>
               {/if}
-              <!-- Icônes de coin (retour de Yann, PLAN.md §7 : « assigner/
-                   verrouiller/brasser directement autour des boutons » —
-                   analyse d'ergonomie faite le jour même : un geste type
-                   joystick percuterait les actions `hold` et le mode FADER,
-                   qui utilisent déjà l'appui long/le glisser comme geste
-                   live. Icônes persistantes minuscules à la place, mêmes
-                   actions que l'overlay ⚙ (toggleSlotLock/randomizeSlot/
-                   picker), SIBLINGS du bouton plutôt qu'imbriquées dedans
-                   (un <button> ne peut pas contenir un <button>) — le tap
-                   sur une icône ne touche donc jamais le bouton en dessous,
-                   pas besoin de désambiguïser un geste. -->
-              <div class="corner-icons">
-                <button
-                  class="corner-icon"
-                  class:locked={assignments.slotLocked[i]}
-                  onpointerdown={(e) => {
-                    e.stopPropagation();
-                    toggleSlotLock(i);
-                  }}
-                  title={assignments.slotLocked[i] ? 'Déverrouiller' : 'Verrouiller (protège du 🔀)'}
-                >
-                  {assignments.slotLocked[i] ? '🔒' : '🔓'}
-                </button>
-                <button
-                  class="corner-icon"
-                  onpointerdown={(e) => {
-                    e.stopPropagation();
-                    randomizeSlot(i);
-                  }}
-                  title="Tirer un nouveau réglage au hasard"
-                >
-                  🎲
-                </button>
-                <button
-                  class="corner-icon"
-                  onpointerdown={(e) => {
-                    e.stopPropagation();
-                    // Le panneau de sélection (picker) n'est rendu que sous
-                    // l'overlay ⚙ (assignOpen) — l'ouvrir ici aussi plutôt
-                    // que de dupliquer son balisage hors de l'overlay.
-                    assignOpen = true;
-                    picker = mode === 'fader' ? { kind: 'slotFader', index: i } : { kind: 'slot', index: i };
-                  }}
-                  title="Assigner ce bouton"
-                >
-                  ✏️
-                </button>
-              </div>
             </div>
           {/each}
         </div>
@@ -1593,46 +1553,6 @@
             onpointerup={() => (dragging = false)}
           >
             <div class="pad-thumb" style:left="{padX * 100}%" style:top="{padY * 100}%"></div>
-            <!-- Mêmes icônes de coin que les boutons (retour de Yann,
-                 2026-08-14 : « il faudrait avoir les mêmes options sur le
-                 pad ») — un seul verrou pour X ET Y ensemble (padLocked, pas
-                 un par axe : le pad est UN geste physique), 🎲 retire les
-                 deux axes d'un coup, ✏️ ouvre l'overlay complet (les deux
-                 lignes X/Y y sont déjà séparées, pas besoin d'un picker dédié
-                 pour un seul axe à la fois). -->
-            <div class="corner-icons">
-              <button
-                class="corner-icon"
-                class:locked={assignments.padLocked}
-                onpointerdown={(e) => {
-                  e.stopPropagation();
-                  togglePadLock();
-                }}
-                title={assignments.padLocked ? 'Déverrouiller le pad' : 'Verrouiller le pad (protège du 🔀)'}
-              >
-                {assignments.padLocked ? '🔒' : '🔓'}
-              </button>
-              <button
-                class="corner-icon"
-                onpointerdown={(e) => {
-                  e.stopPropagation();
-                  randomizePad();
-                }}
-                title="Tirer un nouveau réglage au hasard pour X et Y"
-              >
-                🎲
-              </button>
-              <button
-                class="corner-icon"
-                onpointerdown={(e) => {
-                  e.stopPropagation();
-                  assignOpen = true;
-                }}
-                title="Assigner le pad (X/Y)"
-              >
-                ✏️
-              </button>
-            </div>
           </div>
           <div class="eq-readout">
             <div class="eq-band">
@@ -1696,6 +1616,28 @@
                   </button>
                 </div>
               {/each}
+              <!-- Le verrou et le 🎲 du pad vivaient UNIQUEMENT dans ses icônes
+                   de coin ; en les retirant on aurait perdu deux fonctions.
+                   Ils descendent donc ici, au-dessus des deux axes qu'ils
+                   gouvernent — même rangée d'outils que les six boutons. -->
+              <div class="toggle-row pad-tools">
+                <span class="assign-row-label">PAD</span>
+                <button
+                  class="mode-toggle lock-toggle"
+                  class:on={assignments.padLocked}
+                  onclick={togglePadLock}
+                  title={assignments.padLocked ? 'Déverrouiller le pad (🔀 pourra le rebrasser)' : 'Verrouiller le pad (🔀 le laissera tel quel)'}
+                >
+                  {assignments.padLocked ? '🔒' : '🔓'}
+                </button>
+                <button
+                  class="mode-toggle random-toggle"
+                  onclick={randomizePad}
+                  title="Tirer un nouveau réglage au hasard pour X et Y"
+                >
+                  🎲
+                </button>
+              </div>
               <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisX' })}>
                 <span class="assign-row-label">PAD — AXE X (↔)</span>
                 <span class="assign-row-val">{axesFor(assignments.axisX).map((a) => a.label).join(' + ')}</span>
@@ -2223,47 +2165,16 @@
     grid-auto-rows: 1fr;
     gap: 5px;
   }
-  /* Conteneur d'un bouton de la grille — remplace .abtn comme item de
-     grille pour porter .corner-icons en absolu par-dessus, sans imbriquer
-     un bouton dans un autre (voir le commentaire au-dessus du template). */
+  /* Conteneur d'un bouton de la grille. Il portait les icônes de coin en
+     absolu par-dessus le bouton ; elles sont parties (voir le commentaire au-
+     dessus du template), mais il reste : c'est lui l'item de grille, et le
+     bouton s'étire dedans. */
   .abtn-wrap {
     position: relative;
   }
   .abtn-wrap .abtn {
     width: 100%;
     height: 100%;
-  }
-  .corner-icons {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    z-index: 2;
-    display: flex;
-    gap: 3px;
-  }
-  .corner-icon {
-    /* Agrandi (retour de Yann, 2026-08-14 : « les petits boutons sont un peu
-       trop petit ») — 15px était trop fin pour un tap fiable au pouce ;
-       22px reste hors de la zone d'appui naturelle du bouton (diagnostic
-       ergonomie, PLAN.md §7) tout en étant un vrai cible tactile. */
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border-radius: 4px;
-    border: 1px solid var(--amp-line);
-    background: rgba(10, 10, 24, 0.6);
-    color: var(--amp-lcd-dim);
-    font-size: 12px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: none;
-  }
-  .corner-icon.locked {
-    color: var(--amp-amber);
-    border-color: var(--amp-amber);
   }
   .abtn {
     position: relative;
@@ -2732,17 +2643,47 @@
     padding: 0 4px 6px;
     margin: 0;
   }
-  /* Chantier tactile (cf. styles/global.css). En paysage la largeur est le
-     seul luxe du Mode Live : on écarte horizontalement, ce qui débloque les
-     cibles collées à leur voisine. La hauteur, elle, ne se prend nulle part —
-     les 22px de la barre supérieure et de la barre de séquence sont ce qui
-     reste après les pads, et les pads SONT l'instrument. Reste documenté. */
+  /* Chantier tactile. En paysage la largeur est le luxe du Mode Live : on
+     écarte horizontalement, ce qui débloque les cibles collées à leur voisine.
+
+     La hauteur, on la prend aussi — c'était l'erreur de la passe précédente,
+     qui avait conclu trop vite que « les pads SONT l'instrument, donc on ne
+     leur enlève rien ». Mesuré : les deux barres coûtent 44px sur 390, les
+     pads passent de 94 à 78px de haut. Un pad de 78px reste presque deux fois
+     la cible minimale ; **PLAY à 34px, lui, ne l'atteignait pas**. Le bouton
+     le plus important de l'écran ne peut pas être celui qu'on rate.
+
+     Les six pads et le pad XY ne sont pas touchés : ils étaient déjà bien
+     au-dessus de 44px, ce sont les barres qui montent. */
   @media (pointer: coarse) {
     .topbar {
       gap: 14px;
     }
     .seq-bar {
       gap: 12px;
+      height: 44px;
+    }
+    .amp-btn {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 4px 10px;
+    }
+    .win-dots {
+      min-height: 44px;
+    }
+    .tilt-btn {
+      min-height: 44px;
+    }
+    /* 26px de large : les deux flèches de séquence encadrent un libellé qui
+       prend tout le reste, elles peuvent s'élargir sans rien coûter. */
+    .seq-nav {
+      width: 44px;
+    }
+    /* Le curseur de volume est un `<div>` en `overflow: hidden` : il recadre
+       le pseudo-élément de `.tap44`, comme les éléments remplacés. C'est donc
+       sa propre boîte qui monte. */
+    .vol-slider {
+      height: 44px;
     }
   }
 </style>
