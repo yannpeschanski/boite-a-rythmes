@@ -16,8 +16,6 @@
  * l'afficheur à du vide permanent, ce qui donne l'impression que l'analyseur
  * est cassé. C'est exactement ce que faisait la première version.
  */
-/* Première bande utile et dernière : au-delà de 30 % des bins (≈7 kHz à
- * 48 kHz), une boîte à rythmes ne produit quasiment rien de soutenu. */
 const PREMIER_BIN = 2;
 const PART_UTILE = 0.3;
 

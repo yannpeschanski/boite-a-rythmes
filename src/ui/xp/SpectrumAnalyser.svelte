@@ -30,10 +30,10 @@
     getSpectrum: (out: Uint8Array<ArrayBuffer>) => boolean;
     size?: number;
     /* Largeur visée d'une barre, en pixels — pas leur NOMBRE. L'analyseur vit
-       maintenant dans une boîte élastique : à 1280 elle fait 520px, sur un
-       téléphone une soixantaine. Un nombre fixe donnerait des barres de 26px
-       d'un côté et de 2px de l'autre. En fixant la largeur et en déduisant le
-       nombre, le dessin garde la même densité partout. */
+       dans une boîte élastique : elle va d'une soixantaine de pixels sur un
+       téléphone à 380 sur un écran large. Un nombre fixe donnerait des barres
+       de 19px d'un côté et de 3px de l'autre. En fixant la largeur et en
+       déduisant le nombre, le dessin garde la même densité partout. */
     largeurBarre?: number;
     height?: number;
   } = $props();
