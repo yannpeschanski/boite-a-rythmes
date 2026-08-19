@@ -16,9 +16,23 @@
  * l'afficheur à du vide permanent, ce qui donne l'impression que l'analyseur
  * est cassé. C'est exactement ce que faisait la première version.
  */
+const PREMIER_BIN = 2;
+const PART_UTILE = 0.3;
+
+/* Nombre maximal de barres qui ait un sens pour un spectre donné.
+ *
+ * Ce plafond n'est pas cosmétique : au-delà, plusieurs barres voisines lisent
+ * LE MÊME bin, et l'afficheur s'étire au lieu de se remplir. C'est ce qui
+ * donnait un analyseur à moitié vide à 1280px — 104 barres pour 74 bins
+ * utiles, donc trente barres qui répétaient la dernière valeur, silencieuse.
+ */
+export function barresMax(bins: number): number {
+  return Math.max(8, Math.floor(bins * PART_UTILE) - PREMIER_BIN);
+}
+
 function bande(i: number, n: number, bins: number): [number, number] {
-  const min = 2; // on saute la composante continue et le premier bin
-  const max = Math.max(min + 1, Math.floor(bins * 0.3));
+  const min = PREMIER_BIN;
+  const max = Math.max(min + 1, Math.floor(bins * PART_UTILE));
   const lo = Math.round(min * Math.pow(max / min, i / n));
   const hi = Math.round(min * Math.pow(max / min, (i + 1) / n));
   return [lo, Math.max(lo + 1, hi)];
