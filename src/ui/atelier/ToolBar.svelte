@@ -199,7 +199,7 @@
       </div>
     {/if}
   </div>
-  <div class="menu">
+  <div class="menu align-right">
     <button
       class="menu-btn tap44"
       class:on={openMenu === 'help'}
@@ -211,21 +211,24 @@
     {#if openMenu === 'help'}
       <div class="dropdown">
         <button onclick={() => choose(reportFeedback)}>✉️ Signaler un bug / une idée</button>
+        <!-- Le marqueur d'accès total vivait dans la barre elle-même, sur une
+             ligne à lui. Il en sort : c'était du chrome PERMANENT pour une
+             information qu'on consulte une fois, quand le doute survient. Le
+             raisonnement qui le mettait dans l'Atelier plutôt que sur l'accueil
+             tient toujours — c'est ici qu'on se demande si ce qu'on voit est
+             bien ce que voient les autres — mais un menu est le bon domicile
+             d'une information qu'on va CHERCHER. -->
+        {#if unlocks.totalAccess}
+          <div class="sep">Session</div>
+          <span class="info" title={unlocks.totalAccessHint}
+            >🔓 Accès total{unlocks.totalAccess === 'master' ? ' (master)' : ''}</span
+          >
+        {/if}
       </div>
     {/if}
   </div>
 
   <div class="spacer"></div>
-  <!-- Marqueur d'accès total. N'existe QUE pendant un contournement : zéro
-       pixel pour un visiteur normal, donc rien à échanger au titre de la
-       règle n°1 du §7.5. Il est ici parce que l'accueil n'est pas l'endroit
-       où le doute survient — on est dans l'Atelier quand on se demande si ce
-       qu'on voit est bien ce que voient les autres. -->
-  {#if unlocks.totalAccess}
-    <span class="boss-flag" title={unlocks.totalAccessHint}
-      >🔓 accès total{unlocks.totalAccess === 'master' ? ' (master)' : ''}</span
-    >
-  {/if}
   <!-- Ne restent en accès direct que Annuler/Rétablir (audit A6/B7).
        « 🔗 Partager » est parti : il existait à l'identique dans le menu
        Fichier, et partager un rythme n'est pas un geste qu'on répète — un
@@ -256,7 +259,12 @@
     padding: 2px 4px;
     margin-bottom: 8px;
     border-radius: 3px;
-    flex-wrap: wrap;
+    /* UNE ligne, toujours. `wrap` laissait la barre passer à deux rangées dès
+       que la place manquait — une rangée entière de chrome permanent en haut
+       de chaque écran, pour cinq libellés courts et deux flèches. C'est le
+       remplissage horizontal qui absorbe l'étroitesse (requête média plus
+       bas), plus un retour à la ligne. */
+    flex-wrap: nowrap;
   }
   .menu {
     position: relative;
@@ -279,6 +287,14 @@
   .menu-btn:hover {
     background: var(--xp-select-blue);
     color: var(--xp-title-text);
+  }
+  /* Le dernier menu s'ancre à DROITE : posée à gauche de son libellé, sa liste
+     de 190px partait au-delà du bord de l'écran sur téléphone et se faisait
+     couper. Le défaut existait déjà ; il est devenu visible en ajoutant une
+     entrée à ce menu-là. */
+  .align-right .dropdown {
+    left: auto;
+    right: 0;
   }
   .dropdown {
     position: absolute;
@@ -320,6 +336,17 @@
     min-width: 210px;
   }
   /* Reprend le rôle des <optgroup> du sélecteur remplacé. */
+  /* Une ligne d'INFORMATION dans un menu : pas un bouton, donc ni survol ni
+     curseur de clic. Alignée sur les entrées voisines pour ne pas casser la
+     colonne, mais en retrait — on la lit, on ne la choisit pas. */
+  .info {
+    display: block;
+    padding: 7px 10px;
+    font-size: var(--xp-size-small);
+    color: var(--xp-muted);
+    cursor: help;
+    white-space: nowrap;
+  }
   .sep {
     font-size: var(--xp-size-small);
     font-weight: 700;
@@ -353,53 +380,69 @@
     flex-wrap: nowrap;
     gap: 2px;
   }
-  /* Lisible sans être criard : c'est un état à connaître, pas une alerte. */
-  .boss-flag {
-    align-self: center;
-    font-size: var(--xp-size-small);
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    padding: 2px 6px;
-    margin-right: 4px;
-    border: 1px dashed var(--xp-line);
-    border-radius: 3px;
-    color: var(--xp-muted);
-    white-space: nowrap;
-    cursor: help;
-  }
-  /* Sur téléphone, les cinq menus + les deux outils ne tiennent sur une seule
+    /* Sur téléphone, les cinq menus + les deux outils ne tiennent sur une seule
      ligne qu'en resserrant les libellés — c'est ce qui supprime la deuxième
      rangée (~36px de chrome permanent). La cible tactile ne bouge pas : seul
      le remplissage HORIZONTAL est réduit, la hauteur reste à 28px. */
+  /* Sur téléphone, les cinq menus et les deux flèches doivent tenir sur UNE
+     ligne — c'est le seul endroit où on peut prendre de la place, puisque les
+     libellés eux-mêmes sont ceux de la maquette et que le corps de 9px fait
+     partie de la grammaire. On resserre donc le remplissage horizontal et on
+     supprime l'écart : les libellés en capitales espacées restent séparables à
+     l'œil sans blanc entre eux, c'est justement ce que l'interlettrage fait. */
   @media (max-width: 460px) {
+    .menubar {
+      gap: 0;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
     .menu-btn {
-      padding-left: 6px;
-      padding-right: 6px;
+      padding-left: 5px;
+      padding-right: 5px;
     }
     .tool {
-      padding-left: 7px;
-      padding-right: 7px;
+      padding-left: 4px;
+      padding-right: 4px;
+      min-width: 0;
+    }
+  }
+  /* Le dernier cran, pour les écrans de 320px (iPhone SE de première
+     génération et compagnie) : sans lui la ligne déborde de 19px, et comme la
+     barre ne se replie plus, déborder veut dire pousser la page entière.
+     Trois pixels de remplissage suffisent à la faire rentrer — au-delà, il
+     faudrait toucher aux libellés ou au corps, c'est-à-dire à la maquette. */
+  @media (max-width: 360px) {
+    .menu-btn {
+      padding-left: 3px;
+      padding-right: 3px;
     }
   }
   /* Cible tactile (audit A3) : 19px de haut avant. ↶ et ↷ faisaient 27×19
      alors qu'ils sont utilisés en rafale — `min-width` leur donne aussi une
      largeur décente. */
+  /* Annuler/Rétablir parlaient une troisième langue dans cette barre : les
+     menus sont du texte plat, le marqueur d'accès était un cadre pointillé, et
+     ces deux-là des poussoirs biseautés avec leur dégradé. Une barre de menus
+     n'a qu'un seul registre — du libellé posé sur la face du chrome, qui
+     s'allume au survol. Ils le rejoignent : même famille, même corps, même
+     surlignage bleu. Le biseau reste réservé à ce qui est VRAIMENT un bouton
+     ailleurs sur l'écran ; ici il faisait du bruit. */
   .tool {
     font-family: inherit;
-    font-size: 9px;
-    padding: 6px 10px;
-    min-height: 28px;
-    min-width: 32px;
+    font-size: var(--xp-size-menu);
+    letter-spacing: var(--xp-ls-menu);
+    padding: 9px 10px;
+    min-width: 30px;
     line-height: 1;
-    border: 1px solid var(--xp-line);
-    border-radius: 3px;
-    background: var(--xp-btn-face);
+    border: none;
+    background: none;
     color: var(--xp-text);
-    box-shadow: var(--xp-bevel-out);
     cursor: pointer;
   }
-  .tool:active {
-    box-shadow: var(--xp-bevel-in);
+  .tool:hover:not(:disabled),
+  .tool:active:not(:disabled) {
+    background: var(--xp-select-blue);
+    color: var(--xp-title-text);
   }
   .tool:disabled {
     color: var(--xp-muted);
@@ -421,14 +464,17 @@
      dessiné, et sur un téléphone il ne coûte rien puisque la page défile. */
   @media (pointer: coarse) {
     .menubar {
-      /* Deux valeurs : à 390px la barre passe à deux rangées, et c'est
-         l'écart VERTICAL qui empêche « Aide » de manger la cible de ↶. */
-      gap: 18px 8px;
       margin-bottom: 14px;
-      padding: 2px 10px;
     }
+    /* L'écart ne subsiste QU'ICI. Entre deux libellés de menu, une frappe qui
+       dérape ouvre le mauvais menu : on le referme, il ne s'est rien passé.
+       Entre Annuler et Rétablir, elle défait ce qu'on venait de refaire — ce
+       sont les deux seules commandes de la barre dont l'erreur coûte quelque
+       chose, et les deux seules qui gardent donc du blanc autour d'elles.
+       L'écart de RANGÉE a disparu avec les rangées : la barre ne se replie
+       plus. */
     .tools {
-      gap: 14px;
+      gap: 8px;
     }
   }
 </style>
