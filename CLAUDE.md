@@ -1,7 +1,13 @@
 # Boîte à rythmes — contexte du projet
 
-Séquenceur / boîte à rythmes web, au design rétro Windows XP. Réécriture d'un
+Séquenceur / boîte à rythmes web, habillé en skin Winamp 2.x. Réécriture d'un
 fichier HTML unique de 9 289 lignes vers Svelte 5 + TypeScript + Vite.
+
+⚠️ Les dossiers et les tokens s'appellent encore `xp` (`src/ui/xp/`,
+`--xp-*`) : **les noms ont été conservés, les valeurs remplacées.** Renommer
+n'aurait touché que des étiquettes, au prix d'un diff illisible sur toute
+l'appli. Ne pas en déduire que le design est resté XP — lire la règle
+ci-dessous.
 
 ## Commandes
 
@@ -39,8 +45,17 @@ règles qui coûtent cher si on les oublie : ces enveloppes **débordent et se m
 dessus** (d'où l'écartement du rythme vertical dans les mêmes blocs `coarse`), et un
 bloc `@media` posé au milieu d'un `<style>` Svelte est **écrasé par les règles écrites
 plus bas** — les mettre en fin de `<style>`. `getBoundingClientRect()` ne voit pas le
-pseudo-élément : mesurer avec `elementFromPoint`. Trois exceptions revendiquées
-(largeur des cases, libellés d'aide, Mode Live) sont documentées dans PLAN.md, étape 6.
+pseudo-élément : mesurer avec `elementFromPoint`, après un `scrollIntoView` —
+sinon tout ce qui est sous la ligne de flottaison renvoie `null`. Trois exceptions
+revendiquées (largeur des cases, libellés d'aide, Mode Live) sont documentées dans
+PLAN.md, étape 6.
+
+`<select>` et `<input type="text">` sont des **éléments remplacés** : Chromium
+n'y rend aucun `::after`, l'astuce ne marche pas. Eux passent par
+`min-height: 44px` — ils n'ont ni biseau ni petites capitales à préserver. Et
+`color-scheme: dark` sur `body` aligne tout ce que le navigateur dessine à notre
+place (cases à cocher, listes déroulantes, ascenseurs) : sans ce mot, les seules
+zones claires de l'écran étaient des widgets natifs au milieu du verre noir.
 
 ⚠️ **Les maquettes de référence sont dans `maquettes/atelier/`** — `build_modes.py`
 produit les six écrans (accueil, Rythme, Synthé, Production, Mode jeu, Mode Live
@@ -80,8 +95,22 @@ les fichiers de sauvegarde de la version d'origine (v1 et v2) — ne pas casser
 src/model/    état v2 typé, sérialisation, données (34 presets, 34 niveaux, gammes, voix)
 src/engine/   moteur audio TypeScript pur — aucune dépendance UI
 src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partage)
-src/ui/       design system XP + vues Atelier et Mode jeu
+src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
 ```
+
+**Tout état réactif n'est pas de l'état de morceau.** Deux modules d'interface
+vivent délibérément **hors** du format v2 : `ui/xp/paramHints.svelte.ts` et
+`ui/atelier/lastTouched.svelte.ts` (la dernière ligne manipulée, qui alimente le
+bandeau LCD du séquenceur). Ils ne se sérialisent pas, ne passent pas dans
+l'historique d'annulation, et le moteur audio ne les lit jamais. C'est le bon
+domicile pour ce genre d'état — ne pas les faire remonter dans `model/types.ts`.
+
+**L'analyseur de spectre** est un `AnalyserNode` maître branché en tap sur
+`finalGain` dans `buildGraph` — donc sur ce qu'on entend, limiteur compris. Le
+moteur l'expose par `getSpectrum(out)`, qui **remplit un tableau fourni par
+l'appelant** plutôt que d'en allouer un : le visualiseur tourne à 60 Hz. La
+lecture des bandes est partagée par les deux visualiseurs dans
+`ui/xp/spectrumBands.ts` — une seule définition, pas deux copies.
 
 Trois unifications structurantes par rapport à l'original, à préserver : **un seul**
 builder de graphe audio (`buildGraph(ctx, state)`, direct et hors ligne), **un seul**
@@ -108,11 +137,23 @@ qui en résulte est attendu, pas une erreur.
 Yann) :** ouvrir la PR → `subscribe_pr_activity` → attendre la CI (poll via
 les tools GitHub, jamais de `sleep`) → merger en squash si vert → `unsubscribe_pr_activity`.
 
+⚠️ **Interroger la CI passe par les outils GitHub MCP, JAMAIS par `curl`.**
+L'API GitHub non authentifiée est bloquée dans cette session : elle répond un
+JSON d'erreur sans la clé attendue, donc une boucle `until [ -n "$(curl … )" ]`
+**ne se termine jamais**. Deux d'entre elles ont tourné 45 minutes à vide le
+2026-08-19 avant que Yann ne le remarque. Penser aussi à arrêter les tâches de
+fond dès que la PR est mergée.
+
 **Avant chaque commit :** `npm run check` (0 erreur), `npm test`, `npm run build`
 + `npm run build:singlefile`. Pour un changement d'UI : lancer le serveur de dev
 et vérifier visuellement au moins une fois avec Playwright (headless, Chromium à
-`/opt/pw-browsers/chromium`, driver global à `/opt/node22/lib/node_modules/playwright`)
-avant de considérer le changement terminé.
+`/opt/pw-browsers/chromium`, driver global importé en CommonJS depuis
+`/opt/node22/lib/node_modules/playwright/index.js`) avant de considérer le
+changement terminé. **Vérifier visuellement ne suffit pas pour une mise en page :
+mesurer.** Les scripts de mesure de cette session (débordement de page, zones
+tactiles réelles, contraste) ont trouvé des défauts invisibles à l'œil — une
+barre de 78px au lieu de 32, un analyseur qui dessinait 104 barres pour 74
+bandes utiles.
 
 **Toujours mettre à jour `PLAN.md`** avec un ✅ détaillé (fichiers touchés,
 rationale, écarts de portée assumés) à chaque feature livrée — c'est la mémoire

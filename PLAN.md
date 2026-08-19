@@ -14,108 +14,139 @@
 > [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16).
 >
 
-## 🧭 Brief de reprise — au 2026-08-17
+## 🧭 Brief de reprise — au 2026-08-19
 
 **À lire en premier, en entier. Deux minutes.** Le reste de ce document fait
-3 400 lignes et quatorze sections datées : n'y descends que pour le détail
-d'un point précis, en suivant les liens ci-dessous.
+4 600 lignes et une vingtaine de sections datées : n'y descends que pour le
+détail d'un point précis, en suivant les liens ci-dessous.
 
 ### Où en est le projet
 
 Site en ligne : <https://boite-a-rythmes.vercel.app> · branche de travail
-`claude/design-audit-complet-1xwabg` · tout est mergé sur `main`, arbre propre.
+`claude/audit-design-daw-9ekzm4` · tout est mergé sur `main`, arbre propre.
 `npm run check` 0 erreur · **33 tests** · les deux builds passent.
 
 L'appli est **testée uniquement sur téléphone** (arbitrage D4 de Yann) : le
 desktop est en friche et assumé comme tel. Toute mesure d'interface se fait à
-**390×844**, et se vérifie de 320 à 768.
+**390×844**, et se vérifie de 320 à 1280.
 
-### Ce qui a été livré à la dernière session (14 PR, #61 → #74)
+### La grande affaire de la dernière session : la direction visuelle est tranchée
 
-- **Verrou dur des modules** par la progression du Mode jeu (Atelier niv. 2,
-  Synthé 13, Production 27, Live 34), avec l'accès total **`#boss`** /
-  `#boss=off`. Le pseudo « master » marche toujours, mais n'est plus mémorisé.
-- **Pad d'écriture de notes** dans l'Atelier (🎹 sur Basse et Mélodie) : sept
-  degrés nommés Do-Si + une touche silence, écriture pas-à-pas à l'arrêt,
-  enregistrement quantifié en lecture.
-- **Onglet Synthé refondu** : 66 % → **38 %** de chrome avant la première
-  case, pastilles sur une ligne, tempo retiré de cet onglet, harmonie et
-  remplissage descendus dans un cadre, lignes sans boutons d'octave ni
-  pagination (grille qui défile).
-- **Audio** : densité des mélodies des presets ramenée sous celle de la basse,
-  fill de clap, tempo réglable à l'unité, macros de filtre Brillance/Mouvement.
+Le brief précédent listait « A, B ou C » comme la décision n°3 en attente.
+**Elle est prise et livrée.** Yann a demandé un audit du design XP, a vu
+29 directions maquettées, a réduit à cinq, puis à deux finalistes (cassette et
+Winamp 2.x), et a tranché : **Winamp 2.x pour tous les modes**.
+
+L'argument n'est pas esthétique. L'appli parlait **trois langues visuelles** —
+Atelier en Luna, Mode jeu en thème `noir`, Mode Live avec ses tokens `--amp-*`.
+Elle n'en parle plus qu'une. `CLAUDE.md` a été réécrit en conséquence : la règle
+qui interdisait de remettre XP en cause énonce désormais l'identité Winamp, et
+c'est elle qui fait foi.
+
+Douze étapes, six PR (#76 → #81), toutes détaillées en fin de document :
+
+| | |
+|---|---|
+| 1-3 | fonte à chasse fixe auto-hébergée, tokens Winamp, composants de base |
+| 4-5 | couleurs en dur 182 → 113, fusion des palettes `--amp-*` et `noir` |
+| 6 | **le tactile** — 44px de zone, 0px de dessin (`.tap44` / `.tap44-y`) |
+| 7 | la barre de titre perd le triplet `_ □ ×` et le gag d'extinction |
+| 8 | la typographie — chasse fixe partout, 8,5-9px en capitales espacées |
+| 9 | la structure — afficheur BPM, diodes de ligne, bandeau LCD d'état |
+| 10 | la barre de menus — une seule langue, une seule ligne |
+| 11 | l'analyseur de spectre, sur un vrai `AnalyserNode` maître |
+| 12 | la barre de transport — répartition et dimensionnement des espaces |
+
+Les 29 directions maquettées vivent dans `maquettes/` ; **`maquettes/atelier/`
+est la référence** à consulter avant de dessiner un écran neuf.
 
 ### Ce qui attend une décision de Yann (ne pas coder sans)
 
 1. **La grille de déverrouillage contrôle par contrôle** — le verrou actuel ne
-   gère que les quatre modules. La proposition (rafale au niv. 11, swing au
-   14, ghost au 20, fill au 21, décalage au 23) est écrite et attend d'être
-   validée ou corrigée. Voir « Arbitrages (suite) et 3e lot ».
-2. **Le 2ᵉ type d'exercice du mode jeu** — l'accord de principe est donné
-   (D2), le contenu ne l'est pas. Les 34 niveaux n'ont qu'un seul verbe :
-   reproduire.
-3. **La direction visuelle : A, B ou C.** L'audit design × DAW est fait
-   (2026-08-17, en fin de document). Il mesure que le look XP coûte 3-10 % de
-   la page quand les pastilles répétées en coûtent 31-34 %, et il constate que
-   l'appli parle déjà **trois** langues visuelles — dont le Mode Live, qui est
-   la direction alternative déjà livrée. Recommandation : **B** (cadre XP,
-   plan de travail sombre à la Mode Live). ⚠️ B ou C impose de réécrire
-   `CLAUDE.md`, qui interdit aujourd'hui de remettre XP en cause.
+   gère que les quatre modules. La proposition (rafale au niv. 11, swing au 14,
+   ghost au 20, fill au 21, décalage au 23) est écrite et attend d'être validée
+   ou corrigée. Voir « Arbitrages (suite) et 3e lot ».
+2. **Le 2ᵉ type d'exercice du mode jeu** — l'accord de principe est donné (D2),
+   le contenu ne l'est pas. Les 34 niveaux n'ont qu'un seul verbe : reproduire.
+3. **`ui/xp/systemSounds.ts`** — les sons système XP ne collent plus à la
+   direction, mais `AtelierView` (son d'erreur) et `ToolBar` (réglage dans le
+   menu) s'en servent encore. Les remplacer par des sons d'ampli ou les
+   retirer : c'est une décision, pas un détail.
+4. **La densité face à la maquette** — la maquette tient cinq lignes de batterie
+   plus le bandeau d'état en 430px là où l'appli en prend 844. L'écart vient
+   entièrement des pastilles « Séquence / Timbre / Filtre & espace » sous chaque
+   ligne, que la maquette n'a pas. C'est de l'organisation de fonctionnalités,
+   donc l'arbitrage de Yann — et il a déjà dit une fois qu'il ne voulait pas
+   remettre l'organisation en cause.
 
 ### Ce qui est exécutable tout de suite (aucune décision requise)
 
 Par ordre de taille :
 
-- **Le 🎲 par ligne dans la sous-section Séquence** — demandé au 3ᵉ lot, jamais
-  fait ; il flotte encore à droite de l'en-tête de ligne. Petit.
-- **Le menu de voix synthé qui ment** : il continue d'afficher la voix choisie
-  alors qu'un curseur l'a modifiée. Contrôle qui écrit sans jamais lire.
+- **Le tactile en Mode Live** — 28 cibles sous 44px. Sept sont des commandes de
+  22px dans les barres du haut, et 21 sont les icônes de coin **posées sur les
+  pads** : les agrandir revient à voler la surface de l'instrument. Ce n'est
+  donc pas un réglage de taille mais un déplacement à concevoir. Seul écran où
+  le chantier tactile n'est pas clos.
 - **R1(b) — la mélodie par motif court répété.** Le vrai correctif musical :
-  aujourd'hui chaque pas reste un tirage indépendant, donc une texture, pas
-  une phrase. ⚠️ **Change les notes des 34 presets** — à faire quand Yann est
-  prêt à les réécouter.
+  aujourd'hui chaque pas reste un tirage indépendant, donc une texture, pas une
+  phrase. ⚠️ **Change les notes des 34 presets** — à faire quand Yann est prêt à
+  les réécouter.
+- **Le menu de voix synthé qui ment** (`SynthRowView`, `.voice-select`) : il n'a
+  aucune liaison de valeur, il retombe donc toujours sur « — Voix… » et n'a
+  jamais dit quelle voix est réellement en place. Contrôle qui écrit sans jamais
+  lire. Vérifié le 2026-08-19, toujours vrai.
+- **Le 🎲 par ligne** — demandé au 3ᵉ lot, jamais fait : il vit encore dans
+  `SynthModule` (« Harmonie & remplissage »), pas dans la sous-section
+  « Séquence » de chaque ligne. Vérifié le 2026-08-19, toujours vrai. Petit.
 - **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Peut
   dormir avec le chantier desktop.
 
 ### Les pièges qui ont coûté du temps
 
-- **Squash-merge** : après chaque merge, `git fetch origin main && git reset
-  --hard origin/main` sur la branche de travail, sinon la PR suivante part
-  avec un historique déjà mergé et la CI bloque (`mergeable_state: dirty`).
-  Un `push --force-with-lease` est attendu, pas une erreur.
-- **Ne jamais conclure sans mesurer.** Sur cette session : « 31 presets sur
-  34 » était faux (21), un test vert sur un verrou qu'on vient d'écrire ne
-  prouve rien tant qu'on ne l'a pas vu rougir, et trois constats d'audit
-  (B5, B9, la teinte de B8) étaient périmés ou mal diagnostiqués.
+- **Squash-merge** : après chaque merge, `git fetch origin main && git checkout
+  -B <branche> origin/main` avant de recommencer, sinon la PR suivante part avec
+  un historique déjà mergé. Un `push --force-with-lease` est attendu, pas une
+  erreur.
+- **Interroger la CI passe par les outils GitHub MCP, jamais par `curl`.**
+  L'API GitHub non authentifiée est bloquée dans cette session et répond un JSON
+  d'erreur : une boucle d'attente écrite en `curl` ne se termine **jamais**.
+  Deux d'entre elles ont tourné 45 minutes pour rien le 2026-08-19.
+- **Ne jamais conclure sans mesurer.** Sur les dernières sessions : « 31 presets
+  sur 34 » était faux (21) ; la barre de menus faisait 64px et non 28 ; les
+  pastilles coûtaient 11 % et non 34 % ; l'analyseur paraissait à moitié vide
+  parce qu'il dessinait 104 barres pour 74 bandes utiles, pas à cause du son.
+- **`@media` dans un `<style>` Svelte** : un bloc posé au milieu du fichier est
+  écrasé par les règles de même spécificité écrites **plus bas**. Les mettre en
+  fin de `<style>`. Trois réglages tactiles n'ont rien fait tant qu'ils étaient
+  au milieu.
+- **`getBoundingClientRect()` ne voit pas un pseudo-élément.** Une zone tactile
+  agrandie par `::after` se mesure avec `elementFromPoint`, en ayant fait
+  `scrollIntoView` d'abord — sinon tout ce qui est sous la ligne de flottaison
+  renvoie `null` et se mesure « sans marge ».
 - **Svelte 5** : `queueMicrotask` s'exécute avant que le DOM soit à jour —
   utiliser `tick()`. `structuredClone()` casse sur un proxy `$state` —
   `$state.snapshot()`. Un prop nommé `state` entre en conflit avec la rune.
 - **CSS** : une piste de grille et un élément flex ont un minimum `auto`, ils
   refusent de descendre sous leur contenu — `minmax(0, 1fr)` / `min-width: 0`.
-  Un `::after` en `position: absolute` se cale sur la zone **visible** d'un
-  conteneur qui défile, pas sur son contenu.
 - **Déterminisme** : ajouter un tirage `rng()` décale tout ce qui suit et rend
   les anciens exports non reproductibles. Le fill de clap contourne ça par un
   **second générateur** (`fillRng`) — le modèle à réutiliser pour toute
   fonctionnalité qui fait sonner des pas jusque-là silencieux.
-- **Le proxy réseau de l'environnement bloque `vercel.app`** : impossible de
-  vérifier le site déployé depuis la session. Le déploiement se constate par
-  GitHub Actions, pas par une visite.
+- **Le proxy réseau bloque `vercel.app`** : impossible de vérifier le site
+  déployé depuis la session. Le déploiement se constate par GitHub Actions.
 
 ### Où trouver le détail
 
+- [Décision Winamp 2.x](#-décision--winamp-2x-pour-tous-les-modes-2026-08-18)
+  — l'argument, la déclinaison sur les six écrans, et les douze étapes `✅` qui
+  suivent, chacune avec ses mesures et ses pièges.
 - [Plan d'action consolidé](#plan-daction-consolidé--2026-08-16) — la file de
   travail et les quatre décisions d'origine.
 - [Arbitrages (suite) et 3e lot](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16)
-  — la mécanique de déblocage proposée, l'analyse du choix des notes, le
-  recadrage de l'audit DAW.
+  — la mécanique de déblocage proposée, l'analyse du choix des notes.
 - [§7.5 dette d'interface](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2)
   — les trois règles d'écriture, dont « un ✅ n'est pas définitif ».
-- [Audit design × DAW comparables](#audit-design--daw-comparables--2026-08-17)
-  — les mesures, les cinq familles du marché, les trois directions. Rapport
-  visuel : <https://claude.ai/code/artifact/397c1f0b-c76e-4af5-bdc9-36831375ef3c>
-- Les sections `✅` de fin de document — une par livraison, avec ses mesures
-  et ses pièges.
 
 ---
 
@@ -4236,16 +4267,31 @@ cibles tactiles inchangées · captures à 390, 430 et 1280 en lecture.
 
 ### Chantiers ouverts
 
-- **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on
-  ne peut pas agrandir sans manger le pad. Le reste de l'appli est à 0 hors les
-  deux exceptions revendiquées ci-dessus.
+*Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
+qui l'a fermé.*
 
-- **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. À vérifier sur
-  un vrai appareil **avant** l'étape 4, pas après.
-- **Le visualiseur** — le panneau « Barres » du Live est vide ; Winamp avait son
-  analyseur de spectre. Occasion offerte par la direction, pas trou à combler.
+- **Le tactile en Mode Live** — 28 cibles sous 44px. Sept sont des commandes de
+  22px dans les barres du haut ; 21 sont les icônes de coin **posées sur les
+  pads**, et les agrandir revient à voler la surface de l'instrument. Ce n'est
+  donc pas un réglage de taille mais un déplacement à concevoir. Seul écran où
+  le chantier tactile n'est pas clos ; le reste de l'appli est à zéro, hors les
+  deux exceptions revendiquées à l'étape 6.
+- **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. Toujours pas
+  vérifié sur un vrai appareil ; toutes les mesures de cette session sont des
+  mesures Playwright à `devicePixelRatio` 1 à 3.
 - **Les sons système** — `ui/xp/systemSounds.ts` synthétise des sons XP. Ils ne
-  collent plus : à remplacer ou retirer. C'est une décision, pas un détail.
+  collent plus à la direction, mais `AtelierView` (son d'erreur) et `ToolBar`
+  (réglage dans le menu Affichage) s'en servent encore : les retirer sans les
+  remplacer enlève un retour à l'utilisateur. C'est une décision, pas un détail.
+- **La densité face à la maquette** — la maquette tient cinq lignes de batterie
+  plus le bandeau d'état en 430px là où l'appli en prend 844. L'écart vient
+  **entièrement** des pastilles « Séquence / Timbre / Filtre & espace » sous
+  chaque ligne, que la maquette n'a pas. C'est de l'organisation de
+  fonctionnalités, donc l'arbitrage de Yann.
+
+**Fermés depuis :** le visualiseur (étape 11 — le panneau « Barres » du Live
+affichait un faux spectre construit sur un classement supposé du registre de
+chaque son ; c'est une mesure maintenant, et l'analyseur sert aussi l'Atelier).
 
 ⚠️ **Bug corrigé dans les maquettes :** `.slider` n'était stylé que sous
 `.tempo`, donc **toutes les glissières des écrans Synthé, Production et Live
