@@ -26,6 +26,12 @@ export interface GraphNodes {
   // sans effet ailleurs) : monter le mix entier dans la réverbe partagée
   // sans reconstruire son impulsion (coûteux), contrairement à reverbSize.
   liveReverbSend: GainNode;
+  // Analyseur de spectre MAÎTRE, branché en tap sur `finalGain` — donc sur ce
+  // qu'on entend réellement, après le limiteur, l'écrêteur doux et le volume
+  // général. C'est ce qui le distingue de `lineAnalyser` : celui-ci mesure un
+  // niveau par ligne (fftSize 32, un chiffre par frame), celui-là rend un vrai
+  // spectre du mix. Tap : jamais connecté en aval, aucun effet sur le son.
+  spectrum: AnalyserNode;
   // Un AnalyserNode par ligne (batterie + synthé), pour le visualiseur du
   // Mode Live — tap seulement, jamais connecté en aval, donc sans effet sur
   // le son. Créés systématiquement (live/offline/jeu) comme le reste du
@@ -104,6 +110,19 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   finalLimiter.connect(softClip);
   softClip.connect(finalGain);
   finalGain.connect(ctx.destination);
+  // fftSize 512 → 256 bandes, ce qui laisse de quoi regrouper en 20-30 barres
+  // sans que le grave soit tassé sur une seule. Le lissage de 0,72 est ce qui
+  // donne la descente caractéristique d'un analyseur d'ampli : sans lui les
+  // barres clignotent à 60 Hz et ne se lisent plus.
+  const spectrum = ctx.createAnalyser();
+  spectrum.fftSize = 512;
+  spectrum.smoothingTimeConstant = 0.72;
+  // Fenêtre resserrée : de -84 à -12 dB, un motif de batterie ordinaire ne
+  // remplissait que le tiers bas de l'afficheur. C'est la plage utile d'un
+  // mix, pas la plage théorique du format.
+  spectrum.minDecibels = -72;
+  spectrum.maxDecibels = -18;
+  finalGain.connect(spectrum);
   // Envoi réverbe additionnel pour le Mode Live, gain nul par défaut — câblé
   // vers `reverb` plus bas, une fois le convolver créé.
   const liveReverbSend = ctx.createGain();
@@ -234,6 +253,7 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
     finalLimiter,
     finalGain,
     liveReverbSend,
+    spectrum,
     lineAnalyser,
     masterGain,
     sat,

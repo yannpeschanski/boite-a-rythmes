@@ -31,6 +31,7 @@
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
+  import { niveauBarre, CHUTE_CAPUCHON } from '../xp/spectrumBands';
   import {
     actionById,
     axisById,
@@ -753,7 +754,7 @@
 
   // ---- Séquenceur linéaire (vrai pattern) + visualiseur (vrais niveaux) ----
   // Mêmes valeurs que --cell-* de tokens.css (StepCircle.FALLBACK,
-  // TransportRings.DRUM_COLOR/SYNTH_COLOR) — un canvas ne peut pas lire une
+  // les couleurs de ligne du séquenceur) — un canvas ne peut pas lire une
   // variable CSS, donc dupliquées ici comme ailleurs dans le code.
   const DRUM_COLOR = {
     kick: '#d84315',
@@ -764,31 +765,14 @@
   } as const;
   const SYNTH_COLOR = { bass: '#6a7bff', pad: '#b06bff', melody: '#ff6bd6' } as const;
   const LINE_COLOR = { ...DRUM_COLOR, ...SYNTH_COLOR } as Record<DrumRowName | SynthRowName, string>;
-  const LINE_NAMES = [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES] as (DrumRowName | SynthRowName)[];
 
-  // Position 0..1 (grave → aigu) de chaque ligne dans le spectre décoratif de
-  // viz① — pas une vraie analyse fréquentielle (les AnalyserNode du graphe
-  // sont volontairement en fftSize minimal, voir graph.ts), un classement
-  // approximatif du registre de chaque élément pour donner un vrai look de
-  // spectre plutôt que 6 barres pleine hauteur redondantes avec le
-  // séquenceur linéaire juste au-dessus.
-  const LINE_EQ_POS: Record<DrumRowName | SynthRowName, number> = {
-    kick: 0.02,
-    bass: 0.16,
-    clap: 0.3, // bandpass ~1200Hz, un peu plus sourd que la snare — juste avant elle
-    snare: 0.42,
-    pad: 0.56,
-    hat: 0.72,
-    shaker: 0.86, // passe-haut large bande, plus aigu que le hat
-    melody: 0.97,
-  };
+  // 22 barres : assez pour lire un spectre, assez larges pour rester visibles
+  // dans un panneau de Mode Live en paysage.
   const EQ_BAR_COUNT = 22;
-  const EQ_SIGMA = 0.26; // étalement de la cloche : plusieurs barres voisines réagissent à un même élément
 
   let linCanvas: HTMLCanvasElement = $state()!;
   let vizCanvas: HTMLCanvasElement = $state()!;
   let raf = 0;
-  const levelSmooth: Partial<Record<DrumRowName | SynthRowName, number>> = {};
 
   function roundRectPath(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, rad: number) {
     const rr = Math.max(0, Math.min(rad, w / 2, h / 2));
@@ -860,52 +844,62 @@
     });
   }
 
-  // Égaliseur — PLAN.md §7 (« à refaire ») : la première version faisait une
-  // barre pleine hauteur par ligne, ce qui doublonnait le séquenceur linéaire
-  // juste au-dessus. Ici : EQ_BAR_COUNT barres façon spectre, CHACUNE
-  // composée de petits segments empilés représentant la contribution des 6
-  // éléments à cet instant — pas une barre = une ligne. Chaque ligne pèse
-  // sur toutes les barres via une cloche centrée sur sa position dans
-  // LINE_EQ_POS (grave → aigu) : les barres proches de sa position montrent
-  // un gros segment, les lointaines un segment minuscule voire nul — ça
-  // donne un vrai relief de spectre à partir des 6 niveaux réels (pas de
-  // fausse donnée), avec le même relâchement exponentiel qu'avant pour le
-  // rebond.
+  /* Analyseur de spectre — le visualiseur de Winamp, et cette fois pour de bon.
+   *
+   * Deux versions ont précédé celle-ci. La première faisait une barre pleine
+   * hauteur par ligne : elle doublonnait le séquenceur linéaire juste au-
+   * dessus. La deuxième répartissait les six niveaux de ligne sur 22 barres
+   * via une cloche centrée sur la position supposée de chaque élément dans le
+   * spectre — un joli relief, mais construit sur un CLASSEMENT arbitraire du
+   * registre de chaque son, pas sur une mesure. Un kick filtré en aigu s'y
+   * affichait toujours dans les graves.
+   *
+   * Ici : le vrai AnalyserNode maître du graphe (`engine.getSpectrum`), branché
+   * sur `finalGain`, donc sur ce qu'on entend — limiteur et volume compris.
+   * Répartition logarithmique des bandes parce que l'oreille entend en octaves,
+   * crête par bande et non moyenne parce qu'une moyenne écrase les
+   * transitoires — et un analyseur de percussions qui écrase les transitoires
+   * ne montre plus rien. Capuchon qui monte d'un coup et retombe lentement :
+   * c'est ce détail-là qui fait « analyseur » plutôt que « barres animées ».
+   */
+  // Ambre de la zone médiane du dégradé. En dur comme LINE_COLOR juste au-
+  // dessus, et pour la même raison : un canvas ne résout pas une variable CSS.
+  const EQ_AMBRE = '#ffd54a';
+  const EQ_BINS = new Uint8Array(new ArrayBuffer(512));
+  const EQ_PICS = new Float32Array(EQ_BAR_COUNT);
+
   function drawVizBars(ctx: CanvasRenderingContext2D) {
     const r = vizCanvas.getBoundingClientRect();
     const w = r.width,
       h = r.height;
     ctx.clearRect(0, 0, w, h);
-    const levels = engine.getLineLevels();
-    const boosted: Partial<Record<DrumRowName | SynthRowName, number>> = {};
-    LINE_NAMES.forEach((name) => {
-      const raw = levels[name] ?? 0;
-      const prev = levelSmooth[name] ?? 0;
-      const smoothed = Math.max(raw, prev * 0.88);
-      levelSmooth[name] = smoothed;
-      // Boost d'affichage : les crêtes réelles mesurées avant le bus/limiteur
-      // final tournent souvent bien en dessous de 1.0 (~0.05-0.3) — sans ce
-      // facteur, les barres resteraient quasi invisibles pour un pattern normal.
-      boosted[name] = Math.min(1, smoothed * 3.5);
-    });
+    const taille = engine.spectrumSize || 256;
+    const vivant = engine.getSpectrum(EQ_BINS);
+
+    // Dégradé peint sur la COLONNE et non sur la barre : il ne bouge jamais,
+    // seule la hauteur découpée dedans change. C'est ce qui fait qu'on lit un
+    // niveau et pas une teinte.
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, LINE_COLOR.kick);
+    grad.addColorStop(0.35, EQ_AMBRE);
+    grad.addColorStop(1, LINE_COLOR.hat);
+
     const barW = w / EQ_BAR_COUNT;
     const bw = Math.max(1, barW - 2);
-    const segGap = 1;
     for (let i = 0; i < EQ_BAR_COUNT; i++) {
-      const barPos = i / (EQ_BAR_COUNT - 1);
+      const v = vivant ? niveauBarre(EQ_BINS, i, EQ_BAR_COUNT, taille) : 0;
+      EQ_PICS[i] = v > EQ_PICS[i] ? v : Math.max(v, EQ_PICS[i] - CHUTE_CAPUCHON);
       const x = i * barW + 1;
-      let y = h;
-      const top = h * 0.05;
-      for (const name of LINE_NAMES) {
-        const d = barPos - LINE_EQ_POS[name];
-        const weight = Math.exp(-(d * d) / (2 * EQ_SIGMA * EQ_SIGMA));
-        const raw = (boosted[name] ?? 0) * weight * h * 0.95;
-        const segH = Math.max(0, Math.min(raw - segGap, y - top));
-        if (segH < 1) continue;
-        ctx.fillStyle = LINE_COLOR[name];
-        roundRectPath(ctx, x, y - segH, bw, segH, 1.5);
+      const hb = Math.round(v * (h - 3));
+      if (hb > 0) {
+        ctx.fillStyle = grad;
+        roundRectPath(ctx, x, h - hb, bw, hb, 1.5);
         ctx.fill();
-        y -= segH + segGap;
+      }
+      const hp = Math.round(EQ_PICS[i] * (h - 3));
+      if (hp > 1) {
+        ctx.fillStyle = '#c8c8d8';
+        ctx.fillRect(x, h - hp - 2, bw, 1);
       }
     }
   }
