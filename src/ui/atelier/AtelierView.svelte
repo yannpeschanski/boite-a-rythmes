@@ -9,6 +9,7 @@
   import DrumRowView from '../sequencer/DrumRowView.svelte';
   import StepCircle from '../sequencer/StepCircle.svelte';
   import TransportRings from '../sequencer/TransportRings.svelte';
+  import StatusLcd from '../sequencer/StatusLcd.svelte';
   import GeneralSequencer from '../sequencer/GeneralSequencer.svelte';
   import SynthModule from './SynthModule.svelte';
   import RhythmAnalyser from './RhythmAnalyser.svelte';
@@ -367,6 +368,11 @@
         >
       </div>
       <div class="spacer"></div>
+      <!-- L'afficheur de la maquette : le tempo se lit d'un coup d'œil pendant
+           qu'on joue, sans aller chercher la glissière sous le séquenceur.
+           C'est un AFFICHEUR, pas un réglage — la glissière reste la commande,
+           et il n'y a donc rien à désambiguïser entre les deux. -->
+      <span class="bpm" aria-hidden="true">{st.tempo}<small>BPM</small></span>
       <TransportRings state={st} {playhead} {synthPlayhead} />
     </div>
     <!-- « Le plus proche » a quitté ce bandeau pour l'analyseur de l'onglet
@@ -442,6 +448,7 @@
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
         <DrumRowView name="shaker" label="Shaker" playheadCol={playhead.shaker}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
+        <StatusLcd />
       {/if}
     </XpWindow>
   {:else if activeTab === 'effets'}
@@ -583,6 +590,23 @@
   }
   .spacer {
     flex: 1;
+  }
+  /* 22px : la seule grande typographie de l'Atelier, et c'est voulu — un ampli
+     a un afficheur, et c'est le nombre qu'on lit de loin. Vert LCD, l'unité en
+     retrait, alignés sur la ligne de base comme sur un vrai cadran. */
+  .bpm {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--xp-lcd);
+  }
+  .bpm small {
+    font-size: var(--xp-size-small);
+    font-weight: 400;
+    color: var(--xp-muted);
   }
   .hint {
     font-size: 9px;

@@ -113,6 +113,7 @@
   /* Le texte courant — libellés de curseurs, aides, sous-titres. La maquette
      le pose à 9-9,5px ; il n'est ni en capitales ni espacé, c'est du texte à
      lire et non une étiquette à reconnaître. */
+  --xp-size-lcd: 9px;
   --xp-size-body: 9.5px;
   --xp-size-small: 8.5px;
 
@@ -126,6 +127,9 @@
   --xp-lcd-bg: #050806;
   --xp-lcd: #2ee23c;
   --xp-lcd-dim: #0f5c17;
+  /* Diode éteinte. Gris ardoise et non noir : une diode coupée reste un
+     composant qu'on voit, pas un trou dans le panneau. */
+  --xp-led-off: #33333f;
 
   /* Tête de lecture. C'est de l'ÉTAT, donc elle reste vive — contrairement aux
      trois accents de module, qui sont du chrome et ont été désaturés. */

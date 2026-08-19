@@ -14,6 +14,7 @@
   import { translatePadArpToMelody } from '../../engine/generators';
   import XpSlider from '../xp/XpSlider.svelte';
   import NotePad from './NotePad.svelte';
+  import { lastTouched } from '../atelier/lastTouched.svelte';
 
   let {
     name,
@@ -72,6 +73,11 @@
   const row = $derived(pattern.state.synthRows[name]);
   const chords = $derived(chordsFor(pattern.state));
   const isPad = $derived(name === 'pad');
+  // Une ligne de synthé « sonne » si au moins un pas porte une note. Le
+  // silence s'écrit `null` (basse/mélodie) ou -1 (nappe, index d'accord).
+  const sonne = $derived(
+    row.pattern.some((v) => v !== null && v !== undefined && v !== -1),
+  );
   const sg = $derived(pattern.state.synthGlobal);
   const voicePresets = $derived(SYNTH_VOICE_PRESETS[name] ?? []);
 
@@ -117,6 +123,8 @@
   const beatLines = $derived(4 * row.cycleBars <= MAX_BEAT_LINES ? 4 * row.cycleBars : row.cycleBars);
 
   function cycleCell(col: number) {
+    // Voir DrumRowView : c'est ce qui alimente le bandeau LCD du bas.
+    lastTouched.synth(name);
     if (isPad) {
       // Nappe : -1 (silence) puis les accords disponibles, en boucle.
       const cur = row.pattern[col];
@@ -242,6 +250,22 @@
 
 <div class="synth-row">
   <div class="row-head">
+    <!-- Même diode que les lignes de batterie : allumée elle sonne, éteinte
+         elle est coupée, creuse elle est vide. -->
+    <button
+      class="mini led-btn tap44"
+      class:on={row.muted}
+      class:vide={!sonne}
+      style:--led-color="var(--cell-{name})"
+      aria-pressed={row.muted}
+      title={row.muted ? 'Réactiver la ligne' : 'Couper la ligne'}
+      onclick={() => {
+        lastTouched.synth(name);
+        row.muted = !row.muted;
+      }}
+    >
+      <i class="led"></i><span class="sr">{row.muted ? 'Coupé' : 'Actif'}</span>
+    </button>
     <!-- Portée du cycle accolée au libellé (correctif A5). Sur Rythme, une
          case est toujours une subdivision d'UNE mesure ; sur Synthé, elle
          peut valoir une mesure entière (la Nappe démarre à 4). Sans cette
@@ -255,9 +279,6 @@
           >&nbsp;· {row.cycleBars} mes.</span
         >{/if}</span
     >
-    <button class="mini tap44" class:on={row.muted} onclick={() => (row.muted = !row.muted)}>
-      {row.muted ? '🔇' : '🔊'}
-    </button>
     {#if !isPad}
       <button
         class="mini tap44"
@@ -794,5 +815,39 @@
     .chk {
       margin: 10px 0;
     }
+  }
+  /* La diode des lignes de synthé — même dessin que DrumRowView. Le bouton
+     garde son biseau de poussoir, c'est ce qu'il montre qui a changé. */
+  .led-btn {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    /* Même gabarit que la diode des lignes de batterie : sans l'émoji qui la
+       remplissait, la boîte se serait rétrécie sur les 7px de la diode — et
+       la cible avec elle. */
+    min-width: 32px;
+  }
+  .led {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--led-color);
+    box-shadow: 0 0 5px var(--led-color);
+  }
+  .led-btn.on .led {
+    background: var(--xp-led-off);
+    box-shadow: none;
+  }
+  .led-btn.vide:not(.on) .led {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--xp-led-off);
+  }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 </style>
