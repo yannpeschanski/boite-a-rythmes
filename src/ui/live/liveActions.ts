@@ -382,28 +382,24 @@ export type FaderOrientation = 'vertical' | 'horizontal';
 // au moins une entrée par slot/axe : jamais de tableau vide, sinon le
 // panneau de sélection perdrait toute trace de ce qui est assigné.
 export interface LiveAssignments {
+  /* Il n'y a plus de verrou, ni par bouton ni pour le pad — et plus de
+     brassage total non plus (arbitrage de Yann, 2026-08-19).
+     Le raisonnement, dans cet ordre : le dé PAR bouton rend le brassage total
+     inutile, or le verrou n'existait QUE pour protéger du brassage total ;
+     sans lui, il ne protège de rien. Restent des dés, un par chose
+     assignable — les six boutons, le pad, l'inclinaison.
+     Les assignations déjà enregistrées qui portent encore `slotLocked` et
+     `padLocked` se rechargent sans broncher : le validateur ne les réclame
+     plus, et les clés en trop sont simplement ignorées. */
   slots: LiveActionId[][]; // longueur SLOT_COUNT, chaque slot = 1+ actions
   slotModes: SlotMode[]; // longueur SLOT_COUNT — ignoré (mode 'actions') si le bouton n'a jamais été basculé en fader
   slotFaders: LiveAxisId[][]; // longueur SLOT_COUNT, 1+ axes — utilisé seulement si slotModes[i] === 'fader'
-  // Verrou par bouton (PLAN.md §7, retour de Yann : « verrouiller un bouton
-  // qu'on veut garder avant le brassage ») — un bouton verrouillé garde son
-  // assignation (slots[i] ET slotFaders[i], quel que soit le mode courant)
-  // quand 🔀 brasse tout le reste. N'affecte que les 6 boutons, pas le pad
-  // ni l'inclinaison (Yann : « un bouton », pas les axes).
-  slotLocked: boolean[]; // longueur SLOT_COUNT
   faderOrientation: FaderOrientation[]; // longueur SLOT_COUNT — utilisé seulement si slotModes[i] === 'fader'
   axisX: LiveAxisId[];
   axisY: LiveAxisId[];
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
   // tant que le bouton TILT n'est pas activé côté capteur.
   axisTilt: LiveAxisId[];
-  // Verrou du pad (retour de Yann, 2026-08-14 : « les mêmes options sur le
-  // pad » que les icônes de coin des boutons) — symétrique de slotLocked
-  // mais un seul booléen : le pad est UN contrôle (X et Y ensemble), pas 6
-  // comme les boutons. Protège axisX ET axisY du brassage 🔀, jamais
-  // l'inclinaison (même principe que slotLocked : un geste physique
-  // distinct, pas un axe).
-  padLocked: boolean;
   viz: LiveVizId;
 }
 
@@ -411,12 +407,10 @@ const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   slots: [['break'], ['fill'], ['mute-kick'], ['mute-snare'], ['mute-hat'], ['roll-hat-x2']],
   slotModes: ['actions', 'actions', 'actions', 'actions', 'actions', 'actions'],
   slotFaders: [['filter'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
-  slotLocked: [false, false, false, false, false, false],
   faderOrientation: ['vertical', 'vertical', 'vertical', 'vertical', 'vertical', 'vertical'],
   axisX: ['filter'],
   axisY: ['reverb'],
   axisTilt: ['filter'],
-  padLocked: false,
   viz: 'bars',
 };
 
@@ -444,16 +438,12 @@ function isValid(v: unknown): v is LiveAssignments {
     Array.isArray(a.slotFaders) &&
     a.slotFaders.length === SLOT_COUNT &&
     a.slotFaders.every((f) => isValidAxisList(f)) &&
-    Array.isArray(a.slotLocked) &&
-    a.slotLocked.length === SLOT_COUNT &&
-    a.slotLocked.every((l) => typeof l === 'boolean') &&
     Array.isArray(a.faderOrientation) &&
     a.faderOrientation.length === SLOT_COUNT &&
     a.faderOrientation.every((o) => FADER_ORIENTATIONS.includes(o as FaderOrientation)) &&
     isValidAxisList(a.axisX) &&
     isValidAxisList(a.axisY) &&
     isValidAxisList(a.axisTilt) &&
-    typeof a.padLocked === 'boolean' &&
     !!a.viz &&
     VIZ_IDS.has(a.viz)
   );

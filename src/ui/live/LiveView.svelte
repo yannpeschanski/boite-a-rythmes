@@ -288,40 +288,17 @@
   const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
   const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
 
-  // Bouton 🔀 (séparé, PLAN.md §7 — piste "brasser") : réassigne aléatoirement
-  // tout le catalogue d'un coup plutôt que de choisir soi-même via l'overlay
-  // ⚙ — un "surprends-moi" complémentaire du chaos ci-dessus, qui lui ne
-  // change QUE la valeur d'un paramètre sans toucher aux associations. Un
-  // seul élément par slot/axe (pas de combo aléatoire) : le multi-paramètre
-  // est un choix délibéré via le panneau de sélection, pas une surprise.
-  function shuffleAssignments() {
-    assignments = {
-      ...assignments,
-      // Un bouton en mode fader n'a pas d'actions à tirer au hasard (et
-      // vice-versa) — seul le tableau correspondant à son mode ACTUEL est
-      // rebrassé, l'autre reste tel quel (repris tel quel si on rebascule le
-      // mode plus tard, plutôt que perdu). Un bouton verrouillé (retour de
-      // Yann, PLAN.md §7 : « verrouiller un bouton qu'on veut garder avant
-      // le brassage ») garde ses DEUX tableaux tels quels, quel que soit son
-      // mode courant — seul 🔀 le respecte, le reste de l'UI l'ignore.
-      slots: assignments.slotModes.map((mode, i) =>
-        assignments.slotLocked[i] || mode === 'fader' ? assignments.slots[i] : [pickAction()],
-      ),
-      slotFaders: assignments.slotModes.map((mode, i) =>
-        assignments.slotLocked[i] || mode !== 'fader' ? assignments.slotFaders[i] : [pickAxis()],
-      ),
-      // Le pad (X/Y ensemble) respecte désormais son propre verrou, comme
-      // les boutons — l'inclinaison n'a pas d'icône de verrou dédiée (même
-      // principe que slotLocked : un geste physique séparé du pad).
-      axisX: assignments.padLocked ? assignments.axisX : [pickAxis()],
-      axisY: assignments.padLocked ? assignments.axisY : [pickAxis()],
-      axisTilt: [pickAxis()],
-    };
-    saveLiveAssignments(assignments);
-  }
+  /* Il n'y a plus de brassage total (🔀), ni de verrou — arbitrage de Yann,
+     2026-08-19, et la chaîne se tient : le dé PAR bouton rend le brassage
+     total inutile ; or le verrou n'existait QUE pour protéger du brassage ;
+     sans brassage il ne protège de rien. Ce qui reste est plus simple à
+     expliquer — un dé par chose assignable, et rien d'autre.
 
-  function togglePadLock() {
-    assignments = { ...assignments, padLocked: !assignments.padLocked };
+     L'inclinaison n'avait pas de dé : elle n'était rebrassée que par 🔀. Elle
+     en reçoit un (`randomizeTilt`), sinon elle serait devenue la seule
+     assignation qu'on ne peut plus tirer au hasard. */
+  function randomizeTilt() {
+    assignments = { ...assignments, axisTilt: [pickAxis()] };
     saveLiveAssignments(assignments);
   }
 
@@ -440,11 +417,6 @@
 
   function toggleFaderOrientation(i: number) {
     assignments.faderOrientation[i] = assignments.faderOrientation[i] === 'horizontal' ? 'vertical' : 'horizontal';
-    saveLiveAssignments(assignments);
-  }
-
-  function toggleSlotLock(i: number) {
-    assignments.slotLocked[i] = !assignments.slotLocked[i];
     saveLiveAssignments(assignments);
   }
 
@@ -1432,9 +1404,6 @@
         <button class="tilt-btn tap44" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
           <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
         </button>
-        <button class="amp-btn shuffle tap44" onclick={shuffleAssignments} title="Brasser — réassigne tout le catalogue au hasard">
-          🔀
-        </button>
         <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
       <!-- Remplace l'ex-seekbar décorative façon Winamp (retour de Yann,
@@ -1582,14 +1551,6 @@
                     <button class="mode-toggle" onclick={() => toggleSlotMode(i)} title="Basculer actions / fader">
                       {mode === 'fader' ? '≈ FADER' : '⏻ ACTIONS'}
                     </button>
-                    <button
-                      class="mode-toggle lock-toggle"
-                      class:on={assignments.slotLocked[i]}
-                      onclick={() => toggleSlotLock(i)}
-                      title={assignments.slotLocked[i] ? 'Déverrouiller (🔀 pourra le rebrasser)' : 'Verrouiller (🔀 le laissera tel quel)'}
-                    >
-                      {assignments.slotLocked[i] ? '🔒' : '🔓'}
-                    </button>
                     <button class="mode-toggle random-toggle" onclick={() => randomizeSlot(i)} title="Tirer un nouveau réglage au hasard pour ce bouton">
                       🎲
                     </button>
@@ -1618,18 +1579,10 @@
               {/each}
               <!-- Le verrou et le 🎲 du pad vivaient UNIQUEMENT dans ses icônes
                    de coin ; en les retirant on aurait perdu deux fonctions.
-                   Ils descendent donc ici, au-dessus des deux axes qu'ils
-                   gouvernent — même rangée d'outils que les six boutons. -->
+                   Il descend donc ici, au-dessus des deux axes qu'il gouverne
+                   — même rangée d'outils que les six boutons. -->
               <div class="toggle-row pad-tools">
                 <span class="assign-row-label">PAD</span>
-                <button
-                  class="mode-toggle lock-toggle"
-                  class:on={assignments.padLocked}
-                  onclick={togglePadLock}
-                  title={assignments.padLocked ? 'Déverrouiller le pad (🔀 pourra le rebrasser)' : 'Verrouiller le pad (🔀 le laissera tel quel)'}
-                >
-                  {assignments.padLocked ? '🔒' : '🔓'}
-                </button>
                 <button
                   class="mode-toggle random-toggle"
                   onclick={randomizePad}
@@ -1646,8 +1599,21 @@
                 <span class="assign-row-label">PAD — AXE Y (↕)</span>
                 <span class="assign-row-val">{axesFor(assignments.axisY).map((a) => a.label).join(' + ')}</span>
               </button>
-              <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisTilt' })}>
+              <!-- L'inclinaison n'était rebrassée que par 🔀. Il a disparu ;
+                   sans ce dé, elle serait la seule assignation qu'on ne peut
+                   plus tirer au hasard. -->
+              <div class="toggle-row pad-tools">
                 <span class="assign-row-label">INCLINAISON</span>
+                <button
+                  class="mode-toggle random-toggle"
+                  onclick={randomizeTilt}
+                  title="Tirer un nouveau réglage au hasard pour l'inclinaison"
+                >
+                  🎲
+                </button>
+              </div>
+              <button class="assign-row" onclick={() => (picker = { kind: 'axis', which: 'axisTilt' })}>
+                <span class="assign-row-label">INCLINAISON — RÉGLAGE</span>
                 <span class="assign-row-val">{axesFor(assignments.axisTilt).map((a) => a.label).join(' + ')}</span>
               </button>
               <button class="assign-row" onclick={() => (picker = { kind: 'viz' })}>
@@ -2108,10 +2074,6 @@
     opacity: 0.45;
     cursor: not-allowed;
   }
-  .amp-btn.shuffle {
-    width: 22px;
-    padding: 4px 0;
-  }
   .amp-btn.rec {
     display: flex;
     align-items: center;
@@ -2458,13 +2420,6 @@
   }
   .mode-toggle:active {
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
-  }
-  /* Verrou de bouton (PLAN.md §7) : même gabarit que le toggle actions/fader
-     voisin, distingué par la couleur ambre une fois verrouillé (même accent
-     que les emplacements de snapshot remplis, .snapshot-slot.filled). */
-  .lock-toggle.on {
-    color: var(--amp-amber);
-    border-color: var(--amp-amber);
   }
   /* Ouvre le panneau de sélection correspondant au mode (actions ou fader) —
      tap = ouvrir le panneau, pas un cycle sur place, catalogue trop large
