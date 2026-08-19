@@ -10,7 +10,7 @@
   import { pattern } from '../../stores/pattern.svelte';
   import type { SynthRowName, SynthNote } from '../../model/types';
   import { chordsFor, justesseForStep } from '../../engine/harmony';
-  import { SYNTH_VOICE_PRESETS } from '../../model/presets/voices';
+  import { SYNTH_VOICE_PRESETS, resolveVoicePreset, matchVoicePreset } from '../../model/presets/voices';
   import { translatePadArpToMelody } from '../../engine/generators';
   import XpSlider from '../xp/XpSlider.svelte';
   import NotePad from './NotePad.svelte';
@@ -217,10 +217,25 @@
     onChanged?.();
   }
 
+  /* Un preset de voix, c'est « la voix par défaut de la ligne, PLUS ce que le
+     preset précise » — la bibliothèque le dit noir sur blanc : « un champ non
+     précisé revient au défaut ». Ce n'est pas ce qui se passait : le patch
+     était fusionné sur la voix COURANTE, donc les champs du preset précédent
+     survivaient. Choisir « Pincée » (filterEnvAmount 1200) puis « 808
+     profond » (qui ne touche pas ce champ) laissait l'enveloppe de filtre de
+     Pincée sur un son censé être rond. `resolveVoicePreset` existait déjà et
+     fait exactement le bon calcul — il n'était appelé que par le moteur. */
   function applyVoicePreset(id: string) {
-    const p = voicePresets.find((v: { id: string }) => v.id === id);
-    if (p) row.voice = { ...row.voice, ...p.voice };
+    const resolu = resolveVoicePreset(name, id);
+    if (resolu) {
+      row.voice = { ...row.voice, ...resolu };
+      onChanged?.();
+    }
   }
+
+  /* Ce que le menu doit AFFICHER : le preset en place, ou rien quand les
+     curseurs ont écarté la voix de tous les presets. */
+  const voixCourante = $derived(matchVoicePreset(name, row.voice) ?? '');
 
   function resize(cols: number) {
     const n = Math.max(1, Math.round(cols));
@@ -291,9 +306,15 @@
     {/if}
     <select
       class="voice-select"
+      value={voixCourante}
+      title="Voix de la ligne"
       onchange={(e) => applyVoicePreset((e.currentTarget as HTMLSelectElement).value)}
     >
-      <option value="">— Voix…</option>
+      <!-- Entrée « modifiée » : sélectionnable par le code, pas par
+           l'utilisateur — on ne choisit pas « modifiée », on y arrive en
+           tournant un curseur. La désactiver la garde lisible dans la liste
+           déroulante tout en empêchant de la choisir. -->
+      <option value="" disabled>— Voix modifiée</option>
       {#each voicePresets as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
     </select>
   </div>

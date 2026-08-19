@@ -88,6 +88,126 @@ export function randomizePitchedLine(
   }
 }
 
+/* ── Mélodie par MOTIF, et non par tirage pas à pas (R1(b)) ───────────────
+ *
+ * Le diagnostic tenait en une mesure, faite avant d'écrire une ligne : sur les
+ * 34 presets, **aucune** mesure de mélodie n'était identique à une autre —
+ * 0 sur 94, silences exclus. Chaque pas était un tirage indépendant, donc la
+ * ligne produisait une texture qu'on ne peut pas fredonner. Une mélodie se
+ * reconnaît parce qu'elle REVIENT.
+ *
+ * On tire donc un motif d'UNE mesure, et on le répète sur le cycle.
+ *
+ * Le piège, et c'est lui qui distingue une vraie répétition d'un copier-coller :
+ * la nappe change d'accord d'une mesure à l'autre. Recopier des degrés fixes
+ * ferait sonner faux le motif dès le deuxième accord. Le motif ne mémorise donc
+ * pas des degrés, mais des **rôles** : « la n-ième note de l'accord en cours »
+ * ou « ce degré de gamme ». À la pose, un rôle d'accord se résout contre
+ * l'accord réellement en vigueur à cet endroit — le motif garde sa forme et
+ * suit l'harmonie, ce que fait n'importe quel thème transposé.
+ *
+ * La dernière mesure varie : sa seconde moitié est retirée du motif. Une phrase
+ * qui se répète à l'identique jusqu'au bout est une boucle, pas une phrase.
+ */
+type RoleMotif =
+  | { role: 'silence' }
+  | { role: 'accord'; rang: number }
+  | { role: 'gamme'; degre: number };
+
+function tirerMotif(
+  longueur: number,
+  densite: number,
+  chanceAccord: number,
+  rng: Rng,
+): RoleMotif[] {
+  const motif: RoleMotif[] = [];
+  for (let i = 0; i < longueur; i++) {
+    // Le PREMIER pas du motif porte toujours une note.
+    //
+    // Ce n'est pas une commodité, c'est ce qui rend le motif court viable. Un
+    // tirage par pas sur 8 ou 16 pas ne sort presque jamais entièrement vide ;
+    // sur un motif de 2 à 4 pas à densité 0,39, il sort vide une fois sur
+    // trois — et le filet ne pose alors qu'UNE note pour tout le morceau.
+    // Mesuré tel quel : `boombap` et `trapmodern` se chargeaient avec une
+    // seule note de mélodie sur quatre mesures. Ancrer la tête du motif
+    // supprime le cas par construction, et pose la phrase sur le temps fort,
+    // ce qu'une mélodie fait de toute façon la plupart du temps.
+    if (i === 0) {
+      motif.push({ role: 'accord', rang: Math.floor(rng() * 3) });
+      continue;
+    }
+    if (rng() > densite) {
+      motif.push({ role: 'silence' });
+    } else if (rng() < chanceAccord) {
+      // Le rang est tiré ici une fois pour toutes ; c'est l'accord qui
+      // changera sous lui. 3 rangs couvrent fondamentale/tierce/quinte, et le
+      // modulo à la pose absorbe les accords à plus ou moins de notes.
+      motif.push({ role: 'accord', rang: Math.floor(rng() * 3) });
+    } else {
+      motif.push({ role: 'gamme', degre: 1 + Math.floor(rng() * 7) });
+    }
+  }
+  return motif;
+}
+
+export function randomizeMelodyMotif(
+  state: PatternStateV2,
+  densite: number,
+  chanceAccord: number,
+  rng: Rng,
+): void {
+  const cfg = PITCHED_LINE_CONFIG.melody;
+  const row = state.synthRows.melody;
+  const chords = chordsFor(state);
+  const pas = row.pattern.length;
+  if (pas === 0) return;
+
+  // Longueur du motif : une mesure, mais jamais moins de 4 pas. Plusieurs
+  // presets n'ont que 2 pas par mesure (8 pas sur 4 mesures) — un motif de 2
+  // pas n'est pas une phrase, c'est un battement. On prend alors deux mesures,
+  // ce qui divise toujours le cycle et tuile donc proprement.
+  // Quand la ligne ne fait qu'UNE mesure il n'y aurait rien à répéter : on
+  // prend une demi-mesure, pour qu'il y ait au moins un retour.
+  const parMesure = Math.max(1, Math.round(pas / Math.max(1, row.cycleBars)));
+  const longueur =
+    row.cycleBars > 1
+      ? Math.min(pas, parMesure < 4 ? parMesure * 2 : parMesure)
+      : Math.max(2, Math.floor(pas / 2));
+  const motif = tirerMotif(longueur, densite, chanceAccord, rng);
+
+  // Variation de fin de phrase : la seconde moitié de la dernière mesure est
+  // retirée. Aucun tirage supplémentaire — on ne décale donc pas le flux du
+  // générateur pour une décision purement structurelle.
+  const debutDerniere = Math.max(0, pas - longueur);
+  const debutVariation = debutDerniere + Math.ceil(longueur / 2);
+
+  row.pattern = row.pattern.map((_, i): SynthNote | null => {
+    if (i >= debutVariation && pas > longueur) return null;
+    const m = motif[i % longueur];
+    if (m.role === 'silence') return null;
+    if (m.role === 'gamme') return { degree: m.degre, octave: cfg.defaultOctave };
+    const chordIdx = padChordAtBarPosition(state, barPositionForStep(row, i));
+    const degres = chordIdx >= 0 && chords[chordIdx] ? chords[chordIdx].degrees : null;
+    if (!degres || degres.length === 0) {
+      // Pas d'accord sous ce pas : on retombe sur la tonique plutôt que de
+      // tirer, pour ne pas décaler le générateur.
+      return { degree: 1, octave: cfg.defaultOctave };
+    }
+    const deg = degres[m.rang % degres.length];
+    return { degree: ((deg - 1) % 7) + 1, octave: cfg.defaultOctave };
+  });
+
+  // Même filet que `randomizePitchedLine` : un motif entièrement silencieux
+  // donnerait une ligne vide, qui a l'air cassée et non aérée. Posé sur le
+  // premier pas, sur la fondamentale, sans aucun tirage.
+  if (!row.pattern.some((v) => v != null)) {
+    const chordIdx = padChordAtBarPosition(state, barPositionForStep(row, 0));
+    const degres = chordIdx >= 0 && chords[chordIdx] ? chords[chordIdx].degrees : null;
+    const deg = degres && degres.length > 0 ? ((degres[0] - 1) % 7) + 1 : 1;
+    row.pattern[0] = { degree: deg, octave: cfg.defaultOctave };
+  }
+}
+
 export function randomizeSynth(state: PatternStateV2, fillRate: number, rng: Rng): void {
   randomizePad(state, fillRate, rng); // d'abord la nappe : basse/mélodie s'appuient dessus
   // Aligne les cycles de basse/mélodie sur celui de la nappe : sinon le
@@ -126,7 +246,22 @@ export function randomizeSynth(state: PatternStateV2, fillRate: number, rng: Rng
   // reste reproductible à l'octet près, c'est seulement le résultat qui a
   // changé, pas sa stabilité.
   randomizePitchedLine(state, 'bass', fillRate * 0.75, 0.85, rng);
-  randomizePitchedLine(state, 'melody', fillRate * 0.6, 0.7, rng);
+  // La mélodie passe par le générateur à MOTIF (R1(b)). La basse garde le
+  // tirage pas à pas : c'est une fondation, elle suit l'harmonie plutôt qu'elle
+  // ne porte un thème — et la laisser intacte garde son rendu identique dans
+  // les 34 presets, puisqu'elle est tirée avant.
+  //
+  // FACTEUR 0.35 et non 0.6 (2026-08-19, passage au motif). Le 0.6 avait été
+  // mesuré pour un tirage pas à pas ; le motif garantit désormais une note en
+  // tête, donc les tirages ne font qu'AJOUTER par-dessus. À 0.6 la mélodie
+  // remontait à 1,40 note/mesure — au-dessus de la basse (1,15), c'est-à-dire
+  // exactement le défaut que le 0.6 avait corrigé. Balayage sur les 34 presets :
+  //   0.35 -> 1,14 note/mesure (pire cas 3,0)   <- ici
+  //   0.40 -> 1,22            (pire cas 3,5)
+  //   0.60 -> 1,40            (pire cas 5,0)
+  // 0.35 est le point où la mélodie repasse sous la basse, et c'est aussi
+  // celui qui donne le meilleur pire cas.
+  randomizeMelodyMotif(state, fillRate * 0.35, 0.7, rng);
 }
 
 // Sème des rafales (x2 à x4) sur les pas déjà actifs, probabilité `rate` par
