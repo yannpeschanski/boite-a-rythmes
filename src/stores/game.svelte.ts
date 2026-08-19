@@ -16,6 +16,7 @@ import {
   type GamePresetLike,
   type GameDrumRowName,
 } from '../model/presets/levels';
+import { comparerGrilles } from '../model/exercises';
 import { PRESETS } from '../model/presets/songs';
 import {
   BAG_ITEMS,
@@ -276,20 +277,42 @@ class GameStore {
     if (this.guess[name][col] > 0) this.guessRolls[name][col] = (this.guessRolls[name][col] % 4) + 1;
   }
 
-  // Vérification : une case est exacte si son état ET sa rafale coïncident.
+  /* Vérification — un aiguillage, plus une comparaison câblée en dur.
+   *
+   * La règle « une case est exacte si son état ET sa rafale coïncident » n'a
+   * pas changé : elle a seulement déménagé dans `model/exercises.ts`, où elle
+   * est pure et testable. Ce qui change ici, c'est que le store demande
+   * COMMENT vérifier au lieu de le supposer.
+   *
+   * Tant qu'un seul verbe existe, l'aiguillage n'a qu'une branche — c'est
+   * voulu : la charpente arrive avant les exercices, pas avec eux, pour que
+   * chacun soit une addition et non une chirurgie.
+   */
   verify(): boolean {
     if (this.solved || this.revealed) return this.solved;
     this.attempts++;
-    let allExact = true;
-    GAME_DRUM_ROWS.forEach((name) => {
-      this.target[name].forEach((t, i) => {
-        const exact = this.guess[name][i] === t && this.guessRolls[name][i] === this.targetRolls[name][i];
-        if (exact && t > 0) this.locked[name][i] = true;
-        if (!exact) allExact = false;
-      });
-    });
-    if (allExact) this.win();
-    return allExact;
+    const { exact, aVerrouiller } = comparerGrilles(
+      this.target,
+      this.targetRolls,
+      this.guess,
+      this.guessRolls,
+      GAME_DRUM_ROWS,
+      this.colonnesNotees(),
+    );
+    aVerrouiller.forEach(({ row, col }) => (this.locked[row][col] = true));
+    if (exact) this.win();
+    return exact;
+  }
+
+  /* Quelles colonnes sont notées, selon le verbe du niveau.
+   *
+   * `undefined` = toutes, c'est-à-dire « reproduire ». Les autres exercices
+   * restreindront ICI plutôt que dans une seconde comparaison : deux
+   * comparateurs qui doivent rester d'accord finissent toujours par ne plus
+   * l'être.
+   */
+  private colonnesNotees(): Partial<Record<GameDrumRowName, number[]>> | undefined {
+    return undefined;
   }
 
   private win(): void {
