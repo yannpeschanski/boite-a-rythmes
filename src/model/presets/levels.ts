@@ -2,7 +2,7 @@
 //
 // ÉCARTS DE FORME constatés (données NON adaptées, typées dans leur forme d'origine) :
 // 1. La forme réelle d'un niveau (sortie de mkLevel) ne correspond PAS à
-//    l'interface LevelDef de ../types (id/title/concept/kind/params) : l'original
+//    une interface LevelDef de ../types, retirée depuis (jamais lue) : l'original
 //    est un objet plat riche (teach, preamble, subdivOptions, rowsActive,
 //    tempoOptions, swingOptions, dragOptions, shiftOptions, variant,
 //    variantChance, rollMax, rollChance, ghost, fill, density,
@@ -25,6 +25,8 @@ import type { DrumStep } from '../types';
 // global (désormais élargi), pour que les 34 niveaux continuent de raisonner
 // sur exactement 3 lignes sans qu'une extension du modèle ne les force à
 // gérer 2 lignes qu'ils ne connaissent pas.
+import type { ExerciseKind } from '../exercises';
+
 export type GameDrumRowName = 'kick' | 'snare' | 'hat';
 
 // ---------- Types structurels (forme d'origine) ----------
@@ -48,6 +50,10 @@ export type VoiceTierName = 'easy' | 'medium' | 'hard';
 export interface GameLevel {
   id: number;
   teach: string;
+  /* Le VERBE du niveau — ce qu'on demande au joueur, pas ce qu'on lui fait
+     varier. Les 34 niveaux écrits jusqu'ici sont tous « reproduire », et
+     `mkLevel` pose ce défaut : aucun d'eux n'a besoin d'être touché. */
+  exercise: ExerciseKind;
   preamble: string;
   presetId: string | null;
   subdivOptions: SubdivOption[];
@@ -74,6 +80,7 @@ export interface GameLevel {
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
 export interface MkLevelOptions {
+  exercise?: ExerciseKind;
   preamble?: string;
   presetId?: string;
   subdivOptions?: SubdivOption[];
@@ -297,7 +304,7 @@ export function voiceTierForLevel(id: number): VoiceTierName {
 // de chaque concept) est affiché au joueur pour expliquer ce qui change.
 export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel {
   return {
-    id, teach, preamble: o.preamble || '',
+    id, teach, exercise: o.exercise || 'reproduire', preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
     rowsActive: {
@@ -502,4 +509,36 @@ export const LEVELS: GameLevel[] = [
     // pendant une session de test normale — 2 mesures le rend audible plus vite
     // sans changer ce qui est noté.
     presetGhostDensity: 12, presetGhostRow: 'kick', presetFillEvery: 2 }),
+
+  /* ---------- Pilotes des trois nouveaux verbes ----------
+   *
+   * Un niveau de chacun, pour les essayer et les comparer avant d'en écrire
+   * une campagne. Ils sont posés APRÈS le 34 : la progression existante n'est
+   * pas touchée, et le joueur qui finit la campagne les trouve en bonus.
+   * Accessibles tout de suite avec le pseudo « master » ou #boss.
+   */
+  // Subdivision 16 et non 8 : « compléter » vide un quart de la boucle, et un
+  // quart de 8 pas fait deux doubles-croches par ligne — six cases en tout,
+  // mesurées à l'écran. Ce n'est pas un temps à retrouver, c'est un trou. À 16,
+  // le temps vidé fait quatre cases par ligne : assez pour qu'il y ait quelque
+  // chose à entendre et à reposer.
+  mkLevel(35, 'Complète le temps manquant', {
+    exercise: 'completer',
+    preamble: "Trois temps sur quatre te sont donnés, le quatrième manque — c'est celui qu'encadre le liseré turquoise, et il n'est pas toujours au même endroit. Écoute la boucle entière, puis retrouve ce qui y manque : c'est plus facile que de partir de rien, et c'est comme ça qu'on écrit vraiment.",
+    subdivOptions: [16], rowsActive: { kick: true, snare: true, hat: true },
+    tempoOptions: [92, 100],
+    density: { kickMin: 2, kickMax: 3, snareMin: 1, snareMax: 2, hatMin: 0.4, hatMax: 0.6 } }),
+  mkLevel(36, 'Trouve l’intrus', {
+    exercise: 'intrus',
+    preamble: "Quatre mesures s'enchaînent. Trois sont identiques, une seule diffère. Aucune grille à remplir : rien que l'oreille.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: true, hat: true },
+    density: { kickMin: 1, kickMax: 2, snareMin: 0.5, snareMax: 1, hatMin: 0.4, hatMax: 0.7 } }),
+  // Kick seul, et assez fourni pour qu'il y ait un motif à jouer : à 4 pas avec
+  // kickMin/Max à 1, la boucle sortait DEUX frappes — on ne joue pas en rythme
+  // sur deux frappes, on appuie deux fois.
+  mkLevel(37, 'Joue en rythme', {
+    exercise: 'jouer',
+    preamble: "La boucle tourne. Frappe le pad — ou la barre d'espace — sur chaque coup de kick. Ici on ne note pas ce que tu sais, mais ce que tu places.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [84, 92], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
 ];

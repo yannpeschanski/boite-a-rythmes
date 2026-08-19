@@ -1,0 +1,159 @@
+/* Les types d'exercices du Mode jeu, et la comparaison qui les départage.
+ *
+ * Pourquoi ce fichier existe
+ * --------------------------
+ * Les 34 niveaux font varier les PARAMÈTRES (subdivision, swing, traîne,
+ * polyrythmie) mais jamais la TÂCHE : le seul verbe est « reproduire », et
+ * `verify()` était une comparaison case à case câblée en dur dans le store.
+ * Ajouter un second exercice sans charpente aurait donné un `if` de plus dans
+ * la vue, puis un troisième, puis un quatrième.
+ *
+ * Ici vivent : le discriminant, et la partie PURE de la vérification — celle
+ * qui ne touche ni au store, ni au DOM, ni à l'audio, et qu'on peut donc
+ * tester sans navigateur.
+ *
+ * ⚠️ Ne pas confondre avec `LevelDef.kind` de `model/types.ts`, qui décrivait
+ * la SOURCE d'un niveau (grille générée ou pattern d'un morceau réel) et non
+ * la tâche demandée. Ce champ-là était mort — déclaré, jamais lu — il a été
+ * retiré en même temps que ce fichier était écrit, pour qu'il ne serve pas de
+ * faux ami au prochain qui cherchera un discriminant.
+ */
+import type { DrumStep } from './types';
+import type { GameDrumRowName } from './presets/levels';
+
+/* Les quatre verbes.
+ *
+ * - `reproduire` : écouter la boucle, reposer la grille à l'identique. Le seul
+ *   qui existait, et le défaut de tous les niveaux déjà écrits.
+ * - `completer`  : la grille est donnée sauf un temps, à remplir. Même geste,
+ *   mais l'oreille travaille sur un contexte au lieu du vide.
+ * - `intrus`     : quatre mesures jouées, une seule diffère — laquelle ? Aucune
+ *   grille à manipuler : c'est l'oreille seule.
+ * - `jouer`      : taper en rythme sur la boucle, noté sur le placement. Le
+ *   seul qui teste le geste plutôt que l'analyse.
+ */
+export type ExerciseKind = 'reproduire' | 'completer' | 'intrus' | 'jouer';
+
+export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
+  reproduire: 'Reproduis la boucle',
+  completer: 'Complète le temps manquant',
+  intrus: 'Trouve l’intrus',
+  jouer: 'Joue en rythme',
+};
+
+export type Grille = Record<GameDrumRowName, DrumStep[]>;
+export type Rafales = Record<GameDrumRowName, number[]>;
+
+export interface ResultatComparaison {
+  /** Vrai si chaque case comparée est exacte. */
+  exact: boolean;
+  /** Les cases exactes ET actives, à verrouiller côté store. */
+  aVerrouiller: Array<{ row: GameDrumRowName; col: number }>;
+}
+
+/* Compare la proposition à la cible, case à case.
+ *
+ * Une case est exacte si son état ET sa rafale coïncident — c'est la règle
+ * d'origine, conservée telle quelle.
+ *
+ * `colonnes` restreint la comparaison à un sous-ensemble de colonnes par
+ * ligne : c'est ce qui permet à « compléter » de réutiliser exactement la
+ * même vérification que « reproduire », en ne notant que le temps à remplir.
+ * Sans ce paramètre, il aurait fallu un second comparateur presque identique —
+ * et deux comparateurs qui doivent rester d'accord finissent toujours par ne
+ * plus l'être.
+ */
+export function comparerGrilles(
+  cible: Grille,
+  cibleRafales: Rafales,
+  proposition: Grille,
+  propositionRafales: Rafales,
+  lignes: GameDrumRowName[],
+  colonnes?: Partial<Record<GameDrumRowName, number[]>>,
+): ResultatComparaison {
+  let exact = true;
+  const aVerrouiller: Array<{ row: GameDrumRowName; col: number }> = [];
+  for (const row of lignes) {
+    const indices = colonnes?.[row] ?? cible[row].map((_, i) => i);
+    for (const col of indices) {
+      const t = cible[row][col];
+      const juste = proposition[row][col] === t && propositionRafales[row][col] === cibleRafales[row][col];
+      if (juste && t > 0) aVerrouiller.push({ row, col });
+      if (!juste) exact = false;
+    }
+  }
+  return { exact, aVerrouiller };
+}
+
+/* Les colonnes d'UNE tranche d'une ligne, la ligne étant coupée en `tranches`
+ * parts égales.
+ *
+ * Générique à dessein, et NOMMÉ générique : « compléter » coupe la boucle en
+ * quatre TEMPS (le Mode jeu tient sur une mesure par ligne — un quart de boucle
+ * est un temps, pas une mesure), tandis que « l'intrus » raisonne, lui, sur de
+ * vraies mesures mises bout à bout. Une fonction appelée `colonnesDeMesure`
+ * aurait menti à l'un des deux appelants.
+ *
+ * Chaque ligne a sa propre subdivision (c'est tout l'objet des niveaux de
+ * polyrythmie : 4 contre 6). Le nombre de colonnes d'une tranche n'est donc pas
+ * le même d'une ligne à l'autre, et couper au même index partout couperait au
+ * mauvais endroit.
+ */
+export function colonnesDeTranche(subdiv: number, tranche: number, tranches: number): number[] {
+  const parTranche = Math.max(1, Math.round(subdiv / Math.max(1, tranches)));
+  const debut = Math.min(subdiv - 1, tranche * parTranche);
+  const fin = Math.min(subdiv, debut + parTranche);
+  const out: number[] = [];
+  for (let i = debut; i < fin; i++) out.push(i);
+  return out;
+}
+
+/* ---- « Jouer en rythme » : la notation, extraite et pure ----
+ *
+ * Elle vit ici et pas dans le store pour la même raison que `comparerGrilles` :
+ * c'est de l'arithmétique, elle se teste sans navigateur, sans Web Audio et
+ * sans runes. Le store n'en garde que le branchement.
+ */
+
+/* Tolérance de placement, en millisecondes.
+ *
+ * 90 ms n'est pas un chiffre rond posé au hasard : c'est l'ordre de grandeur
+ * au-delà duquel une frappe cesse d'être entendue comme « sur le temps » et
+ * s'entend comme une faute. En dessous de ~25 ms, personne n'entend l'écart —
+ * exiger mieux noterait la chance, pas l'oreille. */
+export const TOLERANCE_MS = 90;
+export const PARFAIT_MS = 25;
+
+/* Écart signé au coup le plus proche.
+ *
+ * `ecoule` est le temps depuis le DERNIER coup joué, `intervalle` celui qui
+ * sépare ce coup du suivant. Au-delà de la moitié, la frappe n'est plus en
+ * retard sur le précédent : elle est en avance sur le suivant, et l'écart
+ * devient négatif.
+ *
+ * L'intervalle est celui de coup à coup, jamais la durée d'un pas : sur une
+ * boucle de 8 pas qui porte 3 kicks, cinq pas sur huit sont silencieux, et
+ * mesurer contre la grille donnerait 100 % à une frappe posée sur un silence.
+ */
+export function ecartAuCoup(ecoule: number, intervalle: number): number {
+  return ecoule > intervalle / 2 ? ecoule - intervalle : ecoule;
+}
+
+/* Justesse 0-100 d'une série de frappes.
+ *
+ * Chaque frappe vaut 100 sous le seuil d'indiscernable, 0 au-delà de la
+ * tolérance, et décroît linéairement entre les deux. Le diviseur est le PLUS
+ * GRAND du nombre attendu et du nombre joué : sans le premier, frapper une
+ * seule fois très juste donnerait 100 % ; sans le second, marteler le pad
+ * ferait monter la note au lieu de la faire baisser.
+ */
+export function justesseDesFrappes(ecarts: number[], attendues: number): number {
+  if (attendues <= 0) return 0;
+  const total = ecarts.reduce((acc, e) => {
+    const a = Math.abs(e);
+    if (a <= PARFAIT_MS) return acc + 100;
+    if (a >= TOLERANCE_MS) return acc;
+    return acc + 100 * (1 - (a - PARFAIT_MS) / (TOLERANCE_MS - PARFAIT_MS));
+  }, 0);
+  return Math.round(total / Math.max(attendues, ecarts.length));
+}

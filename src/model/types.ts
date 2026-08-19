@@ -154,11 +154,11 @@ export interface SongPreset {
 }
 
 // ---- Niveaux du mode jeu (34) ----
-export interface LevelDef {
-  id: number;
-  title: string;
-  concept: string; // le concept introduit par le niveau
-  kind: 'generated' | 'preset';
-  presetId?: string;
-  params?: Record<string, unknown>; // subdiv, shift forcé, ghost/fill ajoutés…
-}
+//
+// `LevelDef` a été RETIRÉ le 2026-08-19. C'était une interface déclarée et
+// jamais lue : le vrai niveau est `GameLevel` (`presets/levels.ts`), qui n'a
+// jamais eu cette forme. Son champ `kind: 'generated' | 'preset'` était un
+// faux ami — il décrivait la SOURCE d'un niveau, pas la tâche demandée, et
+// c'est exactement le mot qu'on cherche en voulant ajouter un type
+// d'exercice. Le vrai discriminant de tâche s'appelle `exercise` et vit dans
+// `model/exercises.ts`.

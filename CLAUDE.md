@@ -98,6 +98,22 @@ src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partag
 src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
 ```
 
+**Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
+discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
+campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier
+que les *paramètres* du rythme. La partie PURE de la notation vit dans ce fichier :
+`comparerGrilles` (une case est exacte si son état **et** sa rafale coïncident),
+`colonnesDeTranche`, `justesseDesFrappes`, `ecartAuCoup`. Elle s'y teste sans
+navigateur, sans Web Audio et sans runes ; le store n'en garde que l'aiguillage.
+Le paramètre `colonnes` de `comparerGrilles` est le point de conception : il
+permet à « compléter » de réutiliser *exactement* la vérification de
+« reproduire » en ne notant qu'une zone — **ne pas écrire un second
+comparateur**, deux comparateurs qui doivent rester d'accord finissent toujours
+par ne plus l'être. Deux pièges déjà payés, documentés dans PLAN.md étape 17 :
+le Mode jeu tient sur **une mesure** par ligne (un quart de boucle est un *temps*,
+pas une mesure), et « jouer » mesure l'écart au dernier pas **actif** du kick —
+l'ancrer sur la grille donnait 100 % à une frappe posée sur un silence.
+
 **Tout état réactif n'est pas de l'état de morceau.** Deux modules d'interface
 vivent délibérément **hors** du format v2 : `ui/xp/paramHints.svelte.ts` et
 `ui/atelier/lastTouched.svelte.ts` (la dernière ligne manipulée, qui alimente le

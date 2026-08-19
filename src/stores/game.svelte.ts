@@ -16,6 +16,7 @@ import {
   type GamePresetLike,
   type GameDrumRowName,
 } from '../model/presets/levels';
+import { comparerGrilles, colonnesDeTranche, justesseDesFrappes } from '../model/exercises';
 import { PRESETS } from '../model/presets/songs';
 import {
   BAG_ITEMS,
@@ -101,6 +102,19 @@ function emptyRolls(subdiv: SubdivSpec): Rolls {
   };
 }
 
+/* « Compléter » coupe la boucle en QUATRE TEMPS et en vide un.
+ *
+ * Pas « quatre mesures » : le Mode jeu tient sur une mesure par ligne, un quart
+ * de boucle est donc un temps. Le nom compte — la première version parlait de
+ * mesures, et « complète la mesure » sur deux doubles-croches ne veut rien
+ * dire. C'est ce que la mesure d'écran a montré : 6 cases à remplir sur 24. */
+const TEMPS_COMPLETER = 4;
+
+/* « L'intrus », lui, fabrique une vraie phrase de quatre mesures en répétant la
+   boucle : c'est la plus courte longueur où « une mesure sur quatre » veuille
+   dire quelque chose. */
+const MESURES_INTRUS = 4;
+
 class GameStore {
   pseudo = $state('');
   levelIndex = $state(0);
@@ -122,6 +136,26 @@ class GameStore {
   drag = $state(0);
   shift = $state<Record<GameDrumRowName, number>>({ kick: 0, snare: 0, hat: 0 });
   lastResult = $state<{ stars: number; roast: string; items: BagItem[]; presetLabel?: string; history?: string } | null>(null);
+
+  /* ---- État propre aux exercices autres que « reproduire » ----
+   * Tous nuls/vides pour un niveau « reproduire » : rien de ce qui suit n'est
+   * lu dans ce cas, et `startLevel` les remet à zéro à chaque entrée. */
+
+  // « Compléter » : l'index du temps laissé vide, et les colonnes qu'il occupe
+  // ligne par ligne (chaque ligne a sa propre subdivision — d'où un découpage
+  // par ligne et non un index global).
+  tempsACompleter = $state(0);
+  zoneACompleter = $state<Partial<Record<GameDrumRowName, number[]>>>({});
+
+  // « Intrus » : laquelle des quatre mesures diffère, et ce que le joueur a
+  // désigné. `null` = pas encore répondu.
+  intrusReponse = $state(0);
+  intrusChoix = $state<number | null>(null);
+
+  // « Jouer » : les écarts en millisecondes de chaque frappe par rapport au pas
+  // le plus proche, et le nombre de pas attendus sur un tour de boucle.
+  ecarts = $state<number[]>([]);
+  frappesAttendues = $state(0);
 
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
@@ -253,6 +287,56 @@ class GameStore {
     this.guessPlays = 0;
     this.solved = false;
     this.lastResult = null;
+    this.preparerExercice();
+  }
+
+  /* Met en place ce que le verbe du niveau demande, une fois la cible tirée.
+   *
+   * Chaque branche part de la MÊME cible générée : les exercices ne sont pas
+   * des générateurs concurrents, ce sont des façons différentes d'interroger
+   * un rythme. C'est ce qui permet de poser n'importe quel verbe sur n'importe
+   * quel niveau existant sans réécrire sa génération.
+   */
+  private preparerExercice(): void {
+    this.tempsACompleter = 0;
+    this.zoneACompleter = {};
+    this.intrusReponse = 0;
+    this.intrusChoix = null;
+    this.ecarts = [];
+    this.frappesAttendues = 0;
+
+    if (this.level.exercise === 'completer') {
+      // La cible d'un niveau tient sur une boucle ; on la coupe ici en
+      // TEMPS_COMPLETER temps, et on en vide un seul. Jamais le premier : sans
+      // un début posé, il n'y a pas de contexte à écouter, et l'exercice
+      // redevient « reproduire ».
+      const temps = 1 + Math.floor(Math.random() * (TEMPS_COMPLETER - 1));
+      this.tempsACompleter = temps;
+      const zone: Partial<Record<GameDrumRowName, number[]>> = {};
+      GAME_DRUM_ROWS.forEach((name) => {
+        zone[name] = colonnesDeTranche(this.subdiv[name], temps, TEMPS_COMPLETER);
+      });
+      this.zoneACompleter = zone;
+      // Tout ce qui est HORS du temps vidé est donné, et verrouillé : le joueur
+      // ne peut ni le modifier ni le perdre, et la vérification ne le note pas.
+      GAME_DRUM_ROWS.forEach((name) => {
+        const dansLaZone = new Set(zone[name]);
+        this.target[name].forEach((t, i) => {
+          if (dansLaZone.has(i)) return;
+          this.guess[name][i] = t;
+          this.guessRolls[name][i] = this.targetRolls[name][i];
+          this.locked[name][i] = true;
+        });
+      });
+    }
+
+    if (this.level.exercise === 'intrus') {
+      this.intrusReponse = Math.floor(Math.random() * MESURES_INTRUS);
+    }
+
+    if (this.level.exercise === 'jouer') {
+      this.frappesAttendues = this.target.kick.filter((v) => v > 0).length;
+    }
   }
 
   // Combien de cases actives la ligne attend, et combien sont posées.
@@ -276,20 +360,123 @@ class GameStore {
     if (this.guess[name][col] > 0) this.guessRolls[name][col] = (this.guessRolls[name][col] % 4) + 1;
   }
 
-  // Vérification : une case est exacte si son état ET sa rafale coïncident.
+  /* Vérification — un aiguillage, plus une comparaison câblée en dur.
+   *
+   * La règle « une case est exacte si son état ET sa rafale coïncident » n'a
+   * pas changé : elle a seulement déménagé dans `model/exercises.ts`, où elle
+   * est pure et testable. Ce qui change ici, c'est que le store demande
+   * COMMENT vérifier au lieu de le supposer.
+   *
+   * Tant qu'un seul verbe existe, l'aiguillage n'a qu'une branche — c'est
+   * voulu : la charpente arrive avant les exercices, pas avec eux, pour que
+   * chacun soit une addition et non une chirurgie.
+   */
   verify(): boolean {
     if (this.solved || this.revealed) return this.solved;
     this.attempts++;
-    let allExact = true;
+
+    // « Intrus » ne compare pas de grille : la réponse est un index.
+    if (this.level.exercise === 'intrus') {
+      const juste = this.intrusChoix === this.intrusReponse;
+      if (juste) this.win();
+      return juste;
+    }
+
+    // « Jouer » ne note pas ce qui est posé mais ce qui a été JOUÉ : il faut
+    // avoir frappé le bon nombre de fois, et assez juste.
+    if (this.level.exercise === 'jouer') {
+      const juste =
+        this.ecarts.length >= this.frappesAttendues &&
+        this.frappesAttendues > 0 &&
+        this.justesse() >= 70;
+      if (juste) this.win();
+      return juste;
+    }
+
+    const { exact, aVerrouiller } = comparerGrilles(
+      this.target,
+      this.targetRolls,
+      this.guess,
+      this.guessRolls,
+      GAME_DRUM_ROWS,
+      this.colonnesNotees(),
+    );
+    aVerrouiller.forEach(({ row, col }) => (this.locked[row][col] = true));
+    if (exact) this.win();
+    return exact;
+  }
+
+  /* Quelles colonnes sont notées, selon le verbe du niveau.
+   *
+   * `undefined` = toutes, c'est-à-dire « reproduire ». Les autres exercices
+   * restreindront ICI plutôt que dans une seconde comparaison : deux
+   * comparateurs qui doivent rester d'accord finissent toujours par ne plus
+   * l'être.
+   */
+  private colonnesNotees(): Partial<Record<GameDrumRowName, number[]>> | undefined {
+    return this.level.exercise === 'completer' ? this.zoneACompleter : undefined;
+  }
+
+  /* ---- « Jouer en rythme » ----
+   *
+   * Une frappe est enregistrée par son ÉCART au pas le plus proche, pas par le
+   * pas qu'elle vise. C'est la seule mesure qui distingue « au bon endroit » de
+   * « au bon moment » : quantifier d'abord puis comparer les cases rendrait
+   * parfaite une frappe posée 80 ms trop tard.
+   */
+  enregistrerFrappe(ecartMs: number): void {
+    if (this.solved || this.revealed) return;
+    this.ecarts = [...this.ecarts, Math.abs(ecartMs)];
+  }
+
+  // La note elle-même est pure et testée dans model/exercises.ts ; le store ne
+  // fait que lui passer ce qu'il a.
+  justesse(): number {
+    return justesseDesFrappes(this.ecarts, this.frappesAttendues);
+  }
+
+  reinitialiserFrappes(): void {
+    this.ecarts = [];
+  }
+
+  /* ---- « Intrus » ----
+   * La grille jouée fait MESURES_INTRUS mesures : la mesure `intrusReponse`
+   * porte une variante, les autres répètent la cible. On la fabrique à la
+   * demande plutôt que de la stocker — elle ne sert qu'à la lecture.
+   */
+  grilleIntrus(): { grid: Grid; rolls: Rolls; subdiv: SubdivSpec } {
+    const grid = {} as Grid;
+    const rolls = {} as Rolls;
+    const subdiv = {} as SubdivSpec;
     GAME_DRUM_ROWS.forEach((name) => {
-      this.target[name].forEach((t, i) => {
-        const exact = this.guess[name][i] === t && this.guessRolls[name][i] === this.targetRolls[name][i];
-        if (exact && t > 0) this.locked[name][i] = true;
-        if (!exact) allExact = false;
-      });
+      const base = this.target[name];
+      const n = base.length;
+      subdiv[name] = Math.min(32, n * MESURES_INTRUS);
+      const g: DrumStep[] = [];
+      const r: number[] = [];
+      for (let m = 0; m < MESURES_INTRUS; m++) {
+        for (let i = 0; i < n; i++) {
+          if (g.length >= 32) break;
+          g.push(base[i]);
+          r.push(this.targetRolls[name][i]);
+        }
+      }
+      // La variante : sur la ligne du snare, on déplace une frappe d'un pas.
+      // Une seule ligne et un seul pas — l'exercice doit rester une question
+      // d'oreille fine, pas un contraste évident.
+      if (name === 'snare') {
+        const debut = this.intrusReponse * n;
+        const idx = base.findIndex((v) => v > 0);
+        if (idx >= 0 && debut + idx < g.length) {
+          const cible = debut + ((idx + 1) % n);
+          g[debut + idx] = 0;
+          if (cible < g.length) g[cible] = base[idx];
+        }
+      }
+      grid[name] = g;
+      rolls[name] = r;
     });
-    if (allExact) this.win();
-    return allExact;
+    return { grid, rolls, subdiv };
   }
 
   private win(): void {
@@ -363,16 +550,19 @@ class GameStore {
   }
 
   // Construit un état jouable par le moteur pour la cible ou la proposition.
-  buildState(which: 'target' | 'guess'): PatternStateV2 {
+  buildState(which: 'target' | 'guess' | 'intrus'): PatternStateV2 {
     const state = defaultState();
     state.tempo = this.tempo;
     state.swing = this.swing;
     state.drag = this.drag;
-    const grid = which === 'target' ? this.target : this.guess;
-    const rolls = which === 'target' ? this.targetRolls : this.guessRolls;
+    // « Intrus » joue une grille fabriquée de quatre mesures, avec sa propre
+    // subdivision : c'est la seule lecture qui ne montre pas une grille éditable.
+    const intrus = which === 'intrus' ? this.grilleIntrus() : null;
+    const grid = intrus ? intrus.grid : which === 'target' ? this.target : this.guess;
+    const rolls = intrus ? intrus.rolls : which === 'target' ? this.targetRolls : this.guessRolls;
     GAME_DRUM_ROWS.forEach((name) => {
       const row = state.rows[name];
-      row.subdiv = this.subdiv[name];
+      row.subdiv = intrus ? intrus.subdiv[name] : this.subdiv[name];
       row.pattern = new Array(32).fill(0).map((z, i) => grid[name][i] ?? z);
       row.rolls = new Array(32).fill(1).map((one, i) => rolls[name][i] ?? one);
       row.shiftPct = this.shift[name];

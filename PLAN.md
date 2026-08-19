@@ -4414,12 +4414,121 @@ charger : il se recharge intact, sans erreur.
 à 0 cible sous 44×44 · scénario Playwright — 🔀 absent, 0 verrou, 8 dés, un tir
 qui change bien l'assignation (BREAK → ROLL K×3), aucune erreur console.
 
+### ✅ Étape 17 — Mode jeu : la charpente des exercices, et un pilote de chacun (2026-08-19)
+
+> « attaquons maintenant le mode jeu, as tu un plan précis sur le sujet ? » →
+> « je pense qu'on peut tous les faire » (les trois nouveaux types) →
+> **« Fais moi un test de chaque exercice stp »**
+
+**Le constat de départ.** Les 34 niveaux font varier les PARAMÈTRES — subdivision,
+swing, traîne, polyrythmie, rafales — mais jamais la TÂCHE. Le seul verbe est
+« reproduire », et `verify()` était une comparaison case à case câblée en dur
+dans le store. Ajouter un exercice sans charpente aurait donné un `if` de plus
+dans la vue, puis un deuxième, puis un troisième.
+
+**Ce qui a été fait, en deux temps.** D'abord la charpente (`src/model/exercises.ts`,
+neuf, pur, testable sans navigateur) : le discriminant `ExerciseKind`, la
+comparaison `comparerGrilles` **déplacée sans être changée**, et le découpage
+`colonnesDeTranche`. Puis **un niveau jouable de chacun** des trois nouveaux
+verbes, posés en 35/36/37 après la campagne — la progression existante n'est pas
+touchée, et le joueur qui finit le 34 les trouve en bonus (accessibles tout de
+suite avec le pseudo « master » ou `#boss`).
+
+| Verbe | Ce qu'il demande | Ce qui est noté |
+|---|---|---|
+| `reproduire` | écouter, reposer la grille (les 34 niveaux) | chaque case, état **et** rafale |
+| `completer` | un quart de la boucle est vidé, le reste est donné | les mêmes cases, **restreintes à la zone** |
+| `intrus` | quatre mesures s'enchaînent, une seule diffère | un index, aucune grille |
+| `jouer` | frapper le pad (ou l'espace) sur chaque coup de kick | le PLACEMENT, en millisecondes |
+
+**Le point de conception, c'est le paramètre `colonnes` de `comparerGrilles`.**
+Il permet à « compléter » de réutiliser **exactement** la même vérification que
+« reproduire » en ne notant que la zone à remplir. Sans lui il aurait fallu un
+second comparateur presque identique — et deux comparateurs qui doivent rester
+d'accord finissent toujours par ne plus l'être.
+
+**Trois choses que seule la mesure a montrées** (voir la règle « vérifier
+visuellement ne suffit pas ») :
+
+1. **« Compléter » vidait un trou, pas un temps.** À 8 pas et quatre tranches,
+   le quart vidé faisait deux doubles-croches par ligne — **6 cases sur 24**,
+   comptées à l'écran. La subdivision du pilote passe à 16 (12 cases sur 48), et
+   le vocabulaire suit : le Mode jeu tient sur **une mesure** par ligne, donc un
+   quart de boucle est un **temps** et pas une mesure. `colonnesDeMesure` devient
+   `colonnesDeTranche` — générique, parce que « l'intrus » raisonne lui sur de
+   vraies mesures mises bout à bout, et qu'un nom qui ment à un de ses deux
+   appelants est un piège à retardement.
+2. **« Jouer » notait la grille, pas le coup.** L'écart était mesuré contre le
+   pas courant *quel qu'il soit*. Sur une boucle de 8 pas qui en porte 3 actifs,
+   cinq pas sur huit sont silencieux : **frapper sur un silence bien aligné
+   donnait 100 %**. L'ancre devient le dernier pas ACTIF du kick, et l'intervalle
+   celui qui le sépare du prochain pas actif — pas la durée d'un pas. Vérifié
+   dans le navigateur par un rAF qui frappe sur `.pas.playing:not(.actif)` :
+   0 %, aucune victoire (contre 100 % en frappant sur `.pas.actif.playing`).
+   Le pilote 37 passe aussi de 4 pas à 8 : à `kickMin/Max = 1`, la boucle sortait
+   **deux** frappes — on ne joue pas en rythme sur deux frappes, on appuie deux fois.
+3. **Les enveloppes tactiles se marchaient dessus, et volaient du bouton VISIBLE.**
+   Les quatre boutons « Mesure 1..4 » ne répondaient que sur 22px de leurs 30px
+   dessinés : l'enveloppe 44px de « Donner la réponse », plus bas dans le DOM,
+   passait au-dessus. Diagnostiqué en faisant dire à la sonde *quel* élément elle
+   touchait — `elementFromPoint` renvoyait bien le bouton du dessous. Écartements
+   posés en fin de `<style>` dans le bloc `coarse` (16px minimum = deux
+   débordements). Après : plus aucune cible sous 44 hors les deux exceptions déjà
+   documentées (les cases de grille, le bouton `.player`).
+
+**Ce que la charpente a fait tomber au passage.** `LevelDef` de `model/types.ts`
+est **retiré** : déclaré, jamais lu, et son champ `kind: 'generated' | 'preset'`
+décrivait la SOURCE d'un niveau, pas sa tâche. Le laisser à côté d'un vrai
+discriminant en aurait fait un faux ami pour le prochain qui cherche où brancher
+un exercice.
+
+**La partie pure vit dans le modèle, pas dans le store.** `justesseDesFrappes`
+et `ecartAuCoup` sont sortis de `game.svelte.ts` vers `model/exercises.ts` pour la
+même raison que `comparerGrilles` : c'est de l'arithmétique, elle se teste sans
+navigateur, sans Web Audio et sans runes. Le store n'en garde que le branchement.
+
+**Fichiers touchés :** `src/model/exercises.ts` (neuf), `src/model/types.ts`
+(`LevelDef` retiré), `src/model/presets/levels.ts` (champ `exercise` + 3 pilotes),
+`src/stores/game.svelte.ts` (`preparerExercice`, `verify` aiguillé, frappes,
+grille de l'intrus), `src/ui/game/GameView.svelte` (transport et corps par verbe,
+pad, jauge, choix, zone), `src/App.svelte` (« 34 niveaux » devenu dynamique),
+`tests/exercises.test.ts` (17 tests), `tests/model.test.ts`.
+
+**Écarts de portée assumés.** Les pilotes sont des **pilotes** : un niveau de
+chaque, pour comparer avant d'en écrire une campagne. La progression des 34
+n'est pas retouchée, et aucun des trois verbes n'est encore intégré à la courbe
+de difficulté — c'est la décision suivante, et elle appartient à Yann.
+
+**Vérifié :** `check` 0 erreur · **59 tests** · les deux builds · scénario
+Playwright de bout en bout sur les trois pilotes (intrus gagné en 3 essais avec
+2★ et la bonne mesure marquée ; « jouer » gagné à 100 % de justesse en frappant
+sur le curseur, 0 % en frappant sur les silences ; « compléter » verrouille les
+cases justes et laisse les cases données inertes au clic) · barre d'espace
+fonctionnelle · aucune erreur console · aucun débordement de page à 390px ·
+cibles tactiles remesurées.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
 qui l'a fermé.*
 
 - ~~Le tactile en Mode Live~~ — **clos à l'étape 13** : 28 → 0.
+- 🔜 **Mode jeu, la suite — trois chantiers, dans cet ordre.** L'étape 17 a posé
+  la charpente et un pilote de chaque verbe ; ce qui reste est du contenu et de
+  l'intégration, pas de l'architecture.
+  1. **Intégrer les trois verbes à la campagne.** Les pilotes 35-37 sont hors
+     courbe. Décider où chaque verbe entre (« compléter » est le plus doux,
+     « jouer » le plus dépaysant), et si la campagne s'allonge ou si des niveaux
+     existants changent de verbe. **Arbitrage de Yann**, pas une décision technique.
+  2. **La grille de déverrouillage** — proposition écrite et retenue par Yann :
+     rafale au niv. 11, swing 14, ghost 20, fill 21, décalage 23. À appliquer.
+  3. **L'extension au synthé.** La plus grosse. ⚠️ `GameDrumRowName` touche le
+     store, la génération, les presets, le moteur et la vue : **cartographier tous
+     les points de contact avant de coder** (règle `CLAUDE.md`) — la surface réelle
+     dépasse presque toujours l'estimation.
+- 🔜 **B6 — la mise en page du splash et du Mode jeu** (contenu collé en haut,
+  ~70 % de vide, constat 6 de l'audit du 2026-08-15). À traiter dans la même
+  passe que le point 1 ci-dessus : c'est le même écran.
 - **Le biseau en haute densité** — 1px logique = 2 ou 3 physiques. Toujours pas
   vérifié sur un vrai appareil ; toutes les mesures de cette session sont des
   mesures Playwright à `devicePixelRatio` 1 à 3.
