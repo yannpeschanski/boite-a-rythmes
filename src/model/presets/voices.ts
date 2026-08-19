@@ -115,6 +115,40 @@ export function resolveVoicePreset(name: SynthRowName, presetId: string): RawSyn
   return Object.assign(defaultSynthVoice(name), p.voice);
 }
 
+/* Quel preset la voix courante représente-t-elle — ou aucun ?
+ *
+ * Le menu de voix n'avait aucune liaison de valeur : il retombait toujours sur
+ * « — Voix… » et n'a donc jamais dit quelle voix était en place. Un contrôle
+ * qui écrit sans jamais lire. Pour qu'il puisse lire, il faut répondre à cette
+ * question — et la réponse honnête a trois cas, pas deux : un preset, un autre
+ * preset, ou **une voix que les curseurs ont écartée de tout preset**. C'est le
+ * troisième qui manquait, et c'est celui qui rendait le menu menteur : après un
+ * tour de curseur, afficher encore « Rhodes chaud » aurait été un mensonge de
+ * plus, dans l'autre sens.
+ *
+ * Comparaison sur les champs de `RawSynthVoice` seulement : `voice` est typé
+ * avec une signature d'index et peut porter des champs additionnels, qui ne
+ * relèvent pas du preset.
+ */
+export function matchVoicePreset(
+  name: SynthRowName,
+  voice: Record<string, unknown>,
+): string | null {
+  for (const p of SYNTH_VOICE_PRESETS[name] || []) {
+    const resolu = resolveVoicePreset(name, p.id);
+    if (!resolu) continue;
+    let identique = true;
+    for (const cle of Object.keys(resolu)) {
+      if (voice[cle] !== resolu[cle]) {
+        identique = false;
+        break;
+      }
+    }
+    if (identique) return p.id;
+  }
+  return null;
+}
+
 // ---------- Module Timbre (pitch / attack / decay / tone) ----------
 // Un `voice` neutre (toutes valeurs à 0) reproduit EXACTEMENT le son fixe
 // d'origine — donc tout appel existant qui ne passe pas de `voice` (Mode jeu,
