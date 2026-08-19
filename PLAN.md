@@ -96,11 +96,14 @@ Par ordre de taille :
   aucune liaison de valeur, il retombe donc toujours sur « — Voix… » et n'a
   jamais dit quelle voix est réellement en place. Contrôle qui écrit sans jamais
   lire. Vérifié le 2026-08-19, toujours vrai.
-- **Le 🎲 par ligne** — demandé au 3ᵉ lot, jamais fait : il vit encore dans
-  `SynthModule` (« Harmonie & remplissage »), pas dans la sous-section
-  « Séquence » de chaque ligne. Vérifié le 2026-08-19, toujours vrai. Petit.
 - **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Peut
   dormir avec le chantier desktop.
+
+⛔ **Abandonné le 2026-08-19 : le 🎲 par ligne dans la sous-section « Séquence ».**
+Demandé au 3ᵉ lot, jamais fait, et Yann l'a déclaré **obsolète**. Il reste donc
+là où il est, dans « Harmonie & remplissage » (`SynthModule`). Trois sections
+plus bas le mentionnent encore comme « reste ouvert » — elles sont datées et
+antérieures, ne pas les rouvrir.
 
 ### Les pièges qui ont coûté du temps
 
@@ -2740,6 +2743,11 @@ un 🎲 par ligne (l. 47-69). Faire descendre le 🎲 dans le panneau « Séquen
 de chaque ligne supprime la duplication (le 🎲 par ligne existe déjà en haut,
 loin de la ligne qu'il remplit) et rapproche la commande de son effet.
 
+> ⛔ **Abandonné par Yann le 2026-08-19**, demande jugée obsolète. Le 🎲 par
+> ligne reste dans « Harmonie & remplissage ». L'analyse ci-dessus est conservée
+> parce qu'elle documente le raisonnement A6 (chaque commande sur une seule
+> surface) qui vaut toujours pour d'autres commandes — mais ce cas-là est clos.
+
 ⚠️ **Une nuance sur la tonalité et le nombre d'accords** : contrairement au
 remplissage, ce ne sont **pas** des réglages de ligne — ils gouvernent
 l'harmonie des **trois** lignes à la fois (`chordsFor`, `padChordAtBarPosition`).
@@ -3361,6 +3369,9 @@ Le **🎲 par ligne** flotte toujours à droite de l'en-tête de ligne ; Yann
 l'avait demandé « dans la sous-section séquence ». Pas fait dans cette passe,
 qui portait sur la hauteur du haut de page.
 
+> ⛔ **Périmé — 2026-08-19.** Yann a abandonné cette demande, jugée obsolète.
+> Le 🎲 reste dans « Harmonie & remplissage ».
+
 ---
 
 ## ✅ Pad : délai d'attaque et suppression · bloc du bas rangé — 2026-08-17
@@ -3502,6 +3513,8 @@ plus au-delà de 8). Pastilles toujours sur une ligne de 320 à 768px.
 
 Le **🎲 par ligne** flotte encore à droite de l'en-tête, au lieu d'être dans
 la sous-section Séquence comme demandé au 3ᵉ lot.
+
+> ⛔ **Périmé — 2026-08-19.** Demande abandonnée par Yann.
 
 ---
 
