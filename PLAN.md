@@ -3998,6 +3998,75 @@ en bas de fenêtre (`KICK · TON 42 · DÉCLIN 220 · REV 12 %`), et les LED ron
 devant chaque nom de ligne (l'appli a un bouton 🔊 à la place). Ça touche le
 balisage, pas seulement le CSS — c'est une étape à part entière.
 
+### ✅ Étape 9 — la structure de la maquette (2026-08-19)
+
+Ce qui restait après l'étape 8 : trois éléments que la maquette de référence
+montre et que l'appli n'avait pas. Ça touche le balisage, pas seulement le CSS —
+d'où une étape à part.
+
+**1. L'afficheur BPM du transport.** 22px, vert LCD, l'unité en retrait et
+alignée sur la ligne de base. C'est la seule grande typographie de l'Atelier, et
+c'est voulu : un ampli a un cadran, et c'est le nombre qu'on lit de loin. C'est
+un **afficheur, pas un réglage** — la glissière sous le séquenceur reste la
+commande, il n'y a donc rien à désambiguïser entre les deux.
+
+**2. La diode devant le nom de ligne, et c'est elle l'interrupteur.** L'émoji 🔊
+tenait ce rôle : il disait l'action, pas l'état, et c'était le dernier glyphe de
+couleur du chrome. La diode fait 7px, elle est teintée de la ligne et elle
+**rayonne** (`box-shadow: 0 0 5px`) — c'est le halo qui la fait lire comme
+allumée plutôt que comme une pastille peinte, et c'est lui qu'on retire pour
+l'éteindre. Trois états, là où le bouton n'en montrait que deux :
+
+| état | dessin | ce que ça dit |
+|---|---|---|
+| allumée | couleur de la ligne + halo | la ligne sonne |
+| éteinte | gris ardoise `--xp-led-off`, sans halo | la ligne est coupée |
+| creuse | contour seul | la ligne est vide |
+
+Le moodboard le disait déjà : « la diode s'éteint et passe au gris ardoise, le
+nom garde sa couleur — c'est la piste, pas son état ». Le bouton reste un
+poussoir biseauté : une diode nue qui commande quelque chose serait une
+affordance invisible, et le biseau est justement ce qui dit « ceci s'appuie ».
+Le libellé d'état part dans un `.sr` visuellement masqué : la diode ne dit rien
+à qui ne la voit pas.
+
+**3. Le bandeau LCD en bas de la fenêtre du séquenceur** (`StatusLcd.svelte`).
+Verre noir, vert LCD, 9px avec 0,06em d'interlettrage — c'est ce dernier qui
+l'empêche de se lire comme du texte courant : un cadran, pas une phrase. Il
+affiche la ligne qu'on vient de manipuler et ses réglages à gauche, la réverbe
+en retrait à droite, exactement la forme de la maquette
+(« KICK · TON 42 · DÉCLIN 220 » / « RÉV 12 % »).
+
+**Ce que ça a demandé :** un `$state` de plus, `ui/atelier/lastTouched.svelte.ts`
+— la dernière ligne touchée, et rien d'autre. Volontairement **hors du modèle
+v2** : ce n'est pas de l'état de morceau, ça ne se sérialise pas, ça ne passe
+pas dans l'historique d'annulation et le moteur audio ne doit jamais le lire.
+Même esprit que `ui/xp/paramHints.svelte.ts`. Il est marqué là où
+l'utilisateur agit vraiment sur la ligne — dans `cycleCell` et sur la diode,
+pas sur le `pointerdown` : un appui long qui ne modifie rien n'a pas « touché »
+la ligne. Tant qu'on n'a touché à rien, l'afficheur n'invente pas de ligne
+courante : il annonce le morceau (`120 BPM · 3 LIGNES EN JEU`).
+
+**Vérifié :**
+
+- **comportement** : scénario Playwright — au départ le résumé global, après un
+  clic sur une case `SNARE · TON 0 · DÉCLIN 0 · PAS 4 / RÉV 0 %`, après une
+  coupure `KICK · …`, et les cinq diodes rendent bien `coupée / allumée /
+  allumée / vide / vide`.
+- **contraste : plus aucun cas sous le seuil.** Le seul faux positif qui
+  traînait depuis l'étape 6 (l'émoji 🔊, dont la couleur calculée ne s'applique
+  pas au glyphe) a disparu avec l'émoji lui-même.
+- **cibles tactiles inchangées** — après un correctif : sans l'émoji qui la
+  remplissait, la boîte du bouton de coupure du Synthé s'était rétrécie sur les
+  7px de la diode, et la cible avec elle (34px). `min-width: 32px`, comme les
+  lignes de batterie.
+- débordement horizontal 0px à 390 et 1280 · `check` 0 erreur · 33 tests · les
+  deux builds · captures des six écrans.
+
+**Piège du détecteur de troncature :** il signalait les `.sr` comme « tronqués ».
+Un texte réservé aux lecteurs d'écran EST recadré exprès — c'est la technique,
+pas un défaut. Le détecteur ignore désormais ce qui porte un `clip-path`.
+
 ### Chantiers ouverts
 
 - **Le tactile en Mode Live** — 28 cibles sous 44px, dont 21 icônes de coin qu'on

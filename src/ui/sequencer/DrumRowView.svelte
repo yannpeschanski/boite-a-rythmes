@@ -7,6 +7,7 @@
   import XpSlider from '../xp/XpSlider.svelte';
   import { history } from '../../stores/history.svelte';
   import { applyEuclideanRhythm } from '../../engine/generators';
+  import { lastTouched } from '../atelier/lastTouched.svelte';
 
   let {
     name,
@@ -27,6 +28,10 @@
   const row = $derived(pattern.state.rows[name]);
   // snare/hat = 3 états (normal/rim, fermé/ouvert) ; kick/clap/shaker = binaire
   const maxState = $derived(name === 'snare' || name === 'hat' ? 2 : 1);
+  // Une ligne « sonne » si elle a au moins un pas actif. La coupure est un
+  // état distinct : une ligne coupée mais remplie n'est pas une ligne vide,
+  // et la diode les distingue (allumée / éteinte / creuse).
+  const sonne = $derived(row.pattern.some((v) => v > 0));
 
   // Générateur euclidien (PLAN.md §6) : nombre de coups à répartir, réglage
   // ponctuel comme fillRate côté Synthé (SynthModule.svelte) — pas un champ
@@ -38,6 +43,10 @@
   }
 
   function cycleCell(col: number) {
+    // Le bandeau LCD du bas suit la ligne qu'on manipule (voir
+    // atelier/lastTouched.svelte.ts). Posé ici plutôt que sur le pointerdown :
+    // un appui long qui ne modifie rien n'a pas « touché » la ligne.
+    lastTouched.drum(name);
     history.push();
     const cur = row.pattern[col];
     const next = ((cur + 1) % (maxState + 1)) as DrumStep;
@@ -87,13 +96,23 @@
 
 <div class="drum-row">
   <div class="row-head">
-    <span class="row-label" style:--row-color="var(--cell-{name})">{label}</span>
+    <!-- La diode de la maquette, et c'est elle l'interrupteur : allumée la
+         ligne sonne, éteinte elle est coupée, creuse elle est vide. Un émoji
+         🔊 tenait ce rôle — il disait l'action, pas l'état, et il était le
+         dernier glyphe de couleur du chrome. -->
     <button
       class="mute tap44"
       class:muted={row.muted}
-      title={row.muted ? 'Réactiver' : 'Couper'}
-      onclick={() => (row.muted = !row.muted)}>{row.muted ? '🔇' : '🔊'}</button
+      class:vide={!sonne}
+      style:--led-color="var(--cell-{name})"
+      aria-pressed={row.muted}
+      title={row.muted ? 'Réactiver la ligne' : 'Couper la ligne'}
+      onclick={() => {
+        lastTouched.drum(name);
+        row.muted = !row.muted;
+      }}><i class="led"></i><span class="sr">{row.muted ? 'Coupé' : 'Actif'}</span></button
     >
+    <span class="row-label" style:--row-color="var(--cell-{name})">{label}</span>
   </div>
   <!-- `beat-grid` (audit A5, styles dans styles/global.css) : une ligne drum
        couvre toujours exactement une mesure de 4 temps, d'où --bars:1 et
@@ -193,21 +212,54 @@
     color: var(--row-color, var(--xp-text));
   }
   /* 29×18px avant l'audit A3 — un bouton qu'on vise en pleine composition,
-     ramené à une vraie cible carrée. */
+     ramené à une vraie cible carrée. Le bouton reste un poussoir biseauté ;
+     ce qui a changé, c'est ce qu'il montre. */
   .mute {
+    display: grid;
+    place-items: center;
     border: 1px solid var(--xp-line);
     background: var(--xp-face);
     box-shadow: var(--xp-bevel-out);
     border-radius: 3px;
     cursor: pointer;
-    font-size: var(--xp-size-body);
     min-width: 32px;
     min-height: 28px;
-    line-height: 1;
+    padding: 0;
   }
   .mute.muted {
     box-shadow: var(--xp-bevel-in);
     background: var(--xp-face-dark);
+  }
+  /* La diode : 7px, ronde, teintée de la ligne, et elle rayonne. Le halo est
+     ce qui la fait lire comme allumée plutôt que comme une pastille peinte —
+     c'est lui qu'on retire pour l'éteindre, pas seulement la couleur. */
+  .led {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--led-color);
+    box-shadow: 0 0 5px var(--led-color);
+  }
+  /* Coupée : gris ardoise, halo éteint. Le nom de la ligne, lui, garde sa
+     couleur — c'est la piste, pas son état (moodboard des finalistes). */
+  .mute.muted .led {
+    background: var(--xp-led-off);
+    box-shadow: none;
+  }
+  /* Vide : ni allumée ni coupée. Un contour creux, comme un emplacement. */
+  .mute.vide:not(.muted) .led {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--xp-led-off);
+  }
+  /* Le libellé d'état reste lisible par un lecteur d'écran : la diode ne dit
+     rien à qui ne la voit pas. */
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .cells {
     display: grid;
