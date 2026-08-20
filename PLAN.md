@@ -4507,6 +4507,93 @@ cases justes et laisse les cases données inertes au clic) · barre d'espace
 fonctionnelle · aucune erreur console · aucun débordement de page à 390px ·
 cibles tactiles remesurées.
 
+### ✅ Étape 18 — « Joue en rythme » repris sur les retours d'essai (2026-08-20)
+
+> « le 1er type est plus simple que "reproduire" / le 2eme fonctionne en l'état
+> tant que c'est un peu complexe / le 3eme peut être très sympa, plus choses à
+> changer : soit ne pas voir où sont les temps à reproduire soit uniquement les
+> voir mais ne pas entendre à quoi ça doit ressembler · avoir un petit décompte ·
+> doute sur le temps de réponse entre le toucher et la remontée dans le système ·
+> attention à avoir un bon niveau de tolérance · voir ce qu'on joue comme séquence »
+
+**Deux verdicts à garder pour le placement dans la campagne**, sans code associé :
+
+- **« compléter » est PLUS FACILE que « reproduire »** — l'oreille travaille sur
+  un contexte au lieu du vide. Sa place est donc **avant**, pas après : c'est un
+  échauffement, pas un examen.
+- **« l'intrus » tient en l'état** à condition que le rythme soit un peu
+  complexe. Sur une boucle pauvre, la variante d'un pas s'entend trop vite. À
+  cadrer par la densité du niveau, pas par du code.
+
+**Les cinq points sur « jouer », un par un.**
+
+1. **Voir OU entendre, jamais les deux.** C'était le défaut de fond : montrer la
+   grille pendant que le kick sonne ne demande que de suivre un point lumineux.
+   Nouveau champ `GameLevel.jouerIndice` et **deux pilotes** au lieu d'un —
+   37 « à l'oreille » (le kick sonne, la grille reste vide) et 38 « à vue » (la
+   grille montre le motif, le kick est MUET, un hat en croches donne la
+   pulsation). Le kick est coupé par `row.muted` dans `buildState`, honoré par le
+   scheduler.
+   ⚠️ **Le secret fuyait par où on ne l'attendait pas** : la bande de séquence
+   (point 5) affichait les repères des coups attendus, donc la réponse, en
+   « à l'oreille ». Trouvé en scriptant le pilote — le robot, qui n'entend rien,
+   les lisait pour savoir où frapper et gagnait à 100 %. Les repères ne
+   s'affichent plus qu'à vue, ou une fois le niveau fini.
+2. **Précompte.** Quatre clics au tempo du niveau avant que ça compte, affichés
+   en gros sur le pad. `engine.countIn`, écrit pour l'enregistrement du direct,
+   réutilisé tel quel — le pad affiche le chiffre et refuse les frappes tant
+   qu'il tourne. Un Stop pendant le précompte reste un Stop (sans le test, la
+   boucle démarrait quand même quatre temps plus tard).
+3. **Le temps de réponse — le doute était fondé, et il y avait DEUX fautes.**
+   - Le coup de référence était daté par `performance.now()` au moment où la
+     frame rAF consommait l'événement. rAF ne tourne qu'à 60 Hz et ne tombe
+     jamais pile sur le coup : **jusqu'à 16 ms d'erreur ajoutés à chaque
+     mesure**. On prend maintenant `ev.time`, le temps AUDIO programmé, via un
+     `engine.audioTime()` neuf (compensé par `outputLatency`, comme
+     `consumePlayhead`).
+   - La frappe était datée au moment où le gestionnaire s'exécutait, pas quand
+     l'événement est arrivé. `event.timeStamp` porte l'instant de réception ; la
+     différence avec `performance.now()` est exactement le retard de remontée,
+     et il est retranché.
+   Reste ce qu'aucun code ne peut voir : la latence de la dalle tactile
+   elle-même. D'où le point 4.
+4. **Tolérance.** 25/90 ms → **40/130 ms**. Pas par gentillesse : la chaîne
+   d'entrée d'un écran tactile ajoute ses propres dizaines de millisecondes avant
+   que le geste n'arrive au code, et un joueur parfaitement en place peut être
+   mesuré systématiquement en retard. Surtout, `medianeDesEcarts` est affiché à
+   côté de la note — **« écart médian +60 ms (tu traînes) »**. La justesse prend
+   la valeur absolue, donc « tout le monde en retard de 60 ms » et « la moitié en
+   avance, l'autre en retard » lui donnent la même note : la médiane signée les
+   sépare, et c'est ce qui dit si on regarde de la latence ou de l'imprécision.
+   Médiane et non moyenne — une frappe complètement à côté ne doit pas déplacer
+   le diagnostic de toutes les autres.
+5. **Voir ce qu'on joue.** Une bande de séquence sous le guide : chaque frappe à
+   sa **place réelle** dans la mesure (jamais quantifiée — c'est tout l'intérêt,
+   une frappe posée juste après le repère se VOIT en retard), colorée par le même
+   seuil que la note. Une frappe garde donc deux choses au lieu d'une : son écart
+   signé et sa phase. Un pourcentage seul ne dit pas *où* ça déraille.
+
+**Un test de store, le premier du projet.** `tests/jouer.test.ts` vérifie que le
+kick est bien MUET à vue et bien AUDIBLE à l'oreille. Ce n'est pas un détail
+d'implémentation : si le kick redevient audible au 38, l'exercice devient trivial
+et **rien à l'écran ne le signalerait**. Vitest compile les runes sans réglage
+supplémentaire (le plugin Svelte de `vite.config.ts` traite les `.svelte.ts`) —
+vérifié avant d'écrire le fichier.
+
+**Fichiers touchés :** `src/engine/AudioEngine.ts` (`audioTime()`),
+`src/model/exercises.ts` (seuils, `medianeDesEcarts`), `src/model/presets/levels.ts`
+(`jouerIndice`, niveaux 37/38), `src/stores/game.svelte.ts` (`frappes` avec phase,
+`decalageMedian`, kick muet), `src/ui/game/GameView.svelte` (précompte, horloge
+audio, bande de séquence, légende), `tests/exercises.test.ts`, `tests/jouer.test.ts`
+(neuf).
+
+**Vérifié :** `check` 0 erreur · **69 tests** · les deux builds · Playwright sur
+les deux sens (à vue : 10 frappes, 100 %, écart médian +7 ms ; à l'oreille : le
+guide et les repères restent vides pendant le jeu et n'apparaissent qu'à
+l'abandon) · frappes ignorées pendant le précompte · aucune erreur console ·
+aucun débordement à 390px · cibles tactiles : aucune sous 44×44 hors les deux
+exceptions documentées, sur les quatre pilotes.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
@@ -4516,10 +4603,14 @@ qui l'a fermé.*
 - 🔜 **Mode jeu, la suite — trois chantiers, dans cet ordre.** L'étape 17 a posé
   la charpente et un pilote de chaque verbe ; ce qui reste est du contenu et de
   l'intégration, pas de l'architecture.
-  1. **Intégrer les trois verbes à la campagne.** Les pilotes 35-37 sont hors
-     courbe. Décider où chaque verbe entre (« compléter » est le plus doux,
-     « jouer » le plus dépaysant), et si la campagne s'allonge ou si des niveaux
-     existants changent de verbe. **Arbitrage de Yann**, pas une décision technique.
+  1. **Intégrer les trois verbes à la campagne.** Les pilotes 35-38 sont hors
+     courbe. Deux verdicts d'essai de Yann (2026-08-20) à respecter :
+     **« compléter » est plus facile que « reproduire »** — donc AVANT, comme
+     échauffement, pas après ; et **« l'intrus » exige un rythme un peu complexe**
+     pour que la variante d'un pas ne s'entende pas immédiatement. Reste à
+     décider si la campagne s'allonge ou si des niveaux existants changent de
+     verbe, et lequel des deux sens de « jouer » (à l'oreille / à vue) entre en
+     premier. **Arbitrage de Yann**, pas une décision technique.
   2. **La grille de déverrouillage** — proposition écrite et retenue par Yann :
      rafale au niv. 11, swing 14, ghost 20, fill 21, décalage 23. À appliquer.
   3. **L'extension au synthé.** La plus grosse. ⚠️ `GameDrumRowName` touche le

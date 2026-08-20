@@ -4,7 +4,7 @@
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { GameDrumRowName } from '../../model/presets/levels';
-  import type { ExerciseKind } from '../../model/exercises';
+  import { PARFAIT_MS, TOLERANCE_MS, type ExerciseKind } from '../../model/exercises';
   import XpWindow from '../xp/XpWindow.svelte';
 
   let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
@@ -32,7 +32,11 @@
       // mesure l'écart d'une frappe.
       if (ev.name === 'kick' && ev.col !== dernierKickVu && game.target.kick[ev.col] > 0) {
         dernierKickVu = ev.col;
-        dernierKickMs = performance.now();
+        // ⚠️ `ev.time` (horloge audio, temps PROGRAMMÉ du coup) et non l'instant
+        // où cette frame le consomme : rAF ne tourne qu'à 60 Hz et ne passe
+        // jamais pile sur le coup, ce qui ajoutait jusqu'à 16 ms d'erreur à
+        // chaque mesure — sur une tolérance de 130, ce n'est pas du bruit.
+        dernierKickAudio = ev.time;
       }
     }
     raf = requestAnimationFrame(loop);
@@ -44,9 +48,11 @@
     dernierKickVu = -1;
   }
 
-  /* « Jouer en rythme » — mesurer l'écart au COUP, pas à la grille.
+  /* « Jouer en rythme » — mesurer l'écart au COUP, sur l'horloge du SON.
    *
-   * Deux façons de se tromper, écartées ici :
+   * Quatre façons de se tromper, écartées ici. Les deux premières viennent de
+   * l'essai des pilotes, les deux suivantes du retour de Yann (« doute sur le
+   * temps de réponse entre le toucher et la remontée dans le système ») :
    *
    * 1. Quantifier puis comparer les cases. Une frappe posée 80 ms trop tard
    *    tombe encore dans le bon pas : elle serait déclarée parfaite, alors
@@ -56,24 +62,45 @@
    *    silence bien aligné aurait donné 100 %. L'ancre est donc le dernier pas
    *    ACTIF du kick, et l'intervalle est celui qui le sépare du prochain pas
    *    actif — pas la durée d'un pas.
+   * 3. Dater le coup de référence avec `performance.now()` au moment où la
+   *    frame le consomme. rAF ne tourne qu'à 60 Hz : jusqu'à 16 ms d'erreur
+   *    ajoutés à chaque mesure. On prend `ev.time`, le temps AUDIO programmé.
+   * 4. Dater la frappe au moment où le gestionnaire s'exécute. Entre le
+   *    contact du doigt et l'appel du code il y a la file d'événements du
+   *    navigateur, et elle n'est pas régulière. `event.timeStamp` porte
+   *    l'instant où le navigateur a REÇU l'événement : la différence avec
+   *    `performance.now()` est exactement le retard de remontée, et on le
+   *    retranche.
+   *
+   * Reste ce qu'aucun code ne peut voir : la latence de la dalle tactile
+   * elle-même. D'où `decalageMedian`, affiché à côté de la note — un biais
+   * franc et constant est de la latence, pas un défaut de placement.
    */
   let dernierKickVu = $state(-1);
-  let dernierKickMs = 0;
+  let dernierKickAudio = 0;
   function dureeDunPas(): number {
-    return (60000 / game.tempo) / Math.max(1, game.subdiv.kick / 4);
+    return 60 / game.tempo / Math.max(1, game.subdiv.kick / 4);
   }
-  function frapper() {
-    if (playingWhat !== 'target' || dernierKickVu < 0) return;
+  function frapper(e?: Event) {
+    if (playingWhat !== 'target' || enPrecompte || dernierKickVu < 0) return;
+    const maintenant = engine.audioTime();
+    if (maintenant === null) return;
+    // Retard de remontée de l'événement, retranché (point 4 ci-dessus).
+    const retard = e && e.timeStamp > 0 ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0;
     const n = game.subdiv.kick;
     // Combien de pas jusqu'au prochain kick (en tournant : le dernier kick de
     // la boucle enchaîne sur le premier).
     let pas = 1;
     while (pas <= n && game.target.kick[(dernierKickVu + pas) % n] === 0) pas++;
     const intervalle = pas * dureeDunPas();
-    const ecoule = performance.now() - dernierKickMs;
+    const ecoule = maintenant - retard - dernierKickAudio;
     // Écart signé au kick le plus proche : en retard (positif) ou en avance sur
-    // le suivant (négatif). `enregistrerFrappe` n'en garde que la valeur absolue.
-    game.enregistrerFrappe(ecoule > intervalle / 2 ? ecoule - intervalle : ecoule);
+    // le suivant (négatif). Le signe compte — voir `decalageMedian`.
+    const ecart = ecoule > intervalle / 2 ? ecoule - intervalle : ecoule;
+    // Position dans la mesure, pour afficher la séquence réellement jouée.
+    const visee = ecart >= 0 ? dernierKickVu : (dernierKickVu + pas) % n;
+    const phase = (visee + ecart / dureeDunPas()) / n;
+    game.enregistrerFrappe(ecart * 1000, ((phase % 1) + 1) % 1);
   }
 
   onMount(() => {
@@ -105,6 +132,7 @@
   function stopAll() {
     engine.stop();
     playingWhat = '';
+    enPrecompte = false;
     resetPlayhead();
   }
 
@@ -140,19 +168,36 @@
     }
   }
 
-  /* « Jouer » — relancer la boucle repart de zéro frappe.
+  /* « Jouer » — précompte, puis on repart de zéro frappe.
    *
-   * Sans ça, les frappes du tour précédent s'additionnent à celles du nouveau
-   * et la justesse cesse de vouloir dire quoi que ce soit. Arrêter, en
-   * revanche, ne les efface pas : on veut pouvoir stopper puis vérifier.
+   * Le précompte est le geste standard de n'importe quel logiciel
+   * d'enregistrement, et il manquait : sans lui la boucle démarrait sur un
+   * joueur qui n'a pas encore le tempo, et les deux ou trois premières frappes
+   * étaient perdues d'avance. Quatre clics au tempo du niveau — c'est
+   * `engine.countIn`, écrit pour l'enregistrement du direct et réutilisé tel
+   * quel plutôt que redécoupé ici.
+   *
+   * Relancer efface les frappes du tour précédent (sinon la justesse
+   * mélange deux essais) ; ARRÊTER ne les efface pas — on veut pouvoir
+   * stopper puis vérifier.
    */
-  function toggleJouer() {
-    if (playingWhat === 'target') {
-      play('target');
+  let enPrecompte = $state(false);
+  let clicPrecompte = $state(0);
+  async function toggleJouer() {
+    if (playingWhat === 'target' || enPrecompte) {
+      if (playingWhat === 'target') play('target');
+      enPrecompte = false;
       return;
     }
     game.reinitialiserFrappes();
     echec = false;
+    enPrecompte = true;
+    clicPrecompte = 0;
+    await engine.countIn((beat) => (clicPrecompte = beat));
+    // Un Stop pendant le précompte doit rester un Stop : sans ce test, la
+    // boucle démarrerait quand même quatre temps plus tard.
+    if (!enPrecompte) return;
+    enPrecompte = false;
     play('target');
   }
 
@@ -180,6 +225,18 @@
 
   const lvl = $derived(game.level);
   const ex = $derived(lvl.exercise);
+  // À vue, le guide montre le motif ; à l'oreille il ne montre que la grille
+  // vide et le curseur. Jamais les deux canaux ensemble — voir jouerIndice.
+  const montrerLeMotif = $derived(lvl.jouerIndice === 'lecture');
+
+  // Verdict d'une frappe, pour la couleur du repère sur la séquence jouée.
+  // Mêmes seuils que la note : ce qu'on voit et ce qui est compté sont la même
+  // chose, sans quoi une frappe verte pourrait rapporter zéro.
+  function verdict(ecartMs: number): 'parfait' | 'dedans' | 'dehors' {
+    const a = Math.abs(ecartMs);
+    if (a <= PARFAIT_MS) return 'parfait';
+    return a < TOLERANCE_MS ? 'dedans' : 'dehors';
+  }
   const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
 
   // La mesure à remplir, en Set : la grille interroge l'appartenance à chaque
@@ -280,9 +337,9 @@
           </button>
         {:else if ex === 'jouer'}
           <button class="xp-btn" onclick={toggleJouer}>
-            {playingWhat === 'target' ? '■ Stop' : '▶ Lancer la boucle'}
+            {playingWhat === 'target' || enPrecompte ? '■ Stop' : '▶ Lancer (précompte 4 temps)'}
           </button>
-          <button class="xp-btn" disabled={game.ecarts.length === 0} onclick={() => game.reinitialiserFrappes()}>
+          <button class="xp-btn" disabled={game.frappes.length === 0} onclick={() => game.reinitialiserFrappes()}>
             ↺ Effacer mes frappes
           </button>
         {:else}
@@ -336,26 +393,69 @@
           </div>
         </div>
       {:else if ex === 'jouer'}
-        <!-- Le guide montre le kick parce qu'on l'ENTEND de toute façon : rien
-             n'y est caché. Ce qui est noté, c'est le placement de la frappe,
-             pas la connaissance de la grille. -->
+        <!-- UN SEUL des deux canaux, jamais les deux (voir jouerIndice) :
+             montrer la grille pendant que le kick sonne ne demanderait que de
+             suivre un point lumineux. À l'oreille le guide reste vide ; à vue
+             il montre le motif et c'est le kick qui se tait. -->
         <div class="jouer">
           <div class="guide" style:--cols={game.subdiv.kick}>
             {#each { length: game.subdiv.kick } as _, col (col)}
               <span
                 class="pas"
-                class:actif={game.target.kick[col] > 0}
+                class:actif={montrerLeMotif && game.target.kick[col] > 0}
                 class:playing={playhead.kick === col}
               ></span>
             {/each}
           </div>
+
+          <!-- Ce qui a été joué, à sa place réelle dans la mesure. Un
+               pourcentage seul ne dit pas OÙ ça déraille ; ici on voit qu'on
+               traîne toujours sur le même temps.
+               ⚠️ Les repères creux (les coups attendus) sont CACHÉS tant que le
+               niveau « à l'oreille » n'est pas fini : les afficher rendait
+               visible exactement ce que ce niveau demande d'entendre — trouvé
+               en scriptant le pilote, le robot les lisait pour savoir où
+               frapper. À vue il n'y a rien à cacher, ils restent. -->
+          <div class="sequence" aria-hidden="true">
+            {#if montrerLeMotif || game.solved || game.revealed}
+              {#each { length: game.subdiv.kick } as _, col (col)}
+                {#if game.target.kick[col] > 0}
+                  <span class="attendu" style:left="{(col / game.subdiv.kick) * 100}%"></span>
+                {/if}
+              {/each}
+            {/if}
+            {#each game.frappes as f, i (i)}
+              <span
+                class="frappe {verdict(f.ecartMs)}"
+                style:left="{f.phase01 * 100}%"
+                title="{Math.round(f.ecartMs)} ms"
+              ></span>
+            {/each}
+          </div>
+
+          {#if game.frappes.length > 0}
+            <p class="legende">
+              <span class="pastille parfait"></span> juste
+              <span class="pastille dedans"></span> acceptable
+              <span class="pastille dehors"></span> à côté
+              {#if montrerLeMotif || game.solved || game.revealed}· traits fins&nbsp;: les coups attendus{/if}
+            </p>
+          {/if}
+
           <button
             class="pad"
-            disabled={playingWhat !== 'target'}
+            class:precompte={enPrecompte}
+            disabled={playingWhat !== 'target' && !enPrecompte}
             onpointerdown={frapper}
             aria-label="Frapper"
           >
-            {playingWhat === 'target' ? 'FRAPPE' : 'Lance la boucle'}
+            {#if enPrecompte}
+              <span class="decompte">{clicPrecompte || 4}</span>
+            {:else if playingWhat === 'target'}
+              FRAPPE
+            {:else}
+              Lance la boucle
+            {/if}
           </button>
           <div class="jauge" role="meter" aria-valuenow={game.justesse()} aria-valuemin="0" aria-valuemax="100">
             <div class="barre" style:width="{game.justesse()}%"></div>
@@ -364,9 +464,22 @@
                frappes s'accumulent d'un tour à l'autre, dépasser le compte est
                normal. On dit donc combien il en faut, pas une fraction. -->
           <p class="chiffres">
-            {game.ecarts.length} frappe{game.ecarts.length > 1 ? 's' : ''} — il en faut au moins
+            {game.frappes.length} frappe{game.frappes.length > 1 ? 's' : ''} — il en faut au moins
             {game.frappesAttendues} — justesse {game.justesse()}&nbsp;%
             <span class="muted">(70&nbsp;% suffisent)</span>
+            {#if game.frappes.length >= 3}
+              <br />
+              <!-- Diagnostic, jamais noté : un biais franc et constant, c'est de
+                   la latence de la chaîne d'entrée, pas un défaut de placement. -->
+              <span class="muted">
+                écart médian {game.decalageMedian() > 0 ? '+' : ''}{game.decalageMedian()}&nbsp;ms
+                ({Math.abs(game.decalageMedian()) <= 15
+                  ? 'centré'
+                  : game.decalageMedian() > 0
+                    ? 'tu traînes'
+                    : 'tu anticipes'})
+              </span>
+            {/if}
           </p>
         </div>
       {:else}
@@ -769,6 +882,68 @@
     outline: 2px solid var(--xp-playhead);
     outline-offset: -1px;
   }
+  /* La séquence réellement jouée, sur une mesure.
+     Les repères creux sont les coups attendus, les pleins ce qui a été frappé,
+     à leur place réelle et non quantifiés — c'est tout l'intérêt : une frappe
+     posée juste après le repère se VOIT en retard. */
+  .sequence {
+    position: relative;
+    height: 16px;
+    margin-bottom: 8px;
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-in);
+    background: var(--xp-lcd-bg);
+    overflow: hidden;
+  }
+  .attendu,
+  .frappe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+  }
+  .attendu {
+    background: var(--xp-lcd-dim);
+    box-shadow: 0 0 3px var(--xp-lcd-dim);
+  }
+  .frappe {
+    top: 3px;
+    bottom: 3px;
+    border-radius: 1px;
+  }
+  .frappe.parfait {
+    background: var(--xp-lcd);
+  }
+  .frappe.dedans {
+    background: var(--xp-playhead);
+  }
+  .frappe.dehors {
+    background: var(--cell-kick);
+  }
+
+  .legende {
+    font-size: var(--xp-size-small);
+    color: var(--xp-muted);
+    margin: 0 0 8px;
+  }
+  .pastille {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 1px;
+    vertical-align: baseline;
+  }
+  .pastille.parfait {
+    background: var(--xp-lcd);
+  }
+  .pastille.dedans {
+    background: var(--xp-playhead);
+  }
+  .pastille.dehors {
+    background: var(--cell-kick);
+  }
+
   .pad {
     display: block;
     width: 100%;
@@ -795,6 +970,18 @@
   .pad:disabled {
     color: var(--xp-muted);
     cursor: default;
+  }
+  /* Pendant le précompte le pad reste NOIR et affiche le chiffre : il ne se
+     grise pas comme un bouton désactivé, parce qu'il n'est pas hors service —
+     il compte. */
+  .pad.precompte {
+    color: var(--xp-playhead);
+    cursor: default;
+  }
+  .decompte {
+    font-size: 40px;
+    letter-spacing: 0;
+    font-weight: 700;
   }
   .jauge {
     height: 8px;

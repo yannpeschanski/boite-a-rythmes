@@ -76,6 +76,15 @@ export interface GameLevel {
   presetGhostRow: GameDrumRowName;
   presetFillEvery: number;
   voiceTier: VoiceTierName;
+  /* « Jouer en rythme » : par quel sens on donne le rythme à reproduire.
+   *
+   * Montrer la grille ET faire sonner le kick rend l'exercice trivial — il ne
+   * reste qu'à suivre un point lumineux. Un seul des deux canaux à la fois :
+   *   - `ecoute`  : le kick sonne, la grille ne montre RIEN. On place à l'oreille.
+   *   - `lecture` : la grille montre le motif, le kick est MUET ; un hat en
+   *                 croches donne la pulsation. On place à vue.
+   * Sans objet pour les autres verbes. */
+  jouerIndice: 'ecoute' | 'lecture';
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
@@ -102,6 +111,7 @@ export interface MkLevelOptions {
   presetGhostDensity?: number;
   presetGhostRow?: GameDrumRowName;
   presetFillEvery?: number;
+  jouerIndice?: 'ecoute' | 'lecture';
 }
 
 // Options du générateur de ligne (voir genLevelRow).
@@ -304,7 +314,8 @@ export function voiceTierForLevel(id: number): VoiceTierName {
 // de chaque concept) est affiché au joueur pour expliquer ce qui change.
 export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel {
   return {
-    id, teach, exercise: o.exercise || 'reproduire', preamble: o.preamble || '',
+    id, teach, exercise: o.exercise || 'reproduire', jouerIndice: o.jouerIndice || 'ecoute',
+    preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
     rowsActive: {
@@ -536,9 +547,22 @@ export const LEVELS: GameLevel[] = [
   // Kick seul, et assez fourni pour qu'il y ait un motif à jouer : à 4 pas avec
   // kickMin/Max à 1, la boucle sortait DEUX frappes — on ne joue pas en rythme
   // sur deux frappes, on appuie deux fois.
-  mkLevel(37, 'Joue en rythme', {
-    exercise: 'jouer',
-    preamble: "La boucle tourne. Frappe le pad — ou la barre d'espace — sur chaque coup de kick. Ici on ne note pas ce que tu sais, mais ce que tu places.",
+  //
+  // 37 et 38 sont le MÊME exercice par deux sens différents (voir jouerIndice) :
+  // montrer la grille ET faire sonner le kick ne demanderait que de suivre un
+  // point lumineux. À l'oreille, la grille reste vide ; à vue, le kick se tait
+  // et le hat en croches donne la pulsation.
+  mkLevel(37, 'Joue en rythme — à l’oreille', {
+    exercise: 'jouer', jouerIndice: 'ecoute',
+    preamble: "La boucle tourne, la grille reste vide : c'est à l'oreille. Frappe le pad — ou la barre d'espace — sur chaque coup de kick. Un précompte de quatre clics te donne le tempo avant que ça compte.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
     tempoOptions: [84, 92], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(38, 'Joue en rythme — à vue', {
+    exercise: 'jouer', jouerIndice: 'lecture',
+    preamble: "Cette fois le kick est muet : tu vois le motif, tu ne l'entends pas. Le hat te donne la pulsation, à toi de poser les coups au bon endroit.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: true },
+    tempoOptions: [84, 92],
+    // Hat sur toutes les croches : c'est la pulsation, pas un motif. Sans elle,
+    // « à vue » se jouerait dans le silence — donc au hasard.
+    density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 1, hatMax: 1 } }),
 ];

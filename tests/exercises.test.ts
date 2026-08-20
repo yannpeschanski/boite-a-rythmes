@@ -11,6 +11,7 @@ import {
   colonnesDeTranche,
   ecartAuCoup,
   justesseDesFrappes,
+  medianeDesEcarts,
   PARFAIT_MS,
   TOLERANCE_MS,
   type Grille,
@@ -137,11 +138,43 @@ describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au 
   });
 });
 
+describe('medianeDesEcarts — le diagnostic que la justesse ne donne pas', () => {
+  it('sépare « tout le monde en retard » de « à côté dans les deux sens »', () => {
+    // Même justesse pour les deux séries, deux problèmes différents : le
+    // premier est de la latence, le second de l’imprécision.
+    const traine = [60, 62, 58, 61];
+    const disperse = [60, -62, 58, -61];
+    expect(justesseDesFrappes(traine, 4)).toBe(justesseDesFrappes(disperse, 4));
+    expect(medianeDesEcarts(traine)).toBeGreaterThan(50);
+    expect(Math.abs(medianeDesEcarts(disperse))).toBeLessThan(10);
+  });
+
+  it('une frappe complètement à côté ne déplace pas le diagnostic', () => {
+    // C’est la raison d’être de la médiane : la moyenne des mêmes valeurs
+    // vaudrait 205.
+    expect(medianeDesEcarts([10, 12, 14, 1000])).toBe(13);
+  });
+
+  it('série vide : 0, jamais NaN', () => {
+    expect(medianeDesEcarts([])).toBe(0);
+  });
+});
+
 describe('les niveaux', () => {
   it('la campagne reste 34 « reproduire » — ni la charpente ni les pilotes n’y touchent', () => {
     const campagne = LEVELS.slice(0, 34);
     expect(campagne).toHaveLength(34);
     for (const l of campagne) expect(l.exercise).toBe('reproduire');
+  });
+
+  it('« jouer » existe dans ses deux sens, jamais les deux à la fois', () => {
+    const jouer = LEVELS.filter((l) => l.exercise === 'jouer');
+    expect(jouer.map((l) => l.jouerIndice).sort()).toEqual(['ecoute', 'lecture']);
+    // Le défaut ne doit pas fuiter sur les autres verbes : le champ existe
+    // partout mais n'a de sens que pour « jouer ».
+    for (const l of LEVELS.filter((x) => x.exercise !== 'jouer')) {
+      expect(l.jouerIndice).toBe('ecoute');
+    }
   });
 
   it('un pilote de chaque nouveau verbe existe', () => {
