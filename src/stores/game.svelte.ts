@@ -16,7 +16,12 @@ import {
   type GamePresetLike,
   type GameDrumRowName,
 } from '../model/presets/levels';
-import { comparerGrilles, colonnesDeTranche, justesseDesFrappes } from '../model/exercises';
+import {
+  comparerGrilles,
+  colonnesDeTranche,
+  justesseDesFrappes,
+  medianeDesEcarts,
+} from '../model/exercises';
 import { PRESETS } from '../model/presets/songs';
 import {
   BAG_ITEMS,
@@ -152,9 +157,15 @@ class GameStore {
   intrusReponse = $state(0);
   intrusChoix = $state<number | null>(null);
 
-  // « Jouer » : les écarts en millisecondes de chaque frappe par rapport au pas
-  // le plus proche, et le nombre de pas attendus sur un tour de boucle.
-  ecarts = $state<number[]>([]);
+  /* « Jouer » : les frappes jouées, et le nombre de coups attendus sur un tour
+   * de boucle.
+   *
+   * Une frappe garde DEUX choses : son écart signé au coup le plus proche (la
+   * note) et sa position dans la mesure (l'affichage). Le second n'est pas du
+   * décor : sans lui on annonce un pourcentage sans jamais montrer ce qui a été
+   * joué, et le joueur ne peut pas voir qu'il traîne toujours sur le même
+   * temps. */
+  frappes = $state<Array<{ ecartMs: number; phase01: number }>>([]);
   frappesAttendues = $state(0);
 
   progress = $state<Record<string, PlayerProgress>>({});
@@ -302,7 +313,7 @@ class GameStore {
     this.zoneACompleter = {};
     this.intrusReponse = 0;
     this.intrusChoix = null;
-    this.ecarts = [];
+    this.frappes = [];
     this.frappesAttendues = 0;
 
     if (this.level.exercise === 'completer') {
@@ -386,7 +397,7 @@ class GameStore {
     // avoir frappé le bon nombre de fois, et assez juste.
     if (this.level.exercise === 'jouer') {
       const juste =
-        this.ecarts.length >= this.frappesAttendues &&
+        this.frappes.length >= this.frappesAttendues &&
         this.frappesAttendues > 0 &&
         this.justesse() >= 70;
       if (juste) this.win();
@@ -424,19 +435,32 @@ class GameStore {
    * « au bon moment » : quantifier d'abord puis comparer les cases rendrait
    * parfaite une frappe posée 80 ms trop tard.
    */
-  enregistrerFrappe(ecartMs: number): void {
+  enregistrerFrappe(ecartMs: number, phase01: number): void {
     if (this.solved || this.revealed) return;
-    this.ecarts = [...this.ecarts, Math.abs(ecartMs)];
+    // L'écart reste SIGNÉ ici : `justesseDesFrappes` prend la valeur absolue,
+    // mais `decalageMedian` a besoin du signe — c'est lui qui dit si le joueur
+    // traîne ou si c'est la chaîne d'entrée qui retarde.
+    this.frappes = [...this.frappes, { ecartMs, phase01 }];
   }
 
   // La note elle-même est pure et testée dans model/exercises.ts ; le store ne
   // fait que lui passer ce qu'il a.
   justesse(): number {
-    return justesseDesFrappes(this.ecarts, this.frappesAttendues);
+    return justesseDesFrappes(
+      this.frappes.map((f) => f.ecartMs),
+      this.frappesAttendues,
+    );
+  }
+
+  /* Le biais du joueur, en millisecondes signées. Diagnostic, jamais noté :
+   * « tu joues 60 ms en retard, toujours » n'est pas la même faute que « tu es
+   * à ±60 ms dans les deux sens ». */
+  decalageMedian(): number {
+    return medianeDesEcarts(this.frappes.map((f) => f.ecartMs));
   }
 
   reinitialiserFrappes(): void {
-    this.ecarts = [];
+    this.frappes = [];
   }
 
   /* ---- « Intrus » ----
@@ -560,8 +584,13 @@ class GameStore {
     const intrus = which === 'intrus' ? this.grilleIntrus() : null;
     const grid = intrus ? intrus.grid : which === 'target' ? this.target : this.guess;
     const rolls = intrus ? intrus.rolls : which === 'target' ? this.targetRolls : this.guessRolls;
+    // « Jouer » à vue : le kick est MUET. On voit le motif, on ne l'entend pas —
+    // sans quoi voir et entendre ensemble ne demanderait que de suivre un point
+    // lumineux. Le hat de la ligne donne la pulsation (voir le niveau 38).
+    const kickMuet = this.level.exercise === 'jouer' && this.level.jouerIndice === 'lecture';
     GAME_DRUM_ROWS.forEach((name) => {
       const row = state.rows[name];
+      if (name === 'kick' && kickMuet && which === 'target') row.muted = true;
       row.subdiv = intrus ? intrus.subdiv[name] : this.subdiv[name];
       row.pattern = new Array(32).fill(0).map((z, i) => grid[name][i] ?? z);
       row.rolls = new Array(32).fill(1).map((one, i) => rolls[name][i] ?? one);

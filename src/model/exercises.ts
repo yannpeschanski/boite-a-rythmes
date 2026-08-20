@@ -117,12 +117,22 @@ export function colonnesDeTranche(subdiv: number, tranche: number, tranches: num
 
 /* Tolérance de placement, en millisecondes.
  *
- * 90 ms n'est pas un chiffre rond posé au hasard : c'est l'ordre de grandeur
- * au-delà duquel une frappe cesse d'être entendue comme « sur le temps » et
- * s'entend comme une faute. En dessous de ~25 ms, personne n'entend l'écart —
- * exiger mieux noterait la chance, pas l'oreille. */
-export const TOLERANCE_MS = 90;
-export const PARFAIT_MS = 25;
+ * Les seuils portent sur ce qui S'ENTEND : au-delà d'environ 120 ms une frappe
+ * cesse d'être perçue comme « sur le temps » et s'entend comme une faute ; en
+ * dessous de ~40 ms, personne ne distingue l'écart — exiger mieux noterait la
+ * chance, pas l'oreille.
+ *
+ * ⚠️ Élargis (25/90 → 40/130) après essai réel. La raison n'est pas d'être
+ * gentil, c'est que la chaîne d'entrée d'un écran tactile ajoute ses propres
+ * dizaines de millisecondes AVANT que le geste n'arrive au code — un joueur
+ * parfaitement en place peut être mesuré systématiquement en retard. Deux
+ * réponses, toutes deux nécessaires : mesurer sur l'horloge AUDIO et corriger
+ * le délai de remontée de l'événement (voir GameView), et laisser une marge
+ * qui absorbe le reste. `medianeDesEcarts` sert à voir lequel des deux
+ * problèmes on regarde : un biais franc et constant, c'est de la latence, pas
+ * de l'imprécision. */
+export const TOLERANCE_MS = 130;
+export const PARFAIT_MS = 40;
 
 /* Écart signé au coup le plus proche.
  *
@@ -156,4 +166,23 @@ export function justesseDesFrappes(ecarts: number[], attendues: number): number 
     return acc + 100 * (1 - (a - PARFAIT_MS) / (TOLERANCE_MS - PARFAIT_MS));
   }, 0);
   return Math.round(total / Math.max(attendues, ecarts.length));
+}
+
+/* Écart MÉDIAN signé d'une série de frappes.
+ *
+ * Le diagnostic que la justesse seule ne donne pas : elle prend la valeur
+ * absolue, donc « tout le monde en retard de 60 ms » et « la moitié en avance,
+ * l'autre en retard » lui donnent la même note. La médiane signée les sépare.
+ * Un biais franc et constant se lit comme de la latence (chaîne d'entrée,
+ * casque Bluetooth) et non comme un défaut de placement — et on ne corrige pas
+ * la même chose.
+ *
+ * Médiane et non moyenne : une frappe complètement à côté ne doit pas déplacer
+ * le diagnostic de toutes les autres.
+ */
+export function medianeDesEcarts(ecarts: number[]): number {
+  if (ecarts.length === 0) return 0;
+  const tri = [...ecarts].sort((a, b) => a - b);
+  const m = Math.floor(tri.length / 2);
+  return Math.round(tri.length % 2 ? tri[m] : (tri[m - 1] + tri[m]) / 2);
 }

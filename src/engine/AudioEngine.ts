@@ -570,6 +570,20 @@ export class AudioEngine {
     }
   }
 
+  /* L'horloge du son ENTENDU, en secondes.
+   *
+   * `ctx.currentTime` avance dès qu'un échantillon est traité, pas quand il
+   * sort du haut-parleur ; `outputLatency` est cet écart. Même compensation
+   * que `consumePlayhead` ci-dessous, exposée séparément parce que le Mode jeu
+   * en a besoin pour dater une frappe : mesurer un placement contre
+   * `performance.now()` mesure l'horloge du fil principal, qui n'est pas celle
+   * qu'on entend. Renvoie null tant qu'aucun contexte n'existe.
+   */
+  audioTime(): number | null {
+    if (!this.ctx) return null;
+    return this.ctx.currentTime - (this.ctx.outputLatency || 0);
+  }
+
   // Appelée à chaque frame rAF par l'UI : renvoie les événements dont le
   // temps audio programmé est déjà passé selon l'horloge de l'AudioContext.
   // Compensée par outputLatency : ctx.currentTime avance dès qu'un
