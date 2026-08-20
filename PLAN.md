@@ -4594,6 +4594,54 @@ l'abandon) · frappes ignorées pendant le précompte · aucune erreur console �
 aucun débordement à 390px · cibles tactiles : aucune sous 44×44 hors les deux
 exceptions documentées, sur les quatre pilotes.
 
+### ✅ Étape 19 — le test instable qui a rendu `main` rouge, et ce qu'il cachait (2026-08-20)
+
+**Ce qui s'est passé.** Le test de store écrit à l'étape 18 affirmait « le hat a
+8 pas sur 8 ». Vert en local, vert sur la PR #88 — **rouge sur `main` avec 7**,
+donc build non produit et **déploiement Vercel sauté**. La PR était mergée, le
+site ne l'était pas.
+
+**La cause immédiate : un test qui tirait au sort.** La génération d'un niveau
+passe par `Math.random()`. Un test qui n'en regarde qu'un tirage n'est pas un
+test, c'est une pièce lancée. Et le remplissage du hat (`genLevelRow`, branche
+`fillRatio`) tire des positions au hasard avec un garde-fou à `steps * 4` :
+remplir la DERNIÈRE case sur huit est un problème du collectionneur de vignettes,
+32 tirages n'y suffisent pas toujours. `fillRatio: 1` ne garantit donc pas le
+plein — il n'a jamais prétendu le faire, c'est l'assertion qui mentait.
+
+**Ce que l'instabilité cachait, et qui valait bien plus que le test.** En
+mesurant la vraie distribution plutôt qu'en relâchant l'assertion : le générateur
+pose une ancre puis 2 ou 3 « extras » à des positions **tirées indépendamment**,
+qui peuvent retomber sur l'ancre. Sur 200 000 tirages :
+
+| Coups de kick | Part |
+|---|---|
+| **1** | **0,86 %** |
+| 2 | 21,2 % |
+| 3 | 57,5 % |
+| 4 | 20,5 % |
+
+Un niveau « jouer » sur cent sortait avec **un seul coup à jouer** — on ne joue
+pas un rythme sur une frappe, on appuie une fois. Assez rare pour ne jamais se
+voir en essayant, assez fréquent pour tomber sur un joueur. Un plancher de deux
+coups est posé dans `preparerExercice`, **pas dans le générateur** : `genLevelRow`
+sert les 34 niveaux de la campagne et y toucher changerait l'ordre de consommation
+du hasard pour tout le monde. Le complément se prend sur les positions fortes,
+sans tirage — il n'ajoute donc aucun appel au générateur.
+
+**La règle à retenir.** Un test qui dépend de `Math.random()` doit affirmer ce qui
+est vrai à **chaque** tirage, et répéter (60 fois ici) pour que le hasard devienne
+de la couverture au lieu d'une pièce lancée. Le hat est donc noté « au moins 75 %
+des pas », ce qui est la propriété qui compte — un trou occasionnel s'entend comme
+une syncope, pas comme une absence de tempo.
+
+**Et la règle de session.** Vert sur la PR ne veut pas dire vert sur `main` quand
+un test est aléatoire. Vérifier le run de `main` après le merge, pas seulement
+celui de la PR — c'est lui qui déploie.
+
+**Vérifié :** `check` 0 erreur · **70 tests** · 12 exécutions consécutives du
+fichier instable, toutes vertes (≈3 600 tirages par assertion) · les deux builds.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

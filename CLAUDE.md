@@ -160,6 +160,15 @@ JSON d'erreur sans la clé attendue, donc une boucle `until [ -n "$(curl … )" 
 2026-08-19 avant que Yann ne le remarque. Penser aussi à arrêter les tâches de
 fond dès que la PR est mergée.
 
+⚠️ **Vert sur la PR ne veut pas dire vert sur `main`.** La génération des niveaux
+passe par `Math.random()` : un test qui n'en regarde qu'un tirage est une pièce
+lancée. Le 2026-08-20, une assertion à un seul tirage est passée en local et sur
+la PR, puis a échoué sur `main` — **build non produit, déploiement sauté, PR
+mergée mais site inchangé**. Un test qui dépend du hasard doit affirmer ce qui est
+vrai à CHAQUE tirage et répéter (60 fois) pour que le hasard devienne de la
+couverture. Et **après un merge, vérifier le run de `main`**, pas seulement celui
+de la PR : c'est celui-là qui déploie.
+
 **Avant chaque commit :** `npm run check` (0 erreur), `npm test`, `npm run build`
 + `npm run build:singlefile`. Pour un changement d'UI : lancer le serveur de dev
 et vérifier visuellement au moins une fois avec Playwright (headless, Chromium à

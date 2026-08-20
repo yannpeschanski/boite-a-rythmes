@@ -10,6 +10,7 @@ import {
   voiceForLevel,
   presetForLevel,
   pick,
+  strongPositions,
   type GameLevel,
   type GameVoice,
   type SubdivSpec,
@@ -346,7 +347,28 @@ class GameStore {
     }
 
     if (this.level.exercise === 'jouer') {
-      this.frappesAttendues = this.target.kick.filter((v) => v > 0).length;
+      /* Plancher de deux coups.
+       *
+       * Le générateur pose une ancre puis 2 ou 3 « extras » à des positions
+       * TIRÉES INDÉPENDAMMENT : elles peuvent retomber sur l'ancre. Mesuré sur
+       * 200 000 tirages, il sort un seul coup dans 0,86 % des cas — et on ne
+       * joue pas un rythme sur une frappe, on appuie une fois. Assez rare pour
+       * ne jamais se voir en essayant, assez fréquent pour tomber sur un
+       * joueur ; c'est la CI qui l'a fait remonter, via un test devenu instable.
+       *
+       * Corrigé ICI et pas dans le générateur : `genLevelRow` sert les 34
+       * niveaux de la campagne, et y toucher changerait l'ordre de consommation
+       * du hasard pour tout le monde. Le complément se prend sur les positions
+       * fortes, sans tirage — il n'ajoute donc aucun appel au générateur.
+       */
+      const kick = this.target.kick;
+      if (kick.filter((v) => v > 0).length < 2) {
+        for (const i of strongPositions(this.subdiv.kick)) {
+          if (kick.filter((v) => v > 0).length >= 2) break;
+          if (!kick[i]) kick[i] = 1;
+        }
+      }
+      this.frappesAttendues = kick.filter((v) => v > 0).length;
     }
   }
 
