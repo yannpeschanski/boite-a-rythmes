@@ -26,6 +26,7 @@ import type { DrumStep } from '../types';
 // sur exactement 3 lignes sans qu'une extension du modèle ne les force à
 // gérer 2 lignes qu'ils ne connaissent pas.
 import type { ExerciseKind } from '../exercises';
+import type { FamilleParam } from '../parametres';
 
 export type GameDrumRowName = 'kick' | 'snare' | 'hat';
 
@@ -85,6 +86,9 @@ export interface GameLevel {
    *                 croches donne la pulsation. On place à vue.
    * Sans objet pour les autres verbes. */
   jouerIndice: 'ecoute' | 'lecture';
+  /* Pour les verbes de PARAMÈTRE (`lequel`, `nommer`, `regler`) : dans quelle
+     famille de boutons puiser. Sans objet pour les verbes de grille. */
+  familleParam: FamilleParam;
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
@@ -112,6 +116,7 @@ export interface MkLevelOptions {
   presetGhostRow?: GameDrumRowName;
   presetFillEvery?: number;
   jouerIndice?: 'ecoute' | 'lecture';
+  familleParam?: FamilleParam;
 }
 
 // Options du générateur de ligne (voir genLevelRow).
@@ -315,6 +320,7 @@ export function voiceTierForLevel(id: number): VoiceTierName {
 export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel {
   return {
     id, teach, exercise: o.exercise || 'reproduire', jouerIndice: o.jouerIndice || 'ecoute',
+    familleParam: o.familleParam || 'timbre',
     preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
@@ -576,4 +582,30 @@ export const LEVELS: GameLevel[] = [
     // Hat sur toutes les croches : c'est la pulsation, pas un motif. Sans elle,
     // « à vue » se jouerait dans le silence — donc au hasard.
     density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 1, hatMax: 1 } }),
+
+  /* ---------- Pilotes des trois verbes de PARAMÈTRE (famille Timbre) ----------
+   *
+   * Même méthode que pour les verbes de grille : un niveau de chacun, pour les
+   * essayer avant d'en écrire une progression. La difficulté monte dans l'ordre
+   * — entendre la direction, puis nommer, puis viser une valeur.
+   *
+   * Timbre en premier parce que ses quatre boutons s'entendent franchement et
+   * n'interagissent pas avec le séquenceur : ce qu'on teste est bien l'oreille,
+   * pas la lecture d'une grille.
+   */
+  mkLevel(39, 'Lequel est le plus… ?', {
+    exercise: 'lequel', familleParam: 'timbre',
+    preamble: "Trois versions du même son, un seul réglage change. Écoute-les et désigne celle qu'on te demande. Ici on n'attend pas de chiffre : juste d'entendre dans quel SENS un bouton pousse le son.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(40, 'Qu’est-ce qui a changé ?', {
+    exercise: 'nommer', familleParam: 'timbre',
+    preamble: "Deux sons, un seul réglage les sépare. Lequel ? C'est l'exercice le plus utile des trois : tant qu'on n'a pas de NOM pour ce qu'on entend, on ne peut pas le régler.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(41, 'Règle-le à l’oreille', {
+    exercise: 'regler', familleParam: 'timbre',
+    preamble: "Un son cible, un curseur, et rien d'affiché. Retrouve le réglage. On ne te demande pas le chiffre exact — deux réglages qu'on ne distingue pas sont la même réponse.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
 ];

@@ -5057,6 +5057,87 @@ câblage** ; et ne jamais ignorer en silence un geste qu'on mesure.
 **Ce qui reste sur le Mode jeu est désormais du CONTENU et des ARBITRAGES**, plus
 de la mécanique — voir les chantiers ouverts ci-dessous.
 
+### ✅ Étape 24 — trois verbes de PARAMÈTRE, pilotes en famille Timbre (2026-08-21)
+
+> « il faut inventer des jeux séquence, timbre et filtre& espace, groove &
+> variation humaine puis la même pour tout le synthé en friche encore »
+
+**Trente et un boutons. Un jeu par bouton est ingérable** — et ce n'est pas ce
+qu'il faut. Les quatre verbes existants comparent des GRILLES (juste ou faux) ;
+ces familles sont des VALEURS CONTINUES. D'où une seconde famille de verbes,
+**paramétrés par le bouton visé**, et la même progression rejouée dans chaque
+panneau :
+
+| Verbe | Ce qu'on demande | Ce que ça enseigne |
+|---|---|---|
+| `lequel` | trois versions, laquelle est « la plus … » | entendre la **direction** d'un bouton |
+| `nommer` | deux sons, un seul réglage diffère — lequel ? | mettre un **nom** dessus |
+| `regler` | un son cible, un curseur, retrouve la valeur | viser un **son**, pas un chiffre |
+
+#### Le catalogue est le vrai travail — `src/model/parametres.ts`
+
+Chaque bouton y porte ses bornes, son unité, et surtout **deux jugements
+musicaux que le code ne peut pas deviner** : `tolerance` (en deçà de quel écart
+deux réglages s'entendent pareil) et `ecartMini` (au-delà de quel écart la
+différence est franche). Les changer change le jeu.
+
+Trois pièges rencontrés, tous vérifiés avant d'écrire une ligne d'interface :
+
+1. **Le filtre se compare en OCTAVES, pas en hertz.** 500 Hz d'écart à 800 Hz
+   change tout ; les mêmes 500 Hz à 12 kHz sont inaudibles. Une tolérance en
+   hertz serait fausse à un bout ou à l'autre. D'où `echelle: 'log'` et
+   `ecartPercu`.
+2. **Les identifiants doivent être les VRAIS champs de l'état.** J'avais écrit
+   `lowpass` : le champ s'appelle `filterCutoff`. Un identifiant inventé règle un
+   champ que personne ne lit — deux sons identiques, niveau impossible, et rien
+   ne le dit. Un test parcourt le catalogue et vérifie chaque clé contre
+   `defaultState()`.
+3. **Un bouton ne s'entend pas sur toutes les lignes.** `tone` ne pilote qu'une
+   saturation sur le kick, morte sous zéro (`if (tone > 0.03)`) ; sur snare et
+   hat il déplace un filtre de ±1 octave, franc dans les deux sens. D'où le champ
+   `lignes`, sans quoi le tirage pourrait poser un exercice sur un bouton inerte.
+   Réverbe et Delay ont, eux, un `facteurEtat` : stockés en 0..1, montrés en
+   pourcents.
+
+#### Le tirage des versions, repris après échec du test
+
+`tirerVersions` découpait d'abord l'étendue en tranches avec une marge de 15 %.
+Le test l'a attrapé au premier essai : **deux versions à 14 points d'écart pour
+une tolérance de 15**, donc une question dont la bonne réponse est un tirage au
+sort. Remplacé par un espacement **garanti par construction** — valeurs posées à
+intervalle exact, seule leur position d'ensemble est tirée au hasard. Le hasard
+décide où, jamais si c'est audible.
+
+Et l'arrondi : un paramètre logarithmique s'arrondit **au hertz**, pas au pas du
+curseur. Près de 200 Hz, le pas de 100 Hz fait des sauts de 0,35 octave — toute
+la tolérance d'un coup, ce qui pouvait à lui seul rapprocher deux versions en
+deçà du discernable.
+
+#### Ce que ça ajoute côté code
+
+`ExerciseKind` gagne trois entrées (le compilateur a immédiatement réclamé les
+messages d'échec manquants — l'exhaustivité fait son travail), `GameLevel` gagne
+`familleParam`, le store gagne `preparerParametre` et une branche de
+vérification, `buildState` un mode `'param'` qui ne fait sonner QUE la ligne
+visée. Trois pilotes : 39, 40, 41.
+
+**Écart de portée assumé :** seule la famille **Timbre** est servie. Filtre &
+espace est déjà décrit dans le catalogue et ne demandera qu'un niveau de plus ;
+Groove et Séquence demanderont d'étendre le catalogue à l'état global (swing,
+traîne…) plutôt qu'à la ligne ; **le synthé est un autre type de ligne** et reste
+le gros morceau — `CLAUDE.md` impose d'en cartographier les points de contact
+avant d'y toucher.
+
+**Remarque sur « Séquence », à trancher :** *Pas* et *Coups euclidiens* changent
+la GRILLE — c'est déjà ce que « reproduire » enseigne, et un jeu de plus ferait
+doublon. *Volume* seul est un mauvais exercice d'oreille. Il ne reste vraiment
+que *Décalage*. La famille mériterait d'être fondue dans les verbes existants
+plutôt que servie à part.
+
+**Vérifié :** `check` 0 erreur · **119 tests** (dont 21 neufs sur le catalogue et
+le câblage) · les deux builds · les trois écrans au navigateur, niveau 39 gagné ·
+aucune cible tactile sous 44×44, aucun débordement à 390px · aucune erreur console.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

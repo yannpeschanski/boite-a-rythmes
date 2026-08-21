@@ -4,6 +4,8 @@
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { GameDrumRowName } from '../../model/presets/levels';
+  import { parametre } from '../../model/parametres';
+  import XpSlider from '../xp/XpSlider.svelte';
   import {
     PARFAIT_MS,
     TOLERANCE_MS,
@@ -22,7 +24,7 @@
   // jouer l'ancien état : le son se décale de ce qui est affiché sur la
   // grille. buildState() est bon marché (quelques tableaux de 32 cases), pas
   // de souci à le reconstruire à chaque tick (25 ms).
-  let playingWhat = $state<'' | 'target' | 'guess' | 'intrus'>('');
+  let playingWhat = $state<'' | 'target' | 'guess' | 'intrus' | 'param'>('');
   const engine = new AudioEngine(() => game.buildState(playingWhat || 'target'));
   let showMap = $state(false);
   let showBag = $state(false);
@@ -141,11 +143,31 @@
     await engine.start();
   }
 
+  /* ---- Verbes de paramètre : écouter une version ----
+   * `-1` fait sonner le réglage du JOUEUR, pour qu'il puisse comparer sa
+   * version à la cible sans avoir à mémoriser. */
+  let versionEnCours = $state<number | null>(null);
+  async function ecouterVersion(i: number) {
+    if (versionEnCours === i) {
+      stopAll();
+      return;
+    }
+    engine.stop();
+    resetPlayhead();
+    game.paramVersionJouee = i;
+    versionEnCours = i;
+    playingWhat = 'param';
+    await engine.start();
+  }
+
+  const descripteur = $derived(parametre(game.paramId));
+
   function stopAll() {
     engine.stop();
     playingWhat = '';
     enPrecompte = false;
     enregistre = false;
+    versionEnCours = null;
     resetPlayhead();
   }
 
@@ -169,6 +191,9 @@
     completer: 'Pas encore. Les cases justes du temps manquant sont verrouillées ✓.',
     intrus: 'Ce n’est pas celle-là. Réécoute les quatre mesures.',
     jouer: 'Trop loin du temps. Relance la boucle et repose tes frappes.',
+    lequel: 'Ce n’est pas celle-là. Réécoute les versions l’une après l’autre.',
+    nommer: 'Ce n’est pas ce réglage-là. Réécoute A puis B, et cherche ce qui bouge.',
+    regler: 'Pas encore. Compare ta version à la cible et déplace le curseur.',
   };
 
   function verify() {
@@ -462,7 +487,11 @@
            mesures pour l'intrus, la boucle à suivre pour « jouer », la cible et
            sa propre version pour les deux exercices de grille. -->
       <div class="transport">
-        {#if ex === 'intrus'}
+        {#if ex === 'lequel' || ex === 'nommer' || ex === 'regler'}
+          <!-- Rien à écouter « en entier » ici : on compare des versions, et
+               chacune a son bouton dans le corps de l'exercice. Le transport ne
+               garde donc que la validation. -->
+        {:else if ex === 'intrus'}
           <button class="xp-btn" onclick={() => play('intrus')}>
             {playingWhat === 'intrus' ? '■ Stop' : '🔊 Écouter les 4 mesures'}
           </button>
@@ -493,7 +522,10 @@
         {/if}
         <button
           class="xp-btn primary"
-          disabled={game.solved || game.revealed || (ex === 'intrus' && game.intrusChoix === null)}
+          disabled={game.solved ||
+            game.revealed ||
+            (ex === 'intrus' && game.intrusChoix === null) ||
+            ((ex === 'lequel' || ex === 'nommer') && game.paramChoix === null)}
           onclick={verify}
         >
           ✓ Vérifier
@@ -504,7 +536,98 @@
         <p class="echec">✗ {MSG_ECHEC[ex]}</p>
       {/if}
 
-      {#if ex === 'intrus'}
+      {#if descripteur && (ex === 'lequel' || ex === 'nommer' || ex === 'regler')}
+        <div class="param">
+          <p class="consigne">
+            {#if ex === 'lequel'}
+              Trois versions du même son. Laquelle est <strong>{game.paramSens === 'plus'
+                ? descripteur.plus
+                : descripteur.moins}</strong>&nbsp;?
+            {:else if ex === 'nommer'}
+              Écoute <strong>A</strong>, puis <strong>B</strong>. Quel réglage a bougé&nbsp;?
+            {:else}
+              Retrouve le réglage de la cible. Le bouton&nbsp;: <strong>{descripteur.label}</strong>.
+            {/if}
+          </p>
+
+          <!-- Les versions à écouter. Étiquetées A/B/C et jamais par leur
+               valeur : un chiffre affiché transformerait un exercice d'oreille
+               en exercice de lecture. -->
+          <div class="versions">
+            {#if ex === 'regler'}
+              <button class="xp-btn version" class:joue={versionEnCours === 0} onclick={() => ecouterVersion(0)}>
+                {versionEnCours === 0 ? '■' : '🔊'} La cible
+              </button>
+              <button class="xp-btn version" class:joue={versionEnCours === -1} onclick={() => ecouterVersion(-1)}>
+                {versionEnCours === -1 ? '■' : '🎧'} Ma version
+              </button>
+            {:else}
+              {#each game.paramVersions as _, i (i)}
+                <button
+                  class="xp-btn version"
+                  class:joue={versionEnCours === i}
+                  class:actif={game.paramChoix === i && ex === 'lequel'}
+                  class:bonne={(game.solved || game.revealed) && game.paramReponse === i && ex === 'lequel'}
+                  onclick={() => ecouterVersion(i)}
+                >
+                  {versionEnCours === i ? '■' : '🔊'} {String.fromCharCode(65 + i)}
+                </button>
+              {/each}
+            {/if}
+          </div>
+
+          {#if ex === 'lequel'}
+            <p class="consigne">Ta réponse&nbsp;:</p>
+            <div class="choix">
+              {#each game.paramVersions as _, i (i)}
+                <button
+                  class="xp-btn choix-btn tap44-y"
+                  class:actif={game.paramChoix === i}
+                  class:bonne={(game.solved || game.revealed) && game.paramReponse === i}
+                  disabled={game.solved || game.revealed}
+                  onclick={() => { game.paramChoix = i; echec = false; }}
+                >
+                  {String.fromCharCode(65 + i)}
+                </button>
+              {/each}
+            </div>
+          {:else if ex === 'nommer'}
+            <div class="choix choix-noms">
+              {#each game.paramCandidats as id, i (id)}
+                <button
+                  class="xp-btn choix-btn tap44-y"
+                  class:actif={game.paramChoix === i}
+                  class:bonne={(game.solved || game.revealed) && game.paramReponse === i}
+                  disabled={game.solved || game.revealed}
+                  onclick={() => { game.paramChoix = i; echec = false; }}
+                >
+                  {parametre(id)?.label ?? id}
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <!-- Aucune valeur n'est affichée pour la cible : on cherche le SON.
+                 Le curseur, lui, montre la sienne — c'est un instrument, pas une
+                 devinette. -->
+            <div class="reglage">
+              <XpSlider
+                label={descripteur.label}
+                min={descripteur.min}
+                max={descripteur.max}
+                step={descripteur.step}
+                unit={descripteur.unite}
+                bind:value={game.paramValeur}
+              />
+            </div>
+            {#if game.solved || game.revealed}
+              <p class="chiffres">
+                Cible&nbsp;: {game.paramVersions[0]}{descripteur.unite} · toi&nbsp;:
+                {game.paramValeur}{descripteur.unite}
+              </p>
+            {/if}
+          {/if}
+        </div>
+      {:else if ex === 'intrus'}
         <!-- Aucune grille : l'exercice n'a rien à manipuler. Quatre boutons,
              et le curseur de lecture qui dit où on en est — sans lui, compter
              les mesures à l'oreille devient l'exercice, ce qui n'est pas la
@@ -1072,6 +1195,29 @@
   .choix-btn.bonne {
     background: #2f8a4f;
     opacity: 1;
+  }
+
+  /* --- Verbes de paramètre --- */
+  .versions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .version {
+    flex: 1 1 0;
+    min-width: 90px;
+    padding: 10px 6px;
+  }
+  .version.joue {
+    outline: 2px solid var(--xp-playhead);
+    outline-offset: -1px;
+  }
+  .choix-noms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reglage {
+    margin-bottom: 10px;
   }
 
   /* --- « Joue en rythme » --- */

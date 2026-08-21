@@ -22,7 +22,17 @@ import {
   colonnesDeTranche,
   justesseDesFrappes,
   medianeDesEcarts,
+  estVerbeParam,
 } from '../model/exercises';
+import {
+  parametresDe,
+  parametre,
+  tirerVersions,
+  versionQuiRepond,
+  justesseDuReglage,
+  appliquerParam,
+  type DescripteurParam,
+} from '../model/parametres';
 import { PRESETS } from '../model/presets/songs';
 import {
   BAG_ITEMS,
@@ -168,6 +178,30 @@ class GameStore {
    * temps. */
   frappes = $state<Array<{ ecartMs: number; phase01: number }>>([]);
   frappesAttendues = $state(0);
+
+  /* ---- État propre aux verbes de PARAMÈTRE (lequel / nommer / regler) ----
+   * Tous nuls pour un verbe de grille, et remis à zéro à chaque `startLevel`. */
+
+  // Le bouton visé, la ligne sur laquelle il s'entend, et les versions à
+  // comparer — en unité AFFICHÉE (celle du curseur de l'Atelier).
+  paramId = $state('');
+  paramLigne = $state<GameDrumRowName>('kick');
+  paramVersions = $state<number[]>([]);
+  // « Lequel ? » : dans quel sens la question est posée, et quelle version y
+  // répond. « Nommer » : quels boutons sont proposés, et lequel est le bon.
+  paramSens = $state<'plus' | 'moins'>('plus');
+  paramCandidats = $state<string[]>([]);
+  paramReponse = $state(0);
+  paramChoix = $state<number | null>(null);
+  // « Régler » : la position du curseur du joueur.
+  paramValeur = $state(0);
+  /* Quelle version `buildState('param')` doit faire sonner. -1 = le réglage du
+     JOUEUR, pour qu'il puisse comparer sa version à la cible. */
+  paramVersionJouee = $state(0);
+
+  get paramDescripteur(): DescripteurParam | null {
+    return parametre(this.paramId);
+  }
 
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
@@ -346,6 +380,11 @@ class GameStore {
       this.intrusReponse = Math.floor(Math.random() * MESURES_INTRUS);
     }
 
+    if (estVerbeParam(this.level.exercise)) {
+      this.preparerParametre();
+      return;
+    }
+
     if (this.level.exercise === 'jouer') {
       /* Plancher de deux coups.
        *
@@ -370,6 +409,68 @@ class GameStore {
       }
       this.frappesAttendues = kick.filter((v) => v > 0).length;
     }
+  }
+
+  /* Met en place un exercice de paramètre.
+   *
+   * Le rythme n'est PAS l'objet : on pose une frappe régulière et identique
+   * pour toutes les versions, pour que la seule différence audible soit le
+   * bouton visé. Un motif tiré au hasard rendrait la comparaison impossible —
+   * on ne saurait plus si ce qu'on entend vient du réglage ou de la grille.
+   */
+  private preparerParametre(): void {
+    const famille = this.level.familleParam;
+    // Seuls les boutons qui s'entendent sur au moins une ligne du Mode jeu.
+    const candidats = parametresDe(famille).filter((p) =>
+      p.lignes.some((l) => GAME_DRUM_ROWS.includes(l)),
+    );
+    const p = pick(candidats);
+    this.paramId = p.id;
+    this.paramLigne = pick(p.lignes.filter((l) => GAME_DRUM_ROWS.includes(l)));
+
+    // Une noire sur quatre temps : assez pour entendre l'attaque et la chute,
+    // assez court pour comparer sans attendre.
+    this.subdiv = { kick: 8, snare: 8, hat: 8 };
+    const grille = emptyGrid(this.subdiv);
+    [0, 2, 4, 6].forEach((i) => (grille[this.paramLigne][i] = 1));
+    this.target = grille;
+    this.targetRolls = emptyRolls(this.subdiv);
+    this.guess = emptyGrid(this.subdiv);
+    this.guessRolls = emptyRolls(this.subdiv);
+    this.shift = { kick: 0, snare: 0, hat: 0 };
+    this.swing = 0;
+    this.drag = 0;
+
+    this.paramChoix = null;
+    this.paramVersionJouee = 0;
+
+    if (this.level.exercise === 'lequel') {
+      this.paramVersions = tirerVersions(p, 3);
+      this.paramSens = Math.random() < 0.5 ? 'plus' : 'moins';
+      this.paramReponse = versionQuiRepond(this.paramVersions, this.paramSens);
+      return;
+    }
+
+    if (this.level.exercise === 'nommer') {
+      // Deux sons qui ne diffèrent QUE par ce bouton : l'un au repos, l'autre
+      // franchement déplacé. Les autres boutons de la famille sont proposés en
+      // leurres — c'est le vocabulaire qu'on entraîne.
+      this.paramVersions = tirerVersions(p, 2);
+      const leurres = candidats.filter((c) => c.id !== p.id).map((c) => c.id);
+      const choix = [p.id, ...leurres].slice(0, 4);
+      for (let i = choix.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [choix[i], choix[j]] = [choix[j], choix[i]];
+      }
+      this.paramCandidats = choix;
+      this.paramReponse = choix.indexOf(p.id);
+      return;
+    }
+
+    // « Régler » : une seule version, la cible. Le curseur du joueur part du
+    // MILIEU de l'étendue et non de la cible — sinon il serait déjà juste.
+    this.paramVersions = tirerVersions(p, 2).slice(0, 1);
+    this.paramValeur = Math.round((p.min + p.max) / 2);
   }
 
   // Combien de cases actives la ligne attend, et combien sont posées.
@@ -407,6 +508,20 @@ class GameStore {
   verify(): boolean {
     if (this.solved || this.revealed) return this.solved;
     this.attempts++;
+
+    // Les verbes de paramètre : soit un index désigné, soit un curseur placé.
+    if (estVerbeParam(this.level.exercise)) {
+      const p = this.paramDescripteur;
+      let juste = false;
+      if (!p) juste = false;
+      else if (this.level.exercise === 'regler') {
+        juste = justesseDuReglage(this.paramValeur, this.paramVersions[0], p) >= 70;
+      } else {
+        juste = this.paramChoix === this.paramReponse;
+      }
+      if (juste) this.win();
+      return juste;
+    }
 
     // « Intrus » ne compare pas de grille : la réponse est un index.
     if (this.level.exercise === 'intrus') {
@@ -596,13 +711,35 @@ class GameStore {
   }
 
   // Construit un état jouable par le moteur pour la cible ou la proposition.
-  buildState(which: 'target' | 'guess' | 'intrus'): PatternStateV2 {
+  buildState(which: 'target' | 'guess' | 'intrus' | 'param'): PatternStateV2 {
     const state = defaultState();
     state.tempo = this.tempo;
     state.swing = this.swing;
     state.drag = this.drag;
     // « Intrus » joue une grille fabriquée de quatre mesures, avec sa propre
     // subdivision : c'est la seule lecture qui ne montre pas une grille éditable.
+    // Un exercice de paramètre fait sonner UNE version : la ligne visée seule,
+    // avec le bouton posé à la valeur demandée. Tout le reste est au repos pour
+    // que la seule différence entre deux écoutes soit ce bouton-là.
+    if (which === 'param') {
+      const p = this.paramDescripteur;
+      GAME_DRUM_ROWS.forEach((name) => {
+        const row = state.rows[name];
+        row.subdiv = this.subdiv[name];
+        row.pattern = new Array(32).fill(0).map((z, i) => this.target[name][i] ?? z);
+        row.rolls = new Array(32).fill(1);
+        row.muted = name !== this.paramLigne;
+      });
+      if (p) {
+        const valeur =
+          this.paramVersionJouee < 0
+            ? this.paramValeur
+            : (this.paramVersions[this.paramVersionJouee] ?? this.paramVersions[0]);
+        appliquerParam(state.rows[this.paramLigne], p, valeur);
+      }
+      return state;
+    }
+
     const intrus = which === 'intrus' ? this.grilleIntrus() : null;
     const grid = intrus ? intrus.grid : which === 'target' ? this.target : this.guess;
     const rolls = intrus ? intrus.rolls : which === 'target' ? this.targetRolls : this.guessRolls;
