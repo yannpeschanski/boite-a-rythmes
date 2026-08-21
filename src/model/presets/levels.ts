@@ -552,14 +552,19 @@ export const LEVELS: GameLevel[] = [
   // montrer la grille ET faire sonner le kick ne demanderait que de suivre un
   // point lumineux. À l'oreille, la grille reste vide ; à vue, le kick se tait
   // et le hat en croches donne la pulsation.
+  // Tempo abaissé (84/92 → 72/80) après essai : « 37 trop dur ». Reproduire à
+  // l'oreille demande d'entendre, de retenir, puis de placer — trois choses,
+  // pas une. Le vrai correctif est ailleurs (on peut désormais ÉCOUTER autant
+  // qu'on veut avant d'armer, et calibrer sa latence), mais un tempo plus lent
+  // laisse le temps de faire les trois.
   mkLevel(37, 'Joue en rythme — à l’oreille', {
     exercise: 'jouer', jouerIndice: 'ecoute',
-    preamble: "La boucle tourne, la grille reste vide : c'est à l'oreille. Frappe le pad — ou la barre d'espace — sur chaque coup de kick. Un précompte de quatre clics te donne le tempo avant que ça compte.",
+    preamble: "La boucle tourne, la grille reste vide : c'est à l'oreille. Écoute-la autant de fois qu'il faut, puis « ⏺ Jouer » — un précompte de quatre clics te donne le tempo avant que ça compte. Si tes frappes tombent toutes du même côté, le bouton 🎚 Latence règle le retard de ton appareil une fois pour toutes.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
-    tempoOptions: [84, 92], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+    tempoOptions: [72, 80], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
   mkLevel(38, 'Joue en rythme — à vue', {
     exercise: 'jouer', jouerIndice: 'lecture',
-    preamble: "Cette fois le kick est muet : tu vois le motif, tu ne l'entends pas. Le hat te donne la pulsation, à toi de poser les coups au bon endroit.",
+    preamble: "Cette fois le kick est muet : tu vois le motif, tu ne l'entends pas. Le hat te donne la pulsation, à toi de poser les coups au bon endroit. Écoute d'abord si tu veux, puis « ⏺ Jouer ».",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: true },
     tempoOptions: [84, 92],
     // Hat sur toutes les croches : c'est la pulsation, pas un motif. Sans elle,

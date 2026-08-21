@@ -4,7 +4,14 @@
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { GameDrumRowName } from '../../model/presets/levels';
-  import { PARFAIT_MS, TOLERANCE_MS, type ExerciseKind } from '../../model/exercises';
+  import {
+    PARFAIT_MS,
+    TOLERANCE_MS,
+    ecartAuClic,
+    medianeDesEcarts,
+    type ExerciseKind,
+  } from '../../model/exercises';
+  import { latence } from './latence.svelte';
   import XpWindow from '../xp/XpWindow.svelte';
 
   let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
@@ -82,7 +89,7 @@
     return 60 / game.tempo / Math.max(1, game.subdiv.kick / 4);
   }
   function frapper(e?: Event) {
-    if (playingWhat !== 'target' || enPrecompte || dernierKickVu < 0) return;
+    if (playingWhat !== 'target' || !enregistre || enPrecompte || dernierKickVu < 0) return;
     const maintenant = engine.audioTime();
     if (maintenant === null) return;
     // Retard de remontée de l'événement, retranché (point 4 ci-dessus).
@@ -93,7 +100,9 @@
     let pas = 1;
     while (pas <= n && game.target.kick[(dernierKickVu + pas) % n] === 0) pas++;
     const intervalle = pas * dureeDunPas();
-    const ecoule = maintenant - retard - dernierKickAudio;
+    // Le décalage mesuré au calibrage, retranché comme le retard de remontée :
+    // c'est ce que la chaîne d'entrée ajoute et qu'aucune API ne déclare.
+    const ecoule = maintenant - retard - latence.ms / 1000 - dernierKickAudio;
     // Écart signé au kick le plus proche : en retard (positif) ou en avance sur
     // le suivant (négatif). Le signe compte — voir `decalageMedian`.
     const ecart = ecoule > intervalle / 2 ? ecoule - intervalle : ecoule;
@@ -104,6 +113,7 @@
   }
 
   onMount(() => {
+    latence.charger();
     raf = requestAnimationFrame(loop);
   });
   onDestroy(() => {
@@ -133,6 +143,7 @@
     engine.stop();
     playingWhat = '';
     enPrecompte = false;
+    enregistre = false;
     resetPlayhead();
   }
 
@@ -183,12 +194,34 @@
    */
   let enPrecompte = $state(false);
   let clicPrecompte = $state(0);
-  async function toggleJouer() {
-    if (playingWhat === 'target' || enPrecompte) {
-      if (playingWhat === 'target') play('target');
-      enPrecompte = false;
+  /* Écouter n'est pas jouer.
+   *
+   * Le premier essai du niveau 37 était trop dur pour une raison qui n'a rien à
+   * voir avec la précision : on demandait de reproduire À L'OREILLE un rythme
+   * qu'on n'avait jamais entendu, dès la première mesure. Écouter la boucle
+   * autant qu'on veut d'abord, puis armer, c'est ce que fait n'importe qui
+   * devant un instrument. `enregistre` sépare les deux : même lecture, mais les
+   * frappes ne comptent que dans le second cas.
+   */
+  let enregistre = $state(false);
+
+  function ecouterBoucle() {
+    if (playingWhat === 'target') {
+      stopAll();
       return;
     }
+    enregistre = false;
+    play('target');
+  }
+
+  async function toggleJouer() {
+    if ((playingWhat === 'target' && enregistre) || enPrecompte) {
+      if (playingWhat === 'target') play('target');
+      enPrecompte = false;
+      enregistre = false;
+      return;
+    }
+    stopAll();
     game.reinitialiserFrappes();
     echec = false;
     enPrecompte = true;
@@ -198,7 +231,55 @@
     // boucle démarrerait quand même quatre temps plus tard.
     if (!enPrecompte) return;
     enPrecompte = false;
+    enregistre = true;
     play('target');
+  }
+
+  /* ---- Calibrage du décalage d'entrée ----
+   *
+   * Un métronome nu, une douzaine de clics, et on compare les frappes aux temps
+   * PROGRAMMÉS de ces clics. Aucune estimation de navigateur ne remplace cette
+   * mesure : WebKit ne déclare pas `outputLatency`, et personne ne déclare la
+   * latence d'entrée d'une dalle tactile.
+   */
+  const CLICS_CALIBRAGE = 12;
+  const BPM_CALIBRAGE = 100;
+  let calibrage = $state(false);
+  let calibrageEcarts = $state<number[]>([]);
+  let calibrageDebut = 0;
+  let calibrageIntervalle = 0;
+  let calibrageFin = 0;
+
+  function ouvrirCalibrage() {
+    stopAll();
+    calibrage = true;
+    calibrageEcarts = [];
+    const m = engine.metronome(CLICS_CALIBRAGE, BPM_CALIBRAGE);
+    calibrageDebut = m.debut;
+    calibrageIntervalle = m.intervalle;
+    calibrageFin = m.debut + CLICS_CALIBRAGE * m.intervalle;
+  }
+
+  function frapperCalibrage(e?: Event) {
+    const maintenant = engine.audioTime();
+    if (maintenant === null || !calibrage) return;
+    const retard = e && e.timeStamp > 0 ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0;
+    const t = maintenant - retard;
+    if (t < calibrageDebut - calibrageIntervalle / 2 || t > calibrageFin) return;
+    // Écart au clic le plus proche : la frappe est datée, les clics aussi. Le
+    // calcul vit dans model/exercises.ts — une erreur de signe ici corrigerait
+    // la latence à l'envers, et c'est exactement le genre de faute qu'on ne
+    // voit pas en relisant.
+    calibrageEcarts = [...calibrageEcarts, ecartAuClic(t, calibrageDebut, calibrageIntervalle)];
+  }
+
+  const calibrageMediane = $derived(medianeDesEcarts(calibrageEcarts));
+
+  function validerCalibrage() {
+    // Additif : les frappes du calibrage sont déjà corrigées par le réglage en
+    // place, leur médiane est donc ce qu'il RESTE à corriger.
+    latence.affiner(calibrageMediane);
+    calibrage = false;
   }
 
   // Un seul point d'entrée vers un niveau : le drapeau d'échec est local à la
@@ -213,9 +294,15 @@
    * ajoute une latence de visée à ce qu'on mesure — et ce qu'on mesure ici est
    * précisément une latence. */
   function surTouche(e: KeyboardEvent) {
-    if (ex !== 'jouer' || playingWhat !== 'target' || e.code !== 'Space' || e.repeat) return;
+    if (ex !== 'jouer' || e.code !== 'Space' || e.repeat) return;
+    if (calibrage) {
+      e.preventDefault();
+      frapperCalibrage(e);
+      return;
+    }
+    if (!enregistre) return;
     e.preventDefault();
-    frapper();
+    frapper(e);
   }
 
   function saveToAtelier() {
@@ -336,11 +423,17 @@
             {playingWhat === 'intrus' ? '■ Stop' : '🔊 Écouter les 4 mesures'}
           </button>
         {:else if ex === 'jouer'}
-          <button class="xp-btn" onclick={toggleJouer}>
-            {playingWhat === 'target' || enPrecompte ? '■ Stop' : '▶ Lancer (précompte 4 temps)'}
+          <button class="xp-btn" onclick={ecouterBoucle}>
+            {playingWhat === 'target' && !enregistre ? '■ Stop' : '🔊 Écouter la boucle'}
+          </button>
+          <button class="xp-btn rec" onclick={toggleJouer}>
+            {(playingWhat === 'target' && enregistre) || enPrecompte ? '■ Stop' : '⏺ Jouer (précompte)'}
           </button>
           <button class="xp-btn" disabled={game.frappes.length === 0} onclick={() => game.reinitialiserFrappes()}>
-            ↺ Effacer mes frappes
+            ↺ Effacer
+          </button>
+          <button class="xp-btn" onclick={ouvrirCalibrage}>
+            🎚 Latence{latence.ms ? ` (${latence.ms > 0 ? '+' : ''}${latence.ms} ms)` : ''}
           </button>
         {:else}
           <button class="xp-btn" onclick={() => play('target')}>
@@ -390,6 +483,41 @@
                 Mesure {m + 1}
               </button>
             {/each}
+          </div>
+        </div>
+      {:else if ex === 'jouer' && calibrage}
+        <!-- Calibrage : un métronome nu, et on compare les frappes aux temps
+             PROGRAMMÉS des clics. Aucune estimation de navigateur ne remplace
+             cette mesure — WebKit ne déclare pas `outputLatency`, et personne ne
+             déclare la latence d'entrée d'une dalle tactile. -->
+        <div class="jouer calibrage">
+          <p class="consigne">
+            Tape sur le pad à chaque clic, sans chercher à bien faire — on mesure le
+            retard de ton appareil, pas ton sens du rythme.
+          </p>
+          <button class="pad" onpointerdown={frapperCalibrage} aria-label="Frapper pour calibrer">
+            {calibrageEcarts.length < CLICS_CALIBRAGE ? 'TAPE SUR LES CLICS' : 'C’EST BON'}
+          </button>
+          <p class="chiffres">
+            {calibrageEcarts.length}/{CLICS_CALIBRAGE} frappes
+            {#if calibrageEcarts.length >= 4}
+              — décalage mesuré {calibrageMediane > 0 ? '+' : ''}{calibrageMediane}&nbsp;ms
+            {/if}
+            <br />
+            <span class="muted">
+              Réglage actuel {latence.ms > 0 ? '+' : ''}{latence.ms}&nbsp;ms · le navigateur en
+              déclare {engine.latenceSortieMs()}&nbsp;ms
+            </span>
+          </p>
+          <div class="footer-btns">
+            <button class="xp-btn primary" disabled={calibrageEcarts.length < 4} onclick={validerCalibrage}>
+              ✓ Appliquer {calibrageMediane > 0 ? '+' : ''}{calibrageMediane}&nbsp;ms
+            </button>
+            <button class="xp-btn" onclick={ouvrirCalibrage}>↺ Recommencer</button>
+            <button class="xp-btn" onclick={() => { latence.regler(0); calibrage = false; }}>
+              Remettre à zéro
+            </button>
+            <button class="xp-btn" onclick={() => (calibrage = false)}>Fermer</button>
           </div>
         </div>
       {:else if ex === 'jouer'}
@@ -445,16 +573,18 @@
           <button
             class="pad"
             class:precompte={enPrecompte}
-            disabled={playingWhat !== 'target' && !enPrecompte}
+            disabled={!enregistre && !enPrecompte}
             onpointerdown={frapper}
             aria-label="Frapper"
           >
             {#if enPrecompte}
               <span class="decompte">{clicPrecompte || 4}</span>
-            {:else if playingWhat === 'target'}
+            {:else if enregistre}
               FRAPPE
+            {:else if playingWhat === 'target'}
+              écoute — « ⏺ Jouer » quand tu l’as
             {:else}
-              Lance la boucle
+              Écoute d’abord, joue ensuite
             {/if}
           </button>
           <div class="jauge" role="meter" aria-valuenow={game.justesse()} aria-valuemin="0" aria-valuemax="100">
@@ -481,6 +611,23 @@
               </span>
             {/if}
           </p>
+          {#if game.frappes.length >= 4 && Math.abs(game.decalageMedian()) > 25}
+            <!-- Un biais franc et constant n'est pas un défaut de placement,
+                 c'est de la latence : la partie qui vient d'être jouée EST une
+                 mesure, autant s'en servir plutôt que de refaire un calibrage. -->
+            <button
+              class="xp-btn"
+              onclick={() => {
+                latence.affiner(game.decalageMedian());
+                // Les frappes affichées ont été mesurées avec l'ANCIEN réglage :
+                // les garder montrerait un biais qui n'existe déjà plus.
+                game.reinitialiserFrappes();
+                stopAll();
+              }}
+            >
+              🎚 Compenser ce décalage ({game.decalageMedian() > 0 ? '+' : ''}{game.decalageMedian()}&nbsp;ms)
+            </button>
+          {/if}
         </div>
       {:else}
         {#each GAME_DRUM_ROWS as name (name)}
@@ -676,6 +823,13 @@
   .xp-btn:disabled {
     opacity: 0.5;
     cursor: default;
+  }
+  /* Le vert est celui de la VALIDATION dans tout le Mode jeu ; deux boutons
+     verts côte à côte se disputaient l'œil. « Jouer » prend le rouge
+     d'enregistrement — c'est son sens, et ça les sépare. */
+  .xp-btn.rec {
+    font-weight: 700;
+    background: linear-gradient(180deg, #a83a2a, #7a2418 50%, #551208);
   }
   .xp-btn.tiny {
     font-size: var(--xp-size-small);

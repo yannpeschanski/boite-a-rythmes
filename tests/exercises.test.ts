@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import {
   comparerGrilles,
   colonnesDeTranche,
+  ecartAuClic,
   ecartAuCoup,
   justesseDesFrappes,
   medianeDesEcarts,
@@ -135,6 +136,36 @@ describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au 
 
   it('renvoie 0 si rien n’est attendu — jamais une division par zéro', () => {
     expect(justesseDesFrappes([0, 0], 0)).toBe(0);
+  });
+});
+
+describe('ecartAuClic — le calibrage, là où une erreur de signe corrigerait à l’envers', () => {
+  const debut = 10;
+  const pas = 0.6; // 100 bpm
+
+  it('taper APRÈS le clic donne un écart positif', () => {
+    expect(ecartAuClic(debut + 0.07, debut, pas)).toBeCloseTo(70, 6);
+    // Et sur un clic plus loin dans la série, pas seulement le premier.
+    expect(ecartAuClic(debut + 5 * pas + 0.07, debut, pas)).toBeCloseTo(70, 6);
+  });
+
+  it('taper AVANT le clic donne un écart négatif', () => {
+    expect(ecartAuClic(debut + 3 * pas - 0.05, debut, pas)).toBeCloseTo(-50, 6);
+  });
+
+  it('pile sur le clic vaut zéro, à n’importe quel rang', () => {
+    for (const n of [0, 1, 7, 11]) expect(ecartAuClic(debut + n * pas, debut, pas)).toBeCloseTo(0, 6);
+  });
+
+  it('se rattache toujours au clic le PLUS PROCHE, jamais au précédent', () => {
+    // À 80 % de l’intervalle, la frappe est en avance sur le clic suivant —
+    // pas en retard de 480 ms sur le précédent, ce qui la ferait passer pour
+    // une aberration et fausserait la médiane.
+    expect(ecartAuClic(debut + 0.8 * pas, debut, pas)).toBeCloseTo(-0.2 * pas * 1000, 6);
+  });
+
+  it('un intervalle nul ne divise pas par zéro', () => {
+    expect(ecartAuClic(debut, debut, 0)).toBe(0);
   });
 });
 
