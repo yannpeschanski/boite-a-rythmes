@@ -4911,6 +4911,54 @@ atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui, va
 pour toute l'appli. Où poser l'entrée dans l'Atelier — menu Affichage, menu Aide,
 onglet Production ?
 
+### ⚠️ Étape 22 — la latence gagnée au prix du son, et le retour en arrière (2026-08-21)
+
+> « ça marche très bien mais le son est devenu moche ! »
+
+**Régression mise en ligne, corrigée dans la foulée.** L'étape 21 avait descendu
+les deux réglages de latence au minimum : avance de déclenchement à 5 ms, tampon
+de sortie à 128 échantillons. La latence est effectivement tombée à 13 ms — et le
+son avec.
+
+**Le mécanisme, et c'est le raisonnement qui était faux, pas le chiffre.** Toutes
+les voix ouvrent sur une attaque de 3 à 4 ms :
+
+```
+g.gain.setValueAtTime(0.0001, time);
+g.gain.exponentialRampToValueAtTime(gain, time + 0.004);
+```
+
+Avec 5 ms d'avance, **l'attaque entière tient dans la marge**. Il suffit que le fil
+principal prenne quelques millisecondes de retard entre la lecture de
+`currentTime` et le rendu pour que `setValueAtTime` tombe dans le **passé** : Web
+Audio l'applique alors immédiatement, la rampe est sautée, le gain saute d'un
+coup — **un clic à chaque note**. Le tampon de 128 échantillons (2,9 ms pour
+remplir chaque bloc) ne faisait qu'aggraver.
+
+L'avance n'est donc pas du rembourrage de confort : **c'est la marge dont
+l'enveloppe dépend pour exister**. La raccourcir revenait à supprimer l'attaque.
+
+**Valeurs retenues :** avance **20 ms** (celle que `preview` portait déjà, et dont
+on sait qu'elle sonne juste) et tampon **`'interactive'`** (441 échantillons,
+32 ms mesurés — le préréglage que le navigateur dimensionne POUR l'audio
+interactif). Budget logiciel **~122 ms → ~52 ms**. Moins bien que les 13 ms visés,
+mais **13 ms qui claquent ne valent rien**.
+
+**Verrouillé par un test.** `tests/latence-audio.test.ts` lit les deux constantes
+dans la source et vérifie leur RAPPORT à l'attaque la plus courte du banc de voix
+(au moins cinq fois sa durée), plus le fait que le tampon n'est ni `'playback'`
+(hors budget) ni une valeur numérique agressive. La prochaine tentative
+d'optimisation butera sur une assertion au lieu d'aller s'entendre en production.
+
+**Ce qu'il faudrait pour descendre plus bas — et c'est un chantier, pas un
+réglage.** Rendre les enveloppes robustes à un démarrage tardif : caler chaque
+départ sur `max(time, ctx.currentTime)` et recalculer la rampe depuis la valeur
+courante du paramètre plutôt que depuis zéro. Tant que ce n'est pas fait, l'avance
+de 20 ms est le prix du son, et il n'est pas négociable par une constante.
+
+**Vérifié :** `check` 0 erreur · **92 tests** · les deux builds · contexte relu
+dans l'appli réelle (441 échantillons, `outputLatency` 32 ms, `running` stable).
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

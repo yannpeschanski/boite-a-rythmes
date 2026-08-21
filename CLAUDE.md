@@ -129,6 +129,19 @@ bandeau LCD du séquenceur). Ils ne se sérialisent pas, ne passent pas dans
 l'historique d'annulation, et le moteur audio ne les lit jamais. C'est le bon
 domicile pour ce genre d'état — ne pas les faire remonter dans `model/types.ts`.
 
+⚠️ **L'avance de déclenchement est la marge dont l'attaque dépend, pas du
+rembourrage.** Toutes les voix ouvrent sur une rampe de 3-4 ms
+(`setValueAtTime(0.0001, t)` puis `rampTo(gain, t + 0.004)`). Si
+`AVANCE_DECLENCHEMENT` (`engine/AudioEngine.ts`) descend au même ordre, un simple
+retard du fil principal fait tomber `setValueAtTime` dans le passé : Web Audio
+l'applique aussitôt, la rampe est sautée, **le gain saute — un clic à chaque
+note**. Descendu à 5 ms le 2026-08-21 pour gagner de la latence, remonté à 20 ms
+le jour même (« le son est devenu moche »). Idem pour `TAMPON_SORTIE` : `0.001`
+donne 128 échantillons et 8 ms, et décroche — `'interactive'` est le préréglage
+que le navigateur dimensionne pour ça. `tests/latence-audio.test.ts` verrouille
+les deux. Pour descendre plus bas il faut rendre les enveloppes robustes à un
+démarrage tardif, pas raccourcir la constante.
+
 ⚠️ **Deux latences, deux traitements — ne pas les confondre.** DÉCLENCHER un son
 (pads du Mode Live, aperçus, notes jouées) ne se compense pas : on ne peut pas jouer
 un son avant la frappe, on ne peut que réduire — d'où `latencyHint: 'interactive'`
