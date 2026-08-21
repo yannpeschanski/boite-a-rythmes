@@ -5031,6 +5031,32 @@ continu, état visible, jauge de progression), `tests/exercises.test.ts`.
 « j'attends 10 s puis je tape » au navigateur · niveau 38 gagné après des
 tâtonnements suivis d'une mesure propre · aucune erreur console.
 
+### ✅ Les quatre pilotes du Mode jeu sont VALIDÉS (2026-08-21)
+
+> « ça a très bien fonctionné là »
+
+Après la mise en ligne de l'étape 23 (calibrage continu + note à la meilleure
+mesure). Les quatre pilotes — 35 « compléter », 36 « intrus », 37 « jouer à
+l'oreille », 38 « jouer à vue » — sont jouables et jugés bons par Yann.
+
+**Ce qu'il aura fallu, et l'ordre dans lequel c'est tombé** — utile parce que
+trois de ces quatre causes n'étaient PAS ce qu'on regardait au départ :
+
+| Symptôme rapporté | Cause réelle |
+|---|---|
+| « 37 trop dur » | on demandait de reproduire à l'oreille un rythme **jamais entendu** — il manquait « écouter » séparé de « jouer » |
+| « il y a clairement une latence » | `outputLatency` **non implémenté par WebKit**, donc `\|\| 0` ne compensait rien |
+| « le son est devenu moche » | l'avance de déclenchement descendue à 5 ms **mangeait l'attaque de 4 ms** des voix |
+| « je n'arrive pas à faire fonctionner le réglage de latence » | le métronome ne durait que **7 s** et jetait les frappes suivantes en silence |
+| « toujours trop compliqués » | la note moyennait **tout le tour** : impossible de réussir une seule mesure |
+
+Aucune de ces cinq n'était un réglage de difficulté. La leçon de la série est
+dans `CLAUDE.md` : quand un module pur et testé se comporte mal, **suspecter le
+câblage** ; et ne jamais ignorer en silence un geste qu'on mesure.
+
+**Ce qui reste sur le Mode jeu est désormais du CONTENU et des ARBITRAGES**, plus
+de la mécanique — voir les chantiers ouverts ci-dessous.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape
@@ -5040,8 +5066,8 @@ qui l'a fermé.*
 - 🔜 **Mode jeu, la suite — trois chantiers, dans cet ordre.** L'étape 17 a posé
   la charpente et un pilote de chaque verbe ; ce qui reste est du contenu et de
   l'intégration, pas de l'architecture.
-  1. **Intégrer les trois verbes à la campagne.** Les pilotes 35-38 sont hors
-     courbe. Deux verdicts d'essai de Yann (2026-08-20) à respecter :
+  1. **Intégrer les trois verbes à la campagne** — *le prochain pas naturel, les
+     pilotes étant validés.* Les pilotes 35-38 sont hors courbe. Deux verdicts d'essai de Yann (2026-08-20) à respecter :
      **« compléter » est plus facile que « reproduire »** — donc AVANT, comme
      échauffement, pas après ; et **« l'intrus » exige un rythme un peu complexe**
      pour que la variante d'un pas ne s'entende pas immédiatement. Reste à
