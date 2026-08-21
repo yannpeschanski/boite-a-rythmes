@@ -67,11 +67,19 @@ const AVANCE_DECLENCHEMENT = 0.005; // s
  * craquements apparaissent, la seule chose à changer est cette constante —
  * revenir à 'interactive' rend 24 ms et la robustesse avec.
  *
- * ⚠️ Ce que ça ne règle pas : la dalle tactile et le Bluetooth. Un écran
- * capacitif ajoute couramment 40 à 80 ms entre le doigt et l'événement, un
- * casque Bluetooth 100 à 200 ms de plus. Aucune ligne de code n'y touche —
- * sur téléphone, jouer une mélodie sous le seuil n'est pas atteignable, et
- * c'est le matériel qui le dit, pas nous.
+ * ⚠️ Ce que ça ne règle pas : la chaîne d'ENTRÉE et le Bluetooth. Un casque
+ * Bluetooth ajoute 100 à 200 ms, et aucune ligne de code n'y touche.
+ *
+ * Pour le tactile, attention au chiffre qu'on cite : les mesures publiées sur
+ * la « latence tactile » (50 à 100 ms) sont presque toujours du
+ * TOUCH-TO-DISPLAY — doigt, digitaliseur, système, application, rendu,
+ * composition, vsync, réponse de dalle. La moitié de ce budget est le pipeline
+ * GRAPHIQUE, que le pad ne traverse pas : il va du doigt au son. Ce qui compte
+ * ici est le touch-to-event, dominé par la fréquence du digitaliseur (60 à
+ * 120 Hz, soit 8 à 16 ms de granularité) plus la pile d'entrée — plutôt 10 à
+ * 30 ms. Ne pas conclure qu'un téléphone est perdu d'avance : ça se MESURE,
+ * appareil par appareil, et c'est précisément ce que fait le calibrage du Mode
+ * jeu (ui/latence.svelte.ts).
  */
 const TAMPON_SORTIE = 0.001; // s
 

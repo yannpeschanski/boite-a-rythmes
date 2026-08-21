@@ -4885,11 +4885,26 @@ des notes, pas le remplissage du tampon. `TAMPON_SORTIE` est la seule chose à
 changer si des craquements apparaissent ; revenir à `'interactive'` rend 24 ms
 et la robustesse avec.
 
-⚠️ **Ce que ça ne règle pas, et qu'aucun code ne réglera.** Un écran capacitif
-ajoute couramment 40 à 80 ms entre le doigt et l'événement, un casque Bluetooth
-100 à 200 ms de plus. **Sur téléphone, jouer une mélodie sous le seuil n'est pas
-atteignable** — c'est le matériel qui le dit. Sur ordinateur, souris ou clavier,
-on y est.
+⚠️ **Ce que ça ne règle pas.** Le Bluetooth : 100 à 200 ms qu'aucun code ne
+touche.
+
+⚠️ **Et une erreur à ne pas refaire, commise ici puis corrigée** (Yann :
+« l'écran tactile induit une latence de 40 ms a minima ?? »). Les chiffres
+publiés sur la « latence tactile » — 50 à 100 ms — mesurent presque toujours le
+**touch-to-display** : doigt, digitaliseur, système, application, rendu,
+composition, vsync, réponse de dalle. **La moitié de ce budget est le pipeline
+graphique, que le pad ne traverse pas** : il va du doigt au son, sans passer par
+l'écran. Ce qui compte ici est le **touch-to-event**, dominé par la fréquence
+d'échantillonnage du digitaliseur (60 à 120 Hz, soit 8 à 16 ms de granularité)
+plus la pile d'entrée : **plutôt 10 à 30 ms**.
+
+Conclusion révisée : avec 13 ms côté logiciel, **un téléphone récent peut très
+bien tomber dans la zone jouable**. Affirmer le contraire était une extrapolation
+à partir du mauvais chiffre. Et il n'y a pas à en débattre : **ça se mesure**,
+appareil par appareil, et le calibrage du Mode jeu mesure exactement ce
+trajet-là. Depuis que la sortie est compensée à 8 ms près, l'écart médian qu'il
+affiche est essentiellement la latence d'ENTRÉE de l'appareil plus le biais de
+jeu du joueur.
 
 **Reste aussi, et c'est une question de placement :** le calibrage n'est
 atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui, vaut
