@@ -41,6 +41,40 @@ const SCHEDULE_AHEAD = 0.25; // s
  */
 const AVANCE_DECLENCHEMENT = 0.005; // s
 
+/* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
+ *
+ * LE SEUIL À TENIR. Pour jouer d'un instrument, la littérature (Wessel &
+ * Wright, 2002) et la pratique s'accordent : sous 10 ms c'est imperceptible,
+ * 10-20 ms se joue sans y penser, au-delà de 30 ms on entend le décalage et on
+ * ralentit pour compenser. Les attaques franches — un pad, un piano — sont les
+ * plus sensibles. C'est ce budget-là qui commande, pas le confort du moteur.
+ *
+ * Mesuré dans Chromium, ce que chaque valeur donne réellement :
+ *
+ *   'playback'      1024 échantillons   72 ms   ← l'ancien choix
+ *   'interactive'    441 échantillons   32 ms
+ *   0.001            128 échantillons    8 ms   ← le minimum matériel
+ *
+ * Avec l'avance de déclenchement ci-dessus, le budget CÔTÉ LOGICIEL passe donc
+ * de ~122 ms à ~13 ms : sous le seuil, ce qu'aucune des deux autres valeurs ne
+ * permettait.
+ *
+ * ⚠️ Ce que ça coûte, et qui n'est pas nul : à 128 échantillons le fil audio
+ * n'a plus que ~2,9 ms pour remplir chaque bloc. Sur un appareil faible ou
+ * chargé, un dépassement s'entend comme un CLIC — pendant le jeu comme pendant
+ * la lecture. Le lookahead du séquenceur (SCHEDULE_AHEAD) ne protège pas de ça :
+ * il garantit le PLACEMENT des notes, pas le remplissage du tampon. Si des
+ * craquements apparaissent, la seule chose à changer est cette constante —
+ * revenir à 'interactive' rend 24 ms et la robustesse avec.
+ *
+ * ⚠️ Ce que ça ne règle pas : la dalle tactile et le Bluetooth. Un écran
+ * capacitif ajoute couramment 40 à 80 ms entre le doigt et l'événement, un
+ * casque Bluetooth 100 à 200 ms de plus. Aucune ligne de code n'y touche —
+ * sur téléphone, jouer une mélodie sous le seuil n'est pas atteignable, et
+ * c'est le matériel qui le dit, pas nous.
+ */
+const TAMPON_SORTIE = 0.001; // s
+
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private graph: GraphNodes | null = null;
@@ -209,7 +243,7 @@ export class AudioEngine {
    */
   private ensureAudio(): void {
     if (this.ctx && this.graph) return;
-    this.ctx = new AudioContext({ latencyHint: 'interactive' });
+    this.ctx = new AudioContext({ latencyHint: TAMPON_SORTIE });
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);

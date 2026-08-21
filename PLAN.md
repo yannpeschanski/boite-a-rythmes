@@ -4852,12 +4852,44 @@ secondes. Mesuré dans Chromium :
 | `'interactive'` (l'actuel) | 441 éch. | 32 ms |
 | `0.001` | **128 éch.** | **8 ms** |
 
-24 ms de plus à gagner, au prix d'un tampon au minimum matériel : sur un appareil
-faible ou chargé, le fil audio n'a plus que 2,9 ms pour remplir chaque bloc, et un
-dépassement s'entend comme un clic. Le lookahead du séquenceur (0,25 s) ne protège
-pas de ça — il protège le PLACEMENT des notes, pas le remplissage du tampon.
-**Décision de Yann**, parce que le risque ne se mesure que sur son téléphone : on
-échange 24 ms de latence contre un risque de craquements.
+**Tranché : `0.001`.** La question posée par Yann est celle du SEUIL, pas du
+réglage — « je veux juste pouvoir jouer sur le pad une mélodie […] sans me rendre
+compte de la latence ». Or il existe, et c'est lui qui commande :
+
+| Latence geste → son | Ressenti |
+|---|---|
+| **< 10 ms** | imperceptible |
+| 10-20 ms | acceptable, on joue sans y penser |
+| 20-30 ms | sensible sur les attaques franches |
+| **> 30 ms** | on entend le décalage et on ralentit pour compenser |
+
+(Wessel & Wright, *Problems and Prospects for Intimate Musical Control of
+Computers*, 2002, et la pratique des studios. Deux nuances : les attaques
+percussives — un pad, un piano — sont les plus sensibles, une nappe pardonne
+bien plus ; et la GIGUE gêne davantage qu'un retard constant, parce qu'on
+s'adapte à un retard fixe et jamais à un retard qui varie.)
+
+`'interactive'` laissait le budget logiciel à 37 ms : **au-dessus du seuil**,
+donc à côté de la demande. Seul `0.001` passe dessous. Vérifié dans l'appli
+réelle, pas seulement sur un contexte témoin : `latencyHint: 0.001` → 128
+échantillons, `outputLatency` 8 ms, contexte `running` et stable après cinq
+secondes de lecture avec l'analyseur à 60 Hz, zéro erreur console.
+
+**Budget logiciel final : ~122 ms → 13 ms** (5 ms d'avance + 8 ms de tampon).
+
+⚠️ **Le prix, assumé et réversible en une constante.** À 128 échantillons le fil
+audio n'a plus que ~2,9 ms pour remplir chaque bloc : sur un appareil faible ou
+chargé, un dépassement s'entend comme un CLIC, pendant le jeu comme pendant la
+lecture. Le lookahead (0,25 s) ne protège pas de ça — il garantit le PLACEMENT
+des notes, pas le remplissage du tampon. `TAMPON_SORTIE` est la seule chose à
+changer si des craquements apparaissent ; revenir à `'interactive'` rend 24 ms
+et la robustesse avec.
+
+⚠️ **Ce que ça ne règle pas, et qu'aucun code ne réglera.** Un écran capacitif
+ajoute couramment 40 à 80 ms entre le doigt et l'événement, un casque Bluetooth
+100 à 200 ms de plus. **Sur téléphone, jouer une mélodie sous le seuil n'est pas
+atteignable** — c'est le matériel qui le dit. Sur ordinateur, souris ou clavier,
+on y est.
 
 **Reste aussi, et c'est une question de placement :** le calibrage n'est
 atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui, vaut
