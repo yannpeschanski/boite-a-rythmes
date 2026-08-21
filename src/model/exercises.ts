@@ -186,3 +186,19 @@ export function medianeDesEcarts(ecarts: number[]): number {
   const m = Math.floor(tri.length / 2);
   return Math.round(tri.length % 2 ? tri[m] : (tri[m - 1] + tri[m]) / 2);
 }
+
+/* Écart signé d'une frappe au clic le plus proche d'un métronome régulier.
+ *
+ * Sert au calibrage : `t`, `debut` et `intervalle` sont en secondes sur
+ * l'horloge du son entendu, le résultat est en millisecondes. Contrairement à
+ * `ecartAuCoup`, la grille est ici parfaitement régulière — on ne cherche pas
+ * le prochain coup actif, tous les clics en sont un.
+ *
+ * Pur, donc testable : c'est le seul endroit où une erreur de signe rendrait le
+ * calibrage pire que pas de calibrage du tout, en corrigeant à l'envers.
+ */
+export function ecartAuClic(t: number, debut: number, intervalle: number): number {
+  if (intervalle <= 0) return 0;
+  const n = Math.round((t - debut) / intervalle);
+  return (t - debut - n * intervalle) * 1000;
+}

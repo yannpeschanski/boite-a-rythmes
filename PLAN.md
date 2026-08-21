@@ -4642,6 +4642,93 @@ celui de la PR — c'est lui qui déploie.
 **Vérifié :** `check` 0 erreur · **70 tests** · 12 exécutions consécutives du
 fichier instable, toutes vertes (≈3 600 tirages par assertion) · les deux builds.
 
+### ✅ Étape 20 — la latence se mesure, elle ne se devine pas (2026-08-21)
+
+> « 37 trop dur, il y a clairement une latence »
+
+**Deux problèmes distincts sous une seule phrase**, et le second n'est pas une
+question de millisecondes.
+
+#### 1. Une latence bel et bien NON compensée — et c'est un bug, pas une fatalité
+
+`audioTime()` faisait `ctx.currentTime - (ctx.outputLatency || 0)`.
+⚠️ **`outputLatency` n'est pas implémenté par WebKit** : sur iPhone et iPad il
+vaut `undefined`, donc `|| 0` ne compensait **rien**. Et le projet ouvre son
+contexte en `latencyHint: 'playback'` (choix de robustesse Bluetooth, voir
+`ensureAudio`), c'est-à-dire avec un gros tampon de sortie. Sur un téléphone, le
+Mode jeu mesurait donc les frappes contre une horloge en avance de plusieurs
+dizaines de millisecondes sur ce qu'on entend. Repli posé sur `baseLatency`
+(largement supporté) : c'est un plancher, pas la vérité, mais infiniment mieux
+que zéro.
+
+#### 2. Ce qui reste ne se devine pas
+
+La dalle tactile, le système, le casque : aucune API ne les déclare. **Un
+calibrage** est donc ajouté — un métronome nu, douze clics, le joueur tape
+dessus, et la médiane de ses écarts EST son décalage. Le réglage est persisté
+sous sa propre clé (`ui/game/latence.svelte.ts`) : ce n'est ni de l'état de
+morceau ni de la progression, c'est une propriété de **l'appareil** — un même
+joueur sur deux appareils n'a pas le même décalage, un même appareil partagé par
+deux joueurs a le même. Il vit donc hors du format v2, comme `paramHints` et
+`lastTouched`.
+
+**Le point de conception : `affiner` est ADDITIF, pas remplaçant.** Les frappes
+d'une partie sont déjà corrigées par le réglage en place ; leur médiane est donc
+ce qu'il RESTE à corriger. Remplacer effacerait la correction précédente et
+ferait **osciller** le réglage d'une partie à l'autre au lieu de le faire
+converger — un bug invisible à la lecture, visible seulement en jouant deux fois
+de suite. `tests/latence.test.ts` le verrouille.
+
+D'où aussi le raccourci après une partie : si l'écart médian dépasse 25 ms, un
+bouton **« Compenser ce décalage »** propose de l'appliquer — la partie qui vient
+d'être jouée est une mesure, autant s'en servir. Il efface les frappes affichées
+au passage : elles ont été mesurées avec l'ANCIEN réglage, les garder montrerait
+un biais qui n'existe déjà plus.
+
+#### 3. « Trop dur » n'était pas qu'une affaire de latence
+
+Le niveau 37 demandait de reproduire **à l'oreille** un rythme **jamais
+entendu**, dès la première mesure. Écouter, retenir, placer : trois choses, pas
+une. Le transport sépare donc désormais **« 🔊 Écouter la boucle »** (autant de
+fois qu'on veut, les frappes ne comptent pas) de **« ⏺ Jouer (précompte) »**.
+C'est ce que fait n'importe qui devant un instrument, et ça change plus le niveau
+que n'importe quel réglage de tolérance. Tempo abaissé en complément : 84/92 →
+72/80.
+
+#### Ce que la vérification a coûté, et appris
+
+Deux robots Playwright successifs ont donné des mesures **fausses** avant qu'un
+troisième ne serve à quelque chose :
+
+- le premier tapait sur sa propre horloge, pas sur les clics du métronome : sa
+  phase dérivait de 70 ms par temps, la médiane d'une phase qui balaie ne veut
+  rien dire ;
+- le second tapait sur tous les pas en mode « à l'oreille » — puisque les repères
+  y sont **cachés par conception**, `cibles` était vide et il frappait aussi les
+  silences.
+
+Le troisième est un test **différentiel** : même niveau, même robot, une fois à
+0 ms et une fois à +80 ms de réglage. **Différence mesurée : −79 ms pour un
+réglage de +80.** Signe et amplitude justes, sans dépendre de la précision
+absolue du robot. Et le calcul lui-même (`ecartAuClic`) est sorti dans
+`model/exercises.ts` et testé unitairement : c'est le seul endroit où une erreur
+de signe rendrait le calibrage **pire** que pas de calibrage, en corrigeant à
+l'envers.
+
+**Fichiers touchés :** `src/engine/AudioEngine.ts` (`latenceSortie` avec repli,
+`latenceSortieMs`, `metronome`), `src/model/exercises.ts` (`ecartAuClic`),
+`src/ui/game/latence.svelte.ts` (neuf), `src/ui/game/GameView.svelte` (écoute vs
+jeu, panneau de calibrage, correction appliquée, bouton rouge d'enregistrement),
+`src/model/presets/levels.ts` (tempo du 37, préambules), `tests/latence.test.ts`
+(neuf), `tests/exercises.test.ts`.
+
+**Vérifié :** `check` 0 erreur · **81 tests** · les deux builds · scénario
+différentiel Playwright (−79 ms attendu −80) · calibrage complet dans le
+navigateur (12 clics, médiane, application, persistance, relecture après
+rechargement) · les frappes ne comptent pas pendant l'écoute ni pendant le
+précompte · aucune erreur console · cibles tactiles : aucune sous 44×44 sur les
+quatre pilotes, transport à cinq boutons compris.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

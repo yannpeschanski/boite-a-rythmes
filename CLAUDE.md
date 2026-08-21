@@ -121,6 +121,17 @@ bandeau LCD du séquenceur). Ils ne se sérialisent pas, ne passent pas dans
 l'historique d'annulation, et le moteur audio ne les lit jamais. C'est le bon
 domicile pour ce genre d'état — ne pas les faire remonter dans `model/types.ts`.
 
+⚠️ **`outputLatency` n'existe pas dans WebKit.** `AudioEngine.audioTime()` (l'horloge
+du son *entendu*, dont dépend toute la notation de « jouer en rythme ») se replie sur
+`baseLatency` quand il manque — sans ce repli, iPhone et iPad ne compensaient **rien**,
+alors que le contexte s'ouvre en `latencyHint: 'playback'`, donc avec un gros tampon.
+Ce que ce repli ne couvre pas (dalle tactile, casque) ne se devine pas : il se **mesure**,
+d'où le calibrage du Mode jeu (`ui/game/latence.svelte.ts`, encore un module d'état
+d'interface hors format v2 — c'est une propriété de l'APPAREIL, pas du joueur ni du
+morceau). Son `affiner` est **additif** : les frappes sont déjà corrigées par le réglage
+en place, leur médiane est ce qu'il RESTE à corriger — remplacer ferait osciller le
+réglage au lieu de le faire converger.
+
 **L'analyseur de spectre** est un `AnalyserNode` maître branché en tap sur
 `finalGain` dans `buildGraph` — donc sur ce qu'on entend, limiteur compris. Le
 moteur l'expose par `getSpectrum(out)`, qui **remplit un tableau fourni par

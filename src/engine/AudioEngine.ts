@@ -570,18 +570,67 @@ export class AudioEngine {
     }
   }
 
+  /* Le retard entre « l'échantillon est traité » et « on l'entend », en secondes.
+   *
+   * ⚠️ `outputLatency` n'est PAS implémenté par WebKit : sur iPhone et iPad il
+   * vaut `undefined`, donc l'ancien `|| 0` ne compensait rien du tout. Avec
+   * `latencyHint: 'playback'` (choisi pour la robustesse Bluetooth, voir
+   * ensureAudio) le tampon de sortie est gros — l'écart non compensé s'y compte
+   * en dizaines de millisecondes, et le Mode jeu mesurait les frappes contre une
+   * horloge en avance sur ce qu'on entend. C'est ce que Yann a senti en essayant
+   * le niveau 37 : « il y a clairement une latence ».
+   *
+   * `baseLatency` est, lui, largement supporté : il ne couvre que le tampon de
+   * traitement (pas la chaîne matérielle), donc c'est un plancher, pas la
+   * vérité. Il vaut infiniment mieux que zéro. Ce qui reste — la dalle tactile,
+   * le casque — ne se devine pas : il se MESURE, et c'est l'objet du calibrage
+   * du Mode jeu (voir `metronome` ci-dessous).
+   */
+  private latenceSortie(): number {
+    if (!this.ctx) return 0;
+    const sortie = this.ctx.outputLatency;
+    if (typeof sortie === 'number' && sortie > 0) return sortie;
+    // ×2 : le trajet complet vaut au moins l'aller du tampon plus ce que la
+    // carte son y ajoute. Estimation grossière, assumée comme telle.
+    return (this.ctx.baseLatency || 0) * 2;
+  }
+
   /* L'horloge du son ENTENDU, en secondes.
    *
-   * `ctx.currentTime` avance dès qu'un échantillon est traité, pas quand il
-   * sort du haut-parleur ; `outputLatency` est cet écart. Même compensation
-   * que `consumePlayhead` ci-dessous, exposée séparément parce que le Mode jeu
-   * en a besoin pour dater une frappe : mesurer un placement contre
-   * `performance.now()` mesure l'horloge du fil principal, qui n'est pas celle
-   * qu'on entend. Renvoie null tant qu'aucun contexte n'existe.
+   * Mesurer un placement contre `performance.now()` mesure l'horloge du fil
+   * principal, qui n'est pas celle qu'on entend. Renvoie null tant qu'aucun
+   * contexte n'existe.
    */
   audioTime(): number | null {
     if (!this.ctx) return null;
-    return this.ctx.currentTime - (this.ctx.outputLatency || 0);
+    return this.ctx.currentTime - this.latenceSortie();
+  }
+
+  /* Ce que le moteur croit compenser, en millisecondes — pour l'afficher.
+   * Un chiffre à zéro sur un appareil où l'on entend un décalage dit tout de
+   * suite que le navigateur ne renseigne rien, et qu'il faut calibrer. */
+  latenceSortieMs(): number {
+    return Math.round(this.latenceSortie() * 1000);
+  }
+
+  /* Métronome de calibrage : programme `beats` clics réguliers et renvoie leur
+   * position sur l'horloge du son entendu.
+   *
+   * Sert à MESURER la latence de la chaîne d'entrée sur l'appareil réel plutôt
+   * qu'à la deviner : le joueur tape sur les clics, on compare ses frappes à
+   * ces temps-là, et la médiane des écarts est son décalage. Aucune estimation
+   * de navigateur ne remplace cette mesure.
+   */
+  metronome(beats: number, bpm: number): { debut: number; intervalle: number } {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    void ctx.resume();
+    const intervalle = 60 / Math.max(20, bpm);
+    const startAt = ctx.currentTime + 0.3;
+    for (let i = 0; i < beats; i++) scheduleClick(ctx, startAt + i * intervalle, i % 4 === 0);
+    // Renvoyé sur l'horloge du son ENTENDU, comme audioTime : les deux doivent
+    // parler la même langue, sinon la mesure porte la latence de sortie en plus.
+    return { debut: startAt - this.latenceSortie(), intervalle };
   }
 
   // Appelée à chaque frame rAF par l'UI : renvoie les événements dont le
@@ -593,7 +642,7 @@ export class AudioEngine {
   // curseur visuel semble en avance sur ce qu'on entend.
   consumePlayhead(): PlayheadEvent[] {
     if (!this.ctx || this.playheadQueue.length === 0) return [];
-    const now = this.ctx.currentTime - (this.ctx.outputLatency || 0);
+    const now = this.audioTime()!;
     const due: PlayheadEvent[] = [];
     const remaining: PlayheadEvent[] = [];
     this.playheadQueue.sort((a, b) => a.time - b.time);
