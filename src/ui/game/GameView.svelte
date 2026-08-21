@@ -11,7 +11,7 @@
     medianeDesEcarts,
     type ExerciseKind,
   } from '../../model/exercises';
-  import { latence } from './latence.svelte';
+  import { latence } from '../latence.svelte';
   import XpWindow from '../xp/XpWindow.svelte';
 
   let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
@@ -113,7 +113,8 @@
   }
 
   onMount(() => {
-    latence.charger();
+    // `latence.charger()` est fait une fois au démarrage (App.svelte) : le
+    // réglage vaut pour tous les modes, pas seulement pour celui-ci.
     raf = requestAnimationFrame(loop);
   });
   onDestroy(() => {

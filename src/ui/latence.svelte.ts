@@ -1,4 +1,9 @@
-/* Le décalage d'entrée du joueur, mesuré sur SON appareil.
+/* Le décalage d'entrée, mesuré sur l'appareil — pour TOUS les modes.
+ *
+ * Vivait d'abord sous `ui/game/` : le Mode jeu était le seul à mesurer un
+ * placement. Il ne l'est plus — le pad d'écriture de l'Atelier quantifie lui
+ * aussi ce qu'on joue pendant la lecture, donc il subit exactement le même
+ * décalage. Un seul réglage pour l'appareil, pas un par écran.
  *
  * Pourquoi ce module existe
  * -------------------------

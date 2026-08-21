@@ -31,12 +31,14 @@
   import { noteNameForScaleDegree } from '../../model/presets/scales';
   import { barDuration } from '../../engine/groove';
   import { quantizeToStep } from '../../engine/quantize';
+  import { latence } from '../latence.svelte';
 
   let {
     name,
     playing = false,
     playheadCol = -1,
     stepStartedAt = 0,
+    horloge,
     cursor = $bindable(0),
     onPreview,
     onChanged,
@@ -46,7 +48,12 @@
     playing?: boolean;
     playheadCol?: number;
     /** `performance.now()` de l'arrivée du pas courant — sert à quantifier. */
+    /* Temps AUDIO du pas courant, en millisecondes (voir AtelierView). */
     stepStartedAt?: number;
+    /* L'horloge du son ENTENDU, en millisecondes — la même que `stepStartedAt`.
+       Passée en fonction et non en valeur : elle doit être lue au moment de la
+       FRAPPE, pas au moment du rendu. */
+    horloge?: () => number;
     /** Pas visé à l'arrêt — partagé avec la grille, qui l'entoure. */
     cursor?: number;
     onPreview?: (degree: number, octave: number) => void;
@@ -115,15 +122,27 @@
     onChanged?.();
   }
 
-  // Pendant la lecture : on vise le pas le PLUS PROCHE, pas celui en cours.
-  // La règle elle-même vit dans `engine/quantize.ts` (pur, testé) ; ici on ne
-  // fait que lui donner l'horloge.
+  /* Pendant la lecture : on vise le pas le PLUS PROCHE, pas celui en cours.
+   * La règle elle-même vit dans `engine/quantize.ts` (pur, testé) ; ici on ne
+   * fait que lui donner l'horloge — et il faut la lui donner juste.
+   *
+   * Deux corrections, les mêmes que dans le Mode jeu :
+   *   - `stepStartedAt` est désormais le temps AUDIO du pas (voir AtelierView),
+   *     et `horloge()` lit la même horloge. Comparer deux horloges différentes
+   *     revenait à mesurer leur écart plutôt que le geste.
+   *   - `latence.ms` est le décalage d'entrée MESURÉ de l'appareil (dalle
+   *     tactile, casque). Sans lui, un joueur en place mais mesuré 60 ms en
+   *     retard voit sa note basculer sur le pas suivant — la faute la plus
+   *     agaçante qui soit, puisqu'elle est SILENCIEUSE : rien ne dit qu'on
+   *     vient d'écrire à côté.
+   */
   function quantizedCol(): number {
     if (!playing || playheadCol < 0) return safeCursor;
     if (!stepStartedAt) return playheadCol;
+    const maintenant = horloge?.() ?? performance.now();
     return quantizeToStep({
       playheadCol,
-      elapsedMs: performance.now() - stepStartedAt,
+      elapsedMs: maintenant - stepStartedAt - latence.ms,
       stepMs: stepDurForLine(row, barDuration(pattern.state.tempo)) * 1000,
       steps,
     });

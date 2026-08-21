@@ -4729,6 +4729,188 @@ rechargement) · les frappes ne comptent pas pendant l'écoute ni pendant le
 précompte · aucune erreur console · cibles tactiles : aucune sous 44×44 sur les
 quatre pilotes, transport à cinq boutons compris.
 
+### ✅ Étape 21 — la latence hors du Mode jeu, et un pad qui ne quantifiait pas (2026-08-21)
+
+> « (parenthèse, c'est un pb qu'on a aussi lorsqu'on joue au pad dans les autres modes) »
+
+**Deux problèmes différents sous le mot « latence », et il faut les séparer** —
+c'est le point de fond de cette étape :
+
+- **Déclencher un son** (pads du Mode Live, aperçu d'une ligne, note jouée au
+  clavier) : la latence **ne se compense pas**. On ne peut pas jouer un son avant
+  la frappe. La seule réponse est de la RÉDUIRE.
+- **Mesurer un placement** (Mode jeu, et le pad d'écriture de l'Atelier qui range
+  ce qu'on joue dans une case) : là, un décalage mesuré se retranche.
+
+#### 1. Réduire — `latencyHint` de 'playback' à 'interactive'
+
+La justification d'origine (« on programme tout en avance de toute façon ») est
+juste pour le séquenceur — sa robustesse vient du lookahead de 0,25 s
+(`SCHEDULE_AHEAD`), pas du tampon de sortie — et **fausse pour tout ce qu'on
+frappe**. Mesuré dans Chromium :
+
+| `latencyHint` | `baseLatency` | `outputLatency` |
+|---|---|---|
+| `playback` | 23,2 ms | **72 ms** |
+| `interactive` | 10 ms | **32 ms** |
+
+**40 ms rendus à chaque frappe**, dans tous les modes, avant la dalle tactile et
+le Bluetooth.
+
+#### 2. Compenser — le réglage devient commun à toute l'appli
+
+`ui/game/latence.svelte.ts` → `ui/latence.svelte.ts`, chargé une fois au
+démarrage (`App.svelte`) et non plus dans l'écran qui s'en sert en premier. Le
+pad d'écriture de l'Atelier le retranche comme le fait le Mode jeu, et son repère
+de pas passe de `performance.now()` (au moment où la frame rAF consomme
+l'événement) à `ev.time`, le temps AUDIO programmé — la même faute que celle
+corrigée à l'étape 18, au même endroit du raisonnement.
+
+#### 3. Deux bugs trouvés en VÉRIFIANT, dont un antérieur et sérieux
+
+**(a) `quantizeToStep` avalait silencieusement toute correction positive.** Son
+garde-fou `elapsedMs < 0 → pas courant` datait d'un temps où un écoulement
+négatif ne pouvait être qu'une absence de repère. Depuis qu'on retranche un
+décalage, un écoulement négatif veut dire « la frappe appartient au pas
+PRÉCÉDENT » — et c'est le cas qu'on cherche à traiter. Mesuré au navigateur : un
+réglage de 400 ms écrivait **exactement les mêmes colonnes** que 0 ms. La
+fonction arrondit désormais au plus proche dans les deux sens, en conservant le
+contrat d'origine — **pile à la moitié on reste sur le pas courant** (`Math.round`
+arrondit 0,5 vers le haut et cassait un test existant ; d'où un arrondi dont les
+égalités vont vers zéro).
+
+**(b) Le pad d'écriture n'a JAMAIS quantifié pendant la lecture.**
+`synthStepAt` était un `const` — un objet **non réactif**. Le muter ne
+redéclenche rien en Svelte 5 : l'expression `stepStartedAt={stepAt?.[name] ?? 0}`
+était évaluée une fois, au premier rendu, quand la valeur valait encore 0, et ne
+bougeait plus jamais. `quantizedCol()` prenait donc systématiquement son repli
+`if (!stepStartedAt) return playheadCol` — **il écrivait sur le pas EN COURS**,
+c'est-à-dire précisément le défaut que `engine/quantize.ts` a été écrit pour
+éviter. Un module pur, correctement testé, branché sur une valeur morte. Ni les
+tests ni l'écran ne pouvaient le dire.
+
+#### Ce que la vérification a coûté
+
+Six sondes Playwright successives avant d'obtenir une mesure exploitable, et à
+chaque fois **c'est la sonde qui était fausse** : sélecteur attrapant la tuile
+d'aide au lieu de l'onglet, `startsWith('🎹')` attrapant l'onglet au lieu du
+bouton du pad, `page.goto` vers la même URL à ancre identique qui **ne recharge
+pas** (donc le réglage n'était jamais relu), deux `replace` Python sans `assert`
+qui n'ont rien remplacé en silence. La leçon est celle du projet, encore : une
+sonde qui ne montre rien ne prouve rien tant qu'on n'a pas vérifié qu'elle
+regarde au bon endroit.
+
+Preuve finale, différentielle et instrumentée :
+
+| Réglage | `ecoule` vu par le pad | Colonnes écrites |
+|---|---|---|
+| 0 ms | +276 ms | 1, 2, 3 |
+| 400 ms | **−126 ms** | **0, 1, 2** |
+
+**Fichiers touchés :** `src/engine/AudioEngine.ts` (`latencyHint`),
+`src/engine/quantize.ts` (arrondi bidirectionnel), `src/ui/latence.svelte.ts`
+(déplacé depuis `ui/game/`), `src/App.svelte` (chargement au démarrage),
+`src/ui/atelier/AtelierView.svelte` (`$state`, `ev.time`, `horloge`),
+`src/ui/atelier/SynthModule.svelte` + `src/ui/sequencer/SynthRowView.svelte`
+(transmission), `src/ui/sequencer/NotePad.svelte` (horloge audio + décalage),
+`src/ui/game/GameView.svelte`, `tests/quantize.test.ts`, `tests/latence.test.ts`.
+
+**Vérifié :** `check` 0 erreur · **87 tests** · les deux builds · essai
+différentiel instrumenté ci-dessus · sondes retirées du code livré (0 `console.log`
+dans `NotePad.svelte`).
+
+#### 4. Le budget complet de latence d'un pad, chiffré
+
+> « l'idée de pad, c'est de pouvoir jouer en direct donc s'il y a un décalage,
+> il faut le réduire, ma question : est-ce possible ? »
+
+Oui, et il y a **trois maillons** — dont deux réductibles :
+
+| Maillon | Avant | Après | Réductible ? |
+|---|---|---|---|
+| Avance de déclenchement (code) | 20 à **50 ms** | **5 ms** | ✅ gratuit |
+| Tampon de sortie (`latencyHint`) | 72 ms | 32 ms | ✅ fait, et encore possible |
+| Dalle tactile / OS / Bluetooth | 20-200 ms | — | ❌ hors de portée |
+
+**L'avance de déclenchement était le pire, et le plus bête.** Les sons joués à la
+demande étaient programmés à `currentTime + 0,02` (`preview`), `+ 0,02`
+(`playDegreePreview`), `+ 0,01` (SOLO du Mode Live) et **`+ 0,05` pour
+`previewSynth`** — 50 ms de retard ajoutés au geste, empilés SUR la latence de
+sortie. Constante unique `AVANCE_DECLENCHEMENT = 0,005 s` : Web Audio traite par
+blocs de 128 échantillons (≈2,9 ms), deux blocs d'avance suffisent à garantir que
+l'enveloppe démarre à sa première valeur au lieu d'être rattrapée en cours de
+rampe — ce qui claque. C'est la seule raison d'être de cette avance.
+
+Total d'un appui sur le pad synthé, hors matériel : **~122 ms → ~37 ms**.
+
+**Le maillon qui reste, et son prix.** `latencyHint` accepte aussi un NOMBRE de
+secondes. Mesuré dans Chromium :
+
+| `latencyHint` | tampon | `outputLatency` |
+|---|---|---|
+| `'playback'` (l'ancien) | 1024 éch. | 72 ms |
+| `'interactive'` (l'actuel) | 441 éch. | 32 ms |
+| `0.001` | **128 éch.** | **8 ms** |
+
+**Tranché : `0.001`.** La question posée par Yann est celle du SEUIL, pas du
+réglage — « je veux juste pouvoir jouer sur le pad une mélodie […] sans me rendre
+compte de la latence ». Or il existe, et c'est lui qui commande :
+
+| Latence geste → son | Ressenti |
+|---|---|
+| **< 10 ms** | imperceptible |
+| 10-20 ms | acceptable, on joue sans y penser |
+| 20-30 ms | sensible sur les attaques franches |
+| **> 30 ms** | on entend le décalage et on ralentit pour compenser |
+
+(Wessel & Wright, *Problems and Prospects for Intimate Musical Control of
+Computers*, 2002, et la pratique des studios. Deux nuances : les attaques
+percussives — un pad, un piano — sont les plus sensibles, une nappe pardonne
+bien plus ; et la GIGUE gêne davantage qu'un retard constant, parce qu'on
+s'adapte à un retard fixe et jamais à un retard qui varie.)
+
+`'interactive'` laissait le budget logiciel à 37 ms : **au-dessus du seuil**,
+donc à côté de la demande. Seul `0.001` passe dessous. Vérifié dans l'appli
+réelle, pas seulement sur un contexte témoin : `latencyHint: 0.001` → 128
+échantillons, `outputLatency` 8 ms, contexte `running` et stable après cinq
+secondes de lecture avec l'analyseur à 60 Hz, zéro erreur console.
+
+**Budget logiciel final : ~122 ms → 13 ms** (5 ms d'avance + 8 ms de tampon).
+
+⚠️ **Le prix, assumé et réversible en une constante.** À 128 échantillons le fil
+audio n'a plus que ~2,9 ms pour remplir chaque bloc : sur un appareil faible ou
+chargé, un dépassement s'entend comme un CLIC, pendant le jeu comme pendant la
+lecture. Le lookahead (0,25 s) ne protège pas de ça — il garantit le PLACEMENT
+des notes, pas le remplissage du tampon. `TAMPON_SORTIE` est la seule chose à
+changer si des craquements apparaissent ; revenir à `'interactive'` rend 24 ms
+et la robustesse avec.
+
+⚠️ **Ce que ça ne règle pas.** Le Bluetooth : 100 à 200 ms qu'aucun code ne
+touche.
+
+⚠️ **Et une erreur à ne pas refaire, commise ici puis corrigée** (Yann :
+« l'écran tactile induit une latence de 40 ms a minima ?? »). Les chiffres
+publiés sur la « latence tactile » — 50 à 100 ms — mesurent presque toujours le
+**touch-to-display** : doigt, digitaliseur, système, application, rendu,
+composition, vsync, réponse de dalle. **La moitié de ce budget est le pipeline
+graphique, que le pad ne traverse pas** : il va du doigt au son, sans passer par
+l'écran. Ce qui compte ici est le **touch-to-event**, dominé par la fréquence
+d'échantillonnage du digitaliseur (60 à 120 Hz, soit 8 à 16 ms de granularité)
+plus la pile d'entrée : **plutôt 10 à 30 ms**.
+
+Conclusion révisée : avec 13 ms côté logiciel, **un téléphone récent peut très
+bien tomber dans la zone jouable**. Affirmer le contraire était une extrapolation
+à partir du mauvais chiffre. Et il n'y a pas à en débattre : **ça se mesure**,
+appareil par appareil, et le calibrage du Mode jeu mesure exactement ce
+trajet-là. Depuis que la sortie est compensée à 8 ms près, l'écart médian qu'il
+affiche est essentiellement la latence d'ENTRÉE de l'appareil plus le biais de
+jeu du joueur.
+
+**Reste aussi, et c'est une question de placement :** le calibrage n'est
+atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui, vaut
+pour toute l'appli. Où poser l'entrée dans l'Atelier — menu Affichage, menu Aide,
+onglet Production ?
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

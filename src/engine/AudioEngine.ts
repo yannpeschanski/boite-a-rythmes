@@ -24,6 +24,65 @@ import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
 
+/* Avance de déclenchement d'un son JOUÉ (pad, aperçu, note tenue), en secondes.
+ *
+ * Ce n'est pas du confort de programmation : c'est de la latence pure ajoutée
+ * au geste. Les valeurs d'origine étaient dispersées et généreuses — 20 ms pour
+ * `preview`, 20 ms pour `playDegreePreview`, **50 ms** pour `previewSynth`,
+ * 10 ms pour le SOLO du Mode Live — soit jusqu'à 50 ms empilés SUR la latence
+ * de sortie du contexte. Un pad qui répond en 120 ms ne s'entend pas comme un
+ * instrument.
+ *
+ * 5 ms suffisent. Web Audio traite par blocs de 128 échantillons (≈2,9 ms à
+ * 44,1 kHz) : deux blocs d'avance garantissent que l'enveloppe démarre à sa
+ * première valeur au lieu d'être rattrapée en cours de rampe — ce qui claque.
+ * Programmer exactement à `currentTime` reste risqué pour cette raison ; c'est
+ * ce que l'avance protège, et rien d'autre.
+ */
+const AVANCE_DECLENCHEMENT = 0.005; // s
+
+/* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
+ *
+ * LE SEUIL À TENIR. Pour jouer d'un instrument, la littérature (Wessel &
+ * Wright, 2002) et la pratique s'accordent : sous 10 ms c'est imperceptible,
+ * 10-20 ms se joue sans y penser, au-delà de 30 ms on entend le décalage et on
+ * ralentit pour compenser. Les attaques franches — un pad, un piano — sont les
+ * plus sensibles. C'est ce budget-là qui commande, pas le confort du moteur.
+ *
+ * Mesuré dans Chromium, ce que chaque valeur donne réellement :
+ *
+ *   'playback'      1024 échantillons   72 ms   ← l'ancien choix
+ *   'interactive'    441 échantillons   32 ms
+ *   0.001            128 échantillons    8 ms   ← le minimum matériel
+ *
+ * Avec l'avance de déclenchement ci-dessus, le budget CÔTÉ LOGICIEL passe donc
+ * de ~122 ms à ~13 ms : sous le seuil, ce qu'aucune des deux autres valeurs ne
+ * permettait.
+ *
+ * ⚠️ Ce que ça coûte, et qui n'est pas nul : à 128 échantillons le fil audio
+ * n'a plus que ~2,9 ms pour remplir chaque bloc. Sur un appareil faible ou
+ * chargé, un dépassement s'entend comme un CLIC — pendant le jeu comme pendant
+ * la lecture. Le lookahead du séquenceur (SCHEDULE_AHEAD) ne protège pas de ça :
+ * il garantit le PLACEMENT des notes, pas le remplissage du tampon. Si des
+ * craquements apparaissent, la seule chose à changer est cette constante —
+ * revenir à 'interactive' rend 24 ms et la robustesse avec.
+ *
+ * ⚠️ Ce que ça ne règle pas : la chaîne d'ENTRÉE et le Bluetooth. Un casque
+ * Bluetooth ajoute 100 à 200 ms, et aucune ligne de code n'y touche.
+ *
+ * Pour le tactile, attention au chiffre qu'on cite : les mesures publiées sur
+ * la « latence tactile » (50 à 100 ms) sont presque toujours du
+ * TOUCH-TO-DISPLAY — doigt, digitaliseur, système, application, rendu,
+ * composition, vsync, réponse de dalle. La moitié de ce budget est le pipeline
+ * GRAPHIQUE, que le pad ne traverse pas : il va du doigt au son. Ce qui compte
+ * ici est le touch-to-event, dominé par la fréquence du digitaliseur (60 à
+ * 120 Hz, soit 8 à 16 ms de granularité) plus la pile d'entrée — plutôt 10 à
+ * 30 ms. Ne pas conclure qu'un téléphone est perdu d'avance : ça se MESURE,
+ * appareil par appareil, et c'est précisément ce que fait le calibrage du Mode
+ * jeu (ui/latence.svelte.ts).
+ */
+const TAMPON_SORTIE = 0.001; // s
+
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private graph: GraphNodes | null = null;
@@ -170,11 +229,29 @@ export class AudioEngine {
     return next;
   }
 
-  // latencyHint 'playback' : robustesse (Bluetooth notamment) plutôt que
-  // latence minimale — on programme tout en avance de toute façon.
+  /* latencyHint 'interactive' — l'appli est un INSTRUMENT, pas un lecteur.
+   *
+   * Le choix précédent ('playback') s'appuyait sur un argument juste et
+   * incomplet : « on programme tout en avance de toute façon ». C'est vrai du
+   * séquenceur — sa robustesse vient du lookahead de 0,25 s (SCHEDULE_AHEAD),
+   * pas de la taille du tampon de sortie. Mais c'est FAUX de tout ce qu'on
+   * frappe : un pad, une note jouée au clavier, un déclencheur du Mode Live ne
+   * se programment pas à l'avance, ils arrivent maintenant. Pour eux, le gros
+   * tampon est un coût pur.
+   *
+   * Mesuré dans Chromium (2026-08-21) : outputLatency 72 ms en 'playback'
+   * contre 32 ms en 'interactive' — 40 ms rendus à chaque frappe, sur cette
+   * machine seule, avant la dalle tactile et le Bluetooth. C'est ce que Yann
+   * sentait : « c'est un pb qu'on a aussi lorsqu'on joue au pad dans les
+   * autres modes ».
+   *
+   * ⚠️ Une latence de DÉCLENCHEMENT ne se compense pas : on ne peut pas jouer
+   * un son avant la frappe. Le calibrage du Mode jeu corrige la MESURE d'un
+   * placement ; ici il n'y a rien à corriger, seulement à réduire.
+   */
   private ensureAudio(): void {
     if (this.ctx && this.graph) return;
-    this.ctx = new AudioContext({ latencyHint: 'playback' });
+    this.ctx = new AudioContext({ latencyHint: TAMPON_SORTIE });
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);
@@ -737,7 +814,7 @@ export class AudioEngine {
     void ctx.resume();
     const kit = this.kit!;
     const row = this.getState().rows[name];
-    const t = ctx.currentTime + 0.02;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'kick') kit.playKick(t, row.volume, row);
     else if (name === 'snare') stepState === 2 ? kit.playRimshot(t, row.volume, row) : kit.playSnare(t, row.volume, row);
     else if (name === 'hat') stepState === 2 ? kit.playHatOpen(t, row.volume, row) : kit.playHatClosed(t, row.volume, row);
@@ -757,7 +834,7 @@ export class AudioEngine {
     const synth = this.synth!;
     const state = this.getState();
     const row = state.synthRows[name];
-    const t = ctx.currentTime + 0.05;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'pad') {
       const freqs = chordFreqs(state, chordsFor(state), 0);
       synth.playPadChord(freqs, t, 0.6, 0.3, row.voice, 0, 0, null);
@@ -787,7 +864,7 @@ export class AudioEngine {
     const state = this.getState();
     const row = state.synthRows[name];
     const freq = degreeFreq(state, degree, octave, name === 'bass' ? -24 : 0);
-    const t = ctx.currentTime + 0.02;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'bass') this.synth!.playBassNote(freq, t, 0.45, 0.45, row.voice, null);
     else this.synth!.playMelodyNote(freq, t, 0.45, 0.4, row.voice, null);
   }
@@ -846,7 +923,7 @@ export class AudioEngine {
     if (!this.ctx || !this.synth) return;
     void this.ctx.resume();
     const row = this.withLiveOverrides(this.getState()).synthRows.melody;
-    const t = this.ctx.currentTime + 0.01;
+    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
     const glideTime = (row.glide || 0) * 0.12;
     const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
     this.synth.playMelodyNote(freq, t, 0.5, 0.4, row.voice, glide);

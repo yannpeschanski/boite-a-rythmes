@@ -8,6 +8,7 @@
   import GameView from './ui/game/GameView.svelte';
   import LiveView from './ui/live/LiveView.svelte';
   import { game, LEVELS } from './stores/game.svelte';
+  import { latence } from './ui/latence.svelte';
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
@@ -17,6 +18,10 @@
 
   onMount(() => {
     game.load();
+    // Le décalage d'entrée vaut pour TOUS les modes (Mode jeu, pad d'écriture
+    // de l'Atelier) : il se charge une fois, au démarrage, pas dans l'écran qui
+    // s'en sert en premier.
+    latence.charger();
     // Contournement #boss AVANT tout le reste : ce qui suit lit les verrous.
     unlocks.init(location.hash);
     // Rythme partagé par URL : on entre directement dans l'Atelier. Le lien

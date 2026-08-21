@@ -84,6 +84,14 @@ avec de faux kits, sans Web Audio) — si son instantané de référence tombe, 
 n'est pas « comment le mettre à jour » mais « est-ce que je viens de rendre les
 anciens exports non reproductibles ? ».
 
+⚠️ **Un objet muté doit être `$state`, sinon le prop qui en dérive est figé.**
+`synthStepAt` (AtelierView) était un `const` : le muter ne redéclenchait rien, donc
+`stepStartedAt` arrivait toujours à 0 dans le pad, et `quantizeToStep` prenait
+systématiquement son repli « écrire sur le pas en cours » — le défaut même que ce
+module pur et testé existe pour éviter. Ni les tests ni l'écran ne pouvaient le dire.
+Quand un module pur est testé et que le comportement reste faux, **suspecter le
+câblage, pas le calcul**.
+
 **Le format d'état v2 (`src/model/types.ts`) est le contrat central.** Stores, moteur,
 sérialisation, presets et undo/redo parlent tous cette forme. Elle est compatible avec
 les fichiers de sauvegarde de la version d'origine (v1 et v2) — ne pas casser
@@ -120,6 +128,14 @@ vivent délibérément **hors** du format v2 : `ui/xp/paramHints.svelte.ts` et
 bandeau LCD du séquenceur). Ils ne se sérialisent pas, ne passent pas dans
 l'historique d'annulation, et le moteur audio ne les lit jamais. C'est le bon
 domicile pour ce genre d'état — ne pas les faire remonter dans `model/types.ts`.
+
+⚠️ **Deux latences, deux traitements — ne pas les confondre.** DÉCLENCHER un son
+(pads du Mode Live, aperçus, notes jouées) ne se compense pas : on ne peut pas jouer
+un son avant la frappe, on ne peut que réduire — d'où `latencyHint: 'interactive'`
+et non `'playback'` dans `ensureAudio` (mesuré : 32 ms contre 72 ms d'`outputLatency`
+dans Chromium ; l'argument « on programme tout en avance » ne vaut que pour le
+séquenceur, dont la robustesse vient du lookahead). MESURER un placement (Mode jeu,
+pad d'écriture de l'Atelier) se corrige, lui, avec le décalage calibré.
 
 ⚠️ **`outputLatency` n'existe pas dans WebKit.** `AudioEngine.audioTime()` (l'horloge
 du son *entendu*, dont dépend toute la notation de « jouer en rythme ») se replie sur

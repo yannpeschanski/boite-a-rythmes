@@ -22,6 +22,7 @@
     playheadCol = -1,
     playing = false,
     stepStartedAt = 0,
+    horloge,
     onPreviewDegree,
     onChanged,
   }: {
@@ -30,6 +31,7 @@
     playheadCol?: number;
     playing?: boolean;
     stepStartedAt?: number;
+    horloge?: () => number;
     onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
     onChanged?: () => void;
   } = $props();
@@ -374,6 +376,7 @@
         {playing}
         {playheadCol}
         {stepStartedAt}
+        {horloge}
         bind:cursor={padCursor}
         onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
         {onChanged}

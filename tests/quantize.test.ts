@@ -48,3 +48,50 @@ describe('quantification vers un pas', () => {
     expect(quantizeToStep({ playheadCol: 3, elapsedMs: 150, stepMs: STEP, steps: 0 })).toBe(0);
   });
 });
+
+describe('quantizeToStep — le temps écoulé peut être négatif', () => {
+  const STEP = 200;
+
+  /* Depuis que le pad retranche le décalage d'entrée mesuré de l'appareil, un
+   * `elapsedMs` négatif n'est plus une anomalie : il veut dire « la frappe
+   * appartient au pas PRÉCÉDENT ». L'ancien garde-fou `elapsedMs < 0` renvoyait
+   * le pas courant et rendait donc toute correction positive SILENCIEUSEMENT
+   * sans effet — mesuré au navigateur, 400 ms de décalage écrivaient exactement
+   * les mêmes colonnes que 0. */
+  it('recule d’un pas quand la correction dépasse la moitié du pas', () => {
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: -101, stepMs: STEP, steps: 8 })).toBe(2);
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: -300, stepMs: STEP, steps: 8 })).toBe(2);
+  });
+
+  it('ne recule pas pour une correction plus petite que la moitié du pas', () => {
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: -99, stepMs: STEP, steps: 8 })).toBe(3);
+  });
+
+  it('pile à la moitié on reste, des DEUX côtés de zéro', () => {
+    // Le contrat d'origine (`elapsedMs > stepMs / 2`, strictement) est conservé
+    // et simplement reflété : `Math.round` aurait arrondi 0,5 vers le haut et
+    // cassé le cas positif, déjà verrouillé par un test plus haut.
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: STEP / 2, stepMs: STEP, steps: 8 })).toBe(3);
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: -STEP / 2, stepMs: STEP, steps: 8 })).toBe(3);
+  });
+
+  it('recule de plusieurs pas si la correction les dépasse', () => {
+    expect(quantizeToStep({ playheadCol: 5, elapsedMs: -2 * STEP, stepMs: STEP, steps: 8 })).toBe(3);
+  });
+
+  it('replie en début de cycle sans jamais sortir des bornes', () => {
+    expect(quantizeToStep({ playheadCol: 0, elapsedMs: -STEP, stepMs: STEP, steps: 8 })).toBe(7);
+    expect(quantizeToStep({ playheadCol: 1, elapsedMs: -5 * STEP, stepMs: STEP, steps: 8 })).toBe(4);
+    for (const e of [-10 * STEP, -3.5 * STEP, -1, 0, 7 * STEP]) {
+      const col = quantizeToStep({ playheadCol: 2, elapsedMs: e, stepMs: STEP, steps: 8 });
+      expect(col).toBeGreaterThanOrEqual(0);
+      expect(col).toBeLessThan(8);
+    }
+  });
+
+  it('avance toujours comme avant pour un temps écoulé positif', () => {
+    // La règle d'origine reste vraie : au-delà de la moitié, c'est le suivant.
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: 99, stepMs: STEP, steps: 8 })).toBe(3);
+    expect(quantizeToStep({ playheadCol: 3, elapsedMs: 101, stepMs: STEP, steps: 8 })).toBe(4);
+  });
+});
