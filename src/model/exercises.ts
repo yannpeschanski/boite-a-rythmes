@@ -32,13 +32,45 @@ import type { GameDrumRowName } from './presets/levels';
  * - `jouer`      : taper en rythme sur la boucle, noté sur le placement. Le
  *   seul qui teste le geste plutôt que l'analyse.
  */
-export type ExerciseKind = 'reproduire' | 'completer' | 'intrus' | 'jouer';
+/* Les verbes de GRILLE ci-dessus, puis les verbes de PARAMÈTRE.
+ *
+ * Les quatre premiers comparent des cases : juste ou faux. Les trois suivants
+ * portent sur des valeurs continues — les panneaux Timbre, Filtre & espace,
+ * Groove, et tout le synthé, soit une trentaine de boutons. Un jeu par bouton
+ * serait ingérable : ce sont trois verbes PARAMÉTRÉS par le bouton visé (voir
+ * `model/parametres.ts`), et la même progression se rejoue dans chaque famille.
+ *
+ * - `lequel` : deux ou trois versions, laquelle a le plus de ce qu'on demande ?
+ *   Entendre la DIRECTION d'un bouton. Le plus facile, donc le premier.
+ * - `nommer` : deux sons, un seul paramètre diffère — lequel ? Mettre un NOM
+ *   sur ce qu'on entend, ce qui est ce qui permet ensuite d'y penser.
+ * - `regler` : un son cible, un curseur, retrouve la valeur. Viser un SON, pas
+ *   un chiffre — d'où une tolérance par bouton plutôt qu'une égalité.
+ */
+export type ExerciseKind =
+  | 'reproduire'
+  | 'completer'
+  | 'intrus'
+  | 'jouer'
+  | 'lequel'
+  | 'nommer'
+  | 'regler';
+
+/** Les verbes qui portent sur un paramètre continu plutôt que sur la grille. */
+export const VERBES_PARAM: ExerciseKind[] = ['lequel', 'nommer', 'regler'];
+
+export function estVerbeParam(v: ExerciseKind): boolean {
+  return VERBES_PARAM.includes(v);
+}
 
 export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   reproduire: 'Reproduis la boucle',
   completer: 'Complète le temps manquant',
   intrus: 'Trouve l’intrus',
   jouer: 'Joue en rythme',
+  lequel: 'Lequel est le plus… ?',
+  nommer: 'Qu’est-ce qui a changé ?',
+  regler: 'Règle-le à l’oreille',
 };
 
 export type Grille = Record<GameDrumRowName, DrumStep[]>;

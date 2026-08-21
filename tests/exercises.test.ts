@@ -224,6 +224,14 @@ describe('les niveaux', () => {
     }
   });
 
+  it('un pilote de chacun des trois verbes de PARAMÈTRE existe, en Timbre', () => {
+    for (const verbe of ['lequel', 'nommer', 'regler'] as const) {
+      const l = LEVELS.find((x) => x.exercise === verbe);
+      expect(l, verbe).toBeDefined();
+      expect(l!.familleParam, verbe).toBe('timbre');
+    }
+  });
+
   it('un pilote de chaque nouveau verbe existe', () => {
     const verbes = new Set(LEVELS.map((l) => l.exercise));
     expect(verbes.has('completer')).toBe(true);

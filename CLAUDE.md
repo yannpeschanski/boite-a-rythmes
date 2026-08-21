@@ -131,6 +131,22 @@ frappe (calibrage compris) ne doit **jamais** en ignorer une en silence : dire
 pourquoi, sinon l'utilisateur conclut que la fonction est cassée — c'est
 exactement ce qui est arrivé au calibrage, dont le métronome ne durait que 7 s.
 
+**Le Mode jeu a aussi trois verbes de PARAMÈTRE**, à côté des quatre verbes de
+grille : `lequel` (entendre la direction d'un bouton), `nommer` (mettre un nom sur
+ce qui a changé), `regler` (viser un son, pas un chiffre). Ils sont **paramétrés
+par le bouton visé** — trente et un boutons, un jeu par bouton serait ingérable.
+Le catalogue est `src/model/parametres.ts`, et c'est lui le vrai travail : chaque
+entrée porte deux jugements MUSICAUX que le code ne devine pas — `tolerance` (en
+deçà de quel écart deux réglages s'entendent pareil) et `ecartMini` (au-delà de
+quel écart la différence est franche). Trois règles y sont payées d'avance :
+le filtre se compare en **octaves** (`echelle: 'log'`) parce que 500 Hz à 800 Hz
+ne pèsent pas comme 500 Hz à 12 kHz ; l'`id` doit être le **vrai champ** de
+`DrumRowState` (un `lowpass` inventé règle un champ mort, donc deux sons
+identiques et un niveau impossible et muet) ; et `lignes` dit **où le bouton
+s'entend** — `tone` ne fait rien sous zéro sur le kick. `tirerVersions` garantit
+l'écart **par construction**, jamais par des marges : une version à 14 points
+pour une tolérance de 15 est une question dont la réponse est un tirage au sort.
+
 **Tout état réactif n'est pas de l'état de morceau.** Deux modules d'interface
 vivent délibérément **hors** du format v2 : `ui/xp/paramHints.svelte.ts` et
 `ui/atelier/lastTouched.svelte.ts` (la dernière ligne manipulée, qui alimente le
