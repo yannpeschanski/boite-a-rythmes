@@ -8,7 +8,7 @@
  * jouant deux fois de suite.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { latence } from '../src/ui/game/latence.svelte';
+import { latence } from '../src/ui/latence.svelte';
 
 /* Vitest tourne sous Node : pas de `localStorage`. Le module s'en accommode
  * (tous ses accès sont sous `try`), mais la persistance est justement l'une des

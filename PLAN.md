@@ -4729,6 +4729,101 @@ rechargement) · les frappes ne comptent pas pendant l'écoute ni pendant le
 précompte · aucune erreur console · cibles tactiles : aucune sous 44×44 sur les
 quatre pilotes, transport à cinq boutons compris.
 
+### ✅ Étape 21 — la latence hors du Mode jeu, et un pad qui ne quantifiait pas (2026-08-21)
+
+> « (parenthèse, c'est un pb qu'on a aussi lorsqu'on joue au pad dans les autres modes) »
+
+**Deux problèmes différents sous le mot « latence », et il faut les séparer** —
+c'est le point de fond de cette étape :
+
+- **Déclencher un son** (pads du Mode Live, aperçu d'une ligne, note jouée au
+  clavier) : la latence **ne se compense pas**. On ne peut pas jouer un son avant
+  la frappe. La seule réponse est de la RÉDUIRE.
+- **Mesurer un placement** (Mode jeu, et le pad d'écriture de l'Atelier qui range
+  ce qu'on joue dans une case) : là, un décalage mesuré se retranche.
+
+#### 1. Réduire — `latencyHint` de 'playback' à 'interactive'
+
+La justification d'origine (« on programme tout en avance de toute façon ») est
+juste pour le séquenceur — sa robustesse vient du lookahead de 0,25 s
+(`SCHEDULE_AHEAD`), pas du tampon de sortie — et **fausse pour tout ce qu'on
+frappe**. Mesuré dans Chromium :
+
+| `latencyHint` | `baseLatency` | `outputLatency` |
+|---|---|---|
+| `playback` | 23,2 ms | **72 ms** |
+| `interactive` | 10 ms | **32 ms** |
+
+**40 ms rendus à chaque frappe**, dans tous les modes, avant la dalle tactile et
+le Bluetooth.
+
+#### 2. Compenser — le réglage devient commun à toute l'appli
+
+`ui/game/latence.svelte.ts` → `ui/latence.svelte.ts`, chargé une fois au
+démarrage (`App.svelte`) et non plus dans l'écran qui s'en sert en premier. Le
+pad d'écriture de l'Atelier le retranche comme le fait le Mode jeu, et son repère
+de pas passe de `performance.now()` (au moment où la frame rAF consomme
+l'événement) à `ev.time`, le temps AUDIO programmé — la même faute que celle
+corrigée à l'étape 18, au même endroit du raisonnement.
+
+#### 3. Deux bugs trouvés en VÉRIFIANT, dont un antérieur et sérieux
+
+**(a) `quantizeToStep` avalait silencieusement toute correction positive.** Son
+garde-fou `elapsedMs < 0 → pas courant` datait d'un temps où un écoulement
+négatif ne pouvait être qu'une absence de repère. Depuis qu'on retranche un
+décalage, un écoulement négatif veut dire « la frappe appartient au pas
+PRÉCÉDENT » — et c'est le cas qu'on cherche à traiter. Mesuré au navigateur : un
+réglage de 400 ms écrivait **exactement les mêmes colonnes** que 0 ms. La
+fonction arrondit désormais au plus proche dans les deux sens, en conservant le
+contrat d'origine — **pile à la moitié on reste sur le pas courant** (`Math.round`
+arrondit 0,5 vers le haut et cassait un test existant ; d'où un arrondi dont les
+égalités vont vers zéro).
+
+**(b) Le pad d'écriture n'a JAMAIS quantifié pendant la lecture.**
+`synthStepAt` était un `const` — un objet **non réactif**. Le muter ne
+redéclenche rien en Svelte 5 : l'expression `stepStartedAt={stepAt?.[name] ?? 0}`
+était évaluée une fois, au premier rendu, quand la valeur valait encore 0, et ne
+bougeait plus jamais. `quantizedCol()` prenait donc systématiquement son repli
+`if (!stepStartedAt) return playheadCol` — **il écrivait sur le pas EN COURS**,
+c'est-à-dire précisément le défaut que `engine/quantize.ts` a été écrit pour
+éviter. Un module pur, correctement testé, branché sur une valeur morte. Ni les
+tests ni l'écran ne pouvaient le dire.
+
+#### Ce que la vérification a coûté
+
+Six sondes Playwright successives avant d'obtenir une mesure exploitable, et à
+chaque fois **c'est la sonde qui était fausse** : sélecteur attrapant la tuile
+d'aide au lieu de l'onglet, `startsWith('🎹')` attrapant l'onglet au lieu du
+bouton du pad, `page.goto` vers la même URL à ancre identique qui **ne recharge
+pas** (donc le réglage n'était jamais relu), deux `replace` Python sans `assert`
+qui n'ont rien remplacé en silence. La leçon est celle du projet, encore : une
+sonde qui ne montre rien ne prouve rien tant qu'on n'a pas vérifié qu'elle
+regarde au bon endroit.
+
+Preuve finale, différentielle et instrumentée :
+
+| Réglage | `ecoule` vu par le pad | Colonnes écrites |
+|---|---|---|
+| 0 ms | +276 ms | 1, 2, 3 |
+| 400 ms | **−126 ms** | **0, 1, 2** |
+
+**Fichiers touchés :** `src/engine/AudioEngine.ts` (`latencyHint`),
+`src/engine/quantize.ts` (arrondi bidirectionnel), `src/ui/latence.svelte.ts`
+(déplacé depuis `ui/game/`), `src/App.svelte` (chargement au démarrage),
+`src/ui/atelier/AtelierView.svelte` (`$state`, `ev.time`, `horloge`),
+`src/ui/atelier/SynthModule.svelte` + `src/ui/sequencer/SynthRowView.svelte`
+(transmission), `src/ui/sequencer/NotePad.svelte` (horloge audio + décalage),
+`src/ui/game/GameView.svelte`, `tests/quantize.test.ts`, `tests/latence.test.ts`.
+
+**Vérifié :** `check` 0 erreur · **87 tests** · les deux builds · essai
+différentiel instrumenté ci-dessus · sondes retirées du code livré (0 `console.log`
+dans `NotePad.svelte`).
+
+**Reste à faire, et c'est une question de placement, pas de code :** le calibrage
+n'est atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui,
+vaut pour toute l'appli. Où poser l'entrée dans l'Atelier — menu Affichage, menu
+Aide, onglet Production ? À trancher par Yann.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

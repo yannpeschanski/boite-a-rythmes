@@ -16,6 +16,7 @@
     playhead,
     playing = false,
     stepAt,
+    horloge,
     onPreviewDegree,
     onFxChanged,
   }: {
@@ -24,6 +25,7 @@
     playing?: boolean;
     /** `performance.now()` de l'arrivée du pas courant, par ligne. */
     stepAt?: Record<SynthRowName, number>;
+    horloge?: () => number;
     onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
     onFxChanged?: () => void;
   } = $props();
@@ -59,6 +61,7 @@
         playheadCol={playhead[name as SynthRowName]}
         {playing}
         stepStartedAt={stepAt?.[name as SynthRowName] ?? 0}
+        {horloge}
         {onPreviewDegree}
         onChanged={onFxChanged}
       />

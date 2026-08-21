@@ -170,11 +170,29 @@ export class AudioEngine {
     return next;
   }
 
-  // latencyHint 'playback' : robustesse (Bluetooth notamment) plutôt que
-  // latence minimale — on programme tout en avance de toute façon.
+  /* latencyHint 'interactive' — l'appli est un INSTRUMENT, pas un lecteur.
+   *
+   * Le choix précédent ('playback') s'appuyait sur un argument juste et
+   * incomplet : « on programme tout en avance de toute façon ». C'est vrai du
+   * séquenceur — sa robustesse vient du lookahead de 0,25 s (SCHEDULE_AHEAD),
+   * pas de la taille du tampon de sortie. Mais c'est FAUX de tout ce qu'on
+   * frappe : un pad, une note jouée au clavier, un déclencheur du Mode Live ne
+   * se programment pas à l'avance, ils arrivent maintenant. Pour eux, le gros
+   * tampon est un coût pur.
+   *
+   * Mesuré dans Chromium (2026-08-21) : outputLatency 72 ms en 'playback'
+   * contre 32 ms en 'interactive' — 40 ms rendus à chaque frappe, sur cette
+   * machine seule, avant la dalle tactile et le Bluetooth. C'est ce que Yann
+   * sentait : « c'est un pb qu'on a aussi lorsqu'on joue au pad dans les
+   * autres modes ».
+   *
+   * ⚠️ Une latence de DÉCLENCHEMENT ne se compense pas : on ne peut pas jouer
+   * un son avant la frappe. Le calibrage du Mode jeu corrige la MESURE d'un
+   * placement ; ici il n'y a rien à corriger, seulement à réduire.
+   */
   private ensureAudio(): void {
     if (this.ctx && this.graph) return;
-    this.ctx = new AudioContext({ latencyHint: 'playback' });
+    this.ctx = new AudioContext({ latencyHint: 'interactive' });
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);

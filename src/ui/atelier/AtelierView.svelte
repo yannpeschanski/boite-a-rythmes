@@ -49,7 +49,28 @@
   // Volontairement PAS un `$state` : personne n'a besoin de réagir à sa
   // valeur, elle n'est lue qu'au moment d'un appui sur le pad. En faire un
   // état réactif déclencherait un rendu à chaque pas de chaque ligne.
-  const synthStepAt: Record<SynthRowName, number> = { bass: 0, pad: 0, melody: 0 };
+  /* ⚠️ `$state`, et pas un objet simple.
+   *
+   * Écrit à l'origine en `const synthStepAt: Record<...> = {...}` : muter un
+   * objet non réactif ne redéclenche rien en Svelte 5, donc l'expression
+   * `stepStartedAt={stepAt?.[name] ?? 0}` était évaluée UNE fois, au premier
+   * rendu, alors que la valeur valait encore 0 — et ne bougeait plus jamais.
+   * Conséquence : `quantizedCol()` prenait systématiquement son repli
+   * `if (!stepStartedAt) return playheadCol`, c'est-à-dire qu'il écrivait sur
+   * le pas EN COURS. Exactement le défaut que `engine/quantize.ts` a été écrit
+   * pour éviter, module pur et testé branché sur une valeur morte. Trouvé en
+   * instrumentant le pad, pas en relisant le code : rien à l'écran ne le
+   * disait, et les tests du module passaient. */
+  let synthStepAt = $state<Record<SynthRowName, number>>({ bass: 0, pad: 0, melody: 0 });
+
+  /* L'horloge du son ENTENDU, en millisecondes — la même que `synthStepAt`.
+   * Passée en fonction jusqu'au pad : elle doit être lue au moment de la
+   * FRAPPE, pas au moment du rendu. Repli sur l'horloge murale tant qu'aucun
+   * contexte audio n'existe (avant le premier ▶). */
+  function horlogeAudioMs(): number {
+    const t = engine.audioTime();
+    return t === null ? performance.now() : t * 1000;
+  }
   let fileInput: HTMLInputElement;
 
   // Curseur visuel : consommé à chaque frame contre l'horloge audio.
@@ -61,11 +82,16 @@
         synthPlayhead[ev.name as SynthRowName] = ev.col;
         // Instant d'arrivée du pas, pour quantifier ce qu'on joue au pad :
         // savoir QUEL pas joue ne suffit pas, il faut savoir depuis combien
-        // de temps pour décider si un appui est « en retard sur celui-ci »
-        // ou « en avance sur le suivant ». Repère pris sur l'horloge murale
-        // au moment où le moteur relâche l'événement — donc calé sur
-        // l'horloge AUDIO, comme l'aiguille de l'anneau de transport.
-        synthStepAt[ev.name as SynthRowName] = performance.now();
+        // de temps pour décider si un appui est « en retard sur celui-ci » ou
+        // « en avance sur le suivant ».
+        //
+        // ⚠️ `ev.time` (temps AUDIO programmé du pas), pas `performance.now()`
+        // au moment où cette frame consomme l'événement. L'ancien commentaire
+        // affirmait que c'était « calé sur l'horloge audio » — ça ne l'était
+        // pas : rAF ne tourne qu'à 60 Hz et ne passe jamais pile sur le pas,
+        // ce qui ajoutait jusqu'à 16 ms d'erreur à chaque note écrite pendant
+        // la lecture. Même faute que celle corrigée dans le Mode jeu.
+        synthStepAt[ev.name as SynthRowName] = ev.time * 1000;
       }
     }
     breakArmed = engine.breakPending;
@@ -551,6 +577,7 @@
         playhead={synthPlayhead}
         {playing}
         stepAt={synthStepAt}
+        horloge={horlogeAudioMs}
         onPreviewDegree={(n, d, o) => engine.playDegreePreview(n, d, o)}
         onFxChanged={refreshFx}
       />
