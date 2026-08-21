@@ -149,23 +149,51 @@ export function ecartAuCoup(ecoule: number, intervalle: number): number {
   return ecoule > intervalle / 2 ? ecoule - intervalle : ecoule;
 }
 
-/* Justesse 0-100 d'une série de frappes.
+/** Note d'une frappe : 100 sous le seuil d'indiscernable, 0 au-delà de la
+ *  tolérance, décroissance linéaire entre les deux. */
+function noteDUneFrappe(ecartMs: number): number {
+  const a = Math.abs(ecartMs);
+  if (a <= PARFAIT_MS) return 100;
+  if (a >= TOLERANCE_MS) return 0;
+  return 100 * (1 - (a - PARFAIT_MS) / (TOLERANCE_MS - PARFAIT_MS));
+}
+
+/* Justesse 0-100 : la MEILLEURE mesure jouée, pas la moyenne de tout.
  *
- * Chaque frappe vaut 100 sous le seuil d'indiscernable, 0 au-delà de la
- * tolérance, et décroît linéairement entre les deux. Le diviseur est le PLUS
- * GRAND du nombre attendu et du nombre joué : sans le premier, frapper une
- * seule fois très juste donnerait 100 % ; sans le second, marteler le pad
- * ferait monter la note au lieu de la faire baisser.
+ * ⚠️ Changement délibéré de règle (2026-08-21, « les niveaux 37 et 38 sont tj
+ * trop compliqués »). La version précédente moyennait TOUTES les frappes du
+ * tour, divisées par le plus grand du nombre attendu et du nombre joué. La
+ * boucle tournant en rond, les tâtonnements des premières mesures plombaient la
+ * note définitivement : on ne pouvait jamais « réussir une mesure », seulement
+ * diluer ses erreurs — et plus on jouait, plus c'était dur. C'était la vraie
+ * raison de la difficulté, bien avant les seuils.
+ *
+ * On note donc la meilleure fenêtre de `attendues` frappes CONSÉCUTIVES : une
+ * mesure propre suffit, ce qui est exactement ce qu'un joueur cherche à faire.
+ *
+ * Consécutives, et pas « les meilleures » : prendre les meilleures où qu'elles
+ * soient récompenserait le martèlement, puisqu'il suffirait d'en tirer quelques
+ * bonnes au hasard. Une fenêtre consécutive propre, elle, s'obtient en jouant
+ * en place.
+ *
+ * Tant qu'il n'y a pas assez de frappes, le diviseur reste le nombre ATTENDU :
+ * frapper une seule fois très juste ne donne pas 100 %.
  */
 export function justesseDesFrappes(ecarts: number[], attendues: number): number {
   if (attendues <= 0) return 0;
-  const total = ecarts.reduce((acc, e) => {
-    const a = Math.abs(e);
-    if (a <= PARFAIT_MS) return acc + 100;
-    if (a >= TOLERANCE_MS) return acc;
-    return acc + 100 * (1 - (a - PARFAIT_MS) / (TOLERANCE_MS - PARFAIT_MS));
-  }, 0);
-  return Math.round(total / Math.max(attendues, ecarts.length));
+  const notes = ecarts.map(noteDUneFrappe);
+  if (notes.length < attendues) {
+    // Les frappes manquantes comptent comme nulles.
+    return Math.round(notes.reduce((a, b) => a + b, 0) / attendues);
+  }
+  let meilleure = 0;
+  let courante = notes.slice(0, attendues).reduce((a, b) => a + b, 0);
+  meilleure = courante;
+  for (let i = attendues; i < notes.length; i++) {
+    courante += notes[i] - notes[i - attendues];
+    if (courante > meilleure) meilleure = courante;
+  }
+  return Math.round(meilleure / attendues);
 }
 
 /* Écart MÉDIAN signé d'une série de frappes.

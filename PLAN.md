@@ -4968,6 +4968,69 @@ de 20 ms est le prix du son, et il n'est pas négociable par une constante.
 **Vérifié :** `check` 0 erreur · **92 tests** · les deux builds · contexte relu
 dans l'appli réelle (441 échantillons, `outputLatency` 32 ms, `running` stable).
 
+### ✅ Étape 23 — le calibrage inutilisable, et la note qui punissait l'apprentissage (2026-08-21)
+
+> « les niveaux 37 et 38 sont tj trop compliqués, je n'arrive pas à faire
+> fonctionner le réglage de latence »
+
+Deux défauts, et **aucun des deux n'était un réglage de difficulté**.
+
+#### 1. Le calibrage jetait les frappes en silence
+
+Le métronome était une salve UNIQUE de douze clics (7,2 s), lancée à l'ouverture
+du panneau, et `frapperCalibrage` **abandonnait sans rien dire** toute frappe hors
+de cette fenêtre. Le temps de lire la consigne, la fenêtre était passée : le
+compteur restait à zéro, et rien à l'écran n'expliquait pourquoi. Reproduit au
+navigateur en attendant 10 secondes avant de taper — exactement le geste de
+quelqu'un qui découvre l'écran.
+
+Trois correctifs :
+- **le métronome CONTINUE** — les salves s'enchaînent bout à bout (`apresQuoi`),
+  sans rupture de phase, tant que le panneau est ouvert. La grille
+  `debut + n × intervalle` reste vraie du début à la fin ;
+- **plus aucune frappe jetée en silence** : avant le premier clic, le pad affiche
+  « le métronome démarre… » au lieu d'ignorer ;
+- **`await ctx.resume()`** au lieu de `void`. Un AudioContext fraîchement créé
+  démarre suspendu : `currentTime` n'avance pas, et une salve programmée avant la
+  reprise part sur une horloge figée.
+
+Vérifié : ouverture du panneau, **10 s d'attente**, puis frappes → comptées ; et à
+22 s le métronome tourne toujours. Avant, tout était perdu.
+
+#### 2. La note moyennait TOUT le tour — on ne pouvait jamais réussir une mesure
+
+`justesseDesFrappes` moyennait chaque frappe du tour, divisée par le plus grand du
+nombre attendu et du nombre joué. Or **la boucle tourne en rond** : les
+tâtonnements des premières mesures plombaient la note définitivement, et plus on
+jouait, plus c'était dur. Il n'existait aucun moyen de « réussir une mesure », on
+ne pouvait que diluer ses erreurs. **C'était la vraie difficulté**, bien avant les
+seuils de tolérance ou le tempo.
+
+La note est désormais celle de la **meilleure fenêtre de `attendues` frappes
+CONSÉCUTIVES**. Une mesure propre suffit — ce qu'un joueur cherche précisément à
+faire.
+
+⚠️ **Règle changée en connaissance de cause.** Un test affirmait « marteler le pad
+fait BAISSER la note » ; il est remplacé par deux assertions qui disent la
+nouvelle intention : des tâtonnements suivis d'une mesure propre donnent 100 %, et
+la fenêtre est **consécutive** — des bonnes frappes éparpillées ne suffisent pas,
+sans quoi le martèlement serait récompensé.
+
+#### 3. Le tempo, en complément — et un oubli
+
+37 : 84/92 → 72/80 → **64/72**. Et surtout **38 était resté à 84/92** : le pilote
+le plus RAPIDE des trois, alors qu'il demande de lire un motif *et* de le jouer.
+Passé à **68/76**. C'est un oubli de l'étape 21, pas une décision.
+
+**Fichiers touchés :** `src/engine/AudioEngine.ts` (`metronome` asynchrone,
+enchaînable), `src/model/exercises.ts` (`justesseDesFrappes` par fenêtre),
+`src/model/presets/levels.ts` (tempos), `src/ui/game/GameView.svelte` (métronome
+continu, état visible, jauge de progression), `tests/exercises.test.ts`.
+
+**Vérifié :** `check` 0 erreur · **92 tests** · les deux builds · scénario
+« j'attends 10 s puis je tape » au navigateur · niveau 38 gagné après des
+tâtonnements suivis d'une mesure propre · aucune erreur console.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

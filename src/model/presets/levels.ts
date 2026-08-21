@@ -561,12 +561,18 @@ export const LEVELS: GameLevel[] = [
     exercise: 'jouer', jouerIndice: 'ecoute',
     preamble: "La boucle tourne, la grille reste vide : c'est à l'oreille. Écoute-la autant de fois qu'il faut, puis « ⏺ Jouer » — un précompte de quatre clics te donne le tempo avant que ça compte. Si tes frappes tombent toutes du même côté, le bouton 🎚 Latence règle le retard de ton appareil une fois pour toutes.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
-    tempoOptions: [72, 80], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+    // 84/92 → 72/80 → 64/72 : deux passes après essai. Le tempo n'était pas la
+    // cause principale (voir justesseDesFrappes, qui moyennait tout le tour au
+    // lieu de retenir la meilleure mesure), mais à l'oreille il faut entendre,
+    // retenir PUIS placer — trois choses, et chacune prend du temps.
+    tempoOptions: [64, 72], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
   mkLevel(38, 'Joue en rythme — à vue', {
     exercise: 'jouer', jouerIndice: 'lecture',
     preamble: "Cette fois le kick est muet : tu vois le motif, tu ne l'entends pas. Le hat te donne la pulsation, à toi de poser les coups au bon endroit. Écoute d'abord si tu veux, puis « ⏺ Jouer ».",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: true },
-    tempoOptions: [84, 92],
+    // ⚠️ Jamais abaissé jusqu'ici : le 38 était resté le plus RAPIDE des trois
+    // pilotes alors qu'il demande de lire un motif ET de le jouer.
+    tempoOptions: [68, 76],
     // Hat sur toutes les croches : c'est la pulsation, pas un motif. Sans elle,
     // « à vue » se jouerait dans le silence — donc au hasard.
     density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 1, hatMax: 1 } }),

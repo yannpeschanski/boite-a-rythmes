@@ -119,6 +119,7 @@
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
+    clearInterval(relance);
     engine.stop();
   });
 
@@ -243,22 +244,59 @@
    * mesure : WebKit ne déclare pas `outputLatency`, et personne ne déclare la
    * latence d'entrée d'une dalle tactile.
    */
-  const CLICS_CALIBRAGE = 12;
+  /* ⚠️ Le métronome CONTINUE tant que le panneau est ouvert.
+   *
+   * La première version programmait une salve unique de douze clics à
+   * l'ouverture, puis jetait EN SILENCE toute frappe hors de cette fenêtre de
+   * 7 secondes. Le temps de lire la consigne, la fenêtre était passée : le
+   * compteur restait à zéro et rien à l'écran ne disait pourquoi. Retour de
+   * Yann : « je n'arrive pas à faire fonctionner le réglage de latence ».
+   *
+   * Les salves s'enchaînent donc bout à bout (`apresQuoi`), sans rupture de
+   * phase : la grille `debut + n × intervalle` reste vraie du début à la fin, et
+   * il n'y a plus de « hors fenêtre » à part avant le tout premier clic — cas
+   * qui, lui, est DIT au lieu d'être ignoré.
+   */
+  const CLICS_PAR_SALVE = 8;
   const BPM_CALIBRAGE = 100;
+  const FRAPPES_MINIMUM = 6;
   let calibrage = $state(false);
   let calibrageEcarts = $state<number[]>([]);
+  let calibrageAttente = $state(false); // le métronome n'a pas encore commencé
   let calibrageDebut = 0;
   let calibrageIntervalle = 0;
   let calibrageFin = 0;
+  let relance = 0;
 
-  function ouvrirCalibrage() {
+  async function ouvrirCalibrage() {
     stopAll();
     calibrage = true;
     calibrageEcarts = [];
-    const m = engine.metronome(CLICS_CALIBRAGE, BPM_CALIBRAGE);
+    calibrageAttente = true;
+    const m = await engine.metronome(CLICS_PAR_SALVE, BPM_CALIBRAGE);
+    if (!calibrage) return; // fermé pendant la reprise du contexte
     calibrageDebut = m.debut;
     calibrageIntervalle = m.intervalle;
-    calibrageFin = m.debut + CLICS_CALIBRAGE * m.intervalle;
+    calibrageFin = m.fin;
+    // Réarme une salve avant que la précédente ne s'épuise. Un intervalle
+    // d'avance suffit : le scheduling est bon marché et l'horloge audio ne
+    // dérive pas.
+    clearInterval(relance);
+    relance = setInterval(async () => {
+      const t = engine.audioTime();
+      if (!calibrage || t === null) return;
+      if (calibrageAttente && t >= calibrageDebut) calibrageAttente = false;
+      if (t > calibrageFin - 2 * calibrageIntervalle) {
+        const suite = await engine.metronome(CLICS_PAR_SALVE, BPM_CALIBRAGE, calibrageFin);
+        if (calibrage) calibrageFin = suite.fin;
+      }
+    }, 300) as unknown as number;
+  }
+
+  function fermerCalibrage() {
+    calibrage = false;
+    calibrageAttente = false;
+    clearInterval(relance);
   }
 
   function frapperCalibrage(e?: Event) {
@@ -266,7 +304,12 @@
     if (maintenant === null || !calibrage) return;
     const retard = e && e.timeStamp > 0 ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0;
     const t = maintenant - retard;
-    if (t < calibrageDebut - calibrageIntervalle / 2 || t > calibrageFin) return;
+    // Avant le premier clic : on ne jette pas la frappe en silence, on le dit.
+    if (t < calibrageDebut - calibrageIntervalle / 2) {
+      calibrageAttente = true;
+      return;
+    }
+    calibrageAttente = false;
     // Écart au clic le plus proche : la frappe est datée, les clics aussi. Le
     // calcul vit dans model/exercises.ts — une erreur de signe ici corrigerait
     // la latence à l'envers, et c'est exactement le genre de faute qu'on ne
@@ -280,7 +323,7 @@
     // Additif : les frappes du calibrage sont déjà corrigées par le réglage en
     // place, leur médiane est donc ce qu'il RESTE à corriger.
     latence.affiner(calibrageMediane);
-    calibrage = false;
+    fermerCalibrage();
   }
 
   // Un seul point d'entrée vers un niveau : le drapeau d'échec est local à la
@@ -493,15 +536,26 @@
              déclare la latence d'entrée d'une dalle tactile. -->
         <div class="jouer calibrage">
           <p class="consigne">
-            Tape sur le pad à chaque clic, sans chercher à bien faire — on mesure le
-            retard de ton appareil, pas ton sens du rythme.
+            Le métronome tourne <strong>en continu</strong> : prends ton temps, puis tape
+            sur le pad à chaque clic. Ne cherche pas à bien faire — on mesure le retard
+            de ton appareil, pas ton sens du rythme. Il faut {FRAPPES_MINIMUM} frappes.
           </p>
           <button class="pad" onpointerdown={frapperCalibrage} aria-label="Frapper pour calibrer">
-            {calibrageEcarts.length < CLICS_CALIBRAGE ? 'TAPE SUR LES CLICS' : 'C’EST BON'}
+            {#if calibrageAttente}
+              le métronome démarre…
+            {:else if calibrageEcarts.length < FRAPPES_MINIMUM}
+              TAPE SUR LES CLICS
+            {:else}
+              C’EST BON — tu peux appliquer
+            {/if}
           </button>
+          <div class="jauge" role="meter" aria-valuenow={calibrageEcarts.length} aria-valuemin="0" aria-valuemax={FRAPPES_MINIMUM}>
+            <div class="barre" style:width="{Math.min(100, (calibrageEcarts.length / FRAPPES_MINIMUM) * 100)}%"></div>
+          </div>
           <p class="chiffres">
-            {calibrageEcarts.length}/{CLICS_CALIBRAGE} frappes
-            {#if calibrageEcarts.length >= 4}
+            {calibrageEcarts.length} frappe{calibrageEcarts.length > 1 ? 's' : ''} — il en faut
+            {FRAPPES_MINIMUM}
+            {#if calibrageEcarts.length >= FRAPPES_MINIMUM}
               — décalage mesuré {calibrageMediane > 0 ? '+' : ''}{calibrageMediane}&nbsp;ms
             {/if}
             <br />
@@ -511,14 +565,18 @@
             </span>
           </p>
           <div class="footer-btns">
-            <button class="xp-btn primary" disabled={calibrageEcarts.length < 4} onclick={validerCalibrage}>
+            <button
+              class="xp-btn primary"
+              disabled={calibrageEcarts.length < FRAPPES_MINIMUM}
+              onclick={validerCalibrage}
+            >
               ✓ Appliquer {calibrageMediane > 0 ? '+' : ''}{calibrageMediane}&nbsp;ms
             </button>
-            <button class="xp-btn" onclick={ouvrirCalibrage}>↺ Recommencer</button>
-            <button class="xp-btn" onclick={() => { latence.regler(0); calibrage = false; }}>
+            <button class="xp-btn" onclick={() => (calibrageEcarts = [])}>↺ Effacer mes frappes</button>
+            <button class="xp-btn" onclick={() => { latence.regler(0); fermerCalibrage(); }}>
               Remettre à zéro
             </button>
-            <button class="xp-btn" onclick={() => (calibrage = false)}>Fermer</button>
+            <button class="xp-btn" onclick={fermerCalibrage}>Fermer</button>
           </div>
         </div>
       {:else if ex === 'jouer'}

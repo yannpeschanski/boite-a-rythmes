@@ -713,16 +713,30 @@ export class AudioEngine {
    * ces temps-là, et la médiane des écarts est son décalage. Aucune estimation
    * de navigateur ne remplace cette mesure.
    */
-  metronome(beats: number, bpm: number): { debut: number; intervalle: number } {
+  async metronome(
+    beats: number,
+    bpm: number,
+    apresQuoi?: number,
+  ): Promise<{ debut: number; intervalle: number; fin: number }> {
     this.ensureAudio();
     const ctx = this.ctx!;
-    void ctx.resume();
+    // ⚠️ AWAIT, pas `void`. Un AudioContext fraîchement créé démarre suspendu :
+    // `currentTime` n'avance pas, et une salve programmée avant la reprise part
+    // sur une horloge figée. C'est silencieux et incompréhensible côté joueur.
+    if (ctx.state === 'suspended') await ctx.resume();
     const intervalle = 60 / Math.max(20, bpm);
-    const startAt = ctx.currentTime + 0.3;
+    // `apresQuoi` (sur l'horloge du son entendu) enchaîne une salve sur la
+    // précédente sans rupture de phase : le calibrage a besoin d'un métronome
+    // QUI CONTINUE, pas d'une fenêtre de quelques secondes qu'on rate en lisant
+    // la consigne. Les salves se recouvrent donc bout à bout, et la grille
+    // `debut + n × intervalle` reste vraie d'un bout à l'autre.
+    const startAt =
+      apresQuoi !== undefined ? apresQuoi + this.latenceSortie() : ctx.currentTime + 0.3;
     for (let i = 0; i < beats; i++) scheduleClick(ctx, startAt + i * intervalle, i % 4 === 0);
     // Renvoyé sur l'horloge du son ENTENDU, comme audioTime : les deux doivent
     // parler la même langue, sinon la mesure porte la latence de sortie en plus.
-    return { debut: startAt - this.latenceSortie(), intervalle };
+    const debut = startAt - this.latenceSortie();
+    return { debut, intervalle, fin: debut + beats * intervalle };
   }
 
   // Appelée à chaque frame rAF par l'UI : renvoie les événements dont le
