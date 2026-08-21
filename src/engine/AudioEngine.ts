@@ -24,6 +24,23 @@ import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
 
+/* Avance de déclenchement d'un son JOUÉ (pad, aperçu, note tenue), en secondes.
+ *
+ * Ce n'est pas du confort de programmation : c'est de la latence pure ajoutée
+ * au geste. Les valeurs d'origine étaient dispersées et généreuses — 20 ms pour
+ * `preview`, 20 ms pour `playDegreePreview`, **50 ms** pour `previewSynth`,
+ * 10 ms pour le SOLO du Mode Live — soit jusqu'à 50 ms empilés SUR la latence
+ * de sortie du contexte. Un pad qui répond en 120 ms ne s'entend pas comme un
+ * instrument.
+ *
+ * 5 ms suffisent. Web Audio traite par blocs de 128 échantillons (≈2,9 ms à
+ * 44,1 kHz) : deux blocs d'avance garantissent que l'enveloppe démarre à sa
+ * première valeur au lieu d'être rattrapée en cours de rampe — ce qui claque.
+ * Programmer exactement à `currentTime` reste risqué pour cette raison ; c'est
+ * ce que l'avance protège, et rien d'autre.
+ */
+const AVANCE_DECLENCHEMENT = 0.005; // s
+
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private graph: GraphNodes | null = null;
@@ -755,7 +772,7 @@ export class AudioEngine {
     void ctx.resume();
     const kit = this.kit!;
     const row = this.getState().rows[name];
-    const t = ctx.currentTime + 0.02;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'kick') kit.playKick(t, row.volume, row);
     else if (name === 'snare') stepState === 2 ? kit.playRimshot(t, row.volume, row) : kit.playSnare(t, row.volume, row);
     else if (name === 'hat') stepState === 2 ? kit.playHatOpen(t, row.volume, row) : kit.playHatClosed(t, row.volume, row);
@@ -775,7 +792,7 @@ export class AudioEngine {
     const synth = this.synth!;
     const state = this.getState();
     const row = state.synthRows[name];
-    const t = ctx.currentTime + 0.05;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'pad') {
       const freqs = chordFreqs(state, chordsFor(state), 0);
       synth.playPadChord(freqs, t, 0.6, 0.3, row.voice, 0, 0, null);
@@ -805,7 +822,7 @@ export class AudioEngine {
     const state = this.getState();
     const row = state.synthRows[name];
     const freq = degreeFreq(state, degree, octave, name === 'bass' ? -24 : 0);
-    const t = ctx.currentTime + 0.02;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'bass') this.synth!.playBassNote(freq, t, 0.45, 0.45, row.voice, null);
     else this.synth!.playMelodyNote(freq, t, 0.45, 0.4, row.voice, null);
   }
@@ -864,7 +881,7 @@ export class AudioEngine {
     if (!this.ctx || !this.synth) return;
     void this.ctx.resume();
     const row = this.withLiveOverrides(this.getState()).synthRows.melody;
-    const t = this.ctx.currentTime + 0.01;
+    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
     const glideTime = (row.glide || 0) * 0.12;
     const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
     this.synth.playMelodyNote(freq, t, 0.5, 0.4, row.voice, glide);

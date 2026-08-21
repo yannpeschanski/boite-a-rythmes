@@ -4819,10 +4819,50 @@ Preuve finale, différentielle et instrumentée :
 différentiel instrumenté ci-dessus · sondes retirées du code livré (0 `console.log`
 dans `NotePad.svelte`).
 
-**Reste à faire, et c'est une question de placement, pas de code :** le calibrage
-n'est atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui,
-vaut pour toute l'appli. Où poser l'entrée dans l'Atelier — menu Affichage, menu
-Aide, onglet Production ? À trancher par Yann.
+#### 4. Le budget complet de latence d'un pad, chiffré
+
+> « l'idée de pad, c'est de pouvoir jouer en direct donc s'il y a un décalage,
+> il faut le réduire, ma question : est-ce possible ? »
+
+Oui, et il y a **trois maillons** — dont deux réductibles :
+
+| Maillon | Avant | Après | Réductible ? |
+|---|---|---|---|
+| Avance de déclenchement (code) | 20 à **50 ms** | **5 ms** | ✅ gratuit |
+| Tampon de sortie (`latencyHint`) | 72 ms | 32 ms | ✅ fait, et encore possible |
+| Dalle tactile / OS / Bluetooth | 20-200 ms | — | ❌ hors de portée |
+
+**L'avance de déclenchement était le pire, et le plus bête.** Les sons joués à la
+demande étaient programmés à `currentTime + 0,02` (`preview`), `+ 0,02`
+(`playDegreePreview`), `+ 0,01` (SOLO du Mode Live) et **`+ 0,05` pour
+`previewSynth`** — 50 ms de retard ajoutés au geste, empilés SUR la latence de
+sortie. Constante unique `AVANCE_DECLENCHEMENT = 0,005 s` : Web Audio traite par
+blocs de 128 échantillons (≈2,9 ms), deux blocs d'avance suffisent à garantir que
+l'enveloppe démarre à sa première valeur au lieu d'être rattrapée en cours de
+rampe — ce qui claque. C'est la seule raison d'être de cette avance.
+
+Total d'un appui sur le pad synthé, hors matériel : **~122 ms → ~37 ms**.
+
+**Le maillon qui reste, et son prix.** `latencyHint` accepte aussi un NOMBRE de
+secondes. Mesuré dans Chromium :
+
+| `latencyHint` | tampon | `outputLatency` |
+|---|---|---|
+| `'playback'` (l'ancien) | 1024 éch. | 72 ms |
+| `'interactive'` (l'actuel) | 441 éch. | 32 ms |
+| `0.001` | **128 éch.** | **8 ms** |
+
+24 ms de plus à gagner, au prix d'un tampon au minimum matériel : sur un appareil
+faible ou chargé, le fil audio n'a plus que 2,9 ms pour remplir chaque bloc, et un
+dépassement s'entend comme un clic. Le lookahead du séquenceur (0,25 s) ne protège
+pas de ça — il protège le PLACEMENT des notes, pas le remplissage du tampon.
+**Décision de Yann**, parce que le risque ne se mesure que sur son téléphone : on
+échange 24 ms de latence contre un risque de craquements.
+
+**Reste aussi, et c'est une question de placement :** le calibrage n'est
+atteignable que depuis les niveaux « jouer » du Mode jeu. Le réglage, lui, vaut
+pour toute l'appli. Où poser l'entrée dans l'Atelier — menu Affichage, menu Aide,
+onglet Production ?
 
 ### Chantiers ouverts
 
