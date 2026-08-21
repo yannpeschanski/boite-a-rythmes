@@ -33,13 +33,30 @@ const SCHEDULE_AHEAD = 0.25; // s
  * de sortie du contexte. Un pad qui répond en 120 ms ne s'entend pas comme un
  * instrument.
  *
- * 5 ms suffisent. Web Audio traite par blocs de 128 échantillons (≈2,9 ms à
- * 44,1 kHz) : deux blocs d'avance garantissent que l'enveloppe démarre à sa
- * première valeur au lieu d'être rattrapée en cours de rampe — ce qui claque.
- * Programmer exactement à `currentTime` reste risqué pour cette raison ; c'est
- * ce que l'avance protège, et rien d'autre.
+ * ⚠️ 5 ms NE SUFFISENT PAS, et c'est le raisonnement qui était faux — pas le
+ * chiffre. Retour de Yann après la mise en ligne : « ça marche très bien mais le
+ * son est devenu moche ». Toutes les voix ouvrent sur une attaque de 4 ms :
+ *
+ *     g.gain.setValueAtTime(0.0001, time);
+ *     g.gain.exponentialRampToValueAtTime(gain, time + 0.004);
+ *
+ * Avec 5 ms d'avance, l'attaque ENTIÈRE tient dans la marge. Il suffit que le
+ * fil principal prenne quelques millisecondes de retard entre la lecture de
+ * `currentTime` et le rendu pour que `setValueAtTime` tombe dans le PASSÉ :
+ * Web Audio l'applique alors immédiatement, la rampe est sautée, le gain saute
+ * d'un coup — un clic à chaque note. Ce n'est donc pas du rembourrage de
+ * confort, c'est la marge dont l'enveloppe dépend pour exister.
+ *
+ * 20 ms : la valeur que `preview` portait déjà avant, et dont on sait qu'elle
+ * sonne juste. Deux blocs de tampon de slack en 'interactive', et de quoi
+ * absorber une longue tâche du fil principal.
+ *
+ * Descendre plus bas SANS abîmer le son demande de rendre les enveloppes
+ * robustes à un démarrage tardif (caler sur `max(time, currentTime)` et
+ * recalculer la rampe), pas de raccourcir cette constante. C'est un chantier,
+ * pas un réglage — noté dans PLAN.md.
  */
-const AVANCE_DECLENCHEMENT = 0.005; // s
+export const AVANCE_DECLENCHEMENT = 0.02; // s
 
 /* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
  *
@@ -55,17 +72,15 @@ const AVANCE_DECLENCHEMENT = 0.005; // s
  *   'interactive'    441 échantillons   32 ms
  *   0.001            128 échantillons    8 ms   ← le minimum matériel
  *
- * Avec l'avance de déclenchement ci-dessus, le budget CÔTÉ LOGICIEL passe donc
- * de ~122 ms à ~13 ms : sous le seuil, ce qu'aucune des deux autres valeurs ne
- * permettait.
+ * ⚠️ 0.001 A ÉTÉ ESSAYÉ EN PRODUCTION, ET LE SON S'EST DÉGRADÉ. À 128
+ * échantillons le fil audio n'a plus que ~2,9 ms pour remplir chaque bloc :
+ * tout dépassement s'entend, et la marge d'avance ci-dessus devenait trop
+ * mince pour les attaques de 4 ms des voix. Retour de Yann : « ça marche très
+ * bien mais le son est devenu moche ». On revient à 'interactive' — le préréglage
+ * du navigateur POUR l'audio interactif, dimensionné pour ne pas décrocher.
  *
- * ⚠️ Ce que ça coûte, et qui n'est pas nul : à 128 échantillons le fil audio
- * n'a plus que ~2,9 ms pour remplir chaque bloc. Sur un appareil faible ou
- * chargé, un dépassement s'entend comme un CLIC — pendant le jeu comme pendant
- * la lecture. Le lookahead du séquenceur (SCHEDULE_AHEAD) ne protège pas de ça :
- * il garantit le PLACEMENT des notes, pas le remplissage du tampon. Si des
- * craquements apparaissent, la seule chose à changer est cette constante —
- * revenir à 'interactive' rend 24 ms et la robustesse avec.
+ * Budget côté logiciel : ~122 ms → ~52 ms (20 ms d'avance + 32 ms de tampon).
+ * Moins bien que les 13 ms visés, mais 13 ms qui claquent ne valent rien.
  *
  * ⚠️ Ce que ça ne règle pas : la chaîne d'ENTRÉE et le Bluetooth. Un casque
  * Bluetooth ajoute 100 à 200 ms, et aucune ligne de code n'y touche.
@@ -81,7 +96,7 @@ const AVANCE_DECLENCHEMENT = 0.005; // s
  * appareil par appareil, et c'est précisément ce que fait le calibrage du Mode
  * jeu (ui/latence.svelte.ts).
  */
-const TAMPON_SORTIE = 0.001; // s
+export const TAMPON_SORTIE: AudioContextLatencyCategory = 'interactive';
 
 export class AudioEngine {
   private ctx: AudioContext | null = null;
