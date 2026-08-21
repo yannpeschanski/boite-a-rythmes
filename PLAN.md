@@ -4944,11 +4944,20 @@ on sait qu'elle sonne juste) et tampon **`'interactive'`** (441 échantillons,
 interactif). Budget logiciel **~122 ms → ~52 ms**. Moins bien que les 13 ms visés,
 mais **13 ms qui claquent ne valent rien**.
 
-**Verrouillé par un test.** `tests/latence-audio.test.ts` lit les deux constantes
-dans la source et vérifie leur RAPPORT à l'attaque la plus courte du banc de voix
-(au moins cinq fois sa durée), plus le fait que le tampon n'est ni `'playback'`
-(hors budget) ni une valeur numérique agressive. La prochaine tentative
+**Verrouillé par un test.** `tests/latence-audio.test.ts` importe les deux
+constantes (désormais exportées) et vérifie leur RAPPORT à l'attaque la plus
+courte du banc de voix — au moins cinq fois sa durée — plus le fait que le tampon
+reste un préréglage nommé et jamais `'playback'`. La prochaine tentative
 d'optimisation butera sur une assertion au lieu d'aller s'entendre en production.
+
+⚠️ **Et une bourde de méthode, à ne pas refaire.** La première version de ce test
+grattait `AudioEngine.ts` avec une expression régulière et `node:fs`. Elle passait
+`npm test` en local et a fait **échouer la CI** : `svelte-check` vérifie aussi les
+fichiers de `tests/`, et les types Node ne sont pas installés. Cause réelle :
+`npm run check` avait été lancé AVANT d'écrire le test, pas après — c'est
+exactement ce que la règle « avant chaque commit » existe pour empêcher. Importer
+les constantes plutôt que gratter la source supprime au passage deux fragilités
+(le regex et la dépendance au chemin).
 
 **Ce qu'il faudrait pour descendre plus bas — et c'est un chantier, pas un
 réglage.** Rendre les enveloppes robustes à un démarrage tardif : caler chaque

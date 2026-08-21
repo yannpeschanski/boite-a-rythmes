@@ -56,7 +56,7 @@ const SCHEDULE_AHEAD = 0.25; // s
  * recalculer la rampe), pas de raccourcir cette constante. C'est un chantier,
  * pas un réglage — noté dans PLAN.md.
  */
-const AVANCE_DECLENCHEMENT = 0.02; // s
+export const AVANCE_DECLENCHEMENT = 0.02; // s
 
 /* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
  *
@@ -96,7 +96,7 @@ const AVANCE_DECLENCHEMENT = 0.02; // s
  * appareil par appareil, et c'est précisément ce que fait le calibrage du Mode
  * jeu (ui/latence.svelte.ts).
  */
-const TAMPON_SORTIE: AudioContextLatencyCategory = 'interactive';
+export const TAMPON_SORTIE: AudioContextLatencyCategory = 'interactive';
 
 export class AudioEngine {
   private ctx: AudioContext | null = null;

@@ -9,7 +9,7 @@
  *     g.gain.setValueAtTime(0.0001, time);
  *     g.gain.exponentialRampToValueAtTime(gain, time + 0.004);
  *
- * L'attaque dure 4 ms. Si l'avance est du même ordre, l'attaque entière tient
+ * L'attaque dure 3 à 4 ms. Si l'avance est du même ordre, l'attaque entière tient
  * dans la marge : que le fil principal prenne quelques millisecondes de retard
  * entre la lecture de `currentTime` et le rendu, et `setValueAtTime` tombe dans
  * le passé. Web Audio l'applique alors immédiatement, la rampe est sautée, le
@@ -18,55 +18,43 @@
  * Ce test ne mesure pas du son : il verrouille le RAPPORT entre l'avance et
  * l'attaque, pour que la prochaine tentative d'optimisation bute sur une
  * assertion au lieu d'aller s'entendre en production.
+ *
+ * Les constantes sont IMPORTÉES, pas lues dans le fichier source. La première
+ * version grattait `AudioEngine.ts` avec une expression régulière et
+ * `node:fs` — deux fragilités pour rien, et `svelte-check` a refusé les types
+ * Node en intégration continue.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-
-const source = readFileSync(new URL('../src/engine/AudioEngine.ts', import.meta.url), 'utf8');
-
-function constante(nom: string): string {
-  const m = source.match(new RegExp(`const ${nom}[^=]*=\\s*([^;]+);`));
-  if (!m) throw new Error(`constante introuvable : ${nom}`);
-  return m[1].trim();
-}
+import { AVANCE_DECLENCHEMENT, TAMPON_SORTIE } from '../src/engine/AudioEngine';
 
 /** La plus courte attaque du banc de voix, en secondes (drums.ts, snare/rimshot). */
 const ATTAQUE_LA_PLUS_COURTE = 0.003;
 
 describe('avance de déclenchement — le plancher qu’impose l’attaque des voix', () => {
-  const avance = Number(constante('AVANCE_DECLENCHEMENT'));
-
-  it('est un nombre de secondes plausible', () => {
-    expect(Number.isFinite(avance)).toBe(true);
-    expect(avance).toBeGreaterThan(0);
-    expect(avance).toBeLessThan(0.1);
-  });
-
   it('laisse à l’attaque au moins cinq fois sa durée pour se dérouler', () => {
     // À 5 ms d'avance pour 3-4 ms d'attaque, le moindre retard du fil principal
     // fait tomber `setValueAtTime` dans le passé et la rampe est sautée. C'est
     // la régression qui a motivé ce fichier.
-    expect(avance).toBeGreaterThanOrEqual(ATTAQUE_LA_PLUS_COURTE * 5);
+    expect(AVANCE_DECLENCHEMENT).toBeGreaterThanOrEqual(ATTAQUE_LA_PLUS_COURTE * 5);
   });
 
   it('reste sous le seuil de perception d’un instrument', () => {
     // L'autre bord : au-delà de ~30 ms le décalage s'entend. L'avance seule ne
     // doit donc jamais manger tout le budget — le tampon de sortie s'y ajoute.
-    expect(avance).toBeLessThanOrEqual(0.025);
+    expect(AVANCE_DECLENCHEMENT).toBeLessThanOrEqual(0.025);
   });
 });
 
 describe('tampon de sortie — un préréglage sûr, pas le minimum matériel', () => {
-  const tampon = constante('TAMPON_SORTIE');
-
   it('n’est pas revenu à « playback » : 72 ms mesurés, hors budget', () => {
-    expect(tampon).not.toContain('playback');
+    expect(TAMPON_SORTIE).not.toBe('playback');
   });
 
-  it('n’est pas une valeur numérique agressive', () => {
+  it('reste un préréglage nommé, jamais une valeur numérique agressive', () => {
     // `latencyHint: 0.001` donne 128 échantillons et 8 ms — essayé en
     // production, le son s'est dégradé. Le préréglage 'interactive' est
     // dimensionné par le navigateur pour ne pas décrocher.
-    expect(tampon).toContain('interactive');
+    expect(typeof TAMPON_SORTIE).toBe('string');
+    expect(TAMPON_SORTIE).toBe('interactive');
   });
 });
