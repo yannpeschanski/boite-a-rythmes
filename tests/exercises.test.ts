@@ -122,11 +122,27 @@ describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au 
     expect(justesseDesFrappes([0], 3)).toBe(33);
   });
 
-  it('marteler le pad fait BAISSER la note, pas monter', () => {
-    const propre = justesseDesFrappes([0, 0, 0], 3);
-    const martele = justesseDesFrappes([0, 0, 0, 300, 300, 300], 3);
-    expect(propre).toBe(100);
-    expect(martele).toBeLessThan(propre);
+  /* ⚠️ Règle CHANGÉE le 2026-08-21, en connaissance de cause. L'ancienne
+   * assertion était « marteler le pad fait baisser la note » : la note
+   * moyennait tout le tour. Mais la boucle tourne en rond, et les tâtonnements
+   * des premières mesures plombaient définitivement le résultat — on ne pouvait
+   * jamais réussir UNE mesure, seulement diluer ses erreurs. C'était la vraie
+   * raison pour laquelle les niveaux paraissaient impossibles. */
+  it('une mesure propre suffit : les tâtonnements d’avant ne la plombent pas', () => {
+    const attendues = 3;
+    // Trois frappes ratées, puis trois parfaites : c'est une réussite.
+    expect(justesseDesFrappes([300, 300, 300, 0, 0, 0], attendues)).toBe(100);
+    // Et l'inverse aussi : on a réussi, puis on s'est relâché.
+    expect(justesseDesFrappes([0, 0, 0, 300, 300, 300], attendues)).toBe(100);
+  });
+
+  it('la fenêtre est CONSÉCUTIVE : des bonnes frappes éparpillées ne suffisent pas', () => {
+    // Prendre « les meilleures où qu'elles soient » récompenserait le
+    // martèlement. Ici trois frappes parfaites existent, mais jamais d'affilée.
+    const eparpille = justesseDesFrappes([0, 300, 0, 300, 0, 300], 3);
+    const daffilee = justesseDesFrappes([0, 0, 0, 300, 300, 300], 3);
+    expect(eparpille).toBeLessThan(daffilee);
+    expect(eparpille).toBeLessThan(70);
   });
 
   it('décroît linéairement entre les deux seuils', () => {

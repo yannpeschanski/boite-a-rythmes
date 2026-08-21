@@ -122,6 +122,15 @@ le Mode jeu tient sur **une mesure** par ligne (un quart de boucle est un *temps
 pas une mesure), et « jouer » mesure l'écart au dernier pas **actif** du kick —
 l'ancrer sur la grille donnait 100 % à une frappe posée sur un silence.
 
+⚠️ **« Jouer » note la MEILLEURE fenêtre consécutive, pas la moyenne du tour.** La
+boucle tourne en rond : moyenner tout ce qui a été frappé rend les tâtonnements du
+début définitifs, et plus on joue plus la note baisse — on ne peut jamais réussir
+UNE mesure. La fenêtre doit rester *consécutive* : prendre « les meilleures où
+qu'elles soient » récompenserait le martèlement. Et tout écran qui MESURE une
+frappe (calibrage compris) ne doit **jamais** en ignorer une en silence : dire
+pourquoi, sinon l'utilisateur conclut que la fonction est cassée — c'est
+exactement ce qui est arrivé au calibrage, dont le métronome ne durait que 7 s.
+
 **Tout état réactif n'est pas de l'état de morceau.** Deux modules d'interface
 vivent délibérément **hors** du format v2 : `ui/xp/paramHints.svelte.ts` et
 `ui/atelier/lastTouched.svelte.ts` (la dernière ligne manipulée, qui alimente le
