@@ -73,6 +73,11 @@ c'est ça le blocage architectural, pas le contenu.
 **Quatre questions doivent être tranchées par Yann avant tout code.** Elles sont
 listées à la fin de cette proposition, avec mes réponses recommandées.
 
+📖 **L'histoire, elle, est écrite : [`HISTOIRE.md`](HISTOIRE.md)** (2026-08-22) —
+Rossignol Records, un label sans plus aucun artiste, un assistant embauché pour
+le café, sept actes dont quatre ouvrent les quatre modules. Elle ne débloque pas
+les quatre questions ci-dessus, elle leur donne le *pourquoi* qui manquait.
+
 ### Ce qui attend aussi une décision (ne pas coder sans)
 
 1. **Où poser l'entrée du calibrage de latence dans l'Atelier** — menu
@@ -5132,6 +5137,12 @@ proposition écrite à la demande de Yann ; les quatre questions de la fin doive
 recevoir sa réponse avant la moindre ligne. Elle est consignée ici pour ne pas
 être reperdue entre deux sessions.
 
+> 📖 **L'HISTOIRE est écrite, et elle vit dans [`HISTOIRE.md`](HISTOIRE.md)**
+> (2026-08-22). Elle répond à la question 2 ci-dessous (« combien de fiction ? »)
+> par un décor, trois personnages et sept actes, sans inventer un seul mécanisme
+> qui n'existe pas déjà ici. Les deux documents se lisent ensemble : celui-ci dit
+> ce que le jeu FAIT, l'autre ce qu'il RACONTE.
+
 ### Le vrai blocage n'est pas le contenu, c'est un entier
 
 `PlayerProgress.level` est **un seul nombre**, et il porte trois choses qui n'ont
@@ -5277,6 +5288,65 @@ public — vient après sans rien casser.
    riche de la partie marketing, et la plus technique.*
 
 ---
+
+### ✅ L'histoire du Mode carrière — `HISTOIRE.md` (2026-08-22)
+
+Demande de Yann : *« un label a perdu tous ses artistes / le perso est
+l'assistant qui fait uniquement le café / le label ne sait pas vers qui se
+tourner / le perso doit apprendre puis faire la batterie, pareil pour les autres
+modules / il doit faire des commandes spécifiques (ex. boom bap) / il y a des
+accomplissements : faire son EP, faire un live. »*
+
+**Fichier touché : `HISTOIRE.md` (nouveau). Aucun code.** La section ⏳ ci-dessus
+reste en attente d'arbitrage — l'histoire ne la débloque pas, elle lui donne le
+*pourquoi* qui lui manquait.
+
+Ce que la bible fixe, et pourquoi :
+
+- **Rossignol Records, 3ᵉ étage, au-dessus de la laverie Lav'Azur.** La laverie
+  n'est pas du décor : son essorage à 1 200 tours est le premier métronome
+  (acte 0), son haut-parleur de plafond est le test de mix mesurable (acte 3),
+  son arrière-salle est la release party (acte 6). Trois mécaniques déjà
+  existantes ou déjà proposées trouvent un lieu ; aucune n'est inventée pour
+  l'occasion.
+- **Le café est le pont, pas le gag.** 18 g, 25 secondes : le personnage sait
+  déjà mesurer une durée sans horloge, il ne sait pas que ça porte un nom. C'est
+  littéralement la progression `lequel` → `nommer` → `regler` racontée en
+  français. Sans ce pont, « le type du café devient producteur » est un tour de
+  magie, et la fiction cesse de coïncider avec la pédagogie.
+- **Trois personnages nommés, plafond assumé.** Sol (la patronne) **est la voix
+  des roasts déjà écrite** (`presets/gameData.ts`) — un personnage gratuit, à ne
+  pas jeter. Rachid (la laverie) ne juge jamais, il décrit un effet physique
+  (« ça fait vibrer la vitrine ») : c'est ce qui rend son retour mesurable au
+  lieu d'être une opinion. Ambre (partie, et qui **ne revient pas**) porte l'acte
+  groove.
+- ⚠️ **Sol ne félicite pas, elle confie.** Règle de ton la plus structurante du
+  document : la récompense est du travail plus sérieux, jamais un « bravo » —
+  gratuit et vide dès la troisième fois. Coût d'écriture nul. Seul geste
+  sentimental du jeu : elle t'appelle « le café » jusqu'au jour où elle
+  t'appelle par ton nom d'artiste, ce qui est une variable qui change de valeur.
+- **Sept actes, dont quatre ouvrent les quatre modules.** La coïncidence
+  identifiée plus haut est préservée ; les trois actes ajoutés (prologue, groove,
+  EP) n'ouvrent rien, donc ne paient aucune dette mécanique — ce sont les moins
+  chers à écrire et les plus utiles au ton.
+- ⚠️ **Le calibrage de latence devient l'acte 0.** Un réglage technique que
+  personne n'ouvre devient une scène (« on règle ton oreille sur la pièce »).
+  Meilleure affaire du document, et le point à valider en premier : un joueur
+  entré par le studio libre n'aurait jamais calibré — d'où la recommandation de
+  garder le calibrage atteignable seul, la scène étant une porte de plus, pas la
+  seule.
+- **Le budget d'écriture est chiffré : ~130 lignes**, acte par acte, sous la
+  règle « si ça ne tient pas sur un afficheur LCD ou un post-it, ce n'est pas
+  dans le jeu ». Une bible qui ne chiffre pas son coût ne s'écrit jamais.
+- ⚠️ **La besace et le mur du bureau restent séparés.** La besace est du bruit —
+  elle récompense la présence, c'est son métier ; le mur est de la mémoire.
+  Mettre la chaussette dépareillée et le premier EP dans la même vitrine détruit
+  les deux.
+
+**Écarts de portée assumés :** rien n'est codé, et l'entier `PlayerProgress.level`
+n'est pas touché — l'histoire explique pourquoi il faut le casser, elle ne le
+casse pas. Quatre questions restent posées en fin de `HISTOIRE.md`, avec
+recommandation.
 
 ### Chantiers ouverts
 
