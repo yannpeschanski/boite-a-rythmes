@@ -14,138 +14,119 @@
 > [Arbitrages D1-D4](#arbitrages-de-yann-sur-d1-d4--2026-08-16).
 >
 
-## 🧭 Brief de reprise — au 2026-08-19
+## 🧭 Brief de reprise — au 2026-08-21
 
-**À lire en premier, en entier. Deux minutes.** Le reste de ce document fait
-4 600 lignes et une vingtaine de sections datées : n'y descends que pour le
-détail d'un point précis, en suivant les liens ci-dessous.
+**À lire en premier, en entier. Trois minutes.** Le reste fait 5 000 lignes et
+une trentaine de sections datées : n'y descends que pour le détail d'un point,
+en suivant les liens en fin de brief.
 
 ### Où en est le projet
 
-Site en ligne : <https://boite-a-rythmes.vercel.app> · branche de travail
-`claude/audit-design-daw-9ekzm4` · tout est mergé sur `main`, arbre propre.
-`npm run check` 0 erreur · **33 tests** · les deux builds passent.
+Site en ligne : <https://boite-a-rythmes.vercel.app> · tout est mergé sur `main`
+(`0911ac4`), arbre propre. `npm run check` 0 erreur · **119 tests** · les deux
+builds passent · déploiement Vercel vérifié.
 
-L'appli est **testée uniquement sur téléphone** (arbitrage D4 de Yann) : le
-desktop est en friche et assumé comme tel. Toute mesure d'interface se fait à
-**390×844**, et se vérifie de 320 à 1280.
+L'appli est **testée sur téléphone** (arbitrage D4) : le desktop reste en friche
+et assumé. Toute mesure d'interface se fait à **390×844**, vérifiée de 320 à 1280.
 
-### La grande affaire de la dernière session : la direction visuelle est tranchée
+⚠️ **La direction visuelle est tranchée et livrée** — skin Winamp 2.x pour tous
+les modes, une seule langue visuelle. Ne pas rouvrir : `CLAUDE.md` fait foi.
 
-Le brief précédent listait « A, B ou C » comme la décision n°3 en attente.
-**Elle est prise et livrée.** Yann a demandé un audit du design XP, a vu
-29 directions maquettées, a réduit à cinq, puis à deux finalistes (cassette et
-Winamp 2.x), et a tranché : **Winamp 2.x pour tous les modes**.
+### La grande affaire de la dernière session : le Mode jeu
 
-L'argument n'est pas esthétique. L'appli parlait **trois langues visuelles** —
-Atelier en Luna, Mode jeu en thème `noir`, Mode Live avec ses tokens `--amp-*`.
-Elle n'en parle plus qu'une. `CLAUDE.md` a été réécrit en conséquence : la règle
-qui interdisait de remettre XP en cause énonce désormais l'identité Winamp, et
-c'est elle qui fait foi.
+Il est passé **d'un seul verbe à sept**, et de 34 niveaux à 41. Neuf PR (#87 →
+#95), toutes détaillées en fin de document.
 
-Douze étapes, six PR (#76 → #81), toutes détaillées en fin de document :
-
-| | |
+| Verbes de GRILLE | Verbes de PARAMÈTRE |
 |---|---|
-| 1-3 | fonte à chasse fixe auto-hébergée, tokens Winamp, composants de base |
-| 4-5 | couleurs en dur 182 → 113, fusion des palettes `--amp-*` et `noir` |
-| 6 | **le tactile** — 44px de zone, 0px de dessin (`.tap44` / `.tap44-y`) |
-| 7 | la barre de titre perd le triplet `_ □ ×` et le gag d'extinction |
-| 8 | la typographie — chasse fixe partout, 8,5-9px en capitales espacées |
-| 9 | la structure — afficheur BPM, diodes de ligne, bandeau LCD d'état |
-| 10 | la barre de menus — une seule langue, une seule ligne |
-| 11 | l'analyseur de spectre, sur un vrai `AnalyserNode` maître |
-| 12 | la barre de transport — répartition et dimensionnement des espaces |
+| `reproduire` (les 34 niveaux d'origine) | `lequel` — entendre la direction d'un bouton |
+| `completer` — un temps vidé à retrouver | `nommer` — mettre un nom sur ce qui a changé |
+| `intrus` — quatre mesures, une diffère | `regler` — viser un son, pas un chiffre |
+| `jouer` — frapper en rythme, noté au placement | |
 
-Les 29 directions maquettées vivent dans `maquettes/` ; **`maquettes/atelier/`
-est la référence** à consulter avant de dessiner un écran neuf.
+Les quatre verbes de grille sont **validés par Yann** (« ça a très bien
+fonctionné là »). Les trois verbes de paramètre sont livrés en pilotes (niveaux
+39-41, famille Timbre) mais **pas encore essayés par lui**.
 
-### Ce qui attend une décision de Yann (ne pas coder sans)
+⚠️ **Cinq symptômes rapportés, cinq causes qui n'étaient pas là où on
+regardait** — et aucune n'était un réglage de difficulté. C'est la leçon
+principale de la session, détaillée à l'étape « les quatre pilotes sont
+validés » : `outputLatency` absent de WebKit, une avance de déclenchement qui
+mangeait l'attaque des voix, un métronome de calibrage qui ne durait que 7 s et
+jetait les frappes en silence, une note qui moyennait tout le tour au lieu de
+retenir la meilleure mesure. Les règles qui en sortent sont dans `CLAUDE.md` —
+**les lire avant de toucher à la latence ou à la notation**.
 
-1. **La grille de déverrouillage contrôle par contrôle** — le verrou actuel ne
-   gère que les quatre modules. La proposition (rafale au niv. 11, swing au 14,
-   ghost au 20, fill au 21, décalage au 23) est écrite et attend d'être validée
-   ou corrigée. Voir « Arbitrages (suite) et 3e lot ».
-2. **Le 2ᵉ type d'exercice du mode jeu** — l'accord de principe est donné (D2),
-   le contenu ne l'est pas. Les 34 niveaux n'ont qu'un seul verbe : reproduire.
-3. **`ui/xp/systemSounds.ts`** — les sons système XP ne collent plus à la
-   direction, mais `AtelierView` (son d'erreur) et `ToolBar` (réglage dans le
-   menu) s'en servent encore. Les remplacer par des sons d'ampli ou les
-   retirer : c'est une décision, pas un détail.
-4. **La densité face à la maquette** — la maquette tient cinq lignes de batterie
-   plus le bandeau d'état en 430px là où l'appli en prend 844. L'écart vient
-   entièrement des pastilles « Séquence / Timbre / Filtre & espace » sous chaque
-   ligne, que la maquette n'a pas. C'est de l'organisation de fonctionnalités,
-   donc l'arbitrage de Yann — et il a déjà dit une fois qu'il ne voulait pas
-   remettre l'organisation en cause.
+### ⏳ EN ATTENTE D'ARBITRAGE — l'architecture globale du Mode jeu
 
-### Ce qui est exécutable tout de suite (aucune décision requise)
+**C'est le sujet en cours, et rien ne doit être codé dessus avant décision.**
+Yann réfléchit à refondre la colonne vertébrale du Mode jeu : plusieurs façons
+de jouer, modules à débloquer, presets à reconstruire, une histoire, devenir
+producteur, **créer un EP**, et pourquoi pas le marketer.
 
-Par ordre de taille :
+Une proposition complète est écrite plus bas
+([« Architecture du Mode jeu — proposition »](#-architecture-du-mode-jeu--proposition-en-attente-darbitrage-2026-08-21)).
+Son idée centrale : `PlayerProgress.level` est **un seul entier** qui porte trois
+choses distinctes — ce que le joueur sait, ce qui est ouvert, où il en est — et
+c'est ça le blocage architectural, pas le contenu.
 
-- 🔜 **Le Mode jeu**, décidé par Yann le 2026-08-19 : « on s'attaquera une fois
-  pour toute au mode jeu ». C'est le prochain gros morceau. Deux décisions
-  l'attendent (voir la section précédente) : la grille de déverrouillage
-  contrôle par contrôle, et le 2ᵉ type d'exercice.
-- 🔜 **PUIS le Mode Live, à revoir** — demandé par Yann le 2026-08-19,
-  explicitement **après** le Mode jeu. Voir « Le Mode Live est à reprendre »
-  dans les chantiers ouverts pour ce qui s'y est accumulé.
-- **B3 · B4** — proportions des cases, vue circulaire perdue sur desktop. Il
-  dort avec le chantier desktop : celui-ci est hors périmètre par l'arbitrage D4
-  (testé sur téléphone uniquement). À rouvrir avec le desktop, pas avant.
+**Quatre questions doivent être tranchées par Yann avant tout code.** Elles sont
+listées à la fin de cette proposition, avec mes réponses recommandées.
 
-✅ **Vidés le 2026-08-19** (voir les étapes 13 à 15 en fin de document) : le
-tactile du Mode Live, R1(b), et le menu de voix.
+### Ce qui attend aussi une décision (ne pas coder sans)
 
-⛔ **Abandonné le 2026-08-19 : le 🎲 par ligne dans la sous-section « Séquence ».**
-Demandé au 3ᵉ lot, jamais fait, et Yann l'a déclaré **obsolète**. Il reste donc
-là où il est, dans « Harmonie & remplissage » (`SynthModule`). Trois sections
-plus bas le mentionnent encore comme « reste ouvert » — elles sont datées et
-antérieures, ne pas les rouvrir.
+1. **Où poser l'entrée du calibrage de latence dans l'Atelier** — menu
+   Affichage, menu Aide, ou onglet Production ? Le réglage vaut désormais pour
+   toute l'appli, mais n'est atteignable que depuis les niveaux « jouer ».
+2. **La grille de déverrouillage contrôle par contrôle** — proposition écrite et
+   retenue par Yann (rafale niv. 11, swing 14, ghost 20, fill 21, décalage 23),
+   **prête à appliquer**. Mais elle serait à revoir si l'architecture EP passe.
+3. **La famille « Séquence » des jeux de paramètre** — *Pas* et *Coups
+   euclidiens* changent la grille, donc font doublon avec « reproduire », et
+   *Volume* seul est un mauvais exercice d'oreille. Je propose de la fondre dans
+   les verbes existants plutôt que de lui faire des jeux à part.
+4. **`ui/xp/systemSounds.ts`** — les sons système XP ne collent plus à la
+   direction, mais `AtelierView` et `ToolBar` s'en servent encore.
 
-### Les pièges qui ont coûté du temps
+### Chantiers ouverts, hors décision
 
-- **Squash-merge** : après chaque merge, `git fetch origin main && git checkout
-  -B <branche> origin/main` avant de recommencer, sinon la PR suivante part avec
-  un historique déjà mergé. Un `push --force-with-lease` est attendu, pas une
-  erreur.
-- **Interroger la CI passe par les outils GitHub MCP, jamais par `curl`.**
-  L'API GitHub non authentifiée est bloquée dans cette session et répond un JSON
-  d'erreur : une boucle d'attente écrite en `curl` ne se termine **jamais**.
-  Deux d'entre elles ont tourné 45 minutes pour rien le 2026-08-19.
-- **Ne jamais conclure sans mesurer.** Sur les dernières sessions : « 31 presets
-  sur 34 » était faux (21) ; la barre de menus faisait 64px et non 28 ; les
-  pastilles coûtaient 11 % et non 34 % ; l'analyseur paraissait à moitié vide
-  parce qu'il dessinait 104 barres pour 74 bandes utiles, pas à cause du son.
-- **`@media` dans un `<style>` Svelte** : un bloc posé au milieu du fichier est
-  écrasé par les règles de même spécificité écrites **plus bas**. Les mettre en
-  fin de `<style>`. Trois réglages tactiles n'ont rien fait tant qu'ils étaient
-  au milieu.
-- **`getBoundingClientRect()` ne voit pas un pseudo-élément.** Une zone tactile
-  agrandie par `::after` se mesure avec `elementFromPoint`, en ayant fait
-  `scrollIntoView` d'abord — sinon tout ce qui est sous la ligne de flottaison
-  renvoie `null` et se mesure « sans marge ».
-- **Svelte 5** : `queueMicrotask` s'exécute avant que le DOM soit à jour —
-  utiliser `tick()`. `structuredClone()` casse sur un proxy `$state` —
-  `$state.snapshot()`. Un prop nommé `state` entre en conflit avec la rune.
-- **CSS** : une piste de grille et un élément flex ont un minimum `auto`, ils
-  refusent de descendre sous leur contenu — `minmax(0, 1fr)` / `min-width: 0`.
-- **Déterminisme** : ajouter un tirage `rng()` décale tout ce qui suit et rend
-  les anciens exports non reproductibles. Le fill de clap contourne ça par un
-  **second générateur** (`fillRng`) — le modèle à réutiliser pour toute
-  fonctionnalité qui fait sonner des pas jusque-là silencieux.
-- **Le proxy réseau bloque `vercel.app`** : impossible de vérifier le site
-  déployé depuis la session. Le déploiement se constate par GitHub Actions.
+- **L'extension du Mode jeu au synthé** — le gros morceau. `GameDrumRowName` ne
+  connaît que kick/snare/hat ; `CLAUDE.md` impose de **cartographier tous les
+  points de contact avant de coder**.
+- **Les familles Filtre & espace, Groove** — la première est déjà décrite dans
+  `model/parametres.ts` et ne demande qu'un niveau ; la seconde exige d'étendre
+  le catalogue à l'état **global** (swing, traîne…) et non à la ligne.
+- **Le Mode Live est à reprendre — APRÈS le Mode jeu**, demandé par Yann avec cet
+  ordre explicite. Beaucoup a bougé sans passe d'ensemble.
+- **B6** — mise en page du splash et du Mode jeu (contenu collé en haut, ~70 % de
+  vide).
+- **Le biseau en haute densité** — jamais vérifié sur un vrai appareil.
+
+### Les pièges qui ont coûté le plus cher, et qui reviendront
+
+- **Un module pur et testé peut être branché sur une valeur morte.**
+  `synthStepAt` était un objet non réactif : le pad d'écriture n'a **jamais**
+  quantifié pendant la lecture. Quand le calcul est juste et le comportement
+  faux, **suspecter le câblage**.
+- **Un test qui dépend de `Math.random()` doit affirmer ce qui est vrai à CHAQUE
+  tirage**, et répéter (60 fois). Une assertion à un tirage est passée en local
+  et sur la PR, puis a échoué sur `main` — build non produit, **déploiement
+  sauté, site inchangé**.
+- **Vert sur la PR ≠ vert sur `main`.** Après un merge, vérifier le run de
+  `main` ET le job « Déploiement Vercel » (`success`, pas `skipped`).
+- **`npm run check` APRÈS avoir écrit les tests**, pas avant : `svelte-check`
+  vérifie aussi `tests/`.
+- **Le squash-merge décale le SHA** : `git fetch origin main && git checkout -B
+  <branche> origin/main` avant tout nouveau commit.
 
 ### Où trouver le détail
 
+- [Architecture du Mode jeu — proposition](#-architecture-du-mode-jeu--proposition-en-attente-darbitrage-2026-08-21)
+  — **le sujet en cours**, avec les quatre questions à trancher.
+- [Les quatre pilotes sont validés](#-les-quatre-pilotes-du-mode-jeu-sont-validés-2026-08-21)
+  — le tableau symptôme/cause réelle, à lire avant de toucher au Mode jeu.
 - [Décision Winamp 2.x](#-décision--winamp-2x-pour-tous-les-modes-2026-08-18)
-  — l'argument, la déclinaison sur les six écrans, et les douze étapes `✅` qui
-  suivent, chacune avec ses mesures et ses pièges.
-- [Plan d'action consolidé](#plan-daction-consolidé--2026-08-16) — la file de
-  travail et les quatre décisions d'origine.
-- [Arbitrages (suite) et 3e lot](#arbitrages-suite-et-3e-lot-de-sujets--2026-08-16)
-  — la mécanique de déblocage proposée, l'analyse du choix des notes.
+  — l'argument et les douze étapes de mise en œuvre.
 - [§7.5 dette d'interface](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2)
   — les trois règles d'écriture, dont « un ✅ n'est pas définitif ».
 
@@ -5137,6 +5118,165 @@ plutôt que servie à part.
 **Vérifié :** `check` 0 erreur · **119 tests** (dont 21 neufs sur le catalogue et
 le câblage) · les deux builds · les trois écrans au navigateur, niveau 39 gagné ·
 aucune cible tactile sous 44×44, aucun débordement à 390px · aucune erreur console.
+
+## ⏳ Architecture du Mode jeu — proposition (EN ATTENTE D'ARBITRAGE, 2026-08-21)
+
+> « il faut mettre tout à plat : on a plusieurs façons de jouer, des modules à
+> débloquer, ça permet d'apprendre la MAO. on a des presets à reconstruire et
+> comprendre et pourquoi pas jouer avec. on peut imaginer un jeu avec une
+> histoire. un jeu où on devient le meilleur producteur ! on doit pouvoir créer
+> un EP. et pourquoi pas le marketer ? »
+
+⚠️ **RIEN N'EST ARBITRÉ. Ne pas coder dessus.** Cette section est une
+proposition écrite à la demande de Yann ; les quatre questions de la fin doivent
+recevoir sa réponse avant la moindre ligne. Elle est consignée ici pour ne pas
+être reperdue entre deux sessions.
+
+### Le vrai blocage n'est pas le contenu, c'est un entier
+
+`PlayerProgress.level` est **un seul nombre**, et il porte trois choses qui n'ont
+rien à voir :
+
+| Axe | Ce que c'est | Aujourd'hui |
+|---|---|---|
+| **Compétences** | 7 verbes × 5 familles de paramètres | fondu dans le numéro de niveau |
+| **Accès** | Atelier, Synthé, Production, Live | seuil arbitraire sur ce numéro |
+| **Motivation** | pourquoi continuer | étoiles, besace, piques |
+
+Tant qu'il n'y avait qu'un verbe et une ligne droite, ça tenait. Ça ne tient
+plus : un seul entier ne peut pas dire « il entend un filtre mais il n'a jamais
+joué en rythme ».
+
+### L'EP comme colonne vertébrale — et ici ce n'est pas décoratif
+
+**L'appli fabrique déjà l'objet réel** : export MP3 reproductible à l'octet près,
+partage par URL. « Tu as sorti un EP » n'est donc pas une métaphore — le joueur
+repart avec de vrais fichiers et de vrais liens. Un jeu sur « devenir
+producteur » qui ne produit rien serait creux ; celui-là n'a pas à l'être.
+
+La campagne devient **la production d'un EP de 4 ou 5 titres**. Chaque titre est
+un projet exigeant certaines compétences ; les exercices sont comment on les
+acquiert ; les modules s'ouvrent **parce que le titre en a besoin**.
+
+Ça règle le verrou d'un coup : « le niveau 12 ouvre le Synthé » est arbitraire ;
+« ton morceau a besoin d'une basse, voilà le Synthé » est un moment de récit.
+Même mécanisme, plus aucun nombre à justifier.
+
+### L'arc, et une coïncidence qui n'en est pas une
+
+| Titre | Ce qu'il enseigne | Ce qu'il ouvre |
+|---|---|---|
+| 1 · Le beat | rythme seul, kick/snare/hat | **Atelier** |
+| 2 · La basse | tonalité, gamme, lignes tenues | **Synthé** |
+| 3 · L'espace | filtre, réverbe, delay + check de mix | **Production** |
+| 4 · Le groove | swing, traîne, ghost, humanisation | — |
+| 5 · La sortie | jouer son morceau devant quelqu'un | **Mode Live** |
+
+**Les cinq étapes tombent exactement sur les quatre modules verrouillés.** Ce
+n'est pas un hasard heureux : le découpage modulaire de l'appli EST déjà une
+progression pédagogique, et le verrou actuel essayait de dire ça avec des numéros
+de niveau, faute de récit pour le porter.
+
+### Les 34 presets sont l'actif le plus sous-employé
+
+Chacun porte `label`, `cat` et un **paragraphe `history`**. Ils ne servent
+aujourd'hui qu'à deux choses : cible de niveau, et indice « le plus proche ».
+
+Ils peuvent être la **couche culture** : le brief du label, la discothèque de
+référence, le vocabulaire. « Reconstruire un preset » cesse d'être un exercice
+pour devenir une commande, et l'enchaînement par titre devient : *écoute ce
+qu'est ce style* → *reconstruis-le* → *maintenant fais le tien*.
+
+### Le problème le plus dur : noter la création
+
+On ne peut pas noter une composition sur la ressemblance. Réponse proposée :
+**on ne note pas le goût, on note le respect du BRIEF** — vérifiable
+objectivement : tempo dans la fourchette, lignes exigées actives, densité
+minimale, module fraîchement ouvert effectivement utilisé, durée. La voix des
+roasts commente le reste sans que ça compte en étoiles. Et **c'est le joueur qui
+choisit son single**, donc l'auto-évaluation remplace le jugement de la machine
+là où la machine n'a rien à dire.
+
+### Le marketing : la version qui marche, et celle qui tue le jeu
+
+**Celle qui tue :** streams, argent, abonnés — une couche d'idle game dont les
+chiffres montent sans rapport avec ce qu'on a fait. Ça transforme un jeu sur
+l'oreille en tableur.
+
+**Celle qui marche :** que chaque décision reste **musicale ou éditoriale**.
+
+- **Choisir le single** — écouter son propre travail d'un point de vue critique,
+  ce qu'aucun exercice ne fait faire.
+- **Titre, pochette, nom d'artiste** — l'identité, peu coûteuse et mémorable.
+- **Le public visé** — et il **change le retour reçu**. Un public club ne juge
+  pas le kick comme un public casque.
+- **La sortie** — le Mode Live devient la release party, usage narratif qu'il
+  attend.
+
+⚠️ **Le check de mix est réellement faisable.** L'analyseur est déjà branché sur
+`finalGain`, et l'export produit déjà un buffer hors ligne : on peut **mesurer**
+l'énergie par bande et la dynamique du rendu final. Le jeu dit alors « ton kick
+est enterré » avec une mesure, pas avec une opinion.
+
+### Ce que je refuserais
+
+- **La monnaie.** Elle ajoute de la comptabilité, invite au grind, et remplace
+  « j'ai fait un truc bien » par « j'ai assez farmé ». La besace couvre déjà la
+  récompense, avec le bon ton et à coût nul.
+- **Le scénario qui enferme l'outil.** L'Atelier est le but, pas la récompense.
+  Le mode carrière est le chemin par défaut ; un **studio libre reste toujours
+  atteignable**. Sinon on perd exactement les gens venus faire des beats.
+
+### Le modèle qui remplace l'entier unique
+
+```
+competences : Record<CompetenceId, 0|1|2|3>   // verbe × famille, en étoiles
+modules     : LockedModule[]                   // ouverts par le RÉCIT
+carriere    : { titres: TitreEtat[], etape }
+```
+
+Les anciennes sauvegardes se dérivent de `level` — même exigence de
+compatibilité que `deserialize` pour les fichiers v1/v2.
+
+### Ce que deviennent les 41 niveaux existants
+
+Rien ne se jette. Ils cessent d'être *la campagne* pour devenir **le réservoir** :
+chaque titre exige des compétences, les exercices servent à les obtenir ou les
+prouver. Un joueur qui sait déjà entendre un filtre passe au titre ; un autre va
+s'entraîner. C'est ce que le modèle par compétences permet et que l'entier unique
+interdisait.
+
+### La première tranche livrable
+
+Une refonte qui ne se livre pas par morceaux est un piège. Première tranche
+proposée : **l'écran Projet et le titre 1 seulement** —
+
+- le modèle de compétences + la migration des sauvegardes,
+- un écran « EP en cours » listant les titres, verrouillés sauf le premier,
+- titre 1 : brief → étude (un preset à reconstruire, ça existe déjà) →
+  composition libre dans l'Atelier → vérification du brief → validation,
+- l'Atelier s'ouvre **parce que le titre l'exige**.
+
+Le reste — les quatre autres titres, le check de mix, le single, la pochette, le
+public — vient après sans rien casser.
+
+### ⏳ Les quatre questions à trancher (mes réponses recommandées en italique)
+
+1. **L'EP est-il le contenant de toute la campagne, ou un mode à côté ?**
+   *Contenant, avec les niveaux gardés en salle de répétition : l'EP donne le
+   pourquoi, les exercices le comment.*
+2. **Combien de fiction ?** *Minimale : un label pour le cadre, et la voix des
+   roasts — qui existe déjà et qui est bonne — comme personnage. Pas de
+   distribution ni de dialogues à embranchements, ce serait des semaines
+   d'écriture et ça diluerait le ton.*
+3. **Le joueur compose-t-il, ou reconstruit-il des presets imposés ?**
+   *Il compose ; la reconstruction devient l'étude qui précède. Et la notation
+   porte sur le brief, jamais sur le goût.*
+4. **Le public/contexte change-t-il le jugement ?** *Oui, comme contrainte de
+   MIX mesurée sur le rendu, pas comme jugement de goût. C'est l'idée la plus
+   riche de la partie marketing, et la plus technique.*
+
+---
 
 ### Chantiers ouverts
 
