@@ -73,6 +73,12 @@ c'est ça le blocage architectural, pas le contenu.
 **Quatre questions doivent être tranchées par Yann avant tout code.** Elles sont
 listées à la fin de cette proposition, avec mes réponses recommandées.
 
+📖 **L'histoire, elle, est écrite : [`HISTOIRE.md`](HISTOIRE.md)** (2026-08-22) —
+**Face B**, label de quatorze artistes qui n'en a plus aucun, milieu des années
+2000, un assistant embauché pour le café, sept actes dont quatre ouvrent les
+quatre modules. Elle ne débloque pas les quatre questions ci-dessus, elle leur
+donne le *pourquoi* qui manquait.
+
 ### Ce qui attend aussi une décision (ne pas coder sans)
 
 1. **Où poser l'entrée du calibrage de latence dans l'Atelier** — menu
@@ -5132,6 +5138,12 @@ proposition écrite à la demande de Yann ; les quatre questions de la fin doive
 recevoir sa réponse avant la moindre ligne. Elle est consignée ici pour ne pas
 être reperdue entre deux sessions.
 
+> 📖 **L'HISTOIRE est écrite, et elle vit dans [`HISTOIRE.md`](HISTOIRE.md)**
+> (2026-08-22). Elle répond à la question 2 ci-dessous (« combien de fiction ? »)
+> par un décor, trois personnages et sept actes, sans inventer un seul mécanisme
+> qui n'existe pas déjà ici. Les deux documents se lisent ensemble : celui-ci dit
+> ce que le jeu FAIT, l'autre ce qu'il RACONTE.
+
 ### Le vrai blocage n'est pas le contenu, c'est un entier
 
 `PlayerProgress.level` est **un seul nombre**, et il porte trois choses qui n'ont
@@ -5277,6 +5289,121 @@ public — vient après sans rien casser.
    riche de la partie marketing, et la plus technique.*
 
 ---
+
+### ✅ L'histoire du Mode carrière — `HISTOIRE.md` (2026-08-22)
+
+Demande de Yann : *« un label a perdu tous ses artistes / le perso est
+l'assistant qui fait uniquement le café / le label ne sait pas vers qui se
+tourner / le perso doit apprendre puis faire la batterie, pareil pour les autres
+modules / il doit faire des commandes spécifiques (ex. boom bap) / il y a des
+accomplissements : faire son EP, faire un live. »*
+
+**Fichier touché : `HISTOIRE.md` (nouveau). Aucun code.** La section ⏳ ci-dessus
+reste en attente d'arbitrage — l'histoire ne la débloque pas, elle lui donne le
+*pourquoi* qui lui manquait.
+
+**Face B**, label de quatorze artistes qui n'en a plus aucun, trois pièces au
+troisième étage au-dessus de la laverie Lav'Azur. Sept actes, dont quatre
+ouvrent les quatre modules verrouillés. Trois personnages nommés (Sol la
+patronne, Rachid la laverie, Ambre celle qui est partie), une seule voix, aucun
+visage.
+
+#### ⚠️ Deux versions écartées, et ce qu'elles ont appris
+
+Ce sont les deux écarts les plus utiles de la séance, à ne pas refaire :
+
+1. **Version « film français »** — un étage, des escaliers, des visages, des
+   odeurs. Écartée par Yann : *« l'histoire ne colle pas avec l'esthétique
+   winamp »*. Le défaut n'était pas l'époque, c'était la **densité** : une peau
+   Winamp n'affiche qu'une ligne de texte vert dans une petite fenêtre biseautée,
+   elle ne peut rien rendre d'un décor.
+2. **Version « transposée dans la culture technique de 2001 »** (netlabel,
+   canaux de discussion, débats sur les débits d'encodage) — écrite en corrigeant
+   la mauvaise variable, l'époque au lieu de la densité. Écartée en une ligne :
+   *« trop geek, j'adhère pas »*. D'où la règle du § 3 de la bible : **objets
+   ordinaires de l'époque, jamais objets de niche** — un CD gravé au marqueur,
+   tout le monde ; un ratio sur un serveur, personne.
+
+Yann a tranché : **le décor initial était le bon**, la question portait sur le
+visuel. D'où les deux règles ci-dessous, qui sont le vrai résultat de la séance.
+
+#### ⚠️ La peau est le mobilier, pas le sujet
+
+Le chrome gris biseauté n'est pas le langage d'un ordinateur, c'est celui d'un
+**appareil gris avec des boutons** : rack de studio, platine cassette, répondeur,
+bandeau de commande d'une machine à laver — Winamp lui-même imitait un élément
+hi-fi. D'où la règle d'affichage : **on ne montre jamais le décor, on montre les
+appareils du décor.** Jamais un visage, jamais une pièce. Cinq surfaces, toutes
+déjà dessinables avec le design system existant : l'afficheur LCD (les mots de
+Sol), **le répondeur** (les commandes — seul objet neuf, et c'est lui qui
+justifie que tous les textes soient courts), la playlist (l'étagère de disques),
+les étiquettes de cassette (les bandes d'Ambre), l'analyseur de spectre (le test
+de mix). Corollaire et budget : **si ça ne tient pas sur un afficheur, ce n'est
+pas dans le jeu** — ~130 lignes, chiffrées acte par acte.
+
+Et le retournement : **le biseau gris n'est pas un parti pris graphique, c'est le
+budget du label.** Face B n'a rien racheté depuis les bonnes années. La peau
+explique le décor au lieu de le contredire.
+
+#### ⚠️ L'époque est le moteur, pas l'ambiance
+
+Milieu des années 2000, sur proposition de Yann (« les années Winamp »).
+**Un label qui perd tous ses artistes dans cette décennie-là, ce n'est pas une
+fable, c'est ce qui s'est passé** : ça répond gratuitement à pourquoi ils sont
+partis, pourquoi le label est au-dessus d'une laverie, pourquoi rien n'a été
+remplacé, et pourquoi Sol y croit encore. Thèse qui en découle, et c'est aussi
+celle du jeu : **ce qui a tué le label est exactement ce qui permet de le
+refaire** — la musique qui se fabrique seul dans une pièce.
+
+Coût vérifié : sur les 34 presets, **30 tiennent** dans la fenêtre ; trap
+moderne, drill, amapiano et gqom n'existent pas encore. Ils ne sont jamais
+commandés pendant la campagne — ils reviennent dans **l'épilogue**, posés par le
+nouveau qui fait le café, et tu es devenu celui qui ne connaît pas le nom.
+Cadeau inverse : le **dubstep** arrive pile en fin de fenêtre, ce qui donne une
+scène gratuite et historiquement juste sur ce qu'on n'a pas encore appris à
+entendre. **Aucune année ne s'affiche jamais** — les objets datent l'histoire à
+deux ans près.
+
+#### Le reste des décisions
+
+- **Le café est le pont, pas le gag.** 18 g, 25 secondes : le personnage sait
+  déjà mesurer une durée sans horloge, il ne sait pas que ça porte un nom. C'est
+  la progression `lequel` → `nommer` → `regler` racontée en français. Sans ce
+  pont, « le type du café devient producteur » est un tour de magie.
+- ⚠️ **Sol ne félicite pas, elle confie.** La récompense est du travail plus
+  sérieux, jamais un « bravo ». Elle **est la voix des roasts déjà écrite**
+  (`presets/gameData.ts`) — un personnage gratuit, à ne pas jeter. Seul geste
+  sentimental : elle t'appelle « le café » jusqu'au jour où elle t'appelle par
+  ton nom d'artiste, ce qui est une variable qui change de valeur.
+- **Rachid ne juge jamais**, il décrit un effet physique (« ça fait vibrer la
+  vitrine ») : c'est ce qui rend son retour mesurable au lieu d'être une opinion.
+  La laverie sert trois fois — essorage = métronome de l'acte 0, plafonnier =
+  test de mix, arrière-salle = release party.
+- ⚠️ **Le calibrage de latence devient l'acte 0** (« on règle ton oreille sur la
+  pièce »). Meilleure affaire du document et premier point à valider : un joueur
+  entré par le studio libre n'aurait jamais calibré, d'où la recommandation de le
+  garder atteignable seul.
+- **Les commandes tiennent le milieu**, sous deux règles : *le client a toujours
+  tort sur les mots et raison sur la musique* (personne n'est bête, tout le monde
+  est précis dans sa langue — traduire le brief EST le métier), et *Sol ne rit
+  jamais*. Jamais de client méchant, jamais un morceau raté pour faire rire : les
+  blagues portent sur les mots, pas sur la musique, sinon le jeu se moque de ce
+  qu'il enseigne.
+- ⚠️ **La besace et le mur du bureau restent séparés.** La besace est du bruit —
+  elle récompense la présence, c'est son métier ; le mur est de la mémoire.
+  Mettre la chaussette dépareillée et le premier EP dans la même vitrine détruit
+  les deux.
+- **Le nom du label a changé en cours de route.** « Rossignol Records » reposait
+  sur un double sens (l'oiseau / l'invendu qui dort en stock) que Yann n'a pas
+  reconnu — *« on comprend pas ta blague »*. Une blague qu'il faut expliquer n'en
+  est pas une. **Face B** se comprend tout seul, et il porte l'acte 5 sans qu'on
+  ait à l'écrire : le seul moment où un label qui s'appelle Face B doit choisir
+  une face A.
+
+**Écarts de portée assumés :** rien n'est codé, et l'entier `PlayerProgress.level`
+n'est pas touché — l'histoire explique pourquoi il faut le casser, elle ne le
+casse pas. Quatre questions restent posées en fin de `HISTOIRE.md`, dont
+« pourquoi Sol a arrêté de produire », la seule case volontairement vide.
 
 ### Chantiers ouverts
 
