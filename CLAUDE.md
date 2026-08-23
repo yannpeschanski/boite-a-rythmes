@@ -106,6 +106,21 @@ src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partag
 src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
 ```
 
+**Le Mode jeu s'ouvre sur le Mode carrière, et c'est le RÉCIT qui ouvre les
+modules.** `src/model/carriere.ts` porte les huit actes de `HISTOIRE.md` ;
+`PlayerProgress.carriere = { acte, etape }` est un **second axe**, délibérément
+séparé de `level`/`stars` — le récit dit ce qui est OUVERT, le réservoir des 41
+niveaux (la « salle de répétition ») dit ce qui est MAÎTRISÉ. Trois règles
+payées d'avance : un acte **cite** des niveaux du réservoir, il n'en fabrique
+jamais (un même exercice, pas une variante qui dériverait) ; le curseur persisté
+ne recule **jamais**, sinon relire l'acte 1 refermerait l'Atelier qu'il vient
+d'ouvrir ; et `moduleUnlocked` est un **OU** entre l'acte et l'ancien seuil de
+niveau, parce que seuls les actes 0-2 ont leurs exercices écrits — retirer le
+second membre priverait tout le monde du Synthé, de la Production et du Live.
+Une commande d'acte ne doit **promettre que ce que le tirage tient** : les
+niveaux 39-41 tirent leur bouton au hasard, une consigne qui le nomme ment une
+fois sur quatre.
+
 **Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
 discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
 campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier

@@ -13,6 +13,7 @@
 // tests/unlocks.test.ts, qui vérifie notamment le piège du seuil de
 // l'Atelier ci-dessous.
 import { LEVELS } from './presets/levels';
+import { ACTE_DU_MODULE } from './carriere';
 
 export type LockedModule = 'atelier' | 'synth' | 'production' | 'live';
 
@@ -58,6 +59,17 @@ for (const m of LOCKED_MODULES) {
 export interface UnlockContext {
   /** `PlayerProgress.level` — niveau atteint (voir la sémantique ci-dessus). */
   level: number;
+  /**
+   * L'acte du Mode carrière où en est le joueur — 0 s'il vient d'arriver.
+   * Même sémantique que `level` : c'est l'acte ATTEINT, donc `acte = 2` veut
+   * dire « les actes 0 et 1 sont terminés ».
+   *
+   * C'est désormais la voie PRINCIPALE d'ouverture d'un module : « ton morceau
+   * a besoin d'une basse, voilà le Synthé » est un moment de récit, là où « le
+   * niveau 13 ouvre le Synthé » est un nombre à justifier (PLAN.md,
+   * « Architecture du Mode jeu » ; HISTOIRE.md, « Ce que le récit ouvre »).
+   */
+  acte?: number;
   /** Contournement développeur (#boss) : tout est ouvert. */
   bypass?: boolean;
   /**
@@ -70,10 +82,28 @@ export interface UnlockContext {
   sharedPattern?: boolean;
 }
 
+/* Deux voies, jamais une seule — et le OU est délibéré.
+ *
+ * Le récit est la voie principale, mais seuls les actes 0 à 2 ont leurs
+ * exercices écrits : si l'acte était la SEULE voie, le Synthé (acte 3), la
+ * Production (acte 4) et le Mode Live (acte 7) deviendraient inatteignables du
+ * jour où la carrière est arrivée — une régression pour tous ceux qui les
+ * avaient déjà ouverts, et un mur pour les autres. Les seuils de niveau
+ * restent donc un plancher, en salle de répétition.
+ *
+ * Le jour où les huit actes sont écrits, retirer le second membre est un
+ * changement d'une ligne — et une décision, pas un nettoyage.
+ */
 export function moduleUnlocked(name: LockedModule, cx: UnlockContext): boolean {
   if (cx.bypass) return true;
   if (name === 'atelier' && cx.sharedPattern) return true;
+  if ((cx.acte ?? 0) > ACTE_DU_MODULE[name]) return true;
   return cx.level >= MODULE_UNLOCK_LEVEL[name];
+}
+
+/** L'acte qui ouvre le module, pour l'afficher sur le verrou. */
+export function unlockActeFor(name: LockedModule): number {
+  return ACTE_DU_MODULE[name];
 }
 
 /** Niveau à atteindre, pour l'afficher sur le verrou (« Niveau 13 »). */
