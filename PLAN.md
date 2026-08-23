@@ -57,28 +57,31 @@ jetait les frappes en silence, une note qui moyennait tout le tour au lieu de
 retenir la meilleure mesure. Les règles qui en sortent sont dans `CLAUDE.md` —
 **les lire avant de toucher à la latence ou à la notation**.
 
-### ⏳ EN ATTENTE D'ARBITRAGE — l'architecture globale du Mode jeu
+### ✅ ARBITRÉ — le scénario est la colonne vertébrale du Mode jeu
 
-**C'est le sujet en cours, et rien ne doit être codé dessus avant décision.**
-Yann réfléchit à refondre la colonne vertébrale du Mode jeu : plusieurs façons
-de jouer, modules à débloquer, presets à reconstruire, une histoire, devenir
-producteur, **créer un EP**, et pourquoi pas le marketer.
+Yann, le 2026-08-23 : *« on part sur le scénario pour le moment pour développer
+le mode jeu »*. L'architecture proposée plus bas est donc **tranchée sur ses
+deux premières questions**, et la première tranche est livrée.
 
-Une proposition complète est écrite plus bas
-([« Architecture du Mode jeu — proposition »](#-architecture-du-mode-jeu--proposition-en-attente-darbitrage-2026-08-21)).
-Son idée centrale : `PlayerProgress.level` est **un seul entier** qui porte trois
-choses distinctes — ce que le joueur sait, ce qui est ouvert, où il en est — et
-c'est ça le blocage architectural, pas le contenu.
+**L'état d'aujourd'hui, en trois phrases.** Le Mode jeu s'ouvre désormais sur le
+**Mode carrière** : les huit actes de [`HISTOIRE.md`](HISTOIRE.md), dont les
+trois premiers sont jouables. Les 41 niveaux ne sont plus la campagne, ils sont
+la **salle de répétition**, toujours atteignable d'un bouton. Les modules
+s'ouvrent parce qu'un acte en a besoin — l'acte 1 « Le rythme » ouvre l'Atelier
+— les anciens seuils de niveau restant un plancher pour ne priver personne.
 
-**Quatre questions doivent être tranchées par Yann avant tout code.** Elles sont
-listées à la fin de cette proposition, avec mes réponses recommandées.
+Détail complet, avec ce qui a été fait AUTREMENT que proposé :
+[« Mode carrière — la charpente en huit actes »](#-mode-carrière--la-charpente-en-huit-actes-actes-0-à-2-jouables-2026-08-23).
 
-📖 **L'histoire, elle, est écrite : [`HISTOIRE.md`](HISTOIRE.md)** (2026-08-22) —
-**Face B**, label de quatorze artistes qui n'en a plus aucun, qui survit en
-vendant des sonneries de téléphone au milieu des années 2000. Un stagiaire qui
-fait le café, huit actes, dont quatre ouvrent les quatre modules. Texte de Yann,
-relu pour la continuité. Elle ne débloque pas les quatre questions ci-dessus,
-elle leur donne le *pourquoi* qui manquait.
+**Ce qui reste à trancher** : les questions 3 (le joueur compose-t-il ou
+reconstruit-il ?) et 4 (le public change-t-il le jugement ?) de la proposition.
+Elles portent sur les actes 4 et 6, pas encore écrits — rien n'est bloqué par
+elles aujourd'hui.
+
+**Le prochain pas le moins cher : l'acte 5, « Les styles ».** Quinze genres à
+reconstruire, et les 34 presets existent déjà. Les actes 3, 4 et 6 demandent du
+mécanisme neuf (le synthé, le contrôle de mix mesuré, la notation d'une
+composition sur son brief) ; le 5 ne demande que du contenu.
 
 ### Ce qui attend aussi une décision (ne pas coder sans)
 
@@ -5134,10 +5137,15 @@ aucune cible tactile sous 44×44, aucun débordement à 390px · aucune erreur c
 > histoire. un jeu où on devient le meilleur producteur ! on doit pouvoir créer
 > un EP. et pourquoi pas le marketer ? »
 
-⚠️ **RIEN N'EST ARBITRÉ. Ne pas coder dessus.** Cette section est une
-proposition écrite à la demande de Yann ; les quatre questions de la fin doivent
-recevoir sa réponse avant la moindre ligne. Elle est consignée ici pour ne pas
-être reperdue entre deux sessions.
+⚠️ **Partiellement arbitré le 2026-08-23** — Yann : *« on part sur le scénario
+pour le moment pour développer le mode jeu »*. Les questions **1 et 2** sont
+donc tranchées (l'histoire est le contenant ; la fiction, c'est `HISTOIRE.md`
+en entier) et la première tranche est livrée : voir
+[« Mode carrière — la charpente en huit actes »](#-mode-carrière--la-charpente-en-huit-actes-actes-0-à-2-jouables-2026-08-23).
+Les questions **3 et 4** restent ouvertes — elles portent sur les actes 4 et 6,
+qui ne sont pas encore écrits. Le reste de cette section garde sa valeur
+d'analyse ; ce qui a été fait AUTREMENT que proposé (deux axes et non trois, pas
+de migration depuis `level`) est expliqué dans l'entrée ✅.
 
 > 📖 **L'HISTOIRE est écrite, et elle vit dans [`HISTOIRE.md`](HISTOIRE.md)**
 > (2026-08-22). Elle répond à la question 2 ci-dessous (« combien de fiction ? »)
@@ -5362,6 +5370,139 @@ s'en va en laissant un mot de passe qui ne marche pas.
 pas touché. Restent ouverts : le découpage en ~130 exercices avec leurs axes de
 difficulté, et le contrôle de mix mesuré de l'acte 4 (seul mécanisme réellement
 neuf).
+
+### ✅ Mode carrière — la charpente en huit actes, actes 0 à 2 jouables (2026-08-23)
+
+Arbitrage de Yann, en une phrase : *« on part sur le scénario pour le moment
+pour développer le mode jeu »*. Ça tranche les deux premières des quatre
+questions de la section ⏳ ci-dessus — l'histoire est le CONTENANT de la
+campagne, et la fiction n'est pas minimale : c'est `HISTOIRE.md`, ses huit
+actes, ses quatre personnages. Les questions 3 (composer ou reconstruire) et 4
+(le public change-t-il le jugement) portent sur les actes 4 et 6, elles restent
+ouvertes et ne bloquaient pas cette tranche.
+
+**Fichiers touchés :** `src/model/carriere.ts` (neuf), `src/model/unlocks.ts`,
+`src/stores/game.svelte.ts`, `src/stores/unlocks.svelte.ts`,
+`src/ui/game/CarriereView.svelte` (neuf), `src/ui/game/GameView.svelte`,
+`src/App.svelte`, `tests/carriere.test.ts` (neuf).
+
+#### Ce que ça change, en une image
+
+Le Mode jeu a désormais **deux écrans** et la carrière est celui d'entrée. Le
+récit donne le *pourquoi*, les 41 niveaux donnent le *comment* et deviennent la
+**salle de répétition**, atteignable d'un bouton depuis la carrière — « pas de
+scénario qui enferme l'outil » (`HISTOIRE.md`).
+
+#### L'entier unique, découpé en deux — et pas en trois
+
+Le blocage identifié dans la proposition était que `PlayerProgress.level`
+portait trois choses : ce que le joueur sait, ce qui lui est ouvert, où il en
+est. La proposition suggérait un `Record<CompetenceId, 0|1|2|3>`. **Ce n'est pas
+ce qui a été fait, et c'est délibéré** : deux axes suffisent, parce que le
+récit sait déjà répondre à la question d'accès.
+
+| Axe | Où il vit | Ce qu'il décide |
+|---|---|---|
+| **Récit** | `PlayerProgress.carriere = { acte, etape }` | ce qui est ouvert |
+| **Réservoir** | `level` + `stars`, inchangés | ce qui est maîtrisé |
+
+Un troisième axe « compétences » aurait été un modèle de plus à tenir d'accord
+avec les deux autres, sans rien décider que ceux-là ne décident déjà. Il
+reviendra le jour où un exercice devra *vérifier* une compétence plutôt que la
+décerner.
+
+#### Un acte CITE des niveaux, il n'en fabrique pas
+
+`Etape` est soit un `recit` (quelques lignes courtes + l'appareil qui les
+affiche), soit un `exercice` qui ne porte qu'un **`niveau` du réservoir**. Ça
+rend le contenu bon marché à écrire, et surtout ça garantit qu'un niveau joué
+dans la carrière est *exactement* le même qu'en répétition — pas une variante
+qui dériverait de son original. Le mapping actuel :
+
+| Acte | Compétence | Niveaux cités | Ouvre |
+|---|---|---|---|
+| 0 · Le café | ÉCOUTE | 39, 40, 41 (les trois verbes de paramètre) | — |
+| 1 · Le rythme | RYTHME | 1, 2, 3, 7 | **Atelier** |
+| 2 · Le groove | GROOVE | 4, 14, 15, 20, 23 | — |
+
+⚠️ **Les pilotes 39-41 ne sont plus un bonus de fin de campagne, ils sont le
+tout premier écran du jeu.** C'est le texte qui l'a décidé, pas moi :
+« Elle te fait écouter deux sons. — Lequel est le plus grave ? » EST le verbe
+`lequel`. Effet de bord heureux : les trois verbes que Yann n'avait pas encore
+essayés sont maintenant les trois premiers exercices qu'on rencontre.
+
+⚠️ **Une commande ne doit promettre que ce que le tirage tient.** Première
+version de l'acte 0 : la commande disait « — Lequel est le plus grave ? » et
+l'écran demandait « laquelle est la plus courte ? ». Les niveaux 39-41 tirent
+leur bouton au hasard dans la famille Timbre : une consigne qui NOMME le
+réglage ment une fois sur quatre. Trouvé à la capture d'écran, pas au test.
+
+#### Deux curseurs, parce qu'un seul reverrouille l'Atelier
+
+`progresCarriere` (persisté, ne recule jamais) et `acteActif`/`etapeActive`
+(volatil, ce qu'on regarde). Sans le second, **relire l'acte 1 refermerait
+l'Atelier que l'acte 1 vient d'ouvrir** : le curseur reculerait, et le verrou
+lit le curseur. C'est le genre de régression qui ne se voit pas en écrivant le
+code — `tests/carriere.test.ts` la verrouille par le seul scénario qui la
+produit.
+
+#### Le déblocage : le récit d'abord, les niveaux en plancher
+
+`moduleUnlocked` gagne un `acte` et devient un OU. Le récit est la voie
+principale (« ton morceau a besoin d'une basse, voilà le Synthé »), mais **seuls
+les actes 0 à 2 ont leurs exercices écrits** : si l'acte était la seule voie, le
+Synthé (acte 3), la Production (4) et le Mode Live (7) deviendraient
+inatteignables du jour où la carrière arrive — régression pour tous ceux qui les
+avaient ouverts, mur pour les autres. Les seuils de niveau restent donc un
+plancher. Retirer ce second membre le jour où les huit actes sont écrits sera un
+changement d'une ligne, et une décision, pas un nettoyage.
+
+**Corollaire assumé : il n'y a PAS de migration depuis `level`.** La tentation
+était d'y placer un vétéran à l'acte correspondant. Elle ne marche pas :
+l'acte 0 cite 39-41, des bonus posés *après* la campagne d'origine, qu'un joueur
+fini au niveau 34 n'a jamais joués. Aucune dérivation ne peut le déclarer
+« acte 0 acquis » sans mentir sur ce qu'il a entendu. La carrière est du contenu
+neuf : tout le monde la commence au début, et personne ne perd d'accès en
+chemin.
+
+#### L'écran, et la règle qui l'a dessiné
+
+`CarriereView.svelte` applique littéralement « on montre les appareils, pas le
+décor » : jamais un visage ni une pièce, **quatre surfaces** et pas une de plus
+— l'afficheur LCD (les mots de Sol, et le compte à rebours `14 JUIN · J−151`
+affiché en permanence), le répondeur, le fax, l'étiquette de cassette. Les huit
+actes forment un **carnet** vert sur noir, lu comme une playlist. Un seul cadre
+creusé pour les quatre appareils : la variante porte sur ce qui est ÉCRIT
+dessus, pas sur une forme de plus.
+
+Les actes 3 à 7 disent « À venir » et ne s'ouvrent pas : un acte qui s'ouvre sur
+du vide se lit comme une panne.
+
+**Vérifié :** `npm run check` 0 erreur · **133 tests** · les deux builds ·
+parcours Playwright à 390×844 en `pointer: coarse` — les trois actes joués bout
+à bout (37 clics), l'Atelier passe de verrouillé à ouvert **pendant** le
+parcours à la fin de l'acte 1, 0 px de débordement horizontal sur les deux
+écrans, 0 erreur console. Zones tactiles mesurées à `elementFromPoint` (le
+pseudo-élément `.tap44` est invisible à `getBoundingClientRect`) : toutes ≥ 44 px
+après deux correctifs — `.player` de `GameView` n'avait jamais eu son `tap44-y`
+(24 px), et les lignes du carnet tombaient à 43 px avec un `padding` de 9.
+
+**Écarts de portée assumés :**
+
+- **Les actes 3 à 7 ne sont pas jouables.** Leur récit est écrit, leurs
+  exercices non — et trois d'entre eux demandent du mécanisme neuf (le synthé
+  pour l'acte 3, le contrôle de mix mesuré pour le 4, la composition libre
+  notée sur le brief pour le 6). L'acte 5 « Les styles », lui, ne demande que du
+  contenu : quinze presets à reconstruire, tout existe déjà. **C'est le prochain
+  acte à écrire, et de loin le moins cher.**
+- **Aucun système de compétences mesurées** — voir plus haut, deux axes
+  suffisent tant qu'un acte décerne au lieu de vérifier.
+- **La grille de déverrouillage contrôle par contrôle** (rafale niv. 11, swing
+  14, ghost 20, fill 21, décalage 23) n'est toujours pas appliquée. Elle reste
+  valable : elle porte sur les contrôles de l'Atelier, pas sur les modules.
+- **B6 — la mise en page** : l'écran de carrière tient sur la hauteur d'un
+  téléphone sans déborder, mais l'écran d'exercice garde son bas de page vide.
+  Même chantier qu'avant, pas rouvert ici.
 
 ### Chantiers ouverts
 

@@ -64,7 +64,13 @@ class Unlocks {
   }
 
   private get context(): UnlockContext {
-    return { level: game.playerProgress.level, bypass: this.boss, sharedPattern: this.sharedPattern };
+    return {
+      level: game.playerProgress.level,
+      // Voie principale : c'est le RÉCIT qui ouvre les modules (model/carriere.ts).
+      acte: game.progresCarriere.acte,
+      bypass: this.boss,
+      sharedPattern: this.sharedPattern,
+    };
   }
 
   has(name: LockedModule): boolean {

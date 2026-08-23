@@ -34,6 +34,7 @@ import {
   type DescripteurParam,
 } from '../model/parametres';
 import { PRESETS } from '../model/presets/songs';
+import { NB_ACTES, acteParId, acteAVenir, type Acte, type Etape } from '../model/carriere';
 import {
   BAG_ITEMS,
   CONSOLATION_ITEM,
@@ -65,6 +66,19 @@ const KEY_PSEUDO = 'boite-a-rythme:pseudo';
 export interface PlayerProgress {
   level: number;
   stars: Record<string, number>;
+  /* Où en est le joueur dans le RÉCIT (`model/carriere.ts`) — le second axe,
+   * délibérément séparé de `level`.
+   *
+   * `level` et `stars` décrivent le RÉSERVOIR : ce que le joueur a réussi en
+   * salle de répétition. `carriere` décrit l'HISTOIRE : ce qu'il a vécu, et
+   * donc ce qui lui est ouvert. Un seul entier ne pouvait pas dire les deux
+   * (PLAN.md, « Architecture du Mode jeu ») — d'où deux champs, et pas un
+   * numéro de niveau plus gros.
+   *
+   * Facultatif : une sauvegarde d'avant la carrière n'en a pas. Elle démarre
+   * alors la carrière au début, sans rien perdre — voir `carriere.ts`,
+   * « Pourquoi il n'y a PAS de migration ». */
+  carriere?: { acte: number; etape: number };
 }
 
 // 3★ du 1er coup, 2★ en 2-3 essais, 1★ au-delà, 0★ si abandon.
@@ -224,6 +238,125 @@ class GameStore {
     return this.bags[this.pseudo] ?? [];
   }
 
+  /* ---- Mode carrière — le curseur du récit ----------------------------
+   *
+   * DEUX curseurs, et c'est voulu :
+   *
+   *   - `progresCarriere` — jusqu'où le joueur est ALLÉ. Persisté, ne recule
+   *     jamais. C'est lui qui ouvre les actes et les modules.
+   *   - `acteActif` / `etapeActive` — ce qu'il REGARDE en ce moment. Volatil.
+   *
+   * Sans le second, relire un acte terminé ferait reculer le premier — et donc
+   * REVERROUILLER un module déjà ouvert. Un joueur qui relit l'acte 1 se
+   * retrouverait sans Atelier ; ce genre de régression ne se voit pas en
+   * écrivant le code, seulement en jouant.
+   */
+  acteActif = $state(0);
+  etapeActive = $state(0);
+  /** Le niveau en cours a été lancé depuis la carrière (et non depuis la salle
+   *  de répétition) : c'est ce qui décide où l'on retourne en le réussissant. */
+  enCarriere = $state(false);
+  /* L'acte qui vient de se terminer et dont la fin n'a pas encore été annoncée.
+   * Ici plutôt que dans la vue parce que `avancerCarriere` est appelée depuis
+   * DEUX écrans (la lecture d'un récit, la fin d'un exercice) : deux vues qui
+   * devraient chacune se souvenir d'annoncer la compétence finiraient par ne
+   * plus être d'accord. La vue le lit, puis le remet à `null`. */
+  acteTermineAAnnoncer = $state<Acte | null>(null);
+
+  /** Jusqu'où le joueur est allé — acte ATTEINT, donc `2` = actes 0 et 1 faits.
+   *
+   *  Aucune dérivation depuis `level` : voir `carriere.ts`. Un vétéran commence
+   *  la carrière au début sans rien perdre, les seuils de niveau restant un
+   *  plancher pour ses modules. */
+  get progresCarriere(): { acte: number; etape: number } {
+    if (this.pseudo.toLowerCase() === 'master') return { acte: NB_ACTES, etape: 0 };
+    return this.progress[this.pseudo]?.carriere ?? { acte: 0, etape: 0 };
+  }
+
+  get acteCourant(): Acte {
+    return acteParId(this.acteActif);
+  }
+
+  get etapeCourante(): Etape | null {
+    return this.acteCourant.etapes[this.etapeActive] ?? null;
+  }
+
+  /** Un acte est ouvert dès qu'on l'a atteint — et jamais s'il est « à venir »
+   *  (récit écrit, exercices pas encore : voir `carriere.ts`). */
+  acteOuvert(id: number): boolean {
+    return id <= this.progresCarriere.acte && !acteAVenir(acteParId(id));
+  }
+
+  acteFait(id: number): boolean {
+    return id < this.progresCarriere.acte;
+  }
+
+  /** Tous les actes écrits sont derrière : il n'y a plus rien à continuer. */
+  get carriereEnAttente(): boolean {
+    const p = this.progresCarriere.acte;
+    return p >= NB_ACTES || acteAVenir(acteParId(p));
+  }
+
+  /** Reprendre là où on s'était arrêté. */
+  reprendreCarriere(): void {
+    const p = this.progresCarriere;
+    this.acteActif = Math.min(p.acte, NB_ACTES - 1);
+    this.etapeActive = acteAVenir(this.acteCourant) ? 0 : p.etape;
+    this.acteTermineAAnnoncer = null;
+    this.demarrerEtape();
+  }
+
+  /** Ouvrir (ou relire) un acte depuis son début. */
+  ouvrirActe(id: number): void {
+    if (!this.acteOuvert(id)) return;
+    this.acteActif = id;
+    this.etapeActive = 0;
+    this.demarrerEtape();
+  }
+
+  /** Charge ce que l'étape courante demande. Une étape de récit n'a rien à
+   *  charger : c'est du texte, la vue s'en occupe. */
+  demarrerEtape(): void {
+    this.enCarriere = true;
+    const e = this.etapeCourante;
+    if (e && e.kind === 'exercice') this.startLevel(e.niveau - 1);
+  }
+
+  /* Passer à l'étape suivante — appelée après avoir lu un récit ou terminé un
+   * exercice. Rien ici ne vérifie la réussite : c'est la vue qui décide quand
+   * une étape est finie, comme c'est elle qui décide quand un niveau l'est.
+   *
+   * Renvoie l'acte qui vient de se TERMINER, ou `null` — ce qui permet à la vue
+   * d'annoncer la compétence et le module ouvert au bon moment, sans avoir à
+   * comparer des curseurs avant et après. */
+  avancerCarriere(): Acte | null {
+    const acte = this.acteCourant;
+    if (this.etapeActive + 1 < acte.etapes.length) {
+      this.etapeActive += 1;
+      this.memoriserCarriere(acte.id, this.etapeActive);
+      this.demarrerEtape();
+      return null;
+    }
+    this.acteActif = Math.min(NB_ACTES - 1, acte.id + 1);
+    this.etapeActive = 0;
+    this.memoriserCarriere(acte.id + 1, 0);
+    this.demarrerEtape();
+    this.acteTermineAAnnoncer = acte;
+    return acte;
+  }
+
+  /* Le curseur persisté ne recule JAMAIS — c'est ce qui rend la relecture d'un
+   * acte inoffensive : sans cette garde, relire l'acte 1 reverrouillerait
+   * l'Atelier. */
+  private memoriserCarriere(acte: number, etape: number): void {
+    if (this.pseudo.toLowerCase() === 'master') return;
+    const prev = this.progress[this.pseudo] ?? { level: 1, stars: {} };
+    const cur = prev.carriere ?? { acte: 0, etape: 0 };
+    if (acte < cur.acte || (acte === cur.acte && etape <= cur.etape)) return;
+    this.progress = { ...this.progress, [this.pseudo]: { ...prev, carriere: { acte, etape } } };
+    writeJson(KEY_PROGRESS, this.progress);
+  }
+
   load(): void {
     this.progress = readJson<Record<string, PlayerProgress>>(KEY_PROGRESS, {});
     this.bags = readJson<Record<string, BagItem[]>>(KEY_BAG, {});
@@ -261,7 +394,15 @@ class GameStore {
     }
     this.load();
     const prog = this.playerProgress;
+    // Le niveau du réservoir reste chargé — la salle de répétition s'ouvre
+    // dessus — mais l'écran d'entrée du Mode jeu est désormais la carrière :
+    // c'est elle qui donne le pourquoi, les niveaux donnent le comment.
     this.startLevel(Math.max(0, Math.min(LEVELS.length - 1, prog.level - 1)));
+    const p = this.progresCarriere;
+    this.acteActif = Math.min(p.acte, NB_ACTES - 1);
+    this.etapeActive = acteAVenir(this.acteCourant) ? 0 : p.etape;
+    this.acteTermineAAnnoncer = null;
+    this.enCarriere = false;
   }
 
   // Repasser par le formulaire de pseudo. Nécessaire depuis que le pseudo est
@@ -698,6 +839,9 @@ class GameStore {
     const prev = this.progress[this.pseudo] ?? { level: 1, stars: {} };
     const id = String(this.level.id);
     const next: PlayerProgress = {
+      // `...prev` d'abord : sans lui, réussir un niveau effacerait le curseur
+      // de carrière, qui vit dans le même enregistrement.
+      ...prev,
       // Déblocage du niveau suivant dès 1★.
       level: stars >= 1 ? Math.max(prev.level, this.level.id + 1) : prev.level,
       stars: { ...prev.stars, [id]: Math.max(prev.stars[id] ?? 0, stars) },

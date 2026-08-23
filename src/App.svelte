@@ -12,7 +12,8 @@
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
-  import { unlockLevelFor, type LockedModule } from './model/unlocks';
+  import { unlockLevelFor, unlockActeFor, type LockedModule } from './model/unlocks';
+  import { acteParId } from './model/carriere';
 
   let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
 
@@ -60,8 +61,16 @@
     if (mod && !unlocks.has(mod)) return;
     view = v;
   }
+  /* Le verrou dit désormais l'ACTE, pas le numéro de niveau — et il dit les
+     deux voies, parce qu'elles existent toutes les deux : le récit ouvre le
+     module « parce qu'un acte en a besoin » (HISTOIRE.md), les niveaux du
+     réservoir restent un plancher pour qui joue hors carrière. */
   function lockTitle(mod: LockedModule): string {
-    return `Se débloque au niveau ${unlockLevelFor(mod)} du Mode jeu`;
+    const a = acteParId(unlockActeFor(mod));
+    return `S’ouvre à l’acte ${a.id} — ${a.titre} (ou au niveau ${unlockLevelFor(mod)} en salle de répétition)`;
+  }
+  function lockShort(mod: LockedModule): string {
+    return `Acte ${unlockActeFor(mod)}`;
   }
 </script>
 
@@ -70,7 +79,7 @@
 {:else if view === 'splash'}
   <div class="splash">
     <h1>Boîte à rythmes</h1>
-    <p>Un séquenceur rétro, et une campagne pour apprendre le rythme à l’oreille.</p>
+    <p>Un séquenceur rétro, et un label qui a cinq mois pour ne pas fermer.</p>
     <div class="choices">
       <button
         class="big"
@@ -80,10 +89,12 @@
         onclick={() => enter('atelier', 'atelier')}
       >
         {unlocks.has('atelier') ? '🥁' : '🔒'} Atelier<small
-          >{unlocks.has('atelier') ? 'Composer librement' : `Niveau ${unlockLevelFor('atelier')}`}</small
+          >{unlocks.has('atelier') ? 'Composer librement' : lockShort('atelier')}</small
         ></button
       >
-      <button class="big" onclick={() => enter('game')}>🎮 Mode jeu<small>{LEVELS.length} niveaux</small></button>
+      <button class="big" onclick={() => enter('game')}>
+        🎮 Mode jeu<small>Une carrière en huit actes · {LEVELS.length} niveaux</small></button
+      >
       <button
         class="big"
         class:locked={!unlocks.has('live')}
@@ -92,12 +103,12 @@
         onclick={() => enter('live', 'live')}
       >
         {unlocks.has('live') ? '🎛' : '🔒'} Mode Live<small
-          >{unlocks.has('live') ? 'Manette paysage' : `Niveau ${unlockLevelFor('live')}`}</small
+          >{unlocks.has('live') ? 'Manette paysage' : lockShort('live')}</small
         ></button
       >
     </div>
     {#if !unlocks.has('atelier')}
-      <p class="hint">L’Atelier s’ouvre en réussissant le premier niveau du Mode jeu.</p>
+      <p class="hint">L’Atelier s’ouvre à la fin de l’acte 1 — « Le rythme ».</p>
     {/if}
     {#if unlocks.totalAccess}
       <p class="boss">🔓 Accès total — <code>{unlocks.totalAccessHint}</code></p>

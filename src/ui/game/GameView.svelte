@@ -15,6 +15,7 @@
   } from '../../model/exercises';
   import { latence } from '../latence.svelte';
   import XpWindow from '../xp/XpWindow.svelte';
+  import CarriereView from './CarriereView.svelte';
 
   let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
 
@@ -28,6 +29,13 @@
   const engine = new AudioEngine(() => game.buildState(playingWhat || 'target'));
   let showMap = $state(false);
   let showBag = $state(false);
+
+  /* Le Mode jeu a désormais DEUX écrans, et la carrière est celui d'entrée :
+   * c'est le récit qui donne le pourquoi, les niveaux donnent le comment
+   * (PLAN.md, « Architecture du Mode jeu » ; arbitrage du 2026-08-23). La
+   * salle de répétition — les 41 niveaux — reste atteignable d'un bouton :
+   * « pas de scénario qui enferme l'outil » (HISTOIRE.md). */
+  let ecran = $state<'carriere' | 'exercice'>('carriere');
 
   // Curseur visuel : consommé à chaque frame contre l'horloge audio, comme
   // dans l'Atelier (AtelierView.svelte) — sans cette boucle, aucune case ne
@@ -356,7 +364,24 @@
   function allerAuNiveau(index: number) {
     stopAll();
     echec = false;
+    // Choisir un niveau dans la carte, c'est répéter, pas avancer dans le
+    // récit : sans cette ligne, réussir un niveau choisi à la main ferait
+    // progresser la carrière d'une étape qu'on n'a pas jouée.
+    game.enCarriere = false;
     game.startLevel(index);
+  }
+
+  /* Étape suivante du récit, après un exercice de carrière.
+   *
+   * On ne repasse par l'écran de carrière que s'il a quelque chose à dire —
+   * une fin d'acte à annoncer, ou un récit à lire. Deux exercices qui se
+   * suivent s'enchaînent directement : une page « Continuer » entre chaque
+   * ferait trois clics pour une sonnerie. */
+  function continuerCarriere() {
+    stopAll();
+    echec = false;
+    game.avancerCarriere();
+    if (game.acteTermineAAnnoncer || game.etapeCourante?.kind !== 'exercice') ecran = 'carriere';
   }
 
   /* La barre d'espace frappe aussi : sur un clavier, viser un pad à la souris
@@ -381,6 +406,20 @@
 
   const lvl = $derived(game.level);
   const ex = $derived(lvl.exercise);
+  /* Dans la carrière, la consigne affichée est le BRIEF du client, pas la
+     fiche pédagogique du niveau : « La deuxième. La snare entre. » plutôt que
+     « La snare (caisse claire) entre en jeu à son tour ». Le préambule reste
+     dessous — il explique la mécanique, et c'est toujours utile. */
+  const commande = $derived.by(() => {
+    if (!game.enCarriere) return '';
+    const e = game.etapeCourante;
+    return e && e.kind === 'exercice' ? (e.commande ?? '') : '';
+  });
+  const titreFenetre = $derived(
+    game.enCarriere
+      ? `Acte ${game.acteCourant.id} — ${game.acteCourant.titre} · ${game.etapeActive + 1}/${game.acteCourant.etapes.length}`
+      : `Niveau ${lvl.id} / ${LEVELS.length} — ${lvl.teach}`,
+  );
   // À vue, le guide montre le motif ; à l'oreille il ne montre que la grille
   // vide et le curseur. Jamais les deux canaux ensemble — voir jouerIndice.
   const montrerLeMotif = $derived(lvl.jouerIndice === 'lecture');
@@ -427,21 +466,37 @@
           e.preventDefault();
           const input = (e.currentTarget as HTMLFormElement).elements.namedItem('pseudo') as HTMLInputElement;
           game.setPseudo(input.value);
+          ecran = 'carriere';
         }}
       >
         <input name="pseudo" placeholder="Ton pseudo…" autocomplete="off" />
         <button class="xp-btn">C’est parti</button>
       </form>
     </XpWindow>
+  {:else if ecran === 'carriere'}
+    <CarriereView
+      onExercice={() => {
+        stopAll();
+        echec = false;
+        ecran = 'exercice';
+      }}
+      onRepetition={() => {
+        game.enCarriere = false;
+        showMap = true;
+        ecran = 'exercice';
+      }}
+    />
   {:else}
-    <XpWindow title="Niveau {lvl.id} / {LEVELS.length} — {lvl.teach}" icon="🎮" accent="none">
+    <XpWindow title={titreFenetre} icon="🎮" accent="none">
       <div class="head">
-        <button class="player" onclick={() => game.clearPseudo()} title="Changer de joueur">
+        <button class="xp-btn tiny" onclick={() => { stopAll(); ecran = 'carriere'; }}>◂ Carrière</button>
+        <button class="player tap44-y" onclick={() => game.clearPseudo()} title="Changer de joueur">
           👤 {game.pseudo}
         </button>
         <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Carte</button>
         <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
       </div>
+      {#if commande}<p class="commande">{commande}</p>{/if}
       {#if lvl.preamble}<p class="preamble">{lvl.preamble}</p>{/if}
 
       {#if showMap}
@@ -865,7 +920,12 @@
             </p>
           {/if}
           <div class="result-btns">
-            {#if game.solved && game.levelIndex < LEVELS.length - 1}
+            {#if game.enCarriere}
+              <!-- Pas de game over dans cette histoire (HISTOIRE.md) : on
+                   continue même après avoir vu la solution. Ce qui se perd,
+                   ce sont les étoiles, pas la suite du récit. -->
+              <button class="xp-btn primary" onclick={continuerCarriere}>Continuer ▸</button>
+            {:else if game.solved && game.levelIndex < LEVELS.length - 1}
               <button class="xp-btn primary" onclick={() => allerAuNiveau(game.levelIndex + 1)}>
                 Niveau suivant →
               </button>
@@ -895,6 +955,20 @@
 <style>
   .game {
     color: var(--xp-text);
+  }
+  /* Le brief du client passe AVANT la fiche du niveau, et se lit comme une
+     phrase dite : c'est la seule chose de cet écran qui ne soit pas de la
+     documentation. */
+  .commande {
+    margin: 0 0 6px;
+    padding: 6px 8px;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd);
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-in);
+    border-radius: 2px;
+    font-size: var(--xp-size-body);
+    line-height: 1.45;
   }
   .lead {
     font-size: 10px;
