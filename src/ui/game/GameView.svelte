@@ -601,7 +601,13 @@
         <div class="param">
           <p class="consigne">
             {#if ex === 'lequel'}
-              Trois versions du même son. Laquelle est <strong>{game.paramSens === 'plus'
+              <!-- « sonne » et non « est » : les libellés du catalogue portent un
+                   article masculin (« le plus rond », « le plus sec ») tandis que
+                   le sujet, « une version », est féminin — « Laquelle est le plus
+                   rond ? » était fautif sur les sept boutons. « Sonner » prend
+                   l'adjectif en adverbe et accorde tout seul, en plus de mieux
+                   dire ce qu'on écoute. -->
+              Trois versions du même son. Laquelle sonne <strong>{game.paramSens === 'plus'
                 ? descripteur.plus
                 : descripteur.moins}</strong>&nbsp;?
             {:else if ex === 'nommer'}

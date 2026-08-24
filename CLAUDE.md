@@ -140,6 +140,16 @@ replie se lit comme du texte courant. Ça ne se voit pas, ça se **mesure** (hau
 de chaque `.ligne` contre une hauteur de ligne), et ça se corrige en COUPANT la
 ligne, pas en réécrivant le texte.
 
+⚠️ **Le budget de LECTURE avant le premier son est un réglage, et il est
+testé.** Le prologue avait mis sept écrans de texte avant le premier exercice
+(« ça fait beaucoup de texte avant le 1er jeu »). La sortie n'est jamais de
+raccourcir le prologue — il est ce qui rend le reste lisible — mais de
+l'ENTRELACER : le strict nécessaire devant, le reste de l'exposition ENTRE les
+exercices, où il est en plus motivé. Deux tests le tiennent : jamais plus de
+cinq écrans avant le premier exercice, jamais deux lectures empilées entre deux
+exercices. Le nom complet de Sol (**Solange**) n'existe pas dans `HISTOIRE.md` :
+c'est une proposition, à un seul endroit du code.
+
 **Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
 discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
 campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier

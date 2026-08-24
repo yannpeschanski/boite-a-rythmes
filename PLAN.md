@@ -5639,6 +5639,72 @@ suite** sans un échec (c'était le point) · les deux builds · parcours Playwr
 cinq. La réponse reste la même si elle est oui : intercaler un exercice plus
 tôt, pas raccourcir le prologue.
 
+### ✅ Solange, et le prologue entrelacé au jeu (2026-08-24)
+
+Deux retours de Yann, dans le même message : *« sol, il faut rappeler son nom
+bien franchouillard ! »* et *« ça fait en effet beaucoup de texte avant le 1er
+jeu. »*
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/ui/game/GameView.svelte`,
+`tests/carriere.test.ts`.
+
+#### Le nom
+
+⚠️ **`HISTOIRE.md` ne donne aucun nom complet à Sol** — trente-six occurrences,
+toutes « Sol ». **Solange est donc une proposition, pas une reprise**, retenue
+parce que c'est le franchouillard par excellence et le diminutif dont « Sol »
+sort naturellement. Elle apparaît à **un seul endroit**, et un test dit lequel :
+un mot à changer si un autre est préféré.
+
+> Sur les statuts, c'est Solange.
+> Sur les pochettes, ç'a toujours été Sol.
+
+#### Le texte avant le premier jeu : sept écrans → **cinq**
+
+⚠️ **La sortie n'était pas de raccourcir le prologue** — c'est lui qui rend le
+reste lisible, et le couper aurait ramené le « on comprend rien ». C'est de
+l'**entrelacer** : quatre écrans posent le strict nécessaire, puis on joue, et
+ce qui reste d'exposition revient ENTRE les exercices.
+
+| Avant | Après |
+|---|---|
+| Face B · Sol · les sonneries · toi · le 14 juin · le répondeur · Sol | Face B · Sol · le 14 juin · le répondeur |
+| **puis** exercice (8e écran) | **puis** exercice (5e écran) |
+| | l'économie des sonneries · exercice · exercice · … |
+
+Trois choses ont permis la coupe, et aucune n'est une perte :
+
+1. **L'écran « TOI » disparaît en tant qu'écran** — « tu es stagiaire, tu fais
+   le café » tient en deux lignes et prépare directement la réplique qui ouvre
+   le premier exercice. Il rejoint l'écran du répondeur.
+2. **La réplique de bascule vit dans la `commande` de l'exercice**
+   (« — Tu fais quoi exactement ici ? — Le café. — Je sais. Écoute ça. ») au
+   lieu d'un écran à elle : un écran pour quatre lignes de dialogue, c'était une
+   lecture de plus avant le premier son.
+3. **L'économie des sonneries passe APRÈS le premier exercice**, et elle y
+   gagne : on explique les onze centimes à quelqu'un qui vient d'écouter des
+   sons. Une seule ligne reste devant (« le label vit des sonneries »), parce
+   que le message du répondeur parle du sous-traitant « qui fabrique les
+   sonneries » — l'incident ne peut pas tomber dans un métier qu'on n'a pas
+   nommé.
+
+**Deux tests verrouillent le rythme**, parce qu'une propriété de rythme ne se
+voit pas en relisant un fichier : *jamais plus de cinq écrans avant le premier
+exercice*, et *jamais deux lectures empilées entre deux exercices*.
+
+#### Au passage : une faute d'accord sur les sept boutons
+
+« Trois versions du même son. Laquelle **est** *le plus rond* ? » — les libellés
+du catalogue portent un article masculin (« le plus sec », « le plus sourd »)
+tandis que le sujet, *une version*, est féminin. **« Laquelle sonne le plus
+rond »** prend l'adjectif en adverbe, accorde tout seul sur les sept entrées, et
+dit mieux ce qu'on écoute.
+
+**Vérifié :** `check` 0 erreur · **142 tests**, la suite passée cinq fois de
+suite · les deux builds · parcours Playwright à 390×844 : le premier exercice au
+**5e écran**, 27 lignes de récit mesurées et **0 repli**, 0 px de débordement,
+0 erreur console.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
