@@ -5565,6 +5565,80 @@ quatre de lecture d'affilée. Si c'est trop long avant le premier son, la sortie
 est d'intercaler un exercice plus tôt, pas de raccourcir le prologue — c'est lui
 qui rendait le reste lisible.
 
+### ✅ Sol a un écran — et un test a fait tomber un vrai défaut de jeu (2026-08-24)
+
+Deuxième retour de Yann, en cinq mots : *« on ne présente pas Sol ? »*
+
+**Non.** Elle porte presque toutes les répliques du jeu et n'avait qu'une
+demi-phrase — « Sol dirige le label » — glissée dans l'écran qui parle du
+JOUEUR. Et cette demi-phrase, je l'avais ajoutée moi-même : `HISTOIRE.md` ne la
+présente pas davantage, parce qu'un lecteur arrivé là a lu les trente lignes
+précédentes. **Même défaut que le prologue manquant, un cran plus fin** —
+cette fois ce n'était pas le décor qui manquait, c'était le personnage.
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/model/parametres.ts`,
+`src/stores/game.svelte.ts`, `tests/carriere.test.ts`,
+`tests/parametres.test.ts`.
+
+#### L'écran de Sol, et sa place
+
+Elle se présente par ce qu'elle FAIT — les autocollants
+« LE PIRATAGE TUE LA MUSIQUE » du syndicat, dont elle se sert pour caler la
+fenêtre ; la sonnerie de grenouille qui s'est mieux vendue que tout le
+catalogue, et dont elle refuse de parler. Matière prise dans `HISTOIRE.md`, où
+elle dormait.
+
+⚠️ **Et elle passe AVANT l'écran des sonneries, pas après** — parce que cet
+écran-là porte déjà une de ses répliques (« — Sur les trois euros, il nous en
+revient onze centimes »). Placée après, elle parlait avant d'exister. **C'est le
+test qui l'a trouvé**, pas la relecture : écrit pour vérifier qu'elle est
+présentée avant de parler, il a échoué au premier passage et désigné l'écran
+fautif.
+
+#### Trois lignes se repliaient, et ça se mesure
+
+Le récit est écrit en **une idée par ligne** ; une ligne qui se replie casse ce
+rythme et se lit comme du texte courant. Invisible à la lecture, visible en
+mesurant : un script compare la hauteur de chaque `<p class="ligne">` à celle
+d'une ligne seule. **43 lignes mesurées, 3 se repliaient** — corrigées en
+COUPANT plutôt qu'en réécrivant, le texte étant de Yann.
+
+#### ⚠️ Le test instable qui cachait un défaut de jeu
+
+En vérifiant, `npm test` a échoué une fois, puis passé la fois suivante.
+Coupable : `« régler » ne place pas le curseur déjà sur la cible`
+(`tests/parametres.test.ts`, livré avec les verbes de paramètre) — **il échouait
+une fois sur quatre environ**, y compris sur `main`, où un échec veut dire build
+non produit et **déploiement sauté**.
+
+**Ce n'était pas un test à recalibrer, c'était un bug.** « Régler » tirait sa
+cible par `tirerVersions(p, 2).slice(0, 1)` : deux valeurs bien séparées **l'une
+de l'autre**, mais rien ne les séparait du MILIEU de l'étendue, là où le curseur
+du joueur commence. Le niveau était donc parfois **déjà gagné sans toucher au
+curseur**. Le commentaire du store disait pourtant « sinon il serait déjà
+juste » : l'intention était là, la garantie non.
+
+Corrigé par une fonction pure, `tirerCible(p, depart)`, qui applique le principe
+déjà posé pour `tirerVersions` : on tire la **distance** au départ dans
+`[ecartMini, étendue/2]` et le **côté**, au lieu de tirer une valeur et
+d'espérer. Le catalogue le permet toujours — tous les paramètres ont
+`étendue ≥ 2,2 × ecartMini` et `ecartMini > 2 × tolerance`.
+
+Et le test devient ce que `CLAUDE.md` exige : **une assertion par tirage**
+(« la cible n'est JAMAIS dans la tolérance du départ ») au lieu d'une moyenne
+posée à la frontière. Plus un test pur de `tirerCible` sur trois départs — le
+milieu et les deux bords, là où un seul côté est disponible.
+
+**Vérifié :** `check` 0 erreur · **140 tests**, la suite passée **dix fois de
+suite** sans un échec (c'était le point) · les deux builds · parcours Playwright
+à 390×844 : les douze étapes de l'acte 0, 43 lignes de récit mesurées, **0 repli**,
+0 erreur console.
+
+**Écart de portée assumé :** le prologue passe à cinq écrans. La question posée
+à Yann — quatre lectures avant le premier son, est-ce trop ? — devient donc
+cinq. La réponse reste la même si elle est oui : intercaler un exercice plus
+tôt, pas raccourcir le prologue.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

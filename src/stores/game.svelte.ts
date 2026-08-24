@@ -28,6 +28,7 @@ import {
   parametresDe,
   parametre,
   tirerVersions,
+  tirerCible,
   versionQuiRepond,
   justesseDuReglage,
   appliquerParam,
@@ -608,10 +609,13 @@ class GameStore {
       return;
     }
 
-    // « Régler » : une seule version, la cible. Le curseur du joueur part du
-    // MILIEU de l'étendue et non de la cible — sinon il serait déjà juste.
-    this.paramVersions = tirerVersions(p, 2).slice(0, 1);
+    // « Régler » : une seule version, la cible. Le curseur part du MILIEU de
+    // l'étendue, et la cible est tirée LOIN de ce milieu — par construction,
+    // pas en espérant (voir `tirerCible`). L'ancienne version tirait deux
+    // valeurs bien séparées entre elles et gardait la première : rien ne la
+    // séparait du départ, et le niveau était parfois déjà gagné.
     this.paramValeur = Math.round((p.min + p.max) / 2);
+    this.paramVersions = [tirerCible(p, this.paramValeur)];
   }
 
   // Combien de cases actives la ligne attend, et combien sont posées.
