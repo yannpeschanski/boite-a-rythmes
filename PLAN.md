@@ -5504,6 +5504,143 @@ après deux correctifs — `.player` de `GameView` n'avait jamais eu son `tap44-
   téléphone sans déborder, mais l'écran d'exercice garde son bas de page vide.
   Même chantier qu'avant, pas rouvert ici.
 
+### ✅ Le prologue — « on comprend rien », et pourquoi (2026-08-23)
+
+Première impression de Yann sur le Mode carrière livré une heure plus tôt :
+*« 1ère impression : on comprend rien. »*
+
+**La cause n'était ni l'interface ni les exercices.** Relu écran par écran comme
+quelqu'un qui arrive dessus, le premier écran du jeu disait, mot pour mot :
+
+> Le sous-traitant qui fabrique les sonneries arrête. Il a trouvé mieux. Il
+> laisse un dossier et un mot de passe.
+
+C'est-à-dire **la première péripétie d'une histoire dont la mise en place
+n'avait jamais été montrée**. Le joueur ne pouvait pas savoir où il était, qui
+il était, qui était Sol, ce qu'était Face B, ni ce qu'était le 14 juin.
+
+⚠️ **Et tout ça était écrit.** `HISTOIRE.md` consacre **cent quarante lignes**
+à la mise en place avant l'acte 0 — FACE B, « Ce qui fait vivre Face B »,
+« Toi », « Le 14 juin ». Je n'en avais porté **aucune ligne** : j'avais lu le
+document, donc je comprenais l'écran. Le joueur, non.
+
+**La règle à ne pas repayer : ce qui n'a pas été porté n'existe pas.** Un récit
+écrit dans un document et *cité* par le code n'est pas dans le jeu. Le lecteur
+du document comprend ; le joueur juge sur ce qui s'affiche.
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/ui/game/CarriereView.svelte`,
+`src/ui/game/GameView.svelte`, `tests/carriere.test.ts`.
+
+#### Ce qui change
+
+1. **Un prologue de quatre écrans**, porté de `HISTOIRE.md` : le label, son
+   gagne-pain, toi, l'échéance. Il vit dans les étapes de l'acte 0 plutôt que
+   dans une structure à part — curseur, persistance et relecture marchent alors
+   sans un seul cas particulier.
+2. ⚠️ **Le compte à rebours n'apparaît qu'à l'écran qui l'explique.** `J−151`
+   vers une date inconnue n'est pas une tension, c'est un nombre. Il se lève
+   exactement sur l'écran « LE 14 JUIN », et un test lie les deux
+   (`ETAPE_DU_COMPTE_A_REBOURS`) pour qu'ils ne se désynchronisent pas.
+3. **Le carnet des huit actes et les boutons d'en-tête sortent du prologue.**
+   Ils ajoutaient huit titres verrouillés et deux mots non expliqués
+   (« salle de répétition ») à un écran qui n'avait encore rien situé. Le
+   premier écran ne montre plus que ce qu'il peut expliquer : un appareil, un
+   message, un bouton.
+4. **L'écran de pseudo dit enfin ce qu'on va faire** — « apprendre à fabriquer
+   des rythmes à l'oreille » — au lieu de « commencer la campagne ».
+5. **« ✓ Vérifier » est descendu sous la question.** Sur les verbes de
+   paramètre, le transport ne portait que lui : on lisait donc le bouton de
+   validation AVANT la question à laquelle il répond.
+6. **Une consigne annonçait « deux sons » quand l'écran en propose trois.**
+   Corrigée, et un test interdit désormais à toute consigne d'annoncer un
+   nombre de versions — les niveaux 39-41 le tirent.
+
+**Vérifié :** `check` 0 erreur · **137 tests** · les deux builds · parcours
+Playwright à 390×844 : les onze étapes de l'acte 0 lues d'affilée, le décompte
+apparaît bien à l'écran 4 et pas avant, le carnet à l'écran 5, 0 px de
+débordement, 0 erreur console.
+
+**Reste à faire, non traité ici :** l'acte 0 fait maintenant onze étapes, dont
+quatre de lecture d'affilée. Si c'est trop long avant le premier son, la sortie
+est d'intercaler un exercice plus tôt, pas de raccourcir le prologue — c'est lui
+qui rendait le reste lisible.
+
+### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
+
+`CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
+un type central. Fait, et le résultat change le plan : **le comptage
+d'occurrences sous-estime le coût d'un côté et le surestime de l'autre.**
+
+`GameDrumRowName` / `GAME_DRUM_ROWS` : **46 occurrences, 5 fichiers** —
+`stores/game.svelte.ts` (23), `ui/game/GameView.svelte` (8),
+`model/exercises.ts` (7), `model/presets/levels.ts` (6),
+`model/parametres.ts` (2).
+
+#### Ce qui est déjà là, et gratuit
+
+- **Générer une mélodie cible** : `randomizeMelodyMotif` et
+  `randomizePitchedLine` (`engine/generators.ts`) existent, prennent un `rng`
+  injecté, et sont testées (`tests/melody-motif.test.ts`). C'est la partie qu'on
+  croyait chère.
+- **La faire sonner** : `buildGraph` sait déjà rendre une ligne de synthé, en
+  direct comme hors ligne. Rien à écrire.
+- **L'harmonie** : `engine/harmony.ts` (gamme, degrés, accords, `justesseForStep`).
+- **La saisie de notes** : `ui/sequencer/NotePad.svelte`, déjà écrit pour l'Atelier.
+
+#### Ce qui est un renommage mécanique
+
+L'union `GameDrumRowName | SynthRowName` et les `Record<…>` qui la suivent.
+Ennuyeux, sans risque.
+
+#### Le vrai coût — trois choses que le renommage ne touche pas
+
+1. **La case porte une HAUTEUR.** `DrumStep = 0 | 1 | 2` contre
+   `SynthStep = SynthNote | number | null`. `comparerGrilles` compare par `===` :
+   ça marche pour un **degré numérique**, pas pour un objet `SynthNote`. Et
+   `cycleCell` (0→1→2→0) n'a aucun sens sur une note — il faut une seconde
+   interaction de grille dans `GameView`, avec le pad de saisie.
+2. **Une ligne de synthé n'a pas la même FORME.** `DrumRowState.subdiv` contre
+   `SynthRowState.cycleBars` + `subdivisions` ; `buildState` écrit dans
+   `state.rows[…]` et devrait savoir écrire dans `state.synthRows[…]`. Cinq
+   états du store (`target`, `guess`, `locked`, `shift`, `zoneACompleter`)
+   supposent une forme unique.
+3. ⚠️ **Les formes nommées à la main — le coût caché.** `LevelDensity` s'appelle
+   `kickMin`/`kickMax`/`snareMin`/… , `rowsActive` est `{ kick, snare, hat }`,
+   `SubdivSpec` pareil. Ce ne sont **pas** des `Record<Name, …>` : ajouter une
+   ligne s'y fait champ par champ, dans la génération comme dans les 41 niveaux
+   déjà écrits. C'est ce qu'un `grep` sur le nom du type ne montre pas.
+
+#### Ce que ça implique pour l'acte 3, « La mélodie »
+
+Le raccourci existe et il est réel : **les trois verbes de PARAMÈTRE ne
+touchent aucun des trois points ci-dessus** — ils ne comparent pas de grille.
+Ouvrir `parametres.ts` au synthé demande trois choses : `id` accepte aussi une
+clé de `SynthVoice`, `lignes` accepte `SynthRowName`, et `buildState('param')`
+branche sur `state.synthRows`. Petit, et ça se teste sans écran.
+
+Mais un acte « La mélodie » qui n'enseignerait que des boutons de filtre
+n'enseignerait pas la mélodie. D'où la proposition, **en deux temps** :
+
+1. **Les verbes de paramètre sur le synthé** — la moitié bon marché, et elle
+   ouvre le Synthé pour une raison honnête : on a entendu ce que ses boutons
+   font.
+2. **`reproduire` sur une ligne de BASSE monophonique**, dont les cases sont des
+   **degrés numériques** — ce qui laisse `comparerGrilles` intact (le point 1
+   disparaît), n'ajoute qu'une seule ligne (le point 2 se réduit à un
+   aiguillage), et évite la polyphonie de la nappe. La mélodie proprement dite
+   viendra après, sur le même chemin.
+
+#### ⚠️ La contrainte d'ordre, à ne pas oublier
+
+`acteOuvert` exige que l'acte précédent soit franchi. **L'acte 5 « Les styles »
+est le moins cher à écrire — et il est inatteignable tant que les actes 3 et 4
+n'existent pas.** Écrire 5 avant 3 produirait du contenu que personne ne peut
+ouvrir. Trois sorties possibles, à trancher : écrire 3 puis 4 dans l'ordre ;
+autoriser à SAUTER un acte non écrit (le récit reste lisible, son module reste
+fermé) ; ou déplacer l'acte 5 plus tôt, ce que le récit interdit — c'est là que
+les 34 presets servent, « après avoir appris à mixer, avant d'avoir à faire
+quelque chose de personnel ».
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

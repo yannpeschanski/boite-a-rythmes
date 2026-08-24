@@ -103,6 +103,89 @@ export interface Acte {
  */
 const JOURS: Record<ActeId, number> = { 0: 151, 1: 120, 2: 92, 3: 61, 4: 42, 5: 28, 6: 14, 7: 0 };
 
+/* Le PROLOGUE — les quatre écrans qui manquaient, et dont l'absence rendait
+ * tout le reste illisible.
+ *
+ * ⚠️ Retour de Yann sur la première version : *« 1ère impression : on comprend
+ * rien »*. La cause n'était ni l'interface ni les exercices : le jeu s'ouvrait
+ * sur « Le sous-traitant qui fabrique les sonneries arrête », c'est-à-dire sur
+ * la première PÉRIPÉTIE d'une histoire dont la mise en place n'avait jamais été
+ * montrée. Or elle est écrite — `HISTOIRE.md` lui consacre cent quarante lignes
+ * avant l'acte 0 : le label, ce qui le fait vivre, qui tu es, et le 14 juin.
+ * Rien de tout ça n'était dans le jeu.
+ *
+ * La leçon, à ne pas repayer : quand un récit est écrit dans un document et
+ * cité par le code, **ce qui n'a pas été porté n'existe pas**. Le lecteur du
+ * document comprend ; le joueur, non — et c'est lui qui juge.
+ *
+ * Ces quatre écrans vivent dans les étapes de l'acte 0 plutôt que dans une
+ * structure à part : le curseur, la persistance et la relecture marchent alors
+ * sans un seul cas particulier. `LONGUEUR_PROLOGUE` sert seulement à la vue, à
+ * qui il permet de tenir le carnet et le compte à rebours hors de l'écran tant
+ * qu'ils ne veulent encore rien dire.
+ */
+const PROLOGUE: Etape[] = [
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'FACE B',
+    lignes: [
+      'Label indépendant fondé en 1989.',
+      'Quatorze artistes au catalogue.',
+      'Zéro en activité.',
+      'Quatre cent mille disques vendus en 1996.',
+      'Mille huit cents l’an dernier.',
+      'Il reste trois pièces au-dessus d’une laverie.',
+    ],
+  },
+  {
+    kind: 'recit',
+    source: 'fax',
+    entete: 'CE QUI FAIT VIVRE FACE B',
+    lignes: [
+      'Pas les disques. Les sonneries de téléphone.',
+      'Douze secondes, trois euros, par SMS surtaxé.',
+      'TAPEZ FACEB AU 61000.',
+      '— Sur les trois euros, il nous en revient onze centimes.',
+      '— C’est peu.',
+      '— C’est onze centimes de plus qu’un album.',
+    ],
+  },
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'TOI',
+    lignes: [
+      'Tu es stagiaire. Tu fais le café.',
+      'Sol dirige le label. Elle ne connaît pas ton nom,',
+      'parce qu’elle ne l’a jamais demandé.',
+      'Le travail consiste surtout à attendre.',
+    ],
+  },
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'LE 14 JUIN',
+    lignes: [
+      'Une grosse maison propose de racheter Face B.',
+      'Les albums, les droits, les bandes et le nom.',
+      'Sol a jusqu’au 14 juin pour accepter.',
+      '— Je vais vendre.',
+      '— Alors pourquoi on travaille encore ?',
+      '— Parce que je ne vais quand même pas ne rien faire jusqu’en juin.',
+    ],
+  },
+];
+
+/** Combien d'étapes de l'acte 0 sont du prologue. La vue s'en sert pour ne
+ *  montrer le carnet et le compte à rebours qu'une fois qu'ils ont un sens. */
+export const LONGUEUR_PROLOGUE = PROLOGUE.length;
+
+/** L'étape où le 14 juin est expliqué : le compte à rebours apparaît là, et
+ *  pas avant. Un décompte vers une date inconnue n'est pas une tension, c'est
+ *  un nombre. */
+export const ETAPE_DU_COMPTE_A_REBOURS = 3;
+
 export const ACTES: Acte[] = [
   {
     id: 0,
@@ -114,6 +197,7 @@ export const ACTES: Acte[] = [
     module: null,
     resume: 'Le sous-traitant s’en va. Quatre ans de sonneries sont perdus.',
     etapes: [
+      ...PROLOGUE,
       {
         kind: 'recit',
         source: 'repondeur',
@@ -135,15 +219,16 @@ export const ACTES: Acte[] = [
           '— Tu fais quoi exactement ici ?',
           '— Le café.',
           '— Je sais.',
-          'Elle te fait écouter deux sons.',
+          'Elle pose une cassette sur le lecteur.',
+          '— Écoute.',
         ],
       },
       // ⚠️ Ces trois commandes ne nomment PAS le réglage : les niveaux 39-41
       // tirent le leur au hasard dans la famille Timbre. « Lequel est le plus
       // grave ? » — la phrase du texte — mentait une fois sur quatre à l'écran.
       // Une commande ne doit promettre que ce que le tirage tient.
-      { kind: 'exercice', niveau: 39, commande: 'Elle te fait écouter deux sons. — Alors ?' },
-      { kind: 'exercice', niveau: 40, commande: 'Elle en fait écouter deux autres. — Et là, qu’est-ce qui change ?' },
+      { kind: 'exercice', niveau: 39, commande: 'Elle te fait écouter le même son en plusieurs versions. — Alors ?' },
+      { kind: 'exercice', niveau: 40, commande: 'Elle recommence. — Et là, qu’est-ce qui change ?' },
       { kind: 'exercice', niveau: 41, commande: 'Puis un dernier. — Refais-le-moi à l’identique.' },
       {
         kind: 'recit',

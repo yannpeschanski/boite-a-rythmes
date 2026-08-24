@@ -459,7 +459,12 @@
 <div class="game">
   {#if !game.pseudo}
     <XpWindow title="Boîte à rythmes — Mode jeu" icon="🎮" accent="none">
-      <p class="lead">Choisis ton pseudo pour commencer la campagne.</p>
+      <p class="lead">
+        Tu vas apprendre à fabriquer des rythmes <strong>à l’oreille</strong>, dans un petit label de
+        disques qui a cinq mois devant lui. Huit actes, des exercices courts, et l’Atelier qui
+        s’ouvre en chemin.
+      </p>
+      <p class="lead">Choisis un pseudo — c’est là que ta progression sera rangée.</p>
       <form
         class="pseudo-form"
         onsubmit={(e) => {
@@ -541,12 +546,15 @@
       <!-- Le transport dit ce que le VERBE demande d'écouter : les quatre
            mesures pour l'intrus, la boucle à suivre pour « jouer », la cible et
            sa propre version pour les deux exercices de grille. -->
+      <!-- ⚠️ Pas de transport pour les verbes de PARAMÈTRE, et c'est un
+           correctif de lisibilité : il n'y portait que « ✓ Vérifier », donc il
+           affichait le bouton de validation AVANT la question à laquelle il
+           répond. On lisait « Vérifier » puis « Laquelle est la plus… ? ».
+           Le bouton est descendu dans le corps de l'exercice, sous les
+           réponses. -->
+      {#if ex !== 'lequel' && ex !== 'nommer' && ex !== 'regler'}
       <div class="transport">
-        {#if ex === 'lequel' || ex === 'nommer' || ex === 'regler'}
-          <!-- Rien à écouter « en entier » ici : on compare des versions, et
-               chacune a son bouton dans le corps de l'exercice. Le transport ne
-               garde donc que la validation. -->
-        {:else if ex === 'intrus'}
+        {#if ex === 'intrus'}
           <button class="xp-btn" onclick={() => play('intrus')}>
             {playingWhat === 'intrus' ? '■ Stop' : '🔊 Écouter les 4 mesures'}
           </button>
@@ -577,15 +585,13 @@
         {/if}
         <button
           class="xp-btn primary"
-          disabled={game.solved ||
-            game.revealed ||
-            (ex === 'intrus' && game.intrusChoix === null) ||
-            ((ex === 'lequel' || ex === 'nommer') && game.paramChoix === null)}
+          disabled={game.solved || game.revealed || (ex === 'intrus' && game.intrusChoix === null)}
           onclick={verify}
         >
           ✓ Vérifier
         </button>
       </div>
+      {/if}
 
       {#if echec && !game.solved && !game.revealed}
         <p class="echec">✗ {MSG_ECHEC[ex]}</p>
@@ -681,6 +687,16 @@
               </p>
             {/if}
           {/if}
+
+          <div class="valider">
+            <button
+              class="xp-btn primary tap44-y"
+              disabled={game.solved || game.revealed || (ex !== 'regler' && game.paramChoix === null)}
+              onclick={verify}
+            >
+              ✓ Vérifier
+            </button>
+          </div>
         </div>
       {:else if ex === 'intrus'}
         <!-- Aucune grille : l'exercice n'a rien à manipuler. Quatre boutons,
@@ -955,6 +971,9 @@
 <style>
   .game {
     color: var(--xp-text);
+  }
+  .valider {
+    margin-top: 10px;
   }
   /* Le brief du client passe AVANT la fiche du niveau, et se lit comme une
      phrase dite : c'est la seule chose de cet écran qui ne soit pas de la

@@ -121,6 +121,16 @@ Une commande d'acte ne doit **promettre que ce que le tirage tient** : les
 niveaux 39-41 tirent leur bouton au hasard, une consigne qui le nomme ment une
 fois sur quatre.
 
+⚠️ **Ce qui n'a pas été porté n'existe pas.** `HISTOIRE.md` consacre cent
+quarante lignes à la mise en place AVANT l'acte 0 ; la première version du Mode
+carrière n'en portait aucune et s'ouvrait sur la première péripétie — verdict de
+Yann : « on comprend rien ». Un récit écrit dans un document et *cité* par le
+code n'est pas dans le jeu : celui qui a lu le document comprend l'écran, le
+joueur juge sur ce qui s'affiche. Corollaire de mise en scène : **un élément
+n'apparaît qu'à l'écran qui l'explique** — le compte à rebours se lève sur
+l'écran « LE 14 JUIN », le carnet des actes après le prologue, et le premier
+écran ne montre qu'un appareil, un message, un bouton.
+
 **Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
 discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
 campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier

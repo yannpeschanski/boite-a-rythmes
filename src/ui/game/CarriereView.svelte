@@ -17,7 +17,14 @@
    * c'est le budget du label. Face B n'a rien racheté depuis les bonnes années.
    */
   import { game } from '../../stores/game.svelte';
-  import { ACTES, NB_ACTES, acteAVenir, type Acte } from '../../model/carriere';
+  import {
+    ACTES,
+    NB_ACTES,
+    acteAVenir,
+    LONGUEUR_PROLOGUE,
+    ETAPE_DU_COMPTE_A_REBOURS,
+    type Acte,
+  } from '../../model/carriere';
   import XpWindow from '../xp/XpWindow.svelte';
 
   let {
@@ -79,6 +86,24 @@
      l'intérieur d'un acte, sinon un acte de sept étapes se lit comme une
      boucle. */
   const position = $derived(`${game.etapeActive + 1}/${acte.etapes.length}`);
+
+  /* ⚠️ Le premier écran ne doit montrer QUE ce qu'il peut expliquer.
+   *
+   * Première version : le carnet des huit actes et le compte à rebours
+   * s'affichaient dès l'arrivée, sous un message de répondeur qui n'avait
+   * encore rien situé. Huit titres verrouillés, un « J−151 » vers une date
+   * inconnue, et une colonne de mots (ÉCOUTE, RYTHME, GROOVE…) dont rien ne
+   * disait ce qu'ils étaient. Trois inconnues de plus à la première seconde.
+   *
+   * Ils reviennent au moment où ils veulent dire quelque chose : le décompte
+   * quand le 14 juin est expliqué, le carnet quand le prologue est passé. */
+  const enPrologue = $derived(
+    game.progresCarriere.acte === 0 && game.progresCarriere.etape < LONGUEUR_PROLOGUE,
+  );
+  const montrerCompteARebours = $derived(
+    !enPrologue || game.etapeActive >= ETAPE_DU_COMPTE_A_REBOURS || game.acteActif > 0,
+  );
+  const montrerCarnet = $derived(!enPrologue);
 </script>
 
 <XpWindow title="Face B — Mode carrière" icon="📼" accent="none">
@@ -86,20 +111,24 @@
     <button class="player tap44-y" onclick={() => game.clearPseudo()} title="Changer de joueur">
       👤 {game.pseudo}
     </button>
-    <button class="xp-btn tiny tap44-y" onclick={onRepetition}>🗺️ Salle de répétition</button>
-    <button class="xp-btn tiny tap44-y" onclick={() => game.reprendreCarriere()} disabled={game.carriereEnAttente}>
-      ↺ Reprendre
-    </button>
+    {#if !enPrologue}
+      <button class="xp-btn tiny tap44-y" onclick={onRepetition}>🗺️ Salle de répétition</button>
+      <button class="xp-btn tiny tap44-y" onclick={() => game.reprendreCarriere()} disabled={game.carriereEnAttente}>
+        ↺ Reprendre
+      </button>
+    {/if}
   </div>
 
   <!-- Le compte à rebours est affiché en permanence, du premier écran au
        dernier : c'est lui qui donne une échéance à tout le reste. Aucune année
        ne s'affiche jamais — les objets datent l'histoire, pas un millésime. -->
-  <div class="lcd">
-    <span>14 JUIN</span>
-    <span class="gros">J−{acte.jours}</span>
-    <span class="dim">{acte.quand}</span>
-  </div>
+  {#if montrerCompteARebours}
+    <div class="lcd">
+      <span>14 JUIN</span>
+      <span class="gros">J−{acte.jours}</span>
+      <span class="dim">{acte.quand}</span>
+    </div>
+  {/if}
 
   {#if fini}
     <!-- Fin d'acte : la compétence, et le module que le récit vient d'ouvrir.
@@ -139,7 +168,7 @@
       {/each}
     </div>
     <div class="actions">
-      <span class="position">Acte {acte.id} · {position}</span>
+      <span class="position">{enPrologue ? position : `Acte ${acte.id} · ${position}`}</span>
       <button class="xp-btn primary tap44-y" onclick={suite}>Suite ▸</button>
     </div>
   {:else if etape}
@@ -158,7 +187,8 @@
   <!-- Le carnet : les huit actes, comme une playlist. Un acte terminé se
        relit ; le curseur enregistré, lui, ne recule jamais (voir le store) —
        relire l'acte 1 ne referme pas l'Atelier. -->
-  <ol class="carnet">
+  {#if montrerCarnet}
+    <ol class="carnet">
     {#each ACTES as a (a.id)}
       {@const ouvert = game.acteOuvert(a.id)}
       {@const fait = game.acteFait(a.id)}
@@ -178,11 +208,14 @@
         </button>
       </li>
     {/each}
-  </ol>
-  <p class="pied">
-    {game.progresCarriere.acte >= NB_ACTES ? 'Carrière terminée.' : `Acte ${Math.min(game.progresCarriere.acte, NB_ACTES - 1)} sur ${NB_ACTES - 1}`}
-    · les niveaux restent jouables à part, en salle de répétition.
-  </p>
+    </ol>
+    <p class="pied">
+      {game.progresCarriere.acte >= NB_ACTES
+        ? 'Carrière terminée.'
+        : `Acte ${Math.min(game.progresCarriere.acte, NB_ACTES - 1)} sur ${NB_ACTES - 1}`}
+      · la <strong>salle de répétition</strong>, c’est les {41} niveaux d’entraînement, jouables à part.
+    </p>
+  {/if}
 </XpWindow>
 
 <style>
@@ -256,8 +289,14 @@
     padding-bottom: 5px;
     margin-bottom: 7px;
   }
+  /* Le SUJET du message (« FACE B », « LE 14 JUIN ») est ce qu'on doit lire en
+     premier ; le nom de l'appareil n'est que le meuble. La première version
+     avait l'inverse — l'étiquette utile en vert éteint, à droite. */
   .entete .tag {
     margin-left: auto;
+    color: var(--xp-lcd);
+  }
+  .entete .icone + span {
     color: var(--xp-lcd-dim);
   }
   .ligne {
