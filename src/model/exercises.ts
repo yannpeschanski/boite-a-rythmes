@@ -54,7 +54,11 @@ export type ExerciseKind =
   | 'jouer'
   | 'lequel'
   | 'nommer'
-  | 'regler';
+  | 'regler'
+  /* Le verbe de HAUTEUR : reposer une ligne de basse à l'oreille, degré par
+   * degré. C'est le seul qui sorte de la batterie — voir `melodie` dans
+   * `GameLevel` et la grille de `GameView`. */
+  | 'melodie';
 
 /** Les verbes qui portent sur un paramètre continu plutôt que sur la grille. */
 export const VERBES_PARAM: ExerciseKind[] = ['lequel', 'nommer', 'regler'];
@@ -71,16 +75,28 @@ export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   lequel: 'Lequel est le plus… ?',
   nommer: 'Qu’est-ce qui a changé ?',
   regler: 'Règle-le à l’oreille',
+  melodie: 'Repose la mélodie',
 };
 
-export type Grille = Record<GameDrumRowName, DrumStep[]>;
-export type Rafales = Record<GameDrumRowName, number[]>;
+/* ⚠️ Les cases portent un NOMBRE, pas un `DrumStep`.
+ *
+ * Une case de batterie vaut 0, 1 ou 2 (vide, coup, variante) ; une case de
+ * mélodie porte un DEGRÉ de la gamme, 0 pour le silence et 1 à 7 pour les
+ * notes. Le comparateur, lui, ne fait que des `===` : il n'a jamais eu besoin
+ * de savoir ce que le nombre veut dire.
+ *
+ * Généraliser le type plutôt qu'écrire un second comparateur est une règle du
+ * projet, et elle vaut ici plus qu'ailleurs : deux comparateurs qui doivent
+ * rester d'accord finissent toujours par ne plus l'être. Le paramètre de nom de
+ * ligne suit la même logique — la mélodie a sa propre ligne, `bass`. */
+export type Grille<N extends string = GameDrumRowName> = Record<N, number[]>;
+export type Rafales<N extends string = GameDrumRowName> = Record<N, number[]>;
 
-export interface ResultatComparaison {
+export interface ResultatComparaison<N extends string = GameDrumRowName> {
   /** Vrai si chaque case comparée est exacte. */
   exact: boolean;
   /** Les cases exactes ET actives, à verrouiller côté store. */
-  aVerrouiller: Array<{ row: GameDrumRowName; col: number }>;
+  aVerrouiller: Array<{ row: N; col: number }>;
 }
 
 /* Compare la proposition à la cible, case à case.
@@ -95,16 +111,16 @@ export interface ResultatComparaison {
  * et deux comparateurs qui doivent rester d'accord finissent toujours par ne
  * plus l'être.
  */
-export function comparerGrilles(
-  cible: Grille,
-  cibleRafales: Rafales,
-  proposition: Grille,
-  propositionRafales: Rafales,
-  lignes: GameDrumRowName[],
-  colonnes?: Partial<Record<GameDrumRowName, number[]>>,
-): ResultatComparaison {
+export function comparerGrilles<N extends string = GameDrumRowName>(
+  cible: Grille<N>,
+  cibleRafales: Rafales<N>,
+  proposition: Grille<N>,
+  propositionRafales: Rafales<N>,
+  lignes: N[],
+  colonnes?: Partial<Record<N, number[]>>,
+): ResultatComparaison<N> {
   let exact = true;
-  const aVerrouiller: Array<{ row: GameDrumRowName; col: number }> = [];
+  const aVerrouiller: Array<{ row: N; col: number }> = [];
   for (const row of lignes) {
     const indices = colonnes?.[row] ?? cible[row].map((_, i) => i);
     for (const col of indices) {

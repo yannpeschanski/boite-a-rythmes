@@ -231,6 +231,23 @@ class GameStore {
     return p ? pourLigne(p, this.paramLigne) : null;
   }
 
+  /* ---- État du verbe `melodie` ----------------------------------------
+   *
+   * Une ligne de BASSE monophonique : une case par pas, portant un DEGRÉ de la
+   * gamme — 0 pour le silence, 1 à 7 pour les notes. Volontairement pas une
+   * `Grid` de batterie : ce n'est ni la même forme (une seule ligne), ni la
+   * même sémantique (une hauteur, pas un coup). Le COMPARATEUR, lui, est le
+   * même — il ne fait que des `===`. */
+  melodieCible = $state<number[]>([]);
+  melodieGuess = $state<number[]>([]);
+  melodieLocked = $state<boolean[]>([]);
+  /** Rafales factices : la mélodie n'en a pas, mais `comparerGrilles` en attend
+   *  des deux côtés. Le même tableau sert aux deux, donc elles coïncident
+   *  toujours et ne pèsent jamais sur la comparaison. */
+  private get melodieRafales(): number[] {
+    return new Array(this.melodieCible.length).fill(1);
+  }
+
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
 
@@ -584,6 +601,11 @@ class GameStore {
       return;
     }
 
+    if (this.level.exercise === 'melodie') {
+      this.preparerMelodie();
+      return;
+    }
+
     if (this.level.exercise === 'jouer') {
       /* Plancher de deux coups.
        *
@@ -617,6 +639,51 @@ class GameStore {
    * bouton visé. Un motif tiré au hasard rendrait la comparaison impossible —
    * on ne saurait plus si ce qu'on entend vient du réglage ou de la grille.
    */
+  /* Tire la ligne de basse à retrouver.
+   *
+   * Trois choix qui sont de la conception, pas de l'arithmétique :
+   *
+   * - **la tonique tombe toujours sur le premier pas.** Sans point de départ,
+   *   aucun degré ne peut être situé à l'oreille : on entendrait des intervalles
+   *   sans savoir par rapport à quoi. C'est le degré 1, et c'est ce que le
+   *   préambule du niveau 44 dit au joueur.
+   * - **une note par pas au plus**, jamais d'accord : monophonique, donc une
+   *   case = une hauteur, donc `comparerGrilles` s'applique tel quel.
+   * - **le motif** (niveau 43) recopie la première moitié dans la seconde. La
+   *   phrase à trouver est deux fois plus courte, et ce qu'on apprend est
+   *   qu'une mélodie REVIENT — « les motifs, la répétition » de l'acte 3.
+   */
+  private preparerMelodie(): void {
+    const m = this.level.melodie;
+    const pas = Math.max(2, m.pas);
+    const utiles = m.motif ? Math.max(1, Math.floor(pas / 2)) : pas;
+    const cible = new Array<number>(pas).fill(0);
+    cible[0] = 1;
+    const voulu = m.notesMin + Math.floor(Math.random() * (m.notesMax - m.notesMin + 1));
+    // Jamais plus de notes que de pas disponibles : sinon la boucle de tirage
+    // ci-dessous n'aurait plus de case libre à trouver.
+    const combien = Math.min(Math.max(1, voulu), utiles);
+    let posees = 1;
+    let garde = 0;
+    while (posees < combien && garde++ < 500) {
+      const i = 1 + Math.floor(Math.random() * (utiles - 1 || 1));
+      if (i >= utiles || cible[i]) continue;
+      cible[i] = 1 + Math.floor(Math.random() * m.degreMax);
+      posees++;
+    }
+    if (m.motif) for (let i = utiles; i < pas; i++) cible[i] = cible[i - utiles];
+    this.melodieCible = cible;
+    this.melodieGuess = new Array<number>(pas).fill(0);
+    this.melodieLocked = new Array<boolean>(pas).fill(false);
+  }
+
+  /** Poser (ou retirer) une note. Cliquer le degré déjà posé l'efface : c'est
+   *  le même geste que la case de batterie, qui s'éteint en la recliquant. */
+  poserNote(pas: number, degre: number): void {
+    if (this.solved || this.revealed || this.melodieLocked[pas]) return;
+    this.melodieGuess[pas] = this.melodieGuess[pas] === degre ? 0 : degre;
+  }
+
   private preparerParametre(): void {
     const famille = this.level.familleParam;
     // Seuls les boutons qui s'entendent sur au moins une ligne du Mode jeu.
@@ -732,6 +799,22 @@ class GameStore {
       }
       if (juste) this.win();
       return juste;
+    }
+
+    /* La mélodie compare UNE ligne, avec le même comparateur que la batterie —
+     * seul le sens des nombres change (un degré au lieu d'un coup). */
+    if (this.level.exercise === 'melodie') {
+      const rafales = this.melodieRafales;
+      const r = comparerGrilles<'bass'>(
+        { bass: this.melodieCible },
+        { bass: rafales },
+        { bass: this.melodieGuess },
+        { bass: rafales },
+        ['bass'],
+      );
+      r.aVerrouiller.forEach(({ col }) => (this.melodieLocked[col] = true));
+      if (r.exact) this.win();
+      return r.exact;
     }
 
     // « Intrus » ne compare pas de grille : la réponse est un index.
@@ -963,6 +1046,26 @@ class GameStore {
             : (this.paramVersions[this.paramVersionJouee] ?? this.paramVersions[0]);
         appliquerParam(state.rows[this.paramLigne], p, valeur);
       }
+      return state;
+    }
+
+    /* La mélodie ne sonne pas sur la batterie : une seule ligne de BASSE, tout
+     * le reste au repos. Les degrés deviennent ici des `SynthNote` — c'est le
+     * seul endroit où la traduction a lieu, le jeu ne manipule que des
+     * nombres. L'octave est fixée à 0 : monophonique et sur un seul registre,
+     * sans quoi deux hauteurs à l'octave seraient « la même note » à l'oreille
+     * et deux réponses différentes à l'écran. */
+    if (this.level.exercise === 'melodie') {
+      const degres = which === 'guess' ? this.melodieGuess : this.melodieCible;
+      GAME_DRUM_ROWS.forEach((n) => (state.rows[n].muted = true));
+      state.synthRows.pad.muted = true;
+      state.synthRows.melody.muted = true;
+      const row = state.synthRows.bass;
+      row.muted = false;
+      row.cycleBars = 1;
+      row.subdivisions = Math.max(1, degres.length);
+      row.pattern = degres.map((d) => (d > 0 ? { degree: d, octave: 0 } : null));
+      row.rolls = new Array(degres.length).fill(1);
       return state;
     }
 

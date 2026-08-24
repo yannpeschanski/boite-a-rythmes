@@ -42,10 +42,14 @@
   // dans l'Atelier (AtelierView.svelte) — sans cette boucle, aucune case ne
   // s'illumine pendant la lecture et il est impossible de suivre le rythme.
   let playhead = $state<Record<GameDrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
+  /* La basse a son propre curseur : elle ne fait pas partie des trois lignes de
+     batterie, et `PlayheadEvent.name` couvre déjà les lignes de synthé. */
+  let playheadBass = $state(-1);
   let raf = 0;
   function loop() {
     for (const ev of engine.consumePlayhead()) {
       if (ev.name in playhead) playhead[ev.name as GameDrumRowName] = ev.col;
+      if (ev.name === 'bass') playheadBass = ev.col;
       // Repère temporel du pas courant du kick : c'est contre lui que se
       // mesure l'écart d'une frappe.
       if (ev.name === 'kick' && ev.col !== dernierKickVu && game.target.kick[ev.col] > 0) {
@@ -61,6 +65,7 @@
   }
   function resetPlayhead() {
     playhead = { kick: -1, snare: -1, hat: -1 };
+    playheadBass = -1;
     // Oublier l'ancre avec le curseur : sans ça, la première frappe du tour
     // suivant se mesurerait contre un repère vieux de plusieurs secondes.
     dernierKickVu = -1;
@@ -197,6 +202,7 @@
   // examinée. Sans ce drapeau, cliquer sur ✓ Vérifier semble ne rien faire.
   let echec = $state(false);
   const MSG_ECHEC: Record<ExerciseKind, string> = {
+    melodie: 'Pas encore. Les notes justes sont verrouillées ✓ — reprends les autres.',
     reproduire: 'Pas encore. Les cases justes sont verrouillées ✓ — reprends les autres.',
     completer: 'Pas encore. Les cases justes du temps manquant sont verrouillées ✓.',
     intrus: 'Ce n’est pas celle-là. Réécoute les quatre mesures.',
@@ -374,6 +380,13 @@
   }
   const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
 
+  /* Les degrés, du plus HAUT en haut — comme sur une portée, et comme sur le
+     pad de l'Atelier. Une grille de hauteurs qui monterait vers le bas
+     demanderait de retourner ce qu'on entend avant de le poser. */
+  const degres = $derived(
+    Array.from({ length: lvl.melodie.degreMax }, (_, i) => lvl.melodie.degreMax - i),
+  );
+
   // La mesure à remplir, en Set : la grille interroge l'appartenance à chaque
   // case, et un `includes` sur un tableau le referait à chaque rendu.
   const zone = $derived.by(() => {
@@ -535,19 +548,26 @@
               ? '■ Stop'
               : ex === 'completer'
                 ? '🔊 Écouter la boucle entière'
-                : '🔊 Écouter le rythme à trouver'}
+                : ex === 'melodie'
+                  ? '🔊 Écouter la basse'
+                  : '🔊 Écouter le rythme à trouver'}
           </button>
           <button class="xp-btn" onclick={() => play('guess')}>
             {playingWhat === 'guess' ? '■ Stop' : '🎧 Écouter ma version'}
           </button>
         {/if}
-        <button
-          class="xp-btn primary"
-          disabled={game.solved || game.revealed || (ex === 'intrus' && game.intrusChoix === null)}
-          onclick={verify}
-        >
-          ✓ Vérifier
-        </button>
+        {#if ex !== 'melodie'}
+          <!-- ⚠️ Pas de « Vérifier » ici pour la mélodie : le transport est
+               au-dessus de la grille, et on lirait le bouton de validation
+               avant ce qu'il valide. Il est repris sous le rouleau. -->
+          <button
+            class="xp-btn primary"
+            disabled={game.solved || game.revealed || (ex === 'intrus' && game.intrusChoix === null)}
+            onclick={verify}
+          >
+            ✓ Vérifier
+          </button>
+        {/if}
       </div>
       {/if}
 
@@ -686,6 +706,61 @@
               </button>
             {/each}
           </div>
+        </div>
+      {:else if ex === 'melodie'}
+        <!-- La grille de HAUTEURS : un rouleau, degrés en ordonnée, pas en
+             abscisse. Monophonique — une seule note par colonne, donc poser
+             un degré remplace celui qui s'y trouvait. C'est ce qui permet à
+             une case de porter un nombre et au comparateur de rester le même
+             que pour la batterie. -->
+        <div class="melodie" style:--pas={game.melodieCible.length}>
+          {#each degres as d (d)}
+            <div class="mel-ligne">
+              <span class="mel-degre">{d}</span>
+              {#each game.melodieCible as _, col (col)}
+                {@const pose = game.melodieGuess[col] === d}
+                {@const cible = game.melodieCible[col] === d}
+                {@const verrou = game.melodieLocked[col] && cible}
+                <button
+                  class="mel-case"
+                  class:pose
+                  class:verrou
+                  class:revelee={(game.solved || game.revealed) && cible && !pose}
+                  class:playing={playheadBass === col}
+                  class:win-flash={winFlash}
+                  aria-label="Degré {d}, pas {col + 1}"
+                  onclick={() => {
+                    game.poserNote(col, d);
+                    echec = false;
+                  }}
+                >
+                  {#if verrou}<span class="mark">✓</span>
+                  {:else if (game.solved || game.revealed) && cible}<span class="mark">○</span>{/if}
+                </button>
+              {/each}
+            </div>
+          {/each}
+          <div class="mel-ligne mel-pieds">
+            <span class="mel-degre"></span>
+            {#each game.melodieCible as _, col (col)}
+              <span class="mel-pas" class:fort={col % 4 === 0}>{col + 1}</span>
+            {/each}
+          </div>
+        </div>
+        {@const posees = game.melodieGuess.filter((v) => v > 0).length}
+        {@const attendues = game.melodieCible.filter((v) => v > 0).length}
+        <p class="muted">
+          {posees} note{posees > 1 ? 's' : ''} posée{posees > 1 ? 's' : ''} sur {attendues} · le degré
+          1 est la tonique, celui sur lequel la phrase se repose.
+        </p>
+        <div class="valider">
+          <button
+            class="xp-btn primary tap44-y"
+            disabled={game.solved || game.revealed}
+            onclick={verify}
+          >
+            ✓ Vérifier
+          </button>
         </div>
       {:else if ex === 'jouer' && calibrage}
         <!-- Calibrage : un métronome nu, et on compare les frappes aux temps
@@ -892,6 +967,66 @@
   .game {
     color: var(--xp-text);
   }
+  /* Le rouleau de hauteurs. Même grammaire que la grille de batterie — cases
+     creusées, biseau d'un pixel, vert d'afficheur quand c'est allumé — mais en
+     deux dimensions : le temps en abscisse, la hauteur en ordonnée. */
+  .melodie {
+    margin: 8px 0 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mel-ligne {
+    display: grid;
+    grid-template-columns: 16px repeat(var(--pas, 8), 1fr);
+    gap: 2px;
+    align-items: center;
+  }
+  .mel-degre {
+    font-size: var(--xp-size-tag);
+    color: var(--xp-muted);
+    text-align: right;
+    padding-right: 2px;
+  }
+  .mel-case {
+    aspect-ratio: 1;
+    min-height: 22px;
+    background: var(--xp-lcd-bg);
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-in);
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 0;
+    color: var(--xp-lcd);
+    font: inherit;
+    font-size: var(--xp-size-tag);
+  }
+  .mel-case.playing {
+    border-color: var(--xp-lcd-dim);
+  }
+  .mel-case.pose {
+    background: var(--xp-lcd);
+    box-shadow: var(--xp-bevel-out);
+  }
+  .mel-case.verrou {
+    background: var(--xp-lcd);
+    color: var(--xp-lcd-bg);
+  }
+  .mel-case.revelee {
+    background: #123018;
+  }
+  .mel-case.win-flash.pose {
+    background: #7dffa0;
+  }
+  .mel-pieds .mel-pas {
+    font-size: var(--xp-size-tag);
+    color: var(--xp-lcd-dim);
+    text-align: center;
+  }
+  .mel-pieds .mel-pas.fort {
+    color: var(--xp-muted);
+  }
+
   .valider {
     margin-top: 10px;
   }

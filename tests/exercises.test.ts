@@ -239,3 +239,74 @@ describe('les niveaux', () => {
     expect(verbes.has('jouer')).toBe(true);
   });
 });
+
+/* Le verbe `melodie` — une ligne de basse tirée puis comparée.
+ *
+ * ⚠️ La génération passe par `Math.random()` : on affirme ce qui doit être vrai
+ * à CHAQUE tirage, et on répète.
+ */
+describe('melodie — la basse tirée tient ses promesses', () => {
+  const TIRAGES = 60;
+
+  it('commence toujours sur la tonique, et ne sort jamais de la gamme', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    for (const id of [42, 43, 44]) {
+      const i = L.findIndex((l) => l.id === id);
+      const m = L[i].melodie;
+      for (let n = 0; n < TIRAGES; n++) {
+        game.startLevel(i);
+        expect(game.melodieCible.length, `niveau ${id}`).toBe(m.pas);
+        // Sans point de départ, aucun degré ne se situe à l'oreille.
+        expect(game.melodieCible[0], `niveau ${id}`).toBe(1);
+        for (const d of game.melodieCible) {
+          expect(d, `niveau ${id}`).toBeGreaterThanOrEqual(0);
+          expect(d, `niveau ${id}`).toBeLessThanOrEqual(m.degreMax);
+        }
+        // Et il y a toujours quelque chose à trouver au-delà de la tonique.
+        expect(game.melodieCible.filter((d) => d > 0).length, `niveau ${id}`).toBeGreaterThan(1);
+      }
+    }
+  });
+
+  it('répète vraiment la première moitié quand le niveau le promet', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const i = L.findIndex((l) => l.id === 43);
+    const moitie = L[i].melodie.pas / 2;
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      const c = game.melodieCible;
+      expect(c.slice(moitie)).toEqual(c.slice(0, moitie));
+    }
+  });
+
+  // La grille de proposition part vide, et seul le comparateur la verrouille.
+  it('part d’une grille vide et se valide case par case', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.startLevel(L.findIndex((l) => l.id === 42));
+    expect(game.melodieGuess.every((v) => v === 0)).toBe(true);
+    expect(game.melodieLocked.every((v) => !v)).toBe(true);
+
+    // Une seule note juste : la vérification échoue mais verrouille la case.
+    const premier = game.melodieCible.findIndex((d) => d > 0);
+    game.poserNote(premier, game.melodieCible[premier]);
+    expect(game.verify()).toBe(false);
+    expect(game.melodieLocked[premier]).toBe(true);
+
+    // Toutes les notes : c'est gagné.
+    game.melodieCible.forEach((d, i) => d > 0 && game.poserNote(i, d));
+    expect(game.verify()).toBe(true);
+  });
+
+  it('reclique un degré déjà posé pour l’effacer, et respecte le verrou', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.startLevel(L.findIndex((l) => l.id === 44));
+    game.poserNote(3, 4);
+    expect(game.melodieGuess[3]).toBe(4);
+    game.poserNote(3, 4);
+    expect(game.melodieGuess[3]).toBe(0);
+    // Monophonique : poser un autre degré remplace, il n'y a jamais d'accord.
+    game.poserNote(3, 2);
+    game.poserNote(3, 6);
+    expect(game.melodieGuess[3]).toBe(6);
+  });
+});
