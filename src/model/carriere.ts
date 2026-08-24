@@ -124,6 +124,27 @@ const JOURS: Record<ActeId, number> = { 0: 151, 1: 120, 2: 92, 3: 61, 4: 42, 5: 
  * qui il permet de tenir le carnet et le compte à rebours hors de l'écran tant
  * qu'ils ne veulent encore rien dire.
  */
+/* Le PROLOGUE — la mise en place, et sa LONGUEUR est un réglage à part entière.
+ *
+ * ⚠️ Deux retours de Yann l'ont façonné, dans cet ordre :
+ *
+ * 1. *« 1ère impression : on comprend rien »* — le jeu s'ouvrait sur la
+ *    première péripétie sans avoir jamais montré la mise en place, pourtant
+ *    écrite sur cent quarante lignes dans `HISTOIRE.md`. Ce qui n'a pas été
+ *    porté n'existe pas : celui qui a lu le document comprend l'écran, le
+ *    joueur juge sur ce qui s'affiche.
+ * 2. *« ça fait en effet beaucoup de texte avant le 1er jeu »* — la première
+ *    correction avait mis SEPT écrans de lecture avant le premier son.
+ *
+ * La sortie n'était pas de raccourcir le prologue (c'est lui qui rend le reste
+ * lisible) mais de l'ENTRELACER : quatre écrans posent le strict nécessaire —
+ * le label, Sol, l'échéance, l'incident — puis on joue. Ce qui reste
+ * d'exposition (l'économie des sonneries, la première paie) revient ENTRE les
+ * exercices, où il est en plus motivé : on explique les onze centimes après
+ * avoir écouté des sons, pas avant.
+ *
+ * Le premier exercice tombe donc au 5e écran au lieu du 8e.
+ */
 const PROLOGUE: Etape[] = [
   {
     kind: 'recit',
@@ -136,63 +157,45 @@ const PROLOGUE: Etape[] = [
       'Quatre cent mille disques vendus en 1996.',
       'Mille huit cents l’an dernier.',
       'Il reste trois pièces au-dessus d’une laverie.',
+      // Le mot « sonneries » doit être posé AVANT le message du répondeur, qui
+      // parle du sous-traitant « qui fabrique les sonneries » : sinon l'incident
+      // arrive dans un métier qu'on n'a pas encore nommé. Les chiffres, eux,
+      // attendent l'écran d'après le premier exercice.
+      'Le label ne vit plus des disques. Il vit des sonneries.',
     ],
   },
-  /* ⚠️ Sol a son écran, et il a fallu un second retour pour qu'elle l'ait :
+  /* ⚠️ Sol a son écran, et il a fallu un retour pour qu'elle l'ait :
    * *« on ne présente pas Sol ? »*. Elle dit presque toutes les répliques du
    * jeu et n'avait qu'une demi-phrase — « Sol dirige le label » — glissée dans
-   * l'écran qui parle du JOUEUR. Même défaut que le prologue manquant, un cran
-   * plus fin : `HISTOIRE.md` ne la présente pas davantage, parce qu'un lecteur
-   * qui a lu les trente lignes précédentes sait déjà qui elle est.
+   * l'écran qui parlait du JOUEUR. Même défaut que le prologue manquant, un
+   * cran plus fin : `HISTOIRE.md` ne la présente pas davantage, parce qu'un
+   * lecteur arrivé là a lu les trente lignes précédentes.
    *
    * Elle se présente par ce qu'elle FAIT, jamais par une description — c'est la
-   * règle de style du récit, et c'est aussi ce qui la rend drôle.
+   * règle de style du récit, et c'est ce qui la rend drôle.
    *
-   * ⚠️ Et elle passe AVANT l'écran des sonneries, pas après : cet écran-là
-   * porte déjà une de ses répliques (« — Sur les trois euros, il nous en
-   * revient onze centimes »). Placée après, elle parlait avant d'exister. Le
-   * test `présente Sol avant de lui donner la parole` verrouille l'ordre. */
+   * ⚠️ Son prénom complet vient d'une demande de Yann (« il faut rappeler son
+   * nom bien franchouillard ») et n'existe nulle part dans `HISTOIRE.md` :
+   * Solange est une proposition, pas une reprise. Un seul mot à changer si un
+   * autre est retenu — il n'apparaît qu'ici.
+   *
+   * ⚠️ Et elle passe AVANT tout dialogue : le premier « — » du prologue est à
+   * l'écran suivant. Placée après, elle parlait avant d'exister ; c'est le test
+   * `présente Sol avant de lui donner la parole` qui l'avait attrapé. */
   {
     kind: 'recit',
     source: 'lcd',
     entete: 'SOL',
     lignes: [
       'Sol dirige le label.',
+      'Sur les statuts, c’est Solange.',
+      'Sur les pochettes, ç’a toujours été Sol.',
       'Le syndicat lui envoie des cartons d’autocollants :',
       'LE PIRATAGE TUE LA MUSIQUE.',
       // ⚠️ Chaque ligne doit tenir sur UNE ligne d'afficheur à 390 px : le récit
       // est écrit en une idée par ligne, un repli casse le rythme et se lit
       // comme du texte courant. Mesuré à la capture — ~55 signes.
       'Elle s’en sert pour caler la fenêtre, qui ferme mal.',
-      'Une sonnerie de grenouille s’est mieux vendue',
-      'que tout le catalogue depuis la fondation.',
-      'Sol la connaît note pour note. Elle refuse d’en parler.',
-    ],
-  },
-  {
-    kind: 'recit',
-    source: 'fax',
-    entete: 'CE QUI FAIT VIVRE FACE B',
-    lignes: [
-      'Pas les disques. Les sonneries de téléphone.',
-      'Douze secondes, trois euros, par SMS surtaxé.',
-      'TAPEZ FACEB AU 61000.',
-      '— Sur les trois euros,',
-      'il nous en revient onze centimes.',
-      '— C’est peu.',
-      '— C’est onze centimes de plus qu’un album.',
-    ],
-  },
-  {
-    kind: 'recit',
-    source: 'lcd',
-    entete: 'TOI',
-    lignes: [
-      'Tu es stagiaire. Tu fais le café.',
-      'Sol ne connaît pas ton nom.',
-      'Elle ne l’a jamais demandé.',
-      'Tu ne lui en veux pas particulièrement.',
-      'Le travail consiste surtout à attendre.',
     ],
   },
   {
@@ -209,6 +212,24 @@ const PROLOGUE: Etape[] = [
       'ne rien faire jusqu’en juin.',
     ],
   },
+  /* Le dernier écran avant de jouer : l'incident, et le joueur, dans le même
+   * souffle. « Tu es stagiaire, tu fais le café » vivait sur un écran à lui —
+   * il tient en deux lignes et prépare directement la réplique qui ouvre le
+   * premier exercice. */
+  {
+    kind: 'recit',
+    source: 'repondeur',
+    entete: 'MESSAGE — 11 s',
+    lignes: [
+      'Le sous-traitant qui fabrique les sonneries arrête.',
+      'Il laisse un dossier et un mot de passe.',
+      'Le mot de passe ne marche pas.',
+      'Sol essaie trois fois. Il ne répond plus.',
+      '— Il va falloir tout refaire.',
+      'Toi, tu es stagiaire. Tu fais le café.',
+      'Sol se tourne vers toi.',
+    ],
+  },
 ];
 
 /** Combien d'étapes de l'acte 0 sont du prologue. La vue s'en sert pour ne
@@ -218,7 +239,7 @@ export const LONGUEUR_PROLOGUE = PROLOGUE.length;
 /** L'étape où le 14 juin est expliqué : le compte à rebours apparaît là, et
  *  pas avant. Un décompte vers une date inconnue n'est pas une tension, c'est
  *  un nombre. */
-export const ETAPE_DU_COMPTE_A_REBOURS = 4;
+export const ETAPE_DU_COMPTE_A_REBOURS = 2;
 
 export const ACTES: Acte[] = [
   {
@@ -232,37 +253,37 @@ export const ACTES: Acte[] = [
     resume: 'Le sous-traitant s’en va. Quatre ans de sonneries sont perdus.',
     etapes: [
       ...PROLOGUE,
+      /* ⚠️ Le premier exercice arrive ICI, au 5e écran — c'est le cœur du
+       * correctif « beaucoup de texte avant le 1er jeu ». La réplique qui le
+       * déclenche vit dans sa `commande` plutôt que sur un écran à elle : un
+       * écran de plus pour quatre lignes de dialogue, c'était une lecture de
+       * plus avant le premier son. */
+      // ⚠️ Ces commandes ne nomment PAS le réglage : les niveaux 39-41 tirent
+      // le leur au hasard dans la famille Timbre. « Lequel est le plus grave ? »
+      // — la phrase du texte — mentait une fois sur quatre à l'écran. Une
+      // commande ne doit promettre que ce que le tirage tient.
+      {
+        kind: 'exercice',
+        niveau: 39,
+        commande: '— Tu fais quoi exactement ici ? — Le café. — Je sais. Écoute ça.',
+      },
+      /* L'économie des sonneries revient APRÈS le premier exercice, et elle y
+       * gagne : on explique les onze centimes à quelqu'un qui vient d'écouter
+       * des sons, pas à quelqu'un qui attend de jouer. */
       {
         kind: 'recit',
-        source: 'repondeur',
-        entete: 'MESSAGE — 11 s',
+        source: 'fax',
+        entete: 'CE QUI FAIT VIVRE FACE B',
         lignes: [
-          'Le sous-traitant qui fabrique les sonneries arrête.',
-          'Il a trouvé mieux.',
-          'Il laisse un dossier et un mot de passe.',
-          'Le mot de passe ne marche pas.',
-          'Sol essaie trois fois. Il ne répond plus.',
+          'Douze secondes, trois euros, par SMS surtaxé.',
+          'TAPEZ FACEB AU 61000.',
+          '— Sur les trois euros,',
+          'il nous en revient onze centimes.',
+          '— C’est peu.',
+          '— C’est onze centimes de plus qu’un album.',
         ],
       },
-      {
-        kind: 'recit',
-        source: 'lcd',
-        entete: 'SOL',
-        lignes: [
-          '— Il va falloir tout refaire.',
-          '— Tu fais quoi exactement ici ?',
-          '— Le café.',
-          '— Je sais.',
-          'Elle pose une cassette sur le lecteur.',
-          '— Écoute.',
-        ],
-      },
-      // ⚠️ Ces trois commandes ne nomment PAS le réglage : les niveaux 39-41
-      // tirent le leur au hasard dans la famille Timbre. « Lequel est le plus
-      // grave ? » — la phrase du texte — mentait une fois sur quatre à l'écran.
-      // Une commande ne doit promettre que ce que le tirage tient.
-      { kind: 'exercice', niveau: 39, commande: 'Elle te fait écouter le même son en plusieurs versions. — Alors ?' },
-      { kind: 'exercice', niveau: 40, commande: 'Elle recommence. — Et là, qu’est-ce qui change ?' },
+      { kind: 'exercice', niveau: 40, commande: 'Elle en fait écouter deux autres. — Et là, qu’est-ce qui change ?' },
       { kind: 'exercice', niveau: 41, commande: 'Puis un dernier. — Refais-le-moi à l’identique.' },
       {
         kind: 'recit',
@@ -285,7 +306,8 @@ export const ACTES: Acte[] = [
           'Tu livres. C’est objectivement mauvais.',
           'Une des cinq est mise en ligne.',
           'Relevé de fin de mois : NEUF EUROS.',
-          '— Voilà. Tu es officiellement dans l’industrie musicale.',
+          '— Voilà. Tu es officiellement',
+          'dans l’industrie musicale.',
         ],
       },
     ],

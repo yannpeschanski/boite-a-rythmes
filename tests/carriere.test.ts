@@ -170,10 +170,35 @@ describe('Le curseur de carrière ne recule jamais', () => {
  * jamais dit ce qu'était Face B, qui était Sol, ni ce qu'était le 14 juin.
  */
 describe('Le prologue situe l’histoire avant de la commencer', () => {
-  it('ouvre l’acte 0 sur cinq écrans de récit, jamais sur un exercice', () => {
+  it('ouvre l’acte 0 sur quatre écrans de récit, jamais sur un exercice', () => {
     const debut = ACTES[0].etapes.slice(0, LONGUEUR_PROLOGUE);
-    expect(LONGUEUR_PROLOGUE).toBe(5);
+    expect(LONGUEUR_PROLOGUE).toBe(4);
     for (const e of debut) expect(e.kind).toBe('recit');
+  });
+
+  /* ⚠️ Le budget de lecture avant le premier son, verrouillé par un test.
+   *
+   * Retour de Yann : « ça fait en effet beaucoup de texte avant le 1er jeu ».
+   * La correction précédente en avait mis SEPT. Ce test empêche qu'une
+   * prochaine passe d'écriture le regonfle sans qu'on s'en aperçoive — c'est
+   * une propriété de RYTHME, elle ne se voit pas en relisant le fichier. */
+  it('ne fait jamais lire plus de cinq écrans avant le premier exercice', () => {
+    const premier = ACTES[0].etapes.findIndex((e) => e.kind === 'exercice');
+    expect(premier).toBeGreaterThanOrEqual(0);
+    expect(premier + 1).toBeLessThanOrEqual(5);
+  });
+
+  // Et l'exposition qui reste est ENTRELACÉE, pas empilée : après le premier
+  // exercice, l'acte 0 ne pose jamais deux écrans de lecture d'affilée avant
+  // l'exercice suivant.
+  it('n’empile pas deux lectures entre deux exercices', () => {
+    const e = ACTES[0].etapes;
+    const dernier = e.map((x) => x.kind).lastIndexOf('exercice');
+    let suite = 0;
+    for (let i = 0; i < dernier; i++) {
+      suite = e[i].kind === 'recit' ? suite + 1 : 0;
+      expect(suite, `étapes ${i - suite + 1}..${i}`).toBeLessThanOrEqual(LONGUEUR_PROLOGUE);
+    }
   });
 
   // Les quatre inconnues que le joueur avait au premier écran, et qui doivent
@@ -189,6 +214,9 @@ describe('Le prologue situe l’histoire avant de la commencer', () => {
     expect(texte).toContain('stagiaire');
     expect(texte).toContain('Sol');
     expect(texte).toContain('14 juin');
+    // ⚠️ Son prénom complet — demande de Yann, « son nom bien franchouillard ».
+    // Il n'apparaît qu'à un seul endroit : ce test dit où le chercher.
+    expect(texte).toContain('Solange');
   });
 
   /* ⚠️ Sol est présentée AVANT de prendre la parole.
