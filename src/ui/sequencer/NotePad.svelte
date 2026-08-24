@@ -20,6 +20,22 @@
   // exactement le modèle — et sur un téléphone, sept cibles larges valent
   // mieux que douze étroites dont cinq noires.
   //
+  // POURQUOI TROIS RANGÉES (2026-08-24, « il faut montrer les 3 rangées de
+  // notes dans le clavier de sélection des notes »). L'octave fait PARTIE de
+  // la note (`SynthNote = { degree, octave }`) : la cacher derrière un
+  // sélecteur −1/0/+1 en dessous du clavier en faisait un MODE — on posait une
+  // note à l'octave où on avait laissé le bouton, et rien dans la touche ne
+  // disait laquelle. Les trois octaves du modèle sont donc les trois rangées
+  // du clavier, aigu en haut comme sur le pad XY du Mode Live : une note
+  // reste un appui, mais l'appui dit désormais aussi l'octave, et le
+  // sélecteur disparaît (il n'aurait plus rien à régler).
+  //
+  // La rangée du milieu n'est pas la même touche répétée trois fois : chaque
+  // touche porte, sous le nom, l'étiquette EXACTE de la case qu'elle va
+  // écrire — « 5 », « 5▴ », « 5▾ » — la marque d'octave étant celle que la
+  // grille affiche déjà (`octaveMark`, SynthRowView). Le clavier montre ce
+  // qu'il écrit.
+  //
   // CE QUE ÇA REMPLACE (§7.5, règle n°1). Le choix d'une note se faisait en
   // tapant plusieurs fois sur la case : `cycleCell` fait défiler
   // silence -> 1 -> 2 … -> 7 -> silence. Poser un degré 5 coûtait 5 appuis,
@@ -97,8 +113,6 @@
   // pendant la lecture.
   const target = $derived(playing && playheadCol >= 0 ? playheadCol : safeCursor);
 
-  let octave = $state(0);
-
   // Degrés de l'accord de nappe en cours SUR CE PAS : le pad indique lesquels
   // « tombent juste », de la même façon que le point de justesse des cases.
   // Une aide, pas une contrainte — les autres degrés restent jouables.
@@ -148,7 +162,7 @@
     });
   }
 
-  function tap(degree: number) {
+  function tap(degree: number, octave: number) {
     onPreview?.(degree, octave);
     const col = quantizedCol();
     write(col, { degree, octave });
@@ -160,6 +174,14 @@
     write(col, null);
     if (!playing) cursor = (safeCursor + 1) % steps;
   }
+
+  // Même signe que la case de la grille (SynthRowView.octaveMark) : le pad
+  // annonce littéralement ce qui s'écrira.
+  function marque(o: number): string {
+    return o > 0 ? '\u25b4' : o < 0 ? '\u25be' : '';
+  }
+
+  const nomOctave = (o: number): string => (o > 0 ? 'octave aiguë' : o < 0 ? 'octave grave' : 'octave centrale');
 
   function back() {
     cursor = (safeCursor - 1 + steps) % steps;
@@ -186,19 +208,28 @@
        `onpointerdown` — l'écart était chez le pad. `preventDefault` empêche
        le click fantôme qui suivrait et jouerait la note une seconde fois. -->
   <div class="keys">
-    {#each [1, 2, 3, 4, 5, 6, 7] as d (d)}
-      <button
-        class="key"
-        class:inchord={chordDegrees.has(d)}
-        onpointerdown={(e) => {
-          e.preventDefault();
-          tap(d);
-        }}
-        title={chordDegrees.has(d) ? `${noms[d - 1]} (degré ${d}) — dans l’accord en cours` : `${noms[d - 1]} (degré ${d})`}
-      >
-        <span class="nom">{noms[d - 1]}</span>
-        <span class="deg">{d}</span>
-      </button>
+    <!-- Placement explicite plutôt qu'auto : la touche de silence occupe la
+         8e colonne sur les trois rangées, et une grille auto-placée ferait
+         déborder la première rangée dans la case qu'elle laisse libre. -->
+    {#each [1, 0, -1] as o (o)}
+      {#each [1, 2, 3, 4, 5, 6, 7] as d (d)}
+        <button
+          class="key"
+          class:inchord={chordDegrees.has(d)}
+          class:aigu={o > 0}
+          class:grave={o < 0}
+          style:grid-column={d}
+          style:grid-row={2 - o}
+          onpointerdown={(e) => {
+            e.preventDefault();
+            tap(d, o);
+          }}
+          title={`${noms[d - 1]} (degré ${d}, ${nomOctave(o)})${chordDegrees.has(d) ? ' — dans l’accord en cours' : ''}`}
+        >
+          <span class="nom">{noms[d - 1]}</span>
+          <span class="deg">{d}{marque(o)}</span>
+        </button>
+      {/each}
     {/each}
     <!-- Le silence est une TOUCHE, pas un petit bouton relégué en bas
          (retour de Yann : « difficile de supprimer une note »). Effacer est
@@ -218,14 +249,7 @@
   </div>
 
   <div class="bar">
-    <div class="oct">
-      <span class="lab">Octave</span>
-      {#each [-1, 0, 1] as o (o)}
-        <button class="mini tap44" class:on={octave === o} onclick={() => (octave = o)}>
-          {o === 0 ? '0' : o > 0 ? '+1' : '−1'}
-        </button>
-      {/each}
-    </div>
+    <span class="lab">Rangée du haut = octave aiguë ▴, du bas = grave ▾</span>
     <div class="acts">
       <button class="mini tap44" onclick={back} disabled={playing} title="Reculer d’un pas">← pas précédent</button>
     </div>
@@ -267,9 +291,11 @@
     font-size: 9px;
     font-variant-numeric: tabular-nums;
   }
-  /* Sept touches larges plutôt qu'un clavier : sur 390px chacune fait ~48px
-     de large pour 48 de haut — bien au-delà du minimum de 24px (audit A3),
-     parce qu'ici on vise vite et à répétition, pas une fois. */
+  /* Sept touches larges plutôt qu'un clavier, sur les trois rangées d'octave
+     du modèle : sur 390px chacune fait ~48px de large pour 44 de haut. 44 et
+     non 48 parce que la hauteur totale est désormais triple — c'est la cible
+     tactile de référence du projet (`.tap44`), donc le plancher, pas un
+     rognage : bien au-delà du minimum de 24px de l'audit A3. */
   .keys {
     display: grid;
     /* minmax(0, 1fr) et non 1fr : une piste de grille a un minimum
@@ -278,10 +304,11 @@
        débordaient de 14px. Même piège que celui corrigé sur XpSlider
        (audit A2), côté grille plutôt que flexbox. */
     grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(3, auto);
     gap: 4px;
   }
   .key {
-    min-height: 48px;
+    min-height: 44px;
     border: 1px solid var(--xp-line);
     border-radius: 4px;
     background: var(--xp-btn-face);
@@ -334,8 +361,30 @@
     background: var(--xp-btn-face);
     border-style: dashed;
     color: var(--xp-muted);
+    /* Une seule touche pour les trois rangées : effacer un pas ne dépend pas
+       de l'octave, et la cible reste la plus grande du pad — c'est un geste
+       aussi fréquent que poser une note. */
+    grid-column: 8;
+    grid-row: 1 / -1;
   }
-  .key.inchord {
+  /* Les rangées se distinguent AUSSI sans lire la marque : un voile d'un cran,
+     grave plus sombre, aigu plus clair. Un cran, pas une couleur — la teinte
+     est déjà prise par « dans l'accord en cours », et deux signaux de couleur
+     superposés n'en font plus aucun.
+     Voile SUPERPOSÉ et non `color-mix` : `--xp-btn-face` est un dégradé (le
+     biseau lui-même), et `color-mix` n'accepte que des couleurs — la règle
+     tombait invalide, la touche perdait son relief et se retrouvait à plat
+     sur la face du panneau. Mesuré à l'écran : seule la rangée du milieu,
+     celle qui ne portait pas de voile, gardait son biseau. */
+  .key.grave {
+    background-image: linear-gradient(rgb(0 0 0 / 0.16), rgb(0 0 0 / 0.16)), var(--xp-btn-face);
+  }
+  .key.aigu {
+    background-image: linear-gradient(rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.09)), var(--xp-btn-face);
+  }
+  .key.inchord,
+  .key.inchord.grave,
+  .key.inchord.aigu {
     background: color-mix(in srgb, var(--cell-melody) 34%, var(--xp-face));
     border-color: color-mix(in srgb, var(--cell-melody) 60%, var(--xp-line));
   }
@@ -345,7 +394,6 @@
     gap: 10px;
     flex-wrap: wrap;
   }
-  .oct,
   .acts {
     display: flex;
     align-items: center;
@@ -358,6 +406,9 @@
     font-size: 9px;
     color: var(--xp-muted);
   }
+  .bar .lab {
+    flex: 1;
+  }
   .mini {
     min-height: 26px;
     padding: 2px 8px;
@@ -369,10 +420,6 @@
     font-size: 9px;
     color: var(--xp-text);
     cursor: pointer;
-  }
-  .mini.on {
-    box-shadow: var(--xp-bevel-in);
-    font-weight: 700;
   }
   .mini:disabled {
     color: var(--xp-muted);
