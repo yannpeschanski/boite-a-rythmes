@@ -6072,6 +6072,161 @@ débordement, écriture `V` / `I` / vide dans la grille), calibrage ouvert depui
 l'Atelier (métronome lancé, frappes comptées, Échap), et **non-régression du
 calibrage du Mode jeu** au niveau 37 (métronome, 3 clics + Espace = 4 frappes,
 retour au pad de jeu). 0 erreur console.
+### ✅ Actes 0, 1 et 2 refondus sur trois retours de jeu (2026-08-24)
+
+Trois commentaires de Yann après avoir joué les trois premiers actes, et ils
+disent tous la même chose sous trois formes : **un exercice n'enseigne que ce
+que l'écran a déjà expliqué.**
+
+> *acte 0 : je ne sais même pas expliquer ce que c'est decay, pourquoi c'est
+> dès le début ce concept ?? l'acte 0, ça va pas, il faut proposer d'autres
+> niveaux*
+> *acte 1 : niveau 1 à supprimer, on peut passer au niveau 2 directement.*
+> *acte 2 : pour le groove, on ne comprend pas pourquoi il y a les rafales et
+> les charleys ouverts, rim shot, personne n'explique, ce n'est pas lié au
+> groove. le groove, ce sont des paramètres qu'on doit pouvoir régler. Il faut
+> compléter le niveau 1 avec les rafales & rim shots éventuellement, et sortir
+> une vraie sonnerie de téléphone avec. ce qui peut être drôle, c'est de
+> l'exporter et de proposer d'en faire la sonnerie de son téléphone/réveil
+> matin.*
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/model/parametres.ts`,
+`src/model/presets/levels.ts`, `src/model/exercises.ts`,
+`src/stores/game.svelte.ts`, `src/ui/game/CarriereView.svelte`,
+`src/ui/game/GameView.svelte`, `tests/carriere.test.ts`,
+`tests/parametres.test.ts`, `tests/exercises.test.ts`.
+
+#### Acte 0 — les quatre mots de l'écoute, et rien d'autre
+
+Le défaut n'était pas le mot *decay* : c'était le VERBE. L'acte citait les
+niveaux 39-41, c'est-à-dire `lequel`, **`nommer` et `regler`** — deux verbes de
+VOCABULAIRE, dans l'acte où l'Atelier est fermé. On demandait de mettre un nom
+sur un curseur jamais vu, et de viser une valeur sur une échelle jamais
+montrée. Aucun texte ne pouvait rattraper ça : le mot n'existe nulle part dans
+le jeu à ce moment-là.
+
+`HISTOIRE.md` donnait déjà la réponse, mot pour mot : *« Tu travailles sur : la
+hauteur ; la durée ; l'intensité ; le silence. »* Quatre niveaux neufs, un par
+mot, tous en `lequel` sauf le dernier :
+
+| Niveau | Verbe | Bouton | Ce qui s'entend |
+|---|---|---|---|
+| 49 · La hauteur | `lequel` | `pitch` | plus aigu / plus grave |
+| 50 · La durée | `lequel` | `decay` | traîne / s'arrête net |
+| 51 · L'intensité | `lequel` | `volume` (neuf au catalogue) | plus fort / plus doux |
+| 52 · Le silence | `silence` (verbe neuf) | — | le coup qui manque |
+
+`lequel` parle en PROPRIÉTÉS et jamais en étiquettes : « laquelle sonne la plus
+grave ? » ne demande pas de savoir qu'un bouton s'appelle Pitch. `nommer` et
+`regler` déménagent à l'acte 2, où les mots sont enfin sur des boutons
+rencontrés. Un test l'interdit désormais : aucun niveau de l'acte 0 ne peut
+employer un verbe de vocabulaire.
+
+**Le verbe `silence`** est le seul dont la bonne réponse est ce qu'on n'entend
+pas. Une pulsation régulière sur le hat, un pas creusé, huit boutons. Deux
+pièges payés d'avance et verrouillés par test : le trou n'est **jamais sur le
+premier pas** (sans départ entendu, il n'y a rien à manquer) et le kick ne tient
+que ce premier temps — posé sur le trou, il boucherait exactement ce qu'on
+demande d'entendre. Et l'écran n'offre pas « écouter ma version » : on ne pose
+rien, on désigne. Un bouton qui ne joue que du vide se lit comme une panne.
+
+**`volume` entre au catalogue** avec une `plageJeu: [30, 100]` : tiré près de
+zéro, la version à comparer est un silence, et « laquelle est la plus forte ? »
+se répond sans écouter — même famille de défaut que le kick inaudible de la
+veille.
+
+#### Acte 1 — la grille, ses deux gestes, et on repart avec l'objet
+
+- **Le niveau 1 saute** (Yann). Il ne faisait poser que des kicks sur une grille
+  dont les deux autres lignes étaient explicitement vides : un écran sans rien à
+  arbitrer. Il reste au réservoir, la carrière ne le cite plus. L'acte part
+  donc du 2.
+- **Les variantes et les rafales déménagent ici**, depuis l'acte 2 : ce sont
+  deux gestes de GRILLE — un second clic, un appui long — donc deux gestes de
+  l'acte qui enseigne la grille. Niveaux 5 (variante unique) et 8 (rafale
+  unique), et **quelqu'un les explique** : Sol les fait à l'écran, avant qu'on
+  les demande. Un test tient l'ordre (l'écran qui dit « rim shot » précède
+  l'exercice qui en demande un).
+- **L'acte ouvrait sur deux écrans de lecture** — le brief, puis « Sol
+  t'apprend la grille », quatre mots sur un afficheur. Les trois mots tiennent
+  dans le brief, où ils sont en plus motivés. Même règle que l'entrelacement du
+  prologue.
+- **La LIVRAISON** (`EtapeLivraison`, un troisième `kind` d'étape) clôt l'acte :
+  *« sortir une vraie sonnerie de téléphone avec […] l'exporter et en faire la
+  sonnerie de son téléphone/réveil matin »*. Elle ouvre l'Atelier sur
+  `toAtelierState()` — le rythme qu'on vient de réussir, pas une grille vide —
+  et l'export MP3, qui existe depuis toujours, trouve enfin son moment.
+
+⚠️ **L'ordre dans `livrer()` est le sujet, pas un détail.** `moduleUnlocked`
+lit l'acte ATTEINT (`acte > 1` pour l'Atelier). Partir de la dernière étape de
+l'acte 1 sans l'avoir franchie enverrait le joueur dans un module que l'écran
+d'accueil affiche encore cadenassé : **ouvert à l'aller, verrouillé au retour.**
+On avance donc le curseur d'abord, et l'annonce de fin d'acte est absorbée — la
+livraison EST cette annonce. Vérifié à l'écran : après « Emporter ma sonnerie »,
+l'Atelier est ouvert et le Synthé et la Production restent cadenassés.
+
+Un test vérifie ce que la livraison emporte, parce que c'est là qu'elle peut
+mentir sans que rien ne le dise : les deux dernières étapes de l'acte sont du
+récit puis la livraison, et un rechargement de niveau en chemin donnerait une
+grille vide sous la promesse « ton rythme s'y ouvre tel quel ».
+
+#### Acte 2 — le groove se RÈGLE, il ne se reproduit pas
+
+L'acte citait cinq grilles à reproduire (Motown, swing, traîne, ghost notes,
+décalage). Il ne cite plus que les trois verbes de PARAMÈTRE sur la famille
+`groove`, dans l'ordre qui EST le contenu de l'acte : **entendre → nommer →
+viser** (45, 46, 47, 48). On ne fait pas nommer ce qu'on n'a pas entendu.
+
+C'est aussi le premier endroit où `nommer` et `regler` ont un sens : l'Atelier
+est ouvert depuis l'acte 1, donc « Swing » et « Décalage » sont sur des curseurs
+que le joueur a vus.
+
+**La famille `groove` était déclarée et VIDE.** La remplir a demandé trois
+choses au catalogue :
+
+- **`cible: 'global'`** — le swing ne vit pas dans `DrumRowState` mais sur
+  `PatternStateV2`. Sans cette distinction, l'exercice écrivait dans un champ
+  inexistant et faisait entendre deux fois le même son. Le test de contrat suit
+  désormais la cible déclarée, sinon il laissait passer exactement l'erreur
+  qu'il existe pour attraper.
+- **`contexte: { pas, repere }`** — et c'est mesuré, pas supposé. Le swing ne
+  retarde que les pas **impairs** (`col % 2 === 1`) ; le motif par défaut des
+  exercices de paramètre pose ses notes sur `[0, 2, 4, 6]`, tous pairs : le
+  swing n'aurait eu **strictement aucun effet audible**. D'où des croches. Et le
+  décalage ne s'entend que CONTRE un point fixe — d'où le kick en repère, seule
+  ligne non coupée en plus de la ligne visée. Prouvé par rejeu du scheduler avec
+  un faux kit, sans Web Audio : les trois versions produisent trois suites
+  d'instants différentes, et le kick, lui, ne bouge pas.
+- **La traîne (`drag`) n'y est PAS**, et l'absente est instructive : elle est
+  globale et décale tout uniformément. Deux boucles séparées d'un retard
+  constant sont indiscernables — il n'y a rien contre quoi l'entendre. Un test
+  vérifie qu'elle reste hors du catalogue.
+
+#### Trois défauts trouvés en mesurant, pas en relisant
+
+1. **« Trois versions du même SON »** était écrit en dur dans la consigne. Juste
+   tant que les verbes de paramètre ne servaient que le timbre ; faux pour le
+   groove, qui ne change aucun son mais QUAND ils tombent. La question envoyait
+   écouter la mauvaise chose.
+2. **Deux libellés au féminin** (« la plus forte », « la plus en avance ») dans
+   une phrase qui les prend en adverbe : « Laquelle sonne la plus en avance ? ».
+   Ça ne se voit qu'en jouant le bon niveau — un test le voit toujours.
+3. **Une commande promettait un SENS que le tirage ne tient pas.** « Et là,
+   lequel dure le plus ? » se retrouvait une fois sur deux au-dessus d'un écran
+   demandant le plus court. Même famille que le défaut déjà corrigé sur le
+   BOUTON tiré ; le test interdit maintenant le superlatif dans une commande de
+   `lequel` — la propriété peut être nommée, l'extrême non.
+
+Le test de câblage des verbes de paramètre bouclait sur
+`L.findIndex((l) => l.exercise === verbe)`, donc toujours sur un niveau de la
+famille `timbre` — au point de l'affirmer. La famille `groove` et tout son
+câblage neuf seraient passés dessous. Il boucle désormais sur **tous** les
+niveaux de chaque verbe et vérifie la famille que le niveau demande.
+
+**Vérification :** `npm run check` (0 erreur), **189 tests** (24 neufs, trois
+passages consécutifs pour les tirages aléatoires), les deux builds, et un
+parcours Playwright écran par écran des actes 0, 1 et 2 en 390×844 (aucune
+erreur console, aucun débordement, aucune ligne de récit repliée).
 
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 

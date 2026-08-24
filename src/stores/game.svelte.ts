@@ -28,6 +28,7 @@ import {
   parametresDe,
   parametre,
   pourLigne,
+  appliquerParamGlobal,
   tirerVersions,
   tirerCible,
   versionQuiRepond,
@@ -209,6 +210,13 @@ class GameStore {
   // comparer — en unité AFFICHÉE (celle du curseur de l'Atelier).
   paramId = $state('');
   paramLigne = $state<GameDrumRowName>('kick');
+  /* La ligne REPÈRE : elle sonne, mais elle n'est pas visée.
+   *
+   * ⚠️ Sans elle, tous les boutons de groove sont muets. Un décalage est un
+   * écart, et un écart n'existe que par rapport à quelque chose : une ligne
+   * décalée toute seule sonne exactement comme une ligne à l'heure. C'est le
+   * `contexte.repere` du catalogue. */
+  paramRepere = $state<GameDrumRowName | null>(null);
   paramVersions = $state<number[]>([]);
   // « Lequel ? » : dans quel sens la question est posée, et quelle version y
   // répond. « Nommer » : quels boutons sont proposés, et lequel est le bon.
@@ -247,6 +255,12 @@ class GameStore {
   private get melodieRafales(): number[] {
     return new Array(this.melodieCible.length).fill(1);
   }
+
+  /* ---- État du verbe `silence` -----------------------------------------
+   * Une pulsation régulière sur le hat, un coup manquant, et le kick au
+   * premier pas comme point de départ. La réponse est un index. */
+  silenceReponse = $state(0);
+  silenceChoix = $state<number | null>(null);
 
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
@@ -606,6 +620,11 @@ class GameStore {
       return;
     }
 
+    if (this.level.exercise === 'silence') {
+      this.preparerSilence();
+      return;
+    }
+
     if (this.level.exercise === 'jouer') {
       /* Plancher de deux coups.
        *
@@ -677,6 +696,35 @@ class GameStore {
     this.melodieLocked = new Array<boolean>(pas).fill(false);
   }
 
+  /* Une pulsation régulière avec UN trou.
+   *
+   * Deux décisions de conception :
+   *
+   * - **le trou n'est jamais au premier pas.** Le début de boucle est ce qui
+   *   permet de compter ; l'y retirer rendrait la question insoluble autrement
+   *   qu'au hasard, puisqu'on ne saurait plus où la mesure commence.
+   * - **le kick tient le premier temps**, et lui seul. Sur deux ancres, un trou
+   *   tombant sur la seconde resterait masqué par le kick — on entendrait un
+   *   coup là où on demande d'entendre un silence.
+   */
+  private preparerSilence(): void {
+    const pas = Math.max(4, this.level.silencePas);
+    this.subdiv = { kick: pas, snare: pas, hat: pas };
+    const grille = emptyGrid(this.subdiv);
+    for (let i = 0; i < pas; i++) grille.hat[i] = 1;
+    grille.kick[0] = 1;
+    this.silenceReponse = 1 + Math.floor(Math.random() * (pas - 1));
+    grille.hat[this.silenceReponse] = 0;
+    this.silenceChoix = null;
+    this.target = grille;
+    this.targetRolls = emptyRolls(this.subdiv);
+    this.guess = emptyGrid(this.subdiv);
+    this.guessRolls = emptyRolls(this.subdiv);
+    this.shift = { kick: 0, snare: 0, hat: 0 };
+    this.swing = 0;
+    this.drag = 0;
+  }
+
   /** Poser (ou retirer) une note. Cliquer le degré déjà posé l'efface : c'est
    *  le même geste que la case de batterie, qui s'éteint en la recliquant. */
   poserNote(pas: number, degre: number): void {
@@ -703,11 +751,24 @@ class GameStore {
     // les versions, la cible et le curseur doivent parler des mêmes bornes.
     const p = pourLigne(brut, this.paramLigne);
 
-    // Une noire sur quatre temps : assez pour entendre l'attaque et la chute,
-    // assez court pour comparer sans attendre.
+    /* Une noire sur quatre temps : assez pour entendre l'attaque et la chute,
+     * assez court pour comparer sans attendre.
+     *
+     * ⚠️ Sauf si le bouton demande autre chose. Le swing ne retarde que les pas
+     * IMPAIRS (`col % 2 === 1` dans le scheduler) : sur [0, 2, 4, 6], tous
+     * pairs, il n'aurait strictement aucun effet — l'exercice aurait posé trois
+     * versions identiques. C'est le `contexte` du catalogue qui le dit. */
     this.subdiv = { kick: 8, snare: 8, hat: 8 };
     const grille = emptyGrid(this.subdiv);
-    [0, 2, 4, 6].forEach((i) => (grille[this.paramLigne][i] = 1));
+    const pas = p.contexte?.pas ?? [0, 2, 4, 6];
+    pas.forEach((i) => (grille[this.paramLigne][i] = 1));
+    // Le repère tient le temps pendant que la ligne visée bouge autour.
+    this.paramRepere = p.contexte?.repere ?? null;
+    if (this.paramRepere && this.paramRepere !== this.paramLigne) {
+      [0, 4].forEach((i) => (grille[this.paramRepere as GameDrumRowName][i] = 1));
+    } else {
+      this.paramRepere = null;
+    }
     this.target = grille;
     this.targetRolls = emptyRolls(this.subdiv);
     this.guess = emptyGrid(this.subdiv);
@@ -797,6 +858,14 @@ class GameStore {
       } else {
         juste = this.paramChoix === this.paramReponse;
       }
+      if (juste) this.win();
+      return juste;
+    }
+
+    // « Le silence » ne compare pas de grille : la réponse est un index, comme
+    // pour « l'intrus ».
+    if (this.level.exercise === 'silence') {
+      const juste = this.silenceChoix === this.silenceReponse;
       if (juste) this.win();
       return juste;
     }
@@ -1037,14 +1106,18 @@ class GameStore {
         row.subdiv = this.subdiv[name];
         row.pattern = new Array(32).fill(0).map((z, i) => this.target[name][i] ?? z);
         row.rolls = new Array(32).fill(1);
-        row.muted = name !== this.paramLigne;
+        // La ligne visée sonne, et le repère aussi quand il y en a un — sans
+        // lui, un décalage ou un swing n'a rien contre quoi s'entendre.
+        row.muted = name !== this.paramLigne && name !== this.paramRepere;
       });
       if (p) {
         const valeur =
           this.paramVersionJouee < 0
             ? this.paramValeur
             : (this.paramVersions[this.paramVersionJouee] ?? this.paramVersions[0]);
-        appliquerParam(state.rows[this.paramLigne], p, valeur);
+        // ⚠️ Deux cibles : un bouton de groove n'est pas un champ de ligne.
+        if (p.cible === 'global') appliquerParamGlobal(state, p, valeur);
+        else appliquerParam(state.rows[this.paramLigne], p, valeur);
       }
       return state;
     }

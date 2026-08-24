@@ -310,3 +310,51 @@ describe('melodie — la basse tirée tient ses promesses', () => {
     expect(game.melodieGuess[3]).toBe(6);
   });
 });
+
+/* « Le silence » — le quatrième mot de l'écoute, et le seul verbe dont la
+ * bonne réponse est ce qu'on n'entend PAS.
+ *
+ * `HISTOIRE.md` le met sur le même plan que la hauteur, la durée et
+ * l'intensité ; c'est aussi celui qui casse le plus facilement en silence, au
+ * sens propre : un trou masqué par une autre ligne, ou tiré sur le premier pas
+ * (où il n'y a rien à manquer, la boucle n'a pas encore commencé) donne un
+ * niveau sans réponse — et rien à l'écran ne le dirait.
+ */
+describe('silence — le trou est audible, et il en existe un', () => {
+  const TIRAGES = 60;
+
+  it('creuse toujours un trou, jamais sur le premier pas, jamais masqué', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.pseudo = 'test';
+    const i = L.findIndex((l) => l.exercise === 'silence');
+    expect(i).toBeGreaterThanOrEqual(0);
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      const pas = game.subdiv.hat;
+      // La pulsation est régulière : tous les pas sauf un.
+      expect(game.target.hat.filter((v) => v > 0)).toHaveLength(pas - 1);
+      expect(game.target.hat[game.silenceReponse]).toBe(0);
+      // ⚠️ Jamais le premier pas : sans point de départ entendu, il n'y a rien
+      // à manquer — on n'entend pas un trou avant le début.
+      expect(game.silenceReponse).toBeGreaterThan(0);
+      expect(game.silenceReponse).toBeLessThan(pas);
+      // ⚠️ Et le kick ne tient que le premier temps : posé sur le trou, il
+      // boucherait exactement ce qu'on demande d'entendre.
+      expect(game.target.kick[game.silenceReponse]).toBe(0);
+      expect(game.target.snare.every((v) => v === 0)).toBe(true);
+    }
+  });
+
+  it('ne se gagne que sur le bon pas, et la réponse repart à vide', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const i = L.findIndex((l) => l.exercise === 'silence');
+    game.startLevel(i);
+    expect(game.silenceChoix).toBeNull();
+    const faux = game.silenceReponse === 1 ? 2 : 1;
+    game.silenceChoix = faux;
+    expect(game.verify()).toBe(false);
+    game.silenceChoix = game.silenceReponse;
+    expect(game.verify()).toBe(true);
+    expect(game.solved).toBe(true);
+  });
+});

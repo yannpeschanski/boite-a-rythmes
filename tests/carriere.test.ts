@@ -257,6 +257,31 @@ describe('Le prologue situe l’histoire avant de la commencer', () => {
     );
     for (const c of commandes) expect(c).not.toMatch(/\b(deux|trois|quatre) (sons|versions)\b/i);
   });
+
+  /* ⚠️ Même règle, sur l'autre chose que le tirage décide : le SENS.
+   *
+   * « Lequel est le plus grave ? » avait déjà dû sauter parce que le BOUTON
+   * était tiré. Reste `paramSens`, tiré lui aussi à chaque partie : une
+   * commande qui annonce « lequel dure le plus » se retrouve une fois sur deux
+   * au-dessus d'un écran qui demande le plus court.
+   *
+   * Ce qui se teste, c'est le SUPERLATIF — « le plus », « la moins » : c'est
+   * lui qui désigne un extrême, donc un seul des deux sens. Une commande reste
+   * libre de nommer la propriété (« c'est la durée qui change ») ou d'offrir la
+   * paire (« plus fort ou plus doux ? »), qui ne tranche rien. */
+  it('ne promet jamais un SENS que le tirage ne tient pas', () => {
+    const commandes = ACTES.flatMap((a) =>
+      a.etapes.flatMap((e) => {
+        if (e.kind !== 'exercice' || !e.commande) return [];
+        const l = LEVELS.find((x) => x.id === e.niveau)!;
+        return l.exercise === 'lequel' ? [[e.niveau, e.commande] as const] : [];
+      }),
+    );
+    expect(commandes.length).toBeGreaterThan(0);
+    for (const [niveau, c] of commandes) {
+      expect(c, `niveau ${niveau}`).not.toMatch(/\b(le|la|les) (plus|moins)\b/i);
+    }
+  });
 });
 
 /* La salle de répétition — ce qu'elle propose, et ce qu'elle ne montre pas.
@@ -270,15 +295,17 @@ describe('La salle de répétition ne montre que le déjà-rencontré', () => {
     expect(niveauxRencontres(0, 0)).toEqual([]);
   });
 
-  // ⚠️ Le cas qui a rendu l'ancienne carte inutilisable : l'acte 0 cite les
-  // niveaux 39-41, qui portent des numéros de FIN de liste. Le seuil
-  // `id <= PlayerProgress.level` les gardait verrouillés — après tout l'acte 0,
-  // la carte affichait 40 niveaux sur 41 fermés, dont les trois joués.
+  // ⚠️ Le cas qui a rendu l'ancienne carte inutilisable : l'acte 0 cite des
+  // niveaux qui portent des numéros de FIN de liste (39-41 hier, 49-52
+  // aujourd'hui). Le seuil `id <= PlayerProgress.level` les gardait
+  // verrouillés — après tout l'acte 0, la carte affichait 40 niveaux sur 41
+  // fermés, dont ceux qu'on venait de jouer. L'assertion porte donc sur la
+  // PROPRIÉTÉ (un numéro loin devant le curseur), pas sur des numéros gravés.
   it('propose les niveaux de l’acte 0 une fois l’acte 0 fini, quels que soient leurs numéros', () => {
     const apresActe0 = niveauxRencontres(1, 0);
     expect(apresActe0).toEqual(niveauxDeLActe(ACTES[0]));
-    expect(apresActe0).toContain(39);
-    expect(apresActe0).toContain(41);
+    expect(apresActe0.length).toBeGreaterThan(0);
+    expect(Math.max(...apresActe0)).toBeGreaterThan(34);
   });
 
   // No spoil : au milieu d'un acte, ce qui n'a pas encore été joué ne s'affiche
@@ -401,5 +428,144 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
       expect(l.exercise, `niveau ${n}`).toBe('melodie');
       expect(l.melodie.pas, `niveau ${n}`).toBeGreaterThan(0);
     }
+  });
+});
+
+/* Les actes 0, 1 et 2, refondus sur trois retours de Yann d'un coup.
+ *
+ * Chacun de ces tests garde un défaut PRÉCIS qu'il a rencontré à l'écran : un
+ * mot de vocabulaire demandé avant l'écran qui le porte, un niveau où il n'y a
+ * rien à arbitrer, un acte « groove » qui faisait reproduire des grilles.
+ */
+describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
+  /* ⚠️ « Je ne sais même pas expliquer ce que c'est decay, pourquoi c'est dès
+   * le début ce concept ?? » — l'acte 0 utilisait `nommer` et `regler`, deux
+   * verbes de VOCABULAIRE, dans un acte où l'Atelier est FERMÉ : on demandait
+   * de mettre un nom sur des curseurs jamais vus. Ce test interdit qu'ils y
+   * reviennent tant que l'Atelier n'est pas ouvert (acte 1). */
+  it('n’emploie aucun verbe de vocabulaire avant que l’Atelier soit ouvert', () => {
+    for (const n of niveauxDeLActe(ACTES[0])) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      expect(['nommer', 'regler'], `niveau ${n}`).not.toContain(l.exercise);
+    }
+  });
+
+  // Les quatre mots de HISTOIRE.md : « la hauteur ; la durée ; l'intensité ;
+  // le silence ». Quatre exercices, un par mot, dans cet ordre.
+  it('suit les quatre mots de l’écoute, dans l’ordre', () => {
+    const titres = niveauxDeLActe(ACTES[0]).map((n) => LEVELS.find((x) => x.id === n)!.teach);
+    expect(titres).toEqual(['La hauteur', 'La durée', 'L’intensité', 'Le silence']);
+  });
+});
+
+describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
+  // « Niveau 1 à supprimer, on peut passer au niveau 2 directement » : il ne
+  // faisait poser que des kicks sur une grille dont les deux autres lignes
+  // étaient explicitement vides. Il reste au réservoir, la carrière ne le cite
+  // plus.
+  it('ne cite plus le niveau 1', () => {
+    expect(niveauxDeLActe(ACTES[1])).not.toContain(1);
+    expect(niveauxDeLActe(ACTES[1])[0]).toBe(2);
+  });
+
+  /* ⚠️ Les variantes (rim shot, charley ouvert) et les rafales ont déménagé de
+   * l'acte 2 vers ici : « on ne comprend pas pourquoi il y a les rafales et
+   * les charleys ouverts, rim shot, personne n'explique, ce n'est pas lié au
+   * groove ». Ce sont deux gestes de GRILLE, donc de l'acte qui l'enseigne —
+   * et ils sont montrés à l'écran avant d'être demandés. */
+  it('enseigne la variante et la rafale, et les explique avant de les demander', () => {
+    const e = ACTES[1].etapes;
+    const niveaux = niveauxDeLActe(ACTES[1]);
+    expect(niveaux).toContain(5);
+    expect(niveaux).toContain(8);
+    const premierAvecVariante = e.findIndex((x) => x.kind === 'exercice' && x.niveau === 5);
+    const explication = e.findIndex(
+      (x) => x.kind === 'recit' && x.lignes.join(' ').includes('rim shot'),
+    );
+    expect(explication).toBeGreaterThanOrEqual(0);
+    expect(explication).toBeLessThan(premierAvecVariante);
+  });
+
+  /* La livraison — « sortir une vraie sonnerie de téléphone avec […] ce qui
+   * peut être drôle, c'est de l'exporter et de proposer d'en faire la sonnerie
+   * de son téléphone/réveil matin ». Elle clôt l'acte qui ouvre l'Atelier :
+   * placée ailleurs, elle enverrait dans un module encore cadenassé. */
+  it('finit sur une livraison, dans l’acte qui ouvre l’Atelier', () => {
+    const e = ACTES[1].etapes;
+    const derniere = e[e.length - 1];
+    expect(derniere.kind).toBe('livraison');
+    expect(ACTES[1].module).toBe('atelier');
+    if (derniere.kind !== 'livraison') return;
+    expect(derniere.bouton.length).toBeGreaterThan(0);
+    expect(derniere.lignes.join(' ')).toMatch(/sonnerie|réveil/i);
+  });
+
+  /* ⚠️ Ce que la livraison EMPORTE — et c'est là qu'elle peut mentir sans que
+   * rien ne le dise. Elle ouvre l'Atelier sur `toAtelierState()`, c'est-à-dire
+   * sur la PROPOSITION du joueur : si une étape de récit rechargeait un niveau
+   * en chemin, on repartirait avec une grille vide en promettant « ton rythme
+   * s'y ouvre tel quel ». Les deux dernières étapes de l'acte 1 sont
+   * justement du récit puis la livraison. */
+  it('emporte le rythme qu’on vient de faire, pas une grille vide', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    game.pseudo = 'livraison-test';
+    game.acteActif = 1;
+    const e = ACTES[1].etapes;
+    const dernierExo = e.map((x) => x.kind).lastIndexOf('exercice');
+    game.etapeActive = dernierExo;
+    game.demarrerEtape();
+    // On réussit l'exercice, puis on lit ce qui reste avant la livraison.
+    // (Les mêmes tableaux des deux côtés : `comparerGrilles` compare des
+    // valeurs, la proposition est donc exacte.)
+    game.guess = { ...game.target };
+    game.guessRolls = { ...game.targetRolls };
+    expect(game.verify()).toBe(true);
+    for (let i = dernierExo; i < e.length - 1; i++) game.avancerCarriere();
+    expect(game.etapeCourante?.kind).toBe('livraison');
+
+    const st = game.toAtelierState();
+    const coups = (['kick', 'snare', 'hat'] as const).reduce(
+      (n, r) => n + st.rows[r].pattern.filter((v) => v > 0).length,
+      0,
+    );
+    expect(coups).toBeGreaterThan(0);
+  });
+
+  // Une seule livraison dans toute la carrière : c'est un moment, pas un
+  // gabarit de fin d'acte.
+  it('est le seul acte à livrer', () => {
+    for (const a of ACTES) {
+      const n = a.etapes.filter((x) => x.kind === 'livraison').length;
+      expect(n, `acte ${a.id}`).toBe(a.id === 1 ? 1 : 0);
+    }
+  });
+});
+
+describe('L’acte 2 fait RÉGLER le groove, pas reproduire des grilles', () => {
+  /* ⚠️ « Le groove, ce sont des paramètres qu'on doit pouvoir régler. » L'acte
+   * citait cinq grilles à reproduire ; il ne cite plus que les trois verbes de
+   * paramètre sur la famille `groove`. */
+  it('ne cite que des verbes de paramètre, tous sur la famille groove', () => {
+    const niveaux = niveauxDeLActe(ACTES[2]);
+    expect(niveaux.length).toBeGreaterThan(0);
+    for (const n of niveaux) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      expect(['lequel', 'nommer', 'regler'], `niveau ${n}`).toContain(l.exercise);
+      expect(l.familleParam, `niveau ${n}`).toBe('groove');
+    }
+  });
+
+  // Entendre, puis nommer, puis viser — l'ordre est le contenu de l'acte : on
+  // ne fait pas nommer ce qu'on n'a pas encore entendu.
+  it('va d’entendre à régler, dans cet ordre', () => {
+    const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
+    expect(verbes).toEqual(['lequel', 'lequel', 'nommer', 'regler']);
+  });
+
+  // Et il arrive APRÈS l'acte qui ouvre l'Atelier : `nommer` et `regler`
+  // mettent des mots sur des curseurs, encore faut-il que le joueur ait vu les
+  // curseurs.
+  it('tombe après l’ouverture de l’Atelier', () => {
+    expect(moduleUnlocked('atelier', { level: 1, acte: 2 })).toBe(true);
   });
 });

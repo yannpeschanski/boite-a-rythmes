@@ -115,6 +115,9 @@ export interface GameLevel {
      *  courte, et l'oreille apprend à entendre qu'une phrase revient. */
     motif: boolean;
   };
+  /** Le verbe `silence` : une pulsation régulière avec UN coup manquant.
+   *  0 = niveau non concerné. */
+  silencePas: number;
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
@@ -145,6 +148,7 @@ export interface MkLevelOptions {
   familleParam?: FamilleParam;
   paramsAutorises?: string[];
   melodie?: { pas?: number; degreMax?: number; notesMin?: number; notesMax?: number; motif?: boolean };
+  silencePas?: number;
 }
 
 // Options du générateur de ligne (voir genLevelRow).
@@ -357,6 +361,7 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
       notesMax: o.melodie?.notesMax ?? 4,
       motif: o.melodie?.motif ?? false,
     },
+    silencePas: o.silencePas ?? 0,
     preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
@@ -691,4 +696,67 @@ export const LEVELS: GameLevel[] = [
     preamble: "Les sept degrés de la gamme, et une note de plus à placer. Les degrés hauts sont les plus durs à situer : compte depuis la tonique si tu te perds — c'est le degré 1, et c'est là que la phrase se repose.",
     tempoOptions: [80, 88],
     melodie: { pas: 8, degreMax: 7, notesMin: 4, notesMax: 5 } }),
+
+  /* ---------- Acte 2, « Le groove » : des paramètres qu'on RÈGLE ----------
+   *
+   * ⚠️ Retour de Yann : « pour le groove, on ne comprend pas pourquoi il y a
+   * les rafales et les charleys ouverts, rim shot, personne n'explique, ce
+   * n'est pas lié au groove. le groove, ce sont des paramètres qu'on doit
+   * pouvoir régler. » L'acte citait des grilles à reproduire ; il cite
+   * désormais les trois verbes de PARAMÈTRE sur la famille `groove`.
+   *
+   * Et c'est ici que `nommer` et `regler` trouvent enfin leur place : l'Atelier
+   * est ouvert depuis l'acte 1, donc les mots « Swing » et « Décalage » sont
+   * sur des curseurs que le joueur a déjà vus. À l'acte 0 ils ne renvoyaient à
+   * rien.
+   */
+  mkLevel(45, 'Le swing, à l’oreille', {
+    exercise: 'lequel', familleParam: 'groove', paramsAutorises: ['swing'],
+    preamble: "Le kick tient le temps ; ce sont les croches du hat qui bougent — c'est ça, le swing : les temps faibles reculent un peu, et la boucle cesse d'être carrée.",
+    subdivOptions: [8], tempoOptions: [92] }),
+  mkLevel(46, 'Le décalage, à l’oreille', {
+    exercise: 'lequel', familleParam: 'groove', paramsAutorises: ['shiftPct'],
+    preamble: "Cette fois c'est la ligne entière qui glisse, en avance ou en retard sur le kick. Un décalage ne s'entend que par rapport à quelque chose : écoute le kick, il ne bouge pas.",
+    subdivOptions: [8], tempoOptions: [92] }),
+  mkLevel(47, 'Swing ou décalage ?', {
+    exercise: 'nommer', familleParam: 'groove',
+    preamble: "Deux boucles, un seul réglage les sépare. Le swing ne touche qu'un temps sur deux ; le décalage pousse toute la ligne. Mettre un nom sur ce qu'on entend, c'est ce qui permet ensuite d'aller le régler.",
+    subdivOptions: [8], tempoOptions: [92] }),
+  mkLevel(48, 'Règle le swing', {
+    exercise: 'regler', familleParam: 'groove', paramsAutorises: ['swing'],
+    preamble: "Une boucle cible, un curseur. Retrouve son balancement. On ne cherche pas le chiffre : deux swings qu'on ne distingue pas sont la même réponse.",
+    subdivOptions: [8], tempoOptions: [92] }),
+
+  /* ---------- Acte 0, « Le café » : les quatre mots de l'écoute ----------
+   *
+   * ⚠️ Retour de Yann : « je ne sais même pas expliquer ce que c'est decay,
+   * pourquoi c'est dès le début ce concept ?? » — et il avait raison plus
+   * largement que le mot. L'acte 0 utilisait `nommer` et `regler`, deux verbes
+   * de VOCABULAIRE, alors que l'Atelier est fermé : on demandait de nommer des
+   * curseurs jamais vus.
+   *
+   * Il ne reste donc que `lequel`, qui parle en PROPRIÉTÉS et jamais en
+   * étiquettes (« laquelle sonne la plus grave ? »), et un verbe neuf pour le
+   * silence. Les quatre exercices sont les quatre mots de `HISTOIRE.md` :
+   * « la hauteur ; la durée ; l'intensité ; le silence ».
+   */
+  mkLevel(49, 'La hauteur', {
+    exercise: 'lequel', familleParam: 'timbre', paramsAutorises: ['pitch'],
+    preamble: "Une seule chose change d'une version à l'autre : la hauteur. Aucun chiffre à trouver, aucun réglage à nommer — on désigne juste celle qu'on te demande.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(50, 'La durée', {
+    exercise: 'lequel', familleParam: 'timbre', paramsAutorises: ['decay'],
+    preamble: "Même exercice, autre propriété : cette fois c'est la durée du son qui change. Certains s'arrêtent net, d'autres traînent.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(51, 'L’intensité', {
+    exercise: 'lequel', familleParam: 'timbre', paramsAutorises: ['volume'],
+    preamble: "Et la troisième : l'intensité. C'est la plus facile à entendre et la plus facile à mal juger — un son plus aigu paraît souvent plus fort qu'il ne l'est.",
+    subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
+    tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(52, 'Le silence', {
+    exercise: 'silence',
+    preamble: "Une pulsation régulière, et un coup qui manque. Lequel ? C'est la quatrième chose qu'on apprend à entendre, et la moins évidente : le silence fait partie du rythme, il ne l'interrompt pas.",
+    tempoOptions: [88, 96], silencePas: 8 }),
 ];

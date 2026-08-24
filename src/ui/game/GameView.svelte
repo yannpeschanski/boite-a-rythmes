@@ -203,6 +203,7 @@
   let echec = $state(false);
   const MSG_ECHEC: Record<ExerciseKind, string> = {
     melodie: 'Pas encore. Les notes justes sont verrouillées ✓ — reprends les autres.',
+    silence: 'Ce n’est pas là. Réécoute la boucle : le trou est ailleurs.',
     reproduire: 'Pas encore. Les cases justes sont verrouillées ✓ — reprends les autres.',
     completer: 'Pas encore. Les cases justes du temps manquant sont verrouillées ✓.',
     intrus: 'Ce n’est pas celle-là. Réécoute les quatre mesures.',
@@ -340,6 +341,13 @@
 
   const lvl = $derived(game.level);
   const ex = $derived(lvl.exercise);
+  /* ⚠️ « Trois versions du même SON » était écrit en dur — juste tant que les
+     verbes de paramètre ne servaient que la famille `timbre`. Le groove ne
+     change aucun son : il change QUAND ils tombent. Poser la question sur le
+     son y envoie écouter la mauvaise chose. */
+  const sujetDesVersions = $derived(
+    lvl.familleParam === 'groove' ? 'de la même boucle' : 'du même son',
+  );
   /* Les niveaux de la salle de répétition, dans l'ordre où le récit les a
      fait rencontrer — pas dans l'ordre de leur numéro. C'est ce qui compte
      pour s'y retrouver : on refait « celui d'avant », pas « le 39 ». */
@@ -442,6 +450,10 @@
         game.enCarriere = false;
         showMap = true;
         ecran = 'exercice';
+      }}
+      onLivraison={() => {
+        stopAll();
+        saveToAtelier();
       }}
     />
   {:else}
@@ -548,15 +560,23 @@
               ? '■ Stop'
               : ex === 'completer'
                 ? '🔊 Écouter la boucle entière'
-                : ex === 'melodie'
+                : ex === 'silence'
+                  ? '🔊 Écouter la pulsation'
+                  : ex === 'melodie'
                   ? '🔊 Écouter la basse'
                   : '🔊 Écouter le rythme à trouver'}
           </button>
-          <button class="xp-btn" onclick={() => play('guess')}>
-            {playingWhat === 'guess' ? '■ Stop' : '🎧 Écouter ma version'}
-          </button>
+          {#if ex !== 'silence'}
+            <!-- ⚠️ Pas de « ma version » pour le silence : on ne pose rien sur
+                 la grille, on désigne un pas. Le bouton ne jouait donc jamais
+                 que du vide — et un bouton qui ne fait rien se lit comme une
+                 panne, pas comme une absence. -->
+            <button class="xp-btn" onclick={() => play('guess')}>
+              {playingWhat === 'guess' ? '■ Stop' : '🎧 Écouter ma version'}
+            </button>
+          {/if}
         {/if}
-        {#if ex !== 'melodie'}
+        {#if ex !== 'melodie' && ex !== 'silence'}
           <!-- ⚠️ Pas de « Vérifier » ici pour la mélodie : le transport est
                au-dessus de la grille, et on lirait le bouton de validation
                avant ce qu'il valide. Il est repris sous le rouleau. -->
@@ -585,7 +605,7 @@
                    rond ? » était fautif sur les sept boutons. « Sonner » prend
                    l'adjectif en adverbe et accorde tout seul, en plus de mieux
                    dire ce qu'on écoute. -->
-              Trois versions du même son. Laquelle sonne <strong>{game.paramSens === 'plus'
+              Trois versions {sujetDesVersions}. Laquelle sonne <strong>{game.paramSens === 'plus'
                 ? descripteur.plus
                 : descripteur.moins}</strong>&nbsp;?
             {:else if ex === 'nommer'}
@@ -705,6 +725,43 @@
                 Mesure {m + 1}
               </button>
             {/each}
+          </div>
+        </div>
+      {:else if ex === 'silence'}
+        <!-- Aucune grille : une pulsation, un trou, et un bouton par pas. Même
+             mécanique que « l'intrus » — on désigne, on ne construit pas. -->
+        <div class="silence">
+          <p class="consigne">Quel coup manque&nbsp;?</p>
+          <div class="choix choix-pas">
+            {#each { length: game.subdiv.hat } as _, i (i)}
+              <button
+                class="xp-btn choix-btn tap44-y"
+                class:actif={game.silenceChoix === i}
+                class:en-cours={playhead.hat === i}
+                class:bonne={(game.solved || game.revealed) && game.silenceReponse === i}
+                disabled={i === 0 || game.solved || game.revealed}
+                title={i === 0 ? 'Le premier temps donne le départ : il ne manque jamais' : ''}
+                onclick={() => {
+                  game.silenceChoix = i;
+                  echec = false;
+                }}
+              >
+                {i + 1}
+              </button>
+            {/each}
+          </div>
+          <p class="muted">
+            Le kick marque le premier temps — c'est de là qu'on compte. Le trou est
+            toujours ailleurs.
+          </p>
+          <div class="valider">
+            <button
+              class="xp-btn primary tap44-y"
+              disabled={game.solved || game.revealed || game.silenceChoix === null}
+              onclick={verify}
+            >
+              ✓ Vérifier
+            </button>
           </div>
         </div>
       {:else if ex === 'melodie'}
@@ -1025,6 +1082,15 @@
   }
   .mel-pieds .mel-pas.fort {
     color: var(--xp-muted);
+  }
+
+  /* Une touche par pas : ça tient sur une ligne à 390 px pour huit pas, et le
+     bouton du premier temps est désactivé — il donne le départ, il ne manque
+     jamais. */
+  .choix-pas {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
   }
 
   .valider {

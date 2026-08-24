@@ -118,8 +118,38 @@ d'ouvrir ; et `moduleUnlocked` est un **OU** entre l'acte et l'ancien seuil de
 niveau, parce que seuls les actes 0-2 ont leurs exercices écrits — retirer le
 second membre priverait tout le monde du Synthé, de la Production et du Live.
 Une commande d'acte ne doit **promettre que ce que le tirage tient** : les
-niveaux 39-41 tirent leur bouton au hasard, une consigne qui le nomme ment une
-fois sur quatre.
+niveaux de paramètre tirent leur bouton ET leur sens, donc une consigne qui
+nomme l'un des deux ment une fois sur deux ou sur quatre. Elle peut poser la
+propriété (« là, c'est la durée qui change ») ou offrir la paire (« plus fort
+ou plus doux ? ») ; jamais un superlatif, qui désigne un seul extrême. Deux
+tests le tiennent, un par chose tirée.
+
+⚠️ **Un exercice n'enseigne que ce que l'écran a DÉJÀ expliqué**, et le verbe
+est ce qui décide. `lequel` parle en PROPRIÉTÉS (« laquelle sonne la plus
+grave ? ») et se joue partout ; `nommer` et `regler` sont des verbes de
+VOCABULAIRE — ils exigent que le mot soit sur un bouton que le joueur a vu,
+donc que l'Atelier soit ouvert. Les mettre à l'acte 0 a produit « je ne sais
+même pas expliquer ce que c'est decay » : aucun texte ne rattrape un mot qui
+n'existe nulle part dans le jeu à ce moment-là. Corollaire : un GESTE
+s'enseigne dans l'acte de son objet — variantes et rafales sont des gestes de
+grille, donc de l'acte 1, pas de l'acte « groove » où personne ne les
+expliquait.
+
+⚠️ **Une étape qui envoie dans un module doit d'abord FRANCHIR son étape.**
+`moduleUnlocked` lit l'acte ATTEINT (`acte > 1` pour l'Atelier) : la livraison
+de l'acte 1 (`EtapeLivraison`, le troisième `kind`) ouvre l'Atelier sur le
+rythme qu'on vient de faire — partir sans avoir avancé le curseur donnerait un
+module **ouvert à l'aller et cadenassé au retour**. `livrer()` avance, absorbe
+l'annonce de fin d'acte (la livraison EST cette annonce), puis navigue.
+
+⚠️ **Un bouton de GROOVE ne s'entend que dans un contexte, et ça se mesure.**
+`contexte` (`parametres.ts`) existe parce que le swing ne retarde que les pas
+IMPAIRS : le motif par défaut des exercices de paramètre posait ses notes sur
+`[0, 2, 4, 6]`, tous pairs — aucun effet audible. Et un décalage ne s'entend
+que CONTRE un point fixe, d'où `repere` (le kick, seule ligne non coupée en
+plus de la ligne visée). La traîne (`drag`) est délibérément **hors du
+catalogue** : globale et uniforme, elle n'a rien contre quoi s'entendre. Vérifié
+par rejeu du scheduler avec un faux kit, pas à l'oreille.
 
 ⚠️ **Ce qui n'a pas été porté n'existe pas.** `HISTOIRE.md` consacre cent
 quarante lignes à la mise en place AVANT l'acte 0 ; la première version du Mode
@@ -160,10 +190,16 @@ accord** — deux hauteurs à l'octave seraient la même note à l'oreille et de
 réponses à l'écran. La tonique tombe toujours sur le premier pas : sans point de
 départ, aucun degré ne se situe.
 
-**Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
-discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
-campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier
-que les *paramètres* du rythme. La partie PURE de la notation vit dans ce fichier :
+**Le Mode jeu a plusieurs VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
+discrimine ce qu'on demande au joueur — quatre verbes de grille : `reproduire`
+(les 34 niveaux de la campagne), `completer`, `intrus`, `jouer` — là où les
+niveaux, eux, ne font varier que les *paramètres* du rythme. S'y ajoutent
+`melodie` (le seul qui sorte de la batterie, voir plus haut) et `silence`, dont
+la bonne réponse est ce qu'on n'entend PAS : une pulsation régulière, un pas
+creusé, un index à désigner. Deux pièges y sont payés d'avance et testés — le
+trou n'est jamais sur le premier pas (sans départ entendu, il n'y a rien à
+manquer) et le kick ne tient que ce premier temps, sans quoi il boucherait
+exactement ce qu'on demande d'entendre. La partie PURE de la notation vit dans ce fichier :
 `comparerGrilles` (une case est exacte si son état **et** sa rafale coïncident),
 `colonnesDeTranche`, `justesseDesFrappes`, `ecartAuCoup`. Elle s'y teste sans
 navigateur, sans Web Audio et sans runes ; le store n'en garde que l'aiguillage.
@@ -221,7 +257,7 @@ frappe (calibrage compris) ne doit **jamais** en ignorer une en silence : dire
 pourquoi, sinon l'utilisateur conclut que la fonction est cassée — c'est
 exactement ce qui est arrivé au calibrage, dont le métronome ne durait que 7 s.
 
-**Le Mode jeu a aussi trois verbes de PARAMÈTRE**, à côté des quatre verbes de
+**Le Mode jeu a aussi trois verbes de PARAMÈTRE**, à côté des verbes de
 grille : `lequel` (entendre la direction d'un bouton), `nommer` (mettre un nom sur
 ce qui a changé), `regler` (viser un son, pas un chiffre). Ils sont **paramétrés
 par le bouton visé** — trente et un boutons, un jeu par bouton serait ingérable.
