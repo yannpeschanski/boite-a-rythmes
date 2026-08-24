@@ -35,10 +35,12 @@ export type FamilleParam = 'timbre' | 'filtre' | 'groove' | 'sequence';
 export type EchelleParam = 'lineaire' | 'log';
 
 export interface DescripteurParam {
-  /** Clé EXACTE dans `DrumRowState`. Un identifiant inventé réglerait un champ
-   *  que personne ne lit : le jeu tirerait deux sons identiques et le niveau
-   *  serait impossible sans que rien ne le dise. */
-  id: keyof DrumRowState & string;
+  /* Clé EXACTE du champ réglé — dans `DrumRowState` pour un bouton de ligne,
+   * dans l'état global pour un bouton global (voir `cible`). Un identifiant
+   * inventé réglerait un champ que personne ne lit : le jeu tirerait deux sons
+   * identiques et le niveau serait impossible sans que rien ne le dise. C'est
+   * l'union qui garde cette garantie, pas un `string` libre. */
+  id: (keyof DrumRowState | 'swing' | 'drag') & string;
   /** Le libellé EXACT du curseur dans l'Atelier — le jeu et l'atelier doivent
    *  nommer la même chose de la même façon, sinon le jeu n'apprend rien
    *  d'utilisable. */
@@ -87,6 +89,33 @@ export interface DescripteurParam {
    * l'original et protège l'enveloppe ; c'est au JEU de ne pas poser une
    * question dont la réponse est inaudible. */
   plageParLigne?: Partial<Record<GameDrumRowName, [number, number]>>;
+  /** Même idée, mais sur TOUTES les lignes — un bouton dont une partie de
+   *  l'étendue ne pose pas de question valable où qu'on le joue. Le volume en
+   *  est l'exemple : tiré près de zéro, la « version » est un silence. */
+  plageJeu?: [number, number];
+  /* ⚠️ Où ce bouton s'écrit : dans la LIGNE, ou dans l'état global.
+   *
+   * Swing et traîne ne sont pas des champs de `DrumRowState` — ils vivent sur
+   * `PatternStateV2` et valent pour tout le kit. Sans cette distinction, un
+   * exercice de groove écrirait dans un champ inexistant et ferait entendre
+   * deux fois le même son. */
+  cible?: 'ligne' | 'global';
+  /* ⚠️ Ce qu'il faut FAIRE SONNER pour que ce bouton s'entende.
+   *
+   * Les boutons de timbre s'entendent sur une note isolée ; ceux de groove,
+   * non — et c'est mesurable dans le scheduler :
+   *
+   * - le **swing** ne décale que les pas IMPAIRS (`col % 2 === 1`). Le motif
+   *   par défaut des exercices pose les notes sur [0, 2, 4, 6], tous pairs :
+   *   le swing n'aurait strictement aucun effet. D'où `pas` en croches.
+   * - le **décalage** est par ligne, donc il ne s'entend que CONTRE quelque
+   *   chose qui ne bouge pas. D'où `repere`, une seconde ligne qui sonne. */
+  contexte?: {
+    /** Les pas où poser une note sur la ligne visée. Défaut : [0, 2, 4, 6]. */
+    pas?: number[];
+    /** Une ligne qui sonne en plus, jamais visée : le point fixe. */
+    repere?: GameDrumRowName;
+  };
   /** Facteur pour écrire dans l'état ce que le curseur affiche.
    *
    *  Réverbe et Delay sont stockés en 0..1 alors que l'Atelier les montre en
@@ -138,6 +167,51 @@ export const PARAMETRES: DescripteurParam[] = [
     // PAS le kick : il n'y pilote qu'une saturation, morte sous zéro.
     lignes: ['snare', 'hat'], facteurEtat: 1,
   },
+  {
+    /* L'INTENSITÉ — le troisième des quatre mots de l'acte 0 (« la hauteur ; la
+     * durée ; l'intensité ; le silence »). Il manquait au catalogue alors que
+     * le champ existe depuis toujours. */
+    id: 'volume', label: 'Volume', famille: 'timbre',
+    min: 0, max: 100, step: 1, unite: ' %', echelle: 'lineaire',
+    tolerance: 10, ecartMini: 30,
+    // ⚠️ Jamais sous 30 % : tiré près de zéro, la version à comparer est un
+    // silence, et « laquelle est la plus forte ? » se répond sans écouter.
+    plageJeu: [30, 100],
+    plus: 'le plus fort', moins: 'le plus doux',
+    lignes: ['kick', 'snare', 'hat'], facteurEtat: 0.01,
+  },
+
+  /* ---- Groove ----
+   *
+   * ⚠️ La famille était DÉCLARÉE et vide. Deux boutons seulement y entrent, et
+   * l'absent est instructif : **la traîne n'est pas enseignable**. Elle est
+   * globale et décale TOUT uniformément — deux boucles solo séparées d'un
+   * retard constant sont indiscernables, il n'y a rien contre quoi l'entendre.
+   * La mettre ici donnerait une question dont la réponse est un tirage au sort.
+   */
+  {
+    id: 'swing', label: 'Swing', famille: 'groove', cible: 'global',
+    min: 0, max: 75, step: 1, unite: ' %', echelle: 'lineaire',
+    // Le swing s'entend franchement : 10 % se sent, 20 contre 45 ne se discute
+    // pas. En dessous de 8 points, deux réglages balancent pareil.
+    tolerance: 8, ecartMini: 22,
+    plus: 'le plus balancé', moins: 'le plus carré',
+    lignes: ['hat'], facteurEtat: 1,
+    // Croches sur les huit pas : le swing ne retarde que les pas IMPAIRS, un
+    // motif en noires ne bougerait pas d'un cheveu. Le kick tient le temps.
+    contexte: { pas: [0, 1, 2, 3, 4, 5, 6, 7], repere: 'kick' },
+  },
+  {
+    id: 'shiftPct', label: 'Décalage', famille: 'groove',
+    min: -50, max: 50, step: 1, unite: ' %', echelle: 'lineaire',
+    tolerance: 8, ecartMini: 22,
+    plus: 'le plus en retard', moins: 'le plus en avance',
+    lignes: ['hat'], facteurEtat: 1,
+    // Un décalage ne s'entend que CONTRE un point fixe : sans le kick, la
+    // ligne décalée sonne simplement comme une ligne à l'heure.
+    contexte: { repere: 'kick' },
+  },
+
   // ---- Filtre & espace ----
   {
     id: 'filterCutoff', label: 'Filtre passe-bas', famille: 'filtre',
@@ -167,12 +241,23 @@ export const PARAMETRES: DescripteurParam[] = [
 
 /** Applique une valeur AFFICHÉE (celle du curseur) à l'état d'une ligne. */
 export function appliquerParam(row: DrumRowState, p: DescripteurParam, valeur: number): void {
-  (row[p.id] as number) = valeur * p.facteurEtat;
+  (row as unknown as Record<string, number>)[p.id] = valeur * p.facteurEtat;
+}
+
+/* Les paramètres GLOBAUX (swing) ne vivent pas dans une ligne mais sur l'état.
+ * Deux fonctions plutôt qu'une qui prendrait tout l'état : chacune dit dans son
+ * nom où elle écrit, et l'appelant doit avoir lu `p.cible` pour choisir. */
+export function appliquerParamGlobal(
+  state: { swing: number; drag: number },
+  p: DescripteurParam,
+  valeur: number,
+): void {
+  (state as unknown as Record<string, number>)[p.id] = valeur * p.facteurEtat;
 }
 
 /** Relit dans l'état une valeur, dans l'unité AFFICHÉE. */
 export function lireParam(row: DrumRowState, p: DescripteurParam): number {
-  return (row[p.id] as number) / p.facteurEtat;
+  return (row as unknown as Record<string, number>)[p.id] / p.facteurEtat;
 }
 
 export function parametre(id: string): DescripteurParam | null {
@@ -188,7 +273,7 @@ export function parametre(id: string): DescripteurParam | null {
  * bouge serait une invitation à chercher là où il n'y a rien.
  */
 export function pourLigne(p: DescripteurParam, ligne: GameDrumRowName): DescripteurParam {
-  const plage = p.plageParLigne?.[ligne];
+  const plage = p.plageParLigne?.[ligne] ?? p.plageJeu;
   return plage ? { ...p, min: plage[0], max: plage[1] } : p;
 }
 

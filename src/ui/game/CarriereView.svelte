@@ -29,11 +29,14 @@
   let {
     onExercice,
     onRepetition,
+    onLivraison,
   }: {
     /** Une étape d'exercice commence : la vue de jeu prend la main. */
     onExercice: () => void;
     /** Sortir de la carrière pour la salle de répétition (les 41 niveaux). */
     onRepetition: () => void;
+    /** Emporter le rythme qu'on vient de faire dans l'Atelier. */
+    onLivraison: () => void;
   } = $props();
 
   const acte = $derived(game.acteCourant);
@@ -63,6 +66,19 @@
 
   function enchainer() {
     if (game.etapeCourante?.kind === 'exercice') onExercice();
+  }
+
+  /* ⚠️ La livraison FRANCHIT l'étape avant d'ouvrir l'Atelier, et l'ordre est
+   * le sujet. `moduleUnlocked` lit l'acte ATTEINT (`acte > 1` pour l'Atelier) :
+   * partir de la dernière étape de l'acte 1 sans l'avoir franchie enverrait le
+   * joueur dans un module que l'écran d'accueil affiche encore cadenassé —
+   * verrouillé au retour, ouvert à l'aller. On avance donc d'abord, et
+   * l'annonce de fin d'acte est absorbée : la livraison EST cette annonce, la
+   * revoir au retour ferait deux fois la même nouvelle. */
+  function livrer() {
+    game.avancerCarriere();
+    game.acteTermineAAnnoncer = null;
+    onLivraison();
   }
 
   function ouvrir(a: Acte) {
@@ -188,7 +204,27 @@
       <span class="position">{enPrologue ? position : `Acte ${acte.id} · ${position}`}</span>
       <button class="xp-btn primary tap44-y" onclick={suite}>Suite ▸</button>
     </div>
-  {:else if etape}
+  {:else if etape && etape.kind === 'livraison'}
+    <!-- On repart avec l'objet, pas avec un score : le rythme qu'on vient de
+         faire s'ouvre dans l'Atelier, d'où il s'exporte en MP3. -->
+    <div class="appareil source-cassette">
+      <div class="entete">
+        <span class="icone">🎞</span>
+        <span>CASSETTE</span>
+        <span class="tag">{etape.entete}</span>
+      </div>
+      {#each etape.lignes as l, i (i)}
+        <p class="ligne">{l}</p>
+      {/each}
+    </div>
+    <div class="actions">
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
+      <span class="position">Acte {acte.id} · {position}</span>
+      <button class="xp-btn primary tap44-y" onclick={livrer}>{etape.bouton}</button>
+    </div>
+  {:else if etape && etape.kind === 'exercice'}
     <!-- Étape d'exercice atteinte sans être passée par `enchainer` (retour
          arrière du navigateur, relecture) : on ne saute pas dedans tout seul. -->
     <div class="appareil">

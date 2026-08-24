@@ -26,14 +26,31 @@ import {
 import { defaultState } from '../src/model/defaults';
 
 describe('le catalogue — des contrats, pas des intentions', () => {
-  it('chaque identifiant existe vraiment dans l’état d’une ligne', () => {
+  it('chaque identifiant existe vraiment là où il prétend écrire', () => {
     // Le piège que ce test existe pour attraper : un `lowpass` inventé au lieu
     // de `filterCutoff`. Le jeu réglerait un champ fantôme, tirerait deux sons
     // identiques, et le niveau serait impossible sans rien dire.
-    const ligne = defaultState().rows.kick as unknown as Record<string, unknown>;
+    //
+    // ⚠️ Deux cibles depuis l'arrivée du groove : swing ne vit PAS dans une
+    // ligne mais sur l'état global. Le test suit la cible déclarée — sinon il
+    // laisserait passer exactement l'erreur qu'il existe pour attraper.
+    const etat = defaultState();
+    const ligne = etat.rows.kick as unknown as Record<string, unknown>;
+    const global = etat as unknown as Record<string, unknown>;
     for (const p of PARAMETRES) {
-      expect(Object.prototype.hasOwnProperty.call(ligne, p.id), p.id).toBe(true);
-      expect(typeof ligne[p.id], p.id).toBe('number');
+      const cible = p.cible === 'global' ? global : ligne;
+      expect(Object.prototype.hasOwnProperty.call(cible, p.id), p.id).toBe(true);
+      expect(typeof cible[p.id], p.id).toBe('number');
+    }
+  });
+
+  // Un bouton global n'appartient à aucune ligne : il doit quand même dire sur
+  // quelle(s) ligne(s) son effet s'ENTEND, sinon le tirage n'a rien à faire
+  // sonner.
+  it('un bouton global déclare quand même où il s’entend', () => {
+    for (const p of PARAMETRES.filter((x) => x.cible === 'global')) {
+      expect(p.lignes.length, p.label).toBeGreaterThan(0);
+      expect(p.contexte, p.label).toBeTruthy();
     }
   });
 
@@ -53,6 +70,21 @@ describe('le catalogue — des contrats, pas des intentions', () => {
     // identiques : la bonne réponse serait un tirage au sort.
     for (const p of PARAMETRES) {
       expect(p.ecartMini / p.tolerance, p.label).toBeGreaterThanOrEqual(2.5);
+    }
+  });
+
+  /* ⚠️ La CHASSE des libellés, et c'est de la grammaire, pas du style.
+   *
+   * La consigne les insère dans « Laquelle sonne <libellé> ? » — le sujet est
+   * « une version », féminin, tandis que « sonner » prend son attribut en
+   * adverbe, donc au masculin singulier. Deux libellés étaient arrivés au
+   * féminin (« la plus forte », « la plus en avance »), ce qui donnait à
+   * l'écran « Laquelle sonne la plus en avance ? ». Ça ne se voit qu'en jouant
+   * le bon niveau ; ici ça se voit toujours. */
+  it('rédige ses libellés pour la phrase qui les accueille', () => {
+    for (const p of PARAMETRES) {
+      expect(p.plus, p.label).toMatch(/^le (plus|moins) /);
+      expect(p.moins, p.label).toMatch(/^le (plus|moins) /);
     }
   });
 
@@ -219,20 +251,38 @@ describe('les verbes de paramètre, câblés dans le store', () => {
    * identiques. Aucun de ces défauts ne se verrait à l'écran. */
   const TIRAGES = 40;
 
+  /* ⚠️ TOUS les niveaux de chaque verbe, pas le premier venu.
+   *
+   * Ce test bouclait sur `L.findIndex((l) => l.exercise === verbe)` — donc
+   * toujours sur un niveau de la famille `timbre`, et il finissait par
+   * l'affirmer (`expect(p.famille).toBe('timbre')`). L'acte 2 a amené une
+   * SECONDE famille, `groove`, avec son câblage à elle (un paramètre global,
+   * une ligne de repère qui ne doit pas être coupée) : elle serait passée
+   * entièrement sous le test. On boucle donc sur tous les niveaux, et on
+   * vérifie la famille QUE LE NIVEAU DEMANDE. */
   it('chaque tirage donne un bouton audible sur la ligne choisie', async () => {
     const { game, LEVELS: L } = await import('../src/stores/game.svelte');
     game.pseudo = 'test';
-    for (const verbe of ['lequel', 'nommer', 'regler'] as const) {
-      const i = L.findIndex((l) => l.exercise === verbe);
-      expect(i, verbe).toBeGreaterThanOrEqual(0);
+    const verbes = ['lequel', 'nommer', 'regler'] as const;
+    const niveaux = L.map((l, i) => [l, i] as const).filter(([l]) =>
+      (verbes as readonly string[]).includes(l.exercise),
+    );
+    // Les deux familles sont bien représentées : sans ça, le test se
+    // rendormirait sur `timbre` sans que rien ne le dise.
+    expect(new Set(niveaux.map(([l]) => l.familleParam)).size).toBeGreaterThanOrEqual(2);
+    for (const [niveau, i] of niveaux) {
       for (let n = 0; n < TIRAGES; n++) {
         game.startLevel(i);
         const p = parametre(game.paramId);
-        expect(p, `${verbe} ${game.paramId}`).not.toBeNull();
+        expect(p, `niveau ${niveau.id} ${game.paramId}`).not.toBeNull();
         // `tone` sur le kick ne ferait rien : deux sons identiques, niveau
         // impossible et muet sur la raison.
-        expect(p!.lignes, `${verbe} ${p!.label}`).toContain(game.paramLigne);
-        expect(p!.famille).toBe('timbre');
+        expect(p!.lignes, `niveau ${niveau.id} ${p!.label}`).toContain(game.paramLigne);
+        expect(p!.famille, `niveau ${niveau.id}`).toBe(niveau.familleParam);
+        // Et le niveau restreint bien le tirage à ce qu'il autorise.
+        if (niveau.paramsAutorises.length > 0) {
+          expect(niveau.paramsAutorises, `niveau ${niveau.id}`).toContain(p!.id);
+        }
       }
     }
   });
@@ -298,19 +348,33 @@ describe('les verbes de paramètre, câblés dans le store', () => {
     }
   });
 
-  it('la version jouée est bien celle qu’on demande, et la ligne est seule à sonner', async () => {
+  /* ⚠️ « Un décalage ne s'entend que par rapport à quelque chose. » Le groove
+   * est le premier cas où la ligne visée n'est PAS seule à sonner : le kick
+   * reste, comme repère. Sans lui, la question n'a pas de réponse — un hat
+   * décalé tout seul est un hat à l'heure sur un autre tempo. Tout le reste
+   * est coupé, exactement comme avant. */
+  it('la version jouée est bien celle qu’on demande, et rien ne sonne hors sujet', async () => {
     const { game, LEVELS: L } = await import('../src/stores/game.svelte');
-    const i = L.findIndex((l) => l.exercise === 'lequel');
-    game.startLevel(i);
-    const p = parametre(game.paramId)!;
-    for (let v = 0; v < game.paramVersions.length; v++) {
-      game.paramVersionJouee = v;
-      const st = game.buildState('param');
-      expect(lireParam(st.rows[game.paramLigne], p)).toBeCloseTo(game.paramVersions[v], 6);
-      for (const autre of ['kick', 'snare', 'hat'] as const) {
-        if (autre !== game.paramLigne) expect(st.rows[autre].muted, autre).toBe(true);
+    for (const [niveau, i] of L.map((l, k) => [l, k] as const).filter(
+      ([l]) => l.exercise === 'lequel',
+    )) {
+      game.startLevel(i);
+      const p = parametre(game.paramId)!;
+      for (let v = 0; v < game.paramVersions.length; v++) {
+        game.paramVersionJouee = v;
+        const st = game.buildState('param');
+        const lu =
+          p.cible === 'global'
+            ? ((st as unknown as Record<string, number>)[p.id] as number) / p.facteurEtat
+            : lireParam(st.rows[game.paramLigne], p);
+        expect(lu, `niveau ${niveau.id}`).toBeCloseTo(game.paramVersions[v], 6);
+        for (const autre of ['kick', 'snare', 'hat'] as const) {
+          const attendu = autre !== game.paramLigne && autre !== game.paramRepere;
+          expect(st.rows[autre].muted, `niveau ${niveau.id} ${autre}`).toBe(attendu);
+        }
+        // Un repère n'a de sens que s'il en est un : jamais la ligne visée.
+        if (game.paramRepere) expect(game.paramRepere).not.toBe(game.paramLigne);
       }
-      expect(st.rows[game.paramLigne].muted).toBe(false);
     }
   });
 });
@@ -421,5 +485,98 @@ describe('Les trois premiers exercices ne tirent que des boutons annoncés', () 
       if (game.paramId !== 'pitch' || game.paramLigne !== 'kick') continue;
       for (const v of game.paramVersions) expect(v).toBeGreaterThanOrEqual(0);
     }
+  });
+});
+
+/* ⚠️ Le groove doit vraiment BOUGER — prouvé sur les temps programmés.
+ *
+ * Deux pièges que seul le scheduler pouvait révéler, et qu'aucun type
+ * n'attrapait :
+ *
+ * 1. le swing ne retarde que les pas IMPAIRS (`col % 2 === 1`). Le motif par
+ *    défaut des exercices de paramètre pose les notes sur [0, 2, 4, 6] — tous
+ *    pairs. Trois « versions » auraient été strictement identiques ;
+ * 2. le décalage est par ligne, donc inaudible sans une ligne qui ne bouge
+ *    pas — `buildState('param')` muet tout sauf la ligne visée.
+ *
+ * On rejoue donc le scheduler avec de faux kits (aucun Web Audio, comme
+ * `tests/scheduler.test.ts`) et on vérifie que les versions ne tombent pas aux
+ * mêmes instants.
+ */
+describe('groove — les versions tombent à des instants différents', () => {
+  async function tempsDeChaqueVersion(idNiveau: number) {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const { scheduleDrumWindow } = await import('../src/engine/scheduler');
+    const { barDuration } = await import('../src/engine/groove');
+    const { makeSeededRng } = await import('../src/engine/rng');
+
+    const i = L.findIndex((l) => l.id === idNiveau);
+    game.startLevel(i);
+
+    const parVersion: string[] = [];
+    for (let v = 0; v < game.paramVersions.length; v++) {
+      game.paramVersionJouee = v;
+      const state = game.buildState('param');
+      const temps: string[] = [];
+      // Mêmes noms de méthodes que `tests/scheduler.test.ts` : le faux kit
+      // n'implémente que ce que le scheduler appelle, et une méthode oubliée
+      // fait échouer le test avec un TypeError explicite — c'est voulu.
+      const kit = {
+        playKick: (t: number) => temps.push(`k${t.toFixed(4)}`),
+        playSnare: (t: number) => temps.push(`s${t.toFixed(4)}`),
+        playRimshot: (t: number) => temps.push(`r${t.toFixed(4)}`),
+        playClap: (t: number) => temps.push(`c${t.toFixed(4)}`),
+        playShaker: (t: number) => temps.push(`x${t.toFixed(4)}`),
+        playHatClosed: (t: number) => temps.push(`h${t.toFixed(4)}`),
+        playHatOpen: (t: number) => temps.push(`H${t.toFixed(4)}`),
+      } as never;
+      const cursors = {
+        kick: { stepIndex: 0, nextStepTime: 0 },
+        snare: { stepIndex: 0, nextStepTime: 0 },
+        hat: { stepIndex: 0, nextStepTime: 0 },
+        clap: { stepIndex: 0, nextStepTime: 0 },
+        shaker: { stepIndex: 0, nextStepTime: 0 },
+      };
+      // `horizon` est le SECOND argument, pas un champ du contexte.
+      scheduleDrumWindow(
+        {
+          state, kit, cursors,
+          barDur: barDuration(state.tempo), rng: makeSeededRng(1), fillRng: makeSeededRng(2),
+          emitPlayhead: () => {},
+        } as never,
+        barDuration(state.tempo),
+      );
+      parVersion.push(temps.join(' '));
+    }
+    return { parVersion, game };
+  }
+
+  it('le swing déplace vraiment des coups, et le repère sonne', async () => {
+    const { parVersion, game } = await tempsDeChaqueVersion(45);
+    expect(game.paramId).toBe('swing');
+    // Le repère tient le temps : il doit s'entendre.
+    expect(game.paramRepere).toBe('kick');
+    expect(parVersion[0]).toContain('k');
+    expect(parVersion[0]).toContain('h');
+    // Et surtout : aucune version ne sonne comme une autre.
+    expect(new Set(parVersion).size, parVersion.join('\n')).toBe(parVersion.length);
+  });
+
+  it('le décalage déplace la ligne visée sans bouger le repère', async () => {
+    const { parVersion, game } = await tempsDeChaqueVersion(46);
+    expect(game.paramId).toBe('shiftPct');
+    expect(game.paramRepere).toBe('kick');
+    expect(new Set(parVersion).size, parVersion.join('\n')).toBe(parVersion.length);
+    // Le kick, lui, tombe au même endroit dans toutes les versions — c'est ce
+    // qui fait du décalage un écart plutôt qu'un simple retard de la boucle.
+    const kicks = parVersion.map((v) => v.split(' ').filter((e) => e.startsWith('k')).join(' '));
+    expect(new Set(kicks).size).toBe(1);
+  });
+
+  // La traîne est absente du catalogue, et c'est un choix : globale, elle
+  // décale TOUT uniformément — deux boucles séparées d'un retard constant sont
+  // indiscernables. Ce test garde la porte fermée.
+  it('n’enseigne pas la traîne, qui n’a rien contre quoi s’entendre', () => {
+    expect(PARAMETRES.find((p) => p.id === 'drag')).toBeUndefined();
   });
 });

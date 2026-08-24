@@ -58,7 +58,10 @@ export type ExerciseKind =
   /* Le verbe de HAUTEUR : reposer une ligne de basse à l'oreille, degré par
    * degré. C'est le seul qui sorte de la batterie — voir `melodie` dans
    * `GameLevel` et la grille de `GameView`. */
-  | 'melodie';
+  | 'melodie'
+  /* Le verbe du SILENCE : une pulsation régulière, un coup manquant, lequel ?
+   * Aucun vocabulaire, aucune grille — c'est le quatrième mot de l'acte 0. */
+  | 'silence';
 
 /** Les verbes qui portent sur un paramètre continu plutôt que sur la grille. */
 export const VERBES_PARAM: ExerciseKind[] = ['lequel', 'nommer', 'regler'];
@@ -76,6 +79,7 @@ export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   nommer: 'Qu’est-ce qui a changé ?',
   regler: 'Règle-le à l’oreille',
   melodie: 'Repose la mélodie',
+  silence: 'Trouve le silence',
 };
 
 /* ⚠️ Les cases portent un NOMBRE, pas un `DrumStep`.

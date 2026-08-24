@@ -73,7 +73,25 @@ export interface EtapeExercice {
   commande?: string;
 }
 
-export type Etape = EtapeRecit | EtapeExercice;
+/* La LIVRAISON — on repart avec l'objet, pas avec un score.
+ *
+ * Idée de Yann : « sortir une vraie sonnerie de téléphone avec […] ce qui peut
+ * être drôle, c'est de l'exporter et de proposer d'en faire la sonnerie de son
+ * téléphone/réveil matin. »
+ *
+ * Elle tombe à la fin de l'acte 1, et ce n'est pas un hasard : c'est l'acte qui
+ * OUVRE l'Atelier. Le déverrouillage cesse d'être une annonce — on y entre avec
+ * le rythme qu'on vient de faire, et on en sort avec un fichier. L'export MP3
+ * existe depuis toujours, il ne manquait que le moment. */
+export interface EtapeLivraison {
+  kind: 'livraison';
+  entete: string;
+  lignes: string[];
+  /** Le libellé du bouton qui emmène dans l'Atelier. */
+  bouton: string;
+}
+
+export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison;
 
 export interface Acte {
   id: ActeId;
@@ -233,7 +251,7 @@ const PROLOGUE: Etape[] = [
       // donc reconnaître des choses sans les avoir nommées, alors que
       // l'Atelier, où vivent les boutons, n'est même pas encore ouvert.
       'Sol se tourne vers toi.',
-      '— Écoute la hauteur, la durée, et l’attaque.',
+      '— Écoute la hauteur, la durée, l’intensité.',
     ],
   },
 ];
@@ -259,23 +277,20 @@ export const ACTES: Acte[] = [
     resume: 'Le sous-traitant s’en va. Quatre ans de sonneries sont perdus.',
     etapes: [
       ...PROLOGUE,
-      /* ⚠️ Le premier exercice arrive ICI, au 5e écran — c'est le cœur du
-       * correctif « beaucoup de texte avant le 1er jeu ». La réplique qui le
-       * déclenche vit dans sa `commande` plutôt que sur un écran à elle : un
-       * écran de plus pour quatre lignes de dialogue, c'était une lecture de
-       * plus avant le premier son. */
-      // ⚠️ Ces commandes ne nomment PAS le réglage : les niveaux 39-41 tirent
-      // le leur au hasard dans la famille Timbre. « Lequel est le plus grave ? »
-      // — la phrase du texte — mentait une fois sur quatre à l'écran. Une
-      // commande ne doit promettre que ce que le tirage tient.
+      /* ⚠️ Les quatre mots de `HISTOIRE.md` — « la hauteur ; la durée ;
+       * l'intensité ; le silence » — et rien d'autre.
+       *
+       * L'acte utilisait `nommer` et `regler`, deux verbes de VOCABULAIRE, dans
+       * un acte où l'Atelier est FERMÉ : on demandait de nommer des curseurs
+       * jamais vus (« je ne sais même pas expliquer ce que c'est decay »).
+       * Ils déménagent à l'acte 2, où les mots sont enfin sur des boutons que
+       * le joueur a rencontrés. Ici il ne reste que `lequel`, qui parle en
+       * propriétés, et le verbe du silence. */
       {
         kind: 'exercice',
-        niveau: 39,
+        niveau: 49,
         commande: '— Tu fais quoi exactement ici ? — Le café. — Je sais. Écoute ça.',
       },
-      /* L'économie des sonneries revient APRÈS le premier exercice, et elle y
-       * gagne : on explique les onze centimes à quelqu'un qui vient d'écouter
-       * des sons, pas à quelqu'un qui attend de jouer. */
       {
         kind: 'recit',
         source: 'fax',
@@ -289,8 +304,11 @@ export const ACTES: Acte[] = [
           '— C’est onze centimes de plus qu’un album.',
         ],
       },
-      { kind: 'exercice', niveau: 40, commande: 'Elle en fait écouter deux autres. — Et là, qu’est-ce qui change ?' },
-      { kind: 'exercice', niveau: 41, commande: 'Puis un dernier. — Refais-le-moi à l’identique.' },
+      // ⚠️ Aucune de ces commandes ne nomme le SENS de la question : `paramSens`
+      // est tiré à chaque partie. « Lequel dure le plus ? » mentait une fois
+      // sur deux, sur l'écran d'à côté qui demandait le plus court.
+      { kind: 'exercice', niveau: 50, commande: 'Elle recommence. — Même exercice. Là, c’est la durée qui change.' },
+      { kind: 'exercice', niveau: 51, commande: 'Encore. — Et celui-là, il est plus fort ou plus doux ?' },
       {
         kind: 'recit',
         source: 'lcd',
@@ -298,7 +316,13 @@ export const ACTES: Acte[] = [
         lignes: [
           'Elle te regarde comme si la plante verte venait de parler.',
           '— Lundi tu fais les sonneries.',
+          '— Encore une chose.',
         ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 52,
+        commande: '— Ce qu’on n’entend pas compte autant. Où est le trou ?',
       },
       {
         kind: 'recit',
@@ -326,6 +350,12 @@ export const ACTES: Acte[] = [
     module: 'atelier',
     resume: 'Un brief que personne ne sait expliquer. Kick, snare, hi-hat.',
     etapes: [
+      /* ⚠️ L'acte ouvrait sur DEUX écrans de lecture — le brief, puis « Sol
+       * t'apprend la grille » : quatre mots sur un afficheur, pour un écran
+       * entier. Les trois mots tiennent dans le brief, où ils sont en plus
+       * motivés (c'est la réponse de Sol au client qui ne sait pas ce qu'il
+       * veut). Même règle que l'entrelacement du prologue : ce qui peut tenir
+       * dans l'écran d'à côté n'a pas besoin du sien. */
       {
         kind: 'recit',
         source: 'fax',
@@ -335,31 +365,75 @@ export const ACTES: Acte[] = [
           'MAIS QUI DONNE ENVIE DE BOUGER.',
           '— Ça veut dire quoi ?',
           '— Ça veut dire qu’ils ne savent pas.',
-          'Tu dois te débrouiller.',
+          'Sol pose trois mots sur la table :',
+          'Kick. Snare. Hi-hat.',
+          '— Le reste, c’est de la décoration.',
         ],
       },
+      /* ⚠️ Le niveau 1 a sauté — « niveau 1 à supprimer, on peut passer au
+       * niveau 2 directement » (Yann). Il ne faisait poser que des kicks, sur
+       * une grille où les deux autres lignes étaient explicitement vides : un
+       * écran où il n'y a rien à arbitrer. Le niveau reste dans le réservoir,
+       * la carrière ne le cite plus. */
+      { kind: 'exercice', niveau: 2, commande: 'La première sonnerie. Le kick tient le temps, la snare répond.' },
+      { kind: 'exercice', niveau: 3, commande: 'La deuxième. Le hi-hat par-dessus, et le trio est complet.' },
+      { kind: 'exercice', niveau: 7, commande: 'La troisième. Plus de cases, donc plus de précision.' },
+      /* ⚠️ Les variantes et les rafales atterrissent ICI, et c'est un
+       * déménagement demandé : elles vivaient à l'acte 2, où « on ne comprend pas
+       * pourquoi il y a les rafales et les charleys ouverts, rim shot,
+       * personne n'explique, ce n'est pas lié au groove » (Yann). Ce sont deux
+       * gestes de GRILLE — un deuxième clic, un appui long — donc deux gestes
+       * de l'acte qui enseigne la grille. Et quelqu'un les explique : Sol les
+       * fait, à l'écran, avant qu'on les demande. */
       {
         kind: 'recit',
         source: 'lcd',
-        entete: 'SOL T’APPREND LA GRILLE',
-        lignes: ['Kick.', 'Snare.', 'Hi-hat.', 'Subdivisions.'],
+        entete: 'SOL',
+        lignes: [
+          '— C’est juste, et c’est plat.',
+          'Elle reclique sur une case déjà allumée.',
+          'La snare devient un rim shot : le bord, pas la peau.',
+          'Elle appuie longuement sur une autre.',
+          'Le coup part en rafale, trois fois plus vite.',
+          '— Deux gestes. C’est tout ce qui sépare',
+          'une sonnerie d’un réveille-matin.',
+        ],
       },
-      { kind: 'exercice', niveau: 1, commande: 'La première sonnerie. Une seule ligne, pour commencer.' },
-      { kind: 'exercice', niveau: 2, commande: 'La deuxième. La snare entre.' },
-      { kind: 'exercice', niveau: 3, commande: 'La troisième. Le trio complet.' },
-      { kind: 'exercice', niveau: 7, commande: 'La quatrième. Plus de cases, plus de précision.' },
+      { kind: 'exercice', niveau: 5, commande: 'Une seule case porte une variante — rim shot, ou charley ouvert. Trouve-la.' },
+      { kind: 'exercice', niveau: 8, commande: 'Et une seule part en rafale. C’est elle qui donne l’urgence.' },
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'RELEVÉ DU MOIS',
         lignes: [
-          'La quatrième prend.',
+          'La dernière prend.',
           'QUATRE-VINGT-ONZE EUROS.',
           '— On était meilleurs quand on vendait des albums.',
           '— Vous avez arrêté pourquoi ?',
-          '— Nous, on n’a pas arrêté. Les gens ont arrêté d’acheter.',
-          'Le soir, tu restes seul pour travailler.',
+          '— Nous, on n’a pas arrêté.',
+          'Les gens ont arrêté d’acheter.',
         ],
+      },
+      /* La LIVRAISON — et c'est elle qui ouvre l'Atelier, pas un écran de fin
+       * d'acte. « Sortir une vraie sonnerie de téléphone avec […] ce qui peut
+       * être drôle, c'est de l'exporter et de proposer d'en faire la sonnerie de
+       * son téléphone/réveil matin » (Yann). Le déverrouillage cesse d'être une
+       * annonce : on entre dans l'Atelier avec le rythme qu'on vient de faire,
+       * et l'export MP3 — qui existe depuis toujours — trouve enfin son
+       * moment. */
+      {
+        kind: 'livraison',
+        entete: 'FB — TA SONNERIE',
+        lignes: [
+          'Sol fait glisser une clé sur la table.',
+          '— La dernière, elle est à toi. Emporte-la.',
+          'L’ATELIER EST OUVERT.',
+          'Ton rythme s’y ouvre tel quel.',
+          'Exporte-le en MP3, mets-le sur ton téléphone :',
+          'c’est ta sonnerie, ou ton réveil.',
+          '— Et le lundi matin, tu penseras à nous.',
+        ],
+        bouton: 'Emporter ma sonnerie ▸',
       },
     ],
   },
@@ -373,36 +447,82 @@ export const ACTES: Acte[] = [
     module: null,
     resume: 'Kelvin a seize ans, il vient le mardi, et il trouve ça nul.',
     etapes: [
+      /* ⚠️ L'acte citait cinq GRILLES à reproduire (presets, swing, traîne,
+       * ghost notes, décalage). Retour de Yann : « pour le groove, on ne
+       * comprend pas pourquoi il y a les rafales et les charleys ouverts, rim
+       * shot, personne n'explique, ce n'est pas lié au groove. Le groove, ce
+       * sont des paramètres qu'on doit pouvoir régler. »
+       *
+       * Il ne cite donc plus que les trois verbes de PARAMÈTRE sur la famille
+       * `groove` : entendre (`lequel`), nommer (`nommer`), viser (`regler`).
+       * C'est aussi le premier endroit où `nommer` et `regler` ont un sens :
+       * l'Atelier est ouvert depuis l'acte 1, les mots « Swing » et
+       * « Décalage » sont enfin sur des curseurs que le joueur a vus. À l'acte
+       * 0 ils ne renvoyaient à rien — « je ne sais même pas expliquer ce que
+       * c'est decay ».
+       *
+       * La traîne (`drag`) n'y est pas, et c'est un choix : elle est GLOBALE
+       * dans le format v2 (un seul champ pour tout le morceau), donc
+       * impossible à faire entendre ligne par ligne sans mentir sur ce qu'on
+       * règle. Voir `parametres.ts`. */
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'LE MARDI',
         lignes: [
           'Kelvin a seize ans. Il fait du rap.',
-          'Il n’a jamais rien sorti.',
-          'Il cherche des instrumentaux.',
-          'Il ne montre jamais ses textes.',
-          'Il te demande une boucle.',
+          'Il n’a jamais rien sorti, il ne montre jamais ses textes.',
+          'Il te demande une boucle. Tu lui donnes ta plus propre.',
+          '— C’est nul.',
+          '— Pourquoi ?',
+          '— Ça fait réveil.',
+          'Il tape du doigt sur la table, à côté du temps.',
+          '— C’est carré. Personne ne danse carré.',
         ],
       },
-      { kind: 'exercice', niveau: 4, commande: 'Quelque chose de parfaitement calé. Propre, carré, comme à la radio.' },
+      {
+        kind: 'exercice',
+        niveau: 45,
+        commande: 'Sol, sans lever les yeux : — Il a raison. Écoute : même rythme, pas le même balancement.',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— Ça s’appelle le swing.',
+          'Un temps sur deux arrive un peu en retard.',
+          'Toujours le même, toujours du même retard.',
+          '— Et c’est réglable ?',
+          '— Tout est réglable. C’est bien le problème.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 46,
+        commande: 'Autre bouton : là, c’est la ligne entière qui glisse. Le kick, lui, ne bouge pas.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 47,
+        commande: 'Kelvin en a repéré deux. Il ne sait pas les nommer. Toi, si.',
+      },
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'KELVIN',
         lignes: [
-          '— C’est nul.',
-          '— Pourquoi ?',
-          '— Ça fait réveil.',
-          'Il tape du doigt sur la table.',
-          '— C’est carré, mais personne ne danse carré.',
-          'Sol, depuis son bureau : — Il a raison.',
+          'Il refait le geste du doigt sur la table.',
+          '— Comme ça.',
+          '— Ça fait combien, « comme ça » ?',
+          '— J’en sais rien. Comme ça.',
         ],
       },
-      { kind: 'exercice', niveau: 14, commande: 'Le swing : les temps faibles reculent un peu.' },
-      { kind: 'exercice', niveau: 15, commande: 'La traîne : ça arrive juste après, exprès.' },
-      { kind: 'exercice', niveau: 20, commande: 'Les ghost notes : ce qu’on entend à peine tient tout.' },
-      { kind: 'exercice', niveau: 23, commande: 'Le décalage : une ligne entière en avant, ou en retard.' },
+      {
+        kind: 'exercice',
+        niveau: 48,
+        commande: 'Alors trouve-le au curseur. Pas le chiffre : le balancement.',
+      },
       {
         kind: 'recit',
         source: 'cassette',
