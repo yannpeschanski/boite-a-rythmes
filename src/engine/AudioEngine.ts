@@ -33,30 +33,49 @@ const SCHEDULE_AHEAD = 0.25; // s
  * de sortie du contexte. Un pad qui répond en 120 ms ne s'entend pas comme un
  * instrument.
  *
- * ⚠️ 5 ms NE SUFFISENT PAS, et c'est le raisonnement qui était faux — pas le
- * chiffre. Retour de Yann après la mise en ligne : « ça marche très bien mais le
- * son est devenu moche ». Toutes les voix ouvrent sur une attaque de 4 ms :
+ * ⚠️ CETTE CONSTANTE NE SERT QU'AUX FRAPPES. Le séquenceur ne la lit pas : il
+ * programme ses pas depuis l'horloge audio avec 250 ms de lookahead
+ * (SCHEDULE_AHEAD). Tout ce qu'elle règle, c'est le délai entre un doigt et
+ * un son.
+ *
+ * L'HISTOIRE, PARCE QU'ELLE COMMANDE LA VALEUR. Descendue à 5 ms le
+ * 2026-08-21 pour gagner de la latence, remontée à 20 ms le jour même :
+ * « ça marche très bien mais le son est devenu moche » (Yann). La cause était
+ * connue et juste — toutes les voix ouvrent sur une attaque de 4 ms :
  *
  *     g.gain.setValueAtTime(0.0001, time);
  *     g.gain.exponentialRampToValueAtTime(gain, time + 0.004);
  *
- * Avec 5 ms d'avance, l'attaque ENTIÈRE tient dans la marge. Il suffit que le
- * fil principal prenne quelques millisecondes de retard entre la lecture de
- * `currentTime` et le rendu pour que `setValueAtTime` tombe dans le PASSÉ :
- * Web Audio l'applique alors immédiatement, la rampe est sautée, le gain saute
- * d'un coup — un clic à chaque note. Ce n'est donc pas du rembourrage de
- * confort, c'est la marge dont l'enveloppe dépend pour exister.
+ * Il suffisait que le fil principal prenne quelques millisecondes de retard
+ * pour que `setValueAtTime` tombe dans le PASSÉ : Web Audio l'applique alors
+ * immédiatement, la rampe est sautée, le gain saute — un clic à chaque note.
+ * L'avance servait donc de MARGE pour que ce cas n'arrive pas.
  *
- * 20 ms : la valeur que `preview` portait déjà avant, et dont on sait qu'elle
- * sonne juste. Deux blocs de tampon de slack en 'interactive', et de quoi
- * absorber une longue tâche du fil principal.
+ * CE QUI A CHANGÉ (2026-08-24, « il y a un peu trop de délai aux écouteurs
+ * bluetooth, il faudrait que ce soit un peu plus réactif »). Une marge protège
+ * tant qu'elle est plus grande que le retard, et cesse de protéger dès qu'une
+ * tâche du fil principal la dépasse — elle rend le clic rare, pas impossible.
+ * `depart.ts` traite la cause : toute voix dont l'instant est déjà passé repart
+ * de maintenant AVEC son attaque. C'est le chantier que ce commentaire
+ * annonçait comme la seule vraie sortie (« rendre les enveloppes robustes à un
+ * démarrage tardif, pas raccourcir cette constante »), et il est fait.
  *
- * Descendre plus bas SANS abîmer le son demande de rendre les enveloppes
- * robustes à un démarrage tardif (caler sur `max(time, currentTime)` et
- * recalculer la rampe), pas de raccourcir cette constante. C'est un chantier,
- * pas un réglage — noté dans PLAN.md.
+ * D'où 8 ms. Le plancher n'est plus l'attaque de 4 ms — elle est protégée
+ * ailleurs, et mieux — mais le grain de l'ordonnanceur : une frappe se
+ * programme DANS son gestionnaire d'événement, `currentTime` est lu et les
+ * nœuds sont créés dans la même tâche, sans timer entre les deux. 12 ms
+ * rendues sur chaque frappe, sans rien devoir à la chance.
+ * `tests/depart.test.ts` verrouille les deux moitiés : la borne, et le fait
+ * qu'aucune voix ne programme dans le passé.
+ *
+ * ⚠️ Ce que ça ne règle pas, et qu'aucune ligne de code ne réglera : le
+ * Bluetooth. Un casque A2DP met 100 à 200 ms à jouer ce qu'on lui envoie,
+ * dans son propre tampon, hors de portée du navigateur — 12 ms rendues sur 150
+ * ne se sentent pas. Ce qui se sent en Bluetooth, c'est que le PLACEMENT de ce
+ * qu'on enregistre reste juste malgré le décalage : ça, c'est le calibrage
+ * (ui/latence.svelte.ts), pas cette constante.
  */
-export const AVANCE_DECLENCHEMENT = 0.02; // s
+export const AVANCE_DECLENCHEMENT = 0.008; // s
 
 /* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
  *
@@ -896,6 +915,26 @@ export class AudioEngine {
     const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
     if (name === 'bass') this.synth!.playBassNote(freq, t, 0.45, 0.45, row.voice, null);
     else this.synth!.playMelodyNote(freq, t, 0.45, 0.4, row.voice, null);
+  }
+
+  // Aperçu d'un ACCORD précis de la Nappe — pour le pad d'écriture de
+  // l'Atelier (« il faut un pad pour les nappes aussi »).
+  //
+  // `previewSynth('pad')` ne sait jouer que l'accord 0 : c'est un test de
+  // TIMBRE, pas un aperçu de ce qu'on s'apprête à écrire. Les fréquences
+  // passent par `chordFreqs`, donc par le même ancrage de -12 demi-tons que
+  // le scheduler — sans quoi le pad sonnerait une octave au-dessus de ce que
+  // la grille jouera. Même durée/gain que `previewSynth` pour la Nappe : un
+  // accord tenu s'apprécie plus long qu'une note piquée.
+  playChordPreview(chordIdx: number): void {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    void ctx.resume();
+    const state = this.getState();
+    const freqs = chordFreqs(state, chordsFor(state), chordIdx);
+    if (!freqs.length) return;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
+    this.synth!.playPadChord(freqs, t, 0.6, 0.3, state.synthRows.pad.voice, 0, 0, null);
   }
 
   // Son de victoire du Mode jeu (original playChime/playWinSound,

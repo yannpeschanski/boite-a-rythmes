@@ -4,6 +4,7 @@
 // rigoureusement indépendants.
 import type { GraphNodes } from '../graph';
 import { driveCurve } from '../fx';
+import { departSur } from '../depart';
 
 // Un `voice` neutre (toutes valeurs à 0) reproduit EXACTEMENT le son fixe
 // d'origine — tout appel qui ne passe pas de voice (Mode jeu) sonne comme avant.
@@ -59,6 +60,10 @@ export class DrumKit {
   }
 
   playKick(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v);
     const dMult = decayMult(v);
@@ -89,6 +94,10 @@ export class DrumKit {
   }
 
   playSnare(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v);
     const dMult = decayMult(v);
@@ -127,6 +136,10 @@ export class DrumKit {
   }
 
   playRimshot(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v);
     const dMult = decayMult(v);
@@ -168,6 +181,10 @@ export class DrumKit {
   }
 
   playClap(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v);
     const dMult = decayMult(v);
@@ -200,6 +217,10 @@ export class DrumKit {
   // étroit (contrairement au clap) : un shaker est essentiellement du bruit
   // blanc, sa couleur vient d'où on coupe le bas, pas d'une résonance.
   playShaker(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v);
     const dMult = decayMult(v);
@@ -248,6 +269,10 @@ export class DrumKit {
   }
 
   playHatClosed(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v); // pilote la fondamentale des 6 oscillateurs (le vrai timbre)
     const dMult = decayMult(v);
@@ -276,6 +301,10 @@ export class DrumKit {
   }
 
   playHatOpen(time: number, gain: number, voice?: Partial<DrumVoice>): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const v = resolveVoice(voice);
     const mult = pitchMult(v);
     const dMult = decayMult(v);

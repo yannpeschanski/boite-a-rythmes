@@ -18,6 +18,8 @@
     stepAt,
     horloge,
     onPreviewDegree,
+    onPreviewChord,
+    onCalibrer,
     onFxChanged,
   }: {
     playhead: Record<SynthRowName, number>;
@@ -27,6 +29,8 @@
     stepAt?: Record<SynthRowName, number>;
     horloge?: () => number;
     onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
+    onPreviewChord?: (chordIdx: number) => void;
+    onCalibrer?: () => void;
     onFxChanged?: () => void;
   } = $props();
 
@@ -63,6 +67,8 @@
         stepStartedAt={stepAt?.[name as SynthRowName] ?? 0}
         {horloge}
         {onPreviewDegree}
+        {onPreviewChord}
+        {onCalibrer}
         onChanged={onFxChanged}
       />
     </div>

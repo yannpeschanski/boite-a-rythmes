@@ -36,6 +36,19 @@
   // grille affiche déjà (`octaveMark`, SynthRowView). Le clavier montre ce
   // qu'il écrit.
   //
+  // POURQUOI LA NAPPE EST DANS CE COMPOSANT ET PAS DANS UN SECOND PAD
+  // (2026-08-24, « il faut un pad pour les nappes aussi »). Ce que la Nappe
+  // pose n'est pas un degré mais un INDEX D'ACCORD (`-1` pour le silence) —
+  // le clavier change donc entièrement : quatre à sept touches d'accords, une
+  // seule rangée, pas d'octave. Mais tout ce qui l'entoure est identique au
+  // millimètre : le curseur pas-à-pas, l'enregistrement en direct, la
+  // quantification au pas le plus proche avec la latence mesurée, le silence
+  // qui efface et avance. Un second composant aurait dupliqué exactement la
+  // partie difficile — celle qui a coûté deux corrections de câblage
+  // (`synthStepAt`, `latence.ms`) — pour ne varier que la partie facile.
+  // C'est le même arbitrage que `comparerGrilles(colonnes)` côté Mode jeu :
+  // un seul chemin, paramétré, plutôt que deux qui doivent rester d'accord.
+  //
   // CE QUE ÇA REMPLACE (§7.5, règle n°1). Le choix d'une note se faisait en
   // tapant plusieurs fois sur la case : `cycleCell` fait défiler
   // silence -> 1 -> 2 … -> 7 -> silence. Poser un degré 5 coûtait 5 appuis,
@@ -45,6 +58,7 @@
   import type { SynthRowName, SynthNote } from '../../model/types';
   import { chordsFor, scaleFor, stepsForLine, stepDurForLine } from '../../engine/harmony';
   import { noteNameForScaleDegree } from '../../model/presets/scales';
+  import type { ChordDef } from '../../model/presets/scales';
   import { barDuration } from '../../engine/groove';
   import { quantizeToStep } from '../../engine/quantize';
   import { latence } from '../latence.svelte';
@@ -57,10 +71,12 @@
     horloge,
     cursor = $bindable(0),
     onPreview,
+    onPreviewChord,
     onChanged,
     onClose,
+    onCalibrer,
   }: {
-    name: 'bass' | 'melody';
+    name: SynthRowName;
     playing?: boolean;
     playheadCol?: number;
     /** `performance.now()` de l'arrivée du pas courant — sert à quantifier. */
@@ -72,9 +88,16 @@
     horloge?: () => number;
     /** Pas visé à l'arrêt — partagé avec la grille, qui l'entoure. */
     cursor?: number;
+    /** Basse/Mélodie : faire entendre un degré avant qu'il ne s'écrive. */
     onPreview?: (degree: number, octave: number) => void;
+    /** Nappe : faire entendre un accord. Deux rappels et non un seul à valeur
+        union — chacun descend vers une méthode du moteur qui porte son nom. */
+    onPreviewChord?: (chordIdx: number) => void;
     onChanged?: () => void;
     onClose?: () => void;
+    /** Ouvrir le calibrage du décalage d'entrée (remonte jusqu'à l'Atelier,
+        qui possède le moteur audio). */
+    onCalibrer?: () => void;
   } = $props();
 
   const row = $derived(pattern.state.synthRows[name as SynthRowName]);
@@ -129,10 +152,31 @@
     return new Set((chord?.degrees ?? []).map((d) => ((d - 1) % 7) + 1));
   });
 
-  function write(col: number, note: SynthNote | null) {
+  // La Nappe pose des accords : son clavier est la liste des accords
+  // disponibles, qui suit `chordCount` (4 à 7) et la tonalité — pas une liste
+  // en dur. Changer de gamme dans le module Synthé rebaptise les touches.
+  const isPad = $derived(name === 'pad');
+  const accords = $derived<ChordDef[]>(isPad ? chords : []);
+  // Nom réel de la fondamentale de l'accord, même service que `noms` pour les
+  // degrés : « I » ne dit rien à qui ne lit pas le chiffrage, « Do » si.
+  const nomsAccords = $derived(
+    accords.map((c) => noteNameForScaleDegree(scaleFor(pattern.state), pattern.state.synthGlobal.rootMidi, c.root)),
+  );
+
+  // Ce qui est DÉJÀ écrit sur le pas visé. La grille l'affiche, mais on
+  // regarde le clavier au moment d'appuyer : sans ce repère on ne sait pas si
+  // on pose ou si on remplace. Réservé à la Nappe — sur Basse/Mélodie la
+  // teinte est déjà prise par « dans l'accord en cours ».
+  const accordPose = $derived.by(() => {
+    if (!isPad) return -1;
+    const v = row.pattern[target];
+    return typeof v === 'number' ? v : -1;
+  });
+
+  function write(col: number, note: SynthNote | number | null) {
     if (col < 0 || col >= steps) return;
     row.pattern[col] = note;
-    if (note === null) row.rolls[col] = 1;
+    if (note === null || note === -1) row.rolls[col] = 1;
     onChanged?.();
   }
 
@@ -169,9 +213,21 @@
     if (!playing) cursor = (safeCursor + 1) % steps;
   }
 
+  function tapAccord(idx: number) {
+    onPreviewChord?.(idx);
+    const col = quantizedCol();
+    write(col, idx);
+    if (!playing) cursor = (safeCursor + 1) % steps;
+  }
+
+  /* Le silence de la Nappe s'écrit -1 et non `null` : c'est le format v2 qui
+     le dit (types.ts, « pad : index d'accord (0..chordCount-1) ou -1/null »),
+     et c'est ce que `cycleCell` écrit déjà. Écrire `null` marcherait à la
+     lecture — le scheduler teste `>= 0` — mais ferait deux représentations du
+     même silence dans les fichiers de sauvegarde. */
   function silence() {
     const col = quantizedCol();
-    write(col, null);
+    write(col, isPad ? -1 : null);
     if (!playing) cursor = (safeCursor + 1) % steps;
   }
 
@@ -190,7 +246,7 @@
 
 <div class="note-pad" data-group="synth-pad">
   <div class="note-pad-head">
-    <strong>Pad — {name === 'bass' ? 'Basse' : 'Mélodie'}</strong>
+    <strong>Pad — {name === 'bass' ? 'Basse' : name === 'pad' ? 'Nappe' : 'Mélodie'}</strong>
     <span class="where">
       {#if playing}
         enregistre en direct
@@ -198,6 +254,13 @@
         pas {target + 1} / {steps}
       {/if}
     </span>
+    <!-- Le calibrage s'ouvre DEPUIS le pad, parce que c'est ici qu'on sent le
+         problème : ce qu'on joue en Bluetooth s'entend 100 à 200 ms trop tard,
+         donc s'écrit un pas plus loin. Il vivait dans le Mode jeu, où
+         personne n'allait le chercher en composant. -->
+    <button class="mini tap44" onclick={onCalibrer} title="Calibrer le décalage de l’appareil (casque Bluetooth, dalle tactile)">
+      🎚{latence.ms ? ` ${latence.ms > 0 ? '+' : ''}${latence.ms}` : ''}
+    </button>
     <button class="mini tap44" onclick={onClose} title="Fermer le pad">✕</button>
   </div>
 
@@ -207,6 +270,37 @@
        attendait qu'on lève la main. Les cases de batterie écoutaient déjà
        `onpointerdown` — l'écart était chez le pad. `preventDefault` empêche
        le click fantôme qui suivrait et jouerait la note une seconde fois. -->
+  {#if isPad}
+    <!-- Clavier d'ACCORDS. Une seule rangée : un accord n'a pas d'octave dans
+         le format v2, et les quatre à sept touches sont larges d'office. -->
+    <div class="keys accords" style:--cols={accords.length + 1}>
+      {#each accords as c, i (c.id)}
+        <button
+          class="key"
+          class:pose={accordPose === i}
+          onpointerdown={(e) => {
+            e.preventDefault();
+            tapAccord(i);
+          }}
+          title={`${c.label}${accordPose === i ? ' — déjà posé sur le pas visé' : ''}`}
+        >
+          <span class="nom">{nomsAccords[i]}</span>
+          <span class="deg">{c.roman}</span>
+        </button>
+      {/each}
+      <button
+        class="key silence"
+        onpointerdown={(e) => {
+          e.preventDefault();
+          silence();
+        }}
+        title="Effacer ce pas et avancer"
+      >
+        <span class="nom">∅</span>
+        <span class="deg">vide</span>
+      </button>
+    </div>
+  {:else}
   <div class="keys">
     <!-- Placement explicite plutôt qu'auto : la touche de silence occupe la
          8e colonne sur les trois rangées, et une grille auto-placée ferait
@@ -247,9 +341,16 @@
       <span class="deg">vide</span>
     </button>
   </div>
+  {/if}
 
   <div class="bar">
-    <span class="lab">Rangée du haut = octave aiguë ▴, du bas = grave ▾</span>
+    <span class="lab">
+      {#if isPad}
+        Chaque touche est un accord de la tonalité — le chiffrage est celui de la grille
+      {:else}
+        Rangée du haut = octave aiguë ▴, du bas = grave ▾
+      {/if}
+    </span>
     <div class="acts">
       <button class="mini tap44" onclick={back} disabled={playing} title="Reculer d’un pas">← pas précédent</button>
     </div>
@@ -259,7 +360,7 @@
     {#if playing}
       Chaque appui écrit la note sur le pas le plus proche.
     {:else}
-      Chaque appui écrit une note et avance d’un pas. Lance la lecture pour jouer en direct.
+      Chaque appui écrit {isPad ? 'un accord' : 'une note'} et avance d’un pas. Lance la lecture pour jouer en direct.
     {/if}
   </p>
 </div>
@@ -306,6 +407,29 @@
     grid-template-columns: repeat(8, minmax(0, 1fr));
     grid-template-rows: repeat(3, auto);
     gap: 4px;
+  }
+  /* Le clavier d'accords compte ses colonnes lui-même : 4 à 7 accords selon
+     `chordCount`, plus le silence. Pas de rangées, donc des touches un peu
+     plus hautes — c'est la même surface totale que les trois rangées de
+     degrés, et un accord se vise moins vite qu'une note. */
+  .keys.accords {
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+  .keys.accords .key {
+    min-height: 56px;
+  }
+  .keys.accords .key.silence {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  /* Accord déjà en place sur le pas visé : on regarde le clavier au moment
+     d'appuyer, pas la grille — sans ce repère, on ne sait pas si on pose ou
+     si on remplace. Même teinte que « dans l'accord en cours » côté degrés :
+     dans les deux cas elle dit « c'est celui-là qui est juste ici ». */
+  .key.pose {
+    background: color-mix(in srgb, var(--cell-pad) 34%, var(--xp-face));
+    border-color: color-mix(in srgb, var(--cell-pad) 60%, var(--xp-line));
   }
   .key {
     min-height: 44px;

@@ -5959,6 +5959,120 @@ débordement, 0 erreur console.
   chercherait des degrés dans une échelle qu'il ne sait pas avoir changé.
 - **Les actes 4 à 7 restent « à venir ».**
 
+### ✅ Pad de la Nappe, et 12 ms rendues sur chaque frappe (2026-08-24)
+
+Deux demandes de Yann dans le même message : *« il faut un pad pour les nappes
+aussi »* et *« il y a un peu trop de délai aux écouteurs bluetooth, il faudrait
+que ce soit un peu plus réactif. idée si ça nécessite une baisse de qualité de
+l'audio : baisser la qualité de l'audio quand on enregistre au clavier et
+remonter la qualité ensuite. »*
+
+**Fichiers touchés :** `src/ui/sequencer/NotePad.svelte`,
+`src/ui/sequencer/SynthRowView.svelte`, `src/ui/atelier/SynthModule.svelte`,
+`src/ui/atelier/AtelierView.svelte`, `src/ui/xp/CalibrageLatence.svelte`
+(nouveau), `src/ui/game/GameView.svelte`, `src/engine/AudioEngine.ts`,
+`src/engine/depart.ts` (nouveau), `src/engine/voices/drums.ts`,
+`src/engine/voices/synth.ts`, `tests/depart.test.ts` (nouveau),
+`tests/latence-audio.test.ts`.
+
+#### 1. Le pad de la Nappe — dans le MÊME composant
+
+Ce que la Nappe pose n'est pas un degré mais un **index d'accord** (`-1` pour le
+silence) : le clavier change entièrement — quatre à sept touches selon
+`chordCount`, une seule rangée, pas d'octave. Tout ce qui l'entoure est
+identique au millimètre : curseur pas-à-pas, enregistrement en direct,
+quantification au pas le plus proche avec la latence mesurée, silence qui efface
+et avance. **Un second composant aurait dupliqué exactement la partie
+difficile** — celle qui a déjà coûté deux corrections de câblage (`synthStepAt`,
+`latence.ms`) — pour ne varier que la partie facile. Même arbitrage que
+`comparerGrilles(colonnes)` côté Mode jeu.
+
+- Chaque touche porte le **nom réel** de la fondamentale en gros (« Do »,
+  « Fa ») et le **chiffrage de la grille** en petit (« I », « IV », « vi ») :
+  le clavier montre ce qu'il écrit, comme les trois rangées de degrés.
+- La touche de l'accord **déjà posé sur le pas visé** est teintée : on regarde
+  le clavier au moment d'appuyer, pas la grille — sans ce repère on ne sait pas
+  si on pose ou si on remplace.
+- Le silence écrit **-1 et non `null`** : c'est ce que dit le format v2 et ce
+  qu'écrit déjà `cycleCell`. `null` marcherait à la lecture (le scheduler teste
+  `>= 0`) mais ferait deux représentations du même silence dans les fichiers.
+- `playChordPreview(idx)` dans le moteur, à côté de `playDegreePreview` :
+  `previewSynth('pad')` ne sait jouer que l'accord 0 (c'est un test de TIMBRE).
+  Les fréquences passent par `chordFreqs`, donc par le même ancrage de -12
+  demi-tons que le scheduler — sinon le pad sonnerait une octave au-dessus de
+  ce que la grille jouera.
+
+#### 2. Réactivité : ce qui était possible, et ce qui ne l'est pas
+
+⚠️ **La proposition de troquer de la qualité contre de la latence n'achète
+rien, et c'est déjà documenté dans le code.** Le bouton qu'elle vise est le
+tampon de sortie : `latencyHint: 0.001` donne 128 échantillons et 8 ms au lieu
+de 32 — il a été essayé en production le 2026-08-21 et le verdict est dans
+`AudioEngine.ts` : « ça marche très bien mais le son est devenu moche ». Et
+surtout, **ce n'est pas là qu'est le délai du Bluetooth** : un casque A2DP met
+100 à 200 ms à jouer ce qu'on lui envoie, dans son propre tampon, hors de portée
+du navigateur. Baisser la qualité de notre côté ne touche pas ce tampon-là.
+
+**Ce qui a été fait, et qui vaut pour tout le monde : `src/engine/depart.ts`.**
+Toutes les voix ouvrent sur `setValueAtTime(0.0001, time)` puis une rampe de
+4 ms. Si `time` est déjà passé, Web Audio applique les deux d'un coup : la rampe
+est sautée, le gain saute — **un clic à chaque note**. C'est la régression du
+2026-08-21, et l'`AVANCE_DECLENCHEMENT` de 20 ms n'était qu'une MARGE pour la
+rendre rare. `departSur(currentTime, time)` traite la cause : une voix dont
+l'instant est passé repart de maintenant, avec son attaque entière. C'était
+explicitement le chantier annoncé dans le commentaire de la constante (« rendre
+les enveloppes robustes à un démarrage tardif, pas raccourcir cette
+constante ») — il est fait, donc l'avance descend à **8 ms : 12 ms rendues sur
+chaque frappe**, sans rien devoir à la chance.
+
+⚠️ **`AVANCE_DECLENCHEMENT` ne servait QU'aux frappes** — vérifié avant de la
+toucher : le séquenceur programme ses pas depuis l'horloge audio avec 250 ms de
+lookahead et ne la lit jamais. D'où une seule constante corrigée, pas une
+seconde ajoutée à côté.
+
+`tests/depart.test.ts` verrouille l'invariant sur les VOIX, pas sur le chiffre :
+un contexte factice (Proxy) collecte tous les instants passés à Web Audio, et
+aucun n'est antérieur à `currentTime` — sur les sept voix de batterie comme sur
+note/basse/mélodie/accord. **Vérifié en sabotant `departSur` : trois tests
+tombent.** `latence-audio.test.ts` est réécrit en conséquence — il verrouillait
+l'avance comme protection de l'attaque, il verrouille maintenant qu'elle ne
+REDEVIENNE pas une marge (≤ 10 ms), et cite la borne qui la remplace.
+
+#### 3. Le calibrage sort du Mode jeu
+
+Ce qui se sent vraiment en Bluetooth n'est pas le déclenchement — on ne peut pas
+jouer un son avant la frappe, seulement réduire — mais le **placement** de ce
+qu'on enregistre : on joue en place avec ce qu'on entend, et les notes tombent
+un pas plus loin. Ça, le calibrage le corrige entièrement… sauf qu'il ne vivait
+que dans `GameView`, alors que `ui/latence.svelte.ts` est une propriété de
+l'APPAREIL, partagée par tous les écrans qui datent une frappe.
+
+Extrait dans `ui/xp/CalibrageLatence.svelte` (métronome continu, frappes,
+médiane additive) et ouvert **depuis le pad d'écriture**, là où le problème se
+sent — le bouton affiche le réglage en place (`🎚 +34`). Une seule mesure
+appelée de deux endroits : deux mesures qui doivent rester d'accord finissent
+toujours par ne plus l'être, et celle-ci a déjà coûté une correction de signe et
+une refonte du métronome.
+
+⚠️ **Deux auditeurs pour une même barre d'espace.** Le panneau écoute Espace
+pour frapper ; l'écran qui l'héberge aussi (frappe de jeu dans le Mode jeu,
+lancement de la lecture dans l'Atelier). Sans garde, un appui faisait les deux —
+on calibrerait le retard de l'appareil par-dessus un morceau démarré sans le
+vouloir. Les deux écrans rendent la main au panneau tant qu'il est ouvert
+(Échap ferme, dans l'Atelier). Mesuré au navigateur : un appui = **une** frappe,
+et la lecture reste à l'arrêt.
+
+⚠️ **`stop()` tout court passe le typecheck et n'est pas ce qu'on croit** :
+c'est `window.stop()`, qui interrompt le chargement de la page. Le transport de
+l'Atelier est `togglePlay` — corrigé avant que ça n'aille en ligne.
+
+**Vérifié :** `check` 0 erreur · **165 tests** (8 nouveaux) · les deux builds ·
+Playwright à 1280/390/320 px : pad de la Nappe (4 accords + silence, 0 px de
+débordement, écriture `V` / `I` / vide dans la grille), calibrage ouvert depuis
+l'Atelier (métronome lancé, frappes comptées, Échap), et **non-régression du
+calibrage du Mode jeu** au niveau 37 (métronome, 3 clics + Espace = 4 frappes,
+retour au pad de jeu). 0 erreur console.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

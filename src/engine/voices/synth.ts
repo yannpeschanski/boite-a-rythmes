@@ -13,6 +13,7 @@ import type { GraphNodes } from '../graph';
 import type { ChordDef } from '../../model/presets/scales';
 import { driveCurve } from '../fx';
 import type { Rng } from '../rng';
+import { departSur } from '../depart';
 
 // Budget de voix (chantier "ça rame sur enceinte Bluetooth") : au-delà, on
 // saute les couches les plus coûteuses et les moins essentielles (chorus,
@@ -70,6 +71,10 @@ export class SynthKit {
   }
 
   playSynthNote(freq: number, time: number, dur: number, gain: number, opts: NoteOpts = {}): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const ctx = this.ctx;
     // Plafond de release relatif à la durée : sans lui, un release long +
     // subdivision rapide fait s'empiler des traînes qui ne s'éteignent
@@ -346,6 +351,10 @@ export class SynthKit {
   }
 
   private startDrone(freqs: number[], time: number, gain: number, voice: SynthVoice, strumSpread = 0): void {
+    // Enveloppe robuste à un démarrage tardif : si l'instant demandé est
+    // déjà passé, on part de maintenant plutôt que d'écraser l'attaque
+    // (depart.ts).
+    time = departSur(this.ctx.currentTime, time);
     const ctx = this.ctx;
     const opts = { type: 'sawtooth' as OscillatorType, cutoff: 900, attack: 0.08, resonance: 0.7, ...voice };
     const attack = Math.max(opts.attack, 0.05);
