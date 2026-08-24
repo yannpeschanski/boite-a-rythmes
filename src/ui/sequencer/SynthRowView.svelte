@@ -24,7 +24,9 @@
     stepStartedAt = 0,
     horloge,
     onPreviewDegree,
+    onPreviewChord,
     onChanged,
+    onCalibrer,
   }: {
     name: SynthRowName;
     label: string;
@@ -33,12 +35,16 @@
     stepStartedAt?: number;
     horloge?: () => number;
     onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
+    onPreviewChord?: (chordIdx: number) => void;
     onChanged?: () => void;
+    onCalibrer?: () => void;
   } = $props();
 
-  // Pad d'écriture (Basse/Mélodie seulement — la Nappe pose des ACCORDS, pas
-  // des degrés, un pad à 7 touches n'y voudrait rien dire). Fermé par défaut :
-  // tant qu'il l'est, il ne coûte pas un pixel.
+  // Pad d'écriture, pour les TROIS lignes (2026-08-24, « il faut un pad pour
+  // les nappes aussi »). La Nappe pose des accords et non des degrés : c'est
+  // le CLAVIER qui change dans NotePad, pas le mécanisme autour — voir
+  // l'en-tête de ce composant pour l'arbitrage. Fermé par défaut : tant qu'il
+  // l'est, il ne coûte pas un pixel.
   let padOpen = $state(false);
   // Curseur du pad, tenu ICI et pas dans le pad (retour de Yann : « difficile
   // à prendre en main »). C'est ce qui permet à la GRILLE d'entourer la case
@@ -68,7 +74,7 @@
   // sur « ← ». Le défilement par la case reste le comportement dès que le pad
   // est refermé, et la case visée est entourée, donc le changement se voit.
   function onCellClick(col: number) {
-    if (padOpen && !isPad && !playing) padCursor = col;
+    if (padOpen && !playing) padCursor = col;
     else cycleCell(col);
   }
 
@@ -296,16 +302,16 @@
           >&nbsp;· {row.cycleBars} mes.</span
         >{/if}</span
     >
-    {#if !isPad}
-      <button
-        class="mini tap44"
-        class:on={padOpen}
-        onclick={togglePad}
-        title="Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"
-      >
-        🎹
-      </button>
-    {/if}
+    <button
+      class="mini tap44"
+      class:on={padOpen}
+      onclick={togglePad}
+      title={isPad
+        ? "Pad : écrire la ligne en tapant les accords, ou l'enregistrer en direct"
+        : "Pad : écrire la ligne en tapant les degrés, ou l'enregistrer en direct"}
+    >
+      🎹
+    </button>
     <select
       class="voice-select"
       value={voixCourante}
@@ -352,10 +358,10 @@
           class="cell tap44-y {name}"
           class:active
           class:playing={playheadCol === col}
-          class:padtarget={padOpen && !isPad && !playing && padCursor % Math.max(1, row.subdivisions) === col}
+          class:padtarget={padOpen && !playing && padCursor % Math.max(1, row.subdivisions) === col}
           onclick={() => onCellClick(col)}
           oncontextmenu={(e) => cycleRoll(col, e)}
-          title={padOpen && !isPad && !playing
+          title={padOpen && !playing
             ? 'Clic : viser ce pas avec le pad'
             : 'Clic : note suivante — clic droit : rafale'}
         >
@@ -369,16 +375,18 @@
   </div>
   </div>
 
-  {#if padOpen && !isPad}
+  {#if padOpen}
     <div bind:this={padEl}>
       <NotePad
-        name={name as 'bass' | 'melody'}
+        {name}
         {playing}
         {playheadCol}
         {stepStartedAt}
         {horloge}
         bind:cursor={padCursor}
         onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
+        onPreviewChord={(i) => onPreviewChord?.(i)}
+        {onCalibrer}
         {onChanged}
         onClose={() => (padOpen = false)}
       />

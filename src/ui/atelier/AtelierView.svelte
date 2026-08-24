@@ -4,6 +4,7 @@
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { DrumRowName, DrumStep, SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
+  import CalibrageLatence from '../xp/CalibrageLatence.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
   import XpTabs from '../xp/XpTabs.svelte';
   import DrumRowView from '../sequencer/DrumRowView.svelte';
@@ -212,6 +213,15 @@
   function onKey(e: KeyboardEvent) {
     const t = e.target as HTMLElement;
     if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
+    /* Calibrage ouvert : l'écran ne répond plus qu'à lui.
+     * Sans ça, la barre d'espace ferait DEUX choses — une frappe de mesure
+     * (le panneau l'écoute) et un lancement de lecture (ce raccourci) : on
+     * calibrerait le retard de l'appareil par-dessus le morceau qu'on vient
+     * de démarrer sans le vouloir. Échap ferme, comme partout. */
+    if (calibrage) {
+      if (e.key === 'Escape') calibrage = false;
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       e.shiftKey ? history.redo() : history.undo();
@@ -343,9 +353,38 @@
   }
 
   const st = $derived(pattern.state);
+
+  /* Calibrage du décalage d'entrée, ouvert depuis le pad d'écriture.
+   *
+   * La lecture s'ARRÊTE d'abord : on ne mesure pas un métronome sous un
+   * morceau — c'est la même précaution que dans le Mode jeu, et sans elle la
+   * mesure serait faite sur des frappes calées à l'oreille sur autre chose.
+   */
+  let calibrage = $state(false);
+  function ouvrirCalibrage() {
+    // ⚠️ `stop()` tout court passe le typecheck et ne fait PAS ce qu'on croit :
+    // c'est `window.stop()`, qui interrompt le chargement de la page. Le
+    // transport de cet écran est `togglePlay`.
+    if (playing) void togglePlay();
+    calibrage = true;
+  }
 </script>
 
 <div class="atelier" data-theme="luna">
+  {#if calibrage}
+    <!-- En SURCOUCHE et pas en panneau déroulant sous la ligne : le calibrage
+         demande une douzaine de frappes régulières, et l'Atelier est un écran
+         chargé. C'est aussi ce qui garantit que le pad de mesure fait la
+         largeur qu'il lui faut, quel que soit l'onglet ouvert dessous. -->
+    <div class="modale" role="dialog" aria-modal="true" aria-label="Calibrage du décalage">
+      <div class="modale-corps">
+        <XpWindow title="Calibrage du décalage" icon="🎚" accent="teal">
+          <CalibrageLatence {engine} onClose={() => (calibrage = false)} />
+        </XpWindow>
+      </div>
+    </div>
+  {/if}
+
   <ToolBar
     bind:circleView
     {onSwitchView}
@@ -579,6 +618,8 @@
         stepAt={synthStepAt}
         horloge={horlogeAudioMs}
         onPreviewDegree={(n, d, o) => engine.playDegreePreview(n, d, o)}
+        onPreviewChord={(i) => engine.playChordPreview(i)}
+        onCalibrer={ouvrirCalibrage}
         onFxChanged={refreshFx}
       />
     {:else}
@@ -614,6 +655,24 @@
 </div>
 
 <style>
+  /* Surcouche du calibrage. `position: fixed` et non `absolute` : l'Atelier
+     défile, et une mesure au métronome ne doit pas pouvoir sortir de l'écran
+     pendant qu'on tape. */
+  .modale {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: rgb(0 0 0 / 0.55);
+    overflow: auto;
+  }
+  .modale-corps {
+    width: min(560px, 100%);
+  }
+
   .transport-row {
     display: flex;
     align-items: center;

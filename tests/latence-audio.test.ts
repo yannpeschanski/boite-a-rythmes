@@ -1,4 +1,4 @@
-/* Les deux constantes de latence du moteur, et pourquoi elles ont un plancher.
+/* Les deux constantes de latence du moteur, et ce qui les tient.
  *
  * Écrit après une régression MISE EN LIGNE : l'avance de déclenchement avait été
  * ramenée à 5 ms pour gagner de la latence, et le son s'est dégradé — « ça marche
@@ -9,15 +9,22 @@
  *     g.gain.setValueAtTime(0.0001, time);
  *     g.gain.exponentialRampToValueAtTime(gain, time + 0.004);
  *
- * L'attaque dure 3 à 4 ms. Si l'avance est du même ordre, l'attaque entière tient
- * dans la marge : que le fil principal prenne quelques millisecondes de retard
- * entre la lecture de `currentTime` et le rendu, et `setValueAtTime` tombe dans
- * le passé. Web Audio l'applique alors immédiatement, la rampe est sautée, le
- * gain saute — un clic à chaque note.
+ * L'attaque dure 3 à 4 ms. Si `time` est déjà passé quand le fil audio lit ces
+ * deux lignes, Web Audio les applique ensemble : la rampe est sautée, le gain
+ * saute — un clic à chaque note.
  *
- * Ce test ne mesure pas du son : il verrouille le RAPPORT entre l'avance et
- * l'attaque, pour que la prochaine tentative d'optimisation bute sur une
- * assertion au lieu d'aller s'entendre en production.
+ * ⚠️ CE FICHIER A CHANGÉ D'AVIS LE 2026-08-24, ET C'EST LE POINT.
+ * Sa première version verrouillait l'AVANCE comme protection : « au moins cinq
+ * fois la durée de l'attaque ». C'était traiter le symptôme — une marge rend le
+ * clic rare, elle ne l'interdit pas, et une tâche de 30 ms sur le fil principal
+ * passe au travers de n'importe quelle avance raisonnable. La cause est traitée
+ * depuis dans `depart.ts` (une voix dont l'instant est passé repart de
+ * maintenant, avec son attaque), et l'invariant qui compte est vérifié sur les
+ * voix elles-mêmes dans `tests/depart.test.ts`.
+ *
+ * Ce qui reste ici : l'avance ne doit pas REDEVENIR une marge de sécurité. Si
+ * elle remonte, c'est que quelqu'un a repris l'ancien raisonnement — et il
+ * paiera en latence ce que la borne donne gratuitement.
  *
  * Les constantes sont IMPORTÉES, pas lues dans le fichier source. La première
  * version grattait `AudioEngine.ts` avec une expression régulière et
@@ -26,22 +33,26 @@
  */
 import { describe, it, expect } from 'vitest';
 import { AVANCE_DECLENCHEMENT, TAMPON_SORTIE } from '../src/engine/AudioEngine';
+import { departSur } from '../src/engine/depart';
 
-/** La plus courte attaque du banc de voix, en secondes (drums.ts, snare/rimshot). */
-const ATTAQUE_LA_PLUS_COURTE = 0.003;
-
-describe('avance de déclenchement — le plancher qu’impose l’attaque des voix', () => {
-  it('laisse à l’attaque au moins cinq fois sa durée pour se dérouler', () => {
-    // À 5 ms d'avance pour 3-4 ms d'attaque, le moindre retard du fil principal
-    // fait tomber `setValueAtTime` dans le passé et la rampe est sautée. C'est
-    // la régression qui a motivé ce fichier.
-    expect(AVANCE_DECLENCHEMENT).toBeGreaterThanOrEqual(ATTAQUE_LA_PLUS_COURTE * 5);
+describe('avance de déclenchement — de la latence pure, plus une marge', () => {
+  it('reste petite : c’est le grain de l’ordonnanceur, pas la durée d’une attaque', () => {
+    // Une frappe se programme DANS son gestionnaire d'événement : `currentTime`
+    // est lu et les nœuds créés dans la même tâche. 8 ms couvrent le grain de
+    // l'ordonnanceur ; 20 ms étaient la marge d'attaque d'avant `depart.ts`.
+    expect(AVANCE_DECLENCHEMENT).toBeLessThanOrEqual(0.01);
   });
 
-  it('reste sous le seuil de perception d’un instrument', () => {
-    // L'autre bord : au-delà de ~30 ms le décalage s'entend. L'avance seule ne
-    // doit donc jamais manger tout le budget — le tampon de sortie s'y ajoute.
-    expect(AVANCE_DECLENCHEMENT).toBeLessThanOrEqual(0.025);
+  it('ne tombe pas à zéro — un instant strictement futur reste préférable', () => {
+    // La borne est un filet, pas une méthode : programmer exactement sur
+    // `currentTime` ferait dépendre chaque note du filet à chaque frappe.
+    expect(AVANCE_DECLENCHEMENT).toBeGreaterThan(0);
+  });
+
+  it('n’est plus ce qui protège l’attaque — c’est la borne qui le fait', () => {
+    // Le lien est explicite : si cette borne disparaît, l'avance courte
+    // redevient la régression du 2026-08-21.
+    expect(departSur(10, 10 - AVANCE_DECLENCHEMENT)).toBe(10);
   });
 });
 
