@@ -227,7 +227,12 @@ const PROLOGUE: Etape[] = [
       'Sol essaie trois fois. Il ne répond plus.',
       '— Il va falloir tout refaire.',
       'Toi, tu es stagiaire. Tu fais le café.',
+      // ⚠️ Ce que le joueur va devoir entendre est NOMMÉ ici, avant qu'on le
+      // lui demande. Cette ligne vivait après les trois exercices — on faisait
+      // donc reconnaître des choses sans les avoir nommées, alors que
+      // l'Atelier, où vivent les boutons, n'est même pas encore ouvert.
       'Sol se tourne vers toi.',
+      '— Écoute la hauteur, la durée, et l’attaque.',
     ],
   },
 ];
@@ -292,8 +297,6 @@ export const ACTES: Acte[] = [
         lignes: [
           'Elle te regarde comme si la plante verte venait de parler.',
           '— Lundi tu fais les sonneries.',
-          'Tu apprends à reconnaître la hauteur, la durée,',
-          'l’intensité, et le silence.',
         ],
       },
       {
@@ -496,6 +499,40 @@ export function acteAVenir(a: Acte): boolean {
 /** Les niveaux du réservoir cités par un acte, dans l'ordre. */
 export function niveauxDeLActe(a: Acte): number[] {
   return a.etapes.filter((e): e is EtapeExercice => e.kind === 'exercice').map((e) => e.niveau);
+}
+
+/* Les niveaux que le joueur a déjà RENCONTRÉS dans le récit.
+ *
+ * C'est ce que la salle de répétition propose — ni plus, ni moins :
+ *
+ *   - **ni plus** : « tout ce qui n'est pas encore accessible devrait être
+ *     masqué : no spoil ». La carte montrait les 41 niveaux, dont ceux d'actes
+ *     pas encore écrits ;
+ *   - **ni moins** : « dans la salle de répétition, il faut pouvoir refaire les
+ *     niveaux ». L'ancienne carte les ouvrait sur `id <= PlayerProgress.level`,
+ *     un seuil hérité de la campagne linéaire. Or la carrière cite les niveaux
+ *     39-41 AVANT le niveau 1 : après tout l'acte 0, la carte affichait 40
+ *     niveaux verrouillés sur 41 — y compris les trois qu'on venait de jouer.
+ *     Et un exercice abandonné n'avançait pas `level` du tout, donc ne
+ *     s'ouvrait jamais.
+ *
+ * Rencontré, pas réussi : on peut refaire ce qu'on a raté. Les étoiles, elles,
+ * restent la mesure de la réussite.
+ *
+ * `etape` est le curseur DANS l'acte courant : les actes précédents comptent en
+ * entier, l'acte en cours ne compte que ce qui est derrière le curseur.
+ */
+export function niveauxRencontres(acte: number, etape: number): number[] {
+  const out: number[] = [];
+  for (const a of ACTES) {
+    if (a.id > acte) break;
+    const jusqua = a.id < acte ? a.etapes.length : etape;
+    for (let i = 0; i < Math.min(jusqua, a.etapes.length); i++) {
+      const e = a.etapes[i];
+      if (e.kind === 'exercice' && !out.includes(e.niveau)) out.push(e.niveau);
+    }
+  }
+  return out;
 }
 
 /* Pourquoi il n'y a PAS de migration depuis `level`.

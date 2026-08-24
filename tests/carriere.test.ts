@@ -6,6 +6,7 @@ import {
   acteAVenir,
   acteParId,
   niveauxDeLActe,
+  niveauxRencontres,
   LONGUEUR_PROLOGUE,
   ETAPE_DU_COMPTE_A_REBOURS,
 } from '../src/model/carriere';
@@ -255,5 +256,56 @@ describe('Le prologue situe l’histoire avant de la commencer', () => {
       a.etapes.flatMap((e) => (e.kind === 'exercice' && e.commande ? [e.commande] : [])),
     );
     for (const c of commandes) expect(c).not.toMatch(/\b(deux|trois|quatre) (sons|versions)\b/i);
+  });
+});
+
+/* La salle de répétition — ce qu'elle propose, et ce qu'elle ne montre pas.
+ *
+ * Deux retours de Yann d'un coup : « dans la salle de répétition, il faut
+ * pouvoir refaire les niveaux » et « tout ce qui n'est pas encore accessible
+ * devrait être masqué : no spoil ».
+ */
+describe('La salle de répétition ne montre que le déjà-rencontré', () => {
+  it('ne propose rien à qui vient d’arriver', () => {
+    expect(niveauxRencontres(0, 0)).toEqual([]);
+  });
+
+  // ⚠️ Le cas qui a rendu l'ancienne carte inutilisable : l'acte 0 cite les
+  // niveaux 39-41, qui portent des numéros de FIN de liste. Le seuil
+  // `id <= PlayerProgress.level` les gardait verrouillés — après tout l'acte 0,
+  // la carte affichait 40 niveaux sur 41 fermés, dont les trois joués.
+  it('propose les niveaux de l’acte 0 une fois l’acte 0 fini, quels que soient leurs numéros', () => {
+    const apresActe0 = niveauxRencontres(1, 0);
+    expect(apresActe0).toEqual(niveauxDeLActe(ACTES[0]));
+    expect(apresActe0).toContain(39);
+    expect(apresActe0).toContain(41);
+  });
+
+  // No spoil : au milieu d'un acte, ce qui n'a pas encore été joué ne s'affiche
+  // pas — ni les étapes suivantes du même acte, ni les actes d'après.
+  it('ne dévoile pas la suite de l’acte en cours', () => {
+    const acte1 = ACTES[1];
+    const premierExo = acte1.etapes.findIndex((e) => e.kind === 'exercice');
+    const auPremierExo = niveauxRencontres(1, premierExo);
+    // L'acte 0 en entier, et rien de l'acte 1.
+    expect(auPremierExo).toEqual(niveauxDeLActe(ACTES[0]));
+    for (const n of niveauxDeLActe(acte1)) expect(auPremierExo).not.toContain(n);
+    // Une étape plus loin, le premier exercice de l'acte 1 apparaît — lui seul.
+    const suivant = niveauxRencontres(1, premierExo + 1);
+    expect(suivant.length).toBe(auPremierExo.length + 1);
+  });
+
+  it('n’annonce jamais un acte non atteint', () => {
+    for (const [acte, etape] of [[0, 0], [1, 3], [2, 1]] as const) {
+      for (const n of niveauxRencontres(acte, etape)) {
+        const source = ACTES.find((a) => niveauxDeLActe(a).includes(n))!;
+        expect(source.id).toBeLessThanOrEqual(acte);
+      }
+    }
+  });
+
+  it('ne répète jamais deux fois le même niveau', () => {
+    const tout = niveauxRencontres(NB_ACTES, 99);
+    expect(new Set(tout).size).toBe(tout.length);
   });
 });

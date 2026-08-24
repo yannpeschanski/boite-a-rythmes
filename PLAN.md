@@ -5705,6 +5705,94 @@ suite · les deux builds · parcours Playwright à 390×844 : le premier exercic
 **5e écran**, 27 lignes de récit mesurées et **0 repli**, 0 px de débordement,
 0 erreur console.
 
+### ✅ Salle de répétition, no spoil, et un kick inaudible (2026-08-24)
+
+Cinq retours de Yann après essai. Trois étaient des bugs, deux des choix de
+mise en scène — et l'un des bugs ne se voyait qu'à la mesure.
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/model/parametres.ts`,
+`src/model/presets/levels.ts`, `src/stores/game.svelte.ts`,
+`src/ui/game/GameView.svelte`, `src/ui/game/CarriereView.svelte`,
+`tests/carriere.test.ts`, `tests/parametres.test.ts`.
+
+#### 1. « Il faut pouvoir refaire les niveaux » — la carte en verrouillait 40 sur 41
+
+Mesuré : après avoir joué **tout l'acte 0**, la carte affichait **40 niveaux
+verrouillés sur 41**, dont les trois qu'on venait de jouer. Deux causes
+cumulées, toutes deux dans `isUnlocked(id) = id <= PlayerProgress.level` :
+
+- l'acte 0 cite les niveaux **39-41**, qui portent des numéros de FIN de liste.
+  Le seuil, hérité de la campagne linéaire, les gardait fermés ;
+- un exercice **abandonné** n'avance pas `level` du tout — il ne s'ouvrait donc
+  jamais, alors que c'est précisément celui qu'on veut refaire.
+
+La salle de répétition liste désormais `niveauxRencontres(acte, etape)` : les
+niveaux **rencontrés dans le récit**, tous rejouables. Rencontré, pas réussi —
+les étoiles restent la mesure de la réussite.
+
+#### 2 et 3. No spoil
+
+- **La carte** ne montre plus que ces niveaux-là. Plus de cadenas, plus de
+  numéros d'actes non écrits.
+- **Le carnet** listait les HUIT actes, titres et résumés compris — « Kelvin a
+  seize ans, il vient le mardi », « La salle chante un jingle de lessive ». Le
+  récit se racontait lui-même cinq actes à l'avance. Il ne montre plus que les
+  actes **atteints** ; ce qui suit n'est pas annoncé, pas même son titre.
+- **Le titre de fenêtre** hors carrière perd son « / 41 » : un total qui
+  comptait des niveaux que le joueur n'a pas vus.
+
+#### 4. ⚠️ « On n'arrive pas à dire si c'est plus aigu ou plus grave »
+
+**Le kick n'était pas audible, et ça se mesure.** `playKick` balaie de
+`140 × mult` à `Math.max(20, 38 × mult)` : ce plancher de 20 Hz écrase toute la
+moitié basse du curseur. Rendu dans un `OfflineAudioContext` réel, en RMS
+au-dessus de 200 Hz — à peu près ce qu'un haut-parleur de téléphone restitue :
+
+| pitch | −24 | −17 | −10 | 0 | +11 | +24 |
+|---|---|---|---|---|---|---|
+| attaque | 35 Hz | 52 Hz | 79 Hz | 140 Hz | 264 Hz | 560 Hz |
+| queue | **20** | **20** | 21 | 38 | 72 | 152 |
+| RMS > 200 Hz | 0,011 | 0,015 | 0,018 | 0,027 | 0,064 | 0,064 |
+
+`tirerVersions(pitch, 3)` pouvait sortir exactement **−24 / −17 / −10** : trois
+kicks indiscernables, et la question était alors un tirage au sort.
+
+⚠️ **Corrigé dans le JEU, pas dans le moteur.** Le plancher de 20 Hz vient de
+l'original et protège l'enveloppe ; c'est au jeu de ne pas poser une question
+dont la réponse est inaudible. D'où `plageParLigne` sur `DescripteurParam` :
+`lignes` dit OÙ un bouton s'entend, `plageParLigne` dit JUSQU'OÙ. Le pitch du
+kick est borné à `[0, 24]` — 24 demi-tons, largement de quoi poser trois
+versions à 7 d'écart, ce qu'un test vérifie pour chaque ligne de chaque bouton.
+
+`pourLigne(p, ligne)` renvoie le descripteur resserré, et **tout** en découle :
+les versions tirées, la cible de « régler », et le curseur affiché. Un curseur
+plus large que la plage où le son bouge inviterait à chercher là où il n'y a
+rien.
+
+#### 5. Des boutons auxquels on n'a pas encore accès
+
+À l'acte 0 l'Atelier est fermé : on demandait de **nommer** des réglages que le
+joueur n'a jamais vus. Deux réponses, les deux nécessaires :
+
+- `GameLevel.paramsAutorises` restreint le tirage à l'intérieur d'une famille.
+  Les niveaux 39-41 sont limités à **pitch, decay, attack** — `tone` en sort,
+  c'est le mot le plus opaque de la famille, et sur snare comme sur hat il
+  déplace un filtre plutôt qu'il ne change une note.
+- **Ce qu'on va écouter est nommé AVANT qu'on le demande.** La ligne « la
+  hauteur, la durée, l'attaque » vivait *après* les trois exercices ; elle passe
+  sur l'écran du répondeur, juste avant le premier.
+
+**Vérifié :** `check` 0 erreur · **152 tests**, la suite passée **cinq fois de
+suite** · les deux builds · parcours Playwright à 390×844 : après l'acte 0 la
+salle de répétition affiche **3 exercices, 0 verrouillé**, un clic recharge bien
+le niveau ; le carnet n'affiche que les actes atteints ; 28 lignes de récit
+mesurées, **0 repli** ; 0 erreur console.
+
+**Écart de portée assumé :** `PlayerProgress.level` continue d'être écrit par
+`saveProgress` et sert encore de plancher aux verrous de modules
+(`moduleUnlocked`). Il n'ouvre simplement plus la salle de répétition. Le jour
+où les huit actes sont écrits, ce plancher disparaît et `level` avec lui.
+
 ### ✅ Le clavier du pad montre ses trois octaves (2026-08-24)
 
 Retour de Yann : *« il faut montrer les 3 rangées de notes dans le clavier de

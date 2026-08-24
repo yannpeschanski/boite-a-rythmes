@@ -67,6 +67,26 @@ export interface DescripteurParam {
    *  exercice sur une ligne où le bouton ne fait rien produit deux sons
    *  identiques — un niveau impossible, et muet sur la raison. */
   lignes: GameDrumRowName[];
+  /* ⚠️ Sous-plage où le bouton s'entend vraiment SUR CETTE LIGNE-LÀ.
+   *
+   * `lignes` dit OÙ un bouton s'entend ; celui-ci dit JUSQU'OÙ. Le cas qui l'a
+   * imposé est le pitch du kick : `playKick` balaie de `140 × mult` à
+   * `max(20, 38 × mult)`, et ce plancher de 20 Hz écrase toute la moitié basse
+   * du curseur. Mesuré dans un OfflineAudioContext réel, en RMS au-dessus de
+   * 200 Hz (à peu près ce qu'un haut-parleur de téléphone restitue) :
+   *
+   *     pitch  −24 → 0,011   −17 → 0,015   −10 → 0,018
+   *     pitch    0 → 0,027    +11 → 0,064   +24 → 0,064
+   *
+   * Trois versions tirées dans la moitié basse sont donc indiscernables — et
+   * `tirerVersions` pouvait sortir exactement −24 / −17 / −10. C'est ce que
+   * Yann a rencontré au premier niveau du jeu : « on n'arrive pas à dire si
+   * c'est plus aigu ou plus grave ».
+   *
+   * Corrigé ICI et pas dans le moteur : le plancher de 20 Hz vient de
+   * l'original et protège l'enveloppe ; c'est au JEU de ne pas poser une
+   * question dont la réponse est inaudible. */
+  plageParLigne?: Partial<Record<GameDrumRowName, [number, number]>>;
   /** Facteur pour écrire dans l'état ce que le curseur affiche.
    *
    *  Réverbe et Delay sont stockés en 0..1 alors que l'Atelier les montre en
@@ -85,6 +105,10 @@ export const PARAMETRES: DescripteurParam[] = [
   {
     id: 'pitch', label: 'Pitch', famille: 'timbre',
     min: -24, max: 24, step: 1, unite: ' ½t', echelle: 'lineaire',
+    // Le kick perd sa queue sous −10 (plancher de 20 Hz) : on ne le descend
+    // plus en dessous de son réglage par défaut. Reste 24 demi-tons, soit
+    // largement de quoi poser trois versions à 7 d'écart.
+    plageParLigne: { kick: [0, 24] },
     // Un demi-ton s'entend, deux ne se discutent plus.
     tolerance: 2, ecartMini: 7,
     plus: 'le plus aigu', moins: 'le plus grave',
@@ -153,6 +177,19 @@ export function lireParam(row: DrumRowState, p: DescripteurParam): number {
 
 export function parametre(id: string): DescripteurParam | null {
   return PARAMETRES.find((p) => p.id === id) ?? null;
+}
+
+/* Le descripteur tel qu'il vaut SUR UNE LIGNE : bornes resserrées si cette
+ * ligne a une sous-plage jouable (voir `plageParLigne`).
+ *
+ * Renvoyé plutôt qu'appliqué au moment du tirage, pour que TOUT ce qui suit
+ * parle des mêmes bornes — les versions tirées, la cible de « régler », et le
+ * curseur que le joueur manipule. Un curseur plus large que la plage où le son
+ * bouge serait une invitation à chercher là où il n'y a rien.
+ */
+export function pourLigne(p: DescripteurParam, ligne: GameDrumRowName): DescripteurParam {
+  const plage = p.plageParLigne?.[ligne];
+  return plage ? { ...p, min: plage[0], max: plage[1] } : p;
 }
 
 export function parametresDe(famille: FamilleParam): DescripteurParam[] {

@@ -19,7 +19,6 @@
   import { game } from '../../stores/game.svelte';
   import {
     ACTES,
-    NB_ACTES,
     acteAVenir,
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
@@ -104,6 +103,17 @@
     !enPrologue || game.etapeActive >= ETAPE_DU_COMPTE_A_REBOURS || game.acteActif > 0,
   );
   const montrerCarnet = $derived(!enPrologue);
+
+  /* ⚠️ « Tout ce qui n'est pas encore accessible devrait être masqué : no
+   * spoil. » Le carnet listait les HUIT actes, titres et résumés compris —
+   * « Kelvin a seize ans, il vient le mardi », « La salle chante un jingle de
+   * lessive » : le récit se racontait lui-même, cinq actes à l'avance.
+   *
+   * Il ne montre donc plus que les actes ATTEINTS. Ce qui suit n'est pas
+   * annoncé — pas même son titre. */
+  const actesVisibles = $derived(
+    ACTES.filter((a) => a.id <= game.progresCarriere.acte && !acteAVenir(a)),
+  );
 </script>
 
 <XpWindow title="Face B — Mode carrière" icon="📼" accent="none">
@@ -189,31 +199,21 @@
        relire l'acte 1 ne referme pas l'Atelier. -->
   {#if montrerCarnet}
     <ol class="carnet">
-    {#each ACTES as a (a.id)}
-      {@const ouvert = game.acteOuvert(a.id)}
-      {@const fait = game.acteFait(a.id)}
-      <li>
-        <button
-          class="acte tap44-y"
-          class:courant={a.id === acte.id}
-          class:fait
-          class:verrouille={!ouvert}
-          disabled={!ouvert}
-          onclick={() => ouvrir(a)}
-        >
-          <span class="num">{fait ? '✓' : ouvert ? a.id : '🔒'}</span>
-          <span class="titre">{a.titre}</span>
-          <span class="resume">{acteAVenir(a) ? 'À venir' : a.resume}</span>
-          <span class="comp">{a.competenceLabel}</span>
-        </button>
-      </li>
-    {/each}
+      {#each actesVisibles as a (a.id)}
+        {@const fait = game.acteFait(a.id)}
+        <li>
+          <button class="acte tap44-y" class:courant={a.id === acte.id} class:fait onclick={() => ouvrir(a)}>
+            <span class="num">{fait ? '✓' : a.id}</span>
+            <span class="titre">{a.titre}</span>
+            <span class="resume">{a.resume}</span>
+            <span class="comp">{fait ? a.competenceLabel : 'EN COURS'}</span>
+          </button>
+        </li>
+      {/each}
     </ol>
     <p class="pied">
-      {game.progresCarriere.acte >= NB_ACTES
-        ? 'Carrière terminée.'
-        : `Acte ${Math.min(game.progresCarriere.acte, NB_ACTES - 1)} sur ${NB_ACTES - 1}`}
-      · la <strong>salle de répétition</strong>, c’est les {41} niveaux d’entraînement, jouables à part.
+      La <strong>salle de répétition</strong> rassemble les exercices déjà rencontrés&nbsp;: on peut
+      tous les refaire, autant de fois qu’on veut.
     </p>
   {/if}
 </XpWindow>
@@ -371,10 +371,6 @@
     font: inherit;
     font-size: var(--xp-size-small);
     cursor: pointer;
-  }
-  .acte:disabled {
-    cursor: default;
-    color: var(--xp-lcd-dim);
   }
   .acte.courant {
     background: #0c1a0e;

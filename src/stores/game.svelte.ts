@@ -27,6 +27,7 @@ import {
 import {
   parametresDe,
   parametre,
+  pourLigne,
   tirerVersions,
   tirerCible,
   versionQuiRepond,
@@ -35,7 +36,14 @@ import {
   type DescripteurParam,
 } from '../model/parametres';
 import { PRESETS } from '../model/presets/songs';
-import { NB_ACTES, acteParId, acteAVenir, type Acte, type Etape } from '../model/carriere';
+import {
+  NB_ACTES,
+  acteParId,
+  acteAVenir,
+  niveauxRencontres,
+  type Acte,
+  type Etape,
+} from '../model/carriere';
 import {
   BAG_ITEMS,
   CONSOLATION_ITEM,
@@ -214,8 +222,13 @@ class GameStore {
      JOUEUR, pour qu'il puisse comparer sa version à la cible. */
   paramVersionJouee = $state(0);
 
+  /* Le descripteur tel qu'il vaut SUR LA LIGNE VISÉE — bornes resserrées si
+   * cette ligne a une sous-plage jouable. La vue s'en sert pour le curseur de
+   * « régler » : plus large que la plage où le son bouge, il inviterait à
+   * chercher là où il n'y a rien. */
   get paramDescripteur(): DescripteurParam | null {
-    return parametre(this.paramId);
+    const p = parametre(this.paramId);
+    return p ? pourLigne(p, this.paramLigne) : null;
   }
 
   progress = $state<Record<string, PlayerProgress>>({});
@@ -563,12 +576,21 @@ class GameStore {
   private preparerParametre(): void {
     const famille = this.level.familleParam;
     // Seuls les boutons qui s'entendent sur au moins une ligne du Mode jeu.
-    const candidats = parametresDe(famille).filter((p) =>
-      p.lignes.some((l) => GAME_DRUM_ROWS.includes(l)),
+    // Les boutons qui s'entendent sur au moins une ligne du Mode jeu, ET que le
+    // niveau autorise — un acte peut restreindre la famille à ce que le joueur
+    // a déjà rencontré (voir `paramsAutorises`).
+    const autorises = this.level.paramsAutorises;
+    const candidats = parametresDe(famille).filter(
+      (p) =>
+        p.lignes.some((l) => GAME_DRUM_ROWS.includes(l)) &&
+        (autorises.length === 0 || autorises.includes(p.id)),
     );
-    const p = pick(candidats);
-    this.paramId = p.id;
-    this.paramLigne = pick(p.lignes.filter((l) => GAME_DRUM_ROWS.includes(l)));
+    const brut = pick(candidats);
+    this.paramId = brut.id;
+    this.paramLigne = pick(brut.lignes.filter((l) => GAME_DRUM_ROWS.includes(l)));
+    // ⚠️ À partir d'ici on travaille sur le descripteur RESSERRÉ à la ligne :
+    // les versions, la cible et le curseur doivent parler des mêmes bornes.
+    const p = pourLigne(brut, this.paramLigne);
 
     // Une noire sur quatre temps : assez pour entendre l'attaque et la chute,
     // assez court pour comparer sans attendre.
@@ -854,8 +876,20 @@ class GameStore {
     writeJson(KEY_PROGRESS, this.progress);
   }
 
+  /* Ce que la salle de répétition propose : les niveaux déjà rencontrés dans le
+   * récit, tous rejouables. Voir `niveauxRencontres` — le seuil `id <= level`
+   * ne convenait pas, la carrière citant les niveaux dans un autre ordre que
+   * leur numérotation.
+   *
+   * « master » et le contournement voient tout : ce sont des outils de test. */
+  get niveauxDeRepetition(): number[] {
+    if (this.pseudo.toLowerCase() === 'master') return LEVELS.map((l) => l.id);
+    const p = this.progresCarriere;
+    return niveauxRencontres(p.acte, p.etape);
+  }
+
   isUnlocked(levelId: number): boolean {
-    return levelId <= this.playerProgress.level;
+    return this.niveauxDeRepetition.includes(levelId);
   }
 
   // Construit un état jouable par le moteur pour la cible ou la proposition.
