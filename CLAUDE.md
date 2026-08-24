@@ -166,6 +166,33 @@ le Mode jeu tient sur **une mesure** par ligne (un quart de boucle est un *temps
 pas une mesure), et « jouer » mesure l'écart au dernier pas **actif** du kick —
 l'ancrer sur la grille donnait 100 % à une frappe posée sur un silence.
 
+⚠️ **Une question dont la réponse est inaudible n'est pas une question.** Le
+kick balaie jusqu'à `max(20, 38 × mult)` : sous −10 demi-tons, toute la moitié
+basse du curseur finit sur le même plancher de 20 Hz, et trois versions tirées
+là-dedans sont indiscernables (mesuré en RMS > 200 Hz dans un
+`OfflineAudioContext`). D'où `plageParLigne` dans `parametres.ts` — `lignes` dit
+**où** un bouton s'entend, `plageParLigne` dit **jusqu'où** — et `pourLigne()`,
+dont découlent les versions, la cible ET le curseur affiché. Corriger ça dans le
+MOTEUR serait une erreur : le plancher vient de l'original et protège
+l'enveloppe. Et `paramsAutorises` restreint le tirage d'un niveau à des boutons
+déjà rencontrés : à l'acte 0 l'Atelier est fermé, on ne peut pas faire nommer un
+réglage que le joueur n'a jamais vu.
+
+⚠️ **Le récit se lit dans les DEUX sens.** `reculerCarriere()` / `peutReculer`
+(« il faut pouvoir revenir sur un texte précédent ») : reculer est gratuit
+parce que le curseur enregistré ne bouge pas — même invariant que la relecture
+d'un acte. Corollaire : une étape d'exercice revisitée doit pouvoir être
+re-dépassée SANS être rejouée (`etapeDejaFranchie`), sinon un retour d'un cran
+obligerait à refaire l'exercice d'avant pour repartir.
+
+⚠️ **La salle de répétition liste ce qui a été RENCONTRÉ, pas ce qui a été
+réussi** (`niveauxRencontres`). Le seuil `id <= PlayerProgress.level` ne
+convenait plus : la carrière cite les niveaux 39-41 avant le niveau 1, et un
+exercice abandonné n'avance pas `level` — après tout l'acte 0, la carte
+verrouillait 40 niveaux sur 41, dont les trois joués. Corollaire de mise en
+scène : **rien de non atteint ne s'affiche** — ni les actes suivants du carnet,
+ni leurs titres, ni un total de niveaux.
+
 ⚠️ **Un test instable est un bug, pas un test à recalibrer.** `« régler » ne
 place pas le curseur déjà sur la cible` échouait une fois sur quatre : il
 comptait les tirages gagnants d'avance et exigeait « moins de la moitié ». La

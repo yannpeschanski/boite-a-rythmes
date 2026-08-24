@@ -406,6 +406,14 @@
 
   const lvl = $derived(game.level);
   const ex = $derived(lvl.exercise);
+  /* Les niveaux de la salle de répétition, dans l'ordre où le récit les a
+     fait rencontrer — pas dans l'ordre de leur numéro. C'est ce qui compte
+     pour s'y retrouver : on refait « celui d'avant », pas « le 39 ». */
+  const niveauxOuverts = $derived(
+    game.niveauxDeRepetition
+      .map((id) => LEVELS.find((l) => l.id === id))
+      .filter((l): l is (typeof LEVELS)[number] => !!l),
+  );
   /* Dans la carrière, la consigne affichée est le BRIEF du client, pas la
      fiche pédagogique du niveau : « La deuxième. La snare entre. » plutôt que
      « La snare (caisse claire) entre en jeu à son tour ». Le préambule reste
@@ -418,7 +426,11 @@
   const titreFenetre = $derived(
     game.enCarriere
       ? `Acte ${game.acteCourant.id} — ${game.acteCourant.titre} · ${game.etapeActive + 1}/${game.acteCourant.etapes.length}`
-      : `Niveau ${lvl.id} / ${LEVELS.length} — ${lvl.teach}`,
+      : // Hors carrière : plus de « / 41 ». Le total annonçait le nombre de
+        // niveaux existants à quelqu'un qui n'en a rencontré que trois — un
+        // compteur qui ne compte rien de ce que le joueur voit, et un
+        // avant-goût de tout ce qui reste.
+        `Répétition — ${lvl.teach}`,
   );
   // À vue, le guide montre le motif ; à l'oreille il ne montre que la grille
   // vide et le curseur. Jamais les deux canaux ensemble — voir jouerIndice.
@@ -505,26 +517,44 @@
       {#if lvl.preamble}<p class="preamble">{lvl.preamble}</p>{/if}
 
       {#if showMap}
+        <!-- La salle de répétition ne liste QUE les niveaux déjà rencontrés
+             dans le récit, et les liste tous comme rejouables.
+             Deux corrections d'un coup :
+             · « il faut pouvoir refaire les niveaux » — l'ancien seuil
+               `id <= level` verrouillait les niveaux 39-41 de l'acte 0 (ils
+               portent des numéros de fin de liste) et n'ouvrait jamais un
+               exercice abandonné, qui n'avance pas `level` ;
+             · « no spoil » — les 41 niveaux s'affichaient, cadenas compris,
+               y compris ceux d'actes qui ne sont pas encore écrits. -->
         <div class="map">
-          {#each LEVELS as l (l.id)}
-            {@const unlocked = game.isUnlocked(l.id)}
+          {#each niveauxOuverts as l (l.id)}
             {@const stars = game.playerProgress.stars[String(l.id)] ?? 0}
             <button
               class="map-cell"
-              class:locked={!unlocked}
-              class:current={l.id === lvl.id}
-              disabled={!unlocked}
+              class:current={l.id === lvl.id && !game.enCarriere}
               title={l.teach}
               onclick={() => {
                 allerAuNiveau(l.id - 1);
                 showMap = false;
               }}
             >
-              <span class="num">{unlocked ? l.id : '🔒'}</span>
+              <span class="num">{l.id}</span>
               <span class="stars">{'★'.repeat(stars)}{'☆'.repeat(3 - stars)}</span>
             </button>
           {/each}
         </div>
+        {#if niveauxOuverts.length === 0}
+          <p class="muted">
+            Rien à répéter pour l’instant : les exercices arrivent avec l’histoire.
+          </p>
+        {:else}
+          <p class="muted">
+            {niveauxOuverts.length} exercice{niveauxOuverts.length > 1 ? 's' : ''} rencontré{niveauxOuverts.length >
+            1
+              ? 's'
+              : ''} — tous rejouables, autant de fois que tu veux.
+          </p>
+        {/if}
       {/if}
 
       {#if showBag}

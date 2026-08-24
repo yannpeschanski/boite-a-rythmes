@@ -19,7 +19,6 @@
   import { game } from '../../stores/game.svelte';
   import {
     ACTES,
-    NB_ACTES,
     acteAVenir,
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
@@ -104,6 +103,17 @@
     !enPrologue || game.etapeActive >= ETAPE_DU_COMPTE_A_REBOURS || game.acteActif > 0,
   );
   const montrerCarnet = $derived(!enPrologue);
+
+  /* ⚠️ « Tout ce qui n'est pas encore accessible devrait être masqué : no
+   * spoil. » Le carnet listait les HUIT actes, titres et résumés compris —
+   * « Kelvin a seize ans, il vient le mardi », « La salle chante un jingle de
+   * lessive » : le récit se racontait lui-même, cinq actes à l'avance.
+   *
+   * Il ne montre donc plus que les actes ATTEINTS. Ce qui suit n'est pas
+   * annoncé — pas même son titre. */
+  const actesVisibles = $derived(
+    ACTES.filter((a) => a.id <= game.progresCarriere.acte && !acteAVenir(a)),
+  );
 </script>
 
 <XpWindow title="Face B — Mode carrière" icon="📼" accent="none">
@@ -168,6 +178,13 @@
       {/each}
     </div>
     <div class="actions">
+      <!-- ⚠️ « Il faut pouvoir revenir sur un texte précédent. » Le récit
+           n'avait qu'un sens de marche : un écran passé était perdu. Reculer
+           est gratuit ici — seul le curseur ENREGISTRÉ compte pour la
+           progression, et lui ne recule jamais (voir le store). -->
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
       <span class="position">{enPrologue ? position : `Acte ${acte.id} · ${position}`}</span>
       <button class="xp-btn primary tap44-y" onclick={suite}>Suite ▸</button>
     </div>
@@ -179,7 +196,16 @@
       <p class="ligne">{etape.commande ?? 'Au travail.'}</p>
     </div>
     <div class="actions">
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
       <span class="position">Acte {acte.id} · {position}</span>
+      {#if game.etapeDejaFranchie}
+        <!-- Exercice déjà fait, revisité en reculant : on doit pouvoir le
+             re-dépasser sans le refaire, sinon un retour d'un cran obligerait à
+             rejouer pour repartir. -->
+        <button class="xp-btn tap44-y" onclick={suite}>Suite ▸</button>
+      {/if}
       <button class="xp-btn primary tap44-y" onclick={onExercice}>Au travail ▸</button>
     </div>
   {/if}
@@ -189,31 +215,21 @@
        relire l'acte 1 ne referme pas l'Atelier. -->
   {#if montrerCarnet}
     <ol class="carnet">
-    {#each ACTES as a (a.id)}
-      {@const ouvert = game.acteOuvert(a.id)}
-      {@const fait = game.acteFait(a.id)}
-      <li>
-        <button
-          class="acte tap44-y"
-          class:courant={a.id === acte.id}
-          class:fait
-          class:verrouille={!ouvert}
-          disabled={!ouvert}
-          onclick={() => ouvrir(a)}
-        >
-          <span class="num">{fait ? '✓' : ouvert ? a.id : '🔒'}</span>
-          <span class="titre">{a.titre}</span>
-          <span class="resume">{acteAVenir(a) ? 'À venir' : a.resume}</span>
-          <span class="comp">{a.competenceLabel}</span>
-        </button>
-      </li>
-    {/each}
+      {#each actesVisibles as a (a.id)}
+        {@const fait = game.acteFait(a.id)}
+        <li>
+          <button class="acte tap44-y" class:courant={a.id === acte.id} class:fait onclick={() => ouvrir(a)}>
+            <span class="num">{fait ? '✓' : a.id}</span>
+            <span class="titre">{a.titre}</span>
+            <span class="resume">{a.resume}</span>
+            <span class="comp">{fait ? a.competenceLabel : 'EN COURS'}</span>
+          </button>
+        </li>
+      {/each}
     </ol>
     <p class="pied">
-      {game.progresCarriere.acte >= NB_ACTES
-        ? 'Carrière terminée.'
-        : `Acte ${Math.min(game.progresCarriere.acte, NB_ACTES - 1)} sur ${NB_ACTES - 1}`}
-      · la <strong>salle de répétition</strong>, c’est les {41} niveaux d’entraînement, jouables à part.
+      La <strong>salle de répétition</strong> rassemble les exercices déjà rencontrés&nbsp;: on peut
+      tous les refaire, autant de fois qu’on veut.
     </p>
   {/if}
 </XpWindow>
@@ -341,8 +357,16 @@
     letter-spacing: var(--xp-ls-tag);
     color: var(--xp-muted);
   }
-  .actions .xp-btn {
+  /* Le premier bouton reste à gauche (le retour), le dernier à droite (la
+     suite) : la position de l'étape s'intercale et pousse le reste. */
+  .actions .xp-btn:last-child {
     margin-left: auto;
+  }
+  .actions .position {
+    margin-left: auto;
+  }
+  .actions .position + .xp-btn {
+    margin-left: 8px;
   }
 
   /* Le carnet. Une ligne par acte, comme une playlist : numéro, titre, une
@@ -371,10 +395,6 @@
     font: inherit;
     font-size: var(--xp-size-small);
     cursor: pointer;
-  }
-  .acte:disabled {
-    cursor: default;
-    color: var(--xp-lcd-dim);
   }
   .acte.courant {
     background: #0c1a0e;

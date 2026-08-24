@@ -20,6 +20,7 @@ import {
   FACTEUR_ZERO,
   tirerVersions,
   tirerCible,
+  pourLigne,
   versionQuiRepond,
 } from '../src/model/parametres';
 import { defaultState } from '../src/model/defaults';
@@ -354,5 +355,71 @@ describe('tirerCible — la cible ne tombe jamais sur le départ', () => {
     const cotes = new Set<string>();
     for (let n = 0; n < TIRAGES; n++) cotes.add(tirerCible(p, milieu) < milieu ? 'bas' : 'haut');
     expect(cotes.size).toBe(2);
+  });
+});
+
+/* La plage jouable par ligne — un bouton peut être audible « sur une ligne »
+ * sans l'être sur toute son étendue.
+ */
+describe('pourLigne — ne poser que des questions audibles', () => {
+  it('resserre le pitch du kick, et laisse les autres lignes intactes', () => {
+    const pitch = parametre('pitch')!;
+    // ⚠️ Mesuré dans un OfflineAudioContext : `playKick` balaie jusqu'à
+    // `max(20, 38 × mult)`, donc toute la moitié basse du curseur finit sur le
+    // même plancher de 20 Hz. Trois versions tirées là-dedans sont
+    // indiscernables — c'est ce que Yann a rencontré au premier niveau.
+    expect(pourLigne(pitch, 'kick').min).toBe(0);
+    expect(pourLigne(pitch, 'kick').max).toBe(pitch.max);
+    expect(pourLigne(pitch, 'snare').min).toBe(pitch.min);
+    expect(pourLigne(pitch, 'hat').min).toBe(pitch.min);
+  });
+
+  it('laisse un paramètre sans sous-plage strictement identique', () => {
+    const decay = parametre('decay')!;
+    expect(pourLigne(decay, 'kick')).toEqual(decay);
+  });
+
+  // La sous-plage doit rester assez large pour poser trois versions distinctes,
+  // sinon on aurait échangé un exercice inaudible contre un exercice impossible.
+  it('garde de quoi tirer trois versions dans chaque sous-plage', () => {
+    for (const p of PARAMETRES) {
+      for (const ligne of p.lignes) {
+        const q = pourLigne(p, ligne);
+        const etendue = q.echelle === 'log' ? Math.log2(q.max / q.min) : q.max - q.min;
+        expect(etendue, `${p.label} / ${ligne}`).toBeGreaterThanOrEqual(2 * p.ecartMini);
+      }
+    }
+  });
+});
+
+/* Ce que l'acte 0 a le droit de demander.
+ *
+ * Retour de Yann : « les paramètres à régler font intervenir des paramètres
+ * auxquels on n'a pas encore accès ». Au premier acte l'Atelier est fermé : on
+ * ne peut pas demander de NOMMER un bouton que le joueur n'a jamais vu.
+ */
+describe('Les trois premiers exercices ne tirent que des boutons annoncés', () => {
+  it('n’utilise jamais un bouton hors de la liste du niveau', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    for (const id of [39, 40, 41]) {
+      const i = L.findIndex((l) => l.id === id);
+      const autorises = L[i].paramsAutorises;
+      expect(autorises.length, `niveau ${id}`).toBeGreaterThan(0);
+      for (let n = 0; n < 40; n++) {
+        game.startLevel(i);
+        expect(autorises, `niveau ${id}`).toContain(game.paramId);
+      }
+    }
+  });
+
+  // Et le pitch tiré sur un kick reste dans la plage où le kick s'entend.
+  it('ne descend jamais le kick sous son réglage par défaut', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const i = L.findIndex((l) => l.id === 39);
+    for (let n = 0; n < 80; n++) {
+      game.startLevel(i);
+      if (game.paramId !== 'pitch' || game.paramLigne !== 'kick') continue;
+      for (const v of game.paramVersions) expect(v).toBeGreaterThanOrEqual(0);
+    }
   });
 });

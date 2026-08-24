@@ -89,6 +89,14 @@ export interface GameLevel {
   /* Pour les verbes de PARAMÈTRE (`lequel`, `nommer`, `regler`) : dans quelle
      famille de boutons puiser. Sans objet pour les verbes de grille. */
   familleParam: FamilleParam;
+  /* ⚠️ Restreint le tirage à ces boutons-là, à l'intérieur de la famille.
+   *
+   * Retour de Yann sur l'acte 0 : « les paramètres à régler font intervenir des
+   * paramètres auxquels on n'a pas encore accès ». Au tout premier acte
+   * l'Atelier n'est pas ouvert : on demandait au joueur de NOMMER des boutons
+   * qu'il n'a jamais vus. La famille entière est trop large pour un début —
+   * d'où une liste explicite, vide par défaut (= toute la famille). */
+  paramsAutorises: string[];
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
@@ -117,6 +125,7 @@ export interface MkLevelOptions {
   presetFillEvery?: number;
   jouerIndice?: 'ecoute' | 'lecture';
   familleParam?: FamilleParam;
+  paramsAutorises?: string[];
 }
 
 // Options du générateur de ligne (voir genLevelRow).
@@ -321,6 +330,7 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
   return {
     id, teach, exercise: o.exercise || 'reproduire', jouerIndice: o.jouerIndice || 'ecoute',
     familleParam: o.familleParam || 'timbre',
+    paramsAutorises: o.paramsAutorises ?? [],
     preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
@@ -595,16 +605,37 @@ export const LEVELS: GameLevel[] = [
    */
   mkLevel(39, 'Lequel est le plus… ?', {
     exercise: 'lequel', familleParam: 'timbre',
+    // ⚠️ Ces trois niveaux sont les trois premiers exercices du JEU (acte 0,
+    // « Le café ») : l'Atelier n'y est pas encore ouvert, et le récit annonce
+    // exactement ce qu'on va écouter — la hauteur, la durée, l'attaque.
+    // `tone` en est exclu : c'est le mot le plus opaque de la famille pour qui
+    // n'a jamais vu un curseur, et sur la snare comme sur le hat il déplace un
+    // filtre plutôt qu'il ne change une note.
+    paramsAutorises: ['pitch', 'decay', 'attack'],
     preamble: "Trois versions du même son, un seul réglage change. Écoute-les et désigne celle qu'on te demande. Ici on n'attend pas de chiffre : juste d'entendre dans quel SENS un bouton pousse le son.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
     tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
   mkLevel(40, 'Qu’est-ce qui a changé ?', {
     exercise: 'nommer', familleParam: 'timbre',
+    // ⚠️ Ces trois niveaux sont les trois premiers exercices du JEU (acte 0,
+    // « Le café ») : l'Atelier n'y est pas encore ouvert, et le récit annonce
+    // exactement ce qu'on va écouter — la hauteur, la durée, l'attaque.
+    // `tone` en est exclu : c'est le mot le plus opaque de la famille pour qui
+    // n'a jamais vu un curseur, et sur la snare comme sur le hat il déplace un
+    // filtre plutôt qu'il ne change une note.
+    paramsAutorises: ['pitch', 'decay', 'attack'],
     preamble: "Deux sons, un seul réglage les sépare. Lequel ? C'est l'exercice le plus utile des trois : tant qu'on n'a pas de NOM pour ce qu'on entend, on ne peut pas le régler.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
     tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
   mkLevel(41, 'Règle-le à l’oreille', {
     exercise: 'regler', familleParam: 'timbre',
+    // ⚠️ Ces trois niveaux sont les trois premiers exercices du JEU (acte 0,
+    // « Le café ») : l'Atelier n'y est pas encore ouvert, et le récit annonce
+    // exactement ce qu'on va écouter — la hauteur, la durée, l'attaque.
+    // `tone` en est exclu : c'est le mot le plus opaque de la famille pour qui
+    // n'a jamais vu un curseur, et sur la snare comme sur le hat il déplace un
+    // filtre plutôt qu'il ne change une note.
+    paramsAutorises: ['pitch', 'decay', 'attack'],
     preamble: "Un son cible, un curseur, et rien d'affiché. Retrouve le réglage. On ne te demande pas le chiffre exact — deux réglages qu'on ne distingue pas sont la même réponse.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
     tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
