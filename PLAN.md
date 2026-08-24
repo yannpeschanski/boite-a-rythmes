@@ -5705,6 +5705,59 @@ suite · les deux builds · parcours Playwright à 390×844 : le premier exercic
 **5e écran**, 27 lignes de récit mesurées et **0 repli**, 0 px de débordement,
 0 erreur console.
 
+### ✅ Le clavier du pad montre ses trois octaves (2026-08-24)
+
+Retour de Yann : *« il faut montrer les 3 rangées de notes dans le clavier de
+sélection des notes. »*
+
+**Fichier touché :** `src/ui/sequencer/NotePad.svelte` (le seul clavier de
+notes de l'appli — le pad XY du Mode Live découpe déjà son axe Y en trois
+octaves, le Mode jeu n'a pas de clavier).
+
+**Ce qui n'allait pas.** L'octave fait PARTIE de la note (`SynthNote =
+{ degree, octave }`), mais le clavier n'en montrait qu'une : sept touches, et
+un sélecteur −1/0/+1 rangé sous la barre. Ce sélecteur en faisait un **mode** —
+on posait une note à l'octave où on avait laissé le bouton, et **rien dans la
+touche ne disait laquelle**. Poser une octave grave puis une centrale coûtait
+deux gestes de plus que les notes elles-mêmes.
+
+**Ce qui a été fait.** Les trois octaves du modèle sont les trois rangées du
+clavier, aiguë en haut (même sens que le pad XY du Mode Live). Une note reste
+**un appui**, mais l'appui dit maintenant aussi l'octave, et le sélecteur
+disparaît — il n'aurait plus rien à régler.
+
+- Chaque touche porte, sous le nom, **l'étiquette exacte de la case qu'elle va
+  écrire** : « 5 », « 5▴ », « 5▾ ». La marque est celle que la grille affiche
+  déjà (`SynthRowView.octaveMark`) — le clavier montre ce qu'il écrit, vérifié
+  bout en bout au navigateur (trois appuis sur trois rangées → `5▴ 5 2▾` dans
+  la grille).
+- **Le silence garde une seule touche**, en 8e colonne sur les trois rangées
+  (`grid-row: 1 / -1`) : effacer un pas ne dépend pas de l'octave, et la cible
+  reste la plus grande du pad. Placement explicite (`grid-column` /
+  `grid-row` sur chaque touche) plutôt qu'auto : sinon la première rangée
+  déborde dans la case que le silence laisse libre.
+- Touches à **44px** de haut et non 48 : la hauteur totale est désormais
+  triple, et 44 est la cible tactile de référence du projet (`.tap44`), donc
+  le plancher — pas un rognage.
+
+⚠️ **`color-mix()` sur `--xp-btn-face` détruit le biseau.** Pour distinguer les
+rangées au premier coup d'œil, la première version teintait la face d'un cran
+avec `color-mix(in srgb, var(--xp-btn-face) 88%, #000)`. Or `--xp-btn-face`
+est un **dégradé** — le biseau lui-même — et `color-mix` n'accepte que des
+couleurs : la règle tombait invalide, la touche perdait son relief et
+s'aplatissait sur la face du panneau. Invisible en lisant le CSS, flagrant sur
+la capture : **seule la rangée du milieu**, la seule sans teinte, avait encore
+son biseau. Corrigé par un **voile superposé** (`background-image:
+linear-gradient(...), var(--xp-btn-face)`), qui garde le dégradé dessous. Et un
+seul cran de clarté, pas une couleur : la teinte est déjà prise par « dans
+l'accord en cours », qui reste prioritaire sur les trois rangées.
+
+**Vérifié :** `check` 0 erreur (le sélecteur `.mini.on` devenu mort a été
+retiré) · 142 tests · les deux builds · Playwright à 1280, 390, 360 et 320px :
+22 touches sur 3 rangées de 44px, silence à 138-140px de haut, **0 px de
+débordement** de la grille comme de chaque libellé (mesuré span par span, y
+compris « vide » à 23px dans une touche de 27px à 320px).
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
