@@ -54,7 +54,7 @@ describe('Mode carrière — la charpente en huit actes', () => {
   });
 
   it('déclare « à venir » exactement les actes dont les exercices ne sont pas écrits', () => {
-    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2]);
+    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3]);
   });
 
   // Chaque acte jouable doit contenir au moins un exercice ET au moins un
@@ -377,5 +377,29 @@ describe('Le retour arrière ne coûte aucune progression', () => {
     expect(game.etapeDejaFranchie).toBe(false); // on est AU curseur
     game.reculerCarriere();
     expect(game.etapeDejaFranchie).toBe(true); // un cran derrière
+  });
+});
+
+/* L'acte 3 — le premier acte qui sorte de la batterie.
+ *
+ * « poursuis sur la suite chronologique » : après le groove vient la mélodie,
+ * et c'est elle qui ouvre le Synthé.
+ */
+describe('L’acte 3 enseigne ce que le récit annonce', () => {
+  it('est jouable, et ouvre le Synthé', () => {
+    const acte3 = ACTES[3];
+    expect(acteAVenir(acte3)).toBe(false);
+    expect(acte3.module).toBe('synth');
+    // Le Synthé s'ouvre une fois l'acte 3 DERRIÈRE soi, donc à l'acte 4.
+    expect(moduleUnlocked('synth', { level: 1, acte: 3 })).toBe(false);
+    expect(moduleUnlocked('synth', { level: 1, acte: 4 })).toBe(true);
+  });
+
+  it('ne cite que des exercices de mélodie', () => {
+    for (const n of niveauxDeLActe(ACTES[3])) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      expect(l.exercise, `niveau ${n}`).toBe('melodie');
+      expect(l.melodie.pas, `niveau ${n}`).toBeGreaterThan(0);
+    }
   });
 });

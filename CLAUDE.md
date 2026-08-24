@@ -150,6 +150,16 @@ cinq écrans avant le premier exercice, jamais deux lectures empilées entre deu
 exercices. Le nom complet de Sol (**Solange**) n'existe pas dans `HISTOIRE.md` :
 c'est une proposition, à un seul endroit du code.
 
+⚠️ **`melodie` est le huitième verbe, et le seul qui sorte de la batterie.**
+Une ligne de basse monophonique, une note par pas, des DEGRÉS (0 = silence,
+1-7). Il n'étend pas `GameDrumRowName` — ce qui aurait touché 46 endroits plus
+`LevelDensity`/`rowsActive`/`SubdivSpec`, nommés champ par champ. À la place :
+`comparerGrilles` a été **généralisé** (`Grille<N>` sur `number[]`, il ne faisait
+que des `===`), la mélodie a son propre état, et on reste sur **une octave, sans
+accord** — deux hauteurs à l'octave seraient la même note à l'oreille et deux
+réponses à l'écran. La tonique tombe toujours sur le premier pas : sans point de
+départ, aucun degré ne se situe.
+
 **Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
 discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
 campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier

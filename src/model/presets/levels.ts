@@ -97,6 +97,24 @@ export interface GameLevel {
    * qu'il n'a jamais vus. La famille entière est trop large pour un début —
    * d'où une liste explicite, vide par défaut (= toute la famille). */
   paramsAutorises: string[];
+  /* Le verbe `melodie` : une ligne de BASSE à reposer, degré par degré.
+   *
+   * Regroupé plutôt qu'éclaté en cinq champs — c'est un bloc qui n'a de sens
+   * que pour ce verbe-là, et `pas: 0` dit « ce niveau n'est pas mélodique »
+   * sans avoir à consulter `exercise`. */
+  melodie: {
+    /** Nombre de pas de la boucle. 0 = niveau non mélodique. */
+    pas: number;
+    /** Degré le plus haut tiré. 5 pour rester dans le pentatonique du bas de
+     *  gamme, 7 pour toute la gamme — c'est la difficulté principale. */
+    degreMax: number;
+    notesMin: number;
+    notesMax: number;
+    /** La seconde moitié REPRÈND la première. C'est « les motifs, la
+     *  répétition » de l'acte 3 : la moitié à retrouver est deux fois plus
+     *  courte, et l'oreille apprend à entendre qu'une phrase revient. */
+    motif: boolean;
+  };
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
@@ -126,6 +144,7 @@ export interface MkLevelOptions {
   jouerIndice?: 'ecoute' | 'lecture';
   familleParam?: FamilleParam;
   paramsAutorises?: string[];
+  melodie?: { pas?: number; degreMax?: number; notesMin?: number; notesMax?: number; motif?: boolean };
 }
 
 // Options du générateur de ligne (voir genLevelRow).
@@ -331,6 +350,13 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
     id, teach, exercise: o.exercise || 'reproduire', jouerIndice: o.jouerIndice || 'ecoute',
     familleParam: o.familleParam || 'timbre',
     paramsAutorises: o.paramsAutorises ?? [],
+    melodie: {
+      pas: o.melodie?.pas ?? 0,
+      degreMax: o.melodie?.degreMax ?? 5,
+      notesMin: o.melodie?.notesMin ?? 3,
+      notesMax: o.melodie?.notesMax ?? 4,
+      motif: o.melodie?.motif ?? false,
+    },
     preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
@@ -639,4 +665,30 @@ export const LEVELS: GameLevel[] = [
     preamble: "Un son cible, un curseur, et rien d'affiché. Retrouve le réglage. On ne te demande pas le chiffre exact — deux réglages qu'on ne distingue pas sont la même réponse.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
     tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+
+  /* ---------- Acte 3, « La mélodie » : le verbe de HAUTEUR ----------
+   *
+   * Les trois exercices que le récit demande, dans son ordre :
+   * « les hauteurs ; les gammes ; la basse ; les motifs ; la répétition ».
+   *
+   * On reste sur la BASSE et sur une seule octave : monophonique, une note par
+   * pas, degrés d'une gamme. C'est ce qui permet de réutiliser `comparerGrilles`
+   * tel quel (une case porte un nombre, le comparateur ne fait que des `===`)
+   * au lieu d'un second comparateur qui finirait par diverger.
+   */
+  mkLevel(42, 'Reposer une basse', {
+    exercise: 'melodie',
+    preamble: "Une ligne de basse joue en boucle. Repose-la : une note par pas, en cliquant la case qui correspond au degré entendu. Les cinq premiers degrés seulement — de quoi entendre monter et descendre sans se perdre.",
+    tempoOptions: [86, 92],
+    melodie: { pas: 8, degreMax: 5, notesMin: 3, notesMax: 4 } }),
+  mkLevel(43, 'Un motif qui se répète', {
+    exercise: 'melodie',
+    preamble: "Cette fois la phrase se répète : la seconde moitié reprend la première, note pour note. Il n'y a donc que quatre pas à trouver — et une chose à entendre, celle qui fait qu'une mélodie tient : elle revient.",
+    tempoOptions: [86, 92],
+    melodie: { pas: 8, degreMax: 5, notesMin: 2, notesMax: 3, motif: true } }),
+  mkLevel(44, 'Toute la gamme', {
+    exercise: 'melodie',
+    preamble: "Les sept degrés de la gamme, et une note de plus à placer. Les degrés hauts sont les plus durs à situer : compte depuis la tonique si tu te perds — c'est le degré 1, et c'est là que la phrase se repose.",
+    tempoOptions: [80, 88],
+    melodie: { pas: 8, degreMax: 7, notesMin: 4, notesMax: 5 } }),
 ];

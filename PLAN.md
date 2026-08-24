@@ -5880,6 +5880,85 @@ erreur console.
 la PR #104 (« Pad de notes »). Seul `PLAN.md` entrait en conflit — deux sections
 ajoutées au même endroit — résolu en gardant les deux.
 
+### ✅ Acte 3, « La mélodie » — le premier verbe qui sort de la batterie (2026-08-24)
+
+Deux consignes de Yann : *« Solange : ok, ajoute un nom de famille »* et
+*« poursuis sur la suite chronologique »* — donc l'acte 3, et pas l'acte 5.
+
+**Fichiers touchés :** `src/model/exercises.ts`, `src/model/presets/levels.ts`,
+`src/model/carriere.ts`, `src/stores/game.svelte.ts`,
+`src/ui/game/GameView.svelte`, `tests/carriere.test.ts`,
+`tests/exercises.test.ts`.
+
+**Solange Vasseur.** Toujours une proposition, toujours à un seul endroit.
+
+#### Ce que l'acte exige, et pourquoi les boutons ne suffisaient pas
+
+`HISTOIRE.md` est explicite : *« Tu travailles sur : les hauteurs ; les gammes ;
+la basse ; les motifs ; la répétition. »* Le raccourci envisagé dans la
+cartographie — ouvrir les trois verbes de PARAMÈTRE au synthé — aurait enseigné
+des boutons de filtre, pas une mélodie. Il est écarté.
+
+#### Le verbe `melodie`, et la traversée à coût réduit
+
+Un huitième verbe : une ligne de **basse monophonique**, une note par pas, à
+reposer degré par degré sur un rouleau (hauteurs en ordonnée, pas en abscisse).
+
+⚠️ **Le coût annoncé par la cartographie a été évité, exactement là où elle le
+disait.** Étendre `GameDrumRowName` aurait touché 46 endroits *plus* les formes
+nommées à la main (`LevelDensity`, `rowsActive`, `SubdivSpec`, et les 41 niveaux
+déjà écrits). Trois décisions l'ont contourné :
+
+1. **Une case porte un NOMBRE.** `comparerGrilles` a été *généralisé*
+   (`Grille<N>` sur `number[]`) au lieu d'être dupliqué : il ne faisait que des
+   `===`, il n'a jamais eu besoin de savoir si le nombre était un coup ou un
+   degré. La règle du projet — « ne pas écrire un second comparateur » — tient
+   ici plus qu'ailleurs.
+2. **La mélodie a son propre état** (`melodieCible`, `melodieGuess`,
+   `melodieLocked`), pas une `Grid` de batterie élargie. Ni la même forme (une
+   ligne), ni la même sémantique (une hauteur).
+3. **Une seule octave, jamais d'accord.** Deux hauteurs à l'octave seraient « la
+   même note » à l'oreille et deux réponses différentes à l'écran.
+
+#### Trois choix de conception, pas d'arithmétique
+
+- **La tonique tombe toujours sur le premier pas.** Sans point de départ, aucun
+  degré ne se situe à l'oreille : on entendrait des intervalles sans savoir par
+  rapport à quoi.
+- **Le motif** (niveau 43) recopie la première moitié dans la seconde : la
+  phrase à trouver est deux fois plus courte, et ce qu'on apprend est qu'une
+  mélodie REVIENT.
+- **La difficulté est le degré maximum**, pas le nombre de notes : 5 degrés
+  (42, 43) puis les 7 de la gamme (44).
+
+#### Ce que l'acte ouvre
+
+Le **Synthé**, une fois l'acte 3 derrière soi — parce que le récit en a eu
+besoin, pas parce qu'un compteur a atteint un seuil.
+
+#### Au passage
+
+`✓ Vérifier` s'affichait **au-dessus** du rouleau : le transport est en haut de
+l'écran. Même défaut que sur les verbes de paramètre, même correction — le
+bouton descend sous ce qu'il valide. Et « 1/3 notes posée » accordait sur le
+mauvais nom.
+
+**Vérifié :** `check` 0 erreur · **162 tests**, la suite passée trois fois de
+suite · les deux builds · parcours Playwright à 390×844 jusqu'à l'acte 3 :
+rouleau de 5 × 8 cases de 39 px, une note s'allume au clic, 0 px de
+débordement, 0 erreur console.
+
+**Écarts de portée assumés :**
+
+- **Le Synthé s'ouvre, mais le Mode jeu n'y touche toujours pas.** Les exercices
+  de l'acte 3 jouent une ligne de basse, ils ne font pas manipuler les boutons
+  du synthé. C'est cohérent avec le récit (l'acte enseigne les hauteurs) mais ça
+  laisse la famille de paramètres du synthé pour plus tard.
+- **La gamme est celle par défaut** (do majeur). L'acte parle des gammes ; en
+  faire varier une demanderait de l'annoncer à l'écran, sinon le joueur
+  chercherait des degrés dans une échelle qu'il ne sait pas avoir changé.
+- **Les actes 4 à 7 restent « à venir ».**
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

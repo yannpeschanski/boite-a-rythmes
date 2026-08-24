@@ -176,8 +176,9 @@ const PROLOGUE: Etape[] = [
    *
    * ⚠️ Son prénom complet vient d'une demande de Yann (« il faut rappeler son
    * nom bien franchouillard ») et n'existe nulle part dans `HISTOIRE.md` :
-   * Solange est une proposition, pas une reprise. Un seul mot à changer si un
-   * autre est retenu — il n'apparaît qu'ici.
+   * Solange Vasseur est une proposition, pas une reprise — nom de famille
+   * compris, ajouté à sa demande. Un seul endroit à changer si un autre est
+   * retenu : il n'apparaît qu'ici.
    *
    * ⚠️ Et elle passe AVANT tout dialogue : le premier « — » du prologue est à
    * l'écran suivant. Placée après, elle parlait avant d'exister ; c'est le test
@@ -188,7 +189,7 @@ const PROLOGUE: Etape[] = [
     entete: 'SOL',
     lignes: [
       'Sol dirige le label.',
-      'Sur les statuts, c’est Solange.',
+      'Sur les statuts, c’est Solange Vasseur.',
       'Sur les pochettes, ç’a toujours été Sol.',
       'Le syndicat lui envoie des cartons d’autocollants :',
       'LE PIRATAGE TUE LA MUSIQUE.',
@@ -426,7 +427,78 @@ export const ACTES: Acte[] = [
     competenceLabel: 'MÉLODIE',
     module: 'synth',
     resume: 'Une pub refusée, rachetée par le voisin du dessous.',
-    etapes: [],
+    etapes: [
+      {
+        kind: 'recit',
+        source: 'fax',
+        entete: 'BRIEF — AGENCE DE PUBLICITÉ',
+        lignes: [
+          'Les téléphones polyphoniques arrivent.',
+          'Une sonnerie peut contenir plusieurs notes.',
+          'Une agence commande un jingle pour une lessive :',
+          'PROPRE, RAPIDE, FAMILIAL,',
+          'MAIS PAS TROP FAMILIAL.',
+          'Tu fais plusieurs essais. Tous corrects. Aucun ne plaît.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'RACHID, LA LAVERIE DU BAS',
+        lignes: [
+          'Il les entend passer dans la cage d’escalier.',
+          '— Ça, ça fait dentiste.',
+          '— Ça, ça fait linge sale.',
+          '— Ça fait linge propre chez quelqu’un d’autre.',
+          '— Et tu veux quoi ?',
+          '— Quelque chose qui donne envie de rentrer chez soi.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 42,
+        commande: 'Tu commences par la basse. Les hauteurs, une par une.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 43,
+        commande: 'Puis le motif — ce qui fait qu’une phrase revient.',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'L’AGENCE',
+        lignes: [
+          'Tu fais une petite mélodie.',
+          'L’agence la refuse comme les autres.',
+          'Ils ne prendront rien, et ils ne paieront rien.',
+          'Rachid, lui, l’a entendue dans l’escalier.',
+          '— Ça.',
+          '— Pourquoi ?',
+          '— Je sais pas.',
+          'Il sort son portefeuille. — C’est combien ?',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 44,
+        commande: 'La deuxième, celle qu’il réclame. Toute la gamme, cette fois.',
+      },
+      {
+        kind: 'recit',
+        source: 'cassette',
+        entete: 'FB — JINGLE LAVERIE',
+        lignes: [
+          'Le plus grand succès du catalogue est un rebut de publicité',
+          'racheté par le voisin du dessous.',
+          'Il passe huit heures par jour, six jours sur sept.',
+          'Trois semaines plus tard, les clients le fredonnent.',
+          'La deuxième version tourne quatre jours.',
+          'Trois clientes se plaignent.',
+          'Il remet la première et n’en reparle plus.',
+        ],
+      },
+    ],
   },
   {
     id: 4,
