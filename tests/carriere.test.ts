@@ -309,3 +309,73 @@ describe('La salle de répétition ne montre que le déjà-rencontré', () => {
     expect(new Set(tout).size).toBe(tout.length);
   });
 });
+
+/* Revenir en arrière — « il faut pouvoir revenir sur un texte précédent ».
+ *
+ * Gratuit grâce au double curseur : `acteActif`/`etapeActive` sont volatils,
+ * seul `progresCarriere` est enregistré, et lui ne recule jamais. Ces tests
+ * verrouillent précisément ça — reculer ne doit RIEN coûter.
+ */
+describe('Le retour arrière ne coûte aucune progression', () => {
+  it('revient d’un écran, sans toucher au curseur enregistré', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    game.setPseudo('scenario-retour');
+    for (let i = 0; i < 3; i++) game.avancerCarriere();
+    const avant = { ...game.progresCarriere };
+    expect(game.etapeActive).toBe(3);
+
+    game.reculerCarriere();
+    expect(game.etapeActive).toBe(2);
+    expect(game.progresCarriere).toEqual(avant);
+
+    game.reculerCarriere();
+    game.reculerCarriere();
+    expect(game.etapeActive).toBe(0);
+    expect(game.progresCarriere).toEqual(avant);
+  });
+
+  it('ne recule pas au-delà du tout premier écran', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    game.setPseudo('scenario-retour-debut');
+    expect(game.peutReculer).toBe(false);
+    game.reculerCarriere();
+    expect(game.acteActif).toBe(0);
+    expect(game.etapeActive).toBe(0);
+  });
+
+  // Franchir la frontière d'un acte en arrière : on revient à la DERNIÈRE étape
+  // de l'acte précédent, et l'Atelier qu'il a ouvert reste ouvert.
+  it('remonte dans l’acte précédent sans refermer ce qu’il a ouvert', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    const { moduleUnlocked } = await import('../src/model/unlocks');
+    game.setPseudo('scenario-retour-acte');
+    // Tout l'acte 0, puis tout l'acte 1 — celui qui ouvre l'Atelier.
+    for (let i = 0; i < ACTES[0].etapes.length + ACTES[1].etapes.length; i++) {
+      game.avancerCarriere();
+    }
+    expect(game.progresCarriere.acte).toBe(2);
+    const ouvertAvant = moduleUnlocked('atelier', { level: 1, acte: game.progresCarriere.acte });
+    expect(ouvertAvant).toBe(true);
+
+    // Au début de l'acte 2, on recule : on doit retomber en fin d'acte 1.
+    expect(game.etapeActive).toBe(0);
+    expect(game.peutReculer).toBe(true);
+    game.reculerCarriere();
+    expect(game.acteActif).toBe(1);
+    expect(game.etapeActive).toBe(ACTES[1].etapes.length - 1);
+    // Et surtout : la progression enregistrée n'a pas bougé d'un cran.
+    expect(game.progresCarriere.acte).toBe(2);
+    expect(moduleUnlocked('atelier', { level: 1, acte: game.progresCarriere.acte })).toBe(true);
+  });
+
+  // Une étape déjà franchie doit pouvoir être re-dépassée sans être rejouée,
+  // sinon reculer d'un cran obligerait à refaire l'exercice pour repartir.
+  it('sait dire qu’une étape est déjà derrière le curseur', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    game.setPseudo('scenario-retour-franchie');
+    for (let i = 0; i < 5; i++) game.avancerCarriere();
+    expect(game.etapeDejaFranchie).toBe(false); // on est AU curseur
+    game.reculerCarriere();
+    expect(game.etapeDejaFranchie).toBe(true); // un cran derrière
+  });
+});

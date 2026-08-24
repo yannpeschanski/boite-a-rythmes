@@ -178,6 +178,13 @@
       {/each}
     </div>
     <div class="actions">
+      <!-- ⚠️ « Il faut pouvoir revenir sur un texte précédent. » Le récit
+           n'avait qu'un sens de marche : un écran passé était perdu. Reculer
+           est gratuit ici — seul le curseur ENREGISTRÉ compte pour la
+           progression, et lui ne recule jamais (voir le store). -->
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
       <span class="position">{enPrologue ? position : `Acte ${acte.id} · ${position}`}</span>
       <button class="xp-btn primary tap44-y" onclick={suite}>Suite ▸</button>
     </div>
@@ -189,7 +196,16 @@
       <p class="ligne">{etape.commande ?? 'Au travail.'}</p>
     </div>
     <div class="actions">
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
       <span class="position">Acte {acte.id} · {position}</span>
+      {#if game.etapeDejaFranchie}
+        <!-- Exercice déjà fait, revisité en reculant : on doit pouvoir le
+             re-dépasser sans le refaire, sinon un retour d'un cran obligerait à
+             rejouer pour repartir. -->
+        <button class="xp-btn tap44-y" onclick={suite}>Suite ▸</button>
+      {/if}
       <button class="xp-btn primary tap44-y" onclick={onExercice}>Au travail ▸</button>
     </div>
   {/if}
@@ -341,8 +357,16 @@
     letter-spacing: var(--xp-ls-tag);
     color: var(--xp-muted);
   }
-  .actions .xp-btn {
+  /* Le premier bouton reste à gauche (le retour), le dernier à droite (la
+     suite) : la position de l'étape s'intercale et pousse le reste. */
+  .actions .xp-btn:last-child {
     margin-left: auto;
+  }
+  .actions .position {
+    margin-left: auto;
+  }
+  .actions .position + .xp-btn {
+    margin-left: 8px;
   }
 
   /* Le carnet. Une ligne par acte, comme une playlist : numéro, titre, une

@@ -5846,6 +5846,40 @@ retiré) · 142 tests · les deux builds · Playwright à 1280, 390, 360 et 320p
 débordement** de la grille comme de chaque libellé (mesuré span par span, y
 compris « vide » à 23px dans une touche de 27px à 320px).
 
+### ✅ Revenir sur un texte précédent (2026-08-24)
+
+Retour de Yann : *« il faut pouvoir revenir sur un texte précédent. »* Le récit
+n'avait qu'un sens de marche — un « Suite ▸ » et rien d'autre. Un écran passé
+trop vite était perdu, et le seul moyen de le relire était de recommencer
+l'acte entier depuis le carnet.
+
+**Fichiers touchés :** `src/stores/game.svelte.ts`,
+`src/ui/game/CarriereView.svelte`, `tests/carriere.test.ts`.
+
+**Le double curseur l'offrait déjà — il ne restait qu'à le brancher.**
+`acteActif`/`etapeActive` sont volatils ; seul `progresCarriere` est enregistré,
+et il ne recule jamais. Reculer ne coûte donc **aucune progression** et ne
+referme **aucun module** : c'est exactement l'invariant posé au moment de la
+relecture d'un acte, réutilisé tel quel.
+
+- `reculerCarriere()` recule d'un écran, **frontières d'actes comprises** : au
+  début d'un acte, on revient à la dernière étape du précédent, s'il est
+  atteint. `peutReculer` grise le bouton au tout premier écran.
+- **Une étape d'exercice revisitée peut être re-dépassée sans être rejouée**
+  (`etapeDejaFranchie`). Sans ça, reculer d'un cran depuis un récit obligerait à
+  refaire l'exercice d'avant pour repartir — le retour arrière aurait coûté un
+  aller-retour.
+
+**Vérifié :** `check` 0 erreur · **156 tests**, la suite passée trois fois de
+suite · les deux builds · parcours Playwright à 390×844 : « Retour » désactivé
+au premier écran, deux retours ramènent bien de l'écran 4 à l'écran 2, la marche
+avant repart de là, les deux boutons mesurent 44 px, 0 px de débordement, 0
+erreur console.
+
+**Note de rebase :** cette tranche a été rebasée sur `main` après l'arrivée de
+la PR #104 (« Pad de notes »). Seul `PLAN.md` entrait en conflit — deux sections
+ajoutées au même endroit — résolu en gardant les deux.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

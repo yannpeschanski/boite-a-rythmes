@@ -320,6 +320,50 @@ class GameStore {
     this.demarrerEtape();
   }
 
+  /* Revenir sur l'écran précédent — « il faut pouvoir revenir sur un texte
+   * précédent ».
+   *
+   * Le récit n'avait qu'un « Suite ▸ » : un écran passé était perdu, et une
+   * ligne relue trop vite ne se rattrapait pas. C'est exactement le genre de
+   * chose que le DOUBLE CURSEUR permet gratuitement — `acteActif`/`etapeActive`
+   * sont volatils, seul `progresCarriere` est enregistré et lui ne recule
+   * jamais. Reculer ne coûte donc aucune progression, et ne referme aucun
+   * module.
+   *
+   * On recule d'un écran, en franchissant les frontières d'actes : au début
+   * d'un acte, on revient à la dernière étape du précédent, s'il est atteint.
+   */
+  reculerCarriere(): void {
+    this.acteTermineAAnnoncer = null;
+    if (this.etapeActive > 0) {
+      this.etapeActive -= 1;
+      this.demarrerEtape();
+      return;
+    }
+    const precedent = this.acteActif - 1;
+    if (precedent < 0 || !this.acteOuvert(precedent)) return;
+    this.acteActif = precedent;
+    this.etapeActive = Math.max(0, acteParId(precedent).etapes.length - 1);
+    this.demarrerEtape();
+  }
+
+  /** Y a-t-il un écran avant celui-ci ? */
+  get peutReculer(): boolean {
+    if (this.etapeActive > 0) return true;
+    return this.acteActif > 0 && this.acteOuvert(this.acteActif - 1);
+  }
+
+  /* L'étape courante est-elle DÉJÀ derrière le curseur enregistré ?
+   *
+   * Sert au seul écran où la question se pose : une étape d'exercice qu'on
+   * revisite en reculant. On peut alors la re-jouer, mais aussi la re-dépasser
+   * sans la rejouer — sinon reculer d'un cran obligerait à refaire l'exercice
+   * pour repartir. */
+  get etapeDejaFranchie(): boolean {
+    const p = this.progresCarriere;
+    return this.acteActif < p.acte || (this.acteActif === p.acte && this.etapeActive < p.etape);
+  }
+
   /** Ouvrir (ou relire) un acte depuis son début. */
   ouvrirActe(id: number): void {
     if (!this.acteOuvert(id)) return;

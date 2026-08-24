@@ -178,6 +178,13 @@ l'enveloppe. Et `paramsAutorises` restreint le tirage d'un niveau à des boutons
 déjà rencontrés : à l'acte 0 l'Atelier est fermé, on ne peut pas faire nommer un
 réglage que le joueur n'a jamais vu.
 
+⚠️ **Le récit se lit dans les DEUX sens.** `reculerCarriere()` / `peutReculer`
+(« il faut pouvoir revenir sur un texte précédent ») : reculer est gratuit
+parce que le curseur enregistré ne bouge pas — même invariant que la relecture
+d'un acte. Corollaire : une étape d'exercice revisitée doit pouvoir être
+re-dépassée SANS être rejouée (`etapeDejaFranchie`), sinon un retour d'un cran
+obligerait à refaire l'exercice d'avant pour repartir.
+
 ⚠️ **La salle de répétition liste ce qui a été RENCONTRÉ, pas ce qui a été
 réussi** (`niveauxRencontres`). Le seuil `id <= PlayerProgress.level` ne
 convenait plus : la carrière cite les niveaux 39-41 avant le niveau 1, et un
