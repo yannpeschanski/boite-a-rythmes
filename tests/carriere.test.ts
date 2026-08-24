@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { ACTES, NB_ACTES, ACTE_DU_MODULE, acteAVenir, acteParId, niveauxDeLActe } from '../src/model/carriere';
+import {
+  ACTES,
+  NB_ACTES,
+  ACTE_DU_MODULE,
+  acteAVenir,
+  acteParId,
+  niveauxDeLActe,
+  LONGUEUR_PROLOGUE,
+  ETAPE_DU_COMPTE_A_REBOURS,
+} from '../src/model/carriere';
 import { LEVELS } from '../src/model/presets/levels';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
 
@@ -151,5 +160,53 @@ describe('Le curseur de carrière ne recule jamais', () => {
       game.avancerCarriere();
     }
     expect(joues).toEqual(attendus);
+  });
+});
+
+/* Le prologue — la mise en place sans laquelle rien n'était compréhensible.
+ *
+ * Retour de Yann sur la première version : « 1ère impression : on comprend
+ * rien ». Le jeu s'ouvrait sur la première péripétie de l'acte 0, sans avoir
+ * jamais dit ce qu'était Face B, qui était Sol, ni ce qu'était le 14 juin.
+ */
+describe('Le prologue situe l’histoire avant de la commencer', () => {
+  it('ouvre l’acte 0 sur quatre écrans de récit, jamais sur un exercice', () => {
+    const debut = ACTES[0].etapes.slice(0, LONGUEUR_PROLOGUE);
+    expect(LONGUEUR_PROLOGUE).toBe(4);
+    for (const e of debut) expect(e.kind).toBe('recit');
+  });
+
+  // Les quatre inconnues que le joueur avait au premier écran, et qui doivent
+  // toutes être levées avant le premier exercice : où il est, de quoi ça vit,
+  // qui il est, et ce qu'est le 14 juin.
+  it('nomme le label, son gagne-pain, le joueur et l’échéance', () => {
+    const texte = ACTES[0].etapes
+      .slice(0, LONGUEUR_PROLOGUE)
+      .flatMap((e) => (e.kind === 'recit' ? [e.entete, ...e.lignes] : []))
+      .join(' ');
+    expect(texte).toContain('Face B');
+    expect(texte).toContain('sonneries');
+    expect(texte).toContain('stagiaire');
+    expect(texte).toContain('Sol');
+    expect(texte).toContain('14 juin');
+  });
+
+  // Le compte à rebours ne s'affiche qu'une fois le 14 juin expliqué : un
+  // décompte vers une date inconnue n'est pas une tension, c'est un nombre.
+  it('explique le 14 juin à l’étape où le décompte apparaît', () => {
+    const e = ACTES[0].etapes[ETAPE_DU_COMPTE_A_REBOURS];
+    expect(e.kind).toBe('recit');
+    if (e.kind === 'recit') expect(e.entete).toBe('LE 14 JUIN');
+    expect(ETAPE_DU_COMPTE_A_REBOURS).toBeLessThan(LONGUEUR_PROLOGUE);
+  });
+
+  // Aucune consigne ne doit annoncer un nombre de versions : les niveaux 39-41
+  // le tirent. « Elle te fait écouter deux sons » suivi de trois boutons A/B/C
+  // était la contradiction de la première version.
+  it('ne promet jamais un nombre de sons que le tirage ne tient pas', () => {
+    const commandes = ACTES.flatMap((a) =>
+      a.etapes.flatMap((e) => (e.kind === 'exercice' && e.commande ? [e.commande] : [])),
+    );
+    for (const c of commandes) expect(c).not.toMatch(/\b(deux|trois|quatre) (sons|versions)\b/i);
   });
 });
