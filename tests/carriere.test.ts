@@ -170,16 +170,16 @@ describe('Le curseur de carrière ne recule jamais', () => {
  * jamais dit ce qu'était Face B, qui était Sol, ni ce qu'était le 14 juin.
  */
 describe('Le prologue situe l’histoire avant de la commencer', () => {
-  it('ouvre l’acte 0 sur quatre écrans de récit, jamais sur un exercice', () => {
+  it('ouvre l’acte 0 sur cinq écrans de récit, jamais sur un exercice', () => {
     const debut = ACTES[0].etapes.slice(0, LONGUEUR_PROLOGUE);
-    expect(LONGUEUR_PROLOGUE).toBe(4);
+    expect(LONGUEUR_PROLOGUE).toBe(5);
     for (const e of debut) expect(e.kind).toBe('recit');
   });
 
   // Les quatre inconnues que le joueur avait au premier écran, et qui doivent
   // toutes être levées avant le premier exercice : où il est, de quoi ça vit,
   // qui il est, et ce qu'est le 14 juin.
-  it('nomme le label, son gagne-pain, le joueur et l’échéance', () => {
+  it('nomme le label, son gagne-pain, Sol, le joueur et l’échéance', () => {
     const texte = ACTES[0].etapes
       .slice(0, LONGUEUR_PROLOGUE)
       .flatMap((e) => (e.kind === 'recit' ? [e.entete, ...e.lignes] : []))
@@ -189,6 +189,25 @@ describe('Le prologue situe l’histoire avant de la commencer', () => {
     expect(texte).toContain('stagiaire');
     expect(texte).toContain('Sol');
     expect(texte).toContain('14 juin');
+  });
+
+  /* ⚠️ Sol est présentée AVANT de prendre la parole.
+   *
+   * Elle porte presque toutes les répliques du jeu — l'acte 0 s'ouvre sur un
+   * écran « SOL » où elle parle. La première version ne l'avait jamais
+   * introduite : le joueur entendait un personnage sans savoir qui il était.
+   * Ce test lie l'introduction à la première prise de parole ; il tombera si
+   * on réordonne le prologue sans y penser. */
+  it('présente Sol avant de lui donner la parole', () => {
+    const entetes = ACTES[0].etapes.map((e) => (e.kind === 'recit' ? e.entete : ''));
+    const presentation = entetes.indexOf('SOL');
+    expect(presentation).toBeGreaterThanOrEqual(0);
+    expect(presentation).toBeLessThan(LONGUEUR_PROLOGUE);
+    // La première réplique de Sol vient après, dans l'acte proprement dit.
+    const premiereReplique = ACTES[0].etapes.findIndex(
+      (e) => e.kind === 'recit' && e.lignes.some((l) => l.startsWith('—')),
+    );
+    expect(premiereReplique).toBeGreaterThan(presentation);
   });
 
   // Le compte à rebours ne s'affiche qu'une fois le 14 juin expliqué : un

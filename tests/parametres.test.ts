@@ -19,6 +19,7 @@ import {
   lireParam,
   FACTEUR_ZERO,
   tirerVersions,
+  tirerCible,
   versionQuiRepond,
 } from '../src/model/parametres';
 import { defaultState } from '../src/model/defaults';
@@ -264,19 +265,36 @@ describe('les verbes de paramètre, câblés dans le store', () => {
     }
   });
 
-  it('« régler » ne place pas le curseur déjà sur la cible', async () => {
+  /* ⚠️ Assertion par TIRAGE, et non plus par moyenne — et c'est la correction
+   * la plus importante de ce test.
+   *
+   * L'ancienne version comptait les tirages déjà gagnants et exigeait « moins
+   * de la moitié ». Une assertion d'ensemble, posée à la frontière : elle
+   * échouait une fois sur quatre environ, au hasard, y compris sur `main` (où
+   * un échec veut dire build non produit et déploiement sauté). Et elle
+   * décrivait le vrai défaut sans le dire : la cible pouvait tomber sur le
+   * point de départ du curseur, parce que rien ne l'en éloignait.
+   *
+   * `tirerCible` garantit désormais l'écart par construction, donc le test
+   * peut affirmer ce qui est vrai à CHAQUE tirage — ce que `CLAUDE.md` exige
+   * de tout test qui dépend du hasard. */
+  it('« régler » ne place JAMAIS le curseur déjà sur la cible', async () => {
     const { game, LEVELS: L } = await import('../src/stores/game.svelte');
     const i = L.findIndex((l) => l.exercise === 'regler');
-    let dejaJuste = 0;
     for (let n = 0; n < TIRAGES; n++) {
       game.startLevel(i);
       const p = parametre(game.paramId)!;
       expect(game.paramVersions).toHaveLength(1);
-      if (justesseDuReglage(game.paramValeur, game.paramVersions[0], p) >= 70) dejaJuste++;
+      // Pas seulement « pas encore gagné » : franchement à côté. L'écart posé
+      // vaut au moins `ecartMini`, qui est plus du double de la tolérance.
+      expect(justesseDuReglage(game.paramValeur, game.paramVersions[0], p), p.id).toBeLessThan(70);
+      expect(ecartPercu(game.paramValeur, game.paramVersions[0], p), p.id).toBeGreaterThan(
+        p.tolerance,
+      );
+      // Et la cible reste atteignable : jamais hors de l'étendue du curseur.
+      expect(game.paramVersions[0]).toBeGreaterThanOrEqual(p.min);
+      expect(game.paramVersions[0]).toBeLessThanOrEqual(p.max);
     }
-    // Le curseur part du milieu : il peut tomber juste par hasard, mais pas
-    // systématiquement — sinon le niveau se gagnerait sans rien toucher.
-    expect(dejaJuste).toBeLessThan(TIRAGES / 2);
   });
 
   it('la version jouée est bien celle qu’on demande, et la ligne est seule à sonner', async () => {
@@ -293,5 +311,48 @@ describe('les verbes de paramètre, câblés dans le store', () => {
       }
       expect(st.rows[game.paramLigne].muted).toBe(false);
     }
+  });
+});
+
+/* `tirerCible` — l'écart au point de départ, garanti par construction.
+ *
+ * Testé ici en PUR, en plus du test à travers le store : c'est de
+ * l'arithmétique, et une erreur de côté ou de borne s'y verrait tout de suite,
+ * alors qu'à travers le store elle se noierait dans le reste du niveau.
+ */
+describe('tirerCible — la cible ne tombe jamais sur le départ', () => {
+  const TIRAGES = 60;
+
+  it('se pose au moins à `ecartMini` du départ, où qu’il soit', () => {
+    for (const p of PARAMETRES) {
+      const etendue =
+        p.echelle === 'log' ? Math.log2(Math.max(2, p.max) / Math.max(1, p.min)) : p.max - p.min;
+      // Trois départs : le milieu (le cas réel), et les deux bords, où un seul
+      // côté est disponible — c'est là qu'un code qui tire le côté au hasard
+      // sans vérifier la place se ferait prendre.
+      for (const depart of [Math.round((p.min + p.max) / 2), p.min, p.max]) {
+        for (let n = 0; n < TIRAGES; n++) {
+          const c = tirerCible(p, depart);
+          expect(c, p.label).toBeGreaterThanOrEqual(p.min);
+          expect(c, p.label).toBeLessThanOrEqual(p.max);
+          const d = ecartPercu(c, depart, p);
+          expect(d, `${p.label} départ=${depart} cible=${c}`).toBeGreaterThanOrEqual(
+            Math.min(p.ecartMini, etendue) - p.step,
+          );
+          // Et donc, toujours, franchement au-delà du discernable.
+          expect(d, `${p.label} départ=${depart}`).toBeGreaterThan(p.tolerance);
+        }
+      }
+    }
+  });
+
+  it('visite les deux côtés quand les deux tiennent', () => {
+    // Sinon la cible serait toujours au-dessus, et le jeu s'apprendrait par
+    // cœur au lieu de s'écouter.
+    const p = parametre('decay')!;
+    const milieu = Math.round((p.min + p.max) / 2);
+    const cotes = new Set<string>();
+    for (let n = 0; n < TIRAGES; n++) cotes.add(tirerCible(p, milieu) < milieu ? 'bas' : 'haut');
+    expect(cotes.size).toBe(2);
   });
 });

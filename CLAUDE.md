@@ -131,6 +131,15 @@ n'apparaît qu'à l'écran qui l'explique** — le compte à rebours se lève su
 l'écran « LE 14 JUIN », le carnet des actes après le prologue, et le premier
 écran ne montre qu'un appareil, un message, un bouton.
 
+⚠️ **Un PERSONNAGE se présente comme un décor : avant de parler.** Sol porte
+presque toutes les répliques et n'avait qu'une demi-phrase, dans l'écran qui
+parlait du joueur (« on ne présente pas Sol ? »). Son écran passe donc avant
+celui des sonneries, qui porte déjà une de ses répliques — `tests/carriere.test.ts`
+verrouille l'ordre. Et le récit s'écrit **une idée par ligne** : une ligne qui se
+replie se lit comme du texte courant. Ça ne se voit pas, ça se **mesure** (hauteur
+de chaque `.ligne` contre une hauteur de ligne), et ça se corrige en COUPANT la
+ligne, pas en réécrivant le texte.
+
 **Le Mode jeu a quatre VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
 discrimine ce qu'on demande au joueur — `reproduire` (les 34 niveaux de la
 campagne), `completer`, `intrus`, `jouer` — là où les niveaux, eux, ne font varier
@@ -146,6 +155,15 @@ par ne plus l'être. Deux pièges déjà payés, documentés dans PLAN.md étape
 le Mode jeu tient sur **une mesure** par ligne (un quart de boucle est un *temps*,
 pas une mesure), et « jouer » mesure l'écart au dernier pas **actif** du kick —
 l'ancrer sur la grille donnait 100 % à une frappe posée sur un silence.
+
+⚠️ **Un test instable est un bug, pas un test à recalibrer.** `« régler » ne
+place pas le curseur déjà sur la cible` échouait une fois sur quatre : il
+comptait les tirages gagnants d'avance et exigeait « moins de la moitié ». La
+cause n'était pas le seuil — « régler » tirait sa cible sans jamais l'éloigner
+du MILIEU de l'étendue, où le curseur commence, donc le niveau était parfois
+déjà gagné. `tirerCible(p, depart)` tire désormais la **distance** et le
+**côté**, jamais une valeur qu'on espère lointaine. Règle générale : quand un
+test aléatoire est à la frontière, **c'est ce qu'il mesure qui est cassé**.
 
 ⚠️ **« Jouer » note la MEILLEURE fenêtre consécutive, pas la moyenne du tour.** La
 boucle tourne en rond : moyenner tout ce qui a été frappé rend les tâtonnements du

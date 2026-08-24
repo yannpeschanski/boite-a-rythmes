@@ -239,6 +239,57 @@ export function tirerVersions(
   return valeurs;
 }
 
+/* La cible de « régler », posée LOIN du point de départ du curseur.
+ *
+ * ⚠️ Le bug que ça corrige, et sa forme est instructive. « Régler » tirait sa
+ * cible avec `tirerVersions(p, 2)` puis gardait la première : deux valeurs bien
+ * séparées l'une de l'autre — mais rien ne les séparait du MILIEU de l'étendue,
+ * où le curseur du joueur commence. Une fois sur quatre environ, le niveau
+ * était donc déjà gagné sans toucher au curseur. Le commentaire du store disait
+ * pourtant « sinon il serait déjà juste » : l'intention était là, la garantie
+ * non.
+ *
+ * `tests/parametres.test.ts` l'attrapait déjà — mais par une assertion
+ * d'ENSEMBLE (« moins de la moitié des tirages tombent juste »), donc à la
+ * frontière, donc une pièce lancée à chaque `npm test`. C'est exactement ce que
+ * `CLAUDE.md` interdit : un test qui dépend du hasard doit affirmer ce qui est
+ * vrai à CHAQUE tirage. Il ne pouvait pas l'affirmer, puisque ce n'était pas
+ * vrai à chaque tirage.
+ *
+ * Ici l'écart est GARANTI PAR CONSTRUCTION, comme dans `tirerVersions` : on
+ * tire la DISTANCE au départ dans `[ecartMini, étendue/2]` et le CÔTÉ, au lieu
+ * de tirer une valeur et d'espérer. Le catalogue rend la chose toujours
+ * possible — tous les paramètres ont `étendue ≥ 2,2 × ecartMini`, et
+ * `ecartMini > 2 × tolerance`, donc une cible à `ecartMini` du départ n'est
+ * jamais dans la tolérance.
+ */
+export function tirerCible(
+  p: DescripteurParam,
+  depart: number,
+  rng: () => number = Math.random,
+): number {
+  const log = p.echelle === 'log';
+  const bas = log ? Math.log2(Math.max(1, p.min)) : p.min;
+  const haut = log ? Math.log2(Math.max(2, p.max)) : p.max;
+  const d = log ? Math.log2(Math.max(1, depart)) : depart;
+
+  // Ce que chaque côté peut offrir, et l'écart minimal qu'on vise.
+  const place = { bas: d - bas, haut: haut - d };
+  const ecart = Math.min(p.ecartMini, Math.max(place.bas, place.haut));
+
+  // Les côtés qui tiennent l'écart ; il y en a toujours au moins un, puisque
+  // `ecart` a été borné par le plus grand des deux.
+  const cotes: Array<'bas' | 'haut'> = [];
+  if (place.bas >= ecart) cotes.push('bas');
+  if (place.haut >= ecart) cotes.push('haut');
+  const cote = cotes[Math.floor(rng() * cotes.length)] ?? 'haut';
+
+  const marge = place[cote] - ecart;
+  const distance = ecart + rng() * marge;
+  const brut = cote === 'bas' ? d - distance : d + distance;
+  return arrondir(log ? Math.pow(2, brut) : brut, p);
+}
+
 /* ⚠️ Un paramètre logarithmique s'arrondit au hertz, PAS au pas du curseur.
  *
  * Le curseur du filtre avance par 100 Hz : près de 200 Hz, cela fait des sauts

@@ -138,6 +138,37 @@ const PROLOGUE: Etape[] = [
       'Il reste trois pièces au-dessus d’une laverie.',
     ],
   },
+  /* ⚠️ Sol a son écran, et il a fallu un second retour pour qu'elle l'ait :
+   * *« on ne présente pas Sol ? »*. Elle dit presque toutes les répliques du
+   * jeu et n'avait qu'une demi-phrase — « Sol dirige le label » — glissée dans
+   * l'écran qui parle du JOUEUR. Même défaut que le prologue manquant, un cran
+   * plus fin : `HISTOIRE.md` ne la présente pas davantage, parce qu'un lecteur
+   * qui a lu les trente lignes précédentes sait déjà qui elle est.
+   *
+   * Elle se présente par ce qu'elle FAIT, jamais par une description — c'est la
+   * règle de style du récit, et c'est aussi ce qui la rend drôle.
+   *
+   * ⚠️ Et elle passe AVANT l'écran des sonneries, pas après : cet écran-là
+   * porte déjà une de ses répliques (« — Sur les trois euros, il nous en
+   * revient onze centimes »). Placée après, elle parlait avant d'exister. Le
+   * test `présente Sol avant de lui donner la parole` verrouille l'ordre. */
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'SOL',
+    lignes: [
+      'Sol dirige le label.',
+      'Le syndicat lui envoie des cartons d’autocollants :',
+      'LE PIRATAGE TUE LA MUSIQUE.',
+      // ⚠️ Chaque ligne doit tenir sur UNE ligne d'afficheur à 390 px : le récit
+      // est écrit en une idée par ligne, un repli casse le rythme et se lit
+      // comme du texte courant. Mesuré à la capture — ~55 signes.
+      'Elle s’en sert pour caler la fenêtre, qui ferme mal.',
+      'Une sonnerie de grenouille s’est mieux vendue',
+      'que tout le catalogue depuis la fondation.',
+      'Sol la connaît note pour note. Elle refuse d’en parler.',
+    ],
+  },
   {
     kind: 'recit',
     source: 'fax',
@@ -146,7 +177,8 @@ const PROLOGUE: Etape[] = [
       'Pas les disques. Les sonneries de téléphone.',
       'Douze secondes, trois euros, par SMS surtaxé.',
       'TAPEZ FACEB AU 61000.',
-      '— Sur les trois euros, il nous en revient onze centimes.',
+      '— Sur les trois euros,',
+      'il nous en revient onze centimes.',
       '— C’est peu.',
       '— C’est onze centimes de plus qu’un album.',
     ],
@@ -157,8 +189,9 @@ const PROLOGUE: Etape[] = [
     entete: 'TOI',
     lignes: [
       'Tu es stagiaire. Tu fais le café.',
-      'Sol dirige le label. Elle ne connaît pas ton nom,',
-      'parce qu’elle ne l’a jamais demandé.',
+      'Sol ne connaît pas ton nom.',
+      'Elle ne l’a jamais demandé.',
+      'Tu ne lui en veux pas particulièrement.',
       'Le travail consiste surtout à attendre.',
     ],
   },
@@ -172,7 +205,8 @@ const PROLOGUE: Etape[] = [
       'Sol a jusqu’au 14 juin pour accepter.',
       '— Je vais vendre.',
       '— Alors pourquoi on travaille encore ?',
-      '— Parce que je ne vais quand même pas ne rien faire jusqu’en juin.',
+      '— Parce que je ne vais quand même pas',
+      'ne rien faire jusqu’en juin.',
     ],
   },
 ];
@@ -184,7 +218,7 @@ export const LONGUEUR_PROLOGUE = PROLOGUE.length;
 /** L'étape où le 14 juin est expliqué : le compte à rebours apparaît là, et
  *  pas avant. Un décompte vers une date inconnue n'est pas une tension, c'est
  *  un nombre. */
-export const ETAPE_DU_COMPTE_A_REBOURS = 3;
+export const ETAPE_DU_COMPTE_A_REBOURS = 4;
 
 export const ACTES: Acte[] = [
   {
