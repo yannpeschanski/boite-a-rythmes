@@ -759,4 +759,41 @@ export const LEVELS: GameLevel[] = [
     exercise: 'silence',
     preamble: "Une pulsation régulière, et un coup qui manque. Lequel ? C'est la quatrième chose qu'on apprend à entendre, et la moins évidente : le silence fait partie du rythme, il ne l'interrompt pas.",
     tempoOptions: [88, 96], silencePas: 8 }),
+
+  /* ---------- Acte 4, « La production » : ça sonne où ? ----------
+   *
+   * `HISTOIRE.md` fait apprendre six choses ici — EQ, compression, filtre,
+   * réverbération, delay, espace entre les instruments. Trois d'entre elles
+   * sont des boutons du modèle et forment déjà la famille `filtre` (filtre
+   * passe-bas, réverbe, delay) ; l'EQ et la compression sont GLOBALES et n'ont
+   * pas de version par ligne, donc rien à faire entendre ligne contre ligne.
+   * Elles ne sont pas citées plutôt que citées à moitié.
+   *
+   * Mais le cœur de l'acte n'est aucune des six : c'est *« ton morceau est bon
+   * dans ton ordinateur, ici il est mauvais »*. D'où le niveau 53 et son verbe
+   * à lui — voir `laverie` dans `exercises.ts`. Il ouvre l'acte, parce que
+   * c'est lui qui donne une raison aux trois autres.
+   */
+  mkLevel(53, 'Le petit haut-parleur', {
+    exercise: 'laverie',
+    preamble: "Trois versions du même kick, sur le haut-parleur de la laverie. Une seule tient encore. Tu peux repasser sur le moniteur du studio quand tu veux — c'est en comparant les deux qu'on entend le problème, jamais sur un seul.",
+    subdivOptions: [8], tempoOptions: [92],
+    rowsActive: { kick: true, snare: false, hat: false },
+    density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  mkLevel(54, 'Ce qu’on enlève en haut', {
+    exercise: 'lequel', familleParam: 'filtre', paramsAutorises: ['filterCutoff'],
+    preamble: "Le filtre passe-bas coupe les aigus. C'est le premier geste de mixage : on enlève plutôt qu'on ajoute, parce que deux instruments qui occupent la même bande s'effacent l'un l'autre.",
+    subdivOptions: [8], tempoOptions: [92] }),
+  mkLevel(55, 'L’espace', {
+    exercise: 'lequel', familleParam: 'filtre', paramsAutorises: ['reverbSend'],
+    preamble: "La réverbe éloigne. C'est ce qui place un son au fond de la pièce plutôt que contre l'oreille — et ce qui, en trop, transforme une boucle en bouillie sur un petit haut-parleur.",
+    subdivOptions: [8], tempoOptions: [92] }),
+  mkLevel(56, 'Réverbe ou delay ?', {
+    exercise: 'nommer', familleParam: 'filtre',
+    preamble: "Deux façons de créer de l'espace, et on les confond tout le temps. La réverbe étale ; le delay répète. Écoute si les répétitions se comptent : si oui, c'est un delay.",
+    subdivOptions: [8], tempoOptions: [92] }),
+  mkLevel(57, 'Règle l’espace', {
+    exercise: 'regler', familleParam: 'filtre', paramsAutorises: ['reverbSend'],
+    preamble: "Une cible, un curseur. On ne cherche pas le pourcentage : on cherche la même distance.",
+    subdivOptions: [8], tempoOptions: [92] }),
 ];

@@ -15,10 +15,14 @@ import {
   medianeDesEcarts,
   PARFAIT_MS,
   TOLERANCE_MS,
+  LAVERIE_DRIVES,
+  VERBES_PARAM,
+  estVerbeParam,
   type Grille,
   type Rafales,
 } from '../src/model/exercises';
 import { LEVELS } from '../src/model/presets/levels';
+import { parametre } from '../src/model/parametres';
 import type { GameDrumRowName } from '../src/model/presets/levels';
 import type { DrumStep } from '../src/model/types';
 
@@ -356,5 +360,90 @@ describe('silence — le trou est audible, et il en existe un', () => {
     game.silenceChoix = game.silenceReponse;
     expect(game.verify()).toBe(true);
     expect(game.solved).toBe(true);
+  });
+});
+
+/* « La laverie » — l'acte 4, et le seul verbe dont la question porte sur
+ * l'ENDROIT où l'on écoute plutôt que sur le son.
+ *
+ * Ce qui peut casser ici n'est pas le filtre (mesuré dans un
+ * `OfflineAudioContext`, et ses constantes sont verrouillées ailleurs) mais le
+ * CÂBLAGE : un exercice qui oublierait d'allumer le petit haut-parleur poserait
+ * une question dont la réponse ne s'entend pas, et un exercice qui oublierait
+ * de l'éteindre en partant priverait de grave tout ce qui suit.
+ */
+describe('laverie — trois versions, un seul haut-parleur qui compte', () => {
+  const TIRAGES = 40;
+
+  it('pose ses trois paliers de drive, sans jamais les tirer au hasard', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.pseudo = 'test';
+    const i = L.findIndex((l) => l.exercise === 'laverie');
+    expect(i).toBeGreaterThanOrEqual(0);
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      // Les mêmes trois valeurs à chaque partie — ce qui doit être garanti
+      // n'est pas un écart de curseur mais un écart de SURVIE au passe-haut,
+      // que `tirerVersions` ne sait pas mesurer.
+      expect([...game.paramVersions].sort((a, b) => a - b)).toEqual([...LAVERIE_DRIVES].sort((a, b) => a - b));
+      // La bonne réponse est toujours le plus driven — et jamais toujours au
+      // même endroit, sinon on répondrait sans écouter.
+      expect(game.paramVersions[game.paramReponse]).toBe(Math.max(...LAVERIE_DRIVES));
+    }
+    const positions = new Set<number>();
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      positions.add(game.paramReponse);
+    }
+    expect(positions.size).toBeGreaterThan(1);
+  });
+
+  it('arrive sur le petit haut-parleur, et le rend en partant', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const laverie = L.findIndex((l) => l.exercise === 'laverie');
+    game.startLevel(laverie);
+    // ⚠️ On ARRIVE à la laverie : c'est là que la question se pose. Poser la
+    // question en studio la rendrait fausse — le drive y monte aussi le
+    // niveau, donc « la plus forte » gagnerait sans rien enseigner.
+    expect(game.ecoutePetite).toBe(true);
+    // ⚠️ Et on repart en studio. Sans cette remise à zéro, l'exercice suivant
+    // se jouerait sans grave, en silence sur la raison.
+    const autre = L.findIndex((l) => l.exercise === 'reproduire');
+    game.startLevel(autre);
+    expect(game.ecoutePetite).toBe(false);
+  });
+
+  it('sonne le kick seul, avec le drive de la version écoutée', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.startLevel(L.findIndex((l) => l.exercise === 'laverie'));
+    for (let v = 0; v < game.paramVersions.length; v++) {
+      game.paramVersionJouee = v;
+      const st = game.buildState('param');
+      expect(st.rows.kick.muted).toBe(false);
+      expect(st.rows.snare.muted).toBe(true);
+      expect(st.rows.hat.muted).toBe(true);
+      expect(st.rows.kick.tone).toBeCloseTo(game.paramVersions[v], 6);
+    }
+  });
+
+  it('ne se gagne que sur la version qui tient', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.startLevel(L.findIndex((l) => l.exercise === 'laverie'));
+    game.paramChoix = (game.paramReponse + 1) % game.paramVersions.length;
+    expect(game.verify()).toBe(false);
+    game.paramChoix = game.paramReponse;
+    expect(game.verify()).toBe(true);
+    expect(game.solved).toBe(true);
+  });
+
+  /* ⚠️ `laverie` POSE son bouton au lieu de le tirer, donc il ne doit pas
+   * entrer dans `VERBES_PARAM` : `preparerParametre` lui tirerait un bouton de
+   * la famille et l'exercice n'aurait plus de sujet. Et `tone` sur le kick doit
+   * rester hors du catalogue — en studio il ne s'entend presque pas, ce qui en
+   * fait une mauvaise question de timbre et une bonne question de production. */
+  it('reste hors du catalogue et hors des verbes de paramètre', () => {
+    expect(VERBES_PARAM).not.toContain('laverie');
+    expect(estVerbeParam('laverie')).toBe(false);
+    expect(parametre('tone')!.lignes).not.toContain('kick');
   });
 });

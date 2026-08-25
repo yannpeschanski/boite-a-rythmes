@@ -74,7 +74,13 @@ ligne de l'export et le mode jeu. Il reçoit un `BaseAudioContext` en paramètre
 (`AudioContext` en direct, `OfflineAudioContext` à l'export) et un instantané d'état.
 
 **L'aléatoire passe toujours par un `rng` injecté**, jamais `Math.random()` en dur :
-c'est ce qui rend l'export MP3 reproductible à l'octet près. Ne pas changer l'ordre
+c'est ce qui rend les NOTES d'un export reproductibles. ⚠️ Pas les octets, et
+la nuance a été mesurée le 2026-08-25 : deux rendus du même état donnent 0
+échantillon d'écart sur un kick seul, et 8 465 sur une caisse claire. Deux
+tampons sont remplis hors du `rng` — le bruit blanc partagé (`graph.ts`) et
+l'impulsion de réverbe (`fx.ts`), reconstruits à chaque `buildGraph`, donc à
+chaque export. Les semer est une décision (elle change les octets de tous les
+exports futurs), pas un nettoyage : voir PLAN.md, acte 4. Ne pas changer l'ordre
 d'itération des lignes dans le scheduler — réel aujourd'hui : kick → snare → clap →
 hat → shaker → bass → pad → melody (clap partage la boucle de kick/snare, shaker suit
 le hat) — il détermine l'ordre de consommation du générateur. Ne pas non plus insérer
@@ -311,6 +317,29 @@ d'interface hors format v2 — c'est une propriété de l'APPAREIL, pas du joueu
 morceau). Son `affiner` est **additif** : les frappes sont déjà corrigées par le réglage
 en place, leur médiane est ce qu'il RESTE à corriger — remplacer ferait osciller le
 réglage au lieu de le faire converger.
+
+⚠️ **Un étage « neutre » posé EN SÉRIE dans la chaîne finale ne l'est jamais.**
+Le petit haut-parleur de l'acte 4 (`petitHautParleur*`, `graph.ts`) a d'abord
+été monté en série, réglé neutre au repos — passe-haut à 10 Hz, bosse à 0 dB.
+Un filtre sous l'audible ne s'entend pas : vrai de son AMPLITUDE, faux de sa
+PHASE. Mesuré sur un kick contre le même kick sans filtre : **41 176
+échantillons différents sur 44 100**, écart maximal supérieur au RMS du signal.
+L'étage aurait modifié tous les exports du projet, inaudiblement et pour
+toujours, pour un exercice de Mode jeu. Il vit donc dans une BRANCHE PARALLÈLE
+à gain nul (`petitHPSec` / `petitHPHumide`), et le repos est un **trajet**, pas
+un réglage : 0 échantillon d'écart, vérifié. Le fondu entre les deux évite en
+prime le claquement quand on bascule pendant la lecture — ce qui est le geste
+même de l'exercice. Même précaution pour tout futur `liveFilter`.
+
+⚠️ **Une leçon de PRODUCTION ne se raconte pas, elle se fait entendre.** L'acte
+4 tient sur « ton morceau est bon dans ton ordinateur, ici il est mauvais » :
+un écran qui décrit un défaut de mixage n'apprend rien. D'où le verbe `laverie`
+et son étage de moteur. Corollaire sur le catalogue : `tone` sur le kick reste
+**hors** de `parametres.ts` (en studio il ne s'entend presque pas) et c'est
+précisément pour ça qu'il est le sujet de cet exercice-là — un bouton dont
+l'effet ne se voit qu'ailleurs est une mauvaise question de timbre et une bonne
+question de production. `laverie` n'est donc pas un `VERBES_PARAM` : il POSE
+son bouton au lieu de le tirer.
 
 **L'analyseur de spectre** est un `AnalyserNode` maître branché en tap sur
 `finalGain` dans `buildGraph` — donc sur ce qu'on entend, limiteur compris. Le

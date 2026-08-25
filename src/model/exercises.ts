@@ -61,16 +61,48 @@ export type ExerciseKind =
   | 'melodie'
   /* Le verbe du SILENCE : une pulsation régulière, un coup manquant, lequel ?
    * Aucun vocabulaire, aucune grille — c'est le quatrième mot de l'acte 0. */
-  | 'silence';
+  | 'silence'
+  /* « La laverie » — le seul verbe où la question n'est pas le son mais
+   * l'ENDROIT où on l'écoute. Trois versions du même kick, séparées par le
+   * drive ; sur le moniteur de studio elles se valent, sur le petit
+   * haut-parleur une seule tient encore. C'est l'acte 4 en un exercice :
+   * *« Ton morceau est bon dans ton ordinateur. Ici, il est mauvais. »*
+   *
+   * Il réutilise entièrement l'état des verbes de paramètre (versions, choix,
+   * réponse) : ce qui change est le monitoring, pas la mécanique. */
+  | 'laverie';
 
 /** Les verbes qui portent sur un paramètre continu plutôt que sur la grille. */
+/* ⚠️ `laverie` n'en fait PAS partie, bien qu'il porte lui aussi sur un
+ * paramètre : ces trois-là tirent leur bouton dans le catalogue, lui pose le
+ * sien (voir `preparerLaverie`). L'y ajouter enverrait `preparerParametre` lui
+ * tirer un bouton de la famille — et l'exercice n'aurait plus de sujet. */
 export const VERBES_PARAM: ExerciseKind[] = ['lequel', 'nommer', 'regler'];
 
 export function estVerbeParam(v: ExerciseKind): boolean {
   return VERBES_PARAM.includes(v);
 }
 
+/* Les trois paliers de drive de « la laverie », MESURÉS et non choisis à vue.
+ *
+ * Rendu du vrai graphe dans un `OfflineAudioContext`, kick seul, RMS après le
+ * passe-haut du petit haut-parleur rapporté au RMS en studio :
+ *
+ *     drive   0 → 13 %      drive 60 → 37 %      drive 100 → 40 %
+ *
+ * D'où ces trois-là : ils ne sont pas régulièrement espacés sur le curseur
+ * (0, 55, 100) parce que ce n'est pas le curseur qu'on veut espacer, c'est ce
+ * qui SURVIT. Un palier intermédiaire à 30 aurait donné 30 % — trop proche de
+ * 37 pour qu'on tranche à l'oreille sur un haut-parleur de téléphone.
+ *
+ * ⚠️ Le drive monte AUSSI le niveau en studio (0,046 → 0,062 de RMS). C'est
+ * pour ça que l'exercice arrive sur le petit haut-parleur et propose d'aller
+ * comparer : posée en studio, la question aurait une réponse — « la plus
+ * forte » — qui n'est pas celle qu'on enseigne. */
+export const LAVERIE_DRIVES: number[] = [0, 55, 100];
+
 export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
+  laverie: 'Écoute-le à la laverie',
   reproduire: 'Reproduis la boucle',
   completer: 'Complète le temps manquant',
   intrus: 'Trouve l’intrus',

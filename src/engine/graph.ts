@@ -12,6 +12,18 @@ import {
   buildReverbImpulse,
 } from './fx';
 
+/* Les constantes du petit haut-parleur, ici plutôt qu'en dur dans le corps :
+ * c'est ce qui permet de les mesurer dans un test sans les recopier.
+ *
+ * 450 Hz = un boîtier de radio-réveil ou de téléphone : mesuré dans un
+ * `OfflineAudioContext`, le grave d'un kick y perd plus de quatorze fois son
+ * énergie. La bosse de présence à 3 kHz est le « sifflement » du texte — elle
+ * ne sert pas à faire joli, elle empêche le petit haut-parleur de passer pour
+ * une simple baisse de volume, à laquelle on répondrait au vu-mètre. */
+export const PETIT_HP_COUPURE_HZ = 450;
+export const PETIT_HP_PRESENCE_HZ = 3000;
+export const PETIT_HP_PRESENCE_DB = 6;
+
 export interface GraphNodes {
   ctx: BaseAudioContext;
   // Étage final : mixBus reçoit drum + synthé, puis un filtre passe-bas
@@ -20,6 +32,14 @@ export interface GraphNodes {
   // général, destination.
   mixBus: GainNode;
   liveFilter: BiquadFilterNode;
+  /* Le petit haut-parleur de la laverie (acte 4). Les deux filtres tournent en
+   * permanence, dans une BRANCHE PARALLÈLE dont le gain est nul au repos : ce
+   * sont `petitHPSec` (1 au repos) et `petitHPHumide` (0) qui font la bascule,
+   * en fondu. Voir le commentaire du montage pour ce que ça évite. */
+  petitHautParleur: BiquadFilterNode;
+  petitHautParleurPresence: BiquadFilterNode;
+  petitHPSec: GainNode;
+  petitHPHumide: GainNode;
   finalLimiter: DynamicsCompressorNode;
   finalGain: GainNode;
   // Envoi réverbe additionnel pour le Mode Live (gain à 0 par défaut, donc
@@ -105,10 +125,59 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   liveFilter.type = 'lowpass';
   liveFilter.frequency.setValueAtTime(20000, now);
   liveFilter.Q.setValueAtTime(0.7, now);
+  /* Le PETIT HAUT-PARLEUR — deux nœuds neutres par défaut, comme `liveFilter`.
+   *
+   * C'est l'acte 4 de `HISTOIRE.md` : *« Ton morceau est bon dans ton
+   * ordinateur. Ici, il est mauvais. »* Sol branche le haut-parleur de la
+   * laverie et la basse disparaît, la grosse caisse aussi ; il reste les aigus
+   * et un sifflement. On ne peut pas enseigner ça sans le FAIRE ENTENDRE — un
+   * texte qui décrit un défaut de mixage n'apprend rien.
+   *
+   * Un passe-haut (les graves, qu'un boîtier de huit centimètres ne peut pas
+   * produire) et une bosse de présence (le sifflement).
+   *
+   * ⚠️ MONTÉS EN PARALLÈLE, et c'est une correction payée par la mesure. La
+   * première version les mettait EN SÉRIE, réglés « neutres » au repos
+   * (coupure à 10 Hz, bosse à 0 dB), en se disant qu'un passe-haut sous
+   * l'audible ne s'entend pas. C'est vrai de son AMPLITUDE et faux de sa
+   * PHASE : un biquad déplace le signal même là où il ne l'atténue pas.
+   * Mesuré sur un kick, à 10 Hz, contre le même kick sans filtre — 41 176
+   * échantillons différents sur 44 100, écart maximal de 6,4e-2 pour un RMS de
+   * 5,1e-2. Autrement dit : l'étage aurait modifié TOUS les exports du projet,
+   * inaudiblement et pour toujours, pour un exercice de Mode jeu.
+   *
+   * En parallèle, le trajet au repos est celui d'avant, échantillon pour
+   * échantillon : `petitHPSec` à 1, `petitHPHumide` à 0. La bascule est un
+   * fondu entre les deux — ce qui a un second mérite, celui de ne pas claquer
+   * quand on change de haut-parleur pendant que la boucle tourne, ce qui est
+   * précisément le geste de l'exercice.
+   *
+   * ⚠️ Placés AVANT `finalGain`, donc avant le tap de l'analyseur : celui-ci
+   * doit montrer ce qu'on entend (règle du fichier), et ce qu'on entend sur le
+   * petit haut-parleur n'a plus de grave. Le voir disparaître de l'analyseur
+   * fait la moitié de la démonstration. */
+  const petitHautParleur = ctx.createBiquadFilter();
+  petitHautParleur.type = 'highpass';
+  petitHautParleur.frequency.setValueAtTime(PETIT_HP_COUPURE_HZ, now);
+  petitHautParleur.Q.setValueAtTime(0.7, now);
+  const petitHautParleurPresence = ctx.createBiquadFilter();
+  petitHautParleurPresence.type = 'peaking';
+  petitHautParleurPresence.frequency.setValueAtTime(PETIT_HP_PRESENCE_HZ, now);
+  petitHautParleurPresence.Q.setValueAtTime(1.2, now);
+  petitHautParleurPresence.gain.setValueAtTime(PETIT_HP_PRESENCE_DB, now);
+  const petitHPSec = ctx.createGain();
+  petitHPSec.gain.setValueAtTime(1, now);
+  const petitHPHumide = ctx.createGain();
+  petitHPHumide.gain.setValueAtTime(0, now);
   mixBus.connect(liveFilter);
   liveFilter.connect(finalLimiter);
   finalLimiter.connect(softClip);
-  softClip.connect(finalGain);
+  softClip.connect(petitHPSec);
+  petitHPSec.connect(finalGain);
+  softClip.connect(petitHautParleur);
+  petitHautParleur.connect(petitHautParleurPresence);
+  petitHautParleurPresence.connect(petitHPHumide);
+  petitHPHumide.connect(finalGain);
   finalGain.connect(ctx.destination);
   // fftSize 512 → 256 bandes, ce qui laisse de quoi regrouper en 20-30 barres
   // sans que le grave soit tassé sur une seule. Le lissage de 0,72 est ce qui
@@ -250,6 +319,10 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
     ctx,
     mixBus,
     liveFilter,
+    petitHautParleur,
+    petitHautParleurPresence,
+    petitHPSec,
+    petitHPHumide,
     finalLimiter,
     finalGain,
     liveReverbSend,

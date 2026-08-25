@@ -156,6 +156,9 @@
     // (jusqu'à 0.25s) jouerait encore l'ancienne.
     playingWhat = which;
     await engine.start();
+    // Le monitoring suit la lecture, ici aussi : le graphe est neuf à chaque
+    // ouverture du contexte, et il naît neutre.
+    engine.setPetitHautParleur(game.ecoutePetite);
   }
 
   /* ---- Verbes de paramètre : écouter une version ----
@@ -173,6 +176,19 @@
     versionEnCours = i;
     playingWhat = 'param';
     await engine.start();
+    // ⚠️ APRÈS `start()`, et pas seulement au clic sur le sélecteur : le graphe
+    // n'existe pas tant que le contexte n'est pas ouvert, donc un réglage posé
+    // avant la première lecture serait perdu en silence — et le joueur
+    // entendrait le studio en croyant écouter la laverie.
+    engine.setPetitHautParleur(game.ecoutePetite);
+  }
+
+  /* Changer de haut-parleur EN COURS DE LECTURE, sans rien relancer : c'est le
+     geste de l'exercice, et c'est aussi ce qui le rend démonstratif — la même
+     boucle, deux endroits, la différence saute. */
+  function basculerEcoute(petite: boolean) {
+    game.ecoutePetite = petite;
+    engine.setPetitHautParleur(petite);
   }
 
   const descripteur = $derived(parametre(game.paramId));
@@ -202,6 +218,7 @@
   // examinée. Sans ce drapeau, cliquer sur ✓ Vérifier semble ne rien faire.
   let echec = $state(false);
   const MSG_ECHEC: Record<ExerciseKind, string> = {
+    laverie: 'Ce n’est pas celle-là. Compare les deux haut-parleurs : ce qui compte, c’est ce qui reste.',
     melodie: 'Pas encore. Les notes justes sont verrouillées ✓ — reprends les autres.',
     silence: 'Ce n’est pas là. Réécoute la boucle : le trou est ailleurs.',
     reproduire: 'Pas encore. Les cases justes sont verrouillées ✓ — reprends les autres.',
@@ -535,7 +552,7 @@
            répond. On lisait « Vérifier » puis « Laquelle est la plus… ? ».
            Le bouton est descendu dans le corps de l'exercice, sous les
            réponses. -->
-      {#if ex !== 'lequel' && ex !== 'nommer' && ex !== 'regler'}
+      {#if ex !== 'lequel' && ex !== 'nommer' && ex !== 'regler' && ex !== 'laverie'}
       <div class="transport">
         {#if ex === 'intrus'}
           <button class="xp-btn" onclick={() => play('intrus')}>
@@ -595,10 +612,35 @@
         <p class="echec">✗ {MSG_ECHEC[ex]}</p>
       {/if}
 
-      {#if descripteur && (ex === 'lequel' || ex === 'nommer' || ex === 'regler')}
+      {#if descripteur && (ex === 'lequel' || ex === 'nommer' || ex === 'regler' || ex === 'laverie')}
         <div class="param">
+          {#if ex === 'laverie'}
+            <!-- ⚠️ Le sélecteur de haut-parleur EST l'exercice, pas un réglage
+                 de confort : c'est en passant de l'un à l'autre qu'on entend
+                 que le problème n'est pas dans le son mais dans l'endroit. Il
+                 est donc au-dessus de la question, et pas rangé ailleurs. -->
+            <div class="ecoute">
+              <button
+                class="xp-btn ecoute-btn tap44-y"
+                class:actif={!game.ecoutePetite}
+                onclick={() => basculerEcoute(false)}
+              >
+                🖥 Le studio
+              </button>
+              <button
+                class="xp-btn ecoute-btn tap44-y"
+                class:actif={game.ecoutePetite}
+                onclick={() => basculerEcoute(true)}
+              >
+                📻 La laverie
+              </button>
+            </div>
+          {/if}
           <p class="consigne">
-            {#if ex === 'lequel'}
+            {#if ex === 'laverie'}
+              Trois versions du même kick. Laquelle <strong>tient encore</strong> sur
+              le petit haut-parleur&nbsp;?
+            {:else if ex === 'lequel'}
               <!-- « sonne » et non « est » : les libellés du catalogue portent un
                    article masculin (« le plus rond », « le plus sec ») tandis que
                    le sujet, « une version », est féminin — « Laquelle est le plus
@@ -631,8 +673,10 @@
                 <button
                   class="xp-btn version"
                   class:joue={versionEnCours === i}
-                  class:actif={game.paramChoix === i && ex === 'lequel'}
-                  class:bonne={(game.solved || game.revealed) && game.paramReponse === i && ex === 'lequel'}
+                  class:actif={game.paramChoix === i && (ex === 'lequel' || ex === 'laverie')}
+                  class:bonne={(game.solved || game.revealed) &&
+                    game.paramReponse === i &&
+                    (ex === 'lequel' || ex === 'laverie')}
                   onclick={() => ecouterVersion(i)}
                 >
                   {versionEnCours === i ? '■' : '🔊'} {String.fromCharCode(65 + i)}
@@ -641,7 +685,7 @@
             {/if}
           </div>
 
-          {#if ex === 'lequel'}
+          {#if ex === 'lequel' || ex === 'laverie'}
             <p class="consigne">Ta réponse&nbsp;:</p>
             <div class="choix">
               {#each game.paramVersions as _, i (i)}
@@ -1087,6 +1131,22 @@
   /* Une touche par pas : ça tient sur une ligne à 390 px pour huit pas, et le
      bouton du premier temps est désactivé — il donne le départ, il ne manque
      jamais. */
+  /* Le sélecteur de haut-parleur : deux touches d'ampli, celle qui est
+     enfoncée est allumée. Même grammaire que le reste — le biseau dit ce qui
+     est en relief, la couleur LCD dit ce qui est actif. */
+  .ecoute {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .ecoute-btn {
+    flex: 1;
+  }
+  .ecoute-btn.actif {
+    color: var(--xp-lcd);
+    box-shadow: inset 1px 1px 0 var(--xp-shadow), inset -1px -1px 0 var(--xp-light);
+  }
+
   .choix-pas {
     display: grid;
     grid-template-columns: repeat(8, 1fr);

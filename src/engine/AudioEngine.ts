@@ -4,7 +4,11 @@
 // (jamais setTimeout). SCHEDULE_AHEAD élargi (était 0.12) : plus de tolérance
 // si le fil principal est occupé un instant.
 import type { PatternStateV2, DrumRowName, SynthRowName, SynthVoice, SynthRowState, SynthGlobalState } from '../model/types';
-import { buildGraph, applyMixSettings, type GraphNodes } from './graph';
+import {
+  buildGraph,
+  applyMixSettings,
+  type GraphNodes,
+} from './graph';
 import { DrumKit } from './voices/drums';
 import { SynthKit } from './voices/synth';
 import {
@@ -417,6 +421,26 @@ export class AudioEngine {
   setLiveFilterCutoff(hz: number): void {
     if (!this.graph || !this.ctx) return;
     this.graph.liveFilter.frequency.setTargetAtTime(hz, this.ctx.currentTime, 0.01);
+  }
+
+  /* Le petit haut-parleur de la laverie — acte 4, « La production ».
+   *
+   * ⚠️ Ce n'est PAS un réglage de morceau : c'est une façon d'ÉCOUTER. Il ne
+   * passe donc pas par le format v2 (rien à sérialiser, rien à annuler, rien à
+   * exporter), exactement comme le décalage de latence est une propriété de
+   * l'appareil. Les deux nœuds restent neutres partout ailleurs.
+   *
+   * `setTargetAtTime` plutôt qu'un saut : basculer d'un haut-parleur à l'autre
+   * pendant que la boucle tourne est le geste central de l'exercice, et un
+   * passe-haut qui saute de 10 à 450 Hz claque. */
+  setPetitHautParleur(on: boolean): void {
+    if (!this.graph || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    // Un FONDU entre les deux trajets, pas un réglage de filtre : les filtres
+    // sont figés sur leur valeur de laverie, seule la balance bouge. Voir
+    // `graph.ts` — en série, l'étage aurait modifié tous les exports.
+    this.graph.petitHPSec.gain.setTargetAtTime(on ? 0 : 1, t, 0.02);
+    this.graph.petitHPHumide.gain.setTargetAtTime(on ? 1 : 0, t, 0.02);
   }
 
   setLiveReverbWet(amount01: number): void {
