@@ -6414,11 +6414,24 @@ deux TAMPONS remplis hors de ce `rng` :
   claire, le hat, le clap et le shaker ;
 - `fx.ts` — l'impulsion de réverbe, même chose.
 
-**Non corrigé ici, délibérément** : c'est hors du périmètre de l'acte 4, et le
-correctif (semer les deux tampons depuis `EXPORT_SEED`) change les octets de
-tous les exports futurs — donc une décision, pas un nettoyage. À arbitrer :
-soit on sème, soit `CLAUDE.md` cesse de promettre l'octet et promet ce qui est
-vrai, à savoir la reproductibilité des NOTES.
+**Non corrigé, et c'est désormais arbitré.** Le correctif (semer les deux
+tampons depuis `EXPORT_SEED`) tient en deux lignes mais change les octets de
+tous les exports futurs — donc une décision, pas un nettoyage. Verdict de Yann,
+le jour même :
+
+> *« pour moi, c'est pas important qu'un export ne soit pas reproductible à
+> l'octet près »*
+
+**On ne sème donc pas.** `CLAUDE.md` cesse de promettre l'octet et promet ce qui
+est vrai — la reproductibilité des NOTES — et dit explicitement que les deux
+tampons restent non semés par choix, pour qu'une prochaine session ne les
+« corrige » pas en croyant nettoyer une dette.
+
+Ce que l'épisode laisse quand même : la mesure elle-même. Un kick seul rend
+0 échantillon d'écart sur 286 650, ce qui prouve que la règle du `rng` injecté
+tient exactement ce qu'elle dit — l'ordre d'itération du scheduler, les
+vélocités et les rafales sont bien déterministes. C'est cette partie-là qui
+compte, et elle est intacte.
 
 **Vérification :** `npm run check` 0 erreur · **206 tests** (12 neufs, trois
 passages consécutifs) · les deux builds · parcours Playwright de l'acte 4 en

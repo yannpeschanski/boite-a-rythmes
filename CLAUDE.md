@@ -74,13 +74,20 @@ ligne de l'export et le mode jeu. Il reçoit un `BaseAudioContext` en paramètre
 (`AudioContext` en direct, `OfflineAudioContext` à l'export) et un instantané d'état.
 
 **L'aléatoire passe toujours par un `rng` injecté**, jamais `Math.random()` en dur :
-c'est ce qui rend les NOTES d'un export reproductibles. ⚠️ Pas les octets, et
-la nuance a été mesurée le 2026-08-25 : deux rendus du même état donnent 0
-échantillon d'écart sur un kick seul, et 8 465 sur une caisse claire. Deux
-tampons sont remplis hors du `rng` — le bruit blanc partagé (`graph.ts`) et
-l'impulsion de réverbe (`fx.ts`), reconstruits à chaque `buildGraph`, donc à
-chaque export. Les semer est une décision (elle change les octets de tous les
-exports futurs), pas un nettoyage : voir PLAN.md, acte 4. Ne pas changer l'ordre
+c'est ce qui rend les NOTES d'un export reproductibles — **et c'est là que
+s'arrête la promesse.** ⚠️ Pas les octets, et la nuance a été mesurée le
+2026-08-25 : deux rendus du même état donnent 0 échantillon d'écart sur un kick
+seul, et 8 465 sur une caisse claire. Deux tampons sont remplis hors du `rng` —
+le bruit blanc partagé (`graph.ts`) et l'impulsion de réverbe (`fx.ts`),
+reconstruits à chaque `buildGraph`, donc à chaque export.
+
+**Arbitré par Yann le 2026-08-25 : « c'est pas important qu'un export ne soit
+pas reproductible à l'octet près ». On ne sème donc PAS ces deux tampons** —
+ce n'est pas une dette, c'est un choix. Ne pas le « corriger » en croyant
+nettoyer : le semer changerait les octets de tous les exports futurs pour une
+propriété dont personne n'a besoin. Ce qui reste vrai et qui, lui, compte : le
+`rng` injecté gouverne les NOTES — quelles cases sonnent, avec quelle vélocité,
+quelles rafales — et un même état doit toujours donner le même morceau. Ne pas changer l'ordre
 d'itération des lignes dans le scheduler — réel aujourd'hui : kick → snare → clap →
 hat → shaker → bass → pad → melody (clap partage la boucle de kick/snare, shaker suit
 le hat) — il détermine l'ordre de consommation du générateur. Ne pas non plus insérer
