@@ -338,6 +338,16 @@ un réglage : 0 échantillon d'écart, vérifié. Le fondu entre les deux évite
 prime le claquement quand on bascule pendant la lecture — ce qui est le geste
 même de l'exercice. Même précaution pour tout futur `liveFilter`.
 
+⚠️ **L'ÉPILOGUE n'est pas un neuvième acte.** `EPILOGUE` (`carriere.ts`) est
+hors de `ACTES` : ni compétence, ni module, ni exercice, et des mois après le 14
+juin — l'y mettre casserait `ActeId`, `JOURS` et le compte à rebours pour ranger
+du texte dans une structure qui décrit des épreuves. Il a son curseur à lui,
+volatil, et ne touche jamais au curseur enregistré. Sa dernière image est la
+PREMIÈRE du jeu : Sol demande « lequel est le plus grave ? » à un nouveau
+stagiaire, la question du niveau 49 — ne pas la réécrire, c'est elle qui fait la
+boucle. Corollaire du décompte : il disparaît aux DEUX bouts, parce qu'il ne
+s'affiche que tant qu'il veut dire quelque chose.
+
 ⚠️ **Les huit actes sont écrits** (2026-08-25) : `acteAVenir` ne renvoie plus
 jamais vrai. Le second membre du OU de `moduleUnlocked` — les seuils de niveau —
 avait pour justification « seuls les actes 0-2 ont leurs exercices écrits » ;

@@ -19,6 +19,7 @@
   import { game } from '../../stores/game.svelte';
   import {
     ACTES,
+    LONGUEUR_EPILOGUE,
     acteAVenir,
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
@@ -54,6 +55,10 @@
   function texte(l: string): string {
     return l.replace('{pseudo}', game.pseudo);
   }
+
+  /* L'épilogue passe AVANT tout le reste dans le rendu : une fois les huit
+     actes derrière, il n'y a plus d'étape courante à afficher. */
+  const epilogue = $derived(game.ecranEpilogue);
 
   const acte = $derived(game.acteCourant);
   const etape = $derived(game.etapeCourante);
@@ -139,8 +144,14 @@
   const enPrologue = $derived(
     game.progresCarriere.acte === 0 && game.progresCarriere.etape < LONGUEUR_PROLOGUE,
   );
+  /* ⚠️ Le décompte disparaît aux DEUX bouts, et pour la même raison : il ne
+   * s'affiche que tant qu'il veut dire quelque chose. Avant l'écran qui
+   * explique le 14 juin, c'est un nombre vers une date inconnue ; après, la
+   * date est passée — « J−0 · Le jour même » pendant l'épilogue de septembre
+   * dirait le contraire du temps qui s'est écoulé. */
   const montrerCompteARebours = $derived(
-    !enPrologue || game.etapeActive >= ETAPE_DU_COMPTE_A_REBOURS || game.acteActif > 0,
+    !game.enEpilogue &&
+      (!enPrologue || game.etapeActive >= ETAPE_DU_COMPTE_A_REBOURS || game.acteActif > 0),
   );
   const montrerCarnet = $derived(!enPrologue);
 
@@ -187,7 +198,40 @@
     <p class="accepte">{game.commandeAcceptee}</p>
   {/if}
 
-  {#if fini}
+  {#if epilogue}
+    <!-- ⚠️ SEPTEMBRE. La carrière s'arrêtait jusqu'ici sur « le Mode Live est
+         ouvert » et plus rien : le jeu n'avait pas de fin. L'épilogue n'est pas
+         un neuvième acte (ni compétence, ni module, ni exercice, et des mois
+         plus tard) — il a son propre curseur, volatil, et se relit à volonté. -->
+    {@const app = APPAREILS[epilogue.source]}
+    <div class="appareil source-{epilogue.source}">
+      <div class="entete">
+        <span class="icone">{app.icone}</span>
+        <span>{app.nom}</span>
+        <span class="tag">{epilogue.entete}</span>
+      </div>
+      {#each epilogue.lignes as l, i (i)}
+        <p class="ligne">{texte(l)}</p>
+      {/each}
+    </div>
+    <div class="actions">
+      <button
+        class="xp-btn tap44-y"
+        disabled={game.etapeEpilogue === 0}
+        onclick={() => game.reculerEpilogue()}
+      >
+        ◂ Retour
+      </button>
+      <span class="position">Épilogue · {game.etapeEpilogue + 1}/{LONGUEUR_EPILOGUE}</span>
+      {#if !game.finDuJeu}
+        <button class="xp-btn primary tap44-y" onclick={() => game.avancerEpilogue()}>Suite ▸</button>
+      {:else}
+        <!-- Le dernier écran du jeu ne propose pas de « Suite » : il n'y a rien
+             après. Le carnet et la salle de répétition restent, eux, ouverts. -->
+        <span class="position fin">FIN</span>
+      {/if}
+    </div>
+  {:else if fini}
     <!-- Fin d'acte : la compétence, et le module que le récit vient d'ouvrir.
          « Chaque module s'ouvre parce qu'un acte en a besoin, jamais parce
          qu'un compteur atteint un seuil. » -->
@@ -471,6 +515,11 @@
      phrase, et le titre que l'acte décerne. */
   /* La réponse du client, en vert d'afficheur : c'est une réplique, pas un
      score. Elle disparaît dès qu'on avance. */
+  .position.fin {
+    color: var(--xp-lcd);
+    letter-spacing: 0.3em;
+  }
+
   .accepte {
     margin: 0 0 8px;
     padding: 6px 8px;

@@ -8,6 +8,8 @@ import {
   niveauxDeLActe,
   niveauxRencontres,
   LONGUEUR_PROLOGUE,
+  EPILOGUE,
+  LONGUEUR_EPILOGUE,
   ETAPE_DU_COMPTE_A_REBOURS,
 } from '../src/model/carriere';
 import { LEVELS } from '../src/model/presets/levels';
@@ -839,5 +841,91 @@ describe('L’acte 7 joue, et ouvre le Mode Live', () => {
   it('est le dernier acte, et tous sont désormais écrits', () => {
     expect(acte7().id).toBe(NB_ACTES - 1);
     expect(ACTES.every((a) => !acteAVenir(a))).toBe(true);
+  });
+});
+
+/* L'ÉPILOGUE — septembre, et la boucle qui se referme.
+ *
+ * Jusqu'ici la carrière s'arrêtait sur « LE MODE LIVE EST OUVERT » et plus
+ * rien : le jeu n'avait pas de fin.
+ */
+describe('L’épilogue ferme le jeu sans être un neuvième acte', () => {
+  it('n’est PAS dans les actes', () => {
+    // Il n'a ni compétence, ni module, ni exercice, et il se passe des mois
+    // après le 14 juin. L'ajouter à ACTES casserait ActeId, JOURS et le compte
+    // à rebours pour ranger du texte dans une structure qui décrit des épreuves.
+    expect(NB_ACTES).toBe(8);
+    expect(EPILOGUE.length).toBe(LONGUEUR_EPILOGUE);
+    expect(LONGUEUR_EPILOGUE).toBeGreaterThan(0);
+    for (const e of EPILOGUE) expect(e.kind).toBe('recit');
+  });
+
+  /* ⚠️ La dernière image est la PREMIÈRE du jeu : Sol fait écouter deux sons à
+   * un nouveau stagiaire et demande « lequel est le plus grave ? » — la
+   * question du niveau 49, le tout premier exercice de l'acte 0. C'est la
+   * citation qui fait la boucle ; la réécrire la casserait. */
+  it('rejoue la toute première question du jeu', () => {
+    const texte = EPILOGUE.flatMap((e) => e.lignes).join(' ');
+    expect(texte).toMatch(/lequel est le plus grave/i);
+    // Et le niveau que cette question désigne existe bien, sur le bon bouton.
+    const premier = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[0])[0])!;
+    expect(premier.exercise).toBe('lequel');
+    expect(premier.paramsAutorises).toContain('pitch');
+  });
+
+  it('finit sur FB-015 au mur, et ne promet rien après', () => {
+    const derniere = EPILOGUE[EPILOGUE.length - 1];
+    expect(derniere.lignes.join(' ')).toMatch(/FB-015/);
+    expect(derniere.lignes.join(' ')).toMatch(/NOUVELLE SORTIE/);
+  });
+});
+
+describe('Le curseur de l’épilogue est séparé, et ne débloque rien', () => {
+  async function carriereFinie() {
+    const { game } = await import('../src/stores/game.svelte');
+    game.pseudo = 'epilogue-test';
+    game.progress = {
+      ...game.progress,
+      'epilogue-test': { level: 1, stars: {}, carriere: { acte: NB_ACTES, etape: 0 } },
+    };
+    game.etapeEpilogue = 0;
+    return game;
+  }
+
+  it('ne s’ouvre qu’une fois les huit actes derrière', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    game.pseudo = 'pas-fini';
+    game.progress = {
+      ...game.progress,
+      'pas-fini': { level: 1, stars: {}, carriere: { acte: 7, etape: 0 } },
+    };
+    expect(game.enEpilogue).toBe(false);
+    expect(game.ecranEpilogue).toBeNull();
+  });
+
+  it('avance, recule, et s’arrête sur le dernier écran', async () => {
+    const game = await carriereFinie();
+    expect(game.enEpilogue).toBe(true);
+    expect(game.ecranEpilogue).toBe(EPILOGUE[0]);
+    expect(game.finDuJeu).toBe(false);
+
+    for (let i = 0; i < LONGUEUR_EPILOGUE * 2; i++) game.avancerEpilogue();
+    // ⚠️ Il ne déborde pas : le dernier écran EST la fin, il n'y a rien après.
+    expect(game.etapeEpilogue).toBe(LONGUEUR_EPILOGUE - 1);
+    expect(game.finDuJeu).toBe(true);
+    expect(game.ecranEpilogue).toBe(EPILOGUE[LONGUEUR_EPILOGUE - 1]);
+
+    for (let i = 0; i < LONGUEUR_EPILOGUE * 2; i++) game.reculerEpilogue();
+    expect(game.etapeEpilogue).toBe(0);
+  });
+
+  /* Il se relit à volonté : rien ne s'y réussit, rien ne s'y débloque, et le
+   * curseur enregistré de la carrière n'y touche pas. */
+  it('ne fait pas avancer la progression enregistrée', async () => {
+    const game = await carriereFinie();
+    const avant = { ...game.progresCarriere };
+    game.avancerEpilogue();
+    game.avancerEpilogue();
+    expect(game.progresCarriere).toEqual(avant);
   });
 });

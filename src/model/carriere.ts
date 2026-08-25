@@ -1160,6 +1160,92 @@ export const ACTES: Acte[] = [
 
 export const NB_ACTES = ACTES.length;
 
+/* L'ÉPILOGUE — septembre, et la boucle qui se referme.
+ *
+ * ⚠️ PAS un neuvième acte, et la distinction n'est pas cosmétique : il n'a ni
+ * compétence, ni module, ni exercice, et il se passe des mois après le 14 juin.
+ * L'ajouter à `ACTES` casserait `ActeId`, `JOURS`, le compte à rebours (quel
+ * J−… pour « septembre » ?) et le carnet, pour ranger du texte dans une
+ * structure qui décrit des épreuves.
+ *
+ * Il comble en revanche un vrai manque : jusqu'ici la carrière s'arrêtait sur
+ * « LE MODE LIVE EST OUVERT » et plus rien. Le jeu n'avait pas de fin.
+ *
+ * Et sa dernière image est la première du jeu. Sol fait écouter deux sons à un
+ * nouveau stagiaire et demande « lequel est le plus grave ? » — c'est mot pour
+ * mot le niveau 49, le tout premier exercice de l'acte 0. Le joueur, lui, est
+ * dans la pièce d'à côté, et il comprend ce qu'il entend. */
+export const EPILOGUE: EtapeRecit[] = [
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'SEPTEMBRE',
+    lignes: [
+      'Face B existe toujours. Pas comme avant.',
+      'Sol n’a pas récupéré ses bureaux.',
+      'Elle n’a pas signé quinze artistes.',
+      'L’argent de Zik’Mobile a payé le pressage ;',
+      'il n’en reste pas grand-chose.',
+      'Mais FB-015 est sorti.',
+    ],
+  },
+  {
+    kind: 'recit',
+    source: 'cassette',
+    entete: 'FB-015 — CE QUE ÇA A FAIT',
+    lignes: [
+      'Quelques centaines d’exemplaires.',
+      'Quelques téléchargements.',
+      'Quelques concerts.',
+      'Un début.',
+    ],
+  },
+  /* ⚠️ La dernière image est la PREMIÈRE du jeu — « lequel est le plus grave ? »
+   * est la question du niveau 49, celui que Sol pose au joueur cinq mois plus
+   * tôt à l'acte 0. Ne pas la réécrire : c'est la citation qui fait la boucle. */
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'UN NOUVEAU STAGIAIRE',
+    lignes: [
+      'Il fait le café. Sol lui montre la machine.',
+      '— Elle fuit quand tu remplis trop.',
+      'Puis elle lui fait écouter deux sons.',
+      '— Lequel est le plus grave ?',
+      'Il répond. Sol en fait écouter deux autres.',
+    ],
+  },
+  {
+    kind: 'recit',
+    source: 'lcd',
+    entete: 'LA PIÈCE VOISINE',
+    lignes: [
+      'Tu es dans la pièce voisine.',
+      'Tu t’arrêtes. Tu écoutes. Tu souris.',
+      'Sol regarde le nouveau.',
+      '— Lundi, tu fais les sonneries.',
+      '— Et sinon, je fais quoi ?',
+      'Elle regarde le bureau. Puis toi.',
+      '— On verra.',
+    ],
+  },
+  {
+    kind: 'recit',
+    source: 'cassette',
+    entete: 'SUR LE MUR',
+    lignes: [
+      'À côté du disque d’or de 1996,',
+      'il y a maintenant une pochette',
+      'imprimée sur une imprimante de bureau.',
+      'FACE B — FB-015',
+      'Et sous la pochette, une petite étiquette :',
+      'NOUVELLE SORTIE',
+    ],
+  },
+];
+
+export const LONGUEUR_EPILOGUE = EPILOGUE.length;
+
 /** L'acte qui ouvre chaque module — c'est le récit qui décide, pas un seuil.
  *  Dérivé de `ACTES` plutôt que réécrit : deux listes qui doivent rester
  *  d'accord finissent toujours par ne plus l'être. */

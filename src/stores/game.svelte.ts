@@ -46,6 +46,9 @@ import {
   type Acte,
   type Etape,
   type EtapeCommande,
+  type EtapeRecit,
+  EPILOGUE,
+  LONGUEUR_EPILOGUE,
 } from '../model/carriere';
 import { evaluerCommande, type Verdict } from '../model/commande';
 import {
@@ -379,6 +382,38 @@ class GameStore {
   get carriereEnAttente(): boolean {
     const p = this.progresCarriere.acte;
     return p >= NB_ACTES || acteAVenir(acteParId(p));
+  }
+
+  /* ---- L'ÉPILOGUE -------------------------------------------------------
+   *
+   * Les huit actes sont derrière : septembre. Son curseur est SÉPARÉ de celui
+   * de la carrière et volatil comme lui — l'épilogue ne débloque rien, ne se
+   * réussit pas, et doit pouvoir se relire autant qu'on veut. Le lier à
+   * `progresCarriere` aurait demandé un neuvième acte dans un type qui décrit
+   * des épreuves. */
+  etapeEpilogue = $state(0);
+
+  /** La carrière est finie : c'est l'épilogue qui s'affiche. */
+  get enEpilogue(): boolean {
+    return this.progresCarriere.acte >= NB_ACTES;
+  }
+
+  get ecranEpilogue(): EtapeRecit | null {
+    return this.enEpilogue ? (EPILOGUE[this.etapeEpilogue] ?? null) : null;
+  }
+
+  /** Avance dans l'épilogue ; s'arrête sur le dernier écran, qui est la fin. */
+  avancerEpilogue(): void {
+    if (this.etapeEpilogue + 1 < LONGUEUR_EPILOGUE) this.etapeEpilogue += 1;
+  }
+
+  reculerEpilogue(): void {
+    if (this.etapeEpilogue > 0) this.etapeEpilogue -= 1;
+  }
+
+  /** Le tout dernier écran du jeu. */
+  get finDuJeu(): boolean {
+    return this.enEpilogue && this.etapeEpilogue >= LONGUEUR_EPILOGUE - 1;
   }
 
   /** Reprendre là où on s'était arrêté. */
