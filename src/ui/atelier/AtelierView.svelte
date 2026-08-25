@@ -620,6 +620,7 @@
         onPreviewDegree={(n, d, o) => engine.playDegreePreview(n, d, o)}
         onPreviewChord={(i) => engine.playChordPreview(i)}
         onCalibrer={ouvrirCalibrage}
+        latenceSortieMs={() => engine.latenceSortieMs()}
         onFxChanged={refreshFx}
       />
     {:else}

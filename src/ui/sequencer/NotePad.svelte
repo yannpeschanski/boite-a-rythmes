@@ -75,6 +75,7 @@
     onChanged,
     onClose,
     onCalibrer,
+    latenceSortieMs,
   }: {
     name: SynthRowName;
     playing?: boolean;
@@ -98,6 +99,9 @@
     /** Ouvrir le calibrage du décalage d'entrée (remonte jusqu'à l'Atelier,
         qui possède le moteur audio). */
     onCalibrer?: () => void;
+    /** Retard de sortie DÉCLARÉ par le navigateur, en ms. Sert uniquement à
+        dire au joueur quand le calibrage devient utile. */
+    latenceSortieMs?: () => number;
   } = $props();
 
   const row = $derived(pattern.state.synthRows[name as SynthRowName]);
@@ -208,6 +212,7 @@
 
   function tap(degree: number, octave: number) {
     onPreview?.(degree, octave);
+    rafraichirRetard();
     const col = quantizedCol();
     write(col, { degree, octave });
     if (!playing) cursor = (safeCursor + 1) % steps;
@@ -215,6 +220,7 @@
 
   function tapAccord(idx: number) {
     onPreviewChord?.(idx);
+    rafraichirRetard();
     const col = quantizedCol();
     write(col, idx);
     if (!playing) cursor = (safeCursor + 1) % steps;
@@ -238,6 +244,40 @@
   }
 
   const nomOctave = (o: number): string => (o > 0 ? 'octave aiguë' : o < 0 ? 'octave grave' : 'octave centrale');
+
+  /* Quand le calibrage cesse d'être une option et devient nécessaire.
+   *
+   * Un casque Bluetooth déclare couramment 100 à 200 ms ; au-delà d'un
+   * demi-pas, une note jouée EN MESURE avec ce qu'on entend s'écrit sur le pas
+   * suivant — le motif entier sonne en retard d'un cran. Ça ne se voit pas en
+   * jouant : on entend son propre décalage comme « juste », puisque tout est
+   * décalé pareil. D'où ce mot, avec LE CHIFFRE : « ton appareil déclare
+   * 180 ms » est vérifiable, « pense à calibrer » est du bruit.
+   *
+   * Seuil à 60 ms : au-dessous, c'est un tampon de sortie ordinaire (32 ms
+   * mesurés en filaire) et le calibrage ne changerait presque rien. Et rien ne
+   * s'affiche dès que le réglage est posé, quel qu'il soit — y compris remis à
+   * zéro sciemment.
+   */
+  const SEUIL_ALERTE_MS = 60;
+  /* ⚠️ `$state` et non `$derived` — et c'est le piège de câblage habituel du
+   * projet (CLAUDE.md, « suspecter le câblage, pas le calcul »). Un dérivé qui
+   * appelle `latenceSortieMs()` ne dépend d'AUCUNE rune : il se calcule une
+   * fois, à un moment où le contexte audio n'existe même pas encore (il naît au
+   * premier son), et ne se recalcule plus jamais. Mesuré au navigateur avec un
+   * `outputLatency` forcé à 180 ms : l'avertissement ne s'affichait pas.
+   *
+   * On rafraîchit donc explicitement là où la valeur peut CHANGER : à
+   * l'ouverture du pad, et après chaque aperçu — c'est l'aperçu qui crée le
+   * contexte audio, donc la première frappe est exactement le moment où le
+   * chiffre passe de 0 à sa vraie valeur. */
+  let retardDeclare = $state(0);
+  const casqueLent = $derived(latence.ms === 0 && retardDeclare >= SEUIL_ALERTE_MS);
+
+  function rafraichirRetard(): void {
+    retardDeclare = latenceSortieMs?.() ?? 0;
+  }
+  rafraichirRetard();
 
   function back() {
     cursor = (safeCursor - 1 + steps) % steps;
@@ -355,6 +395,15 @@
       <button class="mini tap44" onclick={back} disabled={playing} title="Reculer d’un pas">← pas précédent</button>
     </div>
   </div>
+
+  {#if casqueLent}
+    <p class="alerte">
+      Ton appareil annonce <strong>{retardDeclare}&nbsp;ms</strong> de retard (un casque
+      Bluetooth en ajoute 100 à 200). Joué en mesure avec ce que tu entends, ça s’écrit
+      un pas trop loin — <button class="lien" onclick={onCalibrer}>mesure-le une fois</button>
+      et les notes retombent juste.
+    </p>
+  {/if}
 
   <p class="hint">
     {#if playing}
@@ -548,6 +597,31 @@
   .mini:disabled {
     color: var(--xp-muted);
     cursor: not-allowed;
+  }
+  /* Un avertissement, pas une erreur : c'est le même vert d'afficheur que le
+     reste du chrome, pas un rouge d'alarme — rien n'est cassé, il manque une
+     mesure. */
+  .alerte {
+    margin: 0;
+    padding: 5px 7px;
+    border: 1px solid var(--xp-line);
+    border-radius: 3px;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd);
+    font-size: var(--xp-size-small);
+    line-height: 1.35;
+  }
+  .alerte strong {
+    font-variant-numeric: tabular-nums;
+  }
+  .lien {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--xp-lcd);
+    text-decoration: underline;
+    cursor: pointer;
   }
   .hint {
     margin: 0;
