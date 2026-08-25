@@ -338,6 +338,17 @@ un réglage : 0 échantillon d'écart, vérifié. Le fondu entre les deux évite
 prime le claquement quand on bascule pendant la lecture — ce qui est le geste
 même de l'exercice. Même précaution pour tout futur `liveFilter`.
 
+⚠️ **Les huit actes sont écrits** (2026-08-25) : `acteAVenir` ne renvoie plus
+jamais vrai. Le second membre du OU de `moduleUnlocked` — les seuils de niveau —
+avait pour justification « seuls les actes 0-2 ont leurs exercices écrits » ;
+cette raison a disparu. Le retirer reste **une décision** (il sert de plancher à
+qui joue hors carrière), pas un nettoyage. L'acte 7 ne cite que des niveaux
+`jouer`, et c'est délibéré : `justesseDesFrappes` retient la meilleure fenêtre
+consécutive, donc la notation pardonne un début raté et récompense la reprise —
+mot pour mot ce que Sol répond avant de brancher les enceintes. Un seul jeton de
+texte existe dans tout le récit, `{pseudo}`, interpolé par `CarriereView` : Sol
+dit le nom du joueur au micro, et c'est ce qui referme cinq mois de « le café ».
+
 ⚠️ **Une COMMANDE vérifie un cahier des charges, jamais une cible.**
 `src/model/commande.ts` est le seul endroit où le jeu demande de FAIRE plutôt
 que de retrouver : le joueur produit dans l'Atelier et livre. Trois façons de

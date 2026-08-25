@@ -1038,7 +1038,123 @@ export const ACTES: Acte[] = [
     competenceLabel: 'SCÈNE',
     module: 'live',
     resume: 'La salle chante un jingle de lessive refusé par l’agence.',
-    etapes: [],
+    etapes: [
+      /* ⚠️ L'acte cite les deux niveaux `jouer` (37 et 38) et rien d'autre, et
+       * ce n'est pas un pis-aller : `justesseDesFrappes` retient la MEILLEURE
+       * FENÊTRE CONSÉCUTIVE et non la moyenne du tour. Autrement dit, la
+       * notation pardonne déjà un début raté et récompense la reprise — ce qui
+       * est mot pour mot ce que Sol répond avant de brancher les enceintes :
+       * « Tu te planteras. Mais maintenant tu sais quoi faire après. » La
+       * mécanique portait la leçon de l'acte avant qu'il soit écrit.
+       *
+       * Aucune commande ici, contrairement aux actes 2 à 6 : on ne produit
+       * plus, on joue. Et le Mode Live s'ouvre à la FIN — le récit décrit ce
+       * qu'on y fera (lancer, enchaîner, rattraper), l'acte le donne en
+       * sortant. Pas de commande non plus dans un module qu'on n'a pas encore
+       * ouvert : c'est la même règle qu'à l'acte 1. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'DIX-HUIT HEURES',
+        lignes: [
+          'Le rendez-vous est à dix-huit heures.',
+          'La sortie est à vingt et une.',
+          'Sol a réservé l’arrière-salle de la laverie.',
+          'Rachid coupe les machines.',
+          'Il ne l’avait jamais fait pour personne.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'TRENTE PERSONNES',
+        lignes: [
+          'Kelvin est venu avec quatre amis.',
+          'Le Tunnel est représenté. Rachid aussi.',
+          'Même le garçon du télé-crochet est là.',
+          'Il a fini par trouver une chanson.',
+          'Il n’a plus son book. Il a juste un CD.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'AVANT DE COMMENCER',
+        lignes: [
+          '— Et si je me plante ?',
+          '— Tu te planteras.',
+          'Elle branche les enceintes.',
+          '— Mais maintenant tu sais quoi faire après.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 37,
+        commande: 'Le premier morceau. Tu rates presque ton entrée. Kelvin te regarde.',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'TU REPRENDS',
+        lignes: [
+          'Personne n’a rien dit.',
+          'Le morceau ne s’est pas arrêté pour t’attendre.',
+          'C’est ça, la différence avec l’Atelier :',
+          'ici on ne revient pas en arrière, on rattrape.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 38,
+        commande: 'Le deuxième passe. Le troisième aussi. Cette fois tu vois venir.',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'AU QUATRIÈME',
+        lignes: [
+          'Quelqu’un dans le public danse.',
+          'Puis deux. Puis plusieurs.',
+          'Tu termines.',
+          'Silence.',
+          'Puis les applaudissements.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'cassette',
+        entete: 'LE RAPPEL',
+        lignes: [
+          'Quelqu’un réclame le jingle de la laverie.',
+          'Tout le monde le connaît.',
+          'Trente personnes chantent douze secondes',
+          'écrites pour vendre de la lessive,',
+          'et refusées par l’agence qui les avait commandées.',
+          'Plus grand succès populaire de Face B depuis 1996.',
+          'Il ne rapportera jamais un centime.',
+        ],
+      },
+      /* ⚠️ La réplique que tout le récit prépare, et le seul endroit du jeu où
+       * un texte cite le joueur. Sol l'a appelé « le café » pendant cinq mois ;
+       * à l'acte 6 elle lui demande enfin son nom, ici elle le dit à voix
+       * haute. Le pseudo est tapé au tout premier écran, avant le prologue —
+       * c'est ce qui rend la boucle complète. Voir `{pseudo}` dans la vue. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'ELLE PREND LE MICRO',
+        lignes: [
+          'Elle regarde la salle chanter. Longtemps.',
+          'Puis elle sort et passe un appel de quarante secondes',
+          'dans le couloir, sans que personne l’entende.',
+          'Quand elle revient, elle monte près de toi.',
+          'Pendant cinq mois, elle t’a appelé « le café ».',
+          'Elle regarde le public.',
+          '— Je vous présente… {pseudo}.',
+          'C’est la première fois.',
+        ],
+      },
+    ],
   },
 ];
 

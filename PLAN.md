@@ -6631,6 +6631,85 @@ inactif, produire, voir les cases se cocher en direct, livrer, et revenir sur la
 réplique du client puis l'étape suivante. Aucune erreur console, aucun
 débordement.
 
+### ✅ Acte 7, « Le 14 juin » — les huit actes sont écrits (2026-08-25)
+
+Le dernier. Il ouvre le Mode Live, et il ferme la boucle du récit.
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/ui/game/CarriereView.svelte`,
+`tests/carriere.test.ts`.
+
+#### La mécanique portait déjà la leçon de l'acte
+
+`HISTOIRE.md`, juste avant que Sol branche les enceintes :
+
+> — Et si je me plante ?
+> — **Tu te planteras. Mais maintenant tu sais quoi faire après.**
+
+Or `justesseDesFrappes` retient la **meilleure fenêtre consécutive** et non la
+moyenne du tour — décidé à l'étape 23, pour une raison de jouabilité (« la
+boucle tourne en rond : moyenner tout ce qui a été frappé rend les tâtonnements
+du début définitifs »). Autrement dit : la notation pardonne déjà un début raté
+et récompense la reprise. L'acte cite donc les deux niveaux `jouer` (37 et 38)
+et rien d'autre, et un test l'exige — c'est le seul acte du jeu où l'on ne
+produit pas, on joue.
+
+Le récit s'en sert explicitement, entre les deux : *« Le morceau ne s'est pas
+arrêté pour t'attendre. C'est ça, la différence avec l'Atelier : ici on ne
+revient pas en arrière, on rattrape. »*
+
+#### Aucune commande, et c'est la même règle qu'à l'acte 1
+
+Le Mode Live s'ouvre **en sortant** de l'acte — le récit décrit ce qu'on y fera
+(lancer, enchaîner, rattraper), l'acte le donne en partant. Y poser une commande
+aurait envoyé travailler dans un module pas encore ouvert : exactement ce que
+l'acte 1 évite avec sa `livraison`.
+
+Vérifié à l'écran, et le premier essai était mal calibré — il posait
+`level: 40`, donc c'est le **seuil de niveau** (l'autre branche du OU de
+`moduleUnlocked`) qui ouvrait le Live, pas le récit. Refait à `level: 1` :
+`🔒 Mode Live — Acte 7` désactivé avant la dernière étape, `🎛 Mode Live` ouvert
+après. C'est bien la voie narrative qui déverrouille.
+
+#### `{pseudo}` — le seul endroit du jeu où un texte cite le joueur
+
+Sol l'a appelé « le café » pendant cinq mois. À l'acte 6 elle lui demande enfin
+son nom ; ici elle le dit au micro :
+
+> — Je vous présente… **{pseudo}**.
+
+Le pseudo est tapé au tout premier écran, avant le prologue — l'interpolation
+est ce qui referme la boucle. Un **jeton** plutôt qu'un `kind` d'étape de plus :
+une seule ligne de tout le récit en a besoin, et un genre d'étape se paierait
+dans le store, le curseur, la persistance et trois tests. Deux tests le
+tiennent : que la ligne existe et porte le jeton (et non un nom en dur), et que
+le jeton n'apparaisse **nulle part ailleurs** — un `{pseudo}` oublié
+s'afficherait tel quel, accolades comprises, sur un écran que personne ne relit.
+
+#### Les huit actes sont écrits
+
+| acte | compétence | ouvre |
+|---|---|---|
+| 0 · Le café | ÉCOUTE | — |
+| 1 · Le rythme | RYTHME | l'Atelier |
+| 2 · Le groove | GROOVE | — |
+| 3 · La mélodie | MÉLODIE | le Synthé |
+| 4 · La production | PRODUCTION | la Production |
+| 5 · Les styles | CULTURE DES STYLES | — |
+| 6 · FB-015 | CRÉATION | — |
+| 7 · Le 14 juin | SCÈNE | le Mode Live |
+
+`acteAVenir` ne renvoie plus jamais vrai. **Conséquence à arbitrer un jour** :
+le second membre du OU de `moduleUnlocked` (les seuils de niveau) n'a plus la
+raison d'être qui l'a fait écrire — « seuls les actes 0-2 ont leurs exercices
+écrits ». Le retirer reste une décision, pas un nettoyage : il sert encore de
+plancher à qui joue hors carrière. Non touché ici.
+
+**Vérification :** `npm run check` 0 erreur · **247 tests** (6 neufs, trois
+passages consécutifs) · les deux builds · parcours Playwright de l'acte en
+390×844 : les neuf étapes, la réplique finale qui affiche bien le pseudo et non
+le jeton, le verrou du Mode Live avant/après, aucune ligne repliée, aucune
+erreur console.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
