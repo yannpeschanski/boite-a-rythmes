@@ -27,6 +27,7 @@
     onPreviewChord,
     onChanged,
     onCalibrer,
+    latenceSortieMs,
   }: {
     name: SynthRowName;
     label: string;
@@ -38,6 +39,7 @@
     onPreviewChord?: (chordIdx: number) => void;
     onChanged?: () => void;
     onCalibrer?: () => void;
+    latenceSortieMs?: () => number;
   } = $props();
 
   // Pad d'écriture, pour les TROIS lignes (2026-08-24, « il faut un pad pour
@@ -387,6 +389,7 @@
         onPreview={(d, o) => onPreviewDegree?.(name as 'bass' | 'melody', d, o)}
         onPreviewChord={(i) => onPreviewChord?.(i)}
         {onCalibrer}
+        {latenceSortieMs}
         {onChanged}
         onClose={() => (padOpen = false)}
       />

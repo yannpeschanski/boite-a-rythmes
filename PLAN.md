@@ -6228,6 +6228,66 @@ passages consécutifs pour les tirages aléatoires), les deux builds, et un
 parcours Playwright écran par écran des actes 0, 1 et 2 en 390×844 (aucune
 erreur console, aucun débordement, aucune ligne de récit repliée).
 
+### ✅ Le retard connu bat le retard court — et le pad le dit (2026-08-24)
+
+Retour de Yann sur ma réponse à sa proposition (« baisser la qualité pendant
+l'enregistrement, la remonter ensuite ») : *« l'idée était de réduire la qualité
+juste pour que le délai puisse permettre d'enregistrer en rythme avec la
+musique. une fois que c'est inscrit, le son doit être remis en bonne
+qualité. »* — donc une dégradation TEMPORAIRE et assumée, pas un compromis
+permanent. La réponse change de forme : elle devient chiffrée et exécutable.
+
+**Fichiers touchés :** `tests/quantize.test.ts`,
+`src/ui/sequencer/NotePad.svelte`, `src/ui/sequencer/SynthRowView.svelte`,
+`src/ui/atelier/SynthModule.svelte`, `src/ui/atelier/AtelierView.svelte`.
+
+#### Le raisonnement, mis en test plutôt qu'en argument
+
+`tests/quantize.test.ts` porte cinq cas sur le cadre exact : 120 bpm, ligne de
+8 pas, un pas = 250 ms, casque A2DP à 150 ms, joueur qui joue **en mesure avec
+ce qu'il entend**.
+
+- Sans correction, la note tombe sur **le pas suivant** : tout le motif sonne
+  en retard d'un cran.
+- **En dépensant tout ce qu'une dégradation peut rendre** — les 32 ms de tampon
+  de sortie ramenées à 8, soit le réglage exact qui avait donné « le son est
+  devenu moche » le 2026-08-21 — la note tombe **toujours** sur le pas suivant.
+  24 ms gagnées sur 150 ne franchissent pas le demi-pas de 125 ms.
+- Le retard **connu**, lui, s'annule complètement : `elapsedMs - latence.ms`
+  ramène la note sur le pas visé, avec ±40 ms de jeu humain autour, et **quelle
+  que soit la taille du retard** (300 ms s'annulent aussi bien que 150).
+
+⚠️ **Ce n'est donc pas la taille du délai qui décide si on enregistre en
+rythme, c'est le fait de le connaître.** Un retard uniforme ne gêne pas le jeu —
+la boucle, l'aperçu et le métronome sont décalés du même montant, on joue
+dessus sans y penser ; ce qui se casse, c'est l'ÉCRITURE, et elle se corrige par
+soustraction. C'est aussi ce que font les DAW en monitoring à forte latence :
+ils décalent la prise, ils ne dégradent pas le son.
+
+#### Ce que ça change dans l'appli : le pad le dit, avec le chiffre
+
+Le calibrage ne sert que si on sait qu'il faut le faire — et justement, un
+retard uniforme s'entend comme « juste » puisque tout est décalé pareil. Le pad
+affiche donc un mot quand `latence.ms === 0` **et** que le navigateur déclare
+≥ 60 ms : « Ton appareil annonce 180 ms de retard… ça s'écrit un pas trop
+loin », avec un lien qui ouvre la mesure. Seuil à 60 ms parce qu'en filaire on
+mesure 32 ms — au-dessous, calibrer ne changerait presque rien. Rien ne
+s'affiche dès qu'un réglage est posé, y compris remis à zéro sciemment.
+
+⚠️ **Encore le piège de câblage de CLAUDE.md, et il a mordu.** `retardDeclare`
+était un `$derived` appelant `engine.latenceSortieMs()` : cette fonction ne lit
+aucune rune, donc le dérivé se calcule **une fois** — à un instant où le
+contexte audio n'existe pas encore, puisqu'il naît au premier son — et ne se
+recalcule jamais. Avec `outputLatency` forcé à 180 ms dans Chromium,
+l'avertissement ne s'affichait pas. Devenu un `$state` rafraîchi à l'ouverture
+du pad et après chaque aperçu — l'aperçu étant précisément ce qui crée le
+contexte. *Le module était juste, le câblage était faux : troisième fois.*
+
+**Vérifié :** `check` 0 erreur · **194 tests** (5 nouveaux) · les deux builds ·
+Playwright avec `outputLatency` forcé : rien en filaire (32 ms), avertissement à
+180 ms, le lien ouvre le calibrage, et l'avertissement disparaît une fois le
+réglage posé.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

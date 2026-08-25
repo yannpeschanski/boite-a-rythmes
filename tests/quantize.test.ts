@@ -95,3 +95,90 @@ describe('quantizeToStep — le temps écoulé peut être négatif', () => {
     expect(quantizeToStep({ playheadCol: 3, elapsedMs: 101, stepMs: STEP, steps: 8 })).toBe(4);
   });
 });
+
+/* Le cas Bluetooth, en chiffres — parce que la question s'est posée deux fois.
+ *
+ * Proposition de Yann (2026-08-24) : « baisser la qualité de l'audio quand on
+ * enregistre au clavier et remonter la qualité ensuite », l'objectif étant de
+ * « pouvoir enregistrer en rythme avec la musique ».
+ *
+ * Ce que ces tests montrent, sans avoir à en discuter :
+ *   · rogner nos propres millisecondes NE SUFFIT PAS quand le retard vient du
+ *     casque — même en dépensant tout ce qu'on a (32 ms de tampon ramenées à
+ *     8, soit le réglage qui avait rendu « le son moche »), la note tombe
+ *     toujours sur le pas suivant ;
+ *   · le retard CONNU, lui, s'annule complètement, quelle que soit sa taille.
+ *
+ * Autrement dit : ce n'est pas la taille du délai qui décide si on enregistre
+ * en rythme, c'est le fait de le connaître. C'est l'objet du calibrage
+ * (ui/latence.svelte.ts), pas d'un compromis sur la qualité.
+ *
+ * Cadre commun : 120 bpm, ligne de 8 pas sur une mesure -> un pas = 250 ms.
+ * Casque A2DP : tout est entendu 150 ms trop tard. Le joueur joue en mesure
+ * avec CE QU'IL ENTEND, donc son doigt tombe 150 ms après le pas réel.
+ */
+describe('enregistrer en rythme malgré un casque Bluetooth', () => {
+  const PAS = 250; // ms — une croche à 120 bpm
+  const RETARD_CASQUE = 150; // ms — A2DP, ordre de grandeur courant
+  const VISE = 4; // le pas que le joueur croit viser
+
+  it('sans correction, la note tombe un pas trop loin', () => {
+    expect(
+      quantizeToStep({ playheadCol: VISE, elapsedMs: RETARD_CASQUE, stepMs: PAS, steps: 8 }),
+    ).toBe(VISE + 1);
+  });
+
+  it('rogner nos propres millisecondes ne rattrape pas le casque', () => {
+    // Le maximum que l'appli puisse gagner en dégradant sa sortie : 32 ms de
+    // tampon ramenées à 8 (« latencyHint: 0.001 »), soit 24 ms. Elles se
+    // retranchent du retard perçu — et ne changent rien au résultat.
+    const GAIN_MAXIMUM_EN_DEGRADANT = 24;
+    expect(
+      quantizeToStep({
+        playheadCol: VISE,
+        elapsedMs: RETARD_CASQUE - GAIN_MAXIMUM_EN_DEGRADANT,
+        stepMs: PAS,
+        steps: 8,
+      }),
+    ).toBe(VISE + 1);
+  });
+
+  it('le retard mesuré, lui, ramène la note sur le pas visé', () => {
+    // `NotePad` calcule `elapsedMs = maintenant - stepStartedAt - latence.ms`.
+    expect(
+      quantizeToStep({
+        playheadCol: VISE,
+        elapsedMs: RETARD_CASQUE - RETARD_CASQUE,
+        stepMs: PAS,
+        steps: 8,
+      }),
+    ).toBe(VISE);
+  });
+
+  it('et il tolère l’imprécision humaine autour du temps', () => {
+    // ±40 ms de jeu autour du clic : on reste sur le pas visé tant qu'on est
+    // dans la demi-largeur du pas (125 ms ici).
+    for (const jeu of [-40, -20, 0, 20, 40]) {
+      expect(
+        quantizeToStep({
+          playheadCol: VISE,
+          elapsedMs: RETARD_CASQUE + jeu - RETARD_CASQUE,
+          stepMs: PAS,
+          steps: 8,
+        }),
+      ).toBe(VISE);
+    }
+  });
+
+  it('un retard DEUX fois plus gros s’annule tout aussi bien', () => {
+    // 300 ms — un casque lent, ou un casque + une dalle tactile. La correction
+    // ne dépend pas de la taille du retard, seulement de sa connaissance.
+    const LENT = 300;
+    expect(quantizeToStep({ playheadCol: VISE, elapsedMs: LENT, stepMs: PAS, steps: 8 })).toBe(
+      (VISE + 1) % 8,
+    );
+    expect(quantizeToStep({ playheadCol: VISE, elapsedMs: LENT - LENT, stepMs: PAS, steps: 8 })).toBe(
+      VISE,
+    );
+  });
+});
