@@ -629,7 +629,84 @@ export const ACTES: Acte[] = [
     competenceLabel: 'PRODUCTION',
     module: 'production',
     resume: 'Ça sonne bien ici et mal partout ailleurs.',
-    etapes: [],
+    etapes: [
+      /* ⚠️ L'acte tient sur UNE phrase de `HISTOIRE.md` — « Ton morceau est bon
+       * dans ton ordinateur. Ici, il est mauvais. » — et elle ne peut pas être
+       * racontée : il faut l'entendre. D'où le petit haut-parleur, qui est un
+       * étage de moteur (`graph.ts`) et non un texte, et le verbe `laverie` qui
+       * s'en sert. Il ouvre l'acte : les trois exercices de mixage qui suivent
+       * n'ont de raison d'être que parce qu'on a entendu le problème.
+       *
+       * L'EQ et la compression, que le texte cite aussi, ne sont PAS ici :
+       * elles sont globales dans le format v2, donc sans version par ligne à
+       * faire entendre. Citées à moitié, elles auraient produit exactement le
+       * défaut de l'acte 0 — un mot sans bouton derrière. */
+      {
+        kind: 'recit',
+        source: 'fax',
+        entete: 'COMMANDE — LE TUNNEL',
+        lignes: [
+          'Une salle de trois cents places veut un morceau',
+          'pour ses soirées.',
+          'Première fois que tu produis quelque chose',
+          'destiné à durer plus de douze secondes.',
+          'Tu utilises tout : rythme, groove, mélodie.',
+          'Tu livres. Ils passent le morceau samedi.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'repondeur',
+        entete: 'MESSAGE — LUNDI, 9 s',
+        lignes: [
+          '« Chez nous, ça n’existe pas. »',
+          'Sol rappelle. — Le morceau est bien.',
+          '— Alors pourquoi vous ne le gardez pas ?',
+          '— Parce que personne ne bouge.',
+          'Elle raccroche. Elle débranche le haut-parleur',
+          'de la laverie et le pose sur la table.',
+          '— Écoute ça là-dedans.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 53,
+        commande: 'Tout le grave a disparu. — Laquelle tient encore ?',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— Tu vois ?',
+          '— Non.',
+          '— Ton morceau est bon dans ton ordinateur.',
+          'Elle tapote le petit boîtier.',
+          '— Ici, il est mauvais. Et c’est ici qu’on l’écoute.',
+          '— Je fais quoi ?',
+          '— Tu enlèves. Ensuite seulement, tu ajoutes.',
+        ],
+      },
+      { kind: 'exercice', niveau: 54, commande: 'On commence par enlever. Le filtre, c’est le geste qui enlève.' },
+      { kind: 'exercice', niveau: 55, commande: 'Puis l’espace. Ce qui met un son au fond de la pièce.' },
+      { kind: 'exercice', niveau: 56, commande: 'Deux façons d’en faire, et personne ne les distingue. Toi si.' },
+      { kind: 'exercice', niveau: 57, commande: 'La même distance que la cible. Pas le même chiffre.' },
+      {
+        kind: 'recit',
+        source: 'cassette',
+        entete: 'FB — LE TUNNEL (V2)',
+        lignes: [
+          'Tu refais le morceau. Tu enlèves. Tu accentues.',
+          'Tu renvoies.',
+          'Le samedi suivant, Le Tunnel le passe.',
+          'Cette fois, les gens bougent.',
+          'Le lundi, ils paient.',
+          '— Première fois depuis 1998 qu’un morceau de Face B',
+          'fait danser quelqu’un.',
+          'Elle range le chèque. — C’est pas beaucoup, mais ça compte.',
+        ],
+      },
+    ],
   },
   {
     id: 5,

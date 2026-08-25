@@ -11,6 +11,7 @@ import {
   ETAPE_DU_COMPTE_A_REBOURS,
 } from '../src/model/carriere';
 import { LEVELS } from '../src/model/presets/levels';
+import { parametre } from '../src/model/parametres';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
 
 describe('Mode carrière — la charpente en huit actes', () => {
@@ -54,7 +55,7 @@ describe('Mode carrière — la charpente en huit actes', () => {
   });
 
   it('déclare « à venir » exactement les actes dont les exercices ne sont pas écrits', () => {
-    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3]);
+    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4]);
   });
 
   // Chaque acte jouable doit contenir au moins un exercice ET au moins un
@@ -567,5 +568,60 @@ describe('L’acte 2 fait RÉGLER le groove, pas reproduire des grilles', () => 
   // curseurs.
   it('tombe après l’ouverture de l’Atelier', () => {
     expect(moduleUnlocked('atelier', { level: 1, acte: 2 })).toBe(true);
+  });
+});
+
+/* L'acte 4 — le premier acte dont la leçon n'est pas un son mais un ENDROIT.
+ *
+ * « Poursuis » : après la mélodie vient la production, et c'est elle qui ouvre
+ * le module Production.
+ */
+describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
+  it('est jouable, et ouvre la Production', () => {
+    const acte4 = ACTES[4];
+    expect(acteAVenir(acte4)).toBe(false);
+    expect(acte4.module).toBe('production');
+    expect(moduleUnlocked('production', { level: 1, acte: 4 })).toBe(false);
+    expect(moduleUnlocked('production', { level: 1, acte: 5 })).toBe(true);
+  });
+
+  /* ⚠️ Le petit haut-parleur OUVRE l'acte, et l'ordre est la leçon : les trois
+   * exercices de mixage qui suivent n'ont de raison d'être que parce qu'on a
+   * entendu le problème. Placé après, on apprendrait des boutons puis on
+   * découvrirait pourquoi — soit exactement le défaut de l'acte 0. */
+  it('pose le problème avant d’enseigner les outils', () => {
+    const niveaux = niveauxDeLActe(ACTES[4]);
+    const verbes = niveaux.map((n) => LEVELS.find((x) => x.id === n)!.exercise);
+    expect(verbes[0]).toBe('laverie');
+    expect(verbes.slice(1)).toEqual(['lequel', 'lequel', 'nommer', 'regler']);
+  });
+
+  // Les outils cités sont ceux du modèle, et rien d'autre. `HISTOIRE.md` parle
+  // aussi d'EQ et de compression : elles sont GLOBALES dans le format v2, donc
+  // sans version par ligne à faire entendre. Non citées plutôt que citées à
+  // moitié — un mot sans bouton derrière est ce qui a cassé l'acte 0.
+  it('ne cite que des boutons qui existent par ligne', () => {
+    for (const n of niveauxDeLActe(ACTES[4]).slice(1)) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      expect(l.familleParam, `niveau ${n}`).toBe('filtre');
+      for (const id of l.paramsAutorises) {
+        const p = parametre(id as never);
+        expect(p, `niveau ${n} : ${id}`).not.toBeNull();
+        expect(p!.cible ?? 'ligne', `niveau ${n} : ${id}`).toBe('ligne');
+      }
+    }
+  });
+
+  // Le mot du récit et le mot de l'écran sont le même : si le texte dit « la
+  // laverie », l'exercice doit s'y passer.
+  it('nomme la laverie dans le récit qui l’amène', () => {
+    const e = ACTES[4].etapes;
+    const iExo = e.findIndex((x) => x.kind === 'exercice');
+    const avant = e
+      .slice(0, iExo)
+      .flatMap((x) => (x.kind === 'recit' ? x.lignes : []))
+      .join(' ');
+    expect(avant).toMatch(/laverie/i);
+    expect(avant).toMatch(/haut-parleur/i);
   });
 });

@@ -23,6 +23,7 @@ import {
   justesseDesFrappes,
   medianeDesEcarts,
   estVerbeParam,
+  LAVERIE_DRIVES,
 } from '../model/exercises';
 import {
   parametresDe,
@@ -261,6 +262,13 @@ class GameStore {
    * premier pas comme point de départ. La réponse est un index. */
   silenceReponse = $state(0);
   silenceChoix = $state<number | null>(null);
+
+  /* ---- État du verbe `laverie` ------------------------------------------
+   * Sur quel haut-parleur on écoute. ⚠️ Ce n'est PAS de l'état de morceau :
+   * rien à sérialiser, rien à annuler, rien à exporter — c'est une façon
+   * d'écouter, au même titre que le décalage de latence est une propriété de
+   * l'appareil. Il vit donc ici et pas dans le format v2. */
+  ecoutePetite = $state(false);
 
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
@@ -510,6 +518,12 @@ class GameStore {
   startLevel(index: number): void {
     this.levelIndex = Math.max(0, Math.min(LEVELS.length - 1, index));
     const cfg = this.level;
+    /* ⚠️ On revient TOUJOURS au moniteur de studio en changeant de niveau.
+     * `preparerLaverie` le rebasculera aussitôt si c'est son exercice ; sans
+     * cette remise à zéro, quitter la laverie laisserait le passe-haut engagé
+     * et l'exercice SUIVANT se jouerait sans grave, sans que rien ne le dise.
+     * Un état d'écoute qui déborde de son écran est un défaut muet. */
+    this.ecoutePetite = false;
     const presets = PRESETS as unknown as GamePresetLike[];
     this.subdiv = subdivForLevel(cfg, presets);
     const preset = presetForLevel(cfg, presets);
@@ -625,6 +639,11 @@ class GameStore {
       return;
     }
 
+    if (this.level.exercise === 'laverie') {
+      this.preparerLaverie();
+      return;
+    }
+
     if (this.level.exercise === 'jouer') {
       /* Plancher de deux coups.
        *
@@ -730,6 +749,59 @@ class GameStore {
   poserNote(pas: number, degre: number): void {
     if (this.solved || this.revealed || this.melodieLocked[pas]) return;
     this.melodieGuess[pas] = this.melodieGuess[pas] === degre ? 0 : degre;
+  }
+
+  /* « La laverie » — l'acte 4, et le seul exercice où ce qui compte n'est pas
+   * le son mais l'ENDROIT où on l'écoute.
+   *
+   * `HISTOIRE.md` : *« Ton morceau est bon dans ton ordinateur. Ici, il est
+   * mauvais. »* Trois versions du même kick, séparées par le DRIVE. Sur le
+   * moniteur de studio elles se ressemblent ; sur le petit haut-parleur, une
+   * seule tient encore — mesuré dans un `OfflineAudioContext`, à travers le
+   * vrai graphe : 13 % de l'énergie survit au repos, 40 % à fond de drive.
+   *
+   * ⚠️ Pourquoi `tone` sur le kick n'est PAS pris dans le catalogue, alors
+   * qu'il est le sujet ici : parce qu'en studio il ne s'entend presque pas
+   * (RMS 0,046 → 0,062 sur toute l'étendue, contre un triplement de ce qui
+   * survit au passe-haut). Un bouton dont l'effet ne se voit qu'ailleurs est
+   * une mauvaise question de timbre et une bonne question de production —
+   * c'est exactement ce que l'acte enseigne. Le niveau le pose donc lui-même
+   * plutôt que de le tirer, et `parametre('tone').lignes` continue d'exclure
+   * le kick pour tous les autres verbes. */
+  private preparerLaverie(): void {
+    this.paramId = 'tone';
+    this.paramLigne = 'kick';
+    this.paramRepere = null;
+    this.subdiv = { kick: 8, snare: 8, hat: 8 };
+    const grille = emptyGrid(this.subdiv);
+    [0, 2, 4, 6].forEach((i) => (grille.kick[i] = 1));
+    this.target = grille;
+    this.targetRolls = emptyRolls(this.subdiv);
+    this.guess = emptyGrid(this.subdiv);
+    this.guessRolls = emptyRolls(this.subdiv);
+    this.shift = { kick: 0, snare: 0, hat: 0 };
+    this.swing = 0;
+    this.drag = 0;
+    this.paramChoix = null;
+    this.paramVersionJouee = 0;
+    /* Les trois valeurs sont POSÉES, pas tirées, et c'est délibéré : ce qui
+     * doit être garanti n'est pas un écart de curseur mais un écart de SURVIE
+     * au passe-haut, que `tirerVersions` ne sait pas mesurer. Trois paliers
+     * mesurés, mélangés pour que la bonne réponse ne soit jamais au même
+     * endroit. */
+    const paliers = [...LAVERIE_DRIVES];
+    for (let i = paliers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [paliers[i], paliers[j]] = [paliers[j], paliers[i]];
+    }
+    this.paramVersions = paliers;
+    // Toujours « celle qui tient » : la question ne se retourne pas. Un petit
+    // haut-parleur n'a pas de sens inverse — rien ne « disparaît le mieux ».
+    this.paramSens = 'plus';
+    this.paramReponse = versionQuiRepond(paliers, 'plus');
+    // On arrive TOUJOURS sur le petit haut-parleur : c'est là que la question
+    // se pose. Le studio est ce qu'on va chercher pour comparer.
+    this.ecoutePetite = true;
   }
 
   private preparerParametre(): void {
@@ -858,6 +930,16 @@ class GameStore {
       } else {
         juste = this.paramChoix === this.paramReponse;
       }
+      if (juste) this.win();
+      return juste;
+    }
+
+    /* « La laverie » désigne un index, comme `lequel` — mais elle a sa branche
+     * parce qu'elle n'est délibérément pas un `VERBES_PARAM` : elle POSE son
+     * bouton au lieu de le tirer du catalogue (voir `preparerLaverie`). Elle
+     * partage l'état, pas l'aiguillage. */
+    if (this.level.exercise === 'laverie') {
+      const juste = this.paramChoix === this.paramReponse;
       if (juste) this.win();
       return juste;
     }

@@ -6287,6 +6287,144 @@ contexte. *Le module était juste, le câblage était faux : troisième fois.*
 Playwright avec `outputLatency` forcé : rien en filaire (32 ms), avertissement à
 180 ms, le lien ouvre le calibrage, et l'avertissement disparaît une fois le
 réglage posé.
+### ✅ Acte 4, « La production » — le premier acte qui a demandé un étage de moteur (2026-08-25)
+
+« Poursuis » : après la mélodie vient la production. C'est le premier acte dont
+la leçon n'est **pas un son mais un endroit**, et c'est ce qui a décidé de tout
+le reste.
+
+**Fichiers touchés :** `src/engine/graph.ts`, `src/engine/AudioEngine.ts`,
+`src/model/exercises.ts`, `src/model/presets/levels.ts`,
+`src/model/carriere.ts`, `src/stores/game.svelte.ts`,
+`src/ui/game/GameView.svelte`, `tests/latence-audio.test.ts`,
+`tests/exercises.test.ts`, `tests/carriere.test.ts`.
+
+#### Ce que l'acte exige, et pourquoi les boutons ne suffisaient pas
+
+`HISTOIRE.md` fait apprendre six choses ici — EQ, compression, filtre,
+réverbération, delay, espace entre les instruments. Trois sont des boutons du
+modèle et forment déjà la famille `filtre` : elles donnent les niveaux 54 à 57
+(entendre le filtre, entendre l'espace, nommer réverbe/delay, régler l'espace),
+sur le patron désormais rodé de l'acte 2.
+
+L'EQ et la compression **ne sont pas citées**. Elles sont globales dans le
+format v2 : aucune version par ligne à faire entendre. Citées à moitié, elles
+auraient reproduit exactement le défaut de l'acte 0 — un mot sans bouton
+derrière.
+
+Mais le cœur de l'acte n'est aucune des six. C'est :
+
+> — Ton morceau est bon dans ton ordinateur.
+> — Ici, il est mauvais.
+
+Et **ça ne se raconte pas**. Un écran qui décrit un défaut de mixage n'apprend
+rien : c'est la leçon de « ce qui n'a pas été porté n'existe pas », appliquée
+non plus à du récit mais à du son. D'où un étage de moteur, et un verbe.
+
+#### Le petit haut-parleur (`graph.ts`)
+
+Un passe-haut à 450 Hz et une bosse de présence à 3 kHz — les graves qu'un
+boîtier de huit centimètres ne peut pas produire, et le sifflement du texte.
+Mesuré dans un `OfflineAudioContext`, à travers le vrai graphe, sur un kick :
+
+| | grave 40-200 Hz | RMS total | survie |
+|---|---|---|---|
+| studio | 0,00168 | 0,046 | — |
+| laverie | 0,00011 | 0,0061 | 13 % |
+
+Soit **14,8× d'énergie grave en moins**. Et en bout de chaîne, sur l'analyseur
+maître d'un `AudioEngine` en marche : le grave perd plus de 20 dB à la bascule,
+puis revient quand on repasse au studio.
+
+⚠️ **Il est monté EN PARALLÈLE, et c'est une correction payée par la mesure.**
+La première version mettait les deux filtres **en série**, réglés « neutres »
+au repos (coupure à 10 Hz, bosse à 0 dB) — un passe-haut sous l'audible ne
+s'entend pas, donc il ne fait rien. C'est vrai de son AMPLITUDE et faux de sa
+PHASE : un biquad déplace le signal même là où il ne l'atténue pas. Mesuré sur
+un kick, contre le même kick sans filtre :
+
+```
+41 176 échantillons différents sur 44 100 — écart maximal 6,4e-2 pour un RMS de 5,1e-2
+```
+
+L'étage aurait modifié **tous les exports du projet**, inaudiblement et pour
+toujours, pour les besoins d'un exercice de Mode jeu. Le repos n'est donc plus
+un réglage mais un **trajet** : les filtres vivent dans une branche parallèle à
+gain nul, et `petitHPSec` / `petitHPHumide` font la bascule en fondu. Vérifié :
+**0 échantillon d'écart sur 44 100** entre le trajet au repos et le trajet
+d'avant. Le fondu a un second mérite — changer de haut-parleur pendant que la
+boucle tourne est le geste même de l'exercice, et un saut de filtre claquerait.
+
+Le monitoring **n'entre pas dans le format v2** : c'est une façon d'écouter, pas
+un réglage de morceau — rien à sérialiser, rien à annuler, rien à exporter.
+Même domicile que le décalage de latence, qui est une propriété de l'appareil.
+
+#### Le verbe `laverie` (niveau 53)
+
+Trois versions du même kick, séparées par le **drive**. Sur le moniteur de
+studio elles se ressemblent ; sur le petit haut-parleur, une seule tient encore.
+Mesuré, toujours à travers le vrai graphe :
+
+| drive | RMS studio | RMS laverie | survie |
+|---|---|---|---|
+| 0 | 0,046 | 0,0061 | **13 %** |
+| 55 | 0,061 | 0,0225 | **37 %** |
+| 100 | 0,062 | 0,0252 | **40 %** |
+
+Trois choix de conception en découlent :
+
+- **les paliers sont posés, pas tirés.** Ce qu'il faut garantir n'est pas un
+  écart de curseur mais un écart de SURVIE, que `tirerVersions` ne sait pas
+  mesurer. Un palier intermédiaire à 30 aurait donné 30 % — trop près de 37 pour
+  qu'on tranche sur un haut-parleur de téléphone ;
+- **l'exercice arrive sur le petit haut-parleur.** Le drive monte aussi le
+  niveau en studio (0,046 → 0,062) : posée là-bas, la question aurait une
+  réponse — « la plus forte » — qui n'est pas celle qu'on enseigne ;
+- **`tone` sur le kick reste hors du catalogue.** En studio il ne s'entend
+  presque pas, ce qui en fait une mauvaise question de timbre — et une bonne
+  question de production. Un bouton dont l'effet ne se voit qu'ailleurs est
+  exactement le sujet de l'acte. Le niveau le pose donc lui-même, et `laverie`
+  n'est délibérément pas un `VERBES_PARAM` : l'y mettre ferait tirer un bouton
+  de la famille par `preparerParametre`, et l'exercice n'aurait plus de sujet.
+
+Le sélecteur 🖥 / 📻 est **au-dessus de la question**, pas rangé dans un coin :
+c'est en passant de l'un à l'autre qu'on entend que le problème n'est pas dans
+le son mais dans l'endroit. Et on repart toujours en studio — sans cette remise
+à zéro, l'exercice suivant se serait joué sans grave, muet sur la raison.
+
+#### ⚠️ Trouvé en mesurant : l'export n'est PAS reproductible à l'octet près
+
+En vérifiant que le nouvel étage ne changeait rien, deux rendus du **même** état
+se sont révélés différents. Ce n'est pas le nouvel étage (prouvé à 0 échantillon
+d'écart) — c'est antérieur, et `CLAUDE.md` l'affirme pourtant depuis toujours.
+
+Isolé, effets coupés, deux exports du même état :
+
+```
+kick seul (aucune voix à bruit) :      0 / 286 650 échantillons différents
+snare seule (voix à bruit)      :  8 465 / 286 650, écart maximal 0,531
+```
+
+La règle du `rng` injecté **tient parfaitement** : les notes, les vélocités et
+les rafales sont identiques d'un rendu à l'autre. Ce qui ne l'est pas, ce sont
+deux TAMPONS remplis hors de ce `rng` :
+
+- `graph.ts` — le bruit blanc partagé (`data[i] = Math.random() * 2 - 1`),
+  reconstruit à chaque `buildGraph`, donc à chaque export. Il sert la caisse
+  claire, le hat, le clap et le shaker ;
+- `fx.ts` — l'impulsion de réverbe, même chose.
+
+**Non corrigé ici, délibérément** : c'est hors du périmètre de l'acte 4, et le
+correctif (semer les deux tampons depuis `EXPORT_SEED`) change les octets de
+tous les exports futurs — donc une décision, pas un nettoyage. À arbitrer :
+soit on sème, soit `CLAUDE.md` cesse de promettre l'octet et promet ce qui est
+vrai, à savoir la reproductibilité des NOTES.
+
+**Vérification :** `npm run check` 0 erreur · **206 tests** (12 neufs, trois
+passages consécutifs) · les deux builds · parcours Playwright de l'acte 4 en
+390×844 (aucune erreur console, aucun débordement, une ligne repliée trouvée et
+coupée) · quatre scripts de mesure dans un `OfflineAudioContext` et sur
+l'analyseur maître d'un moteur en marche.
 
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
