@@ -27,6 +27,23 @@
  */
 import type { LockedModule } from './unlocks';
 import { LEVELS } from './presets/levels';
+import {
+  type Contrainte,
+  lignesPresentes,
+  auMoinsUneVariante,
+  auMoinsUneRafale,
+  swingAuMoins,
+  ligneSynthPresente,
+  dansLeStyle,
+  pasLeMotifDeDepart,
+} from './commande';
+import { defaultState } from './defaults';
+
+/* Le point de départ de l'Atelier, figé une fois : toutes les commandes s'en
+ * servent pour refuser une livraison qu'on n'a pas touchée (voir
+ * `pasLeMotifDeDepart`, et la mesure qui l'a imposée). */
+const DEPART = defaultState();
+const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
 
 export type ActeId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -91,7 +108,38 @@ export interface EtapeLivraison {
   bouton: string;
 }
 
-export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison;
+/* La COMMANDE — l'étape où on ne retrouve rien, où on FAIT.
+ *
+ * Idée de Yann : *« à la fin de chaque acte où il est question d'une production
+ * à livrer, on pourrait devoir produire quelque chose dans l'Atelier et le
+ * présenter au Mode carrière pour qu'il valide l'acte »*.
+ *
+ * Les onze verbes du jeu demandent tous de RETROUVER quelque chose. Le récit,
+ * lui, ne parle que de livrer : des sonneries, un jingle, un morceau pour Le
+ * Tunnel, un pack de quinze styles. La commande est le seul moment où
+ * l'Atelier cesse d'être une récompense pour devenir l'outil de travail.
+ *
+ * ⚠️ Le transport de l'état ne passe PAS par un fichier. L'Atelier et la
+ * carrière sont la même application et le même store : un aller-retour par
+ * export/import n'existerait que parce qu'on n'a pas câblé les deux, et il
+ * coûterait cher là où le jeu se joue (390 px, un sélecteur de fichiers).
+ *
+ * Ce qui est vérifié vit dans `model/commande.ts` — et c'est là qu'est le vrai
+ * travail, pas ici. */
+export interface EtapeCommande {
+  kind: 'commande';
+  entete: string;
+  lignes: string[];
+  /** Le libellé du bouton qui emmène à l'Atelier. */
+  bouton: string;
+  /** Ce que Sol vérifie en recevant. Beaucoup de morceaux le satisfont : une
+   *  commande n'a pas UNE réponse, elle a des exigences. */
+  cahier: Contrainte[];
+  /** Ce que Sol dit quand elle accepte. */
+  accepte: string;
+}
+
+export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison | EtapeCommande;
 
 export interface Acte {
   id: ActeId;
@@ -524,6 +572,23 @@ export const ACTES: Acte[] = [
         commande: 'Alors trouve-le au curseur. Pas le chiffre : le balancement.',
       },
       {
+        kind: 'commande',
+        entete: 'KELVIN — IL ATTEND SA BOUCLE',
+        lignes: [
+          '— Bon. Tu me la refais ?',
+          'Il ne dira pas ce qu’il veut : il ne sait pas le dire.',
+          'Il saura le reconnaître.',
+          'Va dans l’Atelier. Fais-en une qui respire.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        cahier: [
+          AVOIR_PRODUIT,
+          lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes, comme il les attend'),
+          swingAuMoins(8, 'Pas carré — personne ne danse carré'),
+        ],
+        accepte: '— Là. Ça respire. Tu vois quand tu veux.',
+      },
+      {
         kind: 'recit',
         source: 'cassette',
         entete: 'KELVIN — SANS TITRE',
@@ -603,6 +668,23 @@ export const ACTES: Acte[] = [
         kind: 'exercice',
         niveau: 44,
         commande: 'La deuxième, celle qu’il réclame. Toute la gamme, cette fois.',
+      },
+      {
+        kind: 'commande',
+        entete: 'RACHID — IL SORT SON PORTEFEUILLE',
+        lignes: [
+          '— C’est combien ?',
+          '— Vous voulez quoi, exactement ?',
+          '— Quelque chose qui donne envie de rentrer chez soi.',
+          'C’est tout le brief. Il n’y en aura pas d’autre.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        cahier: [
+          AVOIR_PRODUIT,
+          ligneSynthPresente('bass', 'Une basse — c’est elle qui porte la mélodie'),
+          lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
+        ],
+        accepte: '— Ça. Je sais pas pourquoi. C’est combien ?',
       },
       {
         kind: 'recit',
@@ -692,6 +774,24 @@ export const ACTES: Acte[] = [
       { kind: 'exercice', niveau: 56, commande: 'Deux façons d’en faire, et personne ne les distingue. Toi si.' },
       { kind: 'exercice', niveau: 57, commande: 'La même distance que la cible. Pas le même chiffre.' },
       {
+        kind: 'commande',
+        entete: 'LE TUNNEL — DEUXIÈME ENVOI',
+        lignes: [
+          'Tu as jusqu’à samedi pour renvoyer le morceau.',
+          'Trois cents personnes, un système de club.',
+          '— Enlève ce qui ne sert pas.',
+          '— Et mets une basse qui existe encore à la laverie.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        cahier: [
+          AVOIR_PRODUIT,
+          lignesPresentes(['kick', 'snare', 'hat'], 'La base, propre'),
+          ligneSynthPresente('bass', 'Une basse'),
+          auMoinsUneVariante('Un charley ouvert ou un rim shot — de l’air'),
+        ],
+        accepte: '— Cette fois, les gens bougent. Le lundi, ils paient.',
+      },
+      {
         kind: 'recit',
         source: 'cassette',
         entete: 'FB — LE TUNNEL (V2)',
@@ -778,6 +878,22 @@ export const ACTES: Acte[] = [
       { kind: 'exercice', niveau: 27, commande: 'Ambiance latino, dit le fax. Dembow, dit le carnet.' },
       { kind: 'exercice', niveau: 32, commande: 'Kelvin vérifie le hip-hop. Il commence par le funk d’où il vient.' },
       {
+        kind: 'commande',
+        entete: 'ZIK’MOBILE — LE QUINZIÈME',
+        lignes: [
+          'Il en manque un. URBAIN FESTIF, dit le fax.',
+          '« Festif mais urbain, vous voyez :) »',
+          'Tu vois, maintenant : c’est ce qu’il a fredonné.',
+          'Fais-le. Pas à l’identique — dans le genre.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        cahier: [
+          AVOIR_PRODUIT,
+          dansLeStyle('dancehall', 'Ça doit sonner dancehall — le genre, pas la copie'),
+        ],
+        accepte: '— C’est ça. C’est exactement ça qu’il n’arrivait pas à dire.',
+      },
+      {
         kind: 'recit',
         source: 'cassette',
         entete: 'PACK ZIK’MOBILE — 28 MAI',
@@ -814,7 +930,104 @@ export const ACTES: Acte[] = [
     competenceLabel: 'CRÉATION',
     module: null,
     resume: 'Une référence libre dans le catalogue. La tienne.',
-    etapes: [],
+    etapes: [
+      /* ⚠️ L'acte où le cahier des charges doit presque DISPARAÎTRE, et c'est
+       * le texte qui l'exige : « Aucun brief. Aucun client. Aucun style
+       * imposé. […] Cette fois, personne ne te dit si c'est bon. »
+       *
+       * C'est ce qui donne sa forme à toute la mécanique de commande : la
+       * sévérité DÉCROÎT avec le récit. Les clients des actes 2 à 5 exigent des
+       * choses précises parce qu'ils paient ; FB-015 n'exige que d'avoir été
+       * fait. Son cahier ne demande donc pas si c'est réussi — il constate
+       * qu'on s'est servi de ce qu'on a appris, et ses libellés sont écrits du
+       * point de vue du joueur, pas d'un client.
+       *
+       * Une commande sans aucune ligne aurait été possible, et aurait été un
+       * bouton qui ne juge rien — ce que le joueur sent au premier clic. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'LE TIROIR',
+        lignes: [
+          '— Maintenant qu’on a de l’argent, pourquoi tu vends ?',
+          '— Parce que je ne veux pas passer dix ans de plus',
+          'à fabriquer des sonneries.',
+          'Puis elle ouvre le tiroir. Une cassette.',
+          'Celle qu’elle t’a fait écouter en février,',
+          'quand tu ne savais pas faire respirer une boucle.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'cassette',
+        entete: 'AMBRE — MAQUETTES',
+        lignes: [
+          'Ambre écrivait ses chansons.',
+          'Sol devait produire son premier EP : pas l’écrire,',
+          'trouver son son. Sol voulait que tout soit parfait.',
+          'Elle a repoussé. Encore. Puis encore.',
+          'Ambre est partie.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'CE QUE TU ENTENDS CETTE FOIS',
+        lignes: [
+          'Il y a des fausses notes. Des silences. Des hésitations.',
+          'Ce ne sont pas des morceaux. Ce sont des maquettes.',
+          'Tu croyais que c’était un disque.',
+          'C’était quelqu’un qui essayait.',
+          'Et c’est exactement pour ça que ça respirait.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'fax',
+        entete: 'FICHE CARTONNÉE — FB-015',
+        lignes: [
+          '— Ce numéro devait être celui d’Ambre.',
+          'Un silence.',
+          '— Je voudrais qu’il soit le tien.',
+          '— Je vends quand même. Mais je ne pars pas',
+          'sans avoir sorti ce numéro.',
+          'Aucun brief. Aucun client. Aucun style imposé.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'FB-015 — À TOI',
+        lignes: [
+          'Pour savoir ce que tu peux faire',
+          'quand personne ne te dit quoi faire.',
+          'Tu peux utiliser tout ce que tu as appris.',
+          'Mais cette fois, personne ne te dira si c’est bon.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        // Aucune exigence de client : on constate seulement qu'on s'est servi
+        // de ce qu'on a appris. Les libellés sont à la première personne.
+        cahier: [
+          AVOIR_PRODUIT,
+          lignesPresentes(['kick', 'snare', 'hat'], 'La grille — acte 1'),
+          auMoinsUneRafale('Une rafale ou une variante — acte 1'),
+          ligneSynthPresente('bass', 'Une basse — acte 3'),
+        ],
+        accepte: '— Je ne sais pas si c’est bon. […] C’est nouveau.',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'LE CATALOGUE',
+        lignes: [
+          'Elle écoute sans rien dire pendant longtemps.',
+          'Puis elle prend la fiche cartonnée et son stylo.',
+          '— Il me faut un nom. Pour le catalogue.',
+          'C’est la première fois en cinq mois',
+          'qu’elle te demande comment tu t’appelles.',
+          'Tu lui donnes celui que tu viens de choisir.',
+        ],
+      },
+    ],
   },
   {
     id: 7,

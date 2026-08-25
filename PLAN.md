@@ -6504,6 +6504,133 @@ les deux builds · parcours Playwright de l'acte en 390×844 (aucune erreur
 console, aucun débordement, aucune ligne repliée — un libellé de genre long
 se replie proprement dans son bouton).
 
+### ✅ Les COMMANDES — l'Atelier cesse d'être une récompense (2026-08-25)
+
+Idée de Yann : *« à la fin de chaque acte où il est question d'une production à
+livrer, on pourrait devoir produire quelque chose dans l'Atelier et présenter le
+fichier JSON au Mode carrière pour qu'il valide l'acte ? ou meilleure idée à
+envisager »*. Arbitrages retenus : **cahier des charges + note de style**, et
+**acte 6 puis rétro-installation sur les actes 1 à 5**.
+
+**Fichiers touchés :** `src/model/commande.ts` (neuf), `src/model/carriere.ts`,
+`src/stores/game.svelte.ts`, `src/ui/game/CarriereView.svelte`,
+`src/ui/game/GameView.svelte`, `src/ui/atelier/AtelierView.svelte`,
+`tests/commande.test.ts` (neuf), `tests/carriere.test.ts`.
+
+#### Ce qui manquait, et que l'idée nomme exactement
+
+Les onze verbes du Mode jeu demandent tous de **retrouver** quelque chose : une
+grille, un pas, un réglage, un genre. Aucun ne demande de **faire**. Or le récit
+ne parle que de ça — on y livre des sonneries, un jingle, un morceau pour Le
+Tunnel, un pack de quinze styles. L'Atelier existait comme récompense ; il
+devient l'outil de travail.
+
+#### Un écart assumé : pas de fichier JSON
+
+L'Atelier et la carrière sont **la même application et le même store**. Un
+aller-retour par export/import n'existerait que parce qu'on n'a pas câblé les
+deux, et il coûterait cher là où le jeu se joue : 390 px, un téléchargement, un
+sélecteur de fichiers. L'état passe en mémoire (`pattern.snapshot()`), comme la
+livraison de l'acte 1 le fait déjà. Tout le reste de l'idée est gardé entier.
+
+#### Le vrai travail : décider ce qui est vérifié
+
+Trois façons de rater cette mécanique, et elles étaient toutes ouvertes :
+
+- **ne rien vérifier** — le bouton est du théâtre, et le joueur le sent au
+  deuxième acte ;
+- **vérifier une cible** — ce n'est plus une commande, c'est `reproduire` avec
+  des étapes en plus, et la liberté de l'Atelier ne sert à rien ;
+- **vérifier trop** — une seule réponse juste, donc pas une production.
+
+Ce qui est vérifié est donc le **cahier des charges** : des propriétés
+mesurables tirées du brief du client (`model/commande.ts`, module pur).
+Beaucoup de morceaux les satisfont — c'est le but.
+
+#### ⚠️ Le piège mesuré : livrer sans rien faire
+
+`defaultState()` ne démarre **pas** sur une grille vide. Son motif de départ est
+*exactement* celui de Motown, et `rankPresets` lui donne **100 % sur « Motown /
+soul » et sur « Swing »**. Un joueur entrant dans l'Atelier et en ressortant
+sans rien toucher aurait livré un morceau qu'une contrainte de style aurait
+accepté.
+
+D'où `pasLeMotifDeDepart`, présente dans **toutes** les commandes, et un test
+qui vérifie les deux moitiés : que le départ ressemble bien à du Motown aux yeux
+du classement, *et* que la commande le refuse quand même.
+
+#### « Dans le style de » est un RANG, pas un pourcentage
+
+`rankPresets` compte les **cases identiques**, cases vides comprises : son score
+ne veut rien dire seul (une grille clairsemée « ressemble » à tout ce qui est
+clairsemé). Mesuré au banc d'essai sur boom bap, house, Motown et jungle :
+
+| | rang du preset d'origine |
+|---|---|
+| le morceau lui-même | 1 |
+| quatre cases de charleston inversées | 1 ou 2 |
+
+D'où `RANG_STYLE_MAX = 3` : « dans le style » sans exiger « à l'identique ».
+
+#### La sévérité DÉCROÎT avec le récit — et c'est l'acte 6 qui l'impose
+
+`HISTOIRE.md` sur FB-015 : *« Aucun brief. Aucun client. Aucun style imposé.
+[…] Cette fois, personne ne te dit si c'est bon. »* Une contrainte de genre y
+contredirait le texte. Son cahier ne demande donc pas si c'est réussi — il
+constate qu'on s'est servi de ce qu'on a appris, et ses libellés sont écrits du
+point de vue du joueur (« La grille — acte 1 », « Une basse — acte 3 ») et non
+d'un client. Un cahier *vide*, en revanche, aurait été un bouton qui ne juge
+rien : un test exige qu'il reste au moins deux lignes.
+
+| acte | client | ce qu'il exige |
+|---|---|---|
+| 2 · Kelvin | il ne sait pas le dire | les trois lignes, du swing |
+| 3 · Rachid | « envie de rentrer chez soi » | une basse, de quoi tenir le temps |
+| 4 · Le Tunnel | un système de club | la base propre, une basse, de l'air |
+| 5 · Zik'Mobile | URBAIN FESTIF | **ça doit sonner dancehall** |
+| 6 · FB-015 | personne | avoir produit, et s'être servi de tout |
+
+**Et jamais avant l'acte 2** : on ne peut pas commander un travail dans un
+module qu'on n'a pas encore ouvert. L'acte 1 garde sa `livraison` — un cadeau,
+pas une épreuve : c'est lui qui donne la clé.
+
+#### Le cahier est VIVANT pendant qu'on travaille
+
+Les cases se cochent à chaque modification, dans un bandeau épinglé en haut de
+l'Atelier, et le bouton « Livrer à Sol » reste désactivé tant que tout n'est pas
+vert. Un verdict rendu seulement à la livraison aurait fait de la commande une
+devinette : on clique, on se fait refuser, sans savoir laquelle des quatre
+lignes bloque. Corollaire assumé : **aucune réplique de refus** — elle serait du
+code mort, puisqu'une livraison refusée est inatteignable, et la liste dit déjà
+mieux ce qui manque.
+
+Le client, lui, **répond** en acceptant (`accepte`) : sans ça, on revenait de
+l'Atelier sur un écran qui passait à la suite comme si de rien n'était.
+
+#### Deux pièges de câblage, tous deux testés
+
+- L'état de la commande **survit à un changement de vue** — on quitte le Mode
+  jeu, on travaille, on revient : il ne peut donc pas vivre dans `GameView`, qui
+  est démonté entre-temps.
+- Il retient l'acte **et** l'étape : le curseur volatil bouge (on peut relire un
+  autre acte pendant qu'on travaille), et c'est l'étape *livrée* qu'il faut
+  valider au retour, pas celle qu'on regardait.
+
+#### Sur l'instabilité constatée
+
+Trois tests ont expiré (5 000 ms) pendant un passage complet. Diagnostic : ils
+prennent 440 à 580 ms quand la machine est libre, et les échecs sont survenus
+avec un serveur de dev et deux builds en concurrence. Huit passages propres
+consécutifs après avoir arrêté le reste. Ce n'est donc pas la suite qui est
+fragile — mais c'est noté ici plutôt que passé sous silence.
+
+**Vérification :** `npm run check` 0 erreur · **241 tests** (25 neufs, quatre
+passages consécutifs) · les deux builds · parcours Playwright de bout en bout en
+390×844 : lire la commande, arriver à l'Atelier avec 1/3 coché et le bouton
+inactif, produire, voir les cases se cocher en direct, livrer, et revenir sur la
+réplique du client puis l'étape suivante. Aucune erreur console, aucun
+débordement.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
