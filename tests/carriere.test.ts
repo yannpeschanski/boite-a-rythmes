@@ -56,7 +56,7 @@ describe('Mode carrière — la charpente en huit actes', () => {
   });
 
   it('déclare « à venir » exactement les actes dont les exercices ne sont pas écrits', () => {
-    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
   /* Chaque acte jouable doit contenir au moins un récit ET au moins une étape
@@ -773,5 +773,71 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
       (a) => a.id,
     );
     expect(avecCommande).toEqual([2, 3, 4, 5, 6]);
+  });
+});
+
+/* L'acte 7 — le dernier, et le seul où l'on ne produit pas : on joue.
+ *
+ * Il ferme aussi la boucle du récit : Sol dit le nom du joueur au micro.
+ */
+describe('L’acte 7 joue, et ouvre le Mode Live', () => {
+  const acte7 = () => ACTES[7];
+
+  it('est jouable, et le Mode Live s’ouvre en sortant', () => {
+    expect(acteAVenir(acte7())).toBe(false);
+    expect(acte7().module).toBe('live');
+    // Le module s'ouvre une fois l'acte DERRIÈRE soi — donc au terme de la
+    // carrière, `progresCarriere.acte` valant alors NB_ACTES.
+    expect(moduleUnlocked('live', { level: 1, acte: 7 })).toBe(false);
+    expect(moduleUnlocked('live', { level: 1, acte: NB_ACTES })).toBe(true);
+  });
+
+  /* ⚠️ Il ne cite QUE des niveaux « jouer », et c'est le fond de l'acte :
+   * `justesseDesFrappes` retient la meilleure fenêtre consécutive et non la
+   * moyenne du tour, donc la notation pardonne un début raté et récompense la
+   * reprise. C'est mot pour mot ce que Sol répond — « Tu te planteras. Mais
+   * maintenant tu sais quoi faire après. » */
+  it('ne demande que de jouer, jamais de reproduire', () => {
+    const niveaux = niveauxDeLActe(acte7());
+    expect(niveaux.length).toBeGreaterThan(0);
+    for (const n of niveaux) {
+      expect(LEVELS.find((x) => x.id === n)!.exercise, `niveau ${n}`).toBe('jouer');
+    }
+  });
+
+  // On ne produit plus : pas de commande dans un module qu'on n'a pas ouvert,
+  // et de toute façon l'acte parle de scène, pas d'atelier.
+  it('ne commande rien', () => {
+    expect(acte7().etapes.some((e) => e.kind === 'commande')).toBe(false);
+    expect(acte7().etapes.some((e) => e.kind === 'livraison')).toBe(false);
+  });
+
+  /* La réplique que tout le récit prépare. Le jeton `{pseudo}` est interpolé
+   * par la vue ; ce test garde les deux moitiés — que la ligne existe, et
+   * qu'elle porte bien le jeton plutôt qu'un nom en dur. */
+  it('finit sur Sol qui dit le nom du joueur', () => {
+    const lignes = acte7().etapes.flatMap((e) => (e.kind === 'recit' ? e.lignes : []));
+    const presente = lignes.find((l) => l.includes('{pseudo}'));
+    expect(presente, 'aucune ligne ne cite le joueur').toBeTruthy();
+    expect(presente).toMatch(/Je vous présente/);
+    // Et c'est la dernière étape : la carrière se termine là-dessus.
+    const derniere = acte7().etapes[acte7().etapes.length - 1];
+    expect(derniere.kind).toBe('recit');
+    if (derniere.kind === 'recit') expect(derniere.lignes).toContain(presente);
+  });
+
+  /* ⚠️ Le jeton n'existe QUE là. Un `{pseudo}` oublié ailleurs s'afficherait
+   * tel quel — accolades comprises — sur un écran que personne ne relit. */
+  it('n’emploie le jeton nulle part ailleurs', () => {
+    const ailleurs = ACTES.filter((a) => a.id !== 7).flatMap((a) =>
+      a.etapes.flatMap((e) => (e.kind === 'recit' ? e.lignes : [])),
+    );
+    for (const l of ailleurs) expect(l).not.toContain('{pseudo}');
+  });
+
+  // Et plus rien après : la carrière est finie, le carnet est complet.
+  it('est le dernier acte, et tous sont désormais écrits', () => {
+    expect(acte7().id).toBe(NB_ACTES - 1);
+    expect(ACTES.every((a) => !acteAVenir(a))).toBe(true);
   });
 });

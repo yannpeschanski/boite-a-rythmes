@@ -42,6 +42,19 @@
     onCommande: () => void;
   } = $props();
 
+  /* ⚠️ Le SEUL endroit du récit où un texte cite le joueur, et c'est la
+   * réplique que tout le reste prépare : Sol l'a appelé « le café » pendant
+   * cinq mois, et au 14 juin elle dit son nom au micro. Le pseudo est tapé au
+   * tout premier écran, avant le prologue — l'interpolation est ce qui referme
+   * la boucle.
+   *
+   * Un jeton `{pseudo}` plutôt qu'un `kind` d'étape de plus : une seule ligne
+   * de tout le récit en a besoin, et un genre d'étape se paierait dans le
+   * store, le curseur, la persistance et trois tests. */
+  function texte(l: string): string {
+    return l.replace('{pseudo}', game.pseudo);
+  }
+
   const acte = $derived(game.acteCourant);
   const etape = $derived(game.etapeCourante);
   const fini = $derived(game.acteTermineAAnnoncer);
@@ -208,7 +221,7 @@
         <span class="tag">{etape.entete}</span>
       </div>
       {#each etape.lignes as l, i (i)}
-        <p class="ligne">{l}</p>
+        <p class="ligne">{texte(l)}</p>
       {/each}
     </div>
     <div class="actions">
@@ -238,7 +251,7 @@
         <span class="tag">{etape.entete}</span>
       </div>
       {#each etape.lignes as l, i (i)}
-        <p class="ligne">{l}</p>
+        <p class="ligne">{texte(l)}</p>
       {/each}
       <ul class="cahier">
         {#each etape.cahier as c (c.id)}
@@ -263,7 +276,7 @@
         <span class="tag">{etape.entete}</span>
       </div>
       {#each etape.lignes as l, i (i)}
-        <p class="ligne">{l}</p>
+        <p class="ligne">{texte(l)}</p>
       {/each}
     </div>
     <div class="actions">
