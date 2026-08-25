@@ -338,6 +338,37 @@ un réglage : 0 échantillon d'écart, vérifié. Le fondu entre les deux évite
 prime le claquement quand on bascule pendant la lecture — ce qui est le geste
 même de l'exercice. Même précaution pour tout futur `liveFilter`.
 
+⚠️ **Une COMMANDE vérifie un cahier des charges, jamais une cible.**
+`src/model/commande.ts` est le seul endroit où le jeu demande de FAIRE plutôt
+que de retrouver : le joueur produit dans l'Atelier et livre. Trois façons de
+rater ça, toutes évitées explicitement — ne rien vérifier (le bouton est du
+théâtre), vérifier une cible (c'est `reproduire` avec des étapes en plus), ou
+vérifier trop (une seule réponse juste, donc pas une production). L'état passe
+en MÉMOIRE (`pattern.snapshot()`), jamais par un fichier : c'est la même appli
+et le même store. Le cahier est **vivant** — les cases se cochent pendant qu'on
+travaille et le bouton reste désactivé sinon ; il n'y a donc aucune réplique de
+refus, elle serait du code mort. Et l'état de la commande survit à un
+changement de vue : il vit dans le store, avec l'acte ET l'étape, parce que le
+curseur volatil bouge pendant qu'on travaille.
+
+⚠️ **`defaultState()` n'est PAS une grille vide — c'est du Motown.** Mesuré :
+`rankPresets` donne 100 % au motif de départ sur « Motown / soul » et sur
+« Swing ». Entrer dans l'Atelier et en ressortir sans rien toucher livrerait
+donc un morceau qu'une contrainte de style accepterait. D'où
+`pasLeMotifDeDepart`, obligatoire dans toutes les commandes. Corollaire :
+« dans le style de » se juge sur un **RANG** (≤ 3) et jamais sur le score —
+celui-ci compte les cases identiques, cases vides comprises, donc il ne veut
+rien dire seul.
+
+⚠️ **La sévérité d'une commande DÉCROÎT avec le récit**, et c'est l'acte 6 qui
+l'impose : « aucun brief, aucun client, aucun style imposé ». Les clients des
+actes 2 à 5 exigent des choses précises parce qu'ils paient ; FB-015 constate
+seulement qu'on s'est servi de ce qu'on a appris, et ses libellés sont écrits
+du point de vue du joueur. Un cahier vide serait un bouton qui ne juge rien.
+Et **jamais de commande avant l'acte 2** : on ne commande pas un travail dans
+un module qu'on n'a pas encore ouvert — l'acte 1 garde sa `livraison`, qui est
+un cadeau et non une épreuve.
+
 ⚠️ **Un verbe qui TIRE dans un catalogue doit tirer ses leurres LOIN.** Le
 verbe `style` (acte 5) fait nommer le genre d'une boucle : ses trois leurres
 viennent d'autres catégories de presets, jamais de la même. « Boom bap » contre

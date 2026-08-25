@@ -45,7 +45,9 @@ import {
   niveauxRencontres,
   type Acte,
   type Etape,
+  type EtapeCommande,
 } from '../model/carriere';
+import { evaluerCommande, type Verdict } from '../model/commande';
 import {
   BAG_ITEMS,
   CONSOLATION_ITEM,
@@ -275,6 +277,25 @@ class GameStore {
    * preset), et la réponse. Le preset tiré sert AUSSI de cible : c'est lui qui
    * donne la grille, le tempo, le swing et le timbre — un genre reconnu sur
    * une grille sans son tempo ni son timbre ne serait pas un genre. */
+  /* ---- La COMMANDE en cours -------------------------------------------
+   *
+   * ⚠️ Cet état survit à un CHANGEMENT DE VUE : on quitte le Mode jeu pour
+   * l'Atelier, on y travaille, on revient. Il ne peut donc pas vivre dans
+   * `GameView`, qui est démonté entre-temps. Il n'entre pas non plus dans le
+   * format v2 : ce n'est pas une propriété du morceau mais du travail en
+   * cours.
+   *
+   * Il porte l'acte ET l'étape parce que le curseur volatil bouge : revenir
+   * livrer alors qu'on a relu un autre acte entre-temps ne doit pas valider la
+   * mauvaise étape. */
+  commandeEnCours = $state<{ acte: number; etape: number } | null>(null);
+  /** Le verdict du dernier refus, pour que l'écran dise ce qui manque. */
+  commandeVerdict = $state<Verdict | null>(null);
+  /* Ce que le client dit en acceptant, à afficher UNE fois au retour.
+   * Sans ça, livrer renverrait à la carrière sans réaction : on aurait
+   * travaillé pour un écran qui passe à la suite comme si de rien n'était. */
+  commandeAcceptee = $state<string | null>(null);
+
   stylePresetId = $state('');
   styleCandidats = $state<string[]>([]);
   styleReponse = $state(0);
@@ -411,6 +432,48 @@ class GameStore {
   get etapeDejaFranchie(): boolean {
     const p = this.progresCarriere;
     return this.acteActif < p.acte || (this.acteActif === p.acte && this.etapeActive < p.etape);
+  }
+
+  /* La commande de l'étape courante, ou `null`. La vue de l'Atelier s'en sert
+   * pour afficher le cahier des charges en direct pendant qu'on travaille —
+   * voir plus bas pourquoi il est VIVANT et pas rendu à la livraison. */
+  get commande(): EtapeCommande | null {
+    const c = this.commandeEnCours;
+    if (!c) return null;
+    const e = acteParId(c.acte).etapes[c.etape];
+    return e && e.kind === 'commande' ? e : null;
+  }
+
+  /** Partir travailler : on retient QUELLE étape attend une livraison. */
+  ouvrirCommande(): void {
+    if (this.etapeCourante?.kind !== 'commande') return;
+    this.commandeEnCours = { acte: this.acteActif, etape: this.etapeActive };
+    this.commandeVerdict = null;
+    this.commandeAcceptee = null;
+  }
+
+  /* Livrer le morceau qu'on vient de faire.
+   *
+   * ⚠️ Le curseur n'avance QUE si le cahier est satisfait — c'est toute la
+   * différence avec la livraison de l'acte 1, qui est un cadeau et non une
+   * épreuve. Un refus n'est jamais muet : le verdict garde la ligne qui bloque,
+   * et l'écran la montre. Un « non » sans raison est ce qui fait abandonner.
+   */
+  livrerCommande(etat: PatternStateV2): Verdict | null {
+    const c = this.commande;
+    if (!c) return null;
+    const v = evaluerCommande(etat, c.cahier);
+    this.commandeVerdict = v;
+    if (!v.accepte) return v;
+    // On se replace sur l'étape livrée avant d'avancer : le joueur a pu relire
+    // un autre acte entre-temps, et c'est CETTE étape-là qu'il vient de finir.
+    const cible = this.commandeEnCours!;
+    this.acteActif = cible.acte;
+    this.etapeActive = cible.etape;
+    this.commandeEnCours = null;
+    this.commandeAcceptee = c.accepte;
+    this.avancerCarriere();
+    return v;
   }
 
   /** Ouvrir (ou relire) un acte depuis son début. */

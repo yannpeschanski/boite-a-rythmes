@@ -56,16 +56,25 @@ describe('Mode carrière — la charpente en huit actes', () => {
   });
 
   it('déclare « à venir » exactement les actes dont les exercices ne sont pas écrits', () => {
-    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
-  // Chaque acte jouable doit contenir au moins un exercice ET au moins un
-  // récit : un acte de texte seul n'est pas un jeu, un acte d'exercices seuls
-  // n'est pas une histoire.
-  it('alterne récit et exercices dans les actes jouables', () => {
+  /* Chaque acte jouable doit contenir au moins un récit ET au moins une étape
+   * où l'on FAIT quelque chose : un acte de texte seul n'est pas un jeu, un
+   * acte d'exercices seuls n'est pas une histoire.
+   *
+   * ⚠️ « Faire quelque chose » ne veut plus dire « un exercice ». L'acte 6
+   * n'en contient aucun : FB-015 est une COMMANDE et rien d'autre, parce que
+   * son texte l'exige — « aucun brief, aucun client, aucun style imposé ». Le
+   * test apprend donc le nouveau genre d'étape au lieu d'être desserré ; ce
+   * qu'il protège reste le même. */
+  it('mêle récit et travail dans les actes jouables', () => {
     for (const a of ACTES.filter((x) => !acteAVenir(x))) {
-      expect(a.etapes.some((e) => e.kind === 'recit')).toBe(true);
-      expect(a.etapes.some((e) => e.kind === 'exercice')).toBe(true);
+      expect(a.etapes.some((e) => e.kind === 'recit'), `acte ${a.id}`).toBe(true);
+      const travail = a.etapes.filter(
+        (e) => e.kind === 'exercice' || e.kind === 'commande' || e.kind === 'livraison',
+      );
+      expect(travail.length, `acte ${a.id}`).toBeGreaterThan(0);
     }
   });
 
@@ -680,5 +689,89 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
       .join(' ');
     expect(avant).toMatch(/fredonn/i);
     expect(avant).toMatch(/dancehall/i);
+  });
+});
+
+/* L'acte 6 — celui où le cahier des charges devait presque disparaître.
+ *
+ * « Aucun brief. Aucun client. Aucun style imposé. […] Cette fois, personne ne
+ * te dit si c'est bon. » C'est ce texte qui donne sa forme à toute la
+ * mécanique de commande : la sévérité DÉCROÎT avec le récit.
+ */
+describe('L’acte 6 ne commande rien, il demande de faire', () => {
+  const acte6 = () => ACTES[6];
+
+  it('est jouable, et sa seule étape de travail est une commande', () => {
+    expect(acteAVenir(acte6())).toBe(false);
+    expect(acte6().etapes.some((e) => e.kind === 'exercice')).toBe(false);
+    expect(acte6().etapes.filter((e) => e.kind === 'commande')).toHaveLength(1);
+  });
+
+  /* ⚠️ Le cahier de FB-015 ne demande AUCUN style et aucun client : il constate
+   * qu'on s'est servi de ce qu'on a appris. Une contrainte de genre ici
+   * contredirait la phrase même de l'acte. */
+  it('n’impose aucun style — c’est la phrase de l’acte', () => {
+    const c = acte6().etapes.find((e) => e.kind === 'commande')!;
+    if (c.kind !== 'commande') return;
+    for (const l of c.cahier) expect(l.id, l.libelle).not.toMatch(/^style:/);
+    const texte = acte6()
+      .etapes.flatMap((e) => (e.kind === 'recit' ? e.lignes : []))
+      .join(' ');
+    expect(texte).toMatch(/aucun style imposé/i);
+  });
+
+  // Mais il n'est pas vide non plus : une commande sans aucune ligne serait un
+  // bouton qui ne juge rien, et le joueur le sent au premier clic.
+  it('exige quand même d’avoir produit quelque chose', () => {
+    const c = acte6().etapes.find((e) => e.kind === 'commande')!;
+    if (c.kind !== 'commande') return;
+    expect(c.cahier.length).toBeGreaterThan(1);
+    expect(c.cahier.some((l) => l.id === 'produit')).toBe(true);
+  });
+
+  // Sol demande son nom au joueur — le pseudo tapé au tout premier écran,
+  // cinq mois de récit plus tôt.
+  it('finit sur la question du nom', () => {
+    const derniere = acte6().etapes[acte6().etapes.length - 1];
+    expect(derniere.kind).toBe('recit');
+    if (derniere.kind !== 'recit') return;
+    expect(derniere.lignes.join(' ')).toMatch(/comment tu t’appelles/i);
+  });
+});
+
+/* Où les commandes ont le droit de se poser — et où elles ne l'ont pas. */
+describe('Les commandes arrivent quand l’Atelier existe', () => {
+  /* ⚠️ On ne peut pas commander un travail dans un module qu'on n'a pas
+   * encore ouvert. L'acte 1 est celui qui donne la clé : sa dernière étape est
+   * une LIVRAISON (un cadeau, pas une épreuve), et la première vraie commande
+   * ne peut arriver qu'après. */
+  it('jamais avant l’acte qui ouvre l’Atelier', () => {
+    for (const a of ACTES) {
+      const aDesCommandes = a.etapes.some((e) => e.kind === 'commande');
+      if (aDesCommandes) expect(a.id, `acte ${a.id}`).toBeGreaterThan(1);
+    }
+    expect(moduleUnlocked('atelier', { level: 1, acte: 2 })).toBe(true);
+  });
+
+  // Une par acte au plus : la commande est le moment où l'acte se conclut, pas
+  // un exercice de plus.
+  it('au plus une par acte, et elle vient près de la fin', () => {
+    for (const a of ACTES) {
+      const idx = a.etapes.flatMap((e, i) => (e.kind === 'commande' ? [i] : []));
+      expect(idx.length, `acte ${a.id}`).toBeLessThanOrEqual(1);
+      if (idx.length === 1) {
+        // Rien d'autre à FAIRE après elle : ce qui suit est du récit.
+        for (const e of a.etapes.slice(idx[0] + 1)) {
+          expect(e.kind, `acte ${a.id}`).toBe('recit');
+        }
+      }
+    }
+  });
+
+  it('couvre tous les actes où l’on livre quelque chose', () => {
+    const avecCommande = ACTES.filter((a) => a.etapes.some((e) => e.kind === 'commande')).map(
+      (a) => a.id,
+    );
+    expect(avecCommande).toEqual([2, 3, 4, 5, 6]);
   });
 });

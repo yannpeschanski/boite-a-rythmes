@@ -30,6 +30,7 @@
     onExercice,
     onRepetition,
     onLivraison,
+    onCommande,
   }: {
     /** Une étape d'exercice commence : la vue de jeu prend la main. */
     onExercice: () => void;
@@ -37,6 +38,8 @@
     onRepetition: () => void;
     /** Emporter le rythme qu'on vient de faire dans l'Atelier. */
     onLivraison: () => void;
+    /** Partir travailler sur une commande — l'Atelier devient l'outil. */
+    onCommande: () => void;
   } = $props();
 
   const acte = $derived(game.acteCourant);
@@ -54,6 +57,7 @@
   };
 
   function suite() {
+    game.commandeAcceptee = null;
     game.avancerCarriere();
     if (!game.acteTermineAAnnoncer) enchainer();
   }
@@ -79,6 +83,13 @@
     game.avancerCarriere();
     game.acteTermineAAnnoncer = null;
     onLivraison();
+  }
+
+  /* Partir travailler. On retient l'étape AVANT de naviguer : au retour c'est
+     elle qu'on validera, même si le joueur a relu un autre acte entre-temps. */
+  function travailler() {
+    game.ouvrirCommande();
+    onCommande();
   }
 
   function ouvrir(a: Acte) {
@@ -156,6 +167,13 @@
     </div>
   {/if}
 
+  <!-- La réaction du client à la livraison qu'on vient de faire, une fois. On
+       revient de l'Atelier avec un morceau : l'écran doit accuser réception,
+       sinon on a travaillé pour un enchaînement qui passe à la suite. -->
+  {#if game.commandeAcceptee}
+    <p class="accepte">{game.commandeAcceptee}</p>
+  {/if}
+
   {#if fini}
     <!-- Fin d'acte : la compétence, et le module que le récit vient d'ouvrir.
          « Chaque module s'ouvre parce qu'un acte en a besoin, jamais parce
@@ -198,11 +216,42 @@
            n'avait qu'un sens de marche : un écran passé était perdu. Reculer
            est gratuit ici — seul le curseur ENREGISTRÉ compte pour la
            progression, et lui ne recule jamais (voir le store). -->
-      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+      <button
+        class="xp-btn tap44-y"
+        disabled={!game.peutReculer}
+        onclick={() => { game.commandeAcceptee = null; game.reculerCarriere(); }}
+      >
         ◂ Retour
       </button>
       <span class="position">{enPrologue ? position : `Acte ${acte.id} · ${position}`}</span>
       <button class="xp-btn primary tap44-y" onclick={suite}>Suite ▸</button>
+    </div>
+  {:else if etape && etape.kind === 'commande'}
+    <!-- ⚠️ Le cahier des charges est montré AVANT de partir, jamais découvert
+         au retour : une commande dont on n'apprend les exigences qu'en se les
+         voyant refuser est une devinette. Il est réaffiché en direct dans
+         l'Atelier pendant qu'on travaille. -->
+    <div class="appareil source-fax">
+      <div class="entete">
+        <span class="icone">📠</span>
+        <span>COMMANDE</span>
+        <span class="tag">{etape.entete}</span>
+      </div>
+      {#each etape.lignes as l, i (i)}
+        <p class="ligne">{l}</p>
+      {/each}
+      <ul class="cahier">
+        {#each etape.cahier as c (c.id)}
+          <li>☐ {c.libelle}</li>
+        {/each}
+      </ul>
+    </div>
+    <div class="actions">
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
+      <span class="position">Acte {acte.id} · {position}</span>
+      <button class="xp-btn primary tap44-y" onclick={travailler}>{etape.bouton}</button>
     </div>
   {:else if etape && etape.kind === 'livraison'}
     <!-- On repart avec l'objet, pas avec un score : le rythme qu'on vient de
@@ -407,6 +456,30 @@
 
   /* Le carnet. Une ligne par acte, comme une playlist : numéro, titre, une
      phrase, et le titre que l'acte décerne. */
+  /* La réponse du client, en vert d'afficheur : c'est une réplique, pas un
+     score. Elle disparaît dès qu'on avance. */
+  .accepte {
+    margin: 0 0 8px;
+    padding: 6px 8px;
+    font-size: var(--xp-size-sm, 9.5px);
+    color: var(--xp-lcd);
+    background: var(--xp-lcd-bg, #0d1a12);
+    box-shadow: inset 1px 1px 0 var(--xp-shadow), inset -1px -1px 0 var(--xp-light);
+  }
+
+  /* Le cahier des charges : des cases à cocher, pas de la prose. Ce que le
+     client demande doit se compter d'un coup d'œil. */
+  .cahier {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cahier li {
+    font-size: var(--xp-size-sm, 9.5px);
+    letter-spacing: var(--xp-ls-sm, 0.04em);
+    color: var(--xp-lcd);
+    padding: 2px 0;
+  }
   .carnet {
     list-style: none;
     margin: 12px 0 0;

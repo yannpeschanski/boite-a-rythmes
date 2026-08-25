@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
+  import { game } from '../../stores/game.svelte';
+  import { evaluerCommande } from '../../model/commande';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { DrumRowName, DrumStep, SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
@@ -31,6 +33,30 @@
   // plus de barre de navigation au-dessus de lui, c'est le menu « Mode » de
   // la ToolBar qui en tient lieu.
   let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live') => void } = $props();
+
+  /* ---- La commande en cours -------------------------------------------
+   *
+   * ⚠️ Le cahier des charges est évalué EN DIRECT, à chaque modification, et
+   * pas au moment de livrer. Un verdict rendu seulement à la livraison
+   * transformerait la commande en devinette : on cliquerait, on se ferait
+   * refuser, sans savoir laquelle des quatre lignes bloque ni ce qu'on vient
+   * de casser. Les cases se cochent pendant qu'on travaille — c'est ce qui
+   * fait de l'Atelier un outil et pas une salle d'examen.
+   *
+   * Le coût est nul à l'échelle : quelques tableaux de 32 cases relus quand le
+   * motif change, et `rankPresets` (34 presets × 6 permutations) seulement
+   * pour les commandes qui demandent un genre. */
+  const commande = $derived(game.commande);
+  const verdict = $derived(commande ? evaluerCommande(pattern.snapshot(), commande.cahier) : null);
+
+  /* ⚠️ Pas de branche « refus » ici, et c'est délibéré : le bouton est
+     désactivé tant que le cahier n'est pas satisfait, donc une livraison
+     refusée est INATTEIGNABLE. Une réplique de refus aurait été du code mort
+     qui fait croire qu'un cas est traité. La liste au-dessus DIT déjà ce qui
+     manque, en direct — c'est un meilleur refus qu'une phrase après coup. */
+  function livrer() {
+    if (game.livrerCommande(pattern.snapshot())?.accepte) onSwitchView?.('game');
+  }
 
   const engine = new AudioEngine(() => pattern.snapshot());
 
@@ -385,6 +411,25 @@
     </div>
   {/if}
 
+  {#if commande}
+    <!-- La commande reste sous les yeux tant qu'elle n'est pas livrée : sans
+         ça, on entre dans l'Atelier et on oublie ce qu'on venait y faire. -->
+    <div class="commande">
+      <div class="commande-tete">
+        <span>📠 {commande.entete}</span>
+        <span class="compte">{verdict?.lignes.filter((l) => l.ok).length ?? 0}/{commande.cahier.length}</span>
+      </div>
+      <ul>
+        {#each verdict?.lignes ?? [] as l (l.contrainte.id)}
+          <li class:ok={l.ok}>{l.ok ? '☑' : '☐'} {l.contrainte.libelle}</li>
+        {/each}
+      </ul>
+      <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
+        Livrer à Sol ▸
+      </button>
+    </div>
+  {/if}
+
   <ToolBar
     bind:circleView
     {onSwitchView}
@@ -656,6 +701,42 @@
 </div>
 
 <style>
+  /* La commande en cours — un fax épinglé en haut de l'établi. Le compteur
+     et les cases se mettent à jour pendant qu'on travaille : c'est ce qui
+     évite d'avoir à deviner ce qui bloque au moment de livrer. */
+  .commande {
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    background: var(--xp-face);
+    box-shadow: inset 1px 1px 0 var(--xp-light), inset -1px -1px 0 var(--xp-shadow);
+  }
+  .commande-tete {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: var(--xp-size-xs, 8.5px);
+    letter-spacing: var(--xp-ls-xs, 0.08em);
+    text-transform: uppercase;
+    color: var(--xp-ink-dim, #9aa);
+  }
+  .commande-tete .compte {
+    color: var(--xp-lcd);
+  }
+  .commande ul {
+    margin: 6px 0;
+    padding: 0;
+    list-style: none;
+  }
+  .commande li {
+    font-size: var(--xp-size-sm, 9.5px);
+    letter-spacing: var(--xp-ls-sm, 0.04em);
+    padding: 2px 0;
+    color: var(--xp-ink-dim, #9aa);
+  }
+  .commande li.ok {
+    color: var(--xp-lcd);
+  }
+
   /* Surcouche du calibrage. `position: fixed` et non `absolute` : l'Atelier
      défile, et une mesure au métronome ne doit pas pouvoir sortir de l'écran
      pendant qu'on tape. */

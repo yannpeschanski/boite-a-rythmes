@@ -480,6 +480,13 @@
         stopAll();
         saveToAtelier();
       }}
+      onCommande={() => {
+        // ⚠️ On n'emporte PAS la grille du dernier exercice : une commande est
+        // un travail à faire, pas une correction à retoucher. L'Atelier garde
+        // ce qu'il avait — et l'acte 6, lui, part d'une page blanche.
+        stopAll();
+        onGoAtelier?.();
+      }}
     />
   {:else}
     <XpWindow title={titreFenetre} icon="🎮" accent="none">
