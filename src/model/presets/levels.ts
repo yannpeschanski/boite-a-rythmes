@@ -118,6 +118,12 @@ export interface GameLevel {
   /** Le verbe `silence` : une pulsation régulière avec UN coup manquant.
    *  0 = niveau non concerné. */
   silencePas: number;
+  /* Le verbe `style` : dans quels presets puiser le morceau à reconnaître.
+   *
+   * ⚠️ Une LISTE et pas un `presetId`, parce que le niveau doit tirer un genre
+   * DIFFÉRENT à chaque partie — sans quoi le refaire ne serait plus de la
+   * culture des styles mais de la mémoire. Vide = les 34 presets. */
+  stylePool: string[];
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
@@ -149,6 +155,7 @@ export interface MkLevelOptions {
   paramsAutorises?: string[];
   melodie?: { pas?: number; degreMax?: number; notesMin?: number; notesMax?: number; motif?: boolean };
   silencePas?: number;
+  stylePool?: string[];
 }
 
 // Options du générateur de ligne (voir genLevelRow).
@@ -194,6 +201,13 @@ export interface GamePresetRow {
 }
 export interface GamePresetLike {
   id: string;
+  /* ⚠️ Le genre et son nom, ajoutés pour le verbe `style` (acte 5) — ils
+   * existaient déjà dans les données (`SongPresetData.cat` / `.label`), ils
+   * n'étaient simplement pas visibles d'ici. Optionnels parce que ce type
+   * décrit ce dont le Mode jeu a BESOIN d'un preset, et que les trois lignes
+   * de batterie suffisent à tous les autres verbes. */
+  cat?: string;
+  label?: string;
   kick: GamePresetRow;
   snare: GamePresetRow;
   hat: GamePresetRow;
@@ -362,6 +376,7 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
       motif: o.melodie?.motif ?? false,
     },
     silencePas: o.silencePas ?? 0,
+    stylePool: o.stylePool ?? [],
     preamble: o.preamble || '',
     presetId: o.presetId || null,
     subdivOptions: o.subdivOptions || [4],
@@ -796,4 +811,27 @@ export const LEVELS: GameLevel[] = [
     exercise: 'regler', familleParam: 'filtre', paramsAutorises: ['reverbSend'],
     preamble: "Une cible, un curseur. On ne cherche pas le pourcentage : on cherche la même distance.",
     subdivOptions: [8], tempoOptions: [92] }),
+
+  /* ---------- Acte 5, « Les styles » : reconnaître, puis reconstruire ----------
+   *
+   * L'acte vient d'une scène, pas d'une liste : le commercial de Zik'Mobile
+   * n'arrive pas à dire ce qu'il veut, il finit par le fredonner, et c'est du
+   * dancehall — *« Tu comprends immédiatement. Il ne savait simplement pas le
+   * dire. »* Mettre le NOM sur le genre est ce qui manquait à l'autre bout du
+   * fil, et c'est le verbe `style`.
+   *
+   * ⚠️ Le niveau ne fixe aucun preset : il tire un genre à chaque partie (voir
+   * `stylePool` et `tirerStyle`). Un preset figé aurait fait de la culture des
+   * styles un exercice de mémoire dès la deuxième partie.
+   *
+   * Les niveaux de reconstruction, eux, existent déjà dans le réservoir depuis
+   * la campagne d'origine — 4 (Motown), 12 (House), 13 (Dancehall), 27
+   * (Dembow), 32 (Funk). L'acte les CITE, il n'en fabrique pas : c'est
+   * exactement le « tu écoutes, tu reconstruis, tu compares » du texte, et ça
+   * ne coûte pas une ligne de données.
+   */
+  mkLevel(58, 'Le genre, à l’oreille', {
+    exercise: 'style',
+    preamble: "Une boucle, quatre genres. Aucun réglage à trouver : celui-là ne se mesure pas, il se reconnaît. Écoute le tempo, la place de la caisse claire, ce que fait le hi-hat — c'est là que les familles se séparent.",
+    tempoOptions: [100] }),
 ];

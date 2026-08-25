@@ -6426,6 +6426,71 @@ passages consécutifs) · les deux builds · parcours Playwright de l'acte 4 en
 coupée) · quatre scripts de mesure dans un `OfflineAudioContext` et sur
 l'analyseur maître d'un moteur en marche.
 
+### ✅ Acte 5, « Les styles » — l'acte qui avait l'air d'être une liste (2026-08-25)
+
+« Poursuis ». Quinze genres à produire : la lecture évidente était quinze
+niveaux de reproduction, c'est-à-dire **le même exercice quinze fois**. Ce
+n'est pas ce que l'acte raconte.
+
+**Fichiers touchés :** `src/model/exercises.ts`, `src/model/presets/levels.ts`,
+`src/model/carriere.ts`, `src/stores/game.svelte.ts`,
+`src/ui/game/GameView.svelte`, `tests/exercises.test.ts`,
+`tests/carriere.test.ts`.
+
+#### La scène, et le verbe qui en sort
+
+`HISTOIRE.md` met la leçon dans une conversation MSN, pas dans le pack livré :
+
+> « Festif mais urbain, vous voyez :) »
+> Il finit par fredonner. C'est du dancehall.
+> **Tu comprends immédiatement. Il ne savait simplement pas le dire.**
+
+Ce qui s'apprend là n'est pas de refaire un genre, c'est de **mettre un nom
+dessus** — c'est précisément ce qui manquait à l'autre bout du fil. D'où le
+verbe `style` : une boucle, quatre genres, aucun réglage à mesurer.
+
+C'est le seul verbe qui interroge une **culture** plutôt qu'une oreille, et
+c'est aussi le moins cher jamais ajouté : les 34 presets portaient déjà leur
+`label`, leur `cat`, leur tempo, leur swing et leur timbre. Il n'a fallu que
+les rendre visibles depuis `GamePresetLike` — deux champs optionnels.
+
+#### Trois décisions de conception
+
+- **Les leurres viennent d'AUTRES catégories.** « Boom bap » contre « Drill »
+  et « Trap moderne » poserait une question dont la réponse est un tirage au
+  sort pour tout le monde sauf un spécialiste — exactement le défaut que
+  `tirerVersions` évite par construction pour les paramètres. On reconnaît une
+  **famille**, comme dans la scène. Un test le vérifie à chaque tirage : les
+  quatre propositions sont de quatre catégories distinctes.
+- **Le genre est tiré à chaque partie**, jamais figé dans les données (d'où
+  `stylePool` et non `presetId`). Un preset gravé aurait fait de la culture des
+  styles un exercice de mémoire dès la deuxième partie.
+- **La cible EST le preset**, pas seulement son nom. Le tirage se fait avant
+  les trois helpers de niveau, en posant le `presetId` sur une **copie** de la
+  config : le niveau hérite ainsi de la grille, de la subdivision, du tempo, du
+  swing, de la traîne et du timbre du morceau réel. Un genre reconnu sur une
+  grille générique à 100 BPM ne serait pas un genre — et rien à l'écran ne
+  l'aurait dit. Un test compare tempo, swing, subdivision et nombre de coups au
+  preset tiré, 60 fois.
+
+#### Les reconstructions sont citées, pas fabriquées
+
+« Tu écoutes. Tu reconstruis. Tu compares. » Ces niveaux-là existent depuis la
+campagne d'origine : l'acte cite 4 (Motown), 12 (House), 13 (Dancehall), 27
+(Dembow) et 32 (Funk) — une par famille du fax. Zéro ligne de données neuve, et
+la règle du fichier est tenue : **un acte cite, il ne fabrique jamais.**
+
+Détail qui n'en est pas un : les quatre catégories des presets *sont* les
+quatre lignes du fax de Zik'Mobile (hip-hop, club, latino, funk/soul). Le brief
+du récit et le classement du code disaient déjà la même chose.
+
+**Vérification :** `npm run check` 0 erreur · **216 tests** (10 neufs, trois
+passages consécutifs — le verbe est entièrement aléatoire, donc chaque
+assertion porte sur ce qui doit être vrai à chaque tirage, répété 60 fois) ·
+les deux builds · parcours Playwright de l'acte en 390×844 (aucune erreur
+console, aucun débordement, aucune ligne repliée — un libellé de genre long
+se replie proprement dans son bouton).
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

@@ -717,7 +717,93 @@ export const ACTES: Acte[] = [
     competenceLabel: 'CULTURE DES STYLES',
     module: null,
     resume: 'Quinze genres au catalogue, et quatre mots sur un fax.',
-    etapes: [],
+    etapes: [
+      /* ⚠️ L'acte a l'air d'être une LISTE (quinze genres à produire) et n'en
+       * est pas une : sa scène est celle du commercial qui n'arrive pas à dire
+       * ce qu'il veut et finit par le fredonner. Ce qui s'apprend ici est de
+       * mettre un NOM sur ce qu'on entend — d'où le verbe `style`, et non
+       * quinze niveaux de reproduction qui auraient été le même exercice
+       * quinze fois.
+       *
+       * Les reconstructions, elles, existent déjà dans le réservoir depuis la
+       * campagne d'origine : l'acte les CITE (4, 12, 13, 27, 32 — Motown,
+       * House, Dancehall, Dembow, Funk), une par catégorie du fax. Un acte
+       * cite, il ne fabrique jamais. */
+      {
+        kind: 'recit',
+        source: 'fax',
+        entete: 'BRIEF — ZIK’MOBILE',
+        lignes: [
+          'Ils vendent des sonneries dans quatorze pays.',
+          'Ils veulent quinze morceaux. Pas quinze chansons :',
+          'quinze STYLES. Le fax est en majuscules.',
+          'HIP-HOP AUTHENTIQUE — CLUB ÉNERGIE',
+          'AMBIANCE LATINO — URBAIN FESTIF',
+          'Quatre catégories. Aucune précision sur lesquelles.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'repondeur',
+        entete: 'MSN — LE COMMERCIAL',
+        lignes: [
+          '« Festif mais urbain, vous voyez :) »',
+          'Tu ne vois pas. Il insiste. Il finit par fredonner.',
+          'C’est du dancehall.',
+          'Tu comprends immédiatement.',
+          'Il ne savait simplement pas le dire.',
+          'Sol, depuis son bureau : — Voilà ton métier.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 58,
+        commande: 'Elle sort un carnet. Trente-quatre disques, un par genre. — Écoute.',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— Tu vas les écouter.',
+          '— Tous ?',
+          '— Les quinze qui nous intéressent. Vite.',
+          'Commence une période de travail absurde.',
+          'Tu écoutes. Tu reconstruis. Tu compares. Tu recommences.',
+        ],
+      },
+      { kind: 'exercice', niveau: 4, commande: 'Sol vérifie les classiques. Motown, pour commencer.' },
+      { kind: 'exercice', niveau: 12, commande: 'Le Tunnel vérifie les morceaux de club. Gratuitement, et sans ménagement.' },
+      { kind: 'exercice', niveau: 13, commande: 'Le dancehall du commercial. Celui qu’il ne savait pas nommer.' },
+      { kind: 'exercice', niveau: 27, commande: 'Ambiance latino, dit le fax. Dembow, dit le carnet.' },
+      { kind: 'exercice', niveau: 32, commande: 'Kelvin vérifie le hip-hop. Il commence par le funk d’où il vient.' },
+      {
+        kind: 'recit',
+        source: 'cassette',
+        entete: 'PACK ZIK’MOBILE — 28 MAI',
+        lignes: [
+          'Le pack part le 28 mai. Zik’Mobile paie.',
+          'Face B vient de gagner de quoi tenir un an.',
+          'Sol devrait être heureuse. Elle ne l’est pas.',
+          'Elle reste assise devant les quinze fichiers.',
+          '— Ils sont bons.',
+          '— Alors c’est bien ?',
+          '— Oui. C’est justement le problème.',
+        ],
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— On faisait des disques.',
+          'Elle montre les quinze sonneries.',
+          '— Maintenant on fabrique des choses',
+          'que les gens oublient avant la prochaine sonnerie.',
+          'Le rendez-vous du 14 juin reste au calendrier.',
+        ],
+      },
+    ],
   },
   {
     id: 6,

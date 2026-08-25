@@ -331,6 +331,18 @@ un réglage : 0 échantillon d'écart, vérifié. Le fondu entre les deux évite
 prime le claquement quand on bascule pendant la lecture — ce qui est le geste
 même de l'exercice. Même précaution pour tout futur `liveFilter`.
 
+⚠️ **Un verbe qui TIRE dans un catalogue doit tirer ses leurres LOIN.** Le
+verbe `style` (acte 5) fait nommer le genre d'une boucle : ses trois leurres
+viennent d'autres catégories de presets, jamais de la même. « Boom bap » contre
+« Drill » et « Trap moderne » est une question dont la réponse est un tirage au
+sort pour tout le monde sauf un spécialiste — même défaut que deux versions
+séparées de moins que la tolérance. Et il tire son preset à chaque partie
+(`stylePool`, pas `presetId`) : un genre gravé dans les données ferait de la
+culture des styles un exercice de mémoire dès la deuxième partie. Le tirage se
+pose sur une COPIE de la config du niveau, avant les helpers, pour que la cible
+hérite du tempo, du swing et du timbre du morceau réel — un genre reconnu sur
+une grille générique n'est pas un genre.
+
 ⚠️ **Une leçon de PRODUCTION ne se raconte pas, elle se fait entendre.** L'acte
 4 tient sur « ton morceau est bon dans ton ordinateur, ici il est mauvais » :
 un écran qui décrit un défaut de mixage n'apprend rien. D'où le verbe `laverie`

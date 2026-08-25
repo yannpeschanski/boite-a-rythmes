@@ -23,6 +23,7 @@ import {
 } from '../src/model/exercises';
 import { LEVELS } from '../src/model/presets/levels';
 import { parametre } from '../src/model/parametres';
+import { PRESETS } from '../src/model/presets/songs';
 import type { GameDrumRowName } from '../src/model/presets/levels';
 import type { DrumStep } from '../src/model/types';
 
@@ -445,5 +446,92 @@ describe('laverie — trois versions, un seul haut-parleur qui compte', () => {
     expect(VERBES_PARAM).not.toContain('laverie');
     expect(estVerbeParam('laverie')).toBe(false);
     expect(parametre('tone')!.lignes).not.toContain('kick');
+  });
+});
+
+/* « Le style » — le seul verbe qui interroge une CULTURE plutôt qu'une oreille.
+ *
+ * Rien à mesurer dans le son : tout à reconnaître. Ce qui peut casser ici sans
+ * qu'on le voie, c'est le TIRAGE — un genre figé d'une partie à l'autre (et
+ * l'exercice devient de la mémoire), ou des leurres pris dans la même famille
+ * (et la réponse devient un tirage au sort).
+ */
+describe('style — reconnaître une famille, pas deviner un sous-genre', () => {
+  const TIRAGES = 60;
+
+  it('propose quatre genres dont le bon, jamais deux fois le même', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.pseudo = 'test';
+    const i = L.findIndex((l) => l.exercise === 'style');
+    expect(i).toBeGreaterThanOrEqual(0);
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      expect(game.styleCandidats).toHaveLength(4);
+      expect(new Set(game.styleCandidats).size).toBe(4);
+      expect(game.styleCandidats[game.styleReponse]).toBe(game.stylePresetId);
+      expect(game.styleChoix).toBeNull();
+    }
+  });
+
+  /* ⚠️ Le point de conception, et il est testé à CHAQUE tirage.
+   *
+   * Les leurres viennent d'autres catégories : on reconnaît une famille
+   * (« c'est du dancehall »), pas un sous-genre. « Boom bap » contre « Drill »
+   * et « Trap moderne » poserait une question dont la réponse est un tirage au
+   * sort pour tout le monde sauf un spécialiste — le défaut même que
+   * `tirerVersions` évite par construction pour les paramètres. */
+  it('ne pose jamais deux genres de la même catégorie', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const i = L.findIndex((l) => l.exercise === 'style');
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      const cats = game.styleCandidats.map(
+        (id) => PRESETS.find((p) => p.id === id)!.cat,
+      );
+      expect(new Set(cats).size, cats.join(' / ')).toBe(4);
+    }
+  });
+
+  // Un genre figé serait de la mémoire dès la deuxième partie.
+  it('tire un genre différent d’une partie à l’autre', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const i = L.findIndex((l) => l.exercise === 'style');
+    const vus = new Set<string>();
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      vus.add(game.stylePresetId);
+    }
+    expect(vus.size).toBeGreaterThan(3);
+  });
+
+  /* ⚠️ Et la cible SONNE comme le genre. Un genre reconnu sur une grille sans
+   * son tempo ni son timbre ne serait pas un genre : le niveau emprunte au
+   * preset tiré sa grille, sa subdivision, son tempo, son swing et sa traîne.
+   * C'est le `presetId` posé sur une copie de la config qui le donne — s'il
+   * sautait, l'exercice se jouerait sur un rythme générique à 100 BPM et
+   * personne ne le verrait. */
+  it('emprunte au preset tiré son tempo et sa grille, pas seulement son nom', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const i = L.findIndex((l) => l.exercise === 'style');
+    for (let n = 0; n < TIRAGES; n++) {
+      game.startLevel(i);
+      const p = PRESETS.find((x) => x.id === game.stylePresetId)!;
+      expect(game.tempo, p.label).toBe(p.tempo);
+      expect(game.swing, p.label).toBe(p.swing);
+      expect(game.subdiv.kick, p.label).toBe(p.kick.subdiv);
+      // La grille jouée est bien celle du morceau, pas un tirage.
+      const coups = game.target.kick.filter((v) => v > 0).length;
+      expect(coups, p.label).toBe(p.kick.pattern.filter((v) => !!v).length);
+    }
+  });
+
+  it('ne se gagne que sur le bon genre', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    game.startLevel(L.findIndex((l) => l.exercise === 'style'));
+    game.styleChoix = (game.styleReponse + 1) % 4;
+    expect(game.verify()).toBe(false);
+    game.styleChoix = game.styleReponse;
+    expect(game.verify()).toBe(true);
+    expect(game.solved).toBe(true);
   });
 });
