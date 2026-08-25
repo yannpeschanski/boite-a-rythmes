@@ -6710,6 +6710,54 @@ passages consécutifs) · les deux builds · parcours Playwright de l'acte en
 le jeton, le verrou du Mode Live avant/après, aucune ligne repliée, aucune
 erreur console.
 
+### ✅ L'épilogue — le jeu avait huit actes et pas de fin (2026-08-25)
+
+Dernière pièce non portée de `HISTOIRE.md`. Et surtout : jusqu'ici la carrière
+s'arrêtait sur « LE MODE LIVE EST OUVERT » et **plus rien**.
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/stores/game.svelte.ts`,
+`src/ui/game/CarriereView.svelte`, `tests/carriere.test.ts`.
+
+#### Pas un neuvième acte, et la distinction n'est pas cosmétique
+
+L'épilogue n'a ni compétence, ni module, ni exercice, et il se passe des mois
+après le 14 juin. L'ajouter à `ACTES` aurait cassé `ActeId`, `JOURS`, le compte
+à rebours (quel J−… pour « septembre » ?) et le carnet — pour ranger du texte
+dans une structure qui décrit des **épreuves**.
+
+Il a donc sa propre constante (`EPILOGUE`) et son propre curseur dans le store,
+volatil comme celui de la carrière : rien ne s'y réussit, rien ne s'y débloque,
+il se relit à volonté, et il ne touche pas au curseur enregistré. Un test le
+vérifie.
+
+#### La dernière image est la première du jeu
+
+> Puis elle lui fait écouter deux sons.
+> **— Lequel est le plus grave ?**
+
+C'est mot pour mot la question du **niveau 49**, le tout premier exercice de
+l'acte 0, celle que Sol pose au joueur cinq mois plus tôt. Cette fois le joueur
+est dans la pièce d'à côté, et il comprend ce qu'il entend. Un test tient la
+citation *et* le niveau qu'elle désigne (`lequel` sur `pitch`) — la réécrire
+casserait la boucle sans que rien ne le dise.
+
+#### Le compte à rebours disparaît aux DEUX bouts
+
+Il n'apparaissait déjà qu'à partir de l'écran qui explique le 14 juin — avant,
+c'est un nombre vers une date inconnue. Il disparaît maintenant après : « J−0 ·
+Le jour même » pendant un épilogue de septembre dirait le contraire du temps
+écoulé. Même règle aux deux extrémités : **il ne s'affiche que tant qu'il veut
+dire quelque chose.**
+
+Et le dernier écran ne propose pas de « Suite ▸ » — il affiche **FIN**. Le
+carnet et la salle de répétition, eux, restent ouverts : « pas de scénario qui
+enferme l'outil ».
+
+**Vérification :** `npm run check` 0 erreur · **253 tests** (6 neufs, trois
+passages consécutifs) · les deux builds · parcours Playwright des cinq écrans en
+390×844 : aucune ligne repliée, aucun débordement, le décompte bien absent, la
+fin sans bouton d'avance, aucune erreur console.
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
