@@ -12,6 +12,7 @@ import {
 } from '../src/model/carriere';
 import { LEVELS } from '../src/model/presets/levels';
 import { parametre } from '../src/model/parametres';
+import { PRESETS } from '../src/model/presets/songs';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
 
 describe('Mode carrière — la charpente en huit actes', () => {
@@ -55,7 +56,7 @@ describe('Mode carrière — la charpente en huit actes', () => {
   });
 
   it('déclare « à venir » exactement les actes dont les exercices ne sont pas écrits', () => {
-    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4]);
+    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
   // Chaque acte jouable doit contenir au moins un exercice ET au moins un
@@ -623,5 +624,61 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
       .join(' ');
     expect(avant).toMatch(/laverie/i);
     expect(avant).toMatch(/haut-parleur/i);
+  });
+});
+
+/* L'acte 5 — celui qui avait l'air d'être une liste.
+ *
+ * Quinze genres à produire : la tentation était quinze niveaux de
+ * reproduction, c'est-à-dire le même exercice quinze fois. Sa vraie scène est
+ * ailleurs — le commercial qui n'arrive pas à dire ce qu'il veut et finit par
+ * le fredonner.
+ */
+describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
+  it('est jouable, et n’ouvre aucun module', () => {
+    expect(acteAVenir(ACTES[5])).toBe(false);
+    // Rien à déverrouiller : l'acte ne paie aucune dette mécanique, ce qui est
+    // précisément ce qui le rend bon marché à écrire.
+    expect(ACTES[5].module).toBeNull();
+  });
+
+  it('commence par reconnaître, puis reconstruit', () => {
+    const verbes = niveauxDeLActe(ACTES[5]).map(
+      (n) => LEVELS.find((x) => x.id === n)!.exercise,
+    );
+    expect(verbes[0]).toBe('style');
+    expect(verbes.slice(1).every((v) => v === 'reproduire')).toBe(true);
+  });
+
+  /* ⚠️ Les reconstructions sont CITÉES, pas fabriquées : ce sont des niveaux
+   * de la campagne d'origine, et chacun porte un vrai preset. Un acte qui
+   * fabriquerait ses propres variantes donnerait un exercice qui dérive de son
+   * original — la règle du fichier depuis le premier jour. */
+  it('ne cite que des niveaux de preset déjà au réservoir', () => {
+    for (const n of niveauxDeLActe(ACTES[5]).slice(1)) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      expect(l.presetId, `niveau ${n}`).toBeTruthy();
+      expect(n, `niveau ${n}`).toBeLessThanOrEqual(34);
+    }
+  });
+
+  // Une par catégorie du fax : le brief du récit et le classement des données
+  // disent la même chose.
+  it('couvre plusieurs familles, pas cinq fois la même', () => {
+    const cats = niveauxDeLActe(ACTES[5])
+      .slice(1)
+      .map((n) => PRESETS.find((p) => p.id === LEVELS.find((x) => x.id === n)!.presetId)!.cat);
+    expect(new Set(cats).size).toBeGreaterThanOrEqual(3);
+  });
+
+  // Le mot du récit et le verbe de l'écran sont le même : si le texte fait
+  // fredonner un genre, l'exercice doit demander de le nommer.
+  it('pose la scène du genre qu’on ne sait pas nommer', () => {
+    const avant = ACTES[5].etapes
+      .slice(0, ACTES[5].etapes.findIndex((e) => e.kind === 'exercice'))
+      .flatMap((e) => (e.kind === 'recit' ? e.lignes : []))
+      .join(' ');
+    expect(avant).toMatch(/fredonn/i);
+    expect(avant).toMatch(/dancehall/i);
   });
 });

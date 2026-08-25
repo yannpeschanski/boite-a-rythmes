@@ -270,6 +270,16 @@ class GameStore {
    * l'appareil. Il vit donc ici et pas dans le format v2. */
   ecoutePetite = $state(false);
 
+  /* ---- État du verbe `style` --------------------------------------------
+   * Le preset tiré pour cette partie, les genres proposés (des `id` de
+   * preset), et la réponse. Le preset tiré sert AUSSI de cible : c'est lui qui
+   * donne la grille, le tempo, le swing et le timbre — un genre reconnu sur
+   * une grille sans son tempo ni son timbre ne serait pas un genre. */
+  stylePresetId = $state('');
+  styleCandidats = $state<string[]>([]);
+  styleReponse = $state(0);
+  styleChoix = $state<number | null>(null);
+
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
 
@@ -525,8 +535,16 @@ class GameStore {
      * Un état d'écoute qui déborde de son écran est un défaut muet. */
     this.ecoutePetite = false;
     const presets = PRESETS as unknown as GamePresetLike[];
-    this.subdiv = subdivForLevel(cfg, presets);
-    const preset = presetForLevel(cfg, presets);
+    /* ⚠️ Le verbe `style` tire son preset ICI, avant tout le reste, et le
+     * passe aux trois helpers par un `presetId` posé sur une COPIE de la
+     * config. C'est ce qui lui donne gratuitement la grille, la subdivision,
+     * le tempo, le swing, la traîne ET le timbre du morceau réel — or c'est
+     * exactement ça, un genre. Un `presetId` figé dans les données aurait fait
+     * de la reconnaissance un exercice de mémoire dès la deuxième partie. */
+    const cfgEffectif =
+      cfg.exercise === 'style' ? { ...cfg, presetId: this.tirerStyle(presets) } : cfg;
+    this.subdiv = subdivForLevel(cfgEffectif, presets);
+    const preset = presetForLevel(cfgEffectif, presets);
     if (preset) {
       // Niveau « preset » : la cible EST le pattern d'un morceau réel (même
       // subdivision, mêmes shift/tempo/swing/drag, même timbre). Rafales
@@ -548,7 +566,7 @@ class GameStore {
       this.tempo = pp.tempo;
       this.swing = pp.swing;
       this.drag = pp.drag;
-      this.shift = cfg.presetForceShift
+      this.shift = cfgEffectif.presetForceShift
         ? { kick: 0, snare: 0, hat: p.hat.shift || 0 }
         : { kick: 0, snare: 0, hat: 0 };
     } else {
@@ -563,7 +581,7 @@ class GameStore {
       this.shift = { kick: 0, snare: 0, hat: s };
     }
     // Timbre aléatoire par palier — pure couleur sonore, jamais devinée.
-    this.voice = voiceForLevel(cfg, presets);
+    this.voice = voiceForLevel(cfgEffectif, presets);
     this.guess = emptyGrid(this.subdiv);
     this.guessRolls = emptyRolls(this.subdiv);
     this.locked = {
@@ -768,6 +786,56 @@ class GameStore {
    * c'est exactement ce que l'acte enseigne. Le niveau le pose donc lui-même
    * plutôt que de le tirer, et `parametre('tone').lignes` continue d'exclure
    * le kick pour tous les autres verbes. */
+  /* Tire le genre à reconnaître, et les trois leurres.
+   *
+   * ⚠️ Les leurres viennent d'AUTRES catégories, jamais de la même, et c'est le
+   * point de conception de l'exercice. La scène qui le motive est celle du
+   * commercial qui fredonne : *« C'est du dancehall. Tu comprends
+   * immédiatement. »* — on reconnaît une famille, pas un sous-genre. Proposer
+   * « Boom bap » contre « Drill » et « Trap moderne » poserait une question
+   * dont la réponse est un tirage au sort pour tout le monde sauf un
+   * spécialiste, ce qui est exactement le défaut qu'on refuse ailleurs (voir
+   * `tirerVersions` et son écart garanti par construction).
+   *
+   * Les quatre catégories des données SONT les quatre lignes du fax de
+   * Zik'Mobile — hip-hop, club, latin, funk/soul : le brief du récit et le
+   * classement du code disent la même chose, ce n'est pas une coïncidence
+   * qu'on a arrangée après coup.
+   *
+   * Renvoie l'`id` du preset tiré ; le reste de l'état est posé dans la
+   * foulée par `preparerStyle`, une fois la cible construite.
+   */
+  private tirerStyle(presets: GamePresetLike[]): string {
+    const autorises = this.level.stylePool;
+    const pool = presets.filter(
+      (p) => p.cat && p.label && (autorises.length === 0 || autorises.includes(p.id)),
+    );
+    const bon = pick(pool);
+    this.stylePresetId = bon.id;
+    // Un leurre par autre catégorie, pris au hasard dans chacune.
+    const parCategorie = new Map<string, GamePresetLike[]>();
+    for (const p of pool) {
+      if (p.cat === bon.cat) continue;
+      const l = parCategorie.get(p.cat as string) ?? [];
+      l.push(p);
+      parCategorie.set(p.cat as string, l);
+    }
+    const cats = [...parCategorie.keys()];
+    for (let i = cats.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cats[i], cats[j]] = [cats[j], cats[i]];
+    }
+    const choix = [bon.id, ...cats.slice(0, 3).map((c) => pick(parCategorie.get(c)!).id)];
+    for (let i = choix.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [choix[i], choix[j]] = [choix[j], choix[i]];
+    }
+    this.styleCandidats = choix;
+    this.styleReponse = choix.indexOf(bon.id);
+    this.styleChoix = null;
+    return bon.id;
+  }
+
   private preparerLaverie(): void {
     this.paramId = 'tone';
     this.paramLigne = 'kick';
@@ -940,6 +1008,14 @@ class GameStore {
      * partage l'état, pas l'aiguillage. */
     if (this.level.exercise === 'laverie') {
       const juste = this.paramChoix === this.paramReponse;
+      if (juste) this.win();
+      return juste;
+    }
+
+    // « Le style » : la réponse est un genre désigné, pas une grille reposée.
+    // La cible reste jouable telle quelle — c'est le morceau réel.
+    if (this.level.exercise === 'style') {
+      const juste = this.styleChoix === this.styleReponse;
       if (juste) this.win();
       return juste;
     }

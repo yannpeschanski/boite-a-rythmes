@@ -5,6 +5,7 @@
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { GameDrumRowName } from '../../model/presets/levels';
   import { parametre } from '../../model/parametres';
+  import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
   import {
     PARFAIT_MS,
@@ -218,6 +219,7 @@
   // examinée. Sans ce drapeau, cliquer sur ✓ Vérifier semble ne rien faire.
   let echec = $state(false);
   const MSG_ECHEC: Record<ExerciseKind, string> = {
+    style: 'Ce n’est pas ce genre-là. Réécoute : le tempo, la place de la caisse claire, ce que fait le hi-hat.',
     laverie: 'Ce n’est pas celle-là. Compare les deux haut-parleurs : ce qui compte, c’est ce qui reste.',
     melodie: 'Pas encore. Les notes justes sont verrouillées ✓ — reprends les autres.',
     silence: 'Ce n’est pas là. Réécoute la boucle : le trou est ailleurs.',
@@ -358,6 +360,12 @@
 
   const lvl = $derived(game.level);
   const ex = $derived(lvl.exercise);
+  /* Le nom du genre tel qu'il s'écrit dans les données des presets — le jeu et
+     l'Atelier doivent nommer la même chose de la même façon, sinon le jeu
+     n'apprend rien d'utilisable dans le menu des presets. */
+  function nomDuGenre(id: string): string {
+    return PRESETS.find((p) => p.id === id)?.label ?? id;
+  }
   /* ⚠️ « Trois versions du même SON » était écrit en dur — juste tant que les
      verbes de paramètre ne servaient que la famille `timbre`. Le groove ne
      change aucun son : il change QUAND ils tombent. Poser la question sur le
@@ -577,13 +585,15 @@
               ? '■ Stop'
               : ex === 'completer'
                 ? '🔊 Écouter la boucle entière'
+                : ex === 'style'
+                  ? '🔊 Écouter la boucle'
                 : ex === 'silence'
                   ? '🔊 Écouter la pulsation'
                   : ex === 'melodie'
                   ? '🔊 Écouter la basse'
                   : '🔊 Écouter le rythme à trouver'}
           </button>
-          {#if ex !== 'silence'}
+          {#if ex !== 'silence' && ex !== 'style'}
             <!-- ⚠️ Pas de « ma version » pour le silence : on ne pose rien sur
                  la grille, on désigne un pas. Le bouton ne jouait donc jamais
                  que du vide — et un bouton qui ne fait rien se lit comme une
@@ -593,7 +603,7 @@
             </button>
           {/if}
         {/if}
-        {#if ex !== 'melodie' && ex !== 'silence'}
+        {#if ex !== 'melodie' && ex !== 'silence' && ex !== 'style'}
           <!-- ⚠️ Pas de « Vérifier » ici pour la mélodie : le transport est
                au-dessus de la grille, et on lirait le bouton de validation
                avant ce qu'il valide. Il est repris sous le rouleau. -->
@@ -769,6 +779,39 @@
                 Mesure {m + 1}
               </button>
             {/each}
+          </div>
+        </div>
+      {:else if ex === 'style'}
+        <!-- Rien à reposer, rien à mesurer : on écoute une boucle et on met un
+             nom dessus. Les quatre propositions viennent de quatre CATÉGORIES
+             différentes — on reconnaît une famille, pas un sous-genre (voir
+             `tirerStyle`). -->
+        <div class="silence">
+          <p class="consigne">Quel genre&nbsp;?</p>
+          <div class="choix choix-noms">
+            {#each game.styleCandidats as id, i (id)}
+              <button
+                class="xp-btn choix-btn tap44-y"
+                class:actif={game.styleChoix === i}
+                class:bonne={(game.solved || game.revealed) && game.styleReponse === i}
+                disabled={game.solved || game.revealed}
+                onclick={() => {
+                  game.styleChoix = i;
+                  echec = false;
+                }}
+              >
+                {nomDuGenre(id)}
+              </button>
+            {/each}
+          </div>
+          <div class="valider">
+            <button
+              class="xp-btn primary tap44-y"
+              disabled={game.solved || game.revealed || game.styleChoix === null}
+              onclick={verify}
+            >
+              ✓ Vérifier
+            </button>
           </div>
         </div>
       {:else if ex === 'silence'}

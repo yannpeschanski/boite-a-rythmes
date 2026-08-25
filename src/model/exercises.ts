@@ -70,7 +70,17 @@ export type ExerciseKind =
    *
    * Il réutilise entièrement l'état des verbes de paramètre (versions, choix,
    * réponse) : ce qui change est le monitoring, pas la mécanique. */
-  | 'laverie';
+  | 'laverie'
+  /* « Le style » — écouter une boucle et NOMMER son genre. Le seul verbe qui
+   * interroge une culture plutôt qu'une oreille : rien à mesurer dans le son,
+   * tout à reconnaître.
+   *
+   * C'est l'acte 5, et il vient d'une scène précise : le commercial de
+   * Zik'Mobile n'arrive pas à dire ce qu'il veut, il finit par le fredonner —
+   * « c'est du dancehall. Tu comprends immédiatement. Il ne savait simplement
+   * pas le dire. » Mettre le nom sur le genre est exactement ce qui manquait à
+   * l'autre bout du fil. */
+  | 'style';
 
 /** Les verbes qui portent sur un paramètre continu plutôt que sur la grille. */
 /* ⚠️ `laverie` n'en fait PAS partie, bien qu'il porte lui aussi sur un
@@ -103,6 +113,7 @@ export const LAVERIE_DRIVES: number[] = [0, 55, 100];
 
 export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   laverie: 'Écoute-le à la laverie',
+  style: 'Reconnais le genre',
   reproduire: 'Reproduis la boucle',
   completer: 'Complète le temps manquant',
   intrus: 'Trouve l’intrus',
