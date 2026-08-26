@@ -4,6 +4,7 @@
   import { history } from '../../stores/history.svelte';
   import { buildShareUrl } from '../../stores/share';
   import { systemSoundsEnabled, setSystemSoundsEnabled, playSystemSound } from '../xp/systemSounds';
+  import { sortie, LIBELLES as LIBELLES_SORTIE } from '../sortie.svelte';
   import { paramHintsSettings } from '../xp/paramHints.svelte';
   import { PRESETS, PRESET_CATEGORIES, type SongPresetData } from '../../model/presets/songs';
   import { sequenceBank } from '../../stores/bank.svelte';
@@ -211,6 +212,16 @@
         <button onclick={() => choose(toggleSystemSounds)}>{soundsOn ? '🔊' : '🔈'} Sons système : {soundsOn ? 'Activés' : 'Désactivés'}</button>
         <button onclick={() => choose(() => paramHintsSettings.toggle())}
           >{paramHintsSettings.enabled ? '💡' : '🌑'} Aide contextuelle : {paramHintsSettings.enabled ? 'Activée' : 'Désactivée'}</button
+        >
+        <!-- Le tampon de sortie. Il est ici, et pas dans le calibrage du
+             décalage d'entrée, parce que ce n'est pas la même chose : le
+             calibrage corrige une MESURE (ce qu'on joue tombe où on l'a joué),
+             ceci change ce qu'on ENTEND. « Confort » se choisit en entendant
+             crachoter, pas en visant une case.
+             Le nouveau tampon prend au ▶ suivant : en changer pendant la
+             lecture ferait un trou dans le morceau (voir adapterTampon). -->
+        <button onclick={() => choose(() => sortie.suivant())}
+          >🎧 Sortie audio : {LIBELLES_SORTIE[sortie.preference]}</button
         >
       </div>
     {/if}

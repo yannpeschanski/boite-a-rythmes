@@ -7098,6 +7098,105 @@ fermé) ; ou déplacer l'acte 5 plus tôt, ce que le récit interdit — c'est l
 les 34 presets servent, « après avoir appris à mixer, avant d'avoir à faire
 quelque chose de personnel ».
 
+### ✅ Le tampon de sortie suit la sortie — le Bluetooth cesse de crachoter (2026-08-26)
+
+> « ça marche assez mal avec le bluetooth » — puis, à la question du symptôme :
+> **ça crachote pendant la lecture**, sur Android / Chrome.
+
+#### Ce qui n'allait pas, et pourquoi c'était SI facile à défendre
+
+`TAMPON_SORTIE = 'interactive'` était le bon choix, pour la bonne raison :
+l'appli est un instrument, un pad qui répond en 72 ms au lieu de 32 ne se joue
+pas (arbitrage du 2026-08-21, `AudioEngine.ts`). Ce raisonnement défend un
+budget — doigt → son — et il suppose que ce budget est **encore disputable**.
+
+En Bluetooth il ne l'est plus. Un casque A2DP joue ce qu'on lui envoie 100 à
+200 ms plus tard, dans son propre tampon, hors de portée du navigateur. Les
+40 ms que le petit tampon fait gagner sont 40 ms sur 250 : personne ne les
+entend. Ce que le petit tampon **coûte**, en revanche, s'entend très bien — le
+fil audio doit remplir un bloc court à chaque réveil d'une route lente et
+irrégulière, et chaque dépassement est un bloc manqué. C'est le crachotement.
+
+La règle qui en sort n'est pas un compromis, c'est une constatation :
+**quand la sortie est déjà lente, le petit tampon n'achète plus rien et
+continue de tout coûter.**
+
+#### Ce qui a été livré
+
+- **`src/engine/tampon.ts`** (neuf, pur — ni DOM, ni Svelte, ni `localStorage`) :
+  le seuil (`SEUIL_SORTIE_LENTE = 0,1 s`), la lecture de `outputLatency`, et la
+  décision `tamponPourSortie(preference, lente)`. Le seuil est posé **entre les
+  deux mondes** : 32 ms en `'interactive'` et 72 ms en `'playback'` sur une
+  sortie filaire (mesures du 2026-08-21) restent tous deux dessous — une sortie
+  filaire ne bascule donc jamais, et ne se mettra jamais à basculer toute seule.
+  Un casque A2DP commence, lui, vers 100-150 ms.
+- **`AudioEngine.adapterTampon()`** : appelé au ▶, **à l'arrêt uniquement**.
+  Changer de tampon veut dire fermer le contexte et le rouvrir : à chaud, ce
+  serait faire un trou dans le morceau pour supprimer un crachotement.
+- **`noterSortie()` dans `tick()`** : `outputLatency` vaut souvent 0 juste après
+  la création du contexte — le flux n'est pas encore ouvert. Une lecture unique,
+  au pire moment, raterait la bascule ; on relit à chaque tick (une comparaison
+  de nombre), et ce qu'on observe s'applique au ▶ suivant. La lenteur vue ne se
+  rétracte pas sur un zéro passager, sinon la bascule dépendrait de l'instant de
+  lecture.
+- **Un réglage manuel** — `ui/sortie.svelte.ts` (persisté, propriété de
+  l'APPAREIL comme le calibrage d'entrée) et une entrée de menu Affichage :
+  « 🎧 Sortie audio : Auto / Confort (Bluetooth) / Réactif (filaire) ».
+  **Il existe parce que la détection automatique dépend d'un aveu volontaire :**
+  WebKit ne déclare pas `outputLatency` du tout, et rien n'oblige un Android à
+  y faire figurer le retard de sa route. Quelqu'un qui ENTEND crachoter en sait
+  alors plus que le navigateur — sans interrupteur, sa seule sortie serait de ne
+  pas se servir de l'appli. Le manuel gagne donc toujours sur l'observation.
+- **Le contexte des sons système s'endort** (`ui/xp/systemSounds.ts`). Un
+  `AudioContext` « running » sans rien de branché tient un **flux de sortie
+  ouvert** : sur une route A2DP, deux flux vers le même appareil, ce sont deux
+  réveils à servir au lieu d'un — et le bloc manqué s'entend dans le morceau,
+  pas dans le chirp. Suspendu 1,5 s après sa dernière note, réveillé au son
+  suivant. `chime` est passé en `async` et **attend** la reprise : sur une
+  horloge gelée, les instants calculés seraient déjà passés, l'attaque serait
+  sautée et un son de fenêtre claquerait.
+
+#### Le piège trouvé en relisant les appelants
+
+`startLiveRecording` branche son tap sur `graph.finalGain` **avant** d'appeler
+`start()`. Sans garde, la bascule aurait remplacé le graphe sous le
+magnétophone, qui aurait enregistré un contexte fermé : **un WAV silencieux,
+sans la moindre erreur**. `liveRecorder` fait donc partie de la garde de
+`adapterTampon`, au même titre que `isPlaying`.
+
+#### Vérifié, et comment
+
+`tests/tampon.test.ts` (10 tests) tient les deux moitiés de la règle : la
+sortie normale ne bascule jamais (sinon on perdrait l'arbitrage du 2026-08-21
+pour tout le monde), et le réglage manuel gagne dans les **deux** sens.
+
+Et surtout **mesuré au navigateur** (Chromium, `outputLatency` feint à 200 ms
+via un getter de prototype, moteur piloté depuis la page) — c'est `baseLatency`
+qui dit si la bascule a vraiment eu lieu :
+
+| Scénario | Contextes créés | `baseLatency` | Notes programmées |
+|---|---|---|---|
+| Sortie normale | `interactive`, `interactive` | 0,0100 s (441 éch.) | 14 / 14 |
+| Sortie lente déclarée 200 ms | `interactive` → **`playback`**, `playback` | **0,0232 s (1024 éch.)** | 14 / 14 |
+| Sortie lente + « Réactif » | `interactive`, `interactive` | 0,0100 s | 14 / 14 |
+| Sortie normale + « Confort » | `playback`, `playback` | 0,0232 s | 14 / 14 |
+
+Le tampon **plus que double** là où il faut, nulle part ailleurs, et le nombre
+de notes programmées est identique dans les quatre cas — la bascule ne mange
+aucune note et ne lève aucune erreur. Le surcoût est **une** création de
+contexte supplémentaire, une fois par session, à la première lecture.
+
+Menu vérifié à la capture en 390×844 (libellé, bascule, persistance sous
+`boite-a-rythme:tampon-sortie`). `npm run check` 0 erreur, 274 tests, les deux
+builds.
+
+#### Ce que ça ne règle pas, et qu'il ne faut pas promettre
+
+Les 100 à 200 ms de retard du casque lui-même. Aucune ligne de code n'y touche
+— ce qui se corrige, c'est le PLACEMENT de ce qu'on écrit (le calibrage,
+`ui/latence.svelte.ts`), et maintenant la propreté de ce qu'on entend. Pas la
+vitesse.
+
 ### Chantiers ouverts
 
 *Tenu à jour : ce qui est fait sort de cette liste, avec le numéro de l'étape

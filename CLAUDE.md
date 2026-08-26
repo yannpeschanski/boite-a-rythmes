@@ -315,6 +315,28 @@ que le navigateur dimensionne pour ça. `tests/latence-audio.test.ts` verrouille
 les deux. Pour descendre plus bas il faut rendre les enveloppes robustes à un
 démarrage tardif, pas raccourcir la constante.
 
+⚠️ **Le tampon de sortie SUIT la sortie : `'interactive'` est un défaut, pas
+une constante.** Le petit tampon défend le budget doigt → son, et ce budget
+n'est disputable que sur une sortie rapide. En Bluetooth (100 à 200 ms dans le
+casque, hors de portée du navigateur), les 40 ms qu'il fait gagner sont
+inaudibles et ce qu'il coûte s'entend : un bloc court à remplir à chaque réveil
+d'une route lente, donc un crachotement par bloc manqué (« ça marche assez mal
+avec le bluetooth », Yann, 2026-08-26). `engine/tampon.ts` porte la règle —
+au-delà de `SEUIL_SORTIE_LENTE` (0,1 s, posé ENTRE les 72 ms du gros tampon
+filaire et les 100-150 ms d'un casque A2DP), on repasse sur `'playback'`. La
+bascule n'a lieu qu'**à l'arrêt** (à chaud elle ferait un trou dans le morceau)
+et jamais pendant une capture (`startLiveRecording` branche son magnétophone
+avant `start()` : remplacer le graphe sous lui donnerait un WAV silencieux et
+muet d'erreurs). ⚠️ Le réglage manuel (`ui/sortie.svelte.ts`, menu Affichage)
+n'est pas un doublon de la détection : `outputLatency` est un **aveu
+volontaire** — WebKit ne le déclare pas, un Android peut le sous-déclarer — et
+qui ENTEND crachoter en sait plus que le navigateur. Le manuel gagne donc
+toujours sur l'observation. Corollaire pour tout second contexte audio : un
+`AudioContext` « running » sans rien de branché tient un flux de sortie ouvert,
+c'est-à-dire un réveil de plus à servir sur la même route — les sons système
+s'endorment pour ça, et leur `chime` **attend** la reprise avant de programmer
+(horloge gelée = instants déjà passés = attaque sautée).
+
 ⚠️ **Deux latences, deux traitements — ne pas les confondre.** DÉCLENCHER un son
 (pads du Mode Live, aperçus, notes jouées) ne se compense pas : on ne peut pas jouer
 un son avant la frappe, on ne peut que réduire — d'où `latencyHint: 'interactive'`

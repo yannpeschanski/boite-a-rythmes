@@ -8,6 +8,7 @@
 // donc un contexte dédié, minimal, créé à la demande. Désactivable, persisté
 // en localStorage, activé par défaut.
 let ctx: AudioContext | null = null;
+let sieste = 0;
 
 function ensureCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -15,13 +16,43 @@ function ensureCtx(): AudioContext | null {
   return ctx;
 }
 
+/* ⚠️ Ce contexte s'ENDORT dès qu'il a fini de sonner (2026-08-26, « ça marche
+ * assez mal avec le bluetooth »).
+ *
+ * Un AudioContext « running » sans rien de branché n'est pas gratuit : il tient
+ * un FLUX DE SORTIE ouvert et le fait remplir à son rythme. Sur une sortie
+ * lente et irrégulière — une route A2DP — deux flux vers le même appareil, ce
+ * sont deux réveils à servir au lieu d'un, et chaque bloc manqué s'entend dans
+ * le morceau, pas dans le chirp. Le contexte des sons système est de très loin
+ * le moins utile des deux : il sert deux notes toutes les quelques minutes.
+ *
+ * Suspendu, il ne coûte plus rien et se réveille au son suivant (`chime`
+ * attend la reprise avant de programmer, sinon les instants calculés sur une
+ * horloge gelée tomberaient dans le passé — l'attaque serait sautée, et un son
+ * de fenêtre claquerait). On ne le FERME pas : rouvrir un contexte est plus
+ * cher, et un contexte fermé ne se rouvre pas du tout.
+ *
+ * Le délai laisse passer la note en cours et une éventuelle rafale de clics de
+ * fenêtre sans rendormir/réveiller entre chaque. */
+const SIESTE_MS = 1500;
+
+function programmerSieste(): void {
+  clearTimeout(sieste);
+  sieste = setTimeout(() => {
+    if (ctx && ctx.state === 'running') void ctx.suspend();
+  }, SIESTE_MS) as unknown as number;
+}
+
 // Même forme d'enveloppe que playChime/playWinChime (attaque/chute
 // exponentielles courtes) — juste des durées/fréquences plus discrètes,
 // pensées pour un retour de chrome de fenêtre plutôt qu'une fanfare.
-function chime(freqs: number[], dur: number, gain: number, type: OscillatorType): void {
+async function chime(freqs: number[], dur: number, gain: number, type: OscillatorType): Promise<void> {
   const c = ensureCtx();
   if (!c) return;
-  void c.resume();
+  // AWAIT, pas `void` : tant que le contexte est suspendu (autoplay, ou la
+  // sieste ci-dessus) `currentTime` est gelé, et les instants calculés juste
+  // après seraient déjà passés à la reprise.
+  if (c.state !== 'running') await c.resume();
   freqs.forEach((f, i) => {
     const t = c.currentTime + i * dur;
     const osc = c.createOscillator();
@@ -36,6 +67,7 @@ function chime(freqs: number[], dur: number, gain: number, type: OscillatorType)
     osc.start(t);
     osc.stop(t + dur);
   });
+  programmerSieste();
 }
 
 const KEY = 'boite-a-rythme:system-sounds-enabled';
@@ -64,7 +96,7 @@ export type SystemSoundId = 'open' | 'close' | 'error';
 // timbre plus dur — fichier illisible à l'import (AtelierView.importJson).
 export function playSystemSound(id: SystemSoundId): void {
   if (!systemSoundsEnabled()) return;
-  if (id === 'open') chime([660, 880], 0.05, 0.12, 'sine');
-  else if (id === 'close') chime([880, 660], 0.05, 0.12, 'sine');
-  else chime([220, 196], 0.09, 0.14, 'square');
+  if (id === 'open') void chime([660, 880], 0.05, 0.12, 'sine');
+  else if (id === 'close') void chime([880, 660], 0.05, 0.12, 'sine');
+  else void chime([220, 196], 0.09, 0.14, 'square');
 }
