@@ -8,6 +8,7 @@
   import { PRESETS, PRESET_CATEGORIES, type SongPresetData } from '../../model/presets/songs';
   import { sequenceBank } from '../../stores/bank.svelte';
   import { unlocks } from '../../stores/unlocks.svelte';
+  import { game } from '../../stores/game.svelte';
   import { libelleVerrou } from '../../model/unlocks';
 
   let {
@@ -146,10 +147,25 @@
             keepSynthAndTempo = !keepSynthAndTempo;
           }}>{keepSynthAndTempo ? '☑' : '☐'} Garder le synthé et le tempo actuels</button
         >
+        <!-- ⚠️ Les morceaux sont VERROUILLÉS pendant une commande. Sans ça,
+             une commande de style se satisfait en trois clics : ouvrir le
+             menu, charger le genre demandé, livrer — mesuré avant le
+             correctif. Le verrou est ici (visible) et dans le cahier
+             (`pasUnPresetCharge`, qui tient le cas du preset chargé AVANT
+             d'ouvrir la commande). Les entrées restent affichées, grisées :
+             une liste qui disparaît se lit comme une panne. -->
+        {#if game.commandeEnCours}
+          <div class="empty">
+            Morceaux verrouillés pendant une commande — c’est ton morceau qu’on attend.
+          </div>
+        {/if}
         {#each PRESET_CATEGORIES as cat (cat)}
           <div class="sep">{cat}</div>
           {#each byCat(cat) as p (p.id)}
-            <button onclick={() => choose(() => onLoadPreset?.(p, keepSynthAndTempo))}>{p.label}</button>
+            <button
+              disabled={!!game.commandeEnCours}
+              onclick={() => choose(() => onLoadPreset?.(p, keepSynthAndTempo))}>{p.label}</button
+            >
           {/each}
         {/each}
         <div class="sep">Banque de séquences</div>

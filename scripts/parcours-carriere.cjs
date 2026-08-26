@@ -83,11 +83,15 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         const st = pattern.state;
         st.swing = 30;
         /* ⚠️ Une commande de STYLE ne se satisfait pas avec un motif générique :
-           `dansLeStyle` compare au vrai preset. On charge donc sa grille, comme
-           le ferait un joueur qui part du preset et le retouche. Sans ça le
+           la fiche (`model/styles.ts`) exige des placements précis. On REJOUE
+           donc la grille du genre à la main — ce que fait un joueur qui suit la
+           description, et ce que le verrou de provenance autorise justement
+           (on refuse un preset CHARGÉ, pas une grille ressemblante). Sans ça le
            parcours s'arrête à l'acte 5 et ne dit rien de la suite. */
-        const styleId = (e.cahier.find((c) => c.id.startsWith('style:')) || {}).id;
-        const preset = styleId ? PRESETS.find((x) => x.id === styleId.slice(6)) : null;
+        const ficheId = (e.cahier.find((c) => c.id.startsWith('fiche:')) || {}).id;
+        const preset = ficheId ? PRESETS.find((x) => x.id === ficheId.slice(6)) : null;
+        // Le tempo fait partie du genre : sans lui il manquerait un critère.
+        if (preset) st.tempo = preset.tempo;
         for (const n of ['kick', 'snare', 'hat']) {
           st.rows[n].muted = false;
           if (preset) {

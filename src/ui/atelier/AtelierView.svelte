@@ -47,7 +47,13 @@
    * motif change, et `rankPresets` (34 presets × 6 permutations) seulement
    * pour les commandes qui demandent un genre. */
   const commande = $derived(game.commande);
-  const verdict = $derived(commande ? evaluerCommande(pattern.snapshot(), commande.cahier) : null);
+  /* La provenance ne vit pas dans l'état livré (voir `pattern.presetCharge`) :
+     elle voyage à côté, et le cahier la reçoit ici — en direct comme à la
+     livraison, sinon la case se cocherait à l'écran et refuserait au clic. */
+  const contexteLivraison = () => ({ presetCharge: pattern.presetCharge });
+  const verdict = $derived(
+    commande ? evaluerCommande(pattern.snapshot(), commande.cahier, contexteLivraison()) : null,
+  );
 
   /* ⚠️ Pas de branche « refus » ici, et c'est délibéré : le bouton est
      désactivé tant que le cahier n'est pas satisfait, donc une livraison
@@ -55,8 +61,9 @@
      qui fait croire qu'un cas est traité. La liste au-dessus DIT déjà ce qui
      manque, en direct — c'est un meilleur refus qu'une phrase après coup. */
   function livrer() {
-    if (game.livrerCommande(pattern.snapshot())?.accepte) onSwitchView?.('game');
+    if (game.livrerCommande(pattern.snapshot(), contexteLivraison())?.accepte) onSwitchView?.('game');
   }
+
 
   const engine = new AudioEngine(() => pattern.snapshot());
 
@@ -280,6 +287,10 @@
   function loadPreset(p: SongPresetData, keepSynthAndTempo: boolean) {
     history.push();
     pattern.replace(presetToState(p, keepSynthAndTempo ? pattern.snapshot() : undefined, keepSynthAndTempo));
+    // La provenance, pour le verrou des presets des commandes de style — voir
+    // `pasUnPresetCharge`. Posée APRÈS le remplacement : elle enregistre
+    // l'empreinte de ce qui vient d'être chargé.
+    pattern.marquerPreset(p.id);
     refreshFx();
   }
   function loadBankEntry(id: string) {
@@ -419,9 +430,26 @@
         <span>📠 {commande.entete}</span>
         <span class="compte">{verdict?.lignes.filter((l) => l.ok).length ?? 0}/{commande.cahier.length}</span>
       </div>
+      {#if commande.chapeau}
+        <!-- La DESCRIPTION du genre. Elle vient de la fiche de style, celle-là
+             même qui juge la livraison : décrire le style d'un côté et le
+             mesurer de l'autre donnerait deux vérités qui divergent au premier
+             ajustement (voir `model/styles.ts`). -->
+        <p class="chapeau">{#each commande.chapeau as ligne (ligne)}{ligne}<br />{/each}</p>
+      {/if}
       <ul>
         {#each verdict?.lignes ?? [] as l (l.contrainte.id)}
           <li class:ok={l.ok}>{l.ok ? '☑' : '☐'} {l.contrainte.libelle}</li>
+          {#if l.contrainte.details}
+            <!-- Le détail d'une contrainte de style : sans lui, un refus dit
+                 « pas assez dancehall », ce qui n'est pas un retour — on ne
+                 sait pas quoi changer. -->
+            <ul class="critères">
+              {#each l.contrainte.details(pattern.state) as d (d.id)}
+                <li class:ok={d.ok}>{d.ok ? '✓' : '·'} {d.libelle}</li>
+              {/each}
+            </ul>
+          {/if}
         {/each}
       </ul>
       <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
@@ -726,6 +754,23 @@
     margin: 6px 0;
     padding: 0;
     list-style: none;
+  }
+  .commande .chapeau {
+    margin: 0 0 8px;
+    font-size: var(--xp-size-small);
+    line-height: 1.5;
+    color: var(--xp-muted);
+  }
+  .commande ul.critères {
+    margin: 2px 0 6px 14px;
+    padding: 0;
+  }
+  .commande ul.critères li {
+    font-size: var(--xp-size-small);
+    color: var(--xp-muted);
+  }
+  .commande ul.critères li.ok {
+    color: var(--xp-lcd);
   }
   .commande li {
     font-size: var(--xp-size-sm, 9.5px);

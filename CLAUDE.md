@@ -402,10 +402,42 @@ curseur volatil bouge pendant qu'on travaille.
 `rankPresets` donne 100 % au motif de départ sur « Motown / soul » et sur
 « Swing ». Entrer dans l'Atelier et en ressortir sans rien toucher livrerait
 donc un morceau qu'une contrainte de style accepterait. D'où
-`pasLeMotifDeDepart`, obligatoire dans toutes les commandes. Corollaire :
-« dans le style de » se juge sur un **RANG** (≤ 3) et jamais sur le score —
-celui-ci compte les cases identiques, cases vides comprises, donc il ne veut
-rien dire seul.
+`pasLeMotifDeDepart`, obligatoire dans toutes les commandes.
+
+⚠️ **« Dans le style de » se juge sur une FICHE, pas sur une ressemblance.**
+`src/model/styles.ts` décrit chaque genre par des CRITÈRES nommés — placements
+lus en *temps* et non en cases (donc valables quelle que soit la subdivision),
+tempo, instrument — et la livraison passe quand la part de critères atteint le
+`seuil` de la fiche (0,8 par défaut, **réglable par fiche**). Trois choses en
+découlent, et aucune n'est cosmétique :
+
+- **une fiche sert à la fois de description, de juge et de retour.** Le chapeau
+  et les libellés sont ce que le joueur lit avant de commencer, ce qui se coche
+  pendant qu'il travaille, et ce qui explique un refus. Les écrire séparément,
+  ce serait deux vérités qui divergent au premier ajustement ;
+- **le pourcentage n'est PAS celui de `rankPresets`.** Ce score-là compte les
+  cases identiques, cases vides comprises — 70 % peut vouloir dire « deux
+  grilles également vides ». Il ne veut rien dire seul, et c'est toujours vrai.
+  Ce qu'on mesure est une part de critères satisfaits ;
+- **le seuil ne s'applique jamais à ce qui NOMME le genre.** Un critère
+  `essentiel` est exigé quel que soit le total : un dancehall sans kick sur
+  chaque temps n'est pas un dancehall à 83 %, c'est autre chose. Deux au plus
+  par fiche, sinon le seuil ne veut plus rien dire.
+
+Une fiche se **calibre**, elle ne se devine pas : le preset du genre doit la
+satisfaire entièrement, les 33 autres échouer, et le plus proche rester à au
+moins **deux critères** (mesuré sur dancehall : 6/6 contre 4/6 pour house,
+hardhouse et amapiano). Même exigence que l'`ecartMini` de `parametres.ts`.
+
+⚠️ **Une commande de style sans verrou de presets est un menu déroulant.**
+Mesuré avant correctif : charger le preset `dancehall` et livrer suffisait.
+Le verrou est double — le menu Morceaux est désactivé pendant une commande, et
+`pasUnPresetCharge` refuse un preset chargé TEL QUEL. Ce qu'on refuse est la
+**provenance**, jamais la ressemblance : suivre la fiche honnêtement mène tout
+droit à la grille du preset, et punir ça reviendrait à punir le joueur d'avoir
+bien travaillé. La provenance vit dans `pattern.presetCharge` (état
+d'interface, hors format v2) et voyage par `ContexteLivraison`, parce qu'un
+`PatternStateV2` ne dit pas d'où il vient.
 
 ⚠️ **La sévérité d'une commande DÉCROÎT avec le récit**, et c'est l'acte 6 qui
 l'impose : « aucun brief, aucun client, aucun style imposé ». Les clients des
@@ -496,6 +528,15 @@ mesurer.** Les scripts de mesure de cette session (débordement de page, zones
 tactiles réelles, contraste) ont trouvé des défauts invisibles à l'œil — une
 barre de 78px au lieu de 32, un analyseur qui dessinait 104 barres pour 74
 bandes utiles.
+
+⚠️ **`scripts/parcours-carriere.cjs` exige un serveur de dev FRAÎCHEMENT
+démarré.** Le HMR de Vite ré-exécute un module modifié : le script obtient
+alors une seconde instance de `game`, pendant que le store `unlocks` garde la
+première. La colonne « modules » affiche « — » du début à la fin et **ressemble
+trait pour trait à une régression du déverrouillage** — une heure perdue le
+2026-08-26 avant de mesurer que `moduleUnlocked` répondait juste et que seul le
+contexte du store était périmé. Redémarrer `npm run dev` après toute
+modification, avant de conclure quoi que ce soit du script ou d'une capture.
 
 ⚠️ **Une fixture ne joue pas le jeu.** Les huit actes du Mode carrière ont été
 vérifiés un par un avec un `localStorage` posé à la main — ce qui a caché

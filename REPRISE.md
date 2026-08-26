@@ -3,7 +3,7 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-26, après le plancher gelé.
+> Dernière mise à jour : 2026-08-26, après les fiches de style.
 
 ## Où en est le projet
 
@@ -11,7 +11,7 @@ Séquenceur / boîte à rythmes web en Svelte 5, skin Winamp 2.x, déployé sur
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 264 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 274 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -53,9 +53,40 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
 
+## Le chantier en cours — revoir les niveaux en profondeur
+
+Retours de Yann (2026-08-26) sur la difficulté et l'amusement : *« bizarre les
+exercices pour la production »*, *« il faut pousser les exercices à faire en
+atelier »*, *« les livraisons en atelier, c'est vraiment bien, il faut pousser
+le jeu dans cette direction à fond »*.
+
+Diagnostic : le jeu enseigne en faisant RETROUVER, et la seule chose qui
+l'intéresse — produire — n'apparaît qu'à la fin de chaque acte, sans lien avec
+les exercices qui précèdent.
+
+**Tranche 1 — LIVRÉE.** Les fiches de style (`src/model/styles.ts`) :
+description, validation par part de critères avec seuil réglable, verrou de
+provenance sur les presets, basse exigée. Calibrée et testée sur **un** genre,
+dancehall. Voir `PLAN.md`, « Les fiches de style ».
+
+**Tranche 2 — à faire, et c'est celle qui a fait tiquer Yann en premier.**
+L'acte 4 en deux temps, tel qu'il l'a décrit : *« pour le tunnel, il faut
+d'abord remplir le séquenceur avec un morceau techno, puis ensuite régler les
+paramètres pour avoir un meilleur son »*. La première moitié réutilise les
+fiches (il faut donc écrire celle de la techno). La seconde demande une
+**mesure du mixage** — l'étage du petit haut-parleur existe déjà
+(`petitHPSec`/`petitHPHumide`, en branche parallèle), mais **ce qui compte comme
+« mieux » reste à arbitrer** : c'est un jugement musical, pas un calcul. Deux ou
+trois critères mesurables, pas dix.
+
+**Tranche 3 — à faire.** Sortir les niveaux `reproduire` 4/12/13/27/32 de l'acte
+5 vers la salle de répétition, et les remplacer par des commandes de style (une
+fiche par genre). Les verbes de paramètre 54-57 de l'acte 4 sont à déplacer de
+la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
+
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 264 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 274 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840.
 
@@ -88,6 +119,12 @@ retouché de la session.
   amplitude). Tout nouvel étage va dans une **branche parallèle à gain nul**.
 - **`defaultState()` n'est pas une grille vide, c'est du Motown** —
   `rankPresets` lui donne 100 %. Toute commande doit exiger qu'on y ait touché.
+- **Le HMR de Vite fait mentir `parcours-carriere.cjs`.** Après une
+  modification, le script reçoit une SECONDE instance de `game` pendant que le
+  store `unlocks` garde la première : la colonne « modules » affiche « — » sur
+  les huit actes, ce qui ressemble trait pour trait à une régression du
+  déverrouillage. Redémarrer `npm run dev` avant de conclure — d'un script comme
+  d'une capture Playwright.
 - **Les tests qui expirent en série complète** ne sont pas fragiles : ils
   prennent 440-580 ms pour un budget de 5 s, et échouent quand un serveur de dev
   et des builds tournent en même temps. Arrêter le reste avant de conclure.

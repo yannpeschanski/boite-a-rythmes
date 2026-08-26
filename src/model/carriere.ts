@@ -34,9 +34,11 @@ import {
   auMoinsUneRafale,
   swingAuMoins,
   ligneSynthPresente,
-  dansLeStyle,
   pasLeMotifDeDepart,
+  dansLeStyleFiche,
+  pasUnPresetCharge,
 } from './commande';
+import { ficheStyle } from './styles';
 import { defaultState } from './defaults';
 
 /* Le point de départ de l'Atelier, figé une fois : toutes les commandes s'en
@@ -44,6 +46,10 @@ import { defaultState } from './defaults';
  * `pasLeMotifDeDepart`, et la mesure qui l'a imposée). */
 const DEPART = defaultState();
 const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
+
+/* La fiche du genre commandé par Zik'Mobile. Chargée une fois : elle sert à la
+ * fois de brief affiché et de juge (voir `model/styles.ts`). */
+const FICHE_DANCEHALL = ficheStyle('dancehall')!;
 
 export type ActeId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -135,6 +141,12 @@ export interface EtapeCommande {
   /** Ce que Sol vérifie en recevant. Beaucoup de morceaux le satisfont : une
    *  commande n'a pas UNE réponse, elle a des exigences. */
   cahier: Contrainte[];
+  /* La DESCRIPTION du genre demandé, quand il y en a un — reprise telle quelle
+   * de la fiche de style, jamais réécrite ici. Une commande de style sans
+   * description exigerait du joueur qu'il connaisse déjà le genre, ce qui
+   * n'est pas ce qu'on lui enseigne (retour de Yann : « il faut avoir une
+   * description du style éventuellement »). */
+  chapeau?: string[];
   /** Ce que Sol dit quand elle accepte. */
   accepte: string;
 }
@@ -887,9 +899,18 @@ export const ACTES: Acte[] = [
           'Fais-le. Pas à l’identique — dans le genre.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
+        chapeau: FICHE_DANCEHALL.chapeau,
+        /* ⚠️ Le cahier qui a changé de nature (2026-08-26). Il demandait un
+         * RANG dans `rankPresets` — et charger le preset `dancehall` depuis le
+         * menu suffisait à le satisfaire, mesuré. Il demande maintenant une
+         * fiche de style (`model/styles.ts`) : des critères nommés, qui se
+         * cochent en direct, une tolérance visible, et une basse — que
+         * `rankPresets` ne pouvait pas voir. Plus le verrou de provenance,
+         * sans lequel tout le reste est décoratif. */
         cahier: [
           AVOIR_PRODUIT,
-          dansLeStyle('dancehall', 'Ça doit sonner dancehall — le genre, pas la copie'),
+          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          dansLeStyleFiche(FICHE_DANCEHALL, 'Ça doit sonner dancehall — le genre, pas la copie'),
         ],
         accepte: '— C’est ça. C’est exactement ça qu’il n’arrivait pas à dire.',
       },

@@ -6872,6 +6872,156 @@ le récit au passage.
 
 ---
 
+### ✅ Les fiches de style — l'acte 5 cesse d'être un menu déroulant (2026-08-26)
+
+> « les reproductions de style, ça doit être fait en atelier, les presets
+> doivent être verrouillés avant. »
+> « il faut avoir une description du style éventuellement. »
+> « on doit pouvoir accepter une certaine tolérance, par exemple, il faut que
+> ce soit 80% de tel style pour pouvoir valider. »
+> « il faut qu'il y ait du synthé dessus aussi. »
+
+Première tranche de la révision des niveaux. Périmètre tenu : **la mécanique
+complète sur UN genre**, dancehall, celui de la commande Zik'Mobile.
+
+#### Le trou, mesuré avant d'écrire une ligne
+
+Charger le preset `dancehall` depuis le menu Morceaux et livrer donnait
+`produit=true`, `style:dancehall=true`, **accepté**. L'acte 5 ne demandait donc
+aucune production. Ce n'était pas une faiblesse théorique : trois clics.
+
+Deux autres défauts sont venus avec :
+
+- **`dansLeStyle` ne disait rien.** Un rang dans `rankPresets` ne se traduit pas
+  en geste : « pas assez dancehall » n'apprend rien à qui ne sait pas déjà.
+- **Le synthé lui était invisible.** `rankPresets` ne compare que kick/snare/hat
+  (les permutations passeraient de 6 à 120 avec cinq lignes). Une basse, moitié
+  d'un riddim, ne comptait pas.
+
+#### La fiche de style, et pourquoi c'est UNE donnée et pas trois
+
+`src/model/styles.ts`. Une fiche porte un chapeau, des critères nommés et un
+seuil — et sert **trois usages à la fois** : la description lue avant de
+commencer, le juge de la livraison, le retour ligne par ligne pendant le
+travail. C'est le point de conception : écrire la description à côté d'un juge
+qui mesure autre chose, c'est deux vérités qui divergent au premier ajustement.
+
+⚠️ **Le pourcentage demandé ne pouvait pas être celui de `rankPresets`.** Ce
+score compte les cases identiques, cases vides comprises — 70 % peut vouloir
+dire « deux grilles également vides ». La règle de `CLAUDE.md` reste vraie de ce
+score-là ; ce qui change, c'est qu'on mesure autre chose : une part de CRITÈRES.
+« 4 sur 5 » se dit au joueur, se coche à l'écran, et se corrige.
+
+Trois décisions de conception, chacune payée par un défaut évité :
+
+1. **Les critères se lisent en TEMPS, pas en cases.** `pasDuTemps(subdiv, temps)`
+   — « sur chaque temps » vaut [0,1,2,3] en subdiv 4 et [0,4,8,12] en subdiv 16.
+   Sans ça, chaque critère serait à écrire trois fois et le joueur serait puni
+   d'avoir choisi une grille plus fine. Un test le tient.
+2. **Le champ `essentiel`.** Un seuil à 80 % sur six critères accepterait un
+   morceau qui rate précisément celui qui donne son nom au riddim. Le kick
+   « steppers » et la basse sont exigés quel que soit le total — deux au plus
+   par fiche, sinon le seuil ne veut plus rien dire. La basse est essentielle
+   *parce que* Yann l'a demandée : facultative, la tolérance l'aurait sautée une
+   fois sur deux.
+3. **Le seuil est réglable PAR FICHE**, pas une constante globale : un genre très
+   typé tolère moins d'écart qu'un genre large.
+
+#### Le calibrage — ce qui rend la fiche défendable
+
+Une fiche n'est pas juste parce qu'elle a l'air juste. Mesuré sur les 34
+presets :
+
+```
+OUI  6/6 dancehall
+     4/6 house, hardhouse, amapiano     ← les plus proches (four-on-the-floor)
+     3/6 techno, motown, dembow, boombap…
+     1/6 motif de départ de l'Atelier
+```
+
+Écart de **deux critères** au genre le plus proche, et le seuil (5/6) tombe dans
+le trou. Même exigence que l'`ecartMini` de `parametres.ts` : une question dont
+la réponse se joue à un critère près est un tirage au sort. `tests/styles.test.ts`
+verrouille les trois : le genre satisfait sa fiche, les 33 autres échouent, et
+l'écart au deuxième reste ≥ 2.
+
+#### Le verrou des presets — provenance, pas ressemblance
+
+C'est la nuance qui fait tout le correctif. Refuser une grille *identique* à
+celle d'un preset punirait le joueur qui suit honnêtement la fiche : « kick sur
+chaque temps, rim shot sur 2 et 4, charley ouvert sur les contretemps » mène tout
+droit à cette grille-là — c'est précisément ce qu'on lui demande.
+
+On refuse donc une PROVENANCE. `pattern.presetCharge` retient l'empreinte du
+moment du chargement ; à la première modification elle ne correspond plus. Un
+morceau tapé à la main n'a aucune empreinte enregistrée et passe, même s'il tombe
+juste. Le menu Morceaux est en plus désactivé pendant une commande (le cas du
+preset chargé AVANT d'ouvrir la commande est couvert par la contrainte, pas par
+le menu).
+
+La provenance est de l'état d'INTERFACE : hors format v2, non sérialisée,
+invisible au moteur — et elle voyage donc par `ContexteLivraison`, une seconde
+paramètre optionnel de `verifie`. Un `PatternStateV2` ne dit pas d'où il vient.
+
+#### `dansLeStyle` retiré plutôt que gardé en réserve
+
+Il n'avait plus d'utilisateur. Deux juges de style qui doivent rester d'accord
+finissent toujours par ne plus l'être — même raison que le comparateur unique de
+`comparerGrilles`. Ses tests partent avec (la mesure qu'ils portaient — « quatre
+cases de charleston inversées laissent le preset au rang 1 ou 2 » — reste
+consignée ici).
+
+#### ⚠️ Le piège qui a coûté le plus de temps : le HMR, pas le code
+
+Après une modification, `scripts/parcours-carriere.cjs` a affiché « modules : — »
+sur les huit actes, avec un avertissement « COMMANDE dans un Atelier
+VERROUILLÉ » — le portrait exact d'une régression du déverrouillage qu'on venait
+de livrer. Diagnostic mesuré : `moduleUnlocked('atelier', {acte: 8})` répondait
+`true`, mais le contexte du store `unlocks` portait `acte: 0` et **pas de champ
+`plancher` du tout**. Le HMR de Vite avait ré-exécuté les modules modifiés : le
+script parlait à une seconde instance de `game`, le store à la première.
+Redémarrage du serveur → parcours parfait. **Toujours redémarrer `npm run dev`
+avant de conclure quoi que ce soit d'un script de parcours ou d'une capture.**
+Consigné dans `CLAUDE.md`.
+
+#### Ce qui le vérifie
+
+- `tests/styles.test.ts` (+13, nouveau) — calibrage, tolérance, `essentiel`,
+  indépendance à la subdivision, verrou de provenance, lisibilité de la fiche.
+- 274 tests, 0 erreur de types, les deux builds.
+- `scripts/parcours-carriere.cjs` sur serveur neuf : les huit actes s'enchaînent,
+  Zik'Mobile acceptée avec la nouvelle fiche, épilogue atteint, modules ouverts
+  un par un, aucune erreur console.
+- Playwright 390×840 : le panneau de commande (chapeau + 3 lignes de cahier + 6
+  critères qui se cochent) et le menu Morceaux verrouillé — libellés relus dans
+  le DOM, `tousDesactives: true`.
+
+#### Fichiers touchés
+
+`src/model/styles.ts` (nouveau), `src/model/commande.ts` (`ContexteLivraison`,
+`details`, `dansLeStyleFiche`, `pasUnPresetCharge`, `empreinteEtat` ;
+`dansLeStyle`/`RANG_STYLE_MAX` retirés), `src/model/carriere.ts` (cahier
+Zik'Mobile, `chapeau`), `src/stores/pattern.svelte.ts` (provenance),
+`src/stores/game.svelte.ts` (`livrerCommande` prend un contexte),
+`src/ui/atelier/AtelierView.svelte`, `src/ui/atelier/ToolBar.svelte`,
+`scripts/parcours-carriere.cjs`, `tests/styles.test.ts`, `tests/commande.test.ts`,
+`CLAUDE.md`, `REPRISE.md`.
+
+#### Ce qui n'est PAS fait — les tranches suivantes
+
+- **Une seule fiche existe** (dancehall). Les autres genres commandés viendront
+  avec leur fiche ; le modèle est écrit et le calibrage est un test générique qui
+  s'appliquera à chacune.
+- **Les niveaux 4/12/13/27/32 restent des `reproduire`** dans l'acte 5. Les
+  sortir vers la salle de répétition et les remplacer par des commandes était la
+  suite annoncée — non faite ici pour garder la tranche jugeable.
+- **L'acte 4 (Le Tunnel en deux temps) n'est pas commencé.** C'est la tranche 2 :
+  remplir le séquenceur en techno, puis régler pour que ça tienne à la laverie.
+  Elle demande de décider ce qui compte comme « mieux mixé », un jugement musical
+  à arbitrer avant de coder.
+
+---
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre
