@@ -3,7 +3,7 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-25, après `fb1554f`.
+> Dernière mise à jour : 2026-08-26, après le plancher gelé.
 
 ## Où en est le projet
 
@@ -11,7 +11,7 @@ Séquenceur / boîte à rythmes web en Svelte 5, skin Winamp 2.x, déployé sur
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 253 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 264 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -22,64 +22,56 @@ attente dans `HISTOIRE.md`.
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
-| Niveaux | 59 |
+| Niveaux | 58 |
 | Commandes (production à livrer) | 5, aux actes 2 à 6 |
 
-## ⚠️ La décision en attente — à trancher avant de coder autre chose
+## Le déverrouillage — tranché le 2026-08-26
 
-**Les quatre modules se déverrouillent tous à la fin de l'acte 0.** Le
-déverrouillage narratif, qui est le principe même du Mode carrière, ne fait donc
-plus rien : quatre actes annoncent l'ouverture d'un module déjà ouvert.
+**C'était LA décision en attente ; elle est prise et livrée.** Les quatre
+modules se déverrouillaient tous à la fin de l'acte 0, ce qui vidait le
+déverrouillage narratif — le principe même du Mode carrière — de son rôle.
 
-Mesuré par un parcours complet depuis un joueur neuf :
+**Arbitrage de Yann : le plancher gelé** (sortie 1 des trois proposées).
 
-```
-── ACTE 0 « LE CAFÉ »   — modules: —
-── ACTE 1 « LE RYTHME » — modules: atelier,synth,production,live
-```
+`PlayerProgress.plancher` est le `level` d'AVANT la carrière, gelé une fois pour
+toutes dans `load()`, et c'est LUI que lisent les seuils de `moduleUnlocked` —
+plus jamais `level`, que la carrière fait monter en citant des niveaux du
+réservoir. Un joueur neuf gèle `1` : le récit gouverne seul. Un vétéran gèle ce
+qu'il avait : il ne perd aucun module. La règle qui en découle, inscrite dans
+`CLAUDE.md` : **une porte déjà ouverte ne se referme jamais.**
 
-**Cause.** `saveProgress` (`stores/game.svelte.ts`) fait
-`level = max(level, id + 1)`. L'acte 0 cite les niveaux 49 à 52 ; réussir le 52
-écrit `level = 53`, au-dessus des quatre seuils de `MODULE_UNLOCK_LEVEL`
-(2 / 13 / 27 / 34) d'un coup. Le second membre du OU de `moduleUnlocked`
-(`model/unlocks.ts`) ouvre alors tout.
+Vérifié par `scripts/parcours-carriere.cjs` depuis un joueur neuf — les modules
+s'ouvrent un par un (Atelier à la livraison de l'acte 1, Synthé à l'acte 4,
+Production à l'acte 5, Live à l'épilogue), là où tout tombait d'un coup avant.
 
-**Le fond.** `level >= 34` voulait dire « a joué 34 niveaux de la campagne
-linéaire ». La carrière a supprimé cet ordre — elle cite les niveaux dans le
-désordre et au-delà de 34. Le seuil ne mesure plus rien.
-
-**Portée.** `PlayerProgress.level` n'est plus lu que par cette seule ligne
-(`unlocks.ts:101`) ; `niveauxDeRepetition` est passé à `niveauxRencontres`.
-
-**Les trois sorties**, recommandation en premier :
-
-1. **Geler le plancher avant la carrière.** Enregistrer une fois le `level` que
-   le joueur avait *avant* de commencer le récit, et s'en servir comme plancher.
-   Un vétéran garde ses modules, un joueur neuf part de zéro et le récit
-   gouverne. C'est exactement l'intention écrite dans `unlocks.ts`.
-2. **Retirer le seuil.** Le récit devient l'unique voie. Plus simple, mais un
-   vétéran perd l'accès jusqu'à refaire la carrière.
-3. **Ne rien faire**, en sachant que le déverrouillage narratif est décoratif.
-
-*Yann n'a pas encore tranché. Ne pas choisir à sa place.*
+**Sur la sauvegarde, qui était la vraie question :** rien n'était à écrire.
+La reprise existait et était juste — curseur `{ acte, etape }` persisté par
+étape franchie, jamais reculant, restauré par `setPseudo` → `load()`, et les
+modules **dérivés** de l'acte plutôt que stockés (une seule source de vérité).
+Deux limites connues et non traitées, par choix : rien ne traverse les appareils
+(il faudrait un code de reprise, `share.ts` saurait le porter), et la
+granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
+début.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 253 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 264 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840.
 
 **La chaîne des actes est saine.** `scripts/parcours-carriere.cjs` joue la
 carrière entière depuis un joueur neuf : les huit actes s'enchaînent, les cinq
-commandes sont acceptées, l'épilogue est atteint, aucune erreur console. Le seul
-défaut qu'il trouve est le déverrouillage ci-dessus.
+commandes sont acceptées, l'épilogue est atteint, aucune erreur console, et les
+modules s'ouvrent désormais un par un. Il ne trouve plus rien.
 
-**Angle mort découvert cette session, à ne pas repayer :** chaque acte avait été
-vérifié isolément avec une fixture `localStorage` où `level` était posé à la
-main. C'est ce qui a caché le défaut ci-dessus pendant sept PR — une fixture ne
-joue pas le jeu. **Relancer `scripts/parcours-carriere.cjs` après toute
-modification du déverrouillage, de la progression ou de la chaîne des actes**
-(`npm run dev` dans un terminal, puis `node scripts/parcours-carriere.cjs`).
+**Angle mort à ne pas repayer :** chaque acte avait été vérifié isolément avec
+une fixture `localStorage` où `level` était posé à la main. C'est ce qui a caché
+le défaut du déverrouillage pendant sept PR — une fixture ne joue pas le jeu.
+**Relancer `scripts/parcours-carriere.cjs` après toute modification du
+déverrouillage, de la progression ou de la chaîne des actes** (`npm run dev`
+dans un terminal, puis `node scripts/parcours-carriere.cjs`). Même raison pour
+`tests/plancher.test.ts`, qui monte un vrai `localStorage` en mémoire plutôt que
+de poser l'objet attendu.
 
 **Pas encore vérifié :** un vrai parcours à la souris/au doigt de bout en bout
 (le script pilote le store, il ne clique pas). Et le Mode Live n'a pas été
@@ -108,6 +100,8 @@ retouché de la session.
 - **La skin Winamp 2.x est un choix, pas un héritage.** Le biseau d'un pixel est
   la grammaire.
 - **Un acte cite des niveaux du réservoir, il n'en fabrique jamais.**
+- **Une porte déjà ouverte ne se referme jamais** (Yann, 2026-08-26) — d'où le
+  plancher gelé, et son repli sur `level` pour les sauvegardes d'avant.
 - **Une commande vérifie un cahier des charges, jamais une cible.**
 
 ## Où lire quoi
@@ -133,4 +127,12 @@ Aucune n'est engagée — demander avant de plonger.
   jamais commandés pendant la campagne — c'est voulu, mais jamais vérifié par un
   test.
 - L'arbitrage design A/B/C de `PLAN.md` (« XP est le cadre, l'instrument est
-  sombre ») est resté en attente depuis août.
+  sombre ») est resté en attente depuis août — c'est la plus ancienne décision
+  ouverte, et elle conditionne toute passe d'UI.
+- **Le Mode Live reste à l'acte 7**, donc derrière tout le récit, alors qu'il est
+  le seul mode pensé pour le téléphone en paysage. Cohérent narrativement (l'acte
+  7 *est* le concert), jamais essayé sur un vrai téléphone. À trancher dans la
+  reprise du Mode Live.
+- **Rien ne traverse les appareils** : téléphone et ordinateur sont deux joueurs
+  distincts. Un « code de reprise » encodant la progression comme `share.ts`
+  encode un rythme réglerait ça — chantier à part, non engagé.

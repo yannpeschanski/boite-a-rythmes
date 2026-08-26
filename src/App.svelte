@@ -12,8 +12,7 @@
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
-  import { unlockLevelFor, unlockActeFor, type LockedModule } from './model/unlocks';
-  import { acteParId } from './model/carriere';
+  import { libelleVerrou, verrouCourt, type LockedModule } from './model/unlocks';
 
   let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
 
@@ -61,17 +60,11 @@
     if (mod && !unlocks.has(mod)) return;
     view = v;
   }
-  /* Le verrou dit désormais l'ACTE, pas le numéro de niveau — et il dit les
-     deux voies, parce qu'elles existent toutes les deux : le récit ouvre le
-     module « parce qu'un acte en a besoin » (HISTOIRE.md), les niveaux du
-     réservoir restent un plancher pour qui joue hors carrière. */
-  function lockTitle(mod: LockedModule): string {
-    const a = acteParId(unlockActeFor(mod));
-    return `S’ouvre à l’acte ${a.id} — ${a.titre} (ou au niveau ${unlockLevelFor(mod)} en salle de répétition)`;
-  }
-  function lockShort(mod: LockedModule): string {
-    return `Acte ${unlockActeFor(mod)}`;
-  }
+  /* Les libellés viennent de `model/unlocks.ts` : les onglets de l'Atelier et
+     le bouton Mode Live affichent le même verrou, et disaient un autre chemin
+     que cet écran-ci. Une seule définition. */
+  const lockTitle = libelleVerrou;
+  const lockShort = verrouCourt;
 </script>
 
 {#if view === 'live'}
@@ -112,6 +105,16 @@
     {/if}
     {#if unlocks.totalAccess}
       <p class="boss">🔓 Accès total — <code>{unlocks.totalAccessHint}</code></p>
+    {/if}
+    <!-- Le stockage refusé était SILENCIEUX : les modules se reverrouillaient
+         à chaque visite et rien ne disait pourquoi. Un verrou qui revient sans
+         explication se lit comme une panne du jeu, pas comme un réglage du
+         navigateur. -->
+    {#if game.persistanceRefusee}
+      <p class="sansmemoire">
+        ⚠ Ce navigateur refuse d’enregistrer (navigation privée ?). Le jeu marche, mais la
+        progression sera perdue en fermant l’onglet.
+      </p>
     {/if}
   </div>
 {:else}
@@ -197,6 +200,13 @@
     margin: 18px 0 0;
     font-size: 12.5px;
     opacity: 0.9;
+  }
+  .splash .sansmemoire {
+    margin: 10px auto 0;
+    max-width: 42ch;
+    font-size: var(--xp-size-body);
+    color: var(--xp-accent-amber);
+    opacity: 0.95;
   }
   .splash .boss {
     margin: 10px 0 0;
