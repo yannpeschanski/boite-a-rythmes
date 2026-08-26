@@ -30,6 +30,7 @@
  */
 import type { PatternStateV2, DrumRowName, SynthRowName } from './types';
 import { evaluerStyle, type FicheStyle } from './styles';
+import { LAVERIE_DRIVES } from './exercises';
 
 /* Ce qu'une contrainte peut avoir besoin de savoir EN PLUS du morceau livré.
  *
@@ -50,6 +51,12 @@ export interface Contrainte {
   /** La demande du client, en une ligne, affichée comme une case à cocher.
    *  Écrite du point de vue de CE QU'IL VEUT, jamais du champ qu'on lit. */
   libelle: string;
+  /* Le titre de l'étape à laquelle cette ligne appartient, quand la commande
+   * en a plusieurs. L'acte 4 se fait EN DEUX TEMPS — « d'abord remplir le
+   * séquenceur avec un morceau techno, puis ensuite régler les paramètres pour
+   * avoir un meilleur son » — et un cahier de neuf lignes à plat ne dit pas
+   * qu'il y a deux gestes différents à faire, dans cet ordre. */
+  section?: string;
   /** Vrai si le morceau livré satisfait la demande. */
   verifie: (etat: PatternStateV2, ctx?: ContexteLivraison) => boolean;
   /* Le détail d'une contrainte qui en contient plusieurs — aujourd'hui la
@@ -197,6 +204,96 @@ export function empreinteEtat(e: PatternStateV2): string {
     })
     .join('|');
   return `${e.tempo}/${e.swing}/${drums}/${synth}`;
+}
+
+/* ---- LE MIXAGE : ce qui compte comme « mieux », et pourquoi ----------
+ *
+ * L'acte 4 tient sur une phrase qui ne peut pas être racontée : *« Ton morceau
+ * est bon dans ton ordinateur. Ici, il est mauvais. »* Le verbe `laverie` la
+ * fait ENTENDRE ; ces trois contraintes-là la font FAIRE.
+ *
+ * ⚠️ Elles se mesurent sur l'ÉTAT, pas sur l'audio rendu. Rendre le morceau
+ * dans un `OfflineAudioContext` à chaque frappe serait asynchrone et lent : le
+ * cahier vivant — qui se coche pendant qu'on travaille et qui est la moitié de
+ * l'intérêt d'une commande — deviendrait un verdict rendu au clic. Ce qu'on y
+ * perd en fidélité, on le récupère par le CALIBRAGE : le seuil du drive vient
+ * d'une mesure réelle (voir juste en dessous).
+ *
+ * Trois, pas dix — et chacune exige un GESTE. Un critère satisfait sans rien
+ * toucher est du théâtre : c'est pour ça que « pas trop de réverbe » seul
+ * n'existe pas ici (la réverbe est à zéro par défaut, la ligne serait cochée
+ * d'avance), et qu'il est devenu « de l'espace, mais pas de la soupe ».
+ */
+
+/* Le kick doit exister AILLEURS que dans le grave.
+ *
+ * Seuil repris de `LAVERIE_DRIVES`, et donc d'une mesure : rendu du vrai graphe
+ * dans un `OfflineAudioContext`, kick seul, RMS après le passe-haut du petit
+ * haut-parleur rapporté au RMS en studio — drive 0 → 13 %, drive 55 → ~35 %,
+ * drive 100 → 40 %. On demande le palier du milieu, celui que l'exercice de la
+ * laverie vient de faire entendre. Un chiffre choisi à vue aurait été une
+ * exigence arbitraire ; celui-là est la moitié de l'énergie perdue, récupérée.
+ */
+export function kickQuiPorte(
+  libelle = 'Le kick doit s’entendre hors du grave — monte son drive',
+): Contrainte {
+  return {
+    id: 'kick-porte',
+    libelle,
+    verifie: (e) => e.rows.kick.tone >= LAVERIE_DRIVES[1],
+  };
+}
+
+/* « Tu enlèves. Ensuite seulement, tu ajoutes. » — Sol, acte 4.
+ *
+ * Le filtre passe-bas est le geste qui enlève, et le premier du mixage : deux
+ * instruments qui occupent la même bande s'effacent l'un l'autre.
+ *
+ * ⚠️ Le kick est EXCLU du décompte, et ce n'est pas un détail : lui couper les
+ * aigus retirerait exactement ce qui vient de lui permettre de survivre au
+ * petit haut-parleur. Une contrainte qui accepterait ça enseignerait le
+ * contraire de l'acte.
+ */
+export const COUPE_AUDIBLE_HZ = 8000;
+
+export function avoirEnleve(
+  libelle = 'Enlève avant d’ajouter : filtre une ligne qui encombre',
+): Contrainte {
+  return {
+    id: 'enleve',
+    libelle,
+    verifie: (e) =>
+      (['snare', 'hat', 'clap', 'shaker'] as DrumRowName[]).some(
+        (l) => !e.rows[l].muted && e.rows[l].filterCutoff <= COUPE_AUDIBLE_HZ,
+      ),
+  };
+}
+
+/* L'espace, et sa mesure — les deux moitiés d'une seule leçon.
+ *
+ * La réverbe éloigne, c'est ce qui place un son au fond de la pièce ; en trop,
+ * elle transforme une boucle en bouillie sur un petit haut-parleur. Exiger
+ * seulement le plafond donnerait une case cochée d'avance (la réverbe part à
+ * zéro) ; exiger seulement le plancher apprendrait à en mettre sans apprendre
+ * à s'arrêter. Les deux ensemble décrivent le geste réel.
+ */
+export const REVERBE_PLANCHER = 0.1;
+export const REVERBE_PLAFOND = 0.4;
+
+export function deLEspaceSansSoupe(
+  libelle = 'De l’espace, sans noyer : un peu de réverbe, pas trop',
+): Contrainte {
+  const lignes: DrumRowName[] = ['kick', 'snare', 'hat', 'clap', 'shaker'];
+  return {
+    id: 'espace',
+    libelle,
+    verifie: (e) => {
+      const envois = lignes.filter((l) => !e.rows[l].muted).map((l) => e.rows[l].reverbSend);
+      return (
+        envois.some((v) => v >= REVERBE_PLANCHER) && envois.every((v) => v <= REVERBE_PLAFOND)
+      );
+    },
+  };
 }
 
 /* ⚠️ Le verrou des presets — sans lui, l'acte 5 est un menu déroulant.

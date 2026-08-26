@@ -117,6 +117,68 @@ export function surLesTemps(
   };
 }
 
+/** Une ligne bien remplie — « le charley en doubles-croches », qu'on ne peut
+ *  pas dire en temps précis parce que c'est une DENSITÉ qu'on entend, pas un
+ *  placement. `part` est une fraction des pas de la ligne. */
+export function densiteAuMoins(
+  id: string,
+  ligne: DrumRowName,
+  part: number,
+  libelle: string,
+  opts: { essentiel?: boolean; subdivMini?: number } = {},
+): CritereStyle {
+  return {
+    id,
+    libelle,
+    essentiel: opts.essentiel,
+    verifie: (e) => {
+      const r = e.rows[ligne];
+      if (r.muted) return false;
+      // Le DÉBIT autant que le remplissage : un charley plein en croches et un
+      // charley plein en doubles-croches ne sonnent pas pareil, et c'est ce
+      // qui sépare la house de la techno.
+      if (opts.subdivMini !== undefined && r.subdiv < opts.subdivMini) return false;
+      const pas = r.pattern.slice(0, r.subdiv);
+      return pas.filter((v) => (v as number) > 0).length >= part * r.subdiv;
+    },
+  };
+}
+
+/* Toutes les frappes de la ligne sont FERMÉES — aucune variante ouverte.
+ *
+ * C'est un critère de caractère, pas une absence : la ligne est là et on
+ * décrit comment elle sonne. Le charley qui ne s'ouvre jamais est ce qui rend
+ * la techno mécanique là où la house respire — mesuré sur les données, c'est
+ * même le seul critère qui sépare vraiment les quatre genres en
+ * four-on-the-floor. Une fiche ne doit pas exiger l'ABSENCE d'un instrument
+ * (« pas de caisse claire ») ; décrire le timbre d'une ligne présente est une
+ * autre chose. */
+export function sansOuverture(ligne: DrumRowName, libelle: string): CritereStyle {
+  return {
+    id: `ferme:${ligne}`,
+    libelle,
+    verifie: (e) => {
+      const r = e.rows[ligne];
+      if (r.muted) return false;
+      const pas = r.pattern.slice(0, r.subdiv);
+      return pas.some((v) => (v as number) > 0) && !pas.some((v) => (v as number) === 2);
+    },
+  };
+}
+
+/** Au moins une rafale sur la ligne — l'accent des musiques de machine. */
+export function rafaleSur(ligne: DrumRowName, libelle: string): CritereStyle {
+  return {
+    id: `rafale:${ligne}`,
+    libelle,
+    verifie: (e) => {
+      const r = e.rows[ligne];
+      if (r.muted) return false;
+      return r.rolls.slice(0, r.subdiv).some((n, i) => n > 1 && (r.pattern[i] as number) > 0);
+    },
+  };
+}
+
 /** Les quatre contretemps d'une mesure — le « et » de un-et-deux-et. */
 export const CONTRETEMPS = [0.5, 1.5, 2.5, 3.5];
 
@@ -215,7 +277,48 @@ const DANCEHALL: FicheStyle = {
   ],
 };
 
-export const FICHES: FicheStyle[] = [DANCEHALL];
+/* TECHNO MINIMALE — la fiche de l'acte 4, celle du morceau commandé par Le
+ * Tunnel. Relevée sur le preset `techno` : kick subdiv 4 sur les quatre temps
+ * (le four-on-the-floor), tempo 130, charley en doubles-croches sur les seize
+ * pas avec deux rafales d'accent (« snare à volume 0 + rafales d'accent sur le
+ * hat », dit sa propre notice), et une basse.
+ *
+ * ⚠️ Le kick « sur chaque temps » est le MÊME critère que celui du dancehall,
+ * et c'est normal : deux genres peuvent partager une fondation. Ce qui les
+ * sépare, ce sont les quatre autres — le calibrage le vérifie plutôt que de le
+ * supposer (`tests/styles.test.ts` exige deux critères d'écart au genre le
+ * plus proche).
+ *
+ * Pas de critère « pas de caisse claire » : une fiche dit ce qu'il FAUT
+ * entendre, jamais ce qu'il faut retirer. Une absence ne s'enseigne pas, et
+ * elle punirait un morceau qui sonne juste avec une claire discrète.
+ */
+const TECHNO: FicheStyle = {
+  id: 'techno',
+  label: 'Techno minimale',
+  chapeau: [
+    'Détroit, milieu des années 80 : pensée pour les machines.',
+    'Le kick sur les quatre temps, sans faiblir — le « four on',
+    'the floor ». Au-dessus, un charley en doubles-croches qui',
+    'ne s’ouvre jamais : c’est ce qui la rend mécanique, là où',
+    'la house respire. Des rafales pour accentuer, et une basse.',
+  ],
+  seuil: 0.8,
+  criteres: [
+    surLesTemps('kick-4x4', ['kick'], [0, 1, 2, 3], 'Le kick sur les quatre temps', {
+      essentiel: true,
+    }),
+    tempoEntre(124, 136, 'Entre 124 et 136 — le tempo du club'),
+    densiteAuMoins('hat-16', 'hat', 0.75, 'Un charley en doubles-croches, qui ne s’arrête pas', {
+      subdivMini: 16,
+    }),
+    sansOuverture('hat', 'Ce charley ne s’ouvre jamais — mécanique, pas dansant'),
+    rafaleSur('hat', 'Au moins une rafale d’accent sur le charley'),
+    synthQuiJoue('bass', 'Une basse qui joue', { essentiel: true }),
+  ],
+};
+
+export const FICHES: FicheStyle[] = [DANCEHALL, TECHNO];
 
 export function ficheStyle(id: string): FicheStyle | null {
   return FICHES.find((f) => f.id === id) ?? null;

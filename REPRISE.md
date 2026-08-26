@@ -3,7 +3,7 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-26, après les fiches de style.
+> Dernière mise à jour : 2026-08-26, après l'acte 4 en deux temps.
 
 ## Où en est le projet
 
@@ -11,7 +11,7 @@ Séquenceur / boîte à rythmes web en Svelte 5, skin Winamp 2.x, déployé sur
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 274 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 287 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -69,15 +69,13 @@ description, validation par part de critères avec seuil réglable, verrou de
 provenance sur les presets, basse exigée. Calibrée et testée sur **un** genre,
 dancehall. Voir `PLAN.md`, « Les fiches de style ».
 
-**Tranche 2 — à faire, et c'est celle qui a fait tiquer Yann en premier.**
-L'acte 4 en deux temps, tel qu'il l'a décrit : *« pour le tunnel, il faut
-d'abord remplir le séquenceur avec un morceau techno, puis ensuite régler les
-paramètres pour avoir un meilleur son »*. La première moitié réutilise les
-fiches (il faut donc écrire celle de la techno). La seconde demande une
-**mesure du mixage** — l'étage du petit haut-parleur existe déjà
-(`petitHPSec`/`petitHPHumide`, en branche parallèle), mais **ce qui compte comme
-« mieux » reste à arbitrer** : c'est un jugement musical, pas un calcul. Deux ou
-trois critères mesurables, pas dix.
+**Tranche 2 — LIVRÉE.** L'acte 4 en deux temps : produire un morceau techno
+(fiche `techno`), puis le régler pour qu'il tienne à la laverie. L'arbitrage
+« qu'est-ce qui compte comme mieux mixé » a été délégué et tranché ainsi : on
+mesure l'ÉTAT et non l'audio rendu (sinon le cahier vivant devient asynchrone),
+trois critères et pas dix, et **chacun exige un geste** — un critère coché sans
+rien toucher est du théâtre. Le seuil du drive vient de la mesure du petit
+haut-parleur. Voir `PLAN.md`, « L'acte 4 en deux temps ».
 
 **Tranche 3 — à faire.** Sortir les niveaux `reproduire` 4/12/13/27/32 de l'acte
 5 vers la salle de répétition, et les remplacer par des commandes de style (une
@@ -86,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 274 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 287 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840.
 

@@ -213,18 +213,32 @@ describe('la commande survit au voyage jusqu’à l’Atelier', () => {
   });
 });
 
-/** Fabrique un état qui satisfait un cahier — en posant ce qu'il demande. */
+/** Fabrique un état qui satisfait un cahier — en posant ce qu'il demande.
+ *
+ * Il LIT le cahier plutôt que de poser un morceau générique : depuis que les
+ * commandes exigent un genre précis (`fiche:<id>`), partir toujours du même
+ * preset ferait échouer toutes les autres. On rejoue donc la grille du genre
+ * demandé — ce qu'un joueur fait à la main, et ce que le verrou de provenance
+ * autorise (il refuse un preset CHARGÉ, pas une grille ressemblante). */
 async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV2> {
-  const st = etatDuPreset('dancehall');
+  const fiche = cahier.find((c) => c.id.startsWith('fiche:'))?.id.slice(6);
+  const st = etatDuPreset(fiche ?? 'dancehall');
   st.swing = 30;
   st.rows.snare.pattern[4] = 2 as never;
   const actif = st.rows.kick.pattern.findIndex((v) => (v as number) > 0);
   st.rows.kick.rolls[actif] = 3;
+  // Une rafale d'accent sur le charley — la fiche techno en demande une.
+  const hatActif = st.rows.hat.pattern.findIndex((v) => (v as number) > 0);
+  if (hatActif >= 0) st.rows.hat.rolls[hatActif] = 3;
   st.synthRows.bass.muted = false;
   st.synthRows.bass.subdivisions = 8;
   st.synthRows.bass.pattern = new Array(8).fill(null);
   st.synthRows.bass.pattern[0] = { degree: 1, octave: 0 };
-  void cahier;
+  // Les trois gestes de mixage de l'acte 4 (voir tests/mixage.test.ts). Sans
+  // effet sur les cahiers qui ne les demandent pas.
+  st.rows.kick.tone = 60;
+  st.rows.hat.filterCutoff = 6000;
+  st.rows.snare.reverbSend = 0.2;
   return st;
 }
 

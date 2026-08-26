@@ -6872,6 +6872,119 @@ le récit au passage.
 
 ---
 
+### ✅ L'acte 4 en deux temps — une leçon de production qui se FAIT (2026-08-26)
+
+> « bizarre les exercices pour la production. »
+> « il faut pousser les exercices à faire en atelier. Par exemple pour le
+> tunnel, il faut d'abord remplir le séquenceur avec un morceau techno. Puis
+> ensuite régler les paramètres pour avoir un meilleur son. »
+> « je suis ta préconisation pour l'arbitrage. »
+
+Tranche 2. L'acte 4 avait une bonne scène d'ouverture — le petit haut-parleur
+de la laverie, qui fait ENTENDRE « ton morceau est bon dans ton ordinateur, ici
+il est mauvais » — et une commande qui ne vérifiait **aucun mixage** :
+kick + snare + hat + une basse + une variante. Le joueur entendait le problème,
+apprenait à nommer un filtre, puis livrait sans avoir jamais rien corrigé.
+
+#### L'arbitrage : ce qui compte comme « mieux mixé »
+
+Yann a délégué. Trois décisions, dans l'ordre où elles se posent :
+
+**1. On mesure l'ÉTAT, pas l'audio rendu.** Rendre le morceau dans un
+`OfflineAudioContext` à chaque frappe serait asynchrone et lent : le cahier
+vivant — qui se coche pendant qu'on travaille, et qui est la moitié de
+l'intérêt d'une commande — redeviendrait un verdict rendu au clic. Ce qu'on
+perd en fidélité se récupère par le calibrage du seuil (point 2).
+
+**2. Trois critères, pas dix — et chacun exige un GESTE.** C'est la contrainte
+qui a le plus filtré les candidats : « pas trop de réverbe » seul est une case
+cochée d'avance (la réverbe part à zéro), donc du théâtre. Il est devenu « de
+l'espace, mais pas de la soupe », qui demande d'en mettre ET de s'arrêter.
+
+**3. Chaque critère est une phrase de l'acte**, pas une règle de mixage
+générique :
+
+| Critère | La phrase | Le seuil |
+|---|---|---|
+| `kickQuiPorte` | le kick doit exister hors du grave | `tone >= 55` |
+| `avoirEnleve` | « tu enlèves, ensuite seulement tu ajoutes » | une ligne ≤ 8 kHz |
+| `deLEspaceSansSoupe` | la réverbe éloigne ; en trop, c'est de la bouillie | 0,10 ≤ envoi ≤ 0,40 |
+
+⚠️ **Le seuil du premier n'est pas choisi à vue** : c'est `LAVERIE_DRIVES[1]`,
+donc la mesure déjà au dossier — rendu du vrai graphe dans un
+`OfflineAudioContext`, kick seul, RMS après le passe-haut du petit
+haut-parleur rapporté au studio : **drive 0 → 13 %, drive 55 → ~35 %, drive
+100 → 40 %**. On demande le palier que l'exercice de la laverie vient de faire
+entendre. La moitié de l'énergie perdue, récupérée.
+
+⚠️ **Le kick est EXCLU de `avoirEnleve`**, et ce n'est pas un détail : lui
+couper les aigus retirerait exactement ce qui vient de lui permettre de
+survivre au petit haut-parleur. Une contrainte qui l'accepterait enseignerait
+le contraire de l'acte. Un test le tient.
+
+#### La fiche techno, et ce que le calibrage a corrigé
+
+Premier jet : kick sur les quatre temps, tempo 122-140, charley dense, une
+rafale, une basse. **Le test de calibrage l'a refusé** — house, hardhouse et
+amapiano passaient à 4/5. La fiche décrivait « n'importe quel morceau de club
+en four-on-the-floor », pas la techno.
+
+Les données ont tranché, et c'est un vrai discriminant musical : la techno a un
+charley **en doubles-croches et entièrement fermé** ; house l'ouvre sur les
+contretemps (subdiv 8), hardhouse et amapiano l'ouvrent sur [2,6,10,14]. D'où
+deux critères neufs — `densiteAuMoins` avec un `subdivMini` (le DÉBIT autant
+que le remplissage) et `sansOuverture`. Résultat : techno 6/6, le suivant 4/6.
+
+⚠️ `sansOuverture` décrit le CARACTÈRE d'une ligne présente, pas une absence.
+Une fiche ne doit pas exiger qu'un instrument manque (« pas de caisse
+claire ») : ça punirait un morceau qui sonne juste avec une claire discrète.
+Dire « ce charley ne s'ouvre jamais » est une autre chose — c'est ce qu'on
+entend.
+
+#### Le cahier en deux temps, à l'écran
+
+`Contrainte.section` et des titres d'étape dans le panneau : « 1 · LE
+MORCEAU », « 2 · LE MIXAGE — pour que ça tienne à la laverie ». Six lignes à
+plat ne disent pas qu'il y a deux gestes différents à faire, ni dans quel
+ordre.
+
+⚠️ **Le contraste mesuré, pas jugé à l'œil.** Premier essai avec
+`--xp-lcd-dim` : **1,5:1** contre le chrome du panneau — illisible. Ce token
+est fait pour un segment sur fond d'afficheur NOIR. Passé en
+`--xp-accent-amber` : **4,76:1**. Et ambre plutôt que vert parce que dans cette
+grammaire le vert dit « allumé / fait », or un titre d'étape n'est pas un état.
+
+#### Ce qui le vérifie
+
+- `tests/mixage.test.ts` (+13, nouveau). Le test qui compte : **un morceau
+  techno correct ne passe PAS le mixage** — sinon le second temps serait
+  décoratif, c'est-à-dire le défaut qu'on corrige. Plus le calibrage : aucun
+  des 34 presets n'arrive déjà mixé (ce sont des mixages de studio, sujet même
+  de l'acte).
+- `tests/commande.test.ts` : le test « aucune commande n'est un cul-de-sac » a
+  attrapé la refonte du premier coup (son constructeur d'état partait toujours
+  du preset dancehall). Il LIT désormais le cahier pour savoir quel genre
+  produire.
+- 287 tests, 0 erreur de types, les deux builds, parcours complet sur serveur
+  neuf, Playwright 390×840 (sections relues dans le DOM, contraste mesuré).
+
+#### Fichiers touchés
+
+`src/model/styles.ts` (fiche techno, `densiteAuMoins`, `sansOuverture`,
+`rafaleSur`), `src/model/commande.ts` (les trois contraintes de mixage,
+`section`), `src/model/carriere.ts` (cahier du Tunnel en deux temps),
+`src/ui/atelier/AtelierView.svelte`, `scripts/parcours-carriere.cjs`,
+`tests/mixage.test.ts`, `tests/commande.test.ts`, `CLAUDE.md`, `REPRISE.md`.
+
+#### Ce qui n'est PAS fait
+
+Les verbes de paramètre 54-57 restent dans l'acte 4. Ils ne sont plus orphelins
+— ils enseignent le filtre et la réverbe que la commande fait maintenant
+utiliser — mais les déplacer vers la salle de répétition reste la tranche 3,
+avec les `reproduire` de l'acte 5.
+
+---
+
 ### ✅ Les fiches de style — l'acte 5 cesse d'être un menu déroulant (2026-08-26)
 
 > « les reproductions de style, ça doit être fait en atelier, les presets

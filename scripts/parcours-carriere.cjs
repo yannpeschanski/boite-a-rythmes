@@ -110,6 +110,16 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         st.synthRows.bass.subdivisions = 8;
         st.synthRows.bass.pattern = new Array(8).fill(null);
         st.synthRows.bass.pattern[0] = { degree: 1, octave: 0 };
+        /* Le MIXAGE de l'acte 4 : la commande du Tunnel se fait en deux temps
+           depuis le 2026-08-26 (voir `kickQuiPorte` / `avoirEnleve` /
+           `deLEspaceSansSoupe`). On fait les trois gestes, comme un joueur qui
+           sort de l'exercice de la laverie. */
+        st.rows.kick.tone = 60;
+        st.rows.hat.filterCutoff = 6000;
+        st.rows.snare.reverbSend = 0.2;
+        // Une rafale d'accent sur le charley — la techno en demande une.
+        st.rows.hat.rolls = new Array(32).fill(1);
+        st.rows.hat.rolls[3] = 3;
         const v = game.livrerCommande(pattern.snapshot());
         const manque = v.lignes.filter((l) => !l.ok).map((l) => l.contrainte.libelle);
         log.push(`   commande « ${e.entete} » → ${v.accepte ? 'ACCEPTÉE' : 'refusée : ' + manque.join(' / ')}`);
