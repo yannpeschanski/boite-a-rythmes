@@ -14,9 +14,7 @@ import {
   swingAuMoins,
   ligneSynthPresente,
   tempoEntre,
-  dansLeStyle,
   pasLeMotifDeDepart,
-  RANG_STYLE_MAX,
 } from '../src/model/commande';
 import { defaultState } from '../src/model/defaults';
 import { PRESETS } from '../src/model/presets/songs';
@@ -128,11 +126,11 @@ describe('chaque contrainte sait dire NON', () => {
  */
 describe('livrer sans rien faire ne passe jamais', () => {
   it('le motif de départ EST du Motown aux yeux du classement', () => {
+    // Mesuré : `rankPresets` donne 100 % au motif de départ sur « Motown /
+    // soul » ET sur « Swing » — il sort donc en tête ou juste derrière.
     const rang = rankPresets(defaultState()).findIndex((m) => m.preset.id === 'motown');
     expect(rang).toBeGreaterThanOrEqual(0);
-    expect(rang, 'le départ ressemble à Motown — d’où `pasLeMotifDeDepart`').toBeLessThan(
-      RANG_STYLE_MAX,
-    );
+    expect(rang, 'le départ ressemble à Motown — d’où `pasLeMotifDeDepart`').toBeLessThan(2);
   });
 
   it('mais la commande le refuse quand même', () => {
@@ -144,38 +142,13 @@ describe('livrer sans rien faire ne passe jamais', () => {
   });
 
   it('et le verdict complet refuse, en disant laquelle bloque', () => {
-    const cahier = [pasLeMotifDeDepart(defaultState()), dansLeStyle('motown')];
+    const cahier = [
+      pasLeMotifDeDepart(defaultState()),
+      lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes'),
+    ];
     const v = evaluerCommande(defaultState(), cahier);
     expect(v.accepte).toBe(false);
     expect(v.lignes.map((l) => l.ok)).toEqual([false, true]);
-  });
-});
-
-/* « Dans le style », c'est un RANG et pas un pourcentage — le score compte les
- * cases identiques, cases vides comprises, donc il ne veut rien dire seul. */
-describe('dansLeStyle accepte une variation, pas n’importe quoi', () => {
-  const GENRES = ['boombap', 'house', 'jungle', 'techno'];
-
-  it('accepte le morceau lui-même', () => {
-    for (const id of GENRES) {
-      expect(dansLeStyle(id).verifie(etatDuPreset(id)), id).toBe(true);
-    }
-  });
-
-  it('accepte encore quatre cases de charleston inversées', () => {
-    for (const id of GENRES) {
-      const st = etatDuPreset(id);
-      const h = st.rows.hat.pattern as unknown as number[];
-      for (let i = 0; i < 4; i++) h[i] = h[i] ? 0 : 1;
-      expect(dansLeStyle(id).verifie(st), id).toBe(true);
-    }
-  });
-
-  it('refuse un autre genre', () => {
-    // La jungle à 170 BPM et la house four-on-the-floor n'ont pas la même
-    // grille : chacune doit refuser l'autre.
-    expect(dansLeStyle('jungle').verifie(etatDuPreset('house'))).toBe(false);
-    expect(dansLeStyle('house').verifie(etatDuPreset('jungle'))).toBe(false);
   });
 });
 

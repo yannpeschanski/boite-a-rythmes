@@ -29,8 +29,20 @@
  * Module PUR : ni rune, ni DOM, ni audio. Il ne lit qu'un `PatternStateV2`.
  */
 import type { PatternStateV2, DrumRowName, SynthRowName } from './types';
-import { rankPresets } from '../engine/similarity';
-import { PRESETS } from './presets/songs';
+import { evaluerStyle, type FicheStyle } from './styles';
+
+/* Ce qu'une contrainte peut avoir besoin de savoir EN PLUS du morceau livré.
+ *
+ * Le morceau ne dit pas tout : deux grilles identiques peuvent avoir été
+ * tapées à la main ou chargées depuis le menu Presets, et ce n'est pas le même
+ * travail. La provenance vit dans le store (`pattern.presetCharge`), pas dans
+ * le format v2 — c'est de l'état d'interface, il ne se sérialise pas et le
+ * moteur ne le lit jamais. Elle arrive donc par ici. */
+export interface ContexteLivraison {
+  /** L'identifiant du preset chargé TEL QUEL, `null` dès la première
+   *  modification. Voir `pattern.presetCharge`. */
+  presetCharge?: string | null;
+}
 
 export interface Contrainte {
   /** Identifiant stable — sert aux tests et aux clés d'affichage. */
@@ -39,7 +51,13 @@ export interface Contrainte {
    *  Écrite du point de vue de CE QU'IL VEUT, jamais du champ qu'on lit. */
   libelle: string;
   /** Vrai si le morceau livré satisfait la demande. */
-  verifie: (etat: PatternStateV2) => boolean;
+  verifie: (etat: PatternStateV2, ctx?: ContexteLivraison) => boolean;
+  /* Le détail d'une contrainte qui en contient plusieurs — aujourd'hui la
+   * seule qui s'en serve est « dans le style de », dont les critères sont ce
+   * que le joueur doit LIRE pour savoir quoi changer. Une contrainte de style
+   * qui n'afficherait que son verdict global dirait « pas assez dancehall »,
+   * ce qui n'est pas un retour. */
+  details?: (etat: PatternStateV2) => Array<{ id: string; libelle: string; ok: boolean }>;
 }
 
 /** Le verdict d'une livraison : une case par ligne du cahier, et le total. */
@@ -48,8 +66,12 @@ export interface Verdict {
   accepte: boolean;
 }
 
-export function evaluerCommande(etat: PatternStateV2, cahier: Contrainte[]): Verdict {
-  const lignes = cahier.map((c) => ({ contrainte: c, ok: c.verifie(etat) }));
+export function evaluerCommande(
+  etat: PatternStateV2,
+  cahier: Contrainte[],
+  ctx: ContexteLivraison = {},
+): Verdict {
+  const lignes = cahier.map((c) => ({ contrainte: c, ok: c.verifie(etat, ctx) }));
   return { lignes, accepte: lignes.every((l) => l.ok) };
 }
 
@@ -115,33 +137,90 @@ export function tempoEntre(min: number, max: number, libelle: string): Contraint
   return { id: 'tempo', libelle, verifie: (e) => e.tempo >= min && e.tempo <= max };
 }
 
-/* ⚠️ « Dans le style de », et c'est la contrainte qui a demandé une mesure.
+/* ⚠️ « Dans le style de » — par FICHE de style, et c'est la contrainte qui a
+ * demandé le plus de mesures.
  *
- * `rankPresets` compare les CASES IDENTIQUES entre le morceau et chacun des 34
- * presets, en testant les six permutations de lignes. Deux enseignements du
- * banc d'essai, tous deux dimensionnants :
+ * Elle remplace une version qui demandait un RANG ≤ 3 dans `rankPresets`.
+ * Celle-là a été RETIRÉE plutôt que gardée en réserve : deux juges de style
+ * qui doivent rester d'accord finissent toujours par ne plus l'être (même
+ * raison que le comparateur unique de `comparerGrilles`). Ses trois défauts,
+ * tous mesurés le 2026-08-26 :
  *
- *   - un morceau modifié reste reconnaissable : quatre cases de charleston
- *     inversées laissent son preset d'origine au rang 1 ou 2 (mesuré sur boom
- *     bap, house, Motown et jungle). Un rang ≤ 3 dit donc « dans le style »
- *     sans exiger « à l'identique » — c'est exactement ce qu'on veut d'une
- *     commande ;
- *   - le SCORE, lui, ne veut rien dire seul : il compte les cases identiques,
- *     y compris les cases vides. C'est pour ça qu'on regarde un RANG et pas un
- *     pourcentage.
+ *   - **elle était contournable** : charger le preset `dancehall` depuis le
+ *     menu et livrer suffisait à la satisfaire. D'où `pasUnPresetCharge`,
+ *     obligatoire à côté de celle-ci ;
+ *   - **elle ne disait rien** : un rang ne se traduit pas en geste. Ici,
+ *     `details` rend les critères visibles un par un, et ils se cochent
+ *     pendant qu'on travaille comme le reste du cahier ;
+ *   - **elle ne voyait pas le synthé** : `rankPresets` ne compare que
+ *     kick/snare/hat. Une fiche peut exiger une basse, et le dancehall le
+ *     fait — un riddim sans basse n'est pas un riddim.
+ *
+ * Le libellé porte le compte (« 5/6 »), parce qu'une tolérance qu'on ne voit
+ * pas est indistinguable d'un refus arbitraire.
  */
-export const RANG_STYLE_MAX = 3;
-
-export function dansLeStyle(presetId: string, libelle?: string): Contrainte {
-  const p = PRESETS.find((x) => x.id === presetId);
+export function dansLeStyleFiche(fiche: FicheStyle, libelle?: string): Contrainte {
   return {
-    id: `style:${presetId}`,
-    libelle: libelle ?? `Ça doit sonner ${p?.label ?? presetId}`,
-    verifie: (e) => {
-      const rang = rankPresets(e).findIndex((m) => m.preset.id === presetId);
-      return rang >= 0 && rang < RANG_STYLE_MAX;
-    },
+    id: `fiche:${fiche.id}`,
+    libelle: libelle ?? `Ça doit sonner ${fiche.label}`,
+    verifie: (e) => evaluerStyle(e, fiche).atteint,
+    details: (e) =>
+      evaluerStyle(e, fiche).lignes.map((l) => ({
+        id: l.critere.id,
+        libelle: l.critere.essentiel ? `${l.critere.libelle} (sans ça, non)` : l.critere.libelle,
+        ok: l.ok,
+      })),
   };
+}
+
+/* L'empreinte d'un morceau — ce qui change dès qu'on y touche vraiment.
+ *
+ * Sert à la PROVENANCE (`pattern.presetCharge`) : un preset chargé puis laissé
+ * tel quel garde son empreinte, la moindre modification la casse. Plus riche
+ * que celle de `pasLeMotifDeDepart`, qui ne regarde que les trois grilles de
+ * batterie et doit le rester — elle répond à une autre question (« a-t-on
+ * produit quelque chose ? »), et l'élargir ferait passer un simple changement
+ * de tempo pour une production.
+ */
+export function empreinteEtat(e: PatternStateV2): string {
+  const drums = (['kick', 'snare', 'hat', 'clap', 'shaker'] as DrumRowName[])
+    .map((l) => {
+      const r = e.rows[l];
+      const n = r.subdiv;
+      return `${l}${n}:${r.pattern.slice(0, n).join('')}:${r.rolls.slice(0, n).join('')}:${r.muted ? 'm' : ''}`;
+    })
+    .join('|');
+  const synth = (['bass', 'pad', 'melody'] as SynthRowName[])
+    .map((l) => {
+      const r = e.synthRows[l];
+      return `${l}:${r.pattern.slice(0, r.subdivisions).map((v) => (v === null ? '.' : v)).join(',')}`;
+    })
+    .join('|');
+  return `${e.tempo}/${e.swing}/${drums}/${synth}`;
+}
+
+/* ⚠️ Le verrou des presets — sans lui, l'acte 5 est un menu déroulant.
+ *
+ * Retour de Yann : *« les reproductions de style, ça doit être fait en
+ * atelier, les presets doivent être verrouillés avant »*. Mesuré avant de
+ * coder : charger `dancehall` et livrer donnait `produit=true`,
+ * `style:dancehall=true`, **accepté**.
+ *
+ * Ce qu'on refuse est la PROVENANCE, pas la ressemblance — et la nuance est
+ * tout le sujet. Refuser une grille identique à celle d'un preset punirait le
+ * joueur qui suit honnêtement la fiche : « kick sur chaque temps, rim shot sur
+ * 2 et 4, charley ouvert sur les contretemps » mène tout droit à la grille du
+ * preset, et c'est justement ce qu'on lui demande de faire. Un morceau tapé à
+ * la main passe donc, même s'il tombe juste ; un preset chargé et laissé tel
+ * quel ne passe pas.
+ *
+ * Le menu Presets est en plus désactivé pendant une commande (`ToolBar`) :
+ * celui-ci tient le cas où le preset a été chargé AVANT de l'ouvrir.
+ */
+export function pasUnPresetCharge(
+  libelle = 'Ton morceau, pas un preset chargé',
+): Contrainte {
+  return { id: 'pas-un-preset', libelle, verifie: (_e, ctx) => !ctx?.presetCharge };
 }
 
 /* ⚠️ La contrainte qui doit être dans TOUTES les commandes, et qui n'a rien

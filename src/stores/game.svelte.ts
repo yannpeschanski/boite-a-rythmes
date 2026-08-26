@@ -50,7 +50,7 @@ import {
   EPILOGUE,
   LONGUEUR_EPILOGUE,
 } from '../model/carriere';
-import { evaluerCommande, type Verdict } from '../model/commande';
+import { evaluerCommande, type Verdict, type ContexteLivraison } from '../model/commande';
 import {
   BAG_ITEMS,
   CONSOLATION_ITEM,
@@ -538,10 +538,10 @@ class GameStore {
    * épreuve. Un refus n'est jamais muet : le verdict garde la ligne qui bloque,
    * et l'écran la montre. Un « non » sans raison est ce qui fait abandonner.
    */
-  livrerCommande(etat: PatternStateV2): Verdict | null {
+  livrerCommande(etat: PatternStateV2, ctx: ContexteLivraison = {}): Verdict | null {
     const c = this.commande;
     if (!c) return null;
-    const v = evaluerCommande(etat, c.cahier);
+    const v = evaluerCommande(etat, c.cahier, ctx);
     this.commandeVerdict = v;
     if (!v.accepte) return v;
     // On se replace sur l'étape livrée avant d'avancer : le joueur a pu relire
