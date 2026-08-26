@@ -30,13 +30,15 @@ import { LEVELS } from './presets/levels';
 import {
   type Contrainte,
   lignesPresentes,
-  auMoinsUneVariante,
   auMoinsUneRafale,
   swingAuMoins,
   ligneSynthPresente,
   pasLeMotifDeDepart,
   dansLeStyleFiche,
   pasUnPresetCharge,
+  kickQuiPorte,
+  avoirEnleve,
+  deLEspaceSansSoupe,
 } from './commande';
 import { ficheStyle } from './styles';
 import { defaultState } from './defaults';
@@ -50,6 +52,17 @@ const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
 /* La fiche du genre commandé par Zik'Mobile. Chargée une fois : elle sert à la
  * fois de brief affiché et de juge (voir `model/styles.ts`). */
 const FICHE_DANCEHALL = ficheStyle('dancehall')!;
+const FICHE_TECHNO = ficheStyle('techno')!;
+
+/* Les deux temps de la commande du Tunnel, tels que Yann les a décrits :
+ * « il faut d'abord remplir le séquenceur avec un morceau techno, puis ensuite
+ * régler les paramètres pour avoir un meilleur son ». */
+const LE_MORCEAU = '1 · LE MORCEAU';
+const LE_MIXAGE = '2 · LE MIXAGE — pour que ça tienne à la laverie';
+
+function dansLaSection<T extends { section?: string }>(section: string, lignes: T[]): T[] {
+  return lignes.map((l) => ({ ...l, section }));
+}
 
 export type ActeId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -795,11 +808,26 @@ export const ACTES: Acte[] = [
           '— Et mets une basse qui existe encore à la laverie.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
+        chapeau: FICHE_TECHNO.chapeau,
+        /* ⚠️ La commande refondue le 2026-08-26, sur le retour de Yann :
+         * l'acte 4 ne vérifiait AUCUN mixage. Le joueur entendait le problème
+         * à la laverie, apprenait à nommer un filtre, puis livrait un morceau
+         * jugé sur « kick + snare + hat + une basse » — rien ne reliait la
+         * leçon à la livraison. Elle se fait maintenant en deux temps : le
+         * morceau, puis le mixage qui le fait tenir sur le petit
+         * haut-parleur. Voir `kickQuiPorte` / `avoirEnleve` /
+         * `deLEspaceSansSoupe` dans `commande.ts`. */
         cahier: [
-          AVOIR_PRODUIT,
-          lignesPresentes(['kick', 'snare', 'hat'], 'La base, propre'),
-          ligneSynthPresente('bass', 'Une basse'),
-          auMoinsUneVariante('Un charley ouvert ou un rim shot — de l’air'),
+          ...dansLaSection(LE_MORCEAU, [
+            AVOIR_PRODUIT,
+            pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+            dansLeStyleFiche(FICHE_TECHNO, 'Un morceau techno — c’est un club, pas un salon'),
+          ]),
+          ...dansLaSection(LE_MIXAGE, [
+            kickQuiPorte(),
+            avoirEnleve(),
+            deLEspaceSansSoupe(),
+          ]),
         ],
         accepte: '— Cette fois, les gens bougent. Le lundi, ils paient.',
       },

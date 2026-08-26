@@ -438,7 +438,14 @@
         <p class="chapeau">{#each commande.chapeau as ligne (ligne)}{ligne}<br />{/each}</p>
       {/if}
       <ul>
-        {#each verdict?.lignes ?? [] as l (l.contrainte.id)}
+        {#each verdict?.lignes ?? [] as l, i (l.contrainte.id)}
+          <!-- Le titre d'étape, quand la commande se fait en plusieurs temps :
+               un cahier à plat ne dit pas qu'il y a deux gestes différents à
+               faire, ni dans quel ordre. Affiché au CHANGEMENT de section,
+               donc jamais deux fois de suite. -->
+          {#if l.contrainte.section && l.contrainte.section !== verdict?.lignes[i - 1]?.contrainte.section}
+            <li class="etape">{l.contrainte.section}</li>
+          {/if}
           <li class:ok={l.ok}>{l.ok ? '☑' : '☐'} {l.contrainte.libelle}</li>
           {#if l.contrainte.details}
             <!-- Le détail d'une contrainte de style : sans lui, un refus dit
@@ -754,6 +761,16 @@
     margin: 6px 0;
     padding: 0;
     list-style: none;
+  }
+  /* Ambre et pas vert : dans cette grammaire le vert dit « allumé / fait »,
+     or un titre d'étape n'est pas un état. Et surtout pas `--xp-lcd-dim`, qui
+     est fait pour un segment sur fond d'afficheur noir — mesuré à 1,5:1 sur le
+     chrome du panneau, donc illisible. */
+  .commande li.etape {
+    margin: 10px 0 3px;
+    color: var(--xp-accent-amber);
+    letter-spacing: var(--xp-ls-tag);
+    font-size: var(--xp-size-tag);
   }
   .commande .chapeau {
     margin: 0 0 8px;

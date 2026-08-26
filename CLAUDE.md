@@ -446,10 +446,39 @@ découlent, et aucune n'est cosmétique :
   chaque temps n'est pas un dancehall à 83 %, c'est autre chose. Deux au plus
   par fiche, sinon le seuil ne veut plus rien dire.
 
+Une fiche décrit ce qu'il FAUT entendre — jamais l'absence d'un instrument
+(« pas de caisse claire » punirait un morceau qui sonne juste avec une claire
+discrète). Décrire le CARACTÈRE d'une ligne présente est autre chose et reste
+permis : « ce charley ne s'ouvre jamais » est, mesuré sur les données, le seul
+critère qui sépare vraiment la techno de la house, de la hard house et de
+l'amapiano — toutes en four-on-the-floor.
+
 Une fiche se **calibre**, elle ne se devine pas : le preset du genre doit la
 satisfaire entièrement, les 33 autres échouer, et le plus proche rester à au
 moins **deux critères** (mesuré sur dancehall : 6/6 contre 4/6 pour house,
 hardhouse et amapiano). Même exigence que l'`ecartMini` de `parametres.ts`.
+
+⚠️ **Une leçon de PRODUCTION se mesure sur l'ÉTAT, et chaque critère exige un
+GESTE.** L'acte 4 se fait en deux temps — produire un morceau techno, puis le
+régler pour qu'il tienne sur le petit haut-parleur (`kickQuiPorte`,
+`avoirEnleve`, `deLEspaceSansSoupe` dans `commande.ts`). Trois choses y sont
+payées d'avance : rendre le morceau dans un `OfflineAudioContext` à chaque
+frappe rendrait le cahier vivant asynchrone, donc on mesure l'état et on
+calibre le seuil (`tone >= LAVERIE_DRIVES[1]`, la mesure du petit
+haut-parleur : 13 % de l'énergie survit à drive 0, ~35 % à 55) ; un critère
+satisfait sans rien toucher est du théâtre, d'où « de l'espace **mais pas de
+la soupe** » plutôt qu'un simple plafond de réverbe, qui serait coché d'avance ;
+et le kick est **exclu** de « tu as enlevé », parce que lui couper les aigus
+retirerait exactement ce qui vient de le sauver. `Contrainte.section` porte les
+titres d'étape : six lignes à plat ne disent pas qu'il y a deux gestes, ni dans
+quel ordre.
+
+⚠️ **Un token de couleur n'est pas transposable d'une surface à l'autre.**
+`--xp-lcd-dim` est fait pour un segment sur fond d'afficheur NOIR : posé sur le
+chrome d'un panneau il donne **1,5:1**, illisible. Mesuré, pas jugé à l'œil —
+et remplacé par `--xp-accent-amber` (4,76:1). Corollaire de grammaire : le vert
+dit « allumé / fait », donc un titre d'étape, qui n'est pas un état, ne doit
+pas être vert.
 
 ⚠️ **Une commande de style sans verrou de presets est un menu déroulant.**
 Mesuré avant correctif : charger le preset `dancehall` et livrer suffisait.
