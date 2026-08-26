@@ -471,6 +471,19 @@ tactiles réelles, contraste) ont trouvé des défauts invisibles à l'œil — 
 barre de 78px au lieu de 32, un analyseur qui dessinait 104 barres pour 74
 bandes utiles.
 
+⚠️ **Une fixture ne joue pas le jeu.** Les huit actes du Mode carrière ont été
+vérifiés un par un avec un `localStorage` posé à la main — ce qui a caché
+pendant sept PR que les quatre modules se déverrouillaient tous à la fin de
+l'acte 0. `scripts/parcours-carriere.cjs` joue la carrière entière depuis un
+joueur neuf et l'a trouvé du premier coup : **le relancer après toute
+modification du déverrouillage, de la progression ou de la chaîne des actes.**
+
+**`REPRISE.md` est le brief de reprise** — à lire en PREMIER en arrivant sur le
+projet : où en est le travail, la décision en attente, les pièges qui ont coûté
+du temps, et ce qui est vérifié ou non. `PLAN.md` reste le journal détaillé
+(7 000 lignes), `REPRISE.md` en est la carte. Le mettre à jour quand l'état
+général change — pas à chaque livraison.
+
 **Toujours mettre à jour `PLAN.md`** avec un ✅ détaillé (fichiers touchés,
 rationale, écarts de portée assumés) à chaque feature livrée — c'est la mémoire
 du projet d'une session à l'autre, à lire en premier en reprenant le travail.
