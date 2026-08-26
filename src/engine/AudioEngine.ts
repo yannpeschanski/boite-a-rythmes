@@ -24,6 +24,7 @@ import { scheduleClick } from './metronome';
 import { chordsFor, chordFreqs, degreeFreq, SCALE_LIBRARY } from './harmony';
 import { driveCurve, bitcrushCurve, applyCompressionAmount, makeupGainForCompression } from './fx';
 import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices';
+import { tamponCourant, noterSortie } from './tampon';
 
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
@@ -119,6 +120,12 @@ export const AVANCE_DECLENCHEMENT = 0.008; // s
  * appareil par appareil, et c'est précisément ce que fait le calibrage du Mode
  * jeu (ui/latence.svelte.ts).
  */
+/* ⚠️ C'est le DÉFAUT, plus la seule valeur possible depuis le 2026-08-26 : une
+ * sortie déjà lente (Bluetooth) repasse sur `'playback'`, parce que le petit
+ * tampon n'y gagne plus rien et continue d'y coûter des crachotements. La
+ * règle, son seuil et ses deux chemins de déclenchement sont dans
+ * `engine/tampon.ts` ; ce qui suit reste ce qu'on demande à une sortie
+ * normale, et l'arbitrage ci-dessus est intact pour elle. */
 export const TAMPON_SORTIE: AudioContextLatencyCategory = 'interactive';
 
 export class AudioEngine {
@@ -127,6 +134,9 @@ export class AudioEngine {
   private kit: DrumKit | null = null;
   private synth: SynthKit | null = null;
   private schedulerTimer: ReturnType<typeof setInterval> | null = null;
+  /* Le tampon demandé au contexte COURANT — comparé à `tamponCourant()` pour
+     savoir s'il faut rouvrir la sortie (voir adapterTampon). */
+  private tamponDemande: AudioContextLatencyCategory = TAMPON_SORTIE;
   private cursors: Cursors = AudioEngine.freshCursors();
   private synthCursors: SynthCursors = AudioEngine.freshSynthCursors();
   private currentBar = 0;
@@ -289,17 +299,59 @@ export class AudioEngine {
    */
   private ensureAudio(): void {
     if (this.ctx && this.graph) return;
-    this.ctx = new AudioContext({ latencyHint: TAMPON_SORTIE });
+    // `tamponCourant()` vaut TAMPON_SORTIE tant que la sortie n'a rien dit de
+    // suspect ; il passe à 'playback' sur une sortie lente ou si le réglage
+    // manuel le demande (engine/tampon.ts).
+    this.tamponDemande = tamponCourant();
+    this.ctx = new AudioContext({ latencyHint: this.tamponDemande });
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);
   }
 
+  /* Rouvre la sortie si le tampon voulu n'est plus celui du contexte en place.
+   *
+   * ⚠️ Uniquement À L'ARRÊT, et c'est la raison d'être de la garde : changer de
+   * tampon veut dire fermer le contexte et le rouvrir, donc couper le son. Au
+   * STOP suivant l'affaire est réglée pour toutes les lectures d'après.
+   *
+   * `outputLatency` vaut souvent 0 juste après la création du contexte — le
+   * flux n'est pas encore ouvert. On le relit donc ici (après la reprise) ET à
+   * chaque tick : la première lecture d'une session en Bluetooth déclare
+   * souvent la lenteur en cours de route, et c'est le ▶ suivant qui en tient
+   * compte. Pas de bascule à chaud : elle ferait un trou au milieu du morceau
+   * pour supprimer un crachotement.
+   */
+  private async adapterTampon(): Promise<void> {
+    const ctx = this.ctx;
+    // ⚠️ `liveRecorder` fait partie de la garde : `startLiveRecording` branche
+    // son tap sur `graph.finalGain` AVANT d'appeler start(). Rouvrir la sortie
+    // à ce moment-là remplacerait le graphe sous le magnétophone, qui
+    // enregistrerait un contexte fermé — un WAV silencieux, sans erreur.
+    if (!ctx || this.isPlaying || this.liveRecorder) return;
+    noterSortie(ctx.outputLatency);
+    if (tamponCourant() === this.tamponDemande) return;
+    await ctx.close();
+    this.ctx = null;
+    this.graph = null;
+    this.kit = null;
+    this.synth = null;
+    // Même remise à zéro qu'au stop() : le graphe neuf part de l'état, pas du
+    // dernier palier live appliqué (voir setLiveSaturation/setLiveBitcrush).
+    this.liveSatBucket = null;
+    this.liveCrushBucket = null;
+    this.ensureAudio();
+    if (this.ctx!.state === 'suspended') await this.ctx!.resume();
+  }
+
   async start(): Promise<void> {
     this.ensureAudio();
-    const ctx = this.ctx!;
-    if (ctx.state === 'suspended') await ctx.resume(); // autoplay policy : resume sur geste utilisateur
+    if (this.ctx!.state === 'suspended') await this.ctx!.resume(); // autoplay policy : resume sur geste utilisateur
     if (this.isPlaying) return;
+    // Avant de poser les curseurs : adapterTampon peut remplacer le contexte,
+    // donc `ctx` ne doit pas être capturé plus haut.
+    await this.adapterTampon();
+    const ctx = this.ctx!;
     this.isPlaying = true;
     this.currentBar = 0;
     this.playheadQueue = [];
@@ -647,6 +699,10 @@ export class AudioEngine {
     const state = this.withLiveOverrides(this.getState());
     const now = ctx.currentTime;
     const barDur = barDuration(state.tempo);
+    // La latence déclarée n'est fiable qu'une fois le flux ouvert : c'est ici
+    // qu'on la voit vraiment. Une comparaison de nombre, 40 fois par seconde ;
+    // ce qu'elle observe ne s'applique qu'au prochain ▶ (voir adapterTampon).
+    noterSortie(ctx.outputLatency);
 
     if (this.nextBarTime !== null && now >= this.nextBarTime) {
       const justStartedBarTime = this.nextBarTime; // avant incrément : début de la mesure qui démarre tout juste

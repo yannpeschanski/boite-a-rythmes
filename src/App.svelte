@@ -9,6 +9,7 @@
   import LiveView from './ui/live/LiveView.svelte';
   import { game, LEVELS } from './stores/game.svelte';
   import { latence } from './ui/latence.svelte';
+  import { sortie } from './ui/sortie.svelte';
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
@@ -22,6 +23,10 @@
     // de l'Atelier) : il se charge une fois, au démarrage, pas dans l'écran qui
     // s'en sert en premier.
     latence.charger();
+    // Même domicile, même moment : le tampon de sortie est lui aussi une
+    // propriété de l'appareil, et il doit être posé AVANT le premier
+    // AudioContext — celui-ci naît au premier son, donc après ce onMount.
+    sortie.charger();
     // Contournement #boss AVANT tout le reste : ce qui suit lit les verrous.
     unlocks.init(location.hash);
     // Rythme partagé par URL : on entre directement dans l'Atelier. Le lien
