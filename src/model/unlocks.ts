@@ -13,7 +13,7 @@
 // tests/unlocks.test.ts, qui vérifie notamment le piège du seuil de
 // l'Atelier ci-dessous.
 import { LEVELS } from './presets/levels';
-import { ACTE_DU_MODULE } from './carriere';
+import { ACTE_DU_MODULE, acteParId } from './carriere';
 
 export type LockedModule = 'atelier' | 'synth' | 'production' | 'live';
 
@@ -60,6 +60,28 @@ export interface UnlockContext {
   /** `PlayerProgress.level` — niveau atteint (voir la sémantique ci-dessus). */
   level: number;
   /**
+   * Le PLANCHER — le `level` que le joueur avait AVANT d'entrer dans la
+   * carrière, gelé une fois pour toutes (`PlayerProgress.plancher`).
+   *
+   * Sans lui, le seuil de niveau court-circuitait le récit tout entier :
+   * l'acte 0 cite les niveaux 49 à 52, réussir le 52 écrit `level = 53`, et
+   * les quatre seuils (2 / 13 / 27 / 34) tombaient **d'un seul coup**. Quatre
+   * actes annonçaient ensuite l'ouverture d'un module déjà ouvert — le
+   * déverrouillage narratif, qui est le principe même du Mode carrière, ne
+   * faisait plus rien.
+   *
+   * Le fond : `level >= 34` voulait dire « a joué 34 niveaux de la campagne
+   * linéaire ». La carrière a supprimé cet ordre — elle cite les niveaux dans
+   * le désordre et au-delà de 34 — donc le seuil ne mesurait plus rien. Le
+   * geler avant le récit lui rend exactement le sens qu'il avait : ce que le
+   * joueur avait acquis en salle de répétition, hors carrière.
+   *
+   * Absent d'une sauvegarde d'avant ce champ : on retombe alors sur `level`,
+   * et le joueur garde tout ce qu'il avait — voir « une porte déjà ouverte ne
+   * se referme jamais » dans CLAUDE.md.
+   */
+  plancher?: number;
+  /**
    * L'acte du Mode carrière où en est le joueur — 0 s'il vient d'arriver.
    * Même sémantique que `level` : c'est l'acte ATTEINT, donc `acte = 2` veut
    * dire « les actes 0 et 1 sont terminés ».
@@ -84,21 +106,21 @@ export interface UnlockContext {
 
 /* Deux voies, jamais une seule — et le OU est délibéré.
  *
- * Le récit est la voie principale, mais seuls les actes 0 à 2 ont leurs
- * exercices écrits : si l'acte était la SEULE voie, le Synthé (acte 3), la
- * Production (acte 4) et le Mode Live (acte 7) deviendraient inatteignables du
- * jour où la carrière est arrivée — une régression pour tous ceux qui les
- * avaient déjà ouverts, et un mur pour les autres. Les seuils de niveau
- * restent donc un plancher, en salle de répétition.
+ * Le récit est la voie PRINCIPALE : c'est un acte qui ouvre un module, parce
+ * qu'il vient d'en avoir besoin. Les seuils de niveau restent un plancher pour
+ * qui joue hors carrière — un vétéran ne doit pas perdre l'accès à un module
+ * qu'il utilisait déjà le jour où la carrière est arrivée.
  *
- * Le jour où les huit actes sont écrits, retirer le second membre est un
- * changement d'une ligne — et une décision, pas un nettoyage.
+ * ⚠️ Mais ce plancher se lit sur `plancher`, PAS sur `level` — voir
+ * `UnlockContext.plancher`. Lu sur `level`, il ouvrait les quatre modules à la
+ * fin de l'acte 0 et vidait le récit de son rôle. Le repli sur `level` ne sert
+ * que les sauvegardes d'avant ce champ.
  */
 export function moduleUnlocked(name: LockedModule, cx: UnlockContext): boolean {
   if (cx.bypass) return true;
   if (name === 'atelier' && cx.sharedPattern) return true;
   if ((cx.acte ?? 0) > ACTE_DU_MODULE[name]) return true;
-  return cx.level >= MODULE_UNLOCK_LEVEL[name];
+  return (cx.plancher ?? cx.level) >= MODULE_UNLOCK_LEVEL[name];
 }
 
 /** L'acte qui ouvre le module, pour l'afficher sur le verrou. */
@@ -109,4 +131,26 @@ export function unlockActeFor(name: LockedModule): number {
 /** Niveau à atteindre, pour l'afficher sur le verrou (« Niveau 13 »). */
 export function unlockLevelFor(name: LockedModule): number {
   return MODULE_UNLOCK_LEVEL[name];
+}
+
+/* Ce que le verrou DIT — ici et nulle part ailleurs.
+ *
+ * Trois écrans affichent un cadenas : l'accueil (`App.svelte`), les onglets
+ * Synthé et Production (`AtelierView`), le bouton Mode Live (`ToolBar`). Les
+ * deux derniers annonçaient encore « Se débloque au niveau 13 du Mode jeu »
+ * alors que le récit est devenu la voie principale et que l'accueil, lui,
+ * disait déjà l'acte : le même verrou nommait deux chemins différents selon
+ * l'écran où on le rencontrait.
+ *
+ * Les deux voies sont dites, parce qu'elles existent toutes les deux — mais
+ * dans leur ordre réel, le récit d'abord.
+ */
+export function libelleVerrou(name: LockedModule): string {
+  const a = acteParId(unlockActeFor(name));
+  return `S’ouvre à l’acte ${a.id} — ${a.titre} (ou au niveau ${unlockLevelFor(name)} en salle de répétition)`;
+}
+
+/** La version courte, pour une pastille ou un sous-titre de bouton. */
+export function verrouCourt(name: LockedModule): string {
+  return `Acte ${unlockActeFor(name)}`;
 }

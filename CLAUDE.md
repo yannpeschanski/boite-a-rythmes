@@ -127,9 +127,10 @@ niveaux (la « salle de répétition ») dit ce qui est MAÎTRISÉ. Trois règle
 payées d'avance : un acte **cite** des niveaux du réservoir, il n'en fabrique
 jamais (un même exercice, pas une variante qui dériverait) ; le curseur persisté
 ne recule **jamais**, sinon relire l'acte 1 refermerait l'Atelier qu'il vient
-d'ouvrir ; et `moduleUnlocked` est un **OU** entre l'acte et l'ancien seuil de
-niveau, parce que seuls les actes 0-2 ont leurs exercices écrits — retirer le
-second membre priverait tout le monde du Synthé, de la Production et du Live.
+d'ouvrir ; et `moduleUnlocked` est un **OU** entre l'acte et le seuil de niveau,
+ce dernier lu sur le **plancher** et jamais sur `level` (voir la règle du
+plancher gelé, plus bas) — retirer le second membre priverait de leurs modules
+ceux qui jouent hors carrière.
 Une commande d'acte ne doit **promettre que ce que le tirage tient** : les
 niveaux de paramètre tirent leur bouton ET leur sens, donc une consigne qui
 nomme l'un des deux ment une fois sur deux ou sur quatre. Elle peut poser la
@@ -286,6 +287,14 @@ s'entend** — `tone` ne fait rien sous zéro sur le kick. `tirerVersions` garan
 l'écart **par construction**, jamais par des marges : une version à 14 points
 pour une tolérance de 15 est une question dont la réponse est un tirage au sort.
 
+⚠️ **Un refus du stockage ne doit jamais être silencieux.** `writeJson` avalait
+l'erreur de quota — le jeu restait jouable, mais rien n'était retenu et les
+modules se **reverrouillaient à chaque visite** sans que rien ne l'explique. Un
+verrou qui revient sans raison se lit comme une panne du jeu, pas comme un
+réglage du navigateur. D'où `game.persistanceRefusee`, posé au chargement par
+une écriture-sonde : `localStorage` EXISTE en navigation privée stricte, il lève
+à l'écriture — vérifier sa présence ne dit donc rien.
+
 **Tout état réactif n'est pas de l'état de morceau.** Deux modules d'interface
 vivent délibérément **hors** du format v2 : `ui/xp/paramHints.svelte.ts` et
 `ui/atelier/lastTouched.svelte.ts` (la dernière ligne manipulée, qui alimente le
@@ -348,11 +357,28 @@ stagiaire, la question du niveau 49 — ne pas la réécrire, c'est elle qui fai
 boucle. Corollaire du décompte : il disparaît aux DEUX bouts, parce qu'il ne
 s'affiche que tant qu'il veut dire quelque chose.
 
+⚠️ **Le seuil de niveau se lit sur le PLANCHER, jamais sur `level`** —
+et c'est le principe « une porte déjà ouverte ne se referme jamais » qui le
+gouverne. `PlayerProgress.plancher` est le `level` d'AVANT la carrière, gelé une
+fois pour toutes dans `load()` (`stores/game.svelte.ts`). Lu sur `level`, le
+seuil ouvrait les **quatre** modules à la fin de l'acte 0 : l'acte 0 cite les
+niveaux 49 à 52, réussir le 52 écrit `level = 53`, au-dessus des quatre seuils
+(2 / 13 / 27 / 34) d'un seul coup — donc quatre actes annonçaient l'ouverture
+d'un module déjà ouvert, et le déverrouillage narratif, qui est le principe même
+du Mode carrière, ne faisait plus rien. Le fond : `level >= 34` voulait dire
+« a joué 34 niveaux de la campagne linéaire », or la carrière a supprimé cet
+ordre — elle cite les niveaux dans le désordre et au-delà de 34.
+**Gelé dans `load()` et pas à l'entrée dans la carrière** : c'est le seul point
+garanti d'être AVANT le premier exercice ; gelé plus tard il enregistrerait un
+`level` déjà gonflé, c'est-à-dire le défaut qu'il corrige. Écrit une fois par
+joueur, jamais réécrit — un joueur neuf gèle `1` et le récit gouverne seul, un
+vétéran gèle ce qu'il a et ne perd aucun module. `tests/plancher.test.ts` tient
+le QUAND (avec un vrai `localStorage` en mémoire), `tests/unlocks.test.ts` la
+RÈGLE, et `scripts/parcours-carriere.cjs` la trajectoire entière.
+
 ⚠️ **Les huit actes sont écrits** (2026-08-25) : `acteAVenir` ne renvoie plus
-jamais vrai. Le second membre du OU de `moduleUnlocked` — les seuils de niveau —
-avait pour justification « seuls les actes 0-2 ont leurs exercices écrits » ;
-cette raison a disparu. Le retirer reste **une décision** (il sert de plancher à
-qui joue hors carrière), pas un nettoyage. L'acte 7 ne cite que des niveaux
+jamais vrai. Retirer le second membre du OU reste **une décision** (il sert de
+plancher à qui joue hors carrière), pas un nettoyage. L'acte 7 ne cite que des niveaux
 `jouer`, et c'est délibéré : `justesseDesFrappes` retient la meilleure fenêtre
 consécutive, donc la notation pardonne un début raté et récompense la reprise —
 mot pour mot ce que Sol répond avant de brancher les enceintes. Un seul jeton de

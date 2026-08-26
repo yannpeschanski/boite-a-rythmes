@@ -6758,6 +6758,120 @@ passages consécutifs) · les deux builds · parcours Playwright des cinq écran
 390×844 : aucune ligne repliée, aucun débordement, le décompte bien absent, la
 fin sans bouton d'avance, aucune erreur console.
 
+### ✅ Le plancher gelé — le récit reprend la main sur le déverrouillage (2026-08-26)
+
+> « il faut que le jeu ouvre les modules et qu'on puisse reprendre là où on
+> s'est arrêtés ce qui permet de retrouver les modules. la question, c'est
+> comment tu geres la "sauvegarde" ? »
+> « faisons comme tu préconises pour le moment »
+
+C'est la décision qui bloquait `REPRISE.md` depuis la veille : **les quatre
+modules se déverrouillaient tous à la fin de l'acte 0**, donc quatre actes
+annonçaient l'ouverture d'un module déjà ouvert.
+
+#### Ce que la sauvegarde faisait déjà — et ce qu'elle ne faisait pas
+
+La reprise n'était PAS à écrire : elle existait et elle était juste.
+`memoriserCarriere` écrit `{ acte, etape }` à chaque étape franchie, le curseur
+ne recule jamais, `setPseudo` → `load()` restaure `acteActif` / `etapeActive`,
+et les modules ne sont pas stockés — ils se **dérivent** de l'acte. Une seule
+source de vérité, donc pas de désynchronisation possible entre « où j'en suis »
+et « ce que j'ai le droit d'ouvrir ».
+
+Le seul défaut était le second membre du OU de `moduleUnlocked` : lu sur
+`level`, il court-circuitait tout le récit. `saveProgress` fait
+`level = max(level, id + 1)` et l'acte 0 cite les niveaux 49 à 52 ; réussir le
+52 écrit `level = 53`, au-dessus des quatre seuils (2 / 13 / 27 / 34) **d'un
+seul coup**.
+
+Le fond, et c'est ce qui rend le correctif évident une fois vu : `level >= 34`
+voulait dire « a joué 34 niveaux de la campagne linéaire ». La carrière a
+supprimé cet ordre — elle cite les niveaux dans le désordre et au-delà de 34.
+Le seuil ne mesurait plus rien.
+
+#### Le plancher — un troisième champ, pas une lecture plus maligne
+
+`PlayerProgress.plancher` : le `level` d'AVANT la carrière, gelé une fois pour
+toutes. `moduleUnlocked` lit `plancher ?? level`.
+
+⚠️ **Gelé dans `load()`, pas à l'entrée dans la carrière** — c'est tout le
+sujet. `load()` est le seul point garanti d'être avant le premier exercice.
+Gelé au premier `memoriserCarriere`, il aurait enregistré un `level` déjà gonflé
+par l'exercice qu'on venait de réussir : exactement le défaut qu'il existe pour
+corriger, avec l'air d'être corrigé.
+
+Le repli `?? level` n'est pas de la prudence : c'est ce qui rend le champ
+**gratuit à déployer**. Une sauvegarde d'avant se comporte comme avant, aucune
+migration, aucun numéro de version à introduire.
+
+Double effet, assumé : un joueur neuf gèle `1`, donc aucun seuil n'est franchi
+et le récit gouverne seul ; un joueur déjà en cours gèle ce qu'il a et **ne perd
+aucun module**. Le second est le prix du premier — on préfère qu'une poignée de
+sauvegardes gardent un accès déjà donné plutôt que de refermer une porte au nez
+de quelqu'un. D'où la règle inscrite dans `CLAUDE.md` : **une porte déjà ouverte
+ne se referme jamais.**
+
+#### Deux défauts trouvés en chemin, corrigés dans la même passe
+
+1. **Les verrous mentaient sur le chemin.** L'accueil disait déjà l'acte, mais
+   les onglets Synthé/Production et le bouton Mode Live annonçaient encore
+   « Se débloque au niveau 13 du Mode jeu » : le même verrou nommait deux
+   chemins différents selon l'écran où on le rencontrait. `libelleVerrou` /
+   `verrouCourt` vivent maintenant dans `model/unlocks.ts` — une seule
+   définition, testée, l'acte cité avant le niveau.
+2. **Le stockage refusé était silencieux.** `writeJson` avalait l'erreur : en
+   navigation privée, les modules se reverrouillaient à chaque visite et rien
+   ne le disait. Le joueur ne pouvait pas distinguer « le jeu m'a oublié » de
+   « mon navigateur ne le laisse pas se souvenir ». `persistanceRefusee` est
+   posé au chargement par une **écriture-sonde** — `localStorage` existe en
+   navigation privée stricte, il lève à l'écriture, donc tester sa présence ne
+   dit rien.
+
+#### Ce qui le vérifie
+
+- `tests/unlocks.test.ts` (+5) — la RÈGLE. Le test de trajectoire a été écrit
+  **rouge d'abord** et vérifié tel quel : sans le plancher, `atelier ouvert par
+  l'acte 0: expected true to be false`. Les anciens tests, eux, vérifiaient les
+  seuils un par un et n'ont rien vu pendant sept PR.
+- `tests/plancher.test.ts` (+6, nouveau) — le QUAND, avec un vrai
+  `localStorage` en mémoire plutôt qu'une fixture posée à la main. Joueur neuf,
+  vétéran, niveau qui monte ensuite, « master », et les deux cas du stockage
+  refusé.
+- `scripts/parcours-carriere.cjs`, depuis un joueur neuf — le juge réel. Avant :
+  `ACTE 1 — modules: atelier,synth,production,live`. Après, un par un :
+
+  ```
+  ── ACTE 0 « LE CAFÉ »       — modules: —
+  ── ACTE 1 « LE RYTHME »     — modules: —
+     après livraison          — modules: atelier
+  ── ACTE 4 « LA PRODUCTION » — modules: atelier,synth
+  ── ACTE 5 « LES STYLES »    — modules: atelier,synth,production
+     ÉPILOGUE atteint         — modules: atelier,synth,production,live
+  ```
+
+- Playwright en 390×840 : splash d'un joueur neuf (« Acte 1 » / « Acte 7 »),
+  ligne d'aveu du stockage refusé, onglets de l'Atelier — libellés relus dans le
+  DOM, pas seulement à l'œil. Aucune erreur console.
+- 264 tests, 0 erreur de types, les deux builds.
+
+#### Fichiers touchés
+
+`src/model/unlocks.ts` (plancher + libellés partagés), `src/stores/game.svelte.ts`
+(`plancher`, `gelerPlancher`, `ecrireProgression`, `stockageEcrivable`,
+`persistanceRefusee`), `src/stores/unlocks.svelte.ts`, `src/App.svelte`,
+`src/ui/atelier/AtelierView.svelte`, `src/ui/atelier/ToolBar.svelte`,
+`tests/unlocks.test.ts`, `tests/plancher.test.ts`, `CLAUDE.md`, `REPRISE.md`.
+
+#### Écart de portée assumé
+
+Le Mode Live reste à l'acte 7, donc derrière tout le récit alors qu'il est le
+seul mode pensé pour le téléphone en paysage. C'est cohérent narrativement —
+l'acte 7 *est* le concert — mais ça n'a jamais été essayé sur un vrai téléphone.
+Laissé tel quel : à traiter dans la reprise du Mode Live, pas en affaiblissant
+le récit au passage.
+
+---
+
 ### 🗺️ Cartographie — étendre le Mode jeu au synthé (2026-08-23, avant tout code)
 
 `CLAUDE.md` impose de cartographier tous les points de contact avant d'étendre

@@ -4,6 +4,9 @@ import {
   LOCKED_MODULES,
   moduleUnlocked,
   unlockLevelFor,
+  unlockActeFor,
+  libelleVerrou,
+  verrouCourt,
 } from '../src/model/unlocks';
 import { LEVELS } from '../src/model/presets/levels';
 
@@ -63,5 +66,74 @@ describe('déblocage des modules', () => {
   it('garde les deux seuils déjà choisis par la version d’origine', () => {
     expect(MODULE_UNLOCK_LEVEL.synth).toBe(13);
     expect(MODULE_UNLOCK_LEVEL.production).toBe(27);
+  });
+});
+
+/* ---- LE PLANCHER ------------------------------------------------------
+ *
+ * Ces tests-ci existent parce que les précédents ne suffisaient pas : ils
+ * vérifiaient les seuils un par un, jamais la TRAJECTOIRE réelle d'un joueur.
+ * C'est ce qui a laissé passer, pendant sept PR, le défaut où les quatre
+ * modules s'ouvraient à la fin de l'acte 0 — l'acte 0 cite les niveaux 49 à
+ * 52, réussir le 52 écrit `level = 53`, au-dessus des quatre seuils.
+ *
+ * La règle vérifiée n'est pas « le seuil vaut N » mais « le récit gouverne ».
+ */
+describe('le plancher gelé', () => {
+  it("n'ouvre RIEN à un joueur neuf que la carrière a fait monter en niveau", () => {
+    // La trajectoire exacte : fin de l'acte 0 (donc `acte = 1`, l'acte 0 est
+    // franchi), `level` gonflé à 53 par les niveaux 49-52 que l'acte cite,
+    // plancher resté à 1. L'acte 0 n'ouvre aucun module — c'est l'acte 1 qui
+    // ouvre l'Atelier, et seulement une fois FRANCHI.
+    const apresActe0 = { level: 53, plancher: 1, acte: 1 };
+    for (const m of LOCKED_MODULES) {
+      expect(moduleUnlocked(m, apresActe0), `${m} ouvert par l’acte 0`).toBe(false);
+    }
+  });
+
+  it('laisse le récit ouvrir les modules un par un, malgré un niveau au plafond', () => {
+    // `level` au maximum en permanence : si le plancher ne tenait pas, tout
+    // serait ouvert dès le premier acte. Ce qu'on vérifie ici, c'est que
+    // chaque module s'ouvre EXACTEMENT quand son acte est franchi, ni avant.
+    for (const m of LOCKED_MODULES) {
+      const acteQuiOuvre = unlockActeFor(m);
+      const veille = { level: LEVELS.length, plancher: 1, acte: acteQuiOuvre };
+      const apres = { level: LEVELS.length, plancher: 1, acte: acteQuiOuvre + 1 };
+      expect(moduleUnlocked(m, veille), `${m} ouvert avant son acte`).toBe(false);
+      expect(moduleUnlocked(m, apres), `${m} pas ouvert par son acte`).toBe(true);
+    }
+  });
+
+  it('garde ses modules à un vétéran, dont le plancher est haut', () => {
+    // L'autre moitié de la décision : quelqu'un qui avait déjà tout ouvert en
+    // salle de répétition ne perd rien le jour où le plancher arrive.
+    const veteran = { level: LEVELS.length, plancher: LEVELS.length, acte: 0 };
+    for (const m of LOCKED_MODULES) {
+      expect(moduleUnlocked(m, veteran), `${m} repris à un vétéran`).toBe(true);
+    }
+  });
+
+  it('retombe sur `level` quand la sauvegarde est d’avant le plancher', () => {
+    // Pas de migration : une sauvegarde sans `plancher` se comporte comme
+    // avant. C'est ce qui rend le champ gratuit à déployer.
+    expect(moduleUnlocked('synth', { level: 13 })).toBe(true);
+    expect(moduleUnlocked('synth', { level: 12 })).toBe(false);
+  });
+});
+
+describe('ce que le verrou dit', () => {
+  it('nomme l’acte d’abord, le niveau ensuite — sur les quatre modules', () => {
+    // Les onglets Synthé/Production et le bouton Mode Live annonçaient encore
+    // « Se débloque au niveau 13 du Mode jeu » alors que l'accueil disait déjà
+    // l'acte : le même verrou nommait deux chemins selon l'écran. Une seule
+    // définition, et ce test la tient.
+    for (const m of LOCKED_MODULES) {
+      const texte = libelleVerrou(m);
+      expect(texte).toContain(`l’acte ${unlockActeFor(m)}`);
+      expect(texte).toContain(`niveau ${unlockLevelFor(m)}`);
+      // L'acte est cité AVANT le niveau : c'est la voie principale.
+      expect(texte.indexOf('acte')).toBeLessThan(texte.indexOf('niveau'));
+      expect(verrouCourt(m)).toBe(`Acte ${unlockActeFor(m)}`);
+    }
   });
 });

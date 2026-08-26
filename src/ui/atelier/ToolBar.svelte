@@ -8,7 +8,7 @@
   import { PRESETS, PRESET_CATEGORIES, type SongPresetData } from '../../model/presets/songs';
   import { sequenceBank } from '../../stores/bank.svelte';
   import { unlocks } from '../../stores/unlocks.svelte';
-  import { unlockLevelFor } from '../../model/unlocks';
+  import { libelleVerrou } from '../../model/unlocks';
 
   let {
     onExport,
@@ -110,7 +110,7 @@
         <button onclick={() => choose(() => onSwitchView?.('game'))}>&nbsp;&nbsp; 🎮 Mode jeu</button>
         <button
           disabled={!unlocks.has('live')}
-          title={unlocks.has('live') ? '' : `Se débloque au niveau ${unlockLevelFor('live')} du Mode jeu`}
+          title={unlocks.has('live') ? '' : libelleVerrou('live')}
           onclick={() => choose(() => onSwitchView?.('live'))}
           >&nbsp;&nbsp; {unlocks.has('live') ? '🎛' : '🔒'} Mode Live</button
         >

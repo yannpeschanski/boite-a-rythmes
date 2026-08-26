@@ -66,6 +66,11 @@ class Unlocks {
   private get context(): UnlockContext {
     return {
       level: game.playerProgress.level,
+      // Le plancher, PAS `level` : la carrière fait monter `level` en citant
+      // des niveaux du réservoir, donc `level` ouvrait les quatre modules dès
+      // la fin de l'acte 0 (voir `UnlockContext.plancher`). `level` reste
+      // transmis pour les sauvegardes d'avant ce champ, où il sert de repli.
+      plancher: game.playerProgress.plancher,
       // Voie principale : c'est le RÉCIT qui ouvre les modules (model/carriere.ts).
       acte: game.progresCarriere.acte,
       bypass: this.boss,

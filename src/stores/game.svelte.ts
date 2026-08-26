@@ -95,6 +95,19 @@ export interface PlayerProgress {
    * alors la carrière au début, sans rien perdre — voir `carriere.ts`,
    * « Pourquoi il n'y a PAS de migration ». */
   carriere?: { acte: number; etape: number };
+  /* Le PLANCHER — le `level` d'AVANT la carrière, gelé une fois pour toutes
+   * (`gelerPlancher`, plus bas). C'est lui, et non `level`, que lisent les
+   * seuils de `model/unlocks.ts`.
+   *
+   * Pourquoi un troisième champ plutôt qu'une lecture de `level` : la carrière
+   * fait monter `level` en citant des niveaux du réservoir (l'acte 0 cite les
+   * niveaux 49 à 52), donc `level` mesure désormais « ce que le récit a fait
+   * jouer » autant que « ce que le joueur a acquis seul ». Les deux tenaient
+   * dans un seul entier tant que la campagne était linéaire ; elles n'y
+   * tiennent plus. Voir `UnlockContext.plancher`.
+   *
+   * Facultatif, et jamais réécrit une fois posé. */
+  plancher?: number;
 }
 
 // 3★ du 1er coup, 2★ en 2-3 essais, 1★ au-delà, 0★ si abandon.
@@ -122,11 +135,32 @@ function readJson<T>(key: string, fallback: T): T {
     return fallback;
   }
 }
-function writeJson(key: string, value: unknown): void {
+/* Renvoie `false` si l'écriture n'a pas eu lieu — quota plein, ou stockage
+ * refusé (navigation privée, réglage du navigateur). Le jeu reste jouable dans
+ * ce cas, mais SANS persistance : c'est un aveu qu'il faut faire à l'écran
+ * plutôt qu'avaler. Un joueur dont les modules se reverrouillent à chaque
+ * visite conclut que le jeu l'a oublié, pas que son navigateur refuse
+ * d'écrire — voir `persistanceRefusee`. */
+function writeJson(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
-    /* quota plein ou stockage refusé : le jeu reste jouable, sans persistance */
+    return false;
+  }
+}
+
+/* Le stockage est-il seulement disponible ? Testé par une écriture réelle :
+ * `localStorage` EXISTE en navigation privée stricte, il lève à l'écriture.
+ * Vérifier sa présence ne dirait donc rien. */
+function stockageEcrivable(): boolean {
+  try {
+    const sonde = 'boite-a-rythme:sonde';
+    localStorage.setItem(sonde, '1');
+    localStorage.removeItem(sonde);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -306,6 +340,16 @@ class GameStore {
 
   progress = $state<Record<string, PlayerProgress>>({});
   bags = $state<Record<string, BagItem[]>>({});
+
+  /* Le navigateur refuse d'écrire (navigation privée stricte, stockage
+   * désactivé, quota plein). Le jeu reste entièrement jouable — mais rien
+   * n'est retenu, donc les modules se REVERROUILLENT à chaque visite.
+   *
+   * Existe parce que ce cas était silencieux : `writeJson` avalait l'erreur,
+   * et le joueur n'avait aucun moyen de distinguer « le jeu m'a oublié » de
+   * « mon navigateur ne le laisse pas se souvenir ». Un verrou qui revient
+   * sans explication se lit comme une panne. */
+  persistanceRefusee = $state(false);
 
   get level(): GameLevel {
     return LEVELS[this.levelIndex] ?? LEVELS[0];
@@ -559,12 +603,48 @@ class GameStore {
     const cur = prev.carriere ?? { acte: 0, etape: 0 };
     if (acte < cur.acte || (acte === cur.acte && etape <= cur.etape)) return;
     this.progress = { ...this.progress, [this.pseudo]: { ...prev, carriere: { acte, etape } } };
-    writeJson(KEY_PROGRESS, this.progress);
+    this.ecrireProgression();
+  }
+
+  /* ---- Le PLANCHER ------------------------------------------------------
+   *
+   * Gelé ICI, au chargement du joueur, et pas à l'entrée dans la carrière :
+   * c'est le seul endroit qui soit garanti d'être AVANT le premier exercice.
+   * Gelé plus tard — au premier `memoriserCarriere`, par exemple — il aurait
+   * enregistré un `level` déjà gonflé par l'exercice qui venait d'être réussi,
+   * c'est-à-dire exactement le défaut qu'il existe pour corriger.
+   *
+   * Écrit UNE fois par joueur, jamais réécrit : « une porte déjà ouverte ne se
+   * referme jamais » (CLAUDE.md). D'où le double effet, voulu :
+   *
+   *   - un joueur neuf gèle `1`, donc aucun seuil de niveau n'est franchi et
+   *     le récit gouverne seul le déverrouillage ;
+   *   - un joueur déjà en cours — vétéran de la campagne linéaire, ou testeur
+   *     à mi-carrière — gèle ce qu'il a MAINTENANT et ne perd aucun module.
+   *
+   * Le second point est le prix du premier, et il est assumé : on préfère
+   * qu'une poignée de sauvegardes existantes gardent un accès déjà donné
+   * plutôt que de refermer une porte au nez de quelqu'un.
+   */
+  private gelerPlancher(): void {
+    if (!this.pseudo || this.pseudo.toLowerCase() === 'master') return;
+    const prev = this.progress[this.pseudo];
+    if (prev?.plancher !== undefined) return;
+    const base = prev ?? { level: 1, stars: {} };
+    this.progress = { ...this.progress, [this.pseudo]: { ...base, plancher: base.level } };
+    this.ecrireProgression();
+  }
+
+  /** Écrit la progression, et retient un refus du stockage — voir
+   *  `persistanceRefusee`. */
+  private ecrireProgression(): void {
+    if (!writeJson(KEY_PROGRESS, this.progress)) this.persistanceRefusee = true;
   }
 
   load(): void {
     this.progress = readJson<Record<string, PlayerProgress>>(KEY_PROGRESS, {});
     this.bags = readJson<Record<string, BagItem[]>>(KEY_BAG, {});
+    this.persistanceRefusee = !stockageEcrivable();
     // Seulement si aucun pseudo n'est actif : `setPseudo` appelle `load()`
     // APRÈS avoir posé le sien, il ne faut pas l'écraser avec l'ancien.
     if (!this.pseudo) {
@@ -580,6 +660,9 @@ class GameStore {
         /* stockage refusé : on redemandera le pseudo, comme avant */
       }
     }
+    // En dernier : `gelerPlancher` a besoin du pseudo, qui vient d'être
+    // restauré ci-dessus (ou posé par `setPseudo`, qui appelle `load`).
+    this.gelerPlancher();
   }
 
   setPseudo(name: string): void {
@@ -1308,7 +1391,7 @@ class GameStore {
       : Array.from({ length: count }, () => pick(BAG_ITEMS));
     const bag = [...(this.bags[this.pseudo] ?? []), ...items];
     this.bags = { ...this.bags, [this.pseudo]: bag };
-    writeJson(KEY_BAG, this.bags);
+    if (!writeJson(KEY_BAG, this.bags)) this.persistanceRefusee = true;
     return items;
   }
 
@@ -1325,7 +1408,7 @@ class GameStore {
       stars: { ...prev.stars, [id]: Math.max(prev.stars[id] ?? 0, stars) },
     };
     this.progress = { ...this.progress, [this.pseudo]: next };
-    writeJson(KEY_PROGRESS, this.progress);
+    this.ecrireProgression();
   }
 
   /* Ce que la salle de répétition propose : les niveaux déjà rencontrés dans le
