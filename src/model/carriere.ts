@@ -127,6 +127,13 @@ export interface EtapeExercice {
 export interface EtapeLivraison {
   kind: 'livraison';
   entete: string;
+  /* Le titre sous lequel la DISCOGRAPHIE range ce qu'on emporte — voir
+   * `model/discographie.ts`. La livraison de l'acte 1 est un cadeau et non une
+   * épreuve, mais c'est quand même une production : le récit dit « elle est à
+   * toi », il faut donc pouvoir la ressortir. */
+  titre: string;
+  /** Pour qui — ici, le label lui-même. */
+  client: string;
   lignes: string[];
   /** Le libellé du bouton qui emmène dans l'Atelier. */
   bouton: string;
@@ -180,6 +187,10 @@ export interface EtapeCommande {
   chapeau?: string[];
   /** Ce que Sol dit quand elle accepte. */
   accepte: string;
+  /** Le titre sous lequel la discographie range le morceau livré. */
+  titre: string;
+  /** Qui l'a reçu — c'est ce qui fait d'une liste une discographie. */
+  client: string;
 }
 
 export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison | EtapeCommande;
@@ -558,6 +569,8 @@ export const ACTES: Acte[] = [
       {
         kind: 'livraison',
         entete: 'FB — TA SONNERIE',
+        titre: 'TA SONNERIE',
+        client: 'FACE B',
         lignes: [
           'Sol fait glisser une clé sur la table.',
           '— La dernière, elle est à toi. Emporte-la.',
@@ -673,6 +686,8 @@ export const ACTES: Acte[] = [
           swingAuMoins(8, 'Pas carré — personne ne danse carré'),
         ],
         accepte: '— Là. Ça respire. Tu vois quand tu veux.',
+        titre: 'SANS TITRE',
+        client: 'KELVIN',
       },
       {
         kind: 'recit',
@@ -773,6 +788,8 @@ export const ACTES: Acte[] = [
           lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
         ],
         accepte: '— Ça. Je sais pas pourquoi. C’est combien ?',
+        titre: 'JINGLE LAVERIE',
+        client: 'RACHID',
       },
       {
         kind: 'recit',
@@ -893,6 +910,8 @@ export const ACTES: Acte[] = [
           ]),
         ],
         accepte: '— Cette fois, les gens bougent. Le lundi, ils paient.',
+        titre: 'LE TUNNEL (V2)',
+        client: 'LE TUNNEL',
       },
       {
         kind: 'recit',
@@ -1004,6 +1023,8 @@ export const ACTES: Acte[] = [
           dansLeStyleFiche(FICHE_DANCEHALL, 'Ça doit sonner dancehall — le genre, pas la copie'),
         ],
         accepte: '— C’est ça. C’est exactement ça qu’il n’arrivait pas à dire.',
+        titre: 'PACK ZIK’MOBILE',
+        client: 'ZIK’MOBILE',
       },
       {
         kind: 'recit',
@@ -1125,6 +1146,8 @@ export const ACTES: Acte[] = [
           ligneSynthPresente('bass', 'Une basse — acte 3'),
         ],
         accepte: '— Je ne sais pas si c’est bon. […] C’est nouveau.',
+        titre: 'FB-015',
+        client: 'FACE B',
       },
       {
         kind: 'recit',

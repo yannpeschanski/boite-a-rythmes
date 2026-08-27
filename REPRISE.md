@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 332 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 358 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -84,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
 
-Une partie complète jouée à la main. **10 points sur 19 sont traités** ; le
+Une partie complète jouée à la main. **12 points sur 19 sont traités** ; le
 reste est là, dans l'ordre où je propose de le prendre.
 
 ### Fait
@@ -100,6 +100,8 @@ reste est là, dans l'ordre où je propose de le prendre.
 | Les promesses de l'acte 1 | le forçage variante/rafale enfin porté |
 | L'export de la sonnerie | sorti de l'onglet verrouillé |
 | L'acte 1 monte en difficulté | huit rythmes ÉCRITS, une nouveauté chacun (`GrilleEcrite`) |
+| Le jeu réagit à ce qu'on livre | réaction calculée sur l'état, calibrée sur les 34 presets |
+| Les productions restent | discographie par pseudo — réécouter, reprendre dans l'Atelier |
 
 ### Reste — plus aucun bug signalé en attente
 
@@ -146,7 +148,9 @@ chaque ligne à un locuteur. À faire ensemble.
 10. **Étendre les grilles écrites au-delà de l'acte 1** — les autres actes citent
     encore des niveaux générés (~28 exercices de grille). Même chantier, même
     méthode : une promesse par test.
-11. **Les roasts** : tous les textes à revoir.
+11. **Les roasts d'EXERCICE** (`gameData.ts`) : tous les textes à revoir. Ceux
+    de LIVRAISON sont faits (`reactions.ts`) — la différence compte : les
+    premiers commentent la façon de jouer, les seconds le morceau produit.
 12. **Les besaces** : introduire le concept (aujourd'hui on en gagne sans
     savoir ce que c'est), et leur donner un usage à la fin. Piste retenue par
     Yann : une fin alternative, un EP si on a tous les objets.
@@ -156,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 332 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 358 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -225,6 +229,27 @@ retouché de la session.
 | `src/model/parametres.ts` | le catalogue des boutons enseignables |
 | `src/model/commande.ts` | ce que Sol vérifie en recevant un morceau |
 | `original/boite-a-rythme-69.html` | la source de vérité pour l'audio |
+
+## L'audit du 27 août — ce qu'il a trouvé
+
+Mesuré sur le code, pas de mémoire (`main de2eaa4`) :
+
+- **29 niveaux sur 61 ne sont cités par aucun acte**, dont les 21 niveaux 14 à 34
+  d'un bloc : swing, traîne, ghost notes, fill, décalage, polyrythmie, mesure
+  longue. C'est la moitié du jeu qui n'existe que dans le tableau.
+- **La carrière dure 60 à 125 min**, la cible de Yann est 120 au minimum.
+- **10 boutons enseignés sur 155 réglages**, la carrière en fait jouer 8, et
+  **aucun du synthé**.
+- Un verbe porte 13 des 32 exercices ; `completer` et `intrus` ne sont jamais
+  cités ; l'acte 6 n'a aucun exercice.
+
+**Chantier A, recommandé et non engagé** : réécrire les niveaux 14-34 en grilles
+écrites et les distribuer (groove à l'acte 2, décalage/polyrythmie à l'acte 5),
+en fusionnant les doublons au passage (14/17, 15/18, et les cinq polyrythmies
+24/26/29/30/31). Rend la moitié morte jouable sans écrire un niveau neuf, et
+remplace les quiz `lequel` passifs de l'acte 2. Puis **chantier B** : l'Atelier
+au cœur de chaque acte (reproduire → transformer → livrer), qui a besoin de A
+pour avoir de la matière en entrée.
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 

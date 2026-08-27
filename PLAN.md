@@ -7211,6 +7211,111 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ La boucle de livraison — le jeu écoute enfin ce qu'on lui donne (2026-08-27)
+
+> « Quand on réussit quelque chose d'important et qu'on livre une production, je
+> trouve que le jeu ne récompense pas encore suffisamment le joueur. »
+> « Ce serait particulièrement intéressant si le jeu pouvait réellement analyser
+> ce que l'on vient de faire pour adapter sa réaction. »
+> « Il faudrait que les productions réalisées restent disponibles dans le jeu. »
+
+Jusqu'ici, livrer une commande évaluait le cahier, avançait le curseur, et
+**jetait le morceau**. La réaction était une phrase écrite d'avance, la même
+quel que soit ce qu'on venait de faire. Le joueur passait dix minutes dans
+l'Atelier et le jeu enchaînait.
+
+#### 1. Une réaction CALCULÉE — `src/model/reactions.ts`
+
+Treize observations, chacune une propriété vérifiable de `PatternStateV2`. La
+plus spécifique gagne (déterministe), seule la formulation varie. Quatre règles
+écrites dans le module : citer un fait, ne commenter que ce qui est **audible**,
+peser la **spécificité et non la sévérité**, et se taire quand il n'y a rien à
+dire.
+
+⚠️ **Le vrai travail est le CALIBRAGE, et une sonde l'a montré avant le premier
+test.** Écrite d'instinct, la pique de Yann — « ta basse fait deux notes » —
+tombait sur **12 presets sur 34**. Mesurée, la distribution des hauteurs de
+basse est : 1 → 3 morceaux, 2 → 9, 3 → 10, 4 → 8, 5 → 4. Une basse à deux notes
+est du travail honnête ; **une** note répétée est le service minimum, et c'est
+rare. Même histoire pour « ton charley ne respire jamais » : 18 presets ont un
+charley sur toutes les cases, 11 sans la moindre variante — c'est la norme en
+house, pas une faute. Observation **retirée** plutôt que rafistolée, et
+remplacée par « tout tombe sur les temps », mesurée à **1 preset sur 34**
+(gqom), qui est en plus le contraire exact de ce que l'acte 1 enseigne.
+
+Résultat mesuré sur les 34 presets : 4 piques seulement, toutes méritées, et
+cinq réactions distinctes là où la première version n'en produisait que trois.
+
+⚠️ **Et un troisième défaut, que seule la mesure pouvait trouver** : les
+échelles de `types.ts` mentent. `finalVolume` va de 50 à 150 (pas 0,5-1,5),
+`globalSaturation` de 0 à 100 (pas 0-1), `swing` de 0 à 75. Écrite sur les
+échelles annoncées, la pique « c'est trop fort » (`finalVolume >= 1.4`) était
+vraie de **tous** les états — y compris d'un Atelier vide, qui recevait donc une
+remarque sur un morceau inexistant. D'où aussi la garde globale : rien ne sonne
+→ `reactionA` rend `null`.
+
+#### 2. Une discographie — `src/model/discographie.ts`
+
+Les six productions du récit (la sonnerie de l'acte 1 + les cinq commandes) sont
+gardées par pseudo, sérialisées au format v2. Une par acte, remplacée et jamais
+empilée — reculer dans le récit est gratuit, et empiler ferait un journal de
+tentatives. Deux gestes par morceau : le réécouter, ou le **reprendre dans
+l'Atelier**, sans quoi la liste serait un musée.
+
+Clé de stockage à part (`boite-a-rythme:productions`) plutôt qu'un champ de
+`PlayerProgress` : un morceau pèse ~5 ko, et `progress` est réécrit à chaque
+niveau réussi.
+
+#### 3. L'écran de livraison
+
+Trois choses dans l'ordre où elles ont du sens : le client accepte, on
+**réécoute** ce qu'on vient de faire, il ajoute sa remarque. La remarque n'est
+pas verte — le vert dit « allumé / fait » dans toute la grammaire de l'appli, et
+une opinion n'est pas un état : ambre pour une pique, violet pour un compliment.
+
+Le lecteur est un `AudioEngine` à part, qui n'ouvre son contexte qu'à la
+première lecture — mesuré : **0 contexte audio avant le clic**, 1 en
+`running` avec l'horloge qui avance après. C'est la règle de CLAUDE.md sur le
+flux de sortie qu'on ne tient pas ouvert pour rien.
+
+#### Un défaut de rangement corrigé en passant
+
+L'archivage de l'acte 1 vivait dans `CarriereView`, celui des commandes dans le
+store. Une règle à deux domiciles n'est appliquée qu'à un seul — et ici l'ordre
+compte (archiver AVANT d'avancer, tant que le curseur désigne l'acte livré).
+D'où `livrerSonnerie()`, à côté de `livrerCommande()`. `parcours-carriere.cjs`
+passe désormais par ce chemin-là : en avançant à la main, il aurait sauté
+l'archivage sans jamais voir une régression.
+
+#### Ce qui le vérifie
+
+358 tests (25 neufs), 0 erreur de types, les deux builds. Le parcours complet
+sur serveur fraîchement démarré rend **6 morceaux — 1:TA SONNERIE · 2:SANS
+TITRE · 3:JINGLE LAVERIE · 4:LE TUNNEL (V2) · 5:PACK ZIK'MOBILE · 6:FB-015**.
+Et une livraison réelle pilotée dans l'appli : cahier de Kelvin satisfait avec
+une basse d'une note → « — Ta basse joue la même note du début à la fin. C'est
+un choix ? », production archivée (5 210 octets), aucune erreur console.
+
+#### Fichiers touchés
+
+`src/model/reactions.ts` (neuf), `src/model/discographie.ts` (neuf),
+`src/model/carriere.ts` (`titre` / `client` sur les six productions),
+`src/stores/game.svelte.ts` (`productions`, `archiverProduction`,
+`livrerSonnerie`, `reactionLivraison`), `src/ui/game/CarriereView.svelte`
+(écran de livraison, lecteur, discographie), `scripts/parcours-carriere.cjs`,
+`tests/reactions.test.ts` (neuf), `tests/discographie.test.ts` (neuf),
+`CLAUDE.md`, `PLAN.md`, `REPRISE.md`.
+
+#### Écart de portée assumé
+
+Les roasts d'EXERCICE (`gameData.ts`) ne sont pas retouchés : ils commentent la
+façon de jouer, pas la production, et Yann les veut tous revus — c'est une passe
+de contenu à part. La besace reste décorative. Et la réaction ne connaît pas le
+cahier : elle parle du morceau, pas de la commande — suffisant pour l'exemple
+demandé, à revoir si une réaction doit un jour citer une contrainte précise.
+
+---
+
 ### ✅ Les rythmes de l'acte 1 sont ÉCRITS, pas tirés au sort (2026-08-27)
 
 > « il n'est pas nécessaire de randomiser les exercices dans la mesure où

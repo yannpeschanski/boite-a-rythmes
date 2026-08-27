@@ -498,6 +498,47 @@ mot pour mot ce que Sol répond avant de brancher les enceintes. Un seul jeton d
 texte existe dans tout le récit, `{pseudo}`, interpolé par `CarriereView` : Sol
 dit le nom du joueur au micro, et c'est ce qui referme cinq mois de « le café ».
 
+⚠️ **Une RÉACTION à la livraison cite un fait de l'état, et son seuil se
+calibre sur les 34 presets.** `src/model/reactions.ts` — retour de Yann : *« ce
+serait intéressant si le jeu pouvait réellement analyser ce qu'on vient de
+faire »*. Les roasts de `gameData.ts` commentent la FAÇON DE JOUER (difficulté,
+réécoutes, tours de boucle) ; ceux-là lisent le morceau. Quatre règles : une
+observation cite une propriété vérifiable de `PatternStateV2` ; on ne commente
+que ce qui est AUDIBLE (une ligne coupée ou vide ne sonne pas — et si rien ne
+sonne, `reactionA` rend `null`, sinon un Atelier vide reçoit une pique) ; le
+poids est la **spécificité**, jamais la sévérité, sans quoi le jeu ne ferait que
+se moquer ; et rien de remarquable → **aucune** réplique, jamais de
+remplissage. ⚠️ Le calibrage n'est pas un avis : les 34 presets sont l'étalon.
+« Ta basse fait deux notes » tombait sur **12 presets sur 34** et « ton charley
+ne respire jamais » sur **11** — deux piques qui punissaient du travail
+correct. Corrigées à *une seule* hauteur (3/34) et remplacées par « tout tombe
+sur les temps » (1/34). Une remarque qui tombe une fois sur trois n'est pas une
+remarque, c'est un reproche automatique — et un compliment fréquent cesse d'en
+être un. `tests/reactions.test.ts` tient les seuils contre le catalogue.
+
+⚠️ **Les échelles de `types.ts` MENTENT sur trois champs — `serialize.ts` et
+`engine/graph.ts` font foi.** `finalVolume` va de **50 à 150** (pourcentage,
+défaut 100) et non 0,5-1,5 ; `globalSaturation` de **0 à 100** et non 0-1 ;
+`swing` de **0 à 75** et non 0-0,75. Écrite sur les échelles annoncées, la pique
+« c'est trop fort » (`finalVolume >= 1.4`) était vraie de **tous** les états, y
+compris d'un Atelier vide. Vérifier la borne dans `serialize.ts` (qui `clamp`)
+avant d'écrire un seuil, jamais dans le commentaire du type.
+
+⚠️ **Une production LIVRÉE est gardée — `model/discographie.ts`.** *« Les
+productions deviendraient de véritables éléments de notre progression, et pas
+simplement des exercices que l'on abandonne. »* Jusqu'ici `livrerCommande`
+jetait l'état, y compris la sonnerie de l'acte 1 dont le récit dit « elle est à
+toi ». Trois choix : l'état est **sérialisé** au format v2 (il survit au
+rechargement, `deserializeState` le relira si le format bouge, et l'Atelier ne
+peut plus le muter) ; **une production par ACTE**, remplacée et jamais empilée
+(reculer dans le récit est gratuit, empiler ferait un journal de tentatives) ;
+et elle est rangée par le RÉCIT — `titre` et `client` viennent de l'étape, ce
+qui fait d'une liste de morceaux une discographie. Les **deux** chemins qui
+produisent un morceau vivent côte à côte dans le store (`livrerSonnerie` et
+`livrerCommande`) : l'archivage de l'acte 1 était dans la vue, et une règle à
+deux domiciles n'est appliquée qu'à un seul. `scripts/parcours-carriere.cjs`
+compte les six productions au bout du parcours.
+
 ⚠️ **Une COMMANDE vérifie un cahier des charges, jamais une cible.**
 `src/model/commande.ts` est le seul endroit où le jeu demande de FAIRE plutôt
 que de retrouver : le joueur produit dans l'Atelier et livre. Trois façons de

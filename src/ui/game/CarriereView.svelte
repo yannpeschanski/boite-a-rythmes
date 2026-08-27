@@ -28,6 +28,11 @@
     type Acte,
   } from '../../model/carriere';
   import XpWindow from '../xp/XpWindow.svelte';
+  import { AudioEngine } from '../../engine/AudioEngine';
+  import { deserializeState } from '../../model/serialize';
+  import { pattern } from '../../stores/pattern.svelte';
+  import { productionDeLActe, type Production } from '../../model/discographie';
+  import type { PatternStateV2 } from '../../model/types';
 
   let {
     onExercice,
@@ -100,8 +105,10 @@
    * l'annonce de fin d'acte est absorbée : la livraison EST cette annonce, la
    * revoir au retour ferait deux fois la même nouvelle. */
   function livrer() {
-    game.avancerCarriere();
-    game.acteTermineAAnnoncer = null;
+    /* Le store archive, avance, et absorbe l'annonce de fin d'acte — l'ordre
+     * compte et vit là-bas, avec `livrerCommande` (voir `livrerSonnerie`). */
+    stopLecture();
+    game.livrerSonnerie();
     onLivraison();
   }
 
@@ -167,6 +174,57 @@
   const actesVisibles = $derived(
     ACTES.filter((a) => a.id <= game.progresCarriere.acte && !acteAVenir(a)),
   );
+
+  /* ---- Le lecteur : réécouter ce qu'on vient de livrer ------------------
+   *
+   * ⚠️ Un moteur À PART, créé une fois, qui lit un état posé dans une rune.
+   * Il ne partage rien avec celui de `GameView` : le nôtre joue un morceau
+   * ARCHIVÉ (sérialisé, relu), pas la cible d'un exercice.
+   *
+   * Le contexte audio n'existe qu'à la première lecture — `AudioEngine` ne
+   * l'ouvre que dans `start()`. C'est ce qui évite le piège documenté dans
+   * CLAUDE.md : un contexte « running » sans rien de branché tient un flux de
+   * sortie ouvert, donc un réveil de plus à servir sur la même route. */
+  let aLire = $state<PatternStateV2 | null>(null);
+  let enLecture = $state<string | null>(null);
+  const lecteur = new AudioEngine(() => aLire ?? game.toAtelierState());
+
+  async function lire(cle: string, etat: PatternStateV2) {
+    if (enLecture === cle) {
+      lecteur.stop();
+      enLecture = null;
+      return;
+    }
+    lecteur.stop();
+    aLire = etat;
+    enLecture = cle;
+    await lecteur.start();
+  }
+
+  function stopLecture() {
+    lecteur.stop();
+    enLecture = null;
+  }
+
+  /* La production qu'on vient de livrer — celle de l'acte affiché. C'est elle
+   * que l'écran de livraison rejoue : on ne demande pas au joueur de retrouver
+   * son morceau dans une liste juste après l'avoir fini. */
+  const livree = $derived(productionDeLActe(game.productions, acte.id));
+
+  let discoOuverte = $state(false);
+
+  /* Reprendre une production dans l'Atelier. Le morceau redevient matière —
+   * c'est la moitié « réutilisable » de la demande, sans quoi la discographie
+   * ne serait qu'un musée. */
+  function reprendre(p: Production) {
+    stopLecture();
+    pattern.replace(deserializeState(p.etat));
+    onLivraison();
+  }
+
+  /* Quitter l'écran coupe le son : un morceau qui continue derrière l'écran
+     suivant est un bug qu'on n'entend que trop tard. */
+  $effect(() => () => lecteur.stop());
 </script>
 
 <XpWindow title="Face B — Mode carrière" icon="📼" accent="none">
@@ -179,8 +237,35 @@
       <button class="xp-btn tiny tap44-y" onclick={() => game.reprendreCarriere()} disabled={game.carriereEnAttente}>
         ↺ Reprendre
       </button>
+      <!-- ⚠️ Rien de non atteint ne s'affiche : tant qu'aucun morceau n'a été
+           livré, la discographie n'existe pas. Un bouton vers une liste vide
+           présenterait le jeu par ce qu'on n'a pas encore fait. -->
+      {#if game.productions.length > 0}
+        <button class="xp-btn tiny tap44-y" onclick={() => (discoOuverte = !discoOuverte)}>
+          💿 Discographie ({game.productions.length})
+        </button>
+      {/if}
     {/if}
   </div>
+
+  {#if discoOuverte}
+    <!-- Ce que le joueur a produit, dans l'ordre du récit. Deux gestes par
+         morceau, et pas un de plus : l'écouter, ou le reprendre dans
+         l'Atelier — sans quoi la liste serait un musée. -->
+    <div class="disco">
+      {#each game.productions as p (p.acte)}
+        <div class="piste">
+          <button class="xp-btn tiny tap44-y" onclick={() => lire('d' + p.acte, deserializeState(p.etat))}>
+            {enLecture === 'd' + p.acte ? '■' : '▶'}
+          </button>
+          <span class="piste-titre">{p.titre}</span>
+          <span class="piste-client">{p.client}</span>
+          <span class="piste-quand">{p.quand}</span>
+          <button class="xp-btn tiny tap44-y" onclick={() => reprendre(p)}>Reprendre</button>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <!-- Le compte à rebours est affiché en permanence, du premier écran au
        dernier : c'est lui qui donne une échéance à tout le reste.
@@ -201,7 +286,32 @@
        revient de l'Atelier avec un morceau : l'écran doit accuser réception,
        sinon on a travaillé pour un enchaînement qui passe à la suite. -->
   {#if game.commandeAcceptee}
-    <p class="accepte">{game.commandeAcceptee}</p>
+    <!-- ⚠️ LA LIVRAISON EST UN MOMENT, pas une ligne de texte.
+         Avant : une phrase écrite d'avance, la même quel que soit le morceau,
+         et l'état partait à la poubelle. Le joueur venait de passer dix
+         minutes dans l'Atelier et le jeu enchaînait.
+         Maintenant, trois choses dans l'ordre où elles ont du sens : le client
+         accepte, on RÉÉCOUTE ce qu'on vient de faire, et il ajoute une remarque
+         calculée sur ce morceau-là (`model/reactions.ts`). -->
+    <div class="livraison">
+      <p class="accepte">{game.commandeAcceptee}</p>
+      {#if livree}
+        <div class="bandeau-piste">
+          <button
+            class="xp-btn tiny tap44-y"
+            onclick={() => lire('livree', deserializeState(livree.etat))}
+          >
+            {enLecture === 'livree' ? '■ Stop' : '▶ Réécouter'}
+          </button>
+          <span class="titre-piste">{livree.titre}</span>
+        </div>
+      {/if}
+      <!-- Rien de remarquable à dire → rien ne s'affiche. Une réplique de
+           remplissage apprendrait au joueur que le jeu ne regarde pas. -->
+      {#if game.reactionLivraison}
+        <p class="reaction {game.reactionLivraison.ton}">{game.reactionLivraison.ligne}</p>
+      {/if}
+    </div>
   {/if}
 
   {#if epilogue}
@@ -526,8 +636,73 @@
     letter-spacing: 0.3em;
   }
 
-  .accepte {
+  /* ---- La livraison : accusé de réception, écoute, remarque -------------
+     Un bloc, pas trois éléments côte à côte : ce qui vient de se passer est
+     UN moment, et il se lit de haut en bas dans l'ordre où il a du sens. */
+  .livraison {
     margin: 0 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bandeau-piste {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .titre-piste {
+    font-size: var(--xp-size-tag, 8.5px);
+    letter-spacing: var(--xp-ls-tag, 0.14em);
+    text-transform: uppercase;
+    color: var(--xp-accent-amber);
+  }
+  /* ⚠️ La remarque n'est PAS verte. Le vert dit « allumé / fait » dans toute
+     la grammaire de l'appli — le réserver à l'accusé de réception, qui est un
+     état. Ce que le client ajoute est une opinion : ambre s'il pique, violet
+     s'il complimente, et jamais la couleur d'un état. */
+  .reaction {
+    margin: 0;
+    padding: 6px 8px;
+    font-size: var(--xp-size-body, 9.5px);
+    background: var(--xp-face-dark);
+    box-shadow: var(--xp-bevel-in);
+  }
+  .reaction.pique { color: var(--xp-accent-amber); }
+  .reaction.compliment { color: var(--xp-accent-violet); }
+
+  /* ---- La discographie ---- */
+  .disco {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0 0 8px;
+    padding: 6px;
+    background: var(--xp-face-dark);
+    box-shadow: var(--xp-bevel-in);
+  }
+  .piste {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .piste-titre {
+    font-size: var(--xp-size-tag, 8.5px);
+    letter-spacing: var(--xp-ls-tag, 0.14em);
+    text-transform: uppercase;
+    color: var(--xp-text);
+  }
+  .piste-client,
+  .piste-quand {
+    font-size: var(--xp-size-small, 8.5px);
+    color: var(--xp-muted);
+  }
+  .piste-quand { margin-left: auto; }
+
+  .accepte {
+    /* Sans marge : c'est `.livraison` qui espace le bloc, une seule autorité
+       sur le rythme vertical (voir CLAUDE.md sur les marges qui se doublent). */
+    margin: 0;
     padding: 6px 8px;
     font-size: var(--xp-size-sm, 9.5px);
     color: var(--xp-lcd);

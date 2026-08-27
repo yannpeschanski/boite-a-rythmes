@@ -71,7 +71,11 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
 
       if (e.kind === 'livraison') {
         log.push(`   livraison — l'Atelier ouvert ? ${unlocks.has('atelier')}`);
-        game.avancerCarriere(); game.acteTermineAAnnoncer = null;
+        // ⚠️ `livrerSonnerie`, pas `avancerCarriere` : c'est le vrai chemin de
+        // la vue, et c'est lui qui ARCHIVE la sonnerie. En avançant à la main,
+        // le script sautait l'archivage et n'aurait jamais vu une régression
+        // de la discographie — une fixture qui ne joue pas le jeu, encore.
+        game.livrerSonnerie();
         log.push(`   après livraison — modules: ${modules()}`);
         continue;
       }
@@ -155,6 +159,12 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     }
     if (garde >= 400) log.push('⚠️ BOUCLE INFINIE — le parcours ne se termine pas');
     log.push(`état final : acte enregistré ${game.progresCarriere.acte}, modules ${modules()}`);
+    /* La DISCOGRAPHIE au bout du parcours. Elle doit contenir les six
+     * productions du récit (la sonnerie de l'acte 1 + les cinq commandes) :
+     * c'est la seule preuve qu'un morceau livré à l'acte 1 est encore là au
+     * mois de septembre. */
+    log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
+    if (game.productions.length !== 6) log.push('   ⚠️ SIX productions attendues');
     return log;
   });
 
