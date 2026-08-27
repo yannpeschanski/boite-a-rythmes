@@ -64,6 +64,9 @@ import {
   ROAST_LOOP,
   type BagItem,
 } from '../model/presets/gameData';
+import { ranger, type Production } from '../model/discographie';
+import { reactionA, type Reaction } from '../model/reactions';
+import { serializeState } from '../model/serialize';
 
 // Mode jeu limité à kick/snare/hat (PLAN.md §6, voir GameDrumRowName dans
 // presets/levels.ts) — PAS `DRUM_ROW_NAMES` du modèle (désormais élargi à
@@ -72,6 +75,12 @@ import {
 export const GAME_DRUM_ROWS: GameDrumRowName[] = ['kick', 'snare', 'hat'];
 
 const KEY_BAG = 'boite-a-rythme:besaces';
+/* La DISCOGRAPHIE — ce que le joueur a produit et livré, gardé par pseudo
+ * comme la besace et la progression. Clé à part plutôt qu'un champ de
+ * `PlayerProgress` : une production est un morceau sérialisé (quelques ko),
+ * et `progress` est relu et réécrit à chaque niveau réussi. Les faire voyager
+ * ensemble ferait payer le poids des morceaux à chaque étoile gagnée. */
+const KEY_PROD = 'boite-a-rythme:productions';
 const KEY_PROGRESS = 'boite-a-rythme:progression';
 // Dernier pseudo utilisé (2026-08-16). La progression et la besace étaient
 // déjà persistées PAR PSEUDO, mais le pseudo actif ne l'était pas : à chaque
@@ -373,6 +382,37 @@ class GameStore {
     return this.bags[this.pseudo] ?? [];
   }
 
+  /* ---- La discographie — voir `model/discographie.ts` ---------------- */
+
+  private disques = $state<Record<string, Production[]>>({});
+
+  /** Ce que ce joueur a produit et livré, dans l'ordre du récit. */
+  get productions(): Production[] {
+    return this.disques[this.pseudo] ?? [];
+  }
+
+  /* Ce que le client ajoute après avoir accepté — calculé sur le morceau qu'on
+   * vient de livrer, `null` s'il n'y a rien de remarquable à dire.
+   *
+   * ⚠️ Volatile, jamais persisté : c'est une réplique, pas un acquis. La
+   * relire au rechargement la ferait arriver hors de son moment, c'est-à-dire
+   * sans le morceau qui la justifie. */
+  reactionLivraison = $state<Reaction | null>(null);
+
+  /**
+   * Ranger une production et calculer ce que le client en dit.
+   *
+   * Appelé aux DEUX endroits qui produisent un morceau : la livraison de
+   * l'acte 1 (un cadeau) et les cinq commandes (des épreuves). Les traiter
+   * séparément aurait donné deux discographies dont une seule marche.
+   */
+  archiverProduction(etat: PatternStateV2, meta: Omit<Production, 'etat'>): void {
+    const p: Production = { ...meta, etat: serializeState(etat) };
+    this.disques = { ...this.disques, [this.pseudo]: ranger(this.productions, p) };
+    if (!writeJson(KEY_PROD, this.disques)) this.persistanceRefusee = true;
+    this.reactionLivraison = reactionA(etat);
+  }
+
   /* ---- Mode carrière — le curseur du récit ----------------------------
    *
    * DEUX curseurs, et c'est voulu :
@@ -562,8 +602,46 @@ class GameStore {
     this.etapeActive = cible.etape;
     this.commandeEnCours = null;
     this.commandeAcceptee = c.accepte;
+    /* ⚠️ On archive AVANT d'avancer, tant que `acteActif` désigne encore
+     * l'acte livré. Après `avancerCarriere`, le curseur est sur l'acte
+     * suivant : la production serait rangée sous le mauvais nom, et la
+     * relivrer après relecture n'écraserait plus la bonne entrée. */
+    this.archiverProduction(etat, {
+      acte: cible.acte,
+      titre: c.titre,
+      client: c.client,
+      quand: this.acteCourant.quand,
+    });
     this.avancerCarriere();
     return v;
+  }
+
+  /* Livrer la sonnerie de l'acte 1 — un cadeau, pas une épreuve : aucun
+   * cahier à satisfaire, on repart avec le rythme qu'on vient de faire.
+   *
+   * ⚠️ Vit ICI et non dans la vue, à côté de `livrerCommande` : ce sont les
+   * deux seuls chemins qui produisent un morceau, et une règle qui a deux
+   * domiciles finit par n'être appliquée qu'à un seul. La vue n'avait pas non
+   * plus de raison de connaître l'ordre (archiver AVANT d'avancer, tant que le
+   * curseur désigne encore l'acte livré).
+   *
+   * Renvoie `false` si l'étape courante n'est pas une livraison — la vue
+   * n'appelle jamais dans ce cas, mais le store ne le suppose pas. */
+  livrerSonnerie(): boolean {
+    const e = this.etapeCourante;
+    if (!e || e.kind !== 'livraison') return false;
+    const acte = this.acteCourant;
+    this.archiverProduction(this.toAtelierState(), {
+      acte: acte.id,
+      titre: e.titre,
+      client: e.client,
+      quand: acte.quand,
+    });
+    this.avancerCarriere();
+    /* La livraison EST l'annonce de fin d'acte : la revoir au retour de
+     * l'Atelier ferait deux fois la même nouvelle. */
+    this.acteTermineAAnnoncer = null;
+    return true;
   }
 
   /** Ouvrir (ou relire) un acte depuis son début. */
@@ -655,6 +733,7 @@ class GameStore {
   load(): void {
     this.progress = readJson<Record<string, PlayerProgress>>(KEY_PROGRESS, {});
     this.bags = readJson<Record<string, BagItem[]>>(KEY_BAG, {});
+    this.disques = readJson<Record<string, Production[]>>(KEY_PROD, {});
     this.persistanceRefusee = !stockageEcrivable();
     // Seulement si aucun pseudo n'est actif : `setPseudo` appelle `load()`
     // APRÈS avoir posé le sien, il ne faut pas l'écraser avec l'ancien.
