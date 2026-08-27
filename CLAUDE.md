@@ -282,6 +282,13 @@ le Mode jeu tient sur **une mesure** par ligne (un quart de boucle est un *temps
 pas une mesure), et « jouer » mesure l'écart au dernier pas **actif** du kick —
 l'ancrer sur la grille donnait 100 % à une frappe posée sur un silence.
 
+⚠️ **L'EXPORT vit hors des onglets.** Il était dans l'onglet Production, donc
+verrouillé jusqu'à l'acte 4 — alors que la livraison de l'acte 1 dit mot pour
+mot *« Exporte-le en MP3, mets-le sur ton téléphone : c'est ta sonnerie »*. Le
+jeu ordonnait ce qu'il interdisait. Exporter n'est pas un réglage de
+production, c'est FINIR : on emporte ce qu'on vient de faire, quel que soit
+l'onglet ouvert et quels que soient les modules déverrouillés.
+
 ⚠️ **Un niveau ne promet pas ce qu'il ne pose pas.** `forceVariantCount` et
 `forceRollCount` étaient déclarés dans `GameLevel`, remplis par les niveaux, et
 lus par **personne** — le forçage n'avait jamais été porté. Les niveaux 5
