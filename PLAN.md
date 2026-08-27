@@ -7211,6 +7211,111 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Chantier A, tranche 1 — le groove se repose, il ne se désigne plus (2026-08-27)
+
+> « Je trouve pour l'instant les exercices locaux et les quiz moins
+> intéressants que les exercices de reproduction et surtout que ceux de
+> l'atelier. »
+
+Suite directe de l'audit : **29 niveaux sur 61 ne sont cités par aucun acte**,
+dont 19 des 21 de la plage 14-34. Cette tranche en rattrape trois — ceux qui
+enseignent le groove — et documente pourquoi les autres ne le seront pas.
+
+#### Le blocage, trouvé avant d'écrire une ligne de contenu
+
+Une grille écrite ne pouvait pas porter ces niveaux. `startLevel` **tirait**
+encore le swing dans `swingOptions`, et surtout **forçait le décalage à zéro** :
+
+```ts
+this.shift = { kick: 0, snare: 0, hat: 0 };   // avant
+```
+
+Le niveau 23 s'appelle « Décalage par ligne ». Il n'en jouait aucun. C'est la
+famille du rim shot annoncé et jamais posé, et personne ne l'avait vu parce que
+le niveau est orphelin depuis que la carrière a remplacé la campagne linéaire.
+`GrilleEcrite` porte donc `swing`, `drag` et `shift`.
+
+#### Les trois niveaux
+
+**La même grille exactement**, un backbeat en croches — seul le feel change :
+
+| # | ce qui change | feel |
+|---|---|---|
+| 14 · Le balancement | rien dans les cases | `swing: 12` |
+| 23 · Une ligne en retard | rien dans les cases | `shift: { hat: 12 }` |
+| 17 · Le balancement, prononcé | rien dans les cases | `swing: 30` |
+
+C'est le point de conception : on ne peut comparer deux balancements que si
+tout le reste est identique. Une densité tirée rendait la question impossible —
+on ne savait pas si ce qu'on entendait venait du feel ou d'un autre motif. Et
+le motif est en croches **pleines** parce que le swing ne retarde que les pas
+impairs (`parametres.ts`) : posé sur `[0, 2, 4, 6]`, il n'aurait aucun effet.
+
+#### Ce que la mesure a tranché : la traîne n'est pas un exercice
+
+`drag` est un champ **global** du format v2. Mesuré en rejouant le scheduler :
+il décale les trois lignes du **même** montant, donc relativement il ne fait
+rien — inaudible dans une boucle qui tourne. Un exercice « reproduis ce rythme,
+il traîne » demanderait d'entendre une différence qui n'existe pas.
+
+Les niveaux 15 et 18 restent donc orphelins **par décision**, et
+`tests/feel-ecrit.test.ts` en fait la preuve plutôt qu'une affirmation. C'est
+déjà la raison pour laquelle la traîne est hors du catalogue de
+`parametres.ts` — la constater deux fois valait mieux que de la redécouvrir.
+
+⚠️ **Deux autres champs déclarés et lus par personne** : `GameLevel.ghost` et
+`GameLevel.fill`. Vérifié — aucune lecture hors de `levels.ts`. Les niveaux 20
+(« Ghost notes ») et 21 (« Fill ») annoncent donc ce que le code ne pose
+jamais, exactement comme `forceVariantCount` avant la PR #124. Ils ne sont pas
+cités ici : une ghost note est une affaire de **vélocité**, qu'une grille ne
+sait pas dessiner, donc `reproduire` est le mauvais verbe pour elle. Leur place
+est dans un cahier de commande — chantier B.
+
+#### L'acte 2 : entendre → reposer → nommer → régler
+
+Neuf étapes deviennent douze. Chaque reproduction suit l'écoute qui la prépare :
+45 (entendre le swing) → **14** → 46 (entendre le décalage) → **23** → 47
+(nommer) → 48 (régler) → **17** → la commande de Kelvin.
+
+⚠️ **Deux arbitrages successifs, à garder tous les deux.** L'acte citait cinq
+grilles générées ; elles ont été retirées parce qu'elles posaient des rafales
+et des rim shots sans rapport avec le groove. Les grilles reviennent
+aujourd'hui — mais écrites, sans une variante ni une rafale, et toutes
+identiques. Ce n'est pas une restauration, et `tests/carriere.test.ts` tient
+maintenant les deux règles au lieu d'un simple « que des verbes de paramètre ».
+
+#### Un harnais extrait, pas recopié
+
+Le rejeu du scheduler sans Web Audio vivait dans `tests/scheduler.test.ts`. Un
+second fichier en ayant besoin, il passe dans `tests/helpers/rejeu.ts` — deux
+copies d'un harnais qui doit rester aligné sur `renderPattern` finiraient par
+diverger, et celle qui diverge cesse silencieusement de protéger ce qu'elle
+croit protéger. Le snapshot du scheduler confirme l'extraction.
+
+#### Ce qui le vérifie
+
+376 tests (9 neufs sur le feel, 3 réécrits sur l'acte 2), 0 erreur de types,
+les deux builds. Vingt démarrages de chaque niveau dans l'appli : **un seul
+feel** à chaque fois, exactement celui qui est écrit. Le parcours complet passe
+l'acte 2 à 12 étapes et rend toujours ses six productions.
+
+#### Fichiers touchés
+
+`src/model/presets/levels.ts` (`GrilleEcrite.swing/drag/shift`, niveaux 14, 17,
+23 réécrits), `src/stores/game.svelte.ts` (le feel écrit prime sur le tirage),
+`src/model/carriere.ts` (acte 2), `tests/helpers/rejeu.ts` (neuf),
+`tests/feel-ecrit.test.ts` (neuf), `tests/scheduler.test.ts`,
+`tests/carriere.test.ts`, `CLAUDE.md`, `PLAN.md`, `REPRISE.md`.
+
+#### Reste du chantier A
+
+Les 16 autres orphelins : 5 presets jamais joués (UK Garage, Gqom, House French
+touch, Clave, Trap moderne) à distribuer dans l'acte 5, 5 polyrythmies à réduire
+à 2, la mesure longue, « tout combiné », et les deux niveaux ghost/fill qui
+demandent d'abord que le code les pose.
+
+---
+
 ### ✅ La boucle de livraison — le jeu écoute enfin ce qu'on lui donne (2026-08-27)
 
 > « Quand on réussit quelque chose d'important et qu'on livre une production, je

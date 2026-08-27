@@ -556,25 +556,79 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
   });
 });
 
-describe('L’acte 2 fait RÉGLER le groove, pas reproduire des grilles', () => {
-  /* ⚠️ « Le groove, ce sont des paramètres qu'on doit pouvoir régler. » L'acte
-   * citait cinq grilles à reproduire ; il ne cite plus que les trois verbes de
-   * paramètre sur la famille `groove`. */
-  it('ne cite que des verbes de paramètre, tous sur la famille groove', () => {
+describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', () => {
+  /* ⚠️ DEUX ARBITRAGES SUCCESSIFS, et il faut les garder tous les deux —
+   * ne pas « restaurer » l'un en croyant corriger l'autre.
+   *
+   * 1. (2026-08-27) « Pour le groove, on ne comprend pas pourquoi il y a les
+   *    rafales et les charleys ouverts, rim shot, personne n'explique, ce
+   *    n'est pas lié au groove. » L'acte citait cinq grilles GÉNÉRÉES, qui
+   *    posaient des variantes et des rafales sans rapport avec ce qu'il
+   *    enseigne. Elles ont été retirées au profit des trois verbes de
+   *    paramètre.
+   * 2. (plus tard le même jour) « Les quiz sont moins intéressants que les
+   *    exercices de reproduction et surtout que ceux de l'atelier. » Trois
+   *    écrans où l'on ne fait que DÉSIGNER, aucun où l'on pose.
+   *
+   * Les deux tiennent ensemble parce que ce qui est revenu n'est pas ce qui
+   * était parti : les grilles de l'acte 2 sont ÉCRITES, sans une variante ni
+   * une rafale, et toutes les trois IDENTIQUES — seul le feel change. C'est ce
+   * que ce fichier vérifie, et c'est la seule forme sous laquelle une grille a
+   * sa place ici. */
+  const grillesDeLActe2 = () =>
+    niveauxDeLActe(ACTES[2])
+      .map((n) => LEVELS.find((x) => x.id === n)!)
+      .filter((l) => l.exercise === 'reproduire');
+
+  it('ses verbes de paramètre restent tous sur la famille groove', () => {
     const niveaux = niveauxDeLActe(ACTES[2]);
     expect(niveaux.length).toBeGreaterThan(0);
     for (const n of niveaux) {
       const l = LEVELS.find((x) => x.id === n)!;
+      if (l.exercise === 'reproduire') continue;
       expect(['lequel', 'nommer', 'regler'], `niveau ${n}`).toContain(l.exercise);
       expect(l.familleParam, `niveau ${n}`).toBe('groove');
     }
   });
 
-  // Entendre, puis nommer, puis viser — l'ordre est le contenu de l'acte : on
-  // ne fait pas nommer ce qu'on n'a pas encore entendu.
+  it('⚠️ ses grilles n’apportent AUCUNE variante ni rafale — l’arbitrage 1', () => {
+    const grilles = grillesDeLActe2();
+    expect(grilles.length).toBeGreaterThan(0);
+    for (const l of grilles) {
+      expect(l.grille, `niveau ${l.id} : doit être écrite, pas tirée`).toBeTruthy();
+      const g = l.grille!;
+      for (const r of ['kick', 'snare', 'hat'] as const) {
+        expect(g[r].slice(0, g.subdiv[r]), `niveau ${l.id} : variante sur ${r}`).not.toContain(2);
+        const rolls = g.rolls?.[r] ?? [];
+        expect(rolls.some((v) => v > 1), `niveau ${l.id} : rafale sur ${r}`).toBe(false);
+      }
+    }
+  });
+
+  it('⚠️ et elles sont TOUTES la même grille — seul le feel change', () => {
+    /* C'est ce qui fait l'exercice : on ne peut comparer deux balancements que
+     * si tout le reste est identique. Une densité tirée rendait la question
+     * impossible — on ne savait pas si ce qu'on entendait venait du feel ou
+     * d'un motif différent. */
+    const grilles = grillesDeLActe2();
+    expect(grilles.length).toBeGreaterThanOrEqual(2);
+    const cases = (l: (typeof grilles)[number]) =>
+      JSON.stringify([l.grille!.subdiv, l.grille!.kick, l.grille!.snare, l.grille!.hat]);
+    const refs = new Set(grilles.map(cases));
+    expect([...refs], 'les grilles diffèrent').toHaveLength(1);
+    // Et le feel, lui, diffère bien d'un niveau à l'autre.
+    const feels = grilles.map((l) => JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]));
+    expect(new Set(feels).size, 'deux niveaux au même feel').toBe(grilles.length);
+  });
+
+  // Entendre, puis reposer, puis nommer, puis viser — l'ordre est le contenu
+  // de l'acte : on ne fait pas nommer ce qu'on n'a pas encore entendu, et on ne
+  // fait pas reproduire un balancement qu'on n'a pas encore isolé à l'oreille.
   it('va d’entendre à régler, dans cet ordre', () => {
     const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    expect(verbes).toEqual(['lequel', 'lequel', 'nommer', 'regler']);
+    expect(verbes).toEqual(['lequel', 'reproduire', 'lequel', 'reproduire', 'nommer', 'regler', 'reproduire']);
+    // Chaque reproduction suit l'écoute qui l'a préparée.
+    expect(verbes.indexOf('reproduire')).toBeGreaterThan(verbes.indexOf('lequel'));
   });
 
   // Et il arrive APRÈS l'acte qui ouvre l'Atelier : `nommer` et `regler`

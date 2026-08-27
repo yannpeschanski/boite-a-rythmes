@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 358 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 376 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -160,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 358 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 376 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -234,22 +234,36 @@ retouché de la session.
 
 Mesuré sur le code, pas de mémoire (`main de2eaa4`) :
 
-- **29 niveaux sur 61 ne sont cités par aucun acte**, dont les 21 niveaux 14 à 34
-  d'un bloc : swing, traîne, ghost notes, fill, décalage, polyrythmie, mesure
-  longue. C'est la moitié du jeu qui n'existe que dans le tableau.
+- **29 niveaux sur 61 ne sont cités par aucun acte**, dont 19 des 21 niveaux de
+  la plage 14 à 34 : swing, traîne, ghost notes, fill, décalage, polyrythmie,
+  mesure longue. C'est la moitié du jeu qui n'existe que dans le tableau (seuls
+  les presets 27 et 32 sont rattrapés par l'acte 5).
 - **La carrière dure 60 à 125 min**, la cible de Yann est 120 au minimum.
 - **10 boutons enseignés sur 155 réglages**, la carrière en fait jouer 8, et
   **aucun du synthé**.
 - Un verbe porte 13 des 32 exercices ; `completer` et `intrus` ne sont jamais
   cités ; l'acte 6 n'a aucun exercice.
 
-**Chantier A, recommandé et non engagé** : réécrire les niveaux 14-34 en grilles
-écrites et les distribuer (groove à l'acte 2, décalage/polyrythmie à l'acte 5),
-en fusionnant les doublons au passage (14/17, 15/18, et les cinq polyrythmies
-24/26/29/30/31). Rend la moitié morte jouable sans écrire un niveau neuf, et
-remplace les quiz `lequel` passifs de l'acte 2. Puis **chantier B** : l'Atelier
-au cœur de chaque acte (reproduire → transformer → livrer), qui a besoin de A
-pour avoir de la matière en entrée.
+**Chantier A — tranche 1 FAITE.** Les niveaux 14, 17 et 23 (balancement léger,
+balancement franc, décalage du charley) sont réécrits en grilles écrites et
+cités par l'acte 2, qui passe de 9 à 12 étapes. Il a fallu d'abord que
+`GrilleEcrite` porte le FEEL : le décalage était **forcé à zéro** sur toute
+grille écrite, donc le niveau 23 n'en jouait aucun.
+
+Deux décisions prises au passage, mesurées et non supposées :
+
+- **la traîne n'est pas un exercice** — `drag` est global, il décale tout du
+  même montant, donc rien relativement. Les niveaux 15 et 18 restent orphelins
+  par décision (`tests/feel-ecrit.test.ts` en fait la preuve) ;
+- **`GameLevel.ghost` et `GameLevel.fill` ne sont lus par personne** — même
+  famille que `forceVariantCount`. Les niveaux 20 et 21 promettent ce que le
+  code ne pose pas. Une ghost note est une affaire de vélocité, qu'une grille
+  ne dessine pas : leur place est dans un cahier de commande, pas dans
+  `reproduire`.
+
+**Reste du chantier A** : 5 presets jamais joués à distribuer dans l'acte 5, 5
+polyrythmies à réduire à 2, la mesure longue, « tout combiné ». Puis **chantier
+B** : l'Atelier au cœur de chaque acte (reproduire → transformer → livrer).
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 

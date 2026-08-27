@@ -600,8 +600,19 @@ export const ACTES: Acte[] = [
        * shot, personne n'explique, ce n'est pas lié au groove. Le groove, ce
        * sont des paramètres qu'on doit pouvoir régler. »
        *
-       * Il ne cite donc plus que les trois verbes de PARAMÈTRE sur la famille
+       * Il a d'abord été réduit aux trois verbes de PARAMÈTRE sur la famille
        * `groove` : entendre (`lequel`), nommer (`nommer`), viser (`regler`).
+       *
+       * ⚠️ Puis les grilles sont REVENUES, et il faut garder les deux
+       * arbitrages : « les quiz sont moins intéressants que les exercices de
+       * reproduction ». Ce qui revient n'est pas ce qui était parti — les
+       * niveaux 14, 17 et 23 sont ÉCRITS, sans une variante ni une rafale
+       * (c'était ça, le reproche), et tous les trois sur la MÊME grille. Seul
+       * le feel change : balancement léger, décalage du charley, balancement
+       * franc. C'est ce qui rend la comparaison possible, et c'est la seule
+       * forme sous laquelle une grille a sa place dans cet acte.
+       * `tests/carriere.test.ts` tient les deux règles.
+       *
        * C'est aussi le premier endroit où `nommer` et `regler` ont un sens :
        * l'Atelier est ouvert depuis l'acte 1, les mots « Swing » et
        * « Décalage » sont enfin sur des curseurs que le joueur a vus. À l'acte
@@ -632,6 +643,20 @@ export const ACTES: Acte[] = [
         niveau: 45,
         commande: 'Sol, sans lever les yeux : — Il a raison. Écoute : même rythme, pas le même balancement.',
       },
+      /* ⚠️ ENTENDRE puis REFAIRE. L'acte ne faisait que désigner (`lequel`,
+       * `nommer`, `regler`) : trois écrans où l'on reconnaît, aucun où l'on
+       * pose. Retour de Yann : « les quiz sont moins intéressants que les
+       * exercices de reproduction et surtout que ceux de l'atelier ».
+       *
+       * Les niveaux 14, 17 et 23 partagent la MÊME grille et ne diffèrent que
+       * par le feel — c'est ce qui rend la comparaison possible, et c'est ce
+       * qu'un tirage de densité interdisait. Ils dormaient dans le réservoir
+       * depuis que la carrière a remplacé la campagne linéaire. */
+      {
+        kind: 'exercice',
+        niveau: 14,
+        commande: 'Maintenant refais-le, avec le balancement dedans. Les cases sont simples : c’est de les entendre qui ne l’est pas.',
+      },
       {
         kind: 'recit',
         source: 'lcd',
@@ -648,6 +673,11 @@ export const ACTES: Acte[] = [
         kind: 'exercice',
         niveau: 46,
         commande: 'Autre bouton : là, c’est la ligne entière qui glisse. Le kick, lui, ne bouge pas.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 23,
+        commande: 'Même grille encore, sans balancement — mais le charley traîne derrière. Repose-la.',
       },
       {
         kind: 'exercice',
@@ -669,6 +699,11 @@ export const ACTES: Acte[] = [
         kind: 'exercice',
         niveau: 48,
         commande: 'Alors trouve-le au curseur. Pas le chiffre : le balancement.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 17,
+        commande: 'Le sien, c’est celui-là. Franc. Refais-le une dernière fois avant de lui rendre sa boucle.',
       },
       {
         kind: 'commande',

@@ -260,6 +260,33 @@ accord** — deux hauteurs à l'octave seraient la même note à l'oreille et de
 réponses à l'écran. La tonique tombe toujours sur le premier pas : sans point de
 départ, aucun degré ne se situe.
 
+⚠️ **Le FEEL fait partie de la grille écrite — et la traîne n'est pas un
+exercice.** `GrilleEcrite` porte `swing`, `drag` et `shift` : le balancement,
+la traîne et le décalage par ligne changent ce qu'on ENTEND sans changer une
+case, donc un niveau qui les enseigne doit pouvoir les POSER. Tirés dans
+`swingOptions`, ils rendaient au niveau le défaut que la grille écrite existe
+pour supprimer. Le décalage était pire : `startLevel` le forçait à `0` sur
+toute grille écrite — le niveau 23 (« décalage par ligne ») n'en jouait donc
+**aucun**, il demandait d'entendre ce qui n'était pas joué. Trois choses à
+garder : un motif de swing doit occuper les pas **impairs** (seuls retardés) ;
+un décalage ne s'entend que **contre** des lignes qui, elles, ne bougent pas ;
+et la **traîne est globale**, donc elle décale tout du même montant — inaudible
+dans une boucle, ce qui la rend impossible comme exercice (c'est déjà pourquoi
+elle est hors de `parametres.ts`). Les niveaux 15 et 18 restent donc orphelins
+**par décision**, pas par oubli. `tests/feel-ecrit.test.ts` mesure les trois en
+rejouant le scheduler, harnais partagé dans `tests/helpers/rejeu.ts`.
+
+⚠️ **L'acte 2 porte DEUX arbitrages successifs — ne pas restaurer l'un en
+croyant corriger l'autre.** Il citait cinq grilles générées ; retirées parce
+qu'elles posaient « des rafales, des charleys ouverts, des rim shots » sans
+rapport avec le groove. Puis les grilles sont revenues — « les quiz sont moins
+intéressants que les exercices de reproduction ». Les deux tiennent parce que
+ce qui revient n'est pas ce qui était parti : les niveaux 14, 17 et 23 sont
+**écrits**, sans une variante ni une rafale, et tous les trois sur la **même
+grille** — seul le feel change, ce qui est la seule façon de rendre deux
+balancements comparables. L'acte alterne désormais entendre → reposer →
+nommer → régler.
+
 ⚠️ **Un exercice qui se joue UNE fois ne se tire pas au sort — `GrilleEcrite`.**
 Arbitrage de Yann (2026-08-27) : « chaque personne ne les ferait qu'une seule
 fois ». Un niveau généré tire une densité dans une fourchette, donc il ne sait
