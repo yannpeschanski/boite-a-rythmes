@@ -87,7 +87,7 @@
         >
       {/if}
       <button class="big" onclick={() => enter('game')}>
-        🎮 Mode jeu<small>Une carrière en huit actes · {LEVELS.length} niveaux</small></button
+        🎮 Jouer<small>Une carrière en huit actes · {LEVELS.length} niveaux</small></button
       >
       {#if unlocks.has('live')}
         <button class="big" onclick={() => enter('live', 'live')}>
@@ -124,7 +124,7 @@
       {#if unlocks.has('atelier')}
         <button onclick={() => enter('atelier', 'atelier')}>🥁 Atelier</button>
       {/if}
-      <button class="on" onclick={() => enter('game')}>🎮 Mode jeu</button>
+      <button class="on" onclick={() => enter('game')}>🎮 Jouer</button>
       {#if unlocks.has('live')}
         <button onclick={() => enter('live', 'live')}>🎛 Mode Live</button>
       {/if}

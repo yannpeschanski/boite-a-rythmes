@@ -82,6 +82,64 @@ haut-parleur. Voir `PLAN.md`, « L'acte 4 en deux temps ».
 fiche par genre). Les verbes de paramètre 54-57 de l'acte 4 sont à déplacer de
 la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
+## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
+
+Une partie complète jouée à la main. **5 points sur 19 sont traités** ; le
+reste est là, dans l'ordre où je propose de le prendre.
+
+### Fait
+
+| | |
+|---|---|
+| L'acte 3 était un cul-de-sac | `modulesRequis` — la commande ouvre le Synthé qu'elle exige |
+| La check-list déjà cochée | `etatVierge()` — une commande part d'un Atelier vide |
+| Le jeu s'appelle **Face B** | et l'entrée s'appelle **Jouer**, plus « Mode jeu » |
+| Le verrouillé est masqué | plus aucun cadenas à l'écran |
+| Les dates | 2005, une seule date écrite, le reste déduit |
+
+### Reste — bugs d'abord
+
+1. **Acte 3, « bug sur la basse à deviner »** — signalé, **non diagnostiqué**.
+   C'est le seul point de la liste dont je ne connais pas encore la cause.
+2. **Acte 1, les promesses non tenues** : « on dit qu'on introduit rim shot ou
+   charley ouvert, ce n'est pas le cas, et on ne dit pas comment les faire » ;
+   « on dit qu'on a un tresillo avec rafales, ce n'est pas le cas ».
+3. **Acte 1, exporter sa sonnerie** : l'export vit dans l'onglet Production,
+   fermé à ce moment. Même famille que le blocage de l'acte 3, mais l'acte 1
+   n'est pas une commande — `modulesRequis` ne s'applique pas.
+
+### Reste — forme du récit
+
+4. **Indiquer qui parle**, à chaque réplique.
+5. **Faire défiler le texte** (révélation progressive).
+
+Les deux touchent les 44 écrans de récit et demandent la même passe : attribuer
+chaque ligne à un locuteur. À faire ensemble.
+
+### Reste — l'acte 0, qui ne marche pas
+
+6. « En l'état ça marche pas, c'est pas fun, trop dur à comprendre. » La trame
+   proposée : faire un tempo → le tempo désigne un style → deviner le style
+   parmi quatre séquences → puis répéter la mesure (l'intrus, le pitch en
+   hausse, l'attaque au minimum), **le tout sur une seule séquence**.
+
+### Reste — la courbe et le contenu
+
+7. **Acte 2** : remplacer les quiz « lequel » par des réglages.
+8. **Acte 2** : la commande en plusieurs étapes (« fais d'abord un poom check
+   poom poom chack », puis le reste du cahier).
+9. **Monter la difficulté des actes 1 et 2** — on arrive trop vite à l'acte 3.
+   Acte 1 : plus de rythmes à refaire. Acte 2 : beaucoup d'exercices d'atelier.
+10. **Acte 3** : la mélodie devrait avoir l'interface de l'Atelier — des
+    cellules et un clavier — pour préparer au module.
+11. **Les roasts** : tous les textes à revoir.
+12. **Les besaces** : introduire le concept (aujourd'hui on en gagne sans
+    savoir ce que c'est), et leur donner un usage à la fin. Piste retenue par
+    Yann : une fin alternative, un EP si on a tous les objets.
+
+⚠️ Le retour s'arrêtait sur « Acte 4 » sans contenu — il manque peut-être la
+fin de la liste.
+
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
 **Vérifié** — types, 303 tests (les tests aléatoires affirment ce qui est vrai à
