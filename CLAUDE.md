@@ -260,6 +260,22 @@ accord** — deux hauteurs à l'octave seraient la même note à l'oreille et de
 réponses à l'écran. La tonique tombe toujours sur le premier pas : sans point de
 départ, aucun degré ne se situe.
 
+⚠️ **Un exercice qui se joue UNE fois ne se tire pas au sort — `GrilleEcrite`.**
+Arbitrage de Yann (2026-08-27) : « chaque personne ne les ferait qu'une seule
+fois ». Un niveau généré tire une densité dans une fourchette, donc il ne sait
+pas ce qu'il vient d'enseigner : c'est ce qui rendait une **courbe** impossible
+à dessiner, et c'est la source de la famille « 0 variante sur 60 tirages » — un
+préambule qui annonce ce que le tirage ne pose pas. L'acte 1 est donc écrit à la
+main, huit rythmes dont chacun n'ajoute qu'UNE chose. Trois règles à garder :
+la grille écrite prime sur le preset et sur la génération dans `startLevel` et
+**ne reçoit aucun forçage** (c'est elle la vérité, seuls tempo et swing restent
+tirés) ; ce qu'elle contient, le niveau doit le **déclarer** (`variant`,
+`rollMax`), sinon la cible est impossible à poser et l'écran ne dit pas pourquoi ;
+et un niveau ajouté se pose **en fin de tableau**, jamais au milieu — carrière et
+salle de répétition citent les niveaux par leur `id`. `tests/grilles-ecrites.test.ts`
+confronte chaque grille à son propre préambule, une promesse par test : c'est la
+moitié que la grille écrite ne corrige pas toute seule.
+
 **Le Mode jeu a plusieurs VERBES, pas un.** `ExerciseKind` (`src/model/exercises.ts`)
 discrimine ce qu'on demande au joueur — quatre verbes de grille : `reproduire`
 (les 34 niveaux de la campagne), `completer`, `intrus`, `jouer` — là où les

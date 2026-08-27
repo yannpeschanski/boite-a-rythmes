@@ -737,7 +737,33 @@ class GameStore {
       cfg.exercise === 'style' ? { ...cfg, presetId: this.tirerStyle(presets) } : cfg;
     this.subdiv = subdivForLevel(cfgEffectif, presets);
     const preset = presetForLevel(cfgEffectif, presets);
-    if (preset) {
+    if (cfgEffectif.grille) {
+      /* ⚠️ GRILLE ÉCRITE — elle prime sur tout le reste, et c'est le point.
+       *
+       * Arbitrage de Yann : un exercice se joue une fois, le tirer au sort
+       * n'apporte rien et coûte cher. Ici la cible est POSÉE : ce que le
+       * niveau enseigne se lit dans les données au lieu de se vérifier en
+       * probabilité, et une courbe de difficulté devient dessinable.
+       *
+       * Aucun forçage n'est appliqué : la grille contient déjà, ou non, ses
+       * variantes et ses rafales — c'est elle la vérité. */
+      const g = cfgEffectif.grille;
+      this.subdiv = { ...g.subdiv };
+      const grid = emptyGrid(this.subdiv);
+      const rolls = emptyRolls(this.subdiv);
+      GAME_DRUM_ROWS.forEach((n) => {
+        const ligne = g[n];
+        for (let i = 0; i < this.subdiv[n]; i++) grid[n][i] = (ligne[i] ?? 0) as DrumStep;
+        const r = g.rolls?.[n];
+        if (r) for (let i = 0; i < this.subdiv[n]; i++) rolls[n][i] = r[i] ?? 1;
+      });
+      this.target = grid;
+      this.targetRolls = rolls;
+      this.tempo = pick(cfgEffectif.tempoOptions);
+      this.swing = pick(cfgEffectif.swingOptions);
+      this.drag = pick(cfgEffectif.dragOptions);
+      this.shift = { kick: 0, snare: 0, hat: 0 };
+    } else if (preset) {
       // Niveau « preset » : la cible EST le pattern d'un morceau réel (même
       // subdivision, mêmes shift/tempo/swing/drag, même timbre). Rafales
       // volontairement ignorées — jamais l'objet noté ici.

@@ -7211,6 +7211,108 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Les rythmes de l'acte 1 sont ÉCRITS, pas tirés au sort (2026-08-27)
+
+> « il n'est pas nécessaire de randomiser les exercices dans la mesure où
+> chaque personne ne les ferait qu'une seule fois »
+> « acte 1 : plus de rythme à refaire »
+
+Deux demandes qui n'en font qu'une : **on ne dessine pas une courbe de
+difficulté avec des tirages.** Un niveau généré ne sait pas ce qu'il vient
+d'enseigner ; il tire une densité dans une fourchette, et deux passages du même
+niveau n'apprennent pas la même chose. Comme un joueur ne fait un exercice
+qu'une fois, tout ce que le hasard apportait était du bruit — et une famille de
+bugs entière (« 0 variante sur 60 tirages » pour un préambule qui en annonce
+une, corrigée la veille par un forçage) n'existait que parce que la cible était
+tirée.
+
+#### La grille écrite
+
+`GrilleEcrite` (`presets/levels.ts`) : une subdivision par ligne, les trois
+lignes en clair, les rafales en option. `startLevel` gagne une **première
+branche**, avant le preset et avant la génération — la grille écrite prime sur
+tout, et **aucun forçage ne lui est appliqué** : c'est elle la vérité. Ne
+restent tirés que le tempo et le swing, dans les options du niveau.
+
+```
+niveau 61 « Tout ensemble »
+  kick  1 0 0 1 1 0 0 0
+  snare 0 0 1 0 0 0 2 0     2 = rim shot
+  hat   1 1 1 1 1 1 1 2     2 = charley ouvert
+  rafales du hat  1 1 1 1 1 3 1 1
+```
+
+#### La série — huit rythmes, une nouveauté chacun
+
+L'acte 1 passe de cinq exercices à huit, et chaque niveau n'ajoute **qu'une
+chose** à celui d'avant :
+
+| # | niveau | ce qui est neuf |
+|---|---|---|
+| 1 | 2 · Le kick et la claire | le backbeat, deux lignes |
+| 2 | 3 · Le trio | le charley, en croches |
+| 3 | 7 · Le kick qui sort du temps | la syncope (huit cases) |
+| — | *leçon de Sol* | elle FAIT le rim shot et la rafale à l'écran |
+| 4 | 5 · Un rim shot | une variante de claire, la dernière |
+| 5 | 59 · Un charley ouvert | une variante de charley, la dernière croche |
+| 6 | 60 · Les deux à la fois | les deux, sur le kick syncopé |
+| 7 | 8 · Une rafale | une rafale, le dernier charley |
+| 8 | 61 · Tout ensemble | les quatre, dans une mesure — « c'est ta sonnerie » |
+
+Les trois nouveaux (59, 60, 61) sont posés **en fin de tableau** : la carrière
+et la salle de répétition citent les niveaux par leur `id`, en insérer au milieu
+aurait déplacé tout le reste. Le niveau 1 n'est plus cité (« niveau 1 à
+supprimer » — il ne faisait poser que des kicks), il reste dans le réservoir.
+
+#### Ce qui le vérifie — et le défaut qu'on cherchait
+
+`tests/grilles-ecrites.test.ts` (27 tests) confronte chaque grille à **son
+propre préambule**, une promesse par test : « une seule des deux claires en
+porte une, c'est la dernière » se lit maintenant sur les données. C'est la
+famille de défauts la plus coûteuse du projet — l'écran promet ce que le code ne
+tient pas — et c'est la seule que la grille écrite ne supprime pas toute seule.
+Vérifié rouge par mutation (rafale du niveau 8 retirée → le test tombe).
+
+S'y ajoutent la bonne formation (longueur = subdivision, valeurs dans 0/1/2, pas
+de rafale sur une case éteinte), la **déclaration** (une variante dans la grille
+exige `variant`, une rafale exige `rollMax` — sinon le niveau est impossible et
+muet sur la raison), et deux tests de COURBE sur l'acte 1 : tous ses exercices
+citent une grille écrite, et la série n'ajoute jamais deux nouveautés d'un coup.
+
+Mesuré aussi dans l'appli, sur serveur de dev neuf : les huit grilles sont
+posées **au bit près** telles qu'écrites (rafales comprises), et l'écran du
+niveau 61 affiche bien `KICK 0/3 · SNARE 0/2 · HAT 0/8`.
+
+⚠️ `tests/model.test.ts` comptait la campagne par `exercise === 'reproduire'` —
+ce qui mesurait le réservoir en croyant mesurer la campagne dès que des
+`reproduire` sont apparus hors des 34. Borné à `id <= 34`, et l'ordre des
+identifiants est vérifié pour que les deux assertions parlent bien des mêmes
+niveaux.
+
+#### Un détail qui est le même défaut en petit
+
+Le bouton « Nouveau rythme » redonne **exactement** la même grille sur un niveau
+écrit. Il devient « Recommencer » dans ce cas : il fait ce qu'il dit (efface la
+proposition, remet le compteur d'essais), et ne promet plus un tirage qui n'aura
+pas lieu.
+
+#### Fichiers touchés
+
+`src/model/presets/levels.ts` (`GrilleEcrite`, niveaux 2/3/5/7/8 réécrits,
+59/60/61 ajoutés), `src/stores/game.svelte.ts` (branche grille écrite dans
+`startLevel`), `src/model/carriere.ts` (acte 1 à huit exercices),
+`src/ui/game/GameView.svelte` (libellé du bouton),
+`tests/grilles-ecrites.test.ts` (nouveau), `tests/model.test.ts`.
+
+#### Ce qui reste de la liste de Yann
+
+Acte 0 à refondre sur sa trame, acte 2 (réglages au lieu des quiz « lequel »,
+commande en plusieurs étapes), roasts, besaces, « qui parle » et défilement du
+texte. Les grilles écrites ne couvrent pour l'instant que l'acte 1 — les autres
+actes citent encore des niveaux générés, et c'est le prolongement naturel.
+
+---
+
 ### ✅ L'acte 4 en deux temps — une leçon de production qui se FAIT (2026-08-26)
 
 > « bizarre les exercices pour la production. »

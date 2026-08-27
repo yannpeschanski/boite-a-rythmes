@@ -57,6 +57,8 @@ export interface GameLevel {
   exercise: ExerciseKind;
   preamble: string;
   presetId: string | null;
+  /** Cible écrite à la main : elle remplace le tirage (voir `GrilleEcrite`). */
+  grille: GrilleEcrite | null;
   subdivOptions: SubdivOption[];
   rowsActive: { kick: boolean; snare: boolean; hat: boolean };
   tempoOptions: number[];
@@ -127,7 +129,35 @@ export interface GameLevel {
 }
 
 // Options passées à mkLevel — tout est facultatif, mkLevel pose les défauts.
+/* ⚠️ UNE GRILLE ÉCRITE — une cible posée à la main plutôt que tirée au sort.
+ *
+ * Arbitrage de Yann (2026-08-27) : *« il n'est pas nécessaire de randomiser
+ * les exercices dans la mesure où chaque personne ne les ferait qu'une seule
+ * fois »*. L'argument suffit, mais il y a plus fort : **tous les bugs
+ * d'exercice du retour de partie venaient de la génération** — le rim shot
+ * annoncé et jamais posé, le tresillo sans rafale, « 0 variante sur 60
+ * tirages ». Un rythme tiré est un rythme que personne n'a conçu : on ne peut
+ * en vérifier les propriétés qu'EN PROBABILITÉ, d'où des tests qui rejouent
+ * 60 fois pour approcher ce qu'une grille écrite dit d'un coup d'œil.
+ *
+ * Et surtout, ça rend possible ce qu'un tirage interdit : une COURBE de
+ * difficulté. On ne dessine pas une progression avec des tirages, on la
+ * dessine avec une liste.
+ *
+ * Chaque ligne est un tableau de la longueur de sa subdivision : 0 vide,
+ * 1 coup, 2 variante (rim shot sur la claire, charley ouvert). `rolls` est
+ * facultatif et ne porte que sur les pas actifs. */
+export interface GrilleEcrite {
+  subdiv: { kick: number; snare: number; hat: number };
+  kick: number[];
+  snare: number[];
+  hat: number[];
+  rolls?: Partial<Record<GameDrumRowName, number[]>>;
+}
+
 export interface MkLevelOptions {
+  /** Une cible écrite à la main — voir `GrilleEcrite`. */
+  grille?: GrilleEcrite;
   exercise?: ExerciseKind;
   preamble?: string;
   presetId?: string;
@@ -460,6 +490,7 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
     // niveaux "une seule variante/rafale" ET pour les niveaux preset (garantir
     // qu'un concept déjà enseigné est bien présent dans la cible, même si le
     // preset original n'en contenait pas assez).
+    grille: o.grille || null,
     forceVariantCount: o.forceVariantCount || 0,
     forceRollCount: o.forceRollCount || 0,
     // Preset "modifié pour l'occasion" : décalage aléatoire forcé par ligne
@@ -479,40 +510,72 @@ export const LEVELS: GameLevel[] = [
     subdivOptions: [4], tempoOptions: [84, 92],
     rowsActive: { kick: true, snare: false, hat: false },
     density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
-  mkLevel(2, 'Poser une note (kick + snare)', {
-    preamble: "La snare (caisse claire) entre en jeu à son tour — le hat reste vide encore un niveau.",
-    subdivOptions: [4], tempoOptions: [84, 92],
+  /* ---------- Acte 1 : les huit rythmes ÉCRITS ----------
+   *
+   * Grilles posées à la main plutôt que tirées (voir `GrilleEcrite`). Chaque
+   * niveau ajoute EXACTEMENT une chose à celui d'avant — c'est ça, une courbe,
+   * et c'est ce qu'un tirage ne sait pas faire. */
+  mkLevel(2, 'Le kick et la claire', {
+    preamble: "Le rythme le plus répandu au monde : le kick sur les temps 1 et 3, la caisse claire qui répond sur 2 et 4. On l'appelle le backbeat, et tu l'as déjà entendu dix mille fois.",
+    tempoOptions: [84, 92],
     rowsActive: { kick: true, snare: true, hat: false },
-    density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
-  mkLevel(3, 'Poser une note (kick + snare + hat)', {
-    preamble: "Le hat (charleston) complète le trio : kick, snare et hat forment maintenant la base complète du rythme.",
-    subdivOptions: [4], tempoOptions: [84, 92],
-    density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0.35, hatMax: 0.5 } }),
+    grille: {
+      subdiv: { kick: 4, snare: 4, hat: 4 },
+      kick:  [1, 0, 1, 0],
+      snare: [0, 1, 0, 1],
+      hat:   [0, 0, 0, 0],
+    } }),
+  mkLevel(3, 'Le trio', {
+    preamble: "Le charleston complète la base : il joue en croches, deux fois par temps, et c'est lui qui donne le débit. Kick, claire, charley — avec ces trois-là tu peux déjà tout faire.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 4, snare: 4, hat: 8 },
+      kick:  [1, 0, 1, 0],
+      snare: [0, 1, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
   mkLevel(4, 'Reproduire un preset (Motown)', {
     preamble: "Ces niveaux ne sont plus générés au hasard : ce sont de vrais rythmes de l'Atelier, à replacer dans leur contexte. Motown/soul, le plus simple qui soit — aucune variante, aucune rafale.",
     presetId: 'motown' }),
   // ---------- Variante (2 niveaux : une seule, puis complète) ----------
-  mkLevel(5, 'Variante (une seule)', {
-    preamble: "Une case active peut aussi contenir une variante (rim shot pour la snare, hat ouvert pour le hat) — reclique une case déjà active pour y basculer. Ici, une seule note du rythme en contient une : à toi de la repérer.",
-    subdivOptions: [4], tempoOptions: [84, 92],
-    variant: { snare: true, hat: true }, variantChance: 0, forceVariantCount: 1,
-    density: { kickMin: 0, kickMax: 0, snareMin: 1, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(5, 'Un rim shot', {
+    preamble: "Une case active peut porter une VARIANTE : reclique-la et la caisse claire passe en rim shot — le bord du fût, pas la peau, un claquement sec. Ici, une seule des deux claires en porte une. C'est la dernière.",
+    tempoOptions: [84, 92],
+    variant: { snare: true, hat: true },
+    grille: {
+      subdiv: { kick: 4, snare: 4, hat: 8 },
+      kick:  [1, 0, 1, 0],
+      snare: [0, 1, 0, 2],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
   mkLevel(6, 'Variante (complète)', {
     preamble: "Cette fois, plusieurs notes peuvent être en variante — sur la snare comme sur le hat.",
     subdivOptions: [4], tempoOptions: [84, 92],
     variant: { snare: true, hat: true }, variantChance: 0.6, rollMax: 1,
     density: { kickMin: 0, kickMax: 0, snareMin: 1, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
   // ---------- Round 1 : Subdivision + Rafale, entrelacés, avec presets ----------
-  mkLevel(7, 'Subdivision plus fine', {
-    preamble: "La mesure se découpe en plus de cases : plus de précision demandée à l'oreille. Ici, une subdivision différente par ligne — kick et hat en 8, snare en 4.",
-    subdivOptions: [{ kick: 8, snare: 4, hat: 8 }],
-    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 1,
-    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.4, hatMax: 0.55 } }),
-  mkLevel(8, 'Rafale (une seule)', {
-    preamble: "Clic droit (ou appui long) sur une case active : elle joue en rafale, plusieurs coups rapprochés au lieu d'un seul. Une seule note du rythme en contient une ici.",
-    subdivOptions: [6, 7],
-    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0, forceRollCount: 1,
-    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(7, 'Le kick qui sort du temps', {
+    preamble: "La mesure se découpe en huit cases pour le kick et le charley : il peut maintenant tomber ENTRE deux temps. Ce décalage-là a un nom, la syncope, et c'est ce qui sépare un rythme qui marche d'un rythme qui groove.",
+    tempoOptions: [88, 96],
+    grille: {
+      // kick sur 1, sur le « et » de 2, et sur 3 — il quitte la grille des
+      // temps une fois, et c'est tout ce qu'on demande d'entendre ici.
+      subdiv: { kick: 8, snare: 4, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      snare: [0, 1, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
+  mkLevel(8, 'Une rafale', {
+    preamble: "Clic droit (ou appui long) sur une case active : elle part en RAFALE, plusieurs coups rapprochés au lieu d'un seul. Une seule ici, sur le tout dernier charley — c'est elle qui relance la boucle.",
+    tempoOptions: [84, 92],
+    variant: { snare: true, hat: true }, rollMax: 3,
+    grille: {
+      subdiv: { kick: 4, snare: 4, hat: 8 },
+      kick:  [1, 0, 1, 0],
+      snare: [0, 1, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      rolls: { hat: [1, 1, 1, 1, 1, 1, 1, 3] },
+    } }),
   mkLevel(9, 'Reproduire un preset (Tresillo)', {
     preamble: "La cellule tresillo (3+3+2), toute simple à l'origine — variante et rafale y sont ajoutées pour l'occasion, histoire de vérifier que ça reste acquis.",
     variant: { snare: true, hat: true }, rollMax: 2, presetId: 'tresillo', forceVariantCount: 1, forceRollCount: 1 }),
@@ -893,4 +956,43 @@ export const LEVELS: GameLevel[] = [
     exercise: 'style',
     preamble: "Une boucle, quatre genres. Aucun réglage à trouver : celui-là ne se mesure pas, il se reconnaît. Écoute le tempo, la place de la caisse claire, ce que fait le hi-hat — c'est là que les familles se séparent.",
     tempoOptions: [100] }),
+
+  /* ---------- Acte 1, la suite : trois rythmes écrits de plus ----------
+   *
+   * Ajoutés à la FIN pour ne déplacer aucun identifiant existant — la carrière
+   * cite les niveaux par leur `id`, et la salle de répétition les retient de
+   * la même façon. Ils prolongent la série de l'acte 1 : après le rim shot
+   * (niveau 5) viennent l'ouverture du charley, les deux ensemble, puis tout
+   * ensemble. Chacun ajoute UNE chose. */
+  mkLevel(59, 'Un charley ouvert', {
+    preamble: "Le charleston aussi a sa variante : reclique-le et il s'OUVRE — un « tss » qui traîne au lieu d'un « tic » sec. Un seul ici, sur la toute dernière croche : c'est ce qui fait respirer la mesure avant qu'elle recommence.",
+    tempoOptions: [84, 92],
+    variant: { snare: true, hat: true },
+    grille: {
+      subdiv: { kick: 4, snare: 4, hat: 8 },
+      kick:  [1, 0, 1, 0],
+      snare: [0, 1, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 2],
+    } }),
+  mkLevel(60, 'Les deux à la fois', {
+    preamble: "Rim shot ET charley ouvert dans le même rythme, sur un kick syncopé. Rien de neuf : ce sont les trois choses que tu viens d'apprendre, posées ensemble. C'est là qu'on voit si elles sont acquises.",
+    tempoOptions: [88, 96],
+    variant: { snare: true, hat: true },
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 2, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 2],
+    } }),
+  mkLevel(61, 'Tout ensemble', {
+    preamble: "Le dernier de la série, et il ne contient rien que tu n'aies déjà fait : la syncope, le rim shot, l'ouverture, et une rafale sur le « et » du troisième temps. Quatre choses, une mesure. C'est ta sonnerie.",
+    tempoOptions: [88, 96],
+    variant: { snare: true, hat: true }, rollMax: 3,
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 2, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 2],
+      rolls: { hat: [1, 1, 1, 1, 1, 3, 1, 1] },
+    } }),
 ];

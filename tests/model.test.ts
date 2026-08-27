@@ -93,13 +93,24 @@ describe('presets', () => {
     }
   });
 
-  it('la campagne fait toujours 34 niveaux, les pilotes en plus', () => {
+  it('la campagne fait toujours 34 niveaux, le reste du réservoir en plus', () => {
     // Le chiffre qui compte est celui de la CAMPAGNE, pas celui du tableau :
-    // les pilotes des nouveaux verbes sont posés après le 34 et n'en font pas
-    // partie. Compter le tableau entier laisserait passer un niveau de
-    // campagne supprimé pour peu qu'un pilote soit ajouté le même jour.
-    expect(LEVELS.filter((l) => l.exercise === 'reproduire')).toHaveLength(34);
+    // ce qui vient après le 34 n'en fait pas partie. Compter le tableau entier
+    // laisserait passer un niveau de campagne supprimé pour peu qu'un niveau
+    // soit ajouté le même jour.
+    //
+    // ⚠️ Le filtre est borné à `id <= 34`, et pas seulement au verbe : depuis
+    // les rythmes ÉCRITS de l'acte 1, `reproduire` existe aussi HORS campagne
+    // (niveaux 59-61, cités par la carrière et posés en fin de tableau pour ne
+    // déplacer aucun identifiant). Compter tous les `reproduire` mesurait le
+    // réservoir en croyant mesurer la campagne.
+    expect(LEVELS.filter((l) => l.exercise === 'reproduire' && l.id <= 34)).toHaveLength(34);
     expect(LEVELS.slice(0, 34).every((l) => l.exercise === 'reproduire')).toBe(true);
+    // Et les identifiants suivent le rang : sans ça, les deux assertions
+    // ci-dessus ne parleraient pas des mêmes niveaux.
+    expect(LEVELS.slice(0, 34).map((l) => l.id)).toEqual(
+      Array.from({ length: 34 }, (_, i) => i + 1),
+    );
   });
 });
 
