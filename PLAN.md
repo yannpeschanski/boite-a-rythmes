@@ -6872,6 +6872,48 @@ le récit au passage.
 
 ---
 
+### ✅ Exporter sa sonnerie — le jeu ordonnait ce qu'il interdisait (2026-08-27)
+
+> « L'atelier de prod est fermé, on ne peut pas exporter sa sonnerie. Il
+> faudrait pouvoir le faire à travers le jeu. »
+
+La livraison de l'acte 1 dit, mot pour mot :
+
+> Exporte-le en MP3, mets-le sur ton téléphone :
+> c'est ta sonnerie, ou ton réveil.
+
+Et le bloc d'export vivait dans l'onglet **Production**, verrouillé jusqu'à
+l'acte 4. Le commentaire de `CarriereView` l'affirmait déjà — « le rythme qu'on
+vient de faire s'ouvre dans l'Atelier, d'où il s'exporte en MP3 » — sans que ce
+soit vrai. Même famille que les autres défauts de ce retour : **l'écran promet
+ce que le code ne fait pas.**
+
+#### Le correctif, et pourquoi ce n'est pas de la mise en page
+
+`<ExportBar>` sort des onglets. Ce n'est pas un arbitrage esthétique :
+**exporter n'est pas un réglage de production, c'est FINIR.** On emporte ce
+qu'on vient de faire, quel que soit l'onglet ouvert et quels que soient les
+modules déverrouillés. Le mettre derrière un module qu'on n'a pas encore gagné
+revenait à verrouiller la sortie de l'atelier.
+
+Relevé après correctif, sur un joueur qui vient de finir l'acte 1 (Atelier
+ouvert, Production fermée, un seul onglet visible) :
+
+```
+onglets : 🥁 RYTHME
+fin de page : 💿 EXPORT AUDIO · Durée · 🎵 EXPORTER EN MP3 · 🎧 EXPORTER EN WAV
+              🔴 ENREGISTRER LE DIRECT (WAV)
+```
+
+⚠️ **Note de méthode** : ma première sonde a conclu « absent » à tort — elle
+cherchait « Exporter en MP3 » alors que le CSS rend les libellés en capitales et
+qu'`innerText` renvoie le texte transformé. Vérifier une absence demande de
+vérifier d'abord que la sonde saurait voir une présence.
+
+305 tests, 0 erreur de types, les deux builds.
+
+---
+
 ### ✅ Les promesses de l'acte 1 — un forçage jamais porté (2026-08-27)
 
 > « Il y a des bugs. On dit qu'on introduit rim shot ou hat ouvert, ce n'est

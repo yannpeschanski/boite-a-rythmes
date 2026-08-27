@@ -710,8 +710,6 @@
         </label>
       </XpWindow>
 
-      <ExportBar {engine} {playing} {recordLive} />
-
       <!-- Ce que le bloc preset supprimé (audit A6) a légué à cet onglet :
            les deux choses qui demandent de la place et qu'un menu ne peut
            pas porter. La gestion de la banque (enregistrer, renommer,
@@ -726,6 +724,18 @@
       </XpWindow>
     {/if}
   </div>
+
+  <!-- ⚠️ L'EXPORT VIT HORS DES ONGLETS, et c'est un correctif, pas un choix de
+       mise en page. Il était dans l'onglet Production — donc verrouillé
+       jusqu'à l'acte 4 — alors que la livraison de l'acte 1 dit mot pour mot
+       « Exporte-le en MP3, mets-le sur ton téléphone : c'est ta sonnerie ».
+       Le jeu ordonnait ce qu'il interdisait (retour de Yann : « l'atelier de
+       prod est fermé, on ne peut pas exporter sa sonnerie »).
+
+       Sa place est ici parce qu'exporter n'est pas un réglage de production :
+       c'est FINIR. On emporte ce qu'on vient de faire, quel que soit l'onglet
+       ouvert et quels que soient les modules déverrouillés. -->
+  <ExportBar {engine} {playing} {recordLive} />
 </div>
 
 <style>

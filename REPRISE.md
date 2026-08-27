@@ -84,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
 
-Une partie complète jouée à la main. **8 points sur 19 sont traités** ; le
+Une partie complète jouée à la main. **9 points sur 19 sont traités** ; le
 reste est là, dans l'ordre où je propose de le prendre.
 
 ### Fait
@@ -98,8 +98,9 @@ reste est là, dans l'ordre où je propose de le prendre.
 | Les dates | 2005, une seule date écrite, le reste déduit |
 | La mélodie | cases + clavier comme l'Atelier, tonique donnée |
 | Les promesses de l'acte 1 | le forçage variante/rafale enfin porté |
+| L'export de la sonnerie | sorti de l'onglet verrouillé |
 
-### Reste — bugs d'abord
+### Reste — plus aucun bug signalé en attente
 
 1. ~~**Acte 3, « bug sur la basse à deviner »**~~ — traité au mieux de ce qui
    était reproductible. La logique était saine (poser exactement la cible est
@@ -112,9 +113,9 @@ reste est là, dans l'ordre où je propose de le prendre.
    tirages aux niveaux 5, 8 et 9. Le forçage est porté, y compris sur les
    niveaux preset. Les gestes, eux, existaient bien (clic pour la variante,
    clic droit pour la rafale) et le préambule les explique.
-3. **Acte 1, exporter sa sonnerie** : l'export vit dans l'onglet Production,
-   fermé à ce moment. Même famille que le blocage de l'acte 3, mais l'acte 1
-   n'est pas une commande — `modulesRequis` ne s'applique pas.
+3. ~~**Acte 1, exporter sa sonnerie**~~ — corrigé. L'export a quitté l'onglet
+   Production : il vit hors des onglets, toujours atteignable. Exporter n'est
+   pas un réglage de production, c'est finir.
 
 ### Reste — forme du récit
 
