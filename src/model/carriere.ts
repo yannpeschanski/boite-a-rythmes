@@ -497,9 +497,9 @@ export const ACTES: Acte[] = [
        * une grille où les deux autres lignes étaient explicitement vides : un
        * écran où il n'y a rien à arbitrer. Le niveau reste dans le réservoir,
        * la carrière ne le cite plus. */
-      { kind: 'exercice', niveau: 2, commande: 'La première sonnerie. Le kick tient le temps, la snare répond.' },
-      { kind: 'exercice', niveau: 3, commande: 'La deuxième. Le hi-hat par-dessus, et le trio est complet.' },
-      { kind: 'exercice', niveau: 7, commande: 'La troisième. Plus de cases, donc plus de précision.' },
+      { kind: 'exercice', niveau: 2, commande: 'La première sonnerie. Le kick tient le temps, la claire répond.' },
+      { kind: 'exercice', niveau: 3, commande: 'La deuxième. Le charley par-dessus, et le trio est complet.' },
+      { kind: 'exercice', niveau: 7, commande: 'La troisième. Le kick sort du temps une fois — c’est là que ça groove.' },
       /* ⚠️ Les variantes et les rafales atterrissent ICI, et c'est un
        * déménagement demandé : elles vivaient à l'acte 2, où « on ne comprend pas
        * pourquoi il y a les rafales et les charleys ouverts, rim shot,
@@ -521,8 +521,20 @@ export const ACTES: Acte[] = [
           'une sonnerie d’un réveille-matin.',
         ],
       },
-      { kind: 'exercice', niveau: 5, commande: 'Une seule case porte une variante — rim shot, ou charley ouvert. Trouve-la.' },
+      /* ⚠️ La série s'est ALLONGÉE (2026-08-27) : « c'est un peu trop rapide
+       * d'arriver à l'acte 3 à mon goût, il faudrait monter en difficulté les
+       * actes 1 et 2 — acte 1 : plus de rythme à refaire ».
+       *
+       * Cinq exercices après la leçon de Sol au lieu de deux, et chacun
+       * n'ajoute qu'UNE chose : le rim shot, l'ouverture du charley, les deux
+       * ensemble, la rafale, puis tout ensemble. Ça n'a été possible qu'une
+       * fois les grilles ÉCRITES (voir `GrilleEcrite`) — on ne dessine pas une
+       * progression avec des tirages. */
+      { kind: 'exercice', niveau: 5, commande: 'La claire du dernier temps part en rim shot. Repère-la.' },
+      { kind: 'exercice', niveau: 59, commande: 'Le charley, lui, s’ouvre une fois. À la toute fin.' },
+      { kind: 'exercice', niveau: 60, commande: 'Les deux dans le même rythme, sur un kick qui sort du temps.' },
       { kind: 'exercice', niveau: 8, commande: 'Et une seule part en rafale. C’est elle qui donne l’urgence.' },
+      { kind: 'exercice', niveau: 61, commande: 'Le dernier. Tout ce que tu sais, dans une mesure.' },
       {
         kind: 'recit',
         source: 'lcd',

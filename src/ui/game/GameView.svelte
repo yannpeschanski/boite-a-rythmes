@@ -1174,8 +1174,15 @@
           <button class="xp-btn tiny" onclick={() => { stopAll(); game.revealSolution(); game.giveUp(); }}>
             {ex === 'intrus' ? 'Donner la réponse (0★)' : ex === 'jouer' ? 'Abandonner (0★)' : 'Voir la solution (0★)'}
           </button>
+          <!-- ⚠️ « Nouveau rythme » ment sur un niveau à GRILLE ÉCRITE : la
+               cible y est posée dans les données, relancer redonne exactement
+               la même — seul le tempo peut changer. Le bouton reste (il efface
+               la proposition et remet le compteur d'essais à zéro), mais il
+               dit ce qu'il fait. Même famille de défaut que le préambule qui
+               annonce un rim shot jamais posé : c'est l'écran qui promet ce
+               que le code ne tient pas. -->
           <button class="xp-btn tiny" onclick={() => { game.giveUp(); allerAuNiveau(game.levelIndex); }}>
-            Nouveau rythme
+            {game.level.grille ? 'Recommencer' : 'Nouveau rythme'}
           </button>
         </div>
       {/if}

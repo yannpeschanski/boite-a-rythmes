@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 303 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 332 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -22,7 +22,7 @@ attente dans `HISTOIRE.md`.
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
-| Niveaux | 58 |
+| Niveaux | 61 (34 de campagne + le reste du réservoir) |
 | Commandes (production à livrer) | 5, aux actes 2 à 6 |
 
 ## Le déverrouillage — tranché le 2026-08-26
@@ -84,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
 
-Une partie complète jouée à la main. **9 points sur 19 sont traités** ; le
+Une partie complète jouée à la main. **10 points sur 19 sont traités** ; le
 reste est là, dans l'ordre où je propose de le prendre.
 
 ### Fait
@@ -99,6 +99,7 @@ reste est là, dans l'ordre où je propose de le prendre.
 | La mélodie | cases + clavier comme l'Atelier, tonique donnée |
 | Les promesses de l'acte 1 | le forçage variante/rafale enfin porté |
 | L'export de la sonnerie | sorti de l'onglet verrouillé |
+| L'acte 1 monte en difficulté | huit rythmes ÉCRITS, une nouveauté chacun (`GrilleEcrite`) |
 
 ### Reste — plus aucun bug signalé en attente
 
@@ -137,8 +138,14 @@ chaque ligne à un locuteur. À faire ensemble.
 7. **Acte 2** : remplacer les quiz « lequel » par des réglages.
 8. **Acte 2** : la commande en plusieurs étapes (« fais d'abord un poom check
    poom poom chack », puis le reste du cahier).
-9. **Monter la difficulté des actes 1 et 2** — on arrive trop vite à l'acte 3.
-   Acte 1 : plus de rythmes à refaire. Acte 2 : beaucoup d'exercices d'atelier.
+9. ~~**Monter la difficulté de l'acte 1**~~ — fait. Cinq exercices → huit, tous
+   à **grille écrite** : backbeat, trio, syncope, puis rim shot, charley ouvert,
+   les deux ensemble, rafale, tout ensemble. Chacun n'ajoute qu'une chose, ce
+   qu'un tirage ne sait pas faire (`GrilleEcrite`, `tests/grilles-ecrites.test.ts`).
+   **Reste l'acte 2** : beaucoup d'exercices d'atelier.
+10. **Étendre les grilles écrites au-delà de l'acte 1** — les autres actes citent
+    encore des niveaux générés (~28 exercices de grille). Même chantier, même
+    méthode : une promesse par test.
 11. **Les roasts** : tous les textes à revoir.
 12. **Les besaces** : introduire le concept (aujourd'hui on en gagne sans
     savoir ce que c'est), et leur donner un usage à la fin. Piste retenue par
@@ -149,9 +156,11 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 303 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 332 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
-par acte en 390×840.
+par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
+mesurées dans l'appli en marche : elles sont posées au bit près, rafales
+comprises.
 
 **La chaîne des actes est saine.** `scripts/parcours-carriere.cjs` joue la
 carrière entière depuis un joueur neuf : les huit actes s'enchaînent, les cinq
