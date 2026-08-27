@@ -657,7 +657,22 @@ class GameStore {
   demarrerEtape(): void {
     this.enCarriere = true;
     const e = this.etapeCourante;
-    if (e && e.kind === 'exercice') this.startLevel(e.niveau - 1);
+    /* ⚠️ On cherche par IDENTIFIANT, pas par position.
+     *
+     * C'était `startLevel(e.niveau - 1)` : une recherche positionnelle à
+     * partir d'un id, qui ne marche que tant que `id === index + 1`. Rien ne
+     * l'imposait. Un niveau inséré au milieu du tableau — ou un id sauté —
+     * aurait décalé TOUS les exercices de TOUS les actes, en silence : chaque
+     * étape aurait lancé le niveau du voisin, sans qu'aucun type ni aucun test
+     * ne bronche.
+     *
+     * La règle « un niveau ajouté se pose en fin de tableau » (CLAUDE.md)
+     * existait précisément pour éviter ça. Elle reste une bonne pratique, mais
+     * elle n'est plus ce qui tient le jeu debout. */
+    if (e && e.kind === 'exercice') {
+      const i = LEVELS.findIndex((l) => l.id === e.niveau);
+      if (i >= 0) this.startLevel(i);
+    }
   }
 
   /* Passer à l'étape suivante — appelée après avoir lu un récit ou terminé un

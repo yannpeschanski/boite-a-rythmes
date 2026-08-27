@@ -1047,6 +1047,14 @@ export const ACTES: Acte[] = [
       { kind: 'exercice', niveau: 22, commande: 'Paris, la French touch. Le même four-on-the-floor, filtré jusqu’à l’os.' },
       { kind: 'exercice', niveau: 9, commande: 'Et la cellule dont tout le reste descend : trois notes, 3+3+2.' },
       { kind: 'exercice', niveau: 25, commande: 'Sa grande sœur, la clave. Sol : — Celle-là, tu la retrouveras partout.' },
+      /* ⚠️ Les polyrythmies atterrissent ICI, et pas ailleurs, parce que
+       * l'acte vient de faire le tour de la famille latine et afro : le
+       * tresillo, la clave, le dembow. La polyrythmie EST l'idée dont ces
+       * trois-là descendent — la poser après eux, c'est nommer ce qu'on vient
+       * d'entendre trois fois. Posée à l'acte 1 elle serait arrivée après le
+       * rim shot, sans rien contre quoi se situer. */
+      { kind: 'exercice', niveau: 29, commande: 'Sol pousse plus loin : quatre coups d’un côté, trois de l’autre, sur la même durée.' },
+      { kind: 'exercice', niveau: 24, commande: 'Et trois cycles qui ne retombent ensemble qu’à la fin. — Voilà d’où vient tout ce que tu viens de refaire.' },
       {
         kind: 'commande',
         entete: 'ZIK’MOBILE — LE QUINZIÈME',
