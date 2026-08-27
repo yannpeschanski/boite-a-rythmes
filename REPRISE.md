@@ -84,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
 
-Une partie complète jouée à la main. **7 points sur 19 sont traités** ; le
+Une partie complète jouée à la main. **8 points sur 19 sont traités** ; le
 reste est là, dans l'ordre où je propose de le prendre.
 
 ### Fait
@@ -97,6 +97,7 @@ reste est là, dans l'ordre où je propose de le prendre.
 | Le verrouillé est masqué | plus aucun cadenas à l'écran |
 | Les dates | 2005, une seule date écrite, le reste déduit |
 | La mélodie | cases + clavier comme l'Atelier, tonique donnée |
+| Les promesses de l'acte 1 | le forçage variante/rafale enfin porté |
 
 ### Reste — bugs d'abord
 
@@ -106,9 +107,11 @@ reste est là, dans l'ordre où je propose de le prendre.
    annoncée comme repère n'était pas posée, et l'interface était un rouleau de
    quarante cases. Refondue en cases + clavier, tonique donnée. **Si le défaut
    persiste, il est dans le SON — c'est la piste qui reste.**
-2. **Acte 1, les promesses non tenues** : « on dit qu'on introduit rim shot ou
-   charley ouvert, ce n'est pas le cas, et on ne dit pas comment les faire » ;
-   « on dit qu'on a un tresillo avec rafales, ce n'est pas le cas ».
+2. ~~**Acte 1, les promesses non tenues**~~ — corrigé. `forceVariantCount` /
+   `forceRollCount` n'étaient lus par personne : 0 variante et 0 rafale sur 60
+   tirages aux niveaux 5, 8 et 9. Le forçage est porté, y compris sur les
+   niveaux preset. Les gestes, eux, existaient bien (clic pour la variante,
+   clic droit pour la rafale) et le préambule les explique.
 3. **Acte 1, exporter sa sonnerie** : l'export vit dans l'onglet Production,
    fermé à ce moment. Même famille que le blocage de l'acte 3, mais l'acte 1
    n'est pas une commande — `modulesRequis` ne s'applique pas.

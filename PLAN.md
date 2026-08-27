@@ -6872,6 +6872,79 @@ le récit au passage.
 
 ---
 
+### ✅ Les promesses de l'acte 1 — un forçage jamais porté (2026-08-27)
+
+> « Il y a des bugs. On dit qu'on introduit rim shot ou hat ouvert, ce n'est
+> pas le cas, d'ailleurs on ne dit pas comment les faire. »
+> « On dit qu'on a un tresillo avec rafales, ce n'est pas le cas. »
+
+#### La cause : deux champs lus par personne
+
+`forceVariantCount` et `forceRollCount` sont déclarés dans `GameLevel`, remplis
+par `mkLevel`, documentés par un commentaire qui décrit leur rôle exact
+(« utilisé pour les niveaux "une seule variante/rafale" ») — et **consommés
+nulle part**. Un `grep` sur les deux noms ne renvoyait que leur déclaration et
+leur affectation.
+
+Ce n'est pas une faiblesse théorique : les niveaux concernés posent
+`variantChance: 0` et `rollChance: 0` **justement parce qu'ils comptaient sur
+le forçage**. Sans lui, la probabilité est nulle et la cible ne contient jamais
+rien. Mesuré sur 60 tirages, avant correctif :
+
+```
+niveau 5, « Variante (une seule) »           →  0 variante sur 60
+niveau 8, « Rafale (une seule) »             →  0 rafale   sur 60
+niveau 9, tresillo « variante et rafale »    →  ni l'une ni l'autre
+```
+
+Après :
+
+```
+niveau 5 → 60/60 avec variante
+niveau 8 → 60/60 avec rafale
+niveau 9 → 60/60 avec les deux
+```
+
+#### Le correctif
+
+`forcerVariantesEtRafales`, appliqué APRÈS le tirage probabiliste et qui
+**compte ce qui est déjà là** : un niveau qui en veut une et qui en a déjà tiré
+une n'en ajoute pas. Deux précautions :
+
+- **seules la caisse claire et le charley** acceptent une variante — c'est
+  pourquoi `level.variant` n'a pas de champ `kick`. Forcer un 2 sur la grosse
+  caisse écrirait un état que la ligne ne sait pas jouer ;
+- **une rafale ne compte que sur une case active** : posée sur une case vide,
+  elle ne s'entend pas, donc elle n'enseigne rien.
+
+⚠️ **Le forçage s'applique aussi au chemin PRESET**, et c'est ce qui manquait
+au tresillo : sa cible est le pattern du preset, qui ne contient ni variante ni
+rafale. Le commentaire de `mkLevel` l'avait prévu — « garantir qu'un concept
+déjà enseigné est bien présent dans la cible, même si le preset original n'en
+contenait pas assez » — mais rien ne l'appliquait.
+
+#### Ce que le retour disait d'autre, et qui était juste
+
+« On ne dit pas comment les faire » : le préambule du niveau 5 explique bien le
+geste (« reclique une case déjà active pour y basculer »), il est affiché, et
+`cycleCell` cycle bien 0 → 1 → 2 sur la claire et le charley (`cycleRoll` au
+clic droit pour la rafale). La consigne était juste — c'est la cible qui ne
+posait rien. Le sentiment « on ne dit pas comment » venait de n'avoir jamais eu
+l'occasion de le faire.
+
+#### Ce qui le vérifie
+
+Deux tests **génériques** : tout niveau qui déclare un forçage doit le tenir, à
+chaque tirage, répété 60 fois (« un test qui dépend du hasard doit affirmer ce
+qui est vrai à CHAQUE tirage »). Ils valent pour les niveaux à venir sans qu'on
+ait à y penser. Vérifiés rouges sans le correctif, avec les messages exacts du
+retour : *« niveau 5 : 0 variante(s) alors qu'il en promet 1 »*.
+
+305 tests, 0 erreur de types, les deux builds, parcours complet sur serveur
+neuf.
+
+---
+
 ### ✅ La mélodie s'écrit comme dans l'Atelier (2026-08-27)
 
 > « bug sur la basse à deviner »
