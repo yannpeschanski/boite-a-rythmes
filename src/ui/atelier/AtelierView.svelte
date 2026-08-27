@@ -26,7 +26,6 @@
   import { scheduleAutosave, hasAutosave, restoreAutosave } from '../../stores/share';
   import { rankPresets, type ClosestMatch } from '../../engine/similarity';
   import { unlocks } from '../../stores/unlocks.svelte';
-  import { libelleVerrou } from '../../model/unlocks';
   import { playSystemSound } from '../xp/systemSounds';
 
   // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
@@ -551,21 +550,15 @@
          plus seulement les effets de bus mais tout ce qui n'est pas l'édition
          des notes — mix, export, banque de séquences, et les textes du
          morceau chargé. -->
+    <!-- Un onglet verrouillé n'est plus affiché du tout (arbitrage de Yann
+         après une partie complète). L'onglet Rythme reste seul tant que le
+         récit n'a rien ouvert d'autre : moins d'écran, et rien qui présente le
+         jeu par ce qu'on ne peut pas faire. -->
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
-        {
-          id: 'synthe',
-          label: '🎹 Synthé',
-          locked: !unlocks.has('synth'),
-          lockHint: libelleVerrou('synth'),
-        },
-        {
-          id: 'effets',
-          label: '🎚 Production',
-          locked: !unlocks.has('production'),
-          lockHint: libelleVerrou('production'),
-        },
+        ...(unlocks.has('synth') ? [{ id: 'synthe', label: '🎹 Synthé' }] : []),
+        ...(unlocks.has('production') ? [{ id: 'effets', label: '🎚 Production' }] : []),
       ]}
       bind:active={activeTab}
     />

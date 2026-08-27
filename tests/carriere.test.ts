@@ -11,6 +11,8 @@ import {
   EPILOGUE,
   LONGUEUR_EPILOGUE,
   ETAPE_DU_COMPTE_A_REBOURS,
+  ANNEE,
+  dateDeLActe,
 } from '../src/model/carriere';
 import { LEVELS } from '../src/model/presets/levels';
 import { parametre } from '../src/model/parametres';
@@ -927,5 +929,43 @@ describe('Le curseur de l’épilogue est séparé, et ne débloque rien', () =>
     game.avancerEpilogue();
     game.avancerEpilogue();
     expect(game.progresCarriere).toEqual(avant);
+  });
+});
+
+/* ⚠️ LE CALENDRIER — une seule date écrite, tout le reste déduit.
+ *
+ * Retour de Yann : « dans l'histoire, il faut mettre des dates ». L'année est
+ * 2005 (voir `ANNEE` et sa justification). Ces tests tiennent la coïncidence
+ * qui rend le calendrier crédible : elle était déjà dans `JOURS`, elle n'était
+ * pas affichée — et un ajustement du compte à rebours la casserait en silence.
+ */
+describe('le calendrier du récit', () => {
+  it('pose le concert le 14 juin 2005', () => {
+    expect(ANNEE).toBe(2005);
+    expect(dateDeLActe(7)).toBe('14 juin 2005');
+  });
+
+  it('fait tomber les quatre premiers actes le 14 de leur mois', () => {
+    expect(dateDeLActe(0)).toBe('14 janvier 2005');
+    expect(dateDeLActe(1)).toBe('14 février 2005');
+    expect(dateDeLActe(2)).toBe('14 mars 2005');
+    expect(dateDeLActe(3)).toBe('14 avril 2005');
+  });
+
+  it('place les trois derniers à six, quatre et deux semaines', () => {
+    expect(dateDeLActe(4)).toBe('3 mai 2005');
+    expect(dateDeLActe(5)).toBe('17 mai 2005');
+    expect(dateDeLActe(6)).toBe('31 mai 2005');
+  });
+
+  it('reste d’accord avec le « quand » écrit à la main de chaque acte', () => {
+    // Deux façons de dire la même chose cohabitent — « Trois mois avant » et
+    // « 14 mars 2005 ». Elles doivent rester d'accord : un `quand` en semaines
+    // ne peut pas tomber sur un acte à plus de deux mois, et inversement.
+    for (const a of ACTES) {
+      const enSemaines = /semaine/.test(a.quand);
+      if (enSemaines) expect(a.jours, `acte ${a.id}`).toBeLessThanOrEqual(45);
+      else if (/mois/.test(a.quand)) expect(a.jours, `acte ${a.id}`).toBeGreaterThan(45);
+    }
   });
 });

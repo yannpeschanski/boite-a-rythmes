@@ -82,7 +82,7 @@
   // un simple mailto: pré-rempli est la solution la plus légère — marche
   // partout, ne demande aucun compte, aucun serveur à maintenir.
   function reportFeedback() {
-    const subject = encodeURIComponent('Boîte à rythmes — retour');
+    const subject = encodeURIComponent('Face B — retour');
     const body = encodeURIComponent(
       `Bug, correction ou idée — écris ici :\n\n\n---\n${location.href}`,
     );
@@ -112,7 +112,6 @@
         <button onclick={() => choose(() => onSwitchView?.('game'))}>&nbsp;&nbsp; 🎮 Mode jeu</button>
         <button
           disabled={!unlocks.has('live')}
-          title={unlocks.has('live') ? '' : libelleVerrou('live')}
           onclick={() => choose(() => onSwitchView?.('live'))}
           >&nbsp;&nbsp; {unlocks.has('live') ? '🎛' : '🔒'} Mode Live</button
         >

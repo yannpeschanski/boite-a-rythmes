@@ -6872,6 +6872,97 @@ le récit au passage.
 
 ---
 
+### ✅ Face B — le nom, les verrous masqués, et une date (2026-08-27)
+
+> « Le jeu devrait s'appeler "Face B" et non boîte à rythme »
+> « On devrait masquer tout ce qui est verrouillé »
+> « Dans l'histoire, il faut mettre des dates. Dire que c'est en 2004, 2005 ou
+> 2006, je te laisse voir ce qui te semble plus pertinent. »
+
+Lot 2 du retour de partie : ce qui se voit dans les trente premières secondes.
+
+#### Le nom
+
+**Face B**, le label — pas « Boîte à rythmes », qui décrivait l'outil. Le
+produit n'est pas un séquenceur, c'est une carrière dans un label qui a cinq
+mois pour ne pas fermer. Trois endroits visibles (`index.html`, le splash, le
+titre de fenêtre du Mode jeu) plus l'objet du mail de retour. Les occurrences
+en commentaire parlent de l'objet « boîte à rythmes » en général : elles
+restent.
+
+#### Les verrous masqués — une décision renversée
+
+Le 2026-08-16, les entrées cadenassées restaient VISIBLES, et c'était motivé :
+« une entrée qui disparaît se lit comme une panne ; une entrée cadenassée se
+lit comme une suite ». Le verdict d'un joueur réel prime : un accueil où deux
+entrées sur trois sont barrées présente le jeu par ce qu'on ne peut pas faire.
+Splash, barre de navigation et onglets de l'Atelier masquent désormais ce qui
+n'est pas ouvert. Mesuré après : plus **aucun** `🔒` dans le DOM d'un joueur
+neuf, et le splash tient sur une seule entrée — « Mode jeu ».
+
+Les libellés de verrou (`libelleVerrou`, `verrouCourt`) restent dans
+`model/unlocks.ts` : ils décrivent toujours la règle, ils n'ont simplement plus
+de surface où s'afficher. Les retirer serait un nettoyage, pas une décision.
+
+#### La date — 2005, et une seule écrite
+
+⚠️ **Le calendrier était déjà là.** `JOURS` porte le compte à rebours
+(151, 120, 92, 61, 42, 28, 14, 0) sans qu'aucune année ne s'affiche jamais.
+En posant le concert au 14 juin 2005 et en déduisant le reste, on découvre que
+ces nombres n'ont rien d'arbitraire :
+
+```
+acte 0  J−151  14 janvier 2005   Cinq mois avant
+acte 1  J−120  14 février 2005   Quatre mois avant
+acte 2  J−92   14 mars 2005      Trois mois avant
+acte 3  J−61   14 avril 2005     Deux mois avant
+acte 4  J−42   3 mai 2005        Six semaines avant
+acte 5  J−28   17 mai 2005       Quatre semaines avant
+acte 6  J−14   31 mai 2005       Deux semaines avant
+acte 7  J−0    14 juin 2005      Le jour même
+```
+
+Les quatre premiers actes tombent **exactement le 14 de leur mois**, les trois
+derniers à six, quatre et deux semaines. Le calendrier n'était pas affiché,
+c'est tout. D'où `ANNEE` + `dateDeLActe(id)`, et **une seule date écrite dans
+le code** : deux sources de vérité pour un calendrier finiraient par ne plus
+être d'accord, et cette coïncidence-là se perdrait au premier ajustement.
+Quatre tests la tiennent, dont un qui vérifie que le `quand` écrit à la main
+(« Trois mois avant ») reste d'accord avec le compte à rebours.
+
+**Pourquoi 2005** plutôt que 2004 ou 2006 : c'est la seule des trois où le
+postulat tient. Les sonneries mono et polyphoniques sont encore un marché dont
+un petit label peut vivre — c'est littéralement ce que Face B fait — le fax, la
+cassette et le répondeur sont des outils et non des accessoires nostalgiques,
+et MSN est le chemin normal vers un commercial. En 2006 le marché des sonneries
+s'effondre et le récit n'a plus de sol.
+
+Le compte à rebours affiche donc `14 JUIN 2005 / J−92 / 14 mars 2005` : le
+décompte dit l'urgence, la date dit l'époque — et l'époque est ce qui rend un
+label de sonneries crédible.
+
+#### Ce qui le vérifie
+
+303 tests, 0 erreur de types, les deux builds, et une passe Playwright en
+390×840 : titre d'onglet « Face B », splash à une seule entrée, aucun `🔒` dans
+le DOM, compte à rebours daté relu dans le DOM.
+
+#### Fichiers touchés
+
+`index.html`, `src/App.svelte`, `src/ui/game/GameView.svelte`,
+`src/ui/game/CarriereView.svelte`, `src/ui/atelier/AtelierView.svelte`,
+`src/ui/atelier/ToolBar.svelte`, `src/model/carriere.ts` (`ANNEE`,
+`dateDeLActe`), `tests/carriere.test.ts`, `CLAUDE.md`, `REPRISE.md`.
+
+#### Ce qui reste du lot 2
+
+« Indiquer qui parle » et « faire défiler le texte » ne sont pas faits : les
+deux demandent une décision de forme sur les 44 écrans de récit (un locuteur
+par ligne, et une révélation progressive), et méritent leur propre passe plutôt
+qu'un ajout en fin de lot.
+
+---
+
 ### ✅ Le jeu se termine à nouveau — deux blocages trouvés EN JOUANT (2026-08-27)
 
 > « je viens de faire une session carrière depuis le début »
