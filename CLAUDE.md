@@ -119,6 +119,31 @@ src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partag
 src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
 ```
 
+⚠️ **Le jeu s'appelle FACE B** (arbitrage de Yann, 2026-08-27) — c'est le nom
+du label, pas celui de l'outil. « Boîte à rythmes » décrivait le séquenceur ;
+le produit, lui, est une carrière dans un label qui a cinq mois pour ne pas
+fermer. Le nom vit dans `index.html`, le splash et le titre de fenêtre du Mode
+jeu ; les occurrences en commentaire parlent de l'objet « boîte à rythmes » en
+général et restent.
+
+⚠️ **Ce qui est VERROUILLÉ ne s'affiche pas.** Renverse la décision de
+2026-08-16, qui gardait les entrées cadenassées visibles pour qu'elles se
+lisent « comme une suite » plutôt que « comme une panne ». Verdict d'un joueur
+réel après une partie complète : un accueil où deux entrées sur trois sont
+barrées présente le jeu par ce qu'on ne peut PAS faire. Splash, barre de
+navigation et onglets de l'Atelier masquent donc ce qui n'est pas ouvert.
+
+⚠️ **Le récit se passe en 2005, et une SEULE date est écrite.** `ANNEE` et
+`dateDeLActe` (`carriere.ts`) : le concert est le 14 juin 2005, tout le reste
+se déduit de `JOURS`. 2005 parce que c'est la seule année où le postulat tient
+— les sonneries sont encore un marché dont un petit label peut vivre, le fax
+et le répondeur sont des outils, MSN est le chemin normal vers un commercial ;
+en 2006 le marché s'effondre et le récit n'a plus de sol. Le calendrier était
+déjà dans `JOURS` sans être affiché : les quatre premiers actes tombent
+exactement le 14 de leur mois, les trois derniers à six, quatre et deux
+semaines. Quatre tests le tiennent — un ajustement du compte à rebours
+casserait la coïncidence en silence.
+
 **Le Mode jeu s'ouvre sur le Mode carrière, et c'est le RÉCIT qui ouvre les
 modules.** `src/model/carriere.ts` porte les huit actes de `HISTOIRE.md` ;
 `PlayerProgress.carriere = { acte, etape }` est un **second axe**, délibérément

@@ -212,6 +212,37 @@ export interface Acte {
  */
 const JOURS: Record<ActeId, number> = { 0: 151, 1: 120, 2: 92, 3: 61, 4: 42, 5: 28, 6: 14, 7: 0 };
 
+/* ⚠️ L'ANNÉE — 2005, et ce n'est pas un détail de décor.
+ *
+ * Retour de Yann : *« dans l'histoire, il faut mettre des dates. Dire que
+ * c'est en 2004, 2005 ou 2006 »*. 2005 parce que c'est la seule des trois où
+ * le postulat tient : les sonneries mono et polyphoniques sont encore un vrai
+ * marché — un petit label peut en vivre, ce qui est exactement ce que Face B
+ * fait — le fax, la cassette et le répondeur sont des outils et pas des
+ * accessoires nostalgiques, et MSN est le chemin normal vers un commercial.
+ * En 2006 le marché des sonneries s'effondre et le récit n'a plus de sol.
+ *
+ * ⚠️ Une seule date est écrite : le concert. Tout le reste s'en DÉDUIT, via
+ * `JOURS`. Deux sources de vérité pour un calendrier finiraient par ne plus
+ * être d'accord — et la coïncidence qui suit se perdrait au premier
+ * ajustement : les quatre premiers actes tombent exactement le 14 de leur
+ * mois (151, 120, 92 et 61 jours avant le 14 juin), et les trois derniers à
+ * six, quatre et deux semaines. Le calendrier du récit était déjà écrit dans
+ * `JOURS`, il n'était simplement pas affiché. */
+export const ANNEE = 2005;
+const CONCERT = Date.UTC(ANNEE, 5, 14); // 14 juin 2005
+
+const MOIS = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+/** La date réelle d'un acte, déduite de son compte à rebours. */
+export function dateDeLActe(id: ActeId): string {
+  const d = new Date(CONCERT - JOURS[id] * 86400000);
+  return `${d.getUTCDate()} ${MOIS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
 /* Le PROLOGUE — les quatre écrans qui manquaient, et dont l'absence rendait
  * tout le reste illisible.
  *

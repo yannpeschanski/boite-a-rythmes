@@ -444,7 +444,7 @@
 
 <div class="game">
   {#if !game.pseudo}
-    <XpWindow title="Boîte à rythmes — Mode jeu" icon="🎮" accent="none">
+    <XpWindow title="Face B — Mode jeu" icon="🎮" accent="none">
       <p class="lead">
         Tu vas apprendre à fabriquer des rythmes <strong>à l’oreille</strong>, dans un petit label de
         disques qui a cinq mois devant lui. Huit actes, des exercices courts, et l’Atelier qui

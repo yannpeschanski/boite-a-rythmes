@@ -13,7 +13,7 @@
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
-  import { libelleVerrou, verrouCourt, type LockedModule } from './model/unlocks';
+  import { type LockedModule } from './model/unlocks';
 
   let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
 
@@ -65,49 +65,36 @@
     if (mod && !unlocks.has(mod)) return;
     view = v;
   }
-  /* Les libellés viennent de `model/unlocks.ts` : les onglets de l'Atelier et
-     le bouton Mode Live affichent le même verrou, et disaient un autre chemin
-     que cet écran-ci. Une seule définition. */
-  const lockTitle = libelleVerrou;
-  const lockShort = verrouCourt;
 </script>
 
 {#if view === 'live'}
   <LiveView onExit={() => (view = 'atelier')} />
 {:else if view === 'splash'}
   <div class="splash">
-    <h1>Boîte à rythmes</h1>
-    <p>Un séquenceur rétro, et un label qui a cinq mois pour ne pas fermer.</p>
+    <h1>Face B</h1>
+    <p>Un label de sonneries qui a cinq mois pour ne pas fermer.</p>
+    <!-- ⚠️ Ce qui est VERROUILLÉ ne s'affiche pas — arbitrage de Yann après
+         une partie complète (« on devrait masquer tout ce qui est
+         verrouillé »). Ça renverse la décision de 2026-08-16, qui gardait les
+         entrées cadenassées visibles pour qu'elles se lisent « comme une
+         suite » plutôt que comme une panne. Le verdict d'un joueur réel prime :
+         un écran d'accueil où deux entrées sur trois sont barrées présente le
+         jeu par ce qu'on ne peut PAS faire. -->
     <div class="choices">
-      <button
-        class="big"
-        class:locked={!unlocks.has('atelier')}
-        disabled={!unlocks.has('atelier')}
-        title={unlocks.has('atelier') ? '' : lockTitle('atelier')}
-        onclick={() => enter('atelier', 'atelier')}
-      >
-        {unlocks.has('atelier') ? '🥁' : '🔒'} Atelier<small
-          >{unlocks.has('atelier') ? 'Composer librement' : lockShort('atelier')}</small
-        ></button
-      >
+      {#if unlocks.has('atelier')}
+        <button class="big" onclick={() => enter('atelier', 'atelier')}>
+          🥁 Atelier<small>Composer librement</small></button
+        >
+      {/if}
       <button class="big" onclick={() => enter('game')}>
         🎮 Mode jeu<small>Une carrière en huit actes · {LEVELS.length} niveaux</small></button
       >
-      <button
-        class="big"
-        class:locked={!unlocks.has('live')}
-        disabled={!unlocks.has('live')}
-        title={unlocks.has('live') ? '' : lockTitle('live')}
-        onclick={() => enter('live', 'live')}
-      >
-        {unlocks.has('live') ? '🎛' : '🔒'} Mode Live<small
-          >{unlocks.has('live') ? 'Manette paysage' : lockShort('live')}</small
-        ></button
-      >
+      {#if unlocks.has('live')}
+        <button class="big" onclick={() => enter('live', 'live')}>
+          🎛 Mode Live<small>Manette paysage</small></button
+        >
+      {/if}
     </div>
-    {#if !unlocks.has('atelier')}
-      <p class="hint">L’Atelier s’ouvre à la fin de l’acte 1 — « Le rythme ».</p>
-    {/if}
     {#if unlocks.totalAccess}
       <p class="boss">🔓 Accès total — <code>{unlocks.totalAccessHint}</code></p>
     {/if}
@@ -134,17 +121,13 @@
     <AtelierView onSwitchView={(v) => (view = v)} />
   {:else}
     <nav class="switcher">
-      <button
-        disabled={!unlocks.has('atelier')}
-        title={unlocks.has('atelier') ? '' : lockTitle('atelier')}
-        onclick={() => enter('atelier', 'atelier')}>{unlocks.has('atelier') ? '🥁' : '🔒'} Atelier</button
-      >
+      {#if unlocks.has('atelier')}
+        <button onclick={() => enter('atelier', 'atelier')}>🥁 Atelier</button>
+      {/if}
       <button class="on" onclick={() => enter('game')}>🎮 Mode jeu</button>
-      <button
-        disabled={!unlocks.has('live')}
-        title={unlocks.has('live') ? '' : lockTitle('live')}
-        onclick={() => enter('live', 'live')}>{unlocks.has('live') ? '🎛' : '🔒'} Mode Live</button
-      >
+      {#if unlocks.has('live')}
+        <button onclick={() => enter('live', 'live')}>🎛 Mode Live</button>
+      {/if}
     </nav>
     <GameView onGoAtelier={() => (view = 'atelier')} />
   {/if}
@@ -194,18 +177,6 @@
   /* Verrouillé : le relief sortant disparaît (rien à enfoncer) et le bouton
      s'éteint, mais il garde sa taille et sa place — c'est ce qui le fait lire
      comme « pas encore » et non comme « absent ». */
-  .big.locked {
-    background: var(--xp-face-dark);
-    box-shadow: none;
-    border-color: var(--xp-line);
-    color: var(--xp-muted);
-    cursor: not-allowed;
-  }
-  .splash .hint {
-    margin: 18px 0 0;
-    font-size: 12.5px;
-    opacity: 0.9;
-  }
   .splash .sansmemoire {
     margin: 10px auto 0;
     max-width: 42ch;

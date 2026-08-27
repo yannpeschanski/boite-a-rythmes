@@ -23,6 +23,8 @@
     acteAVenir,
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
+    ANNEE,
+    dateDeLActe,
     type Acte,
   } from '../../model/carriere';
   import XpWindow from '../xp/XpWindow.svelte';
@@ -181,13 +183,17 @@
   </div>
 
   <!-- Le compte à rebours est affiché en permanence, du premier écran au
-       dernier : c'est lui qui donne une échéance à tout le reste. Aucune année
-       ne s'affiche jamais — les objets datent l'histoire, pas un millésime. -->
+       dernier : c'est lui qui donne une échéance à tout le reste.
+       ⚠️ La DATE RÉELLE y figure depuis le 2026-08-27 (« dans l'histoire, il
+       faut mettre des dates »). Elle ne remplace pas le décompte, elle le
+       situe : « J−92 » dit l'urgence, « 14 mars 2005 » dit l'époque — et
+       l'époque est ce qui rend un label de sonneries crédible. Une seule date
+       est écrite dans le code (le concert), tout le reste se déduit. -->
   {#if montrerCompteARebours}
     <div class="lcd">
-      <span>14 JUIN</span>
+      <span>14 JUIN {ANNEE}</span>
       <span class="gros">J−{acte.jours}</span>
-      <span class="dim">{acte.quand}</span>
+      <span class="dim">{dateDeLActe(acte.id)}</span>
     </div>
   {/if}
 
