@@ -153,6 +153,27 @@ export interface GrilleEcrite {
   snare: number[];
   hat: number[];
   rolls?: Partial<Record<GameDrumRowName, number[]>>;
+  /* ⚠️ LE FEEL FAIT PARTIE DU RYTHME, et une grille écrite doit pouvoir le
+   * poser — sinon un niveau qui enseigne le groove enseigne au hasard.
+   *
+   * Le swing, la traîne et le décalage par ligne changent ce qu'on ENTEND
+   * sans changer une seule case : deux niveaux avec la même grille et deux
+   * swings différents sont deux exercices différents. Tirés dans
+   * `swingOptions` / `dragOptions`, ils redonnaient au niveau le défaut que la
+   * grille écrite existe pour supprimer — il ne sait pas ce qu'il vient
+   * d'enseigner.
+   *
+   * Le décalage est pire encore : `startLevel` le forçait à `0` sur toute
+   * grille écrite. Un niveau « décalage par ligne » écrit sans ce champ
+   * n'aurait eu AUCUN décalage — il aurait demandé d'entendre ce qui n'est pas
+   * joué. Même famille que le rim shot annoncé et jamais posé (PLAN.md,
+   * « les promesses de l'acte 1 »).
+   *
+   * Facultatifs : une grille qui ne s'en occupe pas laisse le tirage faire,
+   * comme avant. */
+  swing?: number;
+  drag?: number;
+  shift?: Partial<Record<GameDrumRowName, number>>;
 }
 
 export interface MkLevelOptions {
@@ -594,11 +615,27 @@ export const LEVELS: GameLevel[] = [
   mkLevel(13, 'Reproduire un preset (Dancehall)', {
     variant: { snare: true, hat: true }, rollMax: 2, presetId: 'dancehall', forceVariantCount: 1, forceRollCount: 1 }),
   // ---------- Round 2 : Swing + Traîne, entrelacés, avec presets ----------
-  mkLevel(14, 'Swing', {
-    preamble: "Le rythme peut désormais 'balancer' (swing) : certaines cases arrivent légèrement en retard pour un groove moins carré.",
-    subdivOptions: [6, 7], swingOptions: [10],
-    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.3,
-    density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  /* ---------- Acte 2 : le groove, ÉCRIT ----------
+   *
+   * ⚠️ Ces trois-là (14, 17, 23) partagent EXACTEMENT la même grille, et c'est
+   * tout l'exercice : ce qui change d'un niveau à l'autre ne se voit pas dans
+   * les cases, il s'entend. Un tirage de densité rendait la comparaison
+   * impossible — on ne pouvait pas savoir si ce qu'on entendait venait du
+   * balancement ou d'un motif différent.
+   *
+   * Le motif est un backbeat en croches : le charley couvre les pas IMPAIRS,
+   * seuls retardés par le swing (voir `contexte` dans parametres.ts). Sur un
+   * motif posé sur [0, 2, 4, 6], le swing n'aurait aucun effet audible. */
+  mkLevel(14, 'Le balancement', {
+    preamble: "Le rythme peut « balancer » : les cases entre les temps arrivent un peu en retard, et la boucle cesse d'être carrée. Ici c'est léger. Les cases, elles, sont là où tu les attends — c'est ce qui change entre elles qu'il faut entendre.",
+    tempoOptions: [88, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      swing: 12,
+    } }),
   mkLevel(15, 'Traîne (drag)', {
     preamble: "Une ligne entière peut traîner légèrement derrière le tempo (drag) — un décalage collectif et constant, pas note par note.",
     subdivOptions: [6, 7], dragOptions: [5], swingOptions: [0, 10],
@@ -607,11 +644,16 @@ export const LEVELS: GameLevel[] = [
   mkLevel(16, 'Reproduire un preset (UK Garage)', {
     preamble: "Le swing de ce preset est très marqué (45%) — pas un hasard, c'est ce chapitre qu'il illustre.",
     variant: { snare: true, hat: true }, rollMax: 2, presetId: 'garage', forceVariantCount: 1, forceRollCount: 1 }),
-  mkLevel(17, 'Swing', {
-    preamble: "Le swing se prononce un peu plus.",
-    subdivOptions: [6, 7, 8], swingOptions: [10, 20],
-    variant: { snare: true, hat: true }, variantChance: 0.35, rollMax: 2, rollChance: 0.3,
-    density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
+  mkLevel(17, 'Le balancement, prononcé', {
+    preamble: "La même grille, exactement. Seul le balancement change, et il est franc cette fois. Compare : ce sont les mêmes cases qui sonnent, elles ne tombent simplement plus au même endroit.",
+    tempoOptions: [88, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      swing: 30,
+    } }),
   mkLevel(18, 'Traîne (drag)', {
     preamble: "La traîne s'accentue.",
     subdivOptions: [7, 8], dragOptions: [5, 10, 15], swingOptions: [0, 10, 20],
@@ -639,11 +681,21 @@ export const LEVELS: GameLevel[] = [
     forceVariantCount: 1, forceRollCount: 1,
     presetGhostDensity: 15, presetGhostRow: 'snare', presetFillEvery: 4 }),
   // ---------- Round 4 : Décalage (seul) + Polyrythmie, avec presets ----------
-  mkLevel(23, 'Décalage par ligne', {
-    preamble: "Chaque ligne (kick/snare/hat) peut être décalée indépendamment, en avance ou en retard — regarde les badges ◀/▶ à côté de son nom.",
-    subdivOptions: [6, 7, 8], shiftOptions: [-10, -5, 5, 10], dragOptions: [0, 10], swingOptions: [0, 10, 20],
-    variant: { snare: true, hat: true }, variantChance: 0.35, rollMax: 3, rollChance: 0.3,
-    density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
+  mkLevel(23, 'Une ligne en retard', {
+    preamble: "Toujours la même grille, sans balancement — mais le charley traîne derrière les deux autres. Une ligne peut être décalée toute seule, en avance ou en retard : c'est ce qui fait qu'un batteur ne sonne pas comme une machine.",
+    tempoOptions: [88, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      swing: 0,
+      /* Le charley seul, et en RETARD : décalé contre deux lignes qui, elles,
+       * ne bougent pas. Un décalage n'existe que par rapport à un point fixe —
+       * tout décaler ensemble ne s'entendrait pas (c'est exactement ce qui
+       * rend la traîne globale inutilisable comme exercice). */
+      shift: { hat: 12 },
+    } }),
   mkLevel(24, 'Polyrythmie', {
     preamble: "Kick, snare et hat peuvent désormais avoir des subdivisions différentes en même temps — plusieurs pulsations qui se croisent.",
     subdivOptions: [{ kick: 3, snare: 4, hat: 5 }, { kick: 4, snare: 3, hat: 5 }, { kick: 5, snare: 4, hat: 3 }],

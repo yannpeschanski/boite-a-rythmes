@@ -839,9 +839,16 @@ class GameStore {
       this.target = grid;
       this.targetRolls = rolls;
       this.tempo = pick(cfgEffectif.tempoOptions);
-      this.swing = pick(cfgEffectif.swingOptions);
-      this.drag = pick(cfgEffectif.dragOptions);
-      this.shift = { kick: 0, snare: 0, hat: 0 };
+      /* Le FEEL suit la même règle que la grille : posé s'il est écrit, tiré
+       * sinon. ⚠️ Le décalage n'avait pas de repli du tout — il était forcé à
+       * zéro, donc un niveau écrit qui l'enseigne n'en aurait joué aucun. */
+      this.swing = g.swing ?? pick(cfgEffectif.swingOptions);
+      this.drag = g.drag ?? pick(cfgEffectif.dragOptions);
+      this.shift = {
+        kick: g.shift?.kick ?? 0,
+        snare: g.shift?.snare ?? 0,
+        hat: g.shift?.hat ?? 0,
+      };
     } else if (preset) {
       // Niveau « preset » : la cible EST le pattern d'un morceau réel (même
       // subdivision, mêmes shift/tempo/swing/drag, même timbre). Rafales
