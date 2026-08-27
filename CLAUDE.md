@@ -237,6 +237,19 @@ cinq écrans avant le premier exercice, jamais deux lectures empilées entre deu
 exercices. Le nom complet de Sol (**Solange**) n'existe pas dans `HISTOIRE.md` :
 c'est une proposition, à un seul endroit du code.
 
+⚠️ **L'exercice de mélodie s'écrit comme dans l'Atelier : CASES + CLAVIER.**
+C'était un rouleau (degrés en ordonnée, pas en abscisse) : quarante boutons
+pour poser trois notes, et rien qui ressemble au Synthé que l'acte 3 est censé
+préparer. Une ligne de cases porte les degrés, un clavier les écrit, la
+sélection avance toute seule — le geste du pad de notes. ⚠️ Et la **tonique du
+premier pas est DONNÉE, verrouillée** : la cible commence toujours par elle et
+l'écran l'annonce comme le repère, mais elle n'était pas posée — le joueur
+devait retrouver une note que la conception considère comme acquise, et
+l'exercice se lisait comme cassé. Corollaire de câblage : un `$effect` qui
+recale la sélection doit se garder du **premier rendu**, où la cible n'est pas
+encore tirée — sans quoi il la ramène sur le pas verrouillé et le clavier
+n'écrit nulle part, ce qui se lit exactement comme un bouton mort.
+
 ⚠️ **`melodie` est le huitième verbe, et le seul qui sorte de la batterie.**
 Une ligne de basse monophonique, une note par pas, des DEGRÉS (0 = silence,
 1-7). Il n'étend pas `GameDrumRowName` — ce qui aurait touché 46 endroits plus

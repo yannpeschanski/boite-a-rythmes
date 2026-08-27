@@ -285,17 +285,28 @@ describe('melodie — la basse tirée tient ses promesses', () => {
   });
 
   // La grille de proposition part vide, et seul le comparateur la verrouille.
-  it('part d’une grille vide et se valide case par case', async () => {
+  /* ⚠️ La TONIQUE est donnée d'entrée (2026-08-27). Elle ne l'était pas, alors
+   * que la cible commence toujours par elle et que l'écran l'annonce comme le
+   * repère : le joueur devait retrouver une note que la conception considère
+   * comme acquise, et l'exercice se lisait comme cassé. */
+  it('donne la tonique, verrouillée, et laisse le reste à trouver', async () => {
     const { game, LEVELS: L } = await import('../src/stores/game.svelte');
     game.startLevel(L.findIndex((l) => l.id === 42));
-    expect(game.melodieGuess.every((v) => v === 0)).toBe(true);
-    expect(game.melodieLocked.every((v) => !v)).toBe(true);
+    expect(game.melodieGuess[0], 'la tonique doit être posée').toBe(game.melodieCible[0]);
+    expect(game.melodieLocked[0], 'et ne pas pouvoir être retirée').toBe(true);
+    expect(game.melodieGuess.slice(1).every((v) => v === 0), 'le reste est vide').toBe(true);
+    expect(game.melodieLocked.slice(1).every((v) => !v)).toBe(true);
 
-    // Une seule note juste : la vérification échoue mais verrouille la case.
-    const premier = game.melodieCible.findIndex((d) => d > 0);
-    game.poserNote(premier, game.melodieCible[premier]);
+    // Le verrou tient : recliquer la tonique ne l'efface pas.
+    game.poserNote(0, game.melodieCible[0]);
+    expect(game.melodieGuess[0]).toBe(game.melodieCible[0]);
+
+    // Une seule note juste au-delà : la vérification échoue mais verrouille
+    // la case — c'est ce qui rend l'exercice progressif.
+    const suivant = game.melodieCible.findIndex((d, i) => i > 0 && d > 0);
+    game.poserNote(suivant, game.melodieCible[suivant]);
     expect(game.verify()).toBe(false);
-    expect(game.melodieLocked[premier]).toBe(true);
+    expect(game.melodieLocked[suivant]).toBe(true);
 
     // Toutes les notes : c'est gagné.
     game.melodieCible.forEach((d, i) => d > 0 && game.poserNote(i, d));
