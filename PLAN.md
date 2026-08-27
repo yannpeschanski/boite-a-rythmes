@@ -7211,6 +7211,82 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Chantier A, tranche 2 — et un anachronisme à 39 % (2026-08-27)
+
+Suite de la tranche 1. Objectif : rendre à l'acte 5 les presets qui dorment
+dans le réservoir. Ce qui a été trouvé en route valait plus que la tranche.
+
+#### Le verbe « style » proposait des genres qui n'existent pas encore
+
+Le niveau 58 (« Le genre, à l'oreille ») a un `stylePool` **vide**, ce qui veut
+dire « les 34 presets ». Le récit se passe en 2005 — `ANNEE`, et c'est le pilier
+du postulat : la seule année où un petit label peut vivre des sonneries.
+
+Mesuré sur **400 tirages**, en pilotant le vrai store :
+
+```
+au moins un genre hors époque parmi les 4 affichés : 156 / 400   (39 %)
+la BONNE RÉPONSE est un genre hors époque         :  40 / 400   (10 %)
+```
+
+Trap moderne (années 2010), Drill (2012+), Gqom (2011), Amapiano (2016) —
+proposés à un stagiaire de 2005, deux parties sur cinq.
+
+⚠️ `REPRISE.md` listait cette règle parmi les pistes ouvertes : *« les quatre
+presets hors époque ne sont jamais commandés pendant la campagne — c'est voulu,
+mais jamais vérifié par un test »*. Elle n'était pas seulement non vérifiée :
+elle était **fausse**. « Voulu et non vérifié » veut toujours dire « pas fait ».
+
+Le correctif est dans le TIRAGE (`tirerStyle`), pas dans le `stylePool` du
+niveau 58 : c'est une règle du récit, pas une propriété d'un exercice. Posée sur
+un niveau, le prochain verbe qui tire un genre l'oublierait — et c'est
+exactement comme ça que celui-ci est passé. Après correctif : **0 sur 400**.
+
+Trois précautions dans `tests/epoque.test.ts` : le tirage répété (120 fois, un
+test aléatoire doit affirmer ce qui est vrai à chaque tirage) ; le fait qu'aucun
+acte ne cite un niveau `reproduire` dont le TITRE nomme un de ces genres (« 34 ·
+Reproduire un preset (Trap moderne) » casserait la fiction aussi sûrement qu'un
+leurre) ; et surtout que **chaque identifiant de `HORS_EPOQUE` existe vraiment**
+— une coquille dans une liste d'exclusion ne filtre plus rien, en silence.
+Vérifié rouge par mutation.
+
+**L'Atelier garde les 34**, et c'est la moitié de la règle : c'est un outil, pas
+le récit. Composer un amapiano aujourd'hui est permis ; le reconnaître en 2005
+ne l'est pas.
+
+#### Quatre presets rendus à l'acte 5
+
+L'acte des styles n'en faisait rejouer que cinq. Quatre orphelins de l'époque
+le rejoignent : **UK Garage** (1997-2001), **French touch** (années 90),
+**Tresillo** et **Clave** (sans date). L'acte passe de 12 à 16 étapes.
+
+Les deux autres orphelins de la famille — 19 (Gqom) et 34 (Trap moderne) —
+restent dehors, et désormais un test dit pourquoi.
+
+⚠️ **Une ligne de récit devenue fausse en même temps.** Sol sort son carnet :
+*« Trente-quatre disques, un par genre »*. Quatre d'entre eux n'existent pas en
+2005, et le jeu ne les propose plus. La réplique dit **trente**, ce qui est
+exactement la taille du tirage. Une ligne de dialogue qui compte quelque chose
+est une assertion comme une autre.
+
+#### Ce qui le vérifie
+
+381 tests (5 neufs), 0 erreur de types, les deux builds, parcours complet sur
+serveur fraîchement démarré : acte 5 à 16 étapes, six productions au bout,
+aucune erreur console.
+
+**Le compteur d'orphelins : 29 → 22.** Sept niveaux rendus au jeu en deux
+tranches, dont aucun n'a été écrit de zéro.
+
+#### Fichiers touchés
+
+`src/model/presets/songs.ts` (`HORS_EPOQUE`), `src/stores/game.svelte.ts`
+(filtre dans `tirerStyle`), `src/model/carriere.ts` (acte 5 : quatre exercices,
+le carnet à trente disques), `tests/epoque.test.ts` (neuf), `CLAUDE.md`,
+`PLAN.md`, `REPRISE.md`.
+
+---
+
 ### ✅ Chantier A, tranche 1 — le groove se repose, il ne se désigne plus (2026-08-27)
 
 > « Je trouve pour l'instant les exercices locaux et les quiz moins

@@ -1015,7 +1015,7 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 58,
-        commande: 'Elle sort un carnet. Trente-quatre disques, un par genre. — Écoute.',
+        commande: 'Elle sort un carnet. Trente disques, un par genre. — Écoute.',
       },
       {
         kind: 'recit',
@@ -1034,6 +1034,19 @@ export const ACTES: Acte[] = [
       { kind: 'exercice', niveau: 13, commande: 'Le dancehall du commercial. Celui qu’il ne savait pas nommer.' },
       { kind: 'exercice', niveau: 27, commande: 'Ambiance latino, dit le fax. Dembow, dit le carnet.' },
       { kind: 'exercice', niveau: 32, commande: 'Kelvin vérifie le hip-hop. Il commence par le funk d’où il vient.' },
+      /* ⚠️ Quatre presets qui dormaient dans le réservoir depuis que la
+       * carrière a remplacé la campagne linéaire — l'acte des styles n'en
+       * faisait rejouer que cinq sur trente. Ils sont TOUS de l'époque : le
+       * garage culmine en 1997-2001, la French touch dans les années 90, le
+       * tresillo et la clave n'ont pas de date.
+       *
+       * Les deux autres orphelins (19 gqom, 34 trap moderne) restent dehors, et
+       * `tests/epoque.test.ts` le tient : leur titre NOMME un genre qui
+       * n'existe pas encore en 2005. */
+      { kind: 'exercice', niveau: 16, commande: 'Londres, 2001. Le garage : la caisse claire glisse, elle n’est jamais où on l’attend.' },
+      { kind: 'exercice', niveau: 22, commande: 'Paris, la French touch. Le même four-on-the-floor, filtré jusqu’à l’os.' },
+      { kind: 'exercice', niveau: 9, commande: 'Et la cellule dont tout le reste descend : trois notes, 3+3+2.' },
+      { kind: 'exercice', niveau: 25, commande: 'Sa grande sœur, la clave. Sol : — Celle-là, tu la retrouveras partout.' },
       {
         kind: 'commande',
         entete: 'ZIK’MOBILE — LE QUINZIÈME',

@@ -658,6 +658,22 @@ Et **jamais de commande avant l'acte 2** : on ne commande pas un travail dans
 un module qu'on n'a pas encore ouvert — l'acte 1 garde sa `livraison`, qui est
 un cadeau et non une épreuve.
 
+⚠️ **Le jeu ne propose que des genres de 2005 — `HORS_EPOQUE`.** Le récit se
+passe en 2005 et c'est son pilier ; or le verbe `style` tirait dans les 34
+presets. Mesuré sur 400 tirages : **39 % des parties affichaient au moins un
+genre postérieur** (trap moderne, drill, amapiano, gqom) et **10 % du temps
+c'était la bonne réponse**. `REPRISE.md` disait cette règle « voulue, mais
+jamais vérifiée par un test » — « voulu et non vérifié » veut toujours dire
+« pas fait ». Trois choses à garder : le filtre vit dans le TIRAGE
+(`tirerStyle`) et non dans le `stylePool` d'un niveau, parce que c'est une
+règle du récit et que le prochain verbe qui tire un genre doit en hériter ;
+l'**Atelier garde les 34**, parce que c'est un outil et non le récit (composer
+un amapiano aujourd'hui est permis, le reconnaître en 2005 ne l'est pas) ; et
+un niveau `reproduire` dont le titre NOMME un de ces genres ne se cite pas non
+plus (19 gqom, 34 trap moderne restent orphelins). Le test vérifie aussi que
+chaque identifiant de la liste existe vraiment — une coquille dans une liste
+d'exclusion ne filtre plus rien, en silence.
+
 ⚠️ **Un verbe qui TIRE dans un catalogue doit tirer ses leurres LOIN.** Le
 verbe `style` (acte 5) fait nommer le genre d'une boucle : ses trois leurres
 viennent d'autres catégories de presets, jamais de la même. « Boom bap » contre

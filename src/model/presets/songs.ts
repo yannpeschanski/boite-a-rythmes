@@ -157,6 +157,28 @@ function h(closedIdx: number[] | null, len: number, openIdx?: number[] | null, r
 
 // ---------- Données (34 presets, verbatim) ----------
 
+/* ⚠️ LES QUATRE GENRES QUI N'EXISTENT PAS ENCORE EN 2005.
+ *
+ * Le récit se passe en 2005 (`ANNEE`, carriere.ts) : c'est la seule année où
+ * le postulat tient — les sonneries sont encore un marché dont un petit label
+ * peut vivre. Or le verbe `style` tirait dans les 34 presets, donc il
+ * proposait « Trap moderne », « Drill », « Amapiano » et « Gqom » comme
+ * réponses possibles à un stagiaire de 2005. Mesuré sur 400 tirages avant
+ * correctif : **39 % des parties affichaient au moins un de ces quatre
+ * genres**, et **10 % du temps c'était la bonne réponse**.
+ *
+ * ⚠️ La règle vaut pour ce que le JEU propose, pas pour ce que l'Atelier
+ * contient : le menu Morceaux garde les 34, parce que c'est un outil et non le
+ * récit. Quelqu'un qui compose aujourd'hui a le droit de charger un amapiano ;
+ * personne, en 2005, n'a le droit de le reconnaître à l'oreille.
+ *
+ * Les dates : trap moderne et drill au tournant des années 2010, gqom vers
+ * 2011, amapiano vers 2016. Tout le reste du catalogue est antérieur à 2005 —
+ * l'UK garage culmine en 1997-2001, la French touch dans les années 90, le
+ * dembow explose en 2004.
+ */
+export const HORS_EPOQUE = ['trapmodern', 'drill', 'amapiano', 'gqom'];
+
 export const PRESETS: SongPresetData[] = [
   { id:'boombap', cat:'Hip-hop / trap', label:'Boom bap 90s', tempo:93, swing:8, drag:0,
     globalSaturation:15, globalCompression:25, globalBitcrush:10,

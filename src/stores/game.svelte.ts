@@ -38,7 +38,7 @@ import {
   appliquerParam,
   type DescripteurParam,
 } from '../model/parametres';
-import { PRESETS } from '../model/presets/songs';
+import { PRESETS, HORS_EPOQUE } from '../model/presets/songs';
 import {
   NB_ACTES,
   acteParId,
@@ -1134,8 +1134,18 @@ class GameStore {
    */
   private tirerStyle(presets: GamePresetLike[]): string {
     const autorises = this.level.stylePool;
+    /* ⚠️ Le filtre d'ÉPOQUE est ici, dans le tirage, et pas dans le
+     * `stylePool` d'un niveau : c'est une règle du RÉCIT (on est en 2005), pas
+     * une propriété d'un exercice. Posée sur un niveau, le prochain verbe qui
+     * tire un genre l'oublierait — et c'est exactement comme ça que le niveau
+     * 58 proposait « Trap moderne » à un stagiaire de 2005, 39 % du temps.
+     * Voir `HORS_EPOQUE` (presets/songs.ts). */
     const pool = presets.filter(
-      (p) => p.cat && p.label && (autorises.length === 0 || autorises.includes(p.id)),
+      (p) =>
+        p.cat &&
+        p.label &&
+        !HORS_EPOQUE.includes(p.id) &&
+        (autorises.length === 0 || autorises.includes(p.id)),
     );
     const bon = pick(pool);
     this.stylePresetId = bon.id;
