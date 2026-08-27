@@ -149,6 +149,24 @@ s'enseigne dans l'acte de son objet — variantes et rafales sont des gestes de
 grille, donc de l'acte 1, pas de l'acte « groove » où personne ne les
 expliquait.
 
+⚠️ **Une COMMANDE ouvre les modules qu'elle exige — `modulesRequis`.** L'acte 3
+était un cul-de-sac : sa commande demande une basse, or `moduleUnlocked`
+n'ouvre le Synthé qu'une fois l'acte 3 FRANCHI, et la commande est la dernière
+étape de l'acte 3. Elle demandait donc l'impossible, et la carrière s'arrêtait
+là — **trouvé en jouant, pas par un test**, parce que les tests vérifiaient
+qu'un cahier est satisfiable *en mémoire*, ce qui ne dit rien de ce que l'écran
+laisse faire. Le grant est de la même famille que `sharedPattern` : une
+intention explicite ouvre ce qu'il faut pour l'honorer, et rien de plus.
+`tests/commande.test.ts` croise désormais le cahier ET le verrou à l'instant où
+la commande se joue.
+
+⚠️ **Une commande part d'un Atelier VIDE — `etatVierge()`.** `defaultState()`
+est le motif d'accueil, et ce motif est du Motown : ouvrir une commande dessus
+cochait des cases du cahier avant que le joueur ait touché quoi que ce soit
+(« la check-list est déjà remplie quand on ouvre l'exercice »). Corollaire à ne
+pas oublier : le `DEPART` de `pasLeMotifDeDepart` doit être **la même** table
+rase, sinon « il faut y avoir touché » se coche tout seul à l'ouverture.
+
 ⚠️ **Une étape qui envoie dans un module doit d'abord FRANCHIR son étape.**
 `moduleUnlocked` lit l'acte ATTEINT (`acte > 1` pour l'Atelier) : la livraison
 de l'acte 1 (`EtapeLivraison`, le troisième `kind`) ouvre l'Atelier sur le

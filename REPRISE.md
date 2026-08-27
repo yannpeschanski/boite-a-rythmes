@@ -3,7 +3,7 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-26, après l'acte 4 en deux temps.
+> Dernière mise à jour : 2026-08-27, après la partie complète de Yann.
 
 ## Où en est le projet
 
@@ -11,7 +11,7 @@ Séquenceur / boîte à rythmes web en Svelte 5, skin Winamp 2.x, déployé sur
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 287 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 299 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -84,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 287 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 299 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840.
 

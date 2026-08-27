@@ -6872,6 +6872,73 @@ le récit au passage.
 
 ---
 
+### ✅ Le jeu se termine à nouveau — deux blocages trouvés EN JOUANT (2026-08-27)
+
+> « je viens de faire une session carrière depuis le début »
+> « Incohérences sur l'exercice en atelier, on n'a pas accès à la basse alors
+> que c'est ce qu'il fait faire. Du coup, le jeu s'arrête là »
+> « La check list dans l'atelier est déjà remplie quand on ouvre l'exercice.
+> Il faut que l'atelier soit bien vide. »
+
+Première partie complète jouée à la main par Yann. Elle a trouvé en une session
+ce que neuf PR de tests n'avaient pas vu — dont un **cul-de-sac dur**.
+
+#### 1. La carrière s'arrêtait à l'acte 3
+
+La commande de Rachid exige une ligne de basse. Or `moduleUnlocked` n'ouvre le
+Synthé qu'une fois l'acte 3 **franchi** (`acte > 3`), et cette commande est la
+dernière étape de l'acte 3. Elle demandait donc quelque chose que le joueur ne
+pouvait pas produire : onglet Synthé cadenassé, cahier impossible, fin de la
+partie.
+
+⚠️ **Pourquoi aucun test ne l'a vu**, et c'est la leçon à garder : les tests
+vérifiaient qu'un cahier est SATISFIABLE — en construisant un état en mémoire,
+où rien n'est verrouillé. Aucun ne croisait le cahier avec le VERROU à
+l'instant où la commande se joue. `tests/commande.test.ts` le fait maintenant,
+et il a été vérifié rouge sans le correctif : *« acte 3 — RACHID demande une
+basse dans un Synthé fermé »*.
+
+Le correctif : `EtapeCommande.modulesRequis`, honoré par `moduleUnlocked` — même
+famille que `sharedPattern`, une intention explicite ouvre ce qu'il faut et rien
+de plus. Vérifié dans l'appli : pendant la commande, Synthé ouvert, Production
+et Live toujours fermés.
+
+#### 2. Le cahier se cochait tout seul
+
+`ouvrirCommande()` laissait l'Atelier sur `defaultState()` — le motif d'accueil,
+qui EST du Motown. « De quoi tenir le temps dessous » était donc coché avant que
+le joueur ait touché quoi que ce soit. D'où `etatVierge()` : mêmes réglages
+machine (tempo, timbres, voix), contenu remis à zéro. `history.push()` avant, pour
+qu'un Ctrl+Z rende son travail à qui en avait en cours.
+
+⚠️ **Le corollaire qui a failli passer**, et qui n'apparaît qu'à l'écran : le
+`DEPART` de `pasLeMotifDeDepart` comparait toujours à `defaultState()`. Comme
+l'Atelier partait désormais de la table rase, les deux différaient — et « il
+faut y avoir touché » se cochait à l'ouverture. Vu sur une capture, pas dans un
+test. Corrigé, et le test « refuse une livraison qu'on n'a pas touchée » part
+maintenant de `etatVierge()`, c'est-à-dire de ce que le joueur a sous les yeux.
+
+#### Ce qui le vérifie
+
+299 tests, 0 erreur de types, les deux builds, le parcours complet sur serveur
+neuf, et une vérification Playwright de l'acte 3 : cahier **0/3** à l'ouverture,
+onglet Synthé sans cadenas, Production cadenassée, séquenceur vide.
+
+#### Fichiers touchés
+
+`src/model/defaults.ts` (`etatVierge`), `src/model/carriere.ts` (`modulesRequis`,
+`DEPART`), `src/model/unlocks.ts`, `src/stores/unlocks.svelte.ts`,
+`src/stores/game.svelte.ts` (`ouvrirCommande` vide l'Atelier),
+`tests/commande.test.ts`, `CLAUDE.md`, `REPRISE.md`.
+
+#### Le reste du retour de Yann — non fait ici
+
+Sa liste couvre bien plus (nom « Face B », masquer le verrouillé, qui parle,
+dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dans
+`REPRISE.md` ; cette entrée ne traite que ce qui EMPÊCHAIT de jouer.
+
+---
+
 ### ✅ L'acte 4 en deux temps — une leçon de production qui se FAIT (2026-08-26)
 
 > « bizarre les exercices pour la production. »

@@ -3,6 +3,8 @@
 // hat en 3 pas (polyrythmie d'accueil).
 import {
   MAXSTEPS,
+  DRUM_ROW_NAMES,
+  SYNTH_ROW_NAMES,
   type PatternStateV2,
   type DrumRowState,
   type SynthRowState,
@@ -86,6 +88,33 @@ export function defaultSynthGlobal(): SynthGlobalState {
     padArpRate: '4',
     padDroneEnabled: false,
   };
+}
+
+/* La TABLE RASE — un Atelier vraiment vide.
+ *
+ * `defaultState()` n'est pas une grille vide : c'est le motif d'accueil, et ce
+ * motif EST du Motown (`rankPresets` lui donne 100 %). Ouvrir une commande
+ * dessus cochait donc des cases du cahier avant que le joueur ait touché quoi
+ * que ce soit — retour de Yann après une partie complète : *« la check-list
+ * dans l'atelier est déjà remplie quand on ouvre l'exercice. Il faut que
+ * l'atelier soit bien vide. »*
+ *
+ * Une commande demande de PRODUIRE : elle doit partir de rien. Tout le reste
+ * de l'état (tempo, timbres, voix de synthé) est conservé — c'est le contenu
+ * qu'on efface, pas les réglages de la machine. */
+export function etatVierge(): PatternStateV2 {
+  const st = defaultState();
+  for (const l of DRUM_ROW_NAMES) {
+    st.rows[l].pattern = new Array(MAXSTEPS).fill(0);
+    st.rows[l].rolls = new Array(MAXSTEPS).fill(1);
+    st.rows[l].muted = false;
+  }
+  for (const l of SYNTH_ROW_NAMES) {
+    const r = st.synthRows[l];
+    r.pattern = new Array(r.subdivisions).fill(l === 'pad' ? -1 : null);
+    r.muted = false;
+  }
+  return st;
 }
 
 export function defaultState(): PatternStateV2 {

@@ -41,12 +41,17 @@ import {
   deLEspaceSansSoupe,
 } from './commande';
 import { ficheStyle } from './styles';
-import { defaultState } from './defaults';
+import { etatVierge } from './defaults';
 
-/* Le point de départ de l'Atelier, figé une fois : toutes les commandes s'en
- * servent pour refuser une livraison qu'on n'a pas touchée (voir
- * `pasLeMotifDeDepart`, et la mesure qui l'a imposée). */
-const DEPART = defaultState();
+/* Le point de départ d'une commande, figé une fois : toutes s'en servent pour
+ * refuser une livraison qu'on n'a pas touchée (voir `pasLeMotifDeDepart`).
+ *
+ * ⚠️ C'est `etatVierge()` et non `defaultState()` depuis le 2026-08-27 :
+ * ouvrir une commande vide désormais l'Atelier, donc c'est à la table rase
+ * qu'il faut comparer. Laissé sur `defaultState()`, le motif d'accueil et la
+ * table rase différaient — et la case « il faut y avoir touché » se cochait
+ * toute seule à l'ouverture, exactement le défaut que Yann a signalé. */
+const DEPART = etatVierge();
 const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
 
 /* La fiche du genre commandé par Zik'Mobile. Chargée une fois : elle sert à la
@@ -151,6 +156,19 @@ export interface EtapeCommande {
   lignes: string[];
   /** Le libellé du bouton qui emmène à l'Atelier. */
   bouton: string;
+  /* ⚠️ Les modules dont le CAHIER a besoin, ouverts le temps de la commande.
+   *
+   * Sans ça, l'acte 3 était un cul-de-sac : sa commande exige une basse, or
+   * `moduleUnlocked` n'ouvre le Synthé qu'une fois l'acte 3 FRANCHI
+   * (`acte > 3`). La commande demandait donc quelque chose que le joueur ne
+   * pouvait pas faire, et la carrière s'arrêtait là — trouvé par Yann en
+   * jouant, pas par un test.
+   *
+   * C'est la même idée que `sharedPattern` pour l'Atelier : une intention
+   * explicite ouvre ce qu'il faut pour l'honorer, et rien de plus. Le module
+   * se referme quand la commande est livrée — c'est l'acte qui l'ouvre pour de
+   * bon, juste après. */
+  modulesRequis?: LockedModule[];
   /** Ce que Sol vérifie en recevant. Beaucoup de morceaux le satisfont : une
    *  commande n'a pas UNE réponse, elle a des exigences. */
   cahier: Contrainte[];
@@ -704,6 +722,8 @@ export const ACTES: Acte[] = [
           'C’est tout le brief. Il n’y en aura pas d’autre.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
+        // La commande demande une basse : le Synthé s'ouvre pour la faire.
+        modulesRequis: ['synth'],
         cahier: [
           AVOIR_PRODUIT,
           ligneSynthPresente('bass', 'Une basse — c’est elle qui porte la mélodie'),

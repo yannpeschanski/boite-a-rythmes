@@ -51,6 +51,9 @@ import {
   LONGUEUR_EPILOGUE,
 } from '../model/carriere';
 import { evaluerCommande, type Verdict, type ContexteLivraison } from '../model/commande';
+import { etatVierge } from '../model/defaults';
+import { pattern } from './pattern.svelte';
+import { history } from './history.svelte';
 import {
   BAG_ITEMS,
   CONSOLATION_ITEM,
@@ -527,6 +530,13 @@ class GameStore {
   ouvrirCommande(): void {
     if (this.etapeCourante?.kind !== 'commande') return;
     this.commandeEnCours = { acte: this.acteActif, etape: this.etapeActive };
+    /* ⚠️ L'Atelier part de RIEN. `defaultState()` est le motif d'accueil, et ce
+     * motif est du Motown : ouvrir une commande dessus cochait des cases du
+     * cahier avant que le joueur ait touché quoi que ce soit (retour de Yann
+     * après une partie complète). Une commande demande de produire — elle part
+     * d'une table rase, `etatVierge()`. */
+    history.push();
+    pattern.replace(etatVierge());
     this.commandeVerdict = null;
     this.commandeAcceptee = null;
   }
