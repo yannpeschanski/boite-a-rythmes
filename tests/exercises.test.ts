@@ -546,3 +546,72 @@ describe('style — reconnaître une famille, pas deviner un sous-genre', () => 
     expect(game.solved).toBe(true);
   });
 });
+
+/* ⚠️ UN NIVEAU NE PROMET PAS CE QU'IL NE POSE PAS.
+ *
+ * `forceVariantCount` et `forceRollCount` étaient déclarés dans le type,
+ * remplis par les niveaux… et lus par PERSONNE : le forçage n'avait jamais été
+ * porté. Mesuré avant correctif, sur 60 tirages :
+ *
+ *   niveau 5, « Variante (une seule) » →  0 variante sur 60
+ *   niveau 8, « Rafale (une seule) »   →  0 rafale   sur 60
+ *   niveau 9, tresillo « avec variante et rafale » → ni l'une ni l'autre
+ *
+ * Ces niveaux posent `variantChance: 0` / `rollChance: 0` JUSTEMENT parce
+ * qu'ils comptaient sur le forçage. Sans lui, la consigne annonçait un rim
+ * shot ou une rafale que la cible ne contenait jamais — trouvé par Yann en
+ * jouant, pas par un test.
+ *
+ * Le test est générique : il vaut pour tout niveau qui déclare un forçage,
+ * ceux à venir compris. Et il répète, parce qu'une seule vérification sur un
+ * tirage est une pièce lancée (CLAUDE.md).
+ */
+describe('les niveaux tiennent ce que leur consigne annonce', () => {
+  const TIRAGES = 60;
+
+  it('pose bien le nombre de variantes qu’ils forcent', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const concernes = L.filter((l) => l.forceVariantCount > 0);
+    expect(concernes.length, 'aucun niveau ne force de variante ?').toBeGreaterThan(0);
+    for (const lvl of concernes) {
+      const i = L.findIndex((l) => l.id === lvl.id);
+      for (let n = 0; n < TIRAGES; n++) {
+        game.startLevel(i);
+        const t = game.target as Record<string, number[]>;
+        const variantes = (['snare', 'hat'] as const).reduce(
+          (a, r) => a + (t[r] ?? []).filter((c) => c === 2).length,
+          0,
+        );
+        expect(
+          variantes,
+          `niveau ${lvl.id} : ${variantes} variante(s) alors qu'il en promet ${lvl.forceVariantCount}`,
+        ).toBeGreaterThanOrEqual(lvl.forceVariantCount);
+      }
+    }
+  });
+
+  it('pose bien le nombre de rafales qu’ils forcent', async () => {
+    const { game, LEVELS: L } = await import('../src/stores/game.svelte');
+    const concernes = L.filter((l) => l.forceRollCount > 0 && l.rollMax > 1);
+    expect(concernes.length, 'aucun niveau ne force de rafale ?').toBeGreaterThan(0);
+    for (const lvl of concernes) {
+      const i = L.findIndex((l) => l.id === lvl.id);
+      for (let n = 0; n < TIRAGES; n++) {
+        game.startLevel(i);
+        const t = game.target as Record<string, number[]>;
+        const r = game.targetRolls as Record<string, number[]>;
+        // Une rafale ne compte que sur une case ACTIVE : un `roll` posé sur
+        // une case vide ne s'entend pas, et ne s'apprend donc pas.
+        const rafales = (['kick', 'snare', 'hat'] as const).reduce(
+          (a, ligne) =>
+            a + (r[ligne] ?? []).filter((v, k) => v > 1 && (t[ligne]?.[k] ?? 0) > 0).length,
+          0,
+        );
+        expect(
+          rafales,
+          `niveau ${lvl.id} : ${rafales} rafale(s) alors qu'il en promet ${lvl.forceRollCount}`,
+        ).toBeGreaterThanOrEqual(lvl.forceRollCount);
+      }
+    }
+  });
+});

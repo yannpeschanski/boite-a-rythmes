@@ -295,10 +295,69 @@ export function genLevelRhythm(subdiv: SubdivSpec, level: GameLevel, rng: () => 
     variantEnabled: level.variant.hat, variantChance: level.variantChance,
     rollMax: level.rollMax, rollChance: level.rollChance,
   }, rng) : { state: new Array<DrumStep>(subdiv.hat).fill(0), roll: new Array<number>(subdiv.hat).fill(1) };
-  return {
+  const rythme: LevelRhythm = {
     target: { kick: kick.state, snare: snare.state, hat: hat.state },
     roll: { kick: kick.roll, snare: snare.roll, hat: hat.roll },
   };
+  forcerVariantesEtRafales(rythme, level, rng);
+  return rythme;
+}
+
+/* ⚠️ LE FORÇAGE — déclaré depuis le début, jamais porté.
+ *
+ * `forceVariantCount` et `forceRollCount` existaient dans le type, étaient
+ * remplis par les niveaux… et lus par PERSONNE. Le commentaire de `mkLevel`
+ * décrit pourtant leur rôle exact : « utilisé pour les niveaux "une seule
+ * variante/rafale" ». Conséquence, mesurée sur 60 tirages avant correctif :
+ *
+ *   niveau 5, « Variante (une seule) » →  0 variante sur 60
+ *   niveau 8, « Rafale (une seule) »   →  0 rafale   sur 60
+ *
+ * Ces deux niveaux posent `variantChance: 0` / `rollChance: 0` justement parce
+ * qu'ils comptaient sur le forçage : sans lui, la consigne annonce un rim shot
+ * ou une rafale que la cible ne contient jamais. Trouvé par Yann en jouant —
+ * « on dit qu'on introduit rim shot ou hat ouvert, ce n'est pas le cas ».
+ *
+ * Le forçage passe APRÈS le tirage probabiliste et compte ce qui est déjà là :
+ * un niveau qui en veut une et qui en a déjà tiré une n'en ajoute pas.
+ * L'ordre d'itération des lignes est fixe (kick → snare → hat) — comme partout
+ * ailleurs, il gouverne la consommation du `rng`.
+ */
+export function forcerVariantesEtRafales(r: LevelRhythm, level: GameLevel, rng: () => number): void {
+  const lignes: GameDrumRowName[] = ['kick', 'snare', 'hat'];
+
+  if (level.forceVariantCount > 0) {
+    /* Seules la caisse claire et le charley ACCEPTENT une variante — c'est
+       pour ça que `level.variant` n'a pas de champ `kick` : la grosse caisse
+       n'a ni rim shot ni ouverture, forcer un 2 dessus écrirait un état que la
+       ligne ne sait pas jouer. */
+    const candidates: Array<['snare' | 'hat', number]> = [];
+    for (const l of ['snare', 'hat'] as const) {
+      if (!level.variant[l]) continue;
+      r.target[l].forEach((v, i) => {
+        if (v === 1) candidates.push([l, i]);
+      });
+    }
+    const deja = lignes.reduce((n, l) => n + r.target[l].filter((v) => v === 2).length, 0);
+    for (let k = deja; k < level.forceVariantCount && candidates.length > 0; k++) {
+      const [l, i] = candidates.splice(Math.floor(rng() * candidates.length), 1)[0];
+      r.target[l][i] = 2;
+    }
+  }
+
+  if (level.forceRollCount > 0 && level.rollMax > 1) {
+    const candidates: Array<[GameDrumRowName, number]> = [];
+    for (const l of lignes) {
+      r.target[l].forEach((v, i) => {
+        if (v > 0 && r.roll[l][i] <= 1) candidates.push([l, i]);
+      });
+    }
+    const deja = lignes.reduce((n, l) => n + r.roll[l].filter((v) => v > 1).length, 0);
+    for (let k = deja; k < level.forceRollCount && candidates.length > 0; k++) {
+      const [l, i] = candidates.splice(Math.floor(rng() * candidates.length), 1)[0];
+      r.roll[l][i] = 2 + Math.floor(rng() * (level.rollMax - 1));
+    }
+  }
 }
 
 // subdivOptions peut mélanger des nombres (même subdivision sur les 3 lignes) et

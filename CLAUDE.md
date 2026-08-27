@@ -282,6 +282,18 @@ le Mode jeu tient sur **une mesure** par ligne (un quart de boucle est un *temps
 pas une mesure), et « jouer » mesure l'écart au dernier pas **actif** du kick —
 l'ancrer sur la grille donnait 100 % à une frappe posée sur un silence.
 
+⚠️ **Un niveau ne promet pas ce qu'il ne pose pas.** `forceVariantCount` et
+`forceRollCount` étaient déclarés dans `GameLevel`, remplis par les niveaux, et
+lus par **personne** — le forçage n'avait jamais été porté. Les niveaux 5
+(« une seule variante ») et 8 (« une seule rafale ») posent `variantChance: 0`
+/ `rollChance: 0` JUSTEMENT parce qu'ils comptaient dessus : mesuré, 0 variante
+et 0 rafale sur 60 tirages, donc une consigne qui annonçait un rim shot que la
+cible ne contenait jamais. Le forçage passe APRÈS le tirage probabiliste,
+compte ce qui est déjà là, et s'applique **aussi aux niveaux preset** (le
+tresillo promet « variante et rafale ajoutées pour l'occasion », or le preset
+n'en a aucune). Deux tests génériques le tiennent, sur tout niveau qui déclare
+un forçage — ceux à venir compris.
+
 ⚠️ **Une question dont la réponse est inaudible n'est pas une question.** Le
 kick balaie jusqu'à `max(20, 38 × mult)` : sous −10 demi-tons, toute la moitié
 basse du curseur finit sur le même plancher de 20 Hz, et trois versions tirées

@@ -6,6 +6,7 @@ import { defaultState } from '../model/defaults';
 import {
   LEVELS,
   genLevelRhythm,
+  forcerVariantesEtRafales,
   subdivForLevel,
   voiceForLevel,
   presetForLevel,
@@ -751,8 +752,17 @@ class GameStore {
             return (v === true ? 1 : v === 2 ? 2 : v ? 1 : 0) as DrumStep;
           });
       });
-      this.target = grid;
-      this.targetRolls = emptyRolls(this.subdiv);
+      /* ⚠️ Le forçage s'applique AUSSI aux niveaux preset, et c'est ce qui
+       * manquait au tresillo : son préambule promet « variante et rafale y
+       * sont ajoutées pour l'occasion », or le preset d'origine n'en contient
+       * aucune — mesuré, 0 sur 60 tirages. Le commentaire de `mkLevel` le
+       * disait déjà : le forçage sert aussi à « garantir qu'un concept déjà
+       * enseigné est bien présent dans la cible, même si le preset original
+       * n'en contenait pas assez ». */
+      const rythmePreset = { target: grid, roll: emptyRolls(this.subdiv) };
+      forcerVariantesEtRafales(rythmePreset, cfgEffectif, Math.random);
+      this.target = rythmePreset.target;
+      this.targetRolls = rythmePreset.roll;
       const pp = preset as unknown as { tempo: number; swing: number; drag: number };
       this.tempo = pp.tempo;
       this.swing = pp.swing;
