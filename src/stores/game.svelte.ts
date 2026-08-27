@@ -920,8 +920,22 @@ class GameStore {
     }
     if (m.motif) for (let i = utiles; i < pas; i++) cible[i] = cible[i - utiles];
     this.melodieCible = cible;
-    this.melodieGuess = new Array<number>(pas).fill(0);
-    this.melodieLocked = new Array<boolean>(pas).fill(false);
+    /* ⚠️ La TONIQUE est DONNÉE, pas à redeviner.
+     *
+     * La cible commence toujours par le degré 1 — « sans point de départ,
+     * aucun degré ne se situe » — et l'écran l'annonce (« le degré 1 est la
+     * tonique, celui sur lequel la phrase se repose »). Elle n'était pourtant
+     * pas posée : le joueur devait retrouver une note que la conception
+     * considère comme acquise, et l'exercice se lisait comme cassé. Elle est
+     * donc posée ET verrouillée d'entrée : c'est le repère contre lequel tous
+     * les autres degrés s'entendent, exactement comme le kick est la seule
+     * ligne laissée en place dans les exercices de groove. */
+    const guess = new Array<number>(pas).fill(0);
+    const locked = new Array<boolean>(pas).fill(false);
+    guess[0] = cible[0];
+    locked[0] = true;
+    this.melodieGuess = guess;
+    this.melodieLocked = locked;
   }
 
   /* Une pulsation régulière avec UN trou.

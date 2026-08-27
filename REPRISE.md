@@ -84,7 +84,7 @@ la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
 
 ## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
 
-Une partie complète jouée à la main. **5 points sur 19 sont traités** ; le
+Une partie complète jouée à la main. **7 points sur 19 sont traités** ; le
 reste est là, dans l'ordre où je propose de le prendre.
 
 ### Fait
@@ -96,11 +96,16 @@ reste est là, dans l'ordre où je propose de le prendre.
 | Le jeu s'appelle **Face B** | et l'entrée s'appelle **Jouer**, plus « Mode jeu » |
 | Le verrouillé est masqué | plus aucun cadenas à l'écran |
 | Les dates | 2005, une seule date écrite, le reste déduit |
+| La mélodie | cases + clavier comme l'Atelier, tonique donnée |
 
 ### Reste — bugs d'abord
 
-1. **Acte 3, « bug sur la basse à deviner »** — signalé, **non diagnostiqué**.
-   C'est le seul point de la liste dont je ne connais pas encore la cause.
+1. ~~**Acte 3, « bug sur la basse à deviner »**~~ — traité au mieux de ce qui
+   était reproductible. La logique était saine (poser exactement la cible est
+   accepté, vérifié aux niveaux 42 et 43) ; ce qui ne l'était pas : la tonique
+   annoncée comme repère n'était pas posée, et l'interface était un rouleau de
+   quarante cases. Refondue en cases + clavier, tonique donnée. **Si le défaut
+   persiste, il est dans le SON — c'est la piste qui reste.**
 2. **Acte 1, les promesses non tenues** : « on dit qu'on introduit rim shot ou
    charley ouvert, ce n'est pas le cas, et on ne dit pas comment les faire » ;
    « on dit qu'on a un tresillo avec rafales, ce n'est pas le cas ».
@@ -130,8 +135,6 @@ chaque ligne à un locuteur. À faire ensemble.
    poom poom chack », puis le reste du cahier).
 9. **Monter la difficulté des actes 1 et 2** — on arrive trop vite à l'acte 3.
    Acte 1 : plus de rythmes à refaire. Acte 2 : beaucoup d'exercices d'atelier.
-10. **Acte 3** : la mélodie devrait avoir l'interface de l'Atelier — des
-    cellules et un clavier — pour préparer au module.
 11. **Les roasts** : tous les textes à revoir.
 12. **Les besaces** : introduire le concept (aujourd'hui on en gagne sans
     savoir ce que c'est), et leur donner un usage à la fin. Piste retenue par

@@ -698,12 +698,12 @@ export const LEVELS: GameLevel[] = [
    */
   mkLevel(42, 'Reposer une basse', {
     exercise: 'melodie',
-    preamble: "Une ligne de basse joue en boucle. Repose-la : une note par pas, en cliquant la case qui correspond au degré entendu. Les cinq premiers degrés seulement — de quoi entendre monter et descendre sans se perdre.",
+    preamble: "Une ligne de basse joue en boucle. Repose-la : choisis une case, appuie sur le degré entendu, la case suivante se sélectionne toute seule. La tonique du premier pas t'est donnée — c'est le repère. Les cinq premiers degrés seulement, de quoi entendre monter et descendre sans se perdre.",
     tempoOptions: [86, 92],
     melodie: { pas: 8, degreMax: 5, notesMin: 3, notesMax: 4 } }),
   mkLevel(43, 'Un motif qui se répète', {
     exercise: 'melodie',
-    preamble: "Cette fois la phrase se répète : la seconde moitié reprend la première, note pour note. Il n'y a donc que quatre pas à trouver — et une chose à entendre, celle qui fait qu'une mélodie tient : elle revient.",
+    preamble: "Cette fois la phrase se répète : la seconde moitié reprend la première, note pour note. Il n'y a donc que quatre pas à trouver — et une chose à entendre, celle qui fait qu'une mélodie tient : elle revient. Le ⌫ efface la case choisie.",
     tempoOptions: [86, 92],
     melodie: { pas: 8, degreMax: 5, notesMin: 2, notesMax: 3, motif: true } }),
   mkLevel(44, 'Toute la gamme', {

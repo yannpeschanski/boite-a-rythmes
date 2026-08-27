@@ -416,9 +416,53 @@
   /* Les degrés, du plus HAUT en haut — comme sur une portée, et comme sur le
      pad de l'Atelier. Une grille de hauteurs qui monterait vers le bas
      demanderait de retourner ce qu'on entend avant de le poser. */
-  const degres = $derived(
-    Array.from({ length: lvl.melodie.degreMax }, (_, i) => lvl.melodie.degreMax - i),
-  );
+  /* Le CLAVIER de l'exercice de mélodie : les degrés dans l'ordre, grave à
+     gauche, comme un instrument. L'ancien rouleau les listait à l'envers
+     (aigu en haut) parce qu'ils étaient un AXE ; ils sont maintenant des
+     touches. */
+  const clavier = $derived(Array.from({ length: lvl.melodie.degreMax }, (_, i) => i + 1));
+
+  /* Le pas sélectionné — c'est lui que le clavier écrit. La tonique du premier
+     pas étant donnée et verrouillée, on démarre sur le pas suivant : rien à
+     faire sur le premier, et une sélection qui n'accepte rien se lit comme un
+     bouton mort. */
+  let melSel = $state(1);
+
+  /** Le prochain pas où l'on peut écrire, en tournant. */
+  function prochainLibre(depuis: number): number {
+    const n = game.melodieCible.length;
+    for (let k = 1; k <= n; k++) {
+      const i = (depuis + k) % n;
+      if (!game.melodieLocked[i]) return i;
+    }
+    return depuis;
+  }
+
+  /* Écrire un degré sur le pas choisi, puis AVANCER — c'est le geste
+     d'écriture, pas un formulaire : on entend la phrase, on la pose de gauche
+     à droite. Reposer le même degré l'efface (même geste que la case de
+     batterie qui s'éteint), et on ne bouge alors pas : effacer puis sauter
+     ferait perdre la case qu'on voulait corriger. */
+  function ecrireDegre(d: number): void {
+    if (game.melodieLocked[melSel]) return;
+    const avant = game.melodieGuess[melSel];
+    game.poserNote(melSel, d);
+    echec = false;
+    if (avant !== d) melSel = prochainLibre(melSel);
+  }
+
+  /* La sélection suit la grille : un niveau qui change, ou une case qui vient
+     de se verrouiller, la déplacent vers le prochain pas où l'on peut écrire.
+     
+     ⚠️ Le `n === 0` n'est pas de la prudence : au tout premier rendu la cible
+     n'est pas encore tirée, et sans cette garde l'effet ramenait la sélection
+     sur le pas 0 — celui de la tonique, verrouillé. Le clavier n'écrivait
+     alors nulle part, ce qui se lit exactement comme un bouton mort. */
+  $effect(() => {
+    const n = game.melodieCible.length;
+    if (n === 0) return;
+    if (melSel >= n || game.melodieLocked[melSel]) melSel = prochainLibre(-1);
+  });
 
   // La mesure à remplir, en Set : la grille interroge l'appartenance à chaque
   // case, et un `includes` sur un tableau le referait à chaque rendu.
@@ -859,44 +903,69 @@
           </div>
         </div>
       {:else if ex === 'melodie'}
-        <!-- La grille de HAUTEURS : un rouleau, degrés en ordonnée, pas en
-             abscisse. Monophonique — une seule note par colonne, donc poser
-             un degré remplace celui qui s'y trouvait. C'est ce qui permet à
-             une case de porter un nombre et au comparateur de rester le même
-             que pour la batterie. -->
-        <div class="melodie" style:--pas={game.melodieCible.length}>
-          {#each degres as d (d)}
-            <div class="mel-ligne">
-              <span class="mel-degre">{d}</span>
-              {#each game.melodieCible as _, col (col)}
-                {@const pose = game.melodieGuess[col] === d}
-                {@const cible = game.melodieCible[col] === d}
-                {@const verrou = game.melodieLocked[col] && cible}
-                <button
-                  class="mel-case"
-                  class:pose
-                  class:verrou
-                  class:revelee={(game.solved || game.revealed) && cible && !pose}
-                  class:playing={playheadBass === col}
-                  class:win-flash={winFlash}
-                  aria-label="Degré {d}, pas {col + 1}"
-                  onclick={() => {
-                    game.poserNote(col, d);
-                    echec = false;
-                  }}
-                >
-                  {#if verrou}<span class="mark">✓</span>
-                  {:else if (game.solved || game.revealed) && cible}<span class="mark">○</span>{/if}
-                </button>
-              {/each}
-            </div>
+        <!-- ⚠️ CELLULES + CLAVIER, comme dans l'Atelier (retour de Yann :
+             « on devrait avoir la même interface que dans l'atelier non ? des
+             cellules et un clavier ? comme ça, ça nous prépare »).
+             
+             C'était un ROULEAU : degrés en ordonnée, pas en abscisse, cinq
+             rangées de huit boutons. Deux défauts. Il ne ressemblait à rien de
+             ce que le joueur retrouvera dans le Synthé — l'acte 3 est censé
+             l'y préparer — et quarante cases pour poser trois notes se lisent
+             comme un tableur, pas comme un instrument.
+             
+             Ici : une ligne de cases qui EST la ligne de basse, chacune
+             portant son degré, et un clavier dessous. On choisit une case, on
+             appuie sur un degré, la sélection avance — c'est le geste
+             d'écriture du pad de l'Atelier. -->
+        <div class="mel-cases" style:--pas={game.melodieCible.length}>
+          {#each game.melodieCible as _, col (col)}
+            {@const pose = game.melodieGuess[col]}
+            {@const montre = (game.solved || game.revealed) ? game.melodieCible[col] : pose}
+            <button
+              class="mel-case"
+              class:vide={!montre}
+              class:sel={melSel === col && !game.solved && !game.revealed}
+              class:verrou={game.melodieLocked[col]}
+              class:revelee={(game.solved || game.revealed) && !pose && game.melodieCible[col] > 0}
+              class:playing={playheadBass === col}
+              class:win-flash={winFlash}
+              aria-label="Pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}"
+              onclick={() => {
+                melSel = col;
+                echec = false;
+              }}
+            >
+              {montre > 0 ? montre : '·'}
+            </button>
           {/each}
-          <div class="mel-ligne mel-pieds">
-            <span class="mel-degre"></span>
-            {#each game.melodieCible as _, col (col)}
-              <span class="mel-pas" class:fort={col % 4 === 0}>{col + 1}</span>
-            {/each}
-          </div>
+        </div>
+        <div class="mel-pieds" style:--pas={game.melodieCible.length}>
+          {#each game.melodieCible as _, col (col)}
+            <span class="mel-pas" class:fort={col % 4 === 0}>{col + 1}</span>
+          {/each}
+        </div>
+        <!-- Le clavier : les degrés dans l'ordre, grave à gauche, comme un
+             instrument. `⌫` efface la case choisie — sans lui, retirer une
+             note demanderait de retrouver quel degré on y avait posé. -->
+        <div class="mel-clavier">
+          {#each clavier as d (d)}
+            <button
+              class="mel-touche tap44-y"
+              class:actif={game.melodieGuess[melSel] === d}
+              disabled={game.solved || game.revealed}
+              onclick={() => ecrireDegre(d)}
+            >
+              {d}
+            </button>
+          {/each}
+          <button
+            class="mel-touche efface tap44-y"
+            disabled={game.solved || game.revealed || !game.melodieGuess[melSel]}
+            aria-label="Effacer la note du pas {melSel + 1}"
+            onclick={() => ecrireDegre(game.melodieGuess[melSel])}
+          >
+            ⌫
+          </button>
         </div>
         {@const posees = game.melodieGuess.filter((v) => v > 0).length}
         {@const attendues = game.melodieCible.filter((v) => v > 0).length}
@@ -1121,53 +1190,61 @@
   /* Le rouleau de hauteurs. Même grammaire que la grille de batterie — cases
      creusées, biseau d'un pixel, vert d'afficheur quand c'est allumé — mais en
      deux dimensions : le temps en abscisse, la hauteur en ordonnée. */
-  .melodie {
-    margin: 8px 0 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .mel-ligne {
+  /* La ligne de basse : une case par pas, comme une ligne du séquenceur. */
+  .mel-cases {
+    margin: 8px 0 2px;
     display: grid;
-    grid-template-columns: 16px repeat(var(--pas, 8), 1fr);
-    gap: 2px;
-    align-items: center;
-  }
-  .mel-degre {
-    font-size: var(--xp-size-tag);
-    color: var(--xp-muted);
-    text-align: right;
-    padding-right: 2px;
+    grid-template-columns: repeat(var(--pas, 8), 1fr);
+    gap: 3px;
   }
   .mel-case {
     aspect-ratio: 1;
-    min-height: 22px;
-    background: var(--xp-lcd-bg);
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--xp-lcd);
+    color: var(--xp-lcd-bg);
     border: 1px solid var(--xp-line);
-    box-shadow: var(--xp-bevel-in);
+    box-shadow: var(--xp-bevel-out);
     border-radius: 2px;
     cursor: pointer;
     padding: 0;
-    color: var(--xp-lcd);
     font: inherit;
-    font-size: var(--xp-size-tag);
+    font-size: var(--xp-size-body);
+    font-weight: 700;
+  }
+  /* Une case vide est CREUSÉE et éteinte, une case posée est en relief et
+     allumée : c'est la grammaire du séquenceur, pas une couleur de plus. */
+  .mel-case.vide {
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd-dim);
+    box-shadow: var(--xp-bevel-in);
+    font-weight: 400;
+  }
+  .mel-case.sel {
+    outline: 2px solid var(--xp-accent-amber);
+    outline-offset: -2px;
   }
   .mel-case.playing {
-    border-color: var(--xp-lcd-dim);
-  }
-  .mel-case.pose {
-    background: var(--xp-lcd);
-    box-shadow: var(--xp-bevel-out);
+    border-color: var(--xp-accent-amber);
   }
   .mel-case.verrou {
-    background: var(--xp-lcd);
-    color: var(--xp-lcd-bg);
+    cursor: default;
+    opacity: 0.85;
   }
   .mel-case.revelee {
     background: #123018;
+    color: var(--xp-lcd);
   }
-  .mel-case.win-flash.pose {
+  .mel-case.win-flash:not(.vide) {
     background: #7dffa0;
+  }
+  .mel-pieds {
+    display: grid;
+    grid-template-columns: repeat(var(--pas, 8), 1fr);
+    gap: 3px;
+    margin-bottom: 8px;
   }
   .mel-pieds .mel-pas {
     font-size: var(--xp-size-tag);
@@ -1177,6 +1254,42 @@
   .mel-pieds .mel-pas.fort {
     color: var(--xp-muted);
   }
+  /* Le clavier — des touches, pas des cases : elles ne portent pas d'état de
+     grille, elles écrivent dans celle du dessus. */
+  .mel-clavier {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .mel-touche {
+    flex: 1 1 0;
+    min-width: 38px;
+    min-height: 40px;
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-out);
+    border-radius: 2px;
+    cursor: pointer;
+    font: inherit;
+    font-size: var(--xp-size-body);
+    font-weight: 700;
+  }
+  .mel-touche.actif {
+    color: var(--xp-lcd);
+    border-color: var(--xp-lcd-dim);
+  }
+  .mel-touche.efface {
+    flex: 0 0 44px;
+    color: var(--xp-muted);
+    font-weight: 400;
+  }
+  .mel-touche:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
 
   /* Une touche par pas : ça tient sur une ligne à 390 px pour huit pas, et le
      bouton du premier temps est désactivé — il donne le départ, il ne manque

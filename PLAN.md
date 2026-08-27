@@ -6872,6 +6872,72 @@ le récit au passage.
 
 ---
 
+### ✅ La mélodie s'écrit comme dans l'Atelier (2026-08-27)
+
+> « bug sur la basse à deviner »
+> « On devrait avoir la même interface que dans l'atelier non ? Des cellules et
+> un clavier ? Comme ça, ça nous prépare. »
+
+#### Ce que le « bug » était, et ce qu'il n'était pas
+
+Diagnostic avant correctif, parce qu'un bug signalé sans cause est un bug qu'on
+corrige au hasard. **La logique était saine** : en posant exactement la cible
+aux niveaux 42 et 43, la vérification accepte. Le comparateur, le compteur
+(calculé sur la vraie cible) et le rendu ne sont pas en cause.
+
+Ce qui l'était : **l'écran annonçait « le degré 1 est la tonique, celui sur
+lequel la phrase se repose » sans jamais la poser.** La cible commence toujours
+par elle — c'est un choix documenté, « sans point de départ, aucun degré ne se
+situe » — mais le joueur devait la redeviner. Un exercice qui exige de retrouver
+ce qu'il présente comme acquis se joue comme un bug. Elle est désormais posée
+ET verrouillée : le repère contre lequel tous les autres degrés s'entendent.
+
+#### Cases + clavier
+
+L'ancien écran était un ROULEAU : degrés en ordonnée, pas en abscisse, cinq
+rangées de huit boutons. Deux défauts. Il ne ressemble à rien de ce que le
+joueur retrouvera dans le Synthé — or l'acte 3 est censé l'y préparer — et
+quarante cases pour poser trois notes se lisent comme un tableur.
+
+Désormais : une ligne de cases qui EST la ligne de basse, chacune portant son
+degré ; un clavier dessous, grave à gauche ; on choisit une case, on appuie sur
+un degré, **la sélection avance**. C'est le geste d'écriture du pad de notes de
+l'Atelier. Le `⌫` efface la case choisie — sans lui, retirer une note
+demanderait de se souvenir du degré qu'on y avait posé.
+
+Grammaire respectée : une case vide est creusée et éteinte, une case posée est
+en relief et allumée. La sélection est un liseré ambre — pas vert, qui dit
+« allumé / fait » dans cette interface.
+
+⚠️ **Le piège de câblage, trouvé à la capture et pas au test.** Le `$effect`
+qui recale la sélection s'exécute AUSSI au premier rendu, quand la cible n'est
+pas encore tirée (`length === 0`) : il ramenait alors la sélection sur le pas 0,
+celui de la tonique, verrouillé. Le clavier n'écrivait plus nulle part — soit
+exactement le symptôme qu'on venait corriger. Une garde `n === 0` et l'effet
+vise le prochain pas libre.
+
+#### Les textes suivent
+
+Le préambule décrivait le geste de l'ancien rouleau (« en cliquant la case qui
+correspond au degré entendu »). Réécrit : un écran ne doit pas décrire un geste
+qu'il ne propose plus.
+
+#### Ce qui le vérifie
+
+`tests/exercises.test.ts` — le test « part d'une grille vide » verrouillait
+l'ANCIEN comportement ; réécrit sur le nouvel invariant (la tonique est posée,
+verrouillée, inamovible ; le reste est vide et se valide case par case). 303
+tests, 0 erreur de types, les deux builds, le parcours complet sur serveur neuf,
+et une vérification Playwright du geste : appuyer sur « 3 » écrit 3 au pas 2 et
+avance la sélection au pas 3.
+
+#### Ce qui reste ouvert
+
+Si le défaut que Yann a vu persiste, il est dans le SON — la basse inaudible en
+contexte. C'est la seule piste non explorée, et elle demande de l'écouter.
+
+---
+
 ### ✅ Face B — le nom, les verrous masqués, et une date (2026-08-27)
 
 > « Le jeu devrait s'appeler "Face B" et non boîte à rythme »
