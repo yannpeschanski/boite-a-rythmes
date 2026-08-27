@@ -75,6 +75,8 @@ class Unlocks {
       acte: game.progresCarriere.acte,
       bypass: this.boss,
       sharedPattern: this.sharedPattern,
+      // Ce que la commande ouverte réclame — voir `EtapeCommande.modulesRequis`.
+      modulesRequis: game.commande?.modulesRequis,
     };
   }
 

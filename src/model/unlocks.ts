@@ -95,6 +95,13 @@ export interface UnlockContext {
   /** Contournement développeur (#boss) : tout est ouvert. */
   bypass?: boolean;
   /**
+   * Les modules qu'une commande EN COURS réclame — voir
+   * `EtapeCommande.modulesRequis`. Ouverts le temps de la livraison, et rien
+   * de plus : une commande qui exige une basse ouvre le Synthé, sinon elle
+   * demande l'impossible et l'acte devient un cul-de-sac.
+   */
+  modulesRequis?: LockedModule[];
+  /**
    * Un rythme partagé est en cours de chargement (`#r=…`). Ouvre l'Atelier
    * pour CETTE session, sans rien débloquer d'autre : sinon un lien de
    * partage envoyé à quelqu'un qui n'a jamais joué tomberait sur un écran de
@@ -119,6 +126,7 @@ export interface UnlockContext {
 export function moduleUnlocked(name: LockedModule, cx: UnlockContext): boolean {
   if (cx.bypass) return true;
   if (name === 'atelier' && cx.sharedPattern) return true;
+  if (cx.modulesRequis?.includes(name)) return true;
   if ((cx.acte ?? 0) > ACTE_DU_MODULE[name]) return true;
   return (cx.plancher ?? cx.level) >= MODULE_UNLOCK_LEVEL[name];
 }

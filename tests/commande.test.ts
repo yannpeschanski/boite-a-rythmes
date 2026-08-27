@@ -260,14 +260,84 @@ describe('aucune commande du récit n’est un cul-de-sac', () => {
   });
 
   it('et refuse une livraison qu’on n’a pas touchée', async () => {
+    // L'état RÉEL au moment où la commande s'ouvre : la table rase. Ouvrir une
+    // commande vide l'Atelier depuis le 2026-08-27 — tester `defaultState()`
+    // ici ne dirait plus rien de ce que le joueur a sous les yeux.
     const { ACTES } = await import('../src/model/carriere');
+    const { etatVierge } = await import('../src/model/defaults');
     for (const a of ACTES) {
       for (const e of a.etapes) {
         if (e.kind !== 'commande') continue;
+        const v = evaluerCommande(etatVierge(), e.cahier);
+        expect(v.accepte, `acte ${a.id} — « ${e.entete} »`).toBe(false);
+        // Et « il faut y avoir touché » doit être DÉCOCHÉ : une case cochée à
+        // l'ouverture est ce qui a fait dire « la check-list est déjà remplie ».
+        const produit = v.lignes.find((l) => l.contrainte.id === 'produit');
+        expect(produit?.ok, `acte ${a.id} — « ${e.entete} » : déjà coché`).toBe(false);
+      }
+    }
+  });
+});
+
+/* ⚠️ LE CUL-DE-SAC QU'AUCUN TEST NE VOYAIT — trouvé par Yann en JOUANT.
+ *
+ * La commande de l'acte 3 exige une ligne de basse. Or le Synthé ne s'ouvre
+ * qu'une fois l'acte 3 FRANCHI (`moduleUnlocked` : `acte > 3`), et la commande
+ * est la dernière étape de l'acte 3 : elle demandait donc quelque chose que le
+ * joueur ne pouvait pas produire, et la carrière s'arrêtait là.
+ *
+ * Les tests précédents ne pouvaient pas le voir : ils vérifient qu'un cahier
+ * est SATISFIABLE par un état construit en mémoire, ce qui ne dit rien de ce
+ * que l'écran laisse faire. Celui-ci croise les deux — le cahier et le verrou,
+ * à l'instant où la commande se joue.
+ */
+describe('aucune commande n’exige un module verrouillé', () => {
+  it('le Synthé est ouvert partout où un cahier demande une ligne de synthé', async () => {
+    const { ACTES } = await import('../src/model/carriere');
+    const { moduleUnlocked } = await import('../src/model/unlocks');
+    for (const a of ACTES) {
+      for (const e of a.etapes) {
+        if (e.kind !== 'commande') continue;
+        const demandeDuSynthe = e.cahier.some((c) => c.id.startsWith('synth:'));
+        if (!demandeDuSynthe) continue;
+        // Le contexte du joueur AU MOMENT de cette commande : il a atteint
+        // l'acte `a.id`, sans l'avoir franchi, et son plancher est celui d'un
+        // joueur neuf.
+        const ouvert = moduleUnlocked('synth', {
+          level: 1,
+          plancher: 1,
+          acte: a.id,
+          modulesRequis: e.modulesRequis,
+        });
+        expect(ouvert, `acte ${a.id} — « ${e.entete} » demande une basse dans un Synthé fermé`).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it('et une fiche de style qui exige une basse compte comme telle', async () => {
+    // Les critères d'une fiche sont cachés dans la contrainte de style : si
+    // une commande future demandait un genre à basse dans un module fermé, ce
+    // test-ci ne la verrait pas. On vérifie donc aussi par les détails.
+    const { ACTES } = await import('../src/model/carriere');
+    const { moduleUnlocked } = await import('../src/model/unlocks');
+    for (const a of ACTES) {
+      for (const e of a.etapes) {
+        if (e.kind !== 'commande') continue;
+        const parFiche = e.cahier.some((c) =>
+          c.details?.(defaultState()).some((d) => d.id.startsWith('synth:')),
+        );
+        if (!parFiche) continue;
         expect(
-          evaluerCommande(defaultState(), e.cahier).accepte,
-          `acte ${a.id} — « ${e.entete} »`,
-        ).toBe(false);
+          moduleUnlocked('synth', {
+            level: 1,
+            plancher: 1,
+            acte: a.id,
+            modulesRequis: e.modulesRequis,
+          }),
+          `acte ${a.id} — « ${e.entete} » : sa fiche exige une basse, Synthé fermé`,
+        ).toBe(true);
       }
     }
   });
