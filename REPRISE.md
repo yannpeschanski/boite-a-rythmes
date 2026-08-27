@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 376 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 381 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -160,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 376 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 381 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -261,9 +261,17 @@ Deux décisions prises au passage, mesurées et non supposées :
   ne dessine pas : leur place est dans un cahier de commande, pas dans
   `reproduire`.
 
-**Reste du chantier A** : 5 presets jamais joués à distribuer dans l'acte 5, 5
-polyrythmies à réduire à 2, la mesure longue, « tout combiné ». Puis **chantier
-B** : l'Atelier au cœur de chaque acte (reproduire → transformer → livrer).
+**Chantier A — tranche 2 FAITE.** Quatre presets de l'époque rendus à l'acte 5
+(UK Garage, French touch, Tresillo, Clave), qui passe de 12 à 16 étapes. Et
+l'anachronisme trouvé en route, corrigé (voir ci-dessus).
+
+**Compteur d'orphelins : 29 → 22**, sans écrire un niveau de zéro.
+
+**Reste du chantier A** : 5 polyrythmies à réduire à 2, la mesure longue,
+« tout combiné », les quatre pilotes de verbes (35, 36, 39-41). Les deux presets
+hors époque (19, 34) resteront dehors. Puis **chantier B** : l'Atelier au cœur
+de chaque acte (reproduire → transformer → livrer) — c'est aussi la bonne maison
+pour les ghost notes et les fills, qu'une grille ne sait pas dessiner.
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 
@@ -271,9 +279,11 @@ Aucune n'est engagée — demander avant de plonger.
 
 - Le découpage en ~130 exercices évoqué dans `HISTOIRE.md` (les actes en citent
   aujourd'hui bien moins).
-- Les quatre presets hors époque (trap moderne, drill, amapiano, gqom) ne sont
-  jamais commandés pendant la campagne — c'est voulu, mais jamais vérifié par un
-  test.
+- ~~Les quatre presets hors époque ne sont jamais commandés~~ — **c'était faux.**
+  Mesuré : le verbe `style` les tirait, 39 % des parties en affichaient un et
+  10 % du temps c'était la bonne réponse. Corrigé (`HORS_EPOQUE`), et le test
+  existe maintenant. À retenir : « voulu mais jamais vérifié » veut dire « pas
+  fait ».
 - L'arbitrage design A/B/C de `PLAN.md` (« XP est le cadre, l'instrument est
   sombre ») est resté en attente depuis août — c'est la plus ancienne décision
   ouverte, et elle conditionne toute passe d'UI.
