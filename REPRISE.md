@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 381 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 388 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -160,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 381 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 388 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -265,13 +265,29 @@ Deux décisions prises au passage, mesurées et non supposées :
 (UK Garage, French touch, Tresillo, Clave), qui passe de 12 à 16 étapes. Et
 l'anachronisme trouvé en route, corrigé (voir ci-dessus).
 
-**Compteur d'orphelins : 29 → 22**, sans écrire un niveau de zéro.
+**Chantier A — tranche 3 FAITE.** Cinq polyrythmies enseignaient deux idées
+(leurs propres préambules le disaient : « le même rapport 4:3 qu'au niveau
+précédent », « le vrai défi de lecture »). Deux restent, réécrites : 24 (trois
+cycles premiers entre eux) et 29 (le 4:3 afro-cubain), citées à l'acte 5 juste
+après la clave — la polyrythmie est l'idée dont le tresillo et la clave
+descendent. L'acte passe à 18 étapes.
 
-**Reste du chantier A** : 5 polyrythmies à réduire à 2, la mesure longue,
-« tout combiné », les quatre pilotes de verbes (35, 36, 39-41). Les deux presets
-hors époque (19, 34) resteront dehors. Puis **chantier B** : l'Atelier au cœur
-de chaque acte (reproduire → transformer → livrer) — c'est aussi la bonne maison
-pour les ghost notes et les fills, qu'une grille ne sait pas dessiner.
+⚠️ **Une fragilité corrigée au passage** : `demarrerEtape` faisait
+`startLevel(niveau - 1)`, une recherche POSITIONNELLE à partir d'un id. Un
+niveau inséré au milieu aurait décalé tous les exercices de tous les actes, en
+silence. La recherche se fait par id ; « poser en fin de tableau » reste une
+bonne pratique mais n'est plus load-bearing. Et **un niveau ne se supprime
+jamais** — il cesse d'être cité.
+
+**CHANTIER A TERMINÉ. Compteur d'orphelins : 29 → 20**, 41 niveaux joués sur 61
+contre 32 à l'audit, sans qu'un seul niveau ait été écrit de zéro. Les 20 qui
+restent le sont chacun pour une raison écrite (voir PLAN.md, tranche 3) — plus
+aucun par accident.
+
+**Prochain : chantier B** — l'Atelier au cœur de chaque acte (reproduire →
+transformer → livrer). C'est le point central du brief de Yann, celui qui achète
+les heures qui manquent, et la bonne maison pour les ghost notes et les fills
+qu'une grille ne sait pas dessiner.
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 

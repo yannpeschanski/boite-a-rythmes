@@ -299,7 +299,13 @@ la grille écrite prime sur le preset et sur la génération dans `startLevel` e
 tirés) ; ce qu'elle contient, le niveau doit le **déclarer** (`variant`,
 `rollMax`), sinon la cible est impossible à poser et l'écran ne dit pas pourquoi ;
 et un niveau ajouté se pose **en fin de tableau**, jamais au milieu — carrière et
-salle de répétition citent les niveaux par leur `id`. `tests/grilles-ecrites.test.ts`
+salle de répétition citent les niveaux par leur `id`. ⚠️ Cette dernière règle
+était **load-bearing** jusqu'au 2026-08-27 : `demarrerEtape` faisait
+`startLevel(niveau - 1)`, une recherche POSITIONNELLE à partir d'un id, donc un
+niveau inséré au milieu aurait décalé tous les exercices de tous les actes en
+silence. La recherche se fait maintenant par id ; poser en fin de tableau reste
+une bonne pratique, ce n'est plus ce qui tient le jeu debout. Et **un niveau ne
+se supprime jamais** — il cesse d'être cité. `tests/grilles-ecrites.test.ts`
 confronte chaque grille à son propre préambule, une promesse par test : c'est la
 moitié que la grille écrite ne corrige pas toute seule.
 

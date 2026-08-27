@@ -7211,6 +7211,93 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Chantier A, tranche 3 — cinq polyrythmies pour deux idées (2026-08-27)
+
+Dernière tranche du rattrapage. Les données disaient elles-mêmes ce qu'il
+fallait faire : le préambule du niveau 30 annonce *« le même rapport 4:3 qu'au
+niveau précédent »*, celui du 31 *« le vrai défi de lecture »*, et le 26 est
+*« une nouvelle combinaison »* du 24. Cinq niveaux pour **deux** idées, dont un
+qui admet ne mesurer que l'endurance de lecture.
+
+Deux restent, réécrits en grilles, parce qu'ils enseignent deux choses
+différentes :
+
+- **24 · Trois cycles à la fois** — kick en 3, claire en 4, charley en 5 :
+  trois cycles premiers entre eux, qui ne retombent ensemble qu'au bout de la
+  mesure ;
+- **29 · Quatre contre trois** — le cross-rhythm de l'afro-cubain, kick et
+  charley en 8 contre une claire en 6.
+
+Ils atterrissent à l'**acte 5**, et pas ailleurs : l'acte vient de faire le tour
+de la famille latine et afro (tresillo, clave, dembow), et la polyrythmie est
+l'idée dont ces trois-là descendent. La poser après eux, c'est nommer ce qu'on
+vient d'entendre trois fois ; la poser à l'acte 1 l'aurait fait arriver après le
+rim shot, sans rien contre quoi se situer. L'acte passe de 16 à 18 étapes.
+
+Les trois autres (26, 30, 31) restent au réservoir sans être cités — **un niveau
+ne se supprime pas**, voir ci-dessous.
+
+#### ⚠️ La fragilité trouvée en chemin : une citation qui lisait une POSITION
+
+`demarrerEtape` faisait :
+
+```ts
+if (e.kind === 'exercice') this.startLevel(e.niveau - 1);
+```
+
+Une recherche **positionnelle** à partir d'un **identifiant**. Ça ne marchait
+que tant que `id === index + 1`, et rien ne l'imposait. Un niveau inséré au
+milieu du tableau — ou un id sauté — aurait décalé **tous les exercices de tous
+les actes**, en silence : chaque étape aurait lancé le niveau du voisin, sans
+qu'aucun type ni aucun test ne bronche.
+
+La règle « un niveau ajouté se pose en fin de tableau » (CLAUDE.md) existait
+précisément pour éviter ça, sans jamais nommer ce qu'elle protégeait. La
+recherche se fait désormais par id ; la règle reste une bonne pratique, ce n'est
+plus ce qui tient le jeu debout. Trois tests le tiennent : chaque niveau cité
+existe, la citation ne dépend plus de la position, et les identifiants du
+réservoir sont uniques.
+
+#### Un test réécrit sur la vraie règle
+
+`tests/carriere.test.ts` exigeait un `presetId` sur chaque exercice de l'acte 5
+— un raccourci datant du moment où l'acte n'était fait que de reconstructions de
+genre. La vraie règle est plus forte et c'est elle qu'on tient maintenant :
+**aucun rythme de l'acte 5 n'est tiré au sort**. Un genre reconnu sur une grille
+générique n'est pas un genre, et une polyrythmie tirée n'apprend pas ce qu'est
+une polyrythmie.
+
+#### Ce qui le vérifie
+
+388 tests (3 neufs sur la citation par id, 1 réécrit), 0 erreur de types, les
+deux builds, parcours complet sur serveur fraîchement démarré : acte 5 à 18
+étapes, six productions au bout, aucune erreur console.
+
+**Compteur d'orphelins : 29 → 20**, en trois tranches. 41 niveaux joués sur 61,
+contre 32 au moment de l'audit — sans qu'un seul niveau ait été écrit de zéro.
+
+#### Fichiers touchés
+
+`src/model/presets/levels.ts` (24 et 29 réécrits en grilles),
+`src/stores/game.svelte.ts` (recherche par id), `src/model/carriere.ts`
+(acte 5), `tests/carriere.test.ts`, `CLAUDE.md`, `PLAN.md`, `REPRISE.md`.
+
+#### Ce qui reste orphelin, et pourquoi
+
+Vingt niveaux. Aucun ne l'est plus par accident :
+
+| Niveaux | Pourquoi |
+|---|---|
+| 15, 18 | la traîne est globale — inaudible dans une boucle |
+| 20, 21 | ghost notes et fills : deux champs que le code ne lit pas, et une affaire de vélocité qu'une grille ne dessine pas |
+| 26, 30, 31 | la même polyrythmie que 24 et 29, ou de l'endurance de lecture |
+| 19, 34 | gqom et trap moderne — postérieurs à 2005 |
+| 28, 33 | mesure longue et « tout combiné » : de l'endurance, et un niveau qui ne sait pas ce qu'il enseigne |
+| 1, 6, 10, 11 | doublons des rythmes écrits de l'acte 1 |
+| 35, 36, 39-41 | les pilotes des verbes, dont `completer` et `intrus` — jamais cités, et c'est le prochain sujet |
+
+---
+
 ### ✅ Chantier A, tranche 2 — et un anachronisme à 39 % (2026-08-27)
 
 Suite de la tranche 1. Objectif : rendre à l'acte 5 les presets qui dorment

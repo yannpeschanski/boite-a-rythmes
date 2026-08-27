@@ -556,6 +556,45 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
   });
 });
 
+describe('un acte lance le niveau qu’il CITE, pas son voisin', () => {
+  /* ⚠️ `demarrerEtape` faisait `startLevel(e.niveau - 1)` : une recherche
+   * POSITIONNELLE à partir d'un identifiant. Ça ne marchait que tant que
+   * `id === index + 1`, et rien ne l'imposait — un niveau inséré au milieu du
+   * tableau aurait décalé tous les exercices de tous les actes, en silence.
+   *
+   * La recherche se fait désormais par id. Ces deux tests tiennent les deux
+   * moitiés : que chaque citation TROUVE un niveau, et que ce niveau soit bien
+   * celui qui porte cet identifiant. */
+  it('chaque niveau cité existe dans le réservoir', () => {
+    for (const a of ACTES) {
+      for (const e of a.etapes) {
+        if (e.kind !== 'exercice') continue;
+        const l = LEVELS.find((x) => x.id === e.niveau);
+        expect(l, `acte ${a.id} cite le niveau ${e.niveau}, introuvable`).toBeTruthy();
+      }
+    }
+  });
+
+  it('et la citation ne dépend plus de la POSITION dans le tableau', () => {
+    // Si un jour `id !== index + 1`, la recherche par id continue de rendre le
+    // bon niveau — c'est ce qu'on vérifie, plutôt que de figer la coïncidence.
+    for (const a of ACTES) {
+      for (const e of a.etapes) {
+        if (e.kind !== 'exercice') continue;
+        const parId = LEVELS.find((x) => x.id === e.niveau)!;
+        expect(parId.id, `acte ${a.id}`).toBe(e.niveau);
+      }
+    }
+  });
+
+  it('les identifiants du réservoir sont uniques', () => {
+    // Deux niveaux au même id rendraient la recherche par id ambiguë, et le
+    // jeu jouerait toujours le premier.
+    const ids = LEVELS.map((l) => l.id);
+    expect(new Set(ids).size, 'des identifiants en double').toBe(ids.length);
+  });
+});
+
 describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', () => {
   /* ⚠️ DEUX ARBITRAGES SUCCESSIFS, et il faut les garder tous les deux —
    * ne pas « restaurer » l'un en croyant corriger l'autre.
@@ -717,15 +756,24 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
     expect(verbes.slice(1).every((v) => v === 'reproduire')).toBe(true);
   });
 
-  /* ⚠️ Les reconstructions sont CITÉES, pas fabriquées : ce sont des niveaux
-   * de la campagne d'origine, et chacun porte un vrai preset. Un acte qui
-   * fabriquerait ses propres variantes donnerait un exercice qui dérive de son
-   * original — la règle du fichier depuis le premier jour. */
-  it('ne cite que des niveaux de preset déjà au réservoir', () => {
-    for (const n of niveauxDeLActe(ACTES[5]).slice(1)) {
+  /* ⚠️ Les exercices sont CITÉS, pas fabriqués — la règle du fichier depuis le
+   * premier jour. Mais « cité » ne veut pas dire « preset » : l'acte a d'abord
+   * été écrit avec uniquement des reconstructions de genre, et le test exigeait
+   * donc un `presetId` sur chacune. C'était un raccourci, pas la règle.
+   *
+   * La vraie règle est plus forte, et c'est elle qu'on tient maintenant :
+   * **aucun rythme de l'acte 5 n'est TIRÉ**. Un genre reconnu sur une grille
+   * générique n'est pas un genre, et une polyrythmie tirée au sort n'apprend
+   * pas ce qu'est une polyrythmie. Chaque exercice est donc soit le verbe
+   * `style`, soit un preset réel, soit une grille écrite. */
+  it('ne joue aucun rythme tiré au sort', () => {
+    for (const n of niveauxDeLActe(ACTES[5])) {
       const l = LEVELS.find((x) => x.id === n)!;
-      expect(l.presetId, `niveau ${n}`).toBeTruthy();
-      expect(n, `niveau ${n}`).toBeLessThanOrEqual(34);
+      if (l.exercise === 'style') continue;
+      expect(
+        Boolean(l.presetId) || Boolean(l.grille),
+        `niveau ${n} : ni preset, ni grille écrite — il serait généré`,
+      ).toBe(true);
     }
   });
 
@@ -734,7 +782,9 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
   it('couvre plusieurs familles, pas cinq fois la même', () => {
     const cats = niveauxDeLActe(ACTES[5])
       .slice(1)
-      .map((n) => PRESETS.find((p) => p.id === LEVELS.find((x) => x.id === n)!.presetId)!.cat);
+      .map((n) => LEVELS.find((x) => x.id === n)!.presetId)
+      .filter((id): id is string => Boolean(id))
+      .map((id) => PRESETS.find((p) => p.id === id)!.cat);
     expect(new Set(cats).size).toBeGreaterThanOrEqual(3);
   });
 

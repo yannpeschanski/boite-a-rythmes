@@ -696,12 +696,33 @@ export const LEVELS: GameLevel[] = [
        * rend la traîne globale inutilisable comme exercice). */
       shift: { hat: 12 },
     } }),
-  mkLevel(24, 'Polyrythmie', {
-    preamble: "Kick, snare et hat peuvent désormais avoir des subdivisions différentes en même temps — plusieurs pulsations qui se croisent.",
-    subdivOptions: [{ kick: 3, snare: 4, hat: 5 }, { kick: 4, snare: 3, hat: 5 }, { kick: 5, snare: 4, hat: 3 }],
-    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.25,
-    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
-  mkLevel(25, 'Reproduire un preset (Clave)', {
+    /* ---------- Les deux polyrythmies qui restent ----------
+   *
+   * ⚠️ Il y en avait CINQ (24, 26, 29, 30, 31), et elles enseignaient deux
+   * choses. Les préambules le disaient eux-mêmes : le 30 annonce « le même
+   * rapport 4:3 qu'au niveau précédent », le 31 « le vrai défi de lecture ».
+   * Trois niveaux pour un seul rapport, dont un qui admet ne mesurer que
+   * l'endurance de lecture ; et le 26 est « une nouvelle combinaison » du 24,
+   * c'est-à-dire le même exercice retiré au sort.
+   *
+   * Deux restent, parce qu'elles enseignent deux idées différentes :
+   *   - 24 : trois cycles PREMIERS entre eux (3, 4, 5) qui ne retombent
+   *     ensemble qu'au bout de la mesure ;
+   *   - 29 : un vrai cross-rhythm 4:3, celui de l'afro-cubain.
+   *
+   * Les trois autres restent au réservoir, jamais cités — un niveau ne se
+   * supprime pas (voir la recherche par id dans `demarrerEtape`), il cesse
+   * d'être cité. */
+  mkLevel(24, 'Trois cycles à la fois', {
+    preamble: "Chaque ligne peut avoir sa propre longueur de cycle. Ici le kick boucle en 3, la claire en 4, le charley en 5 : les trois ne retombent ensemble qu'à la fin de la mesure. C'est ça, une polyrythmie.",
+    tempoOptions: [96, 104],
+    grille: {
+      subdiv: { kick: 3, snare: 4, hat: 5 },
+      kick:  [1, 0, 0],
+      snare: [1, 0, 1, 0],
+      hat:   [1, 0, 1, 0, 1],
+    } }),
+mkLevel(25, 'Reproduire un preset (Clave)', {
     preamble: "Kick, snare et hat n'ont déjà plus du tout la même subdivision entre eux dans ce preset — la meilleure passerelle vers la polyrythmie.",
     variant: { snare: true, hat: true }, rollMax: 3, presetId: 'clave', forceVariantCount: 1, forceRollCount: 1 }),
   mkLevel(26, 'Polyrythmie', {
@@ -719,12 +740,16 @@ export const LEVELS: GameLevel[] = [
     subdivOptions: [{ kick: 16, snare: 16, hat: 16 }],
     variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 3, rollChance: 0.3,
     density: { kickMin: 1, kickMax: 2, snareMin: 0, snareMax: 1, hatMin: 0.5, hatMax: 0.65 } }),
-  mkLevel(29, 'Polyrythmie — 8 contre 6', {
-    preamble: "Un vrai cross-rhythm : le kick et le hat jouent en 8, la snare en 6 — le même rapport qu'un 4 contre 3, très courant en afro-cubain.",
-    subdivOptions: [{ kick: 8, snare: 6, hat: 8 }],
-    variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 3, rollChance: 0.3,
-    density: { kickMin: 0, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
-  mkLevel(30, 'Polyrythmie — 16 contre 12', {
+    mkLevel(29, 'Quatre contre trois', {
+    preamble: "Le cross-rhythm le plus répandu au monde : le kick et le charley en 8, la caisse claire en 6. Quatre coups d'un côté, trois de l'autre, sur la même durée — l'ossature de presque tout l'afro-cubain.",
+    tempoOptions: [92, 100],
+    grille: {
+      subdiv: { kick: 8, snare: 6, hat: 8 },
+      kick:  [1, 0, 1, 0, 1, 0, 1, 0],
+      snare: [1, 0, 1, 0, 1, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
+mkLevel(30, 'Polyrythmie — 16 contre 12', {
     preamble: "Le même rapport 4:3 qu'au niveau précédent, mais étiré sur une mesure deux fois plus longue.",
     subdivOptions: [{ kick: 16, snare: 12, hat: 16 }],
     variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 3, rollChance: 0.3,
