@@ -410,7 +410,7 @@ const PROLOGUE: Etape[] = [
       // donc reconnaître des choses sans les avoir nommées, alors que
       // l'Atelier, où vivent les boutons, n'est même pas encore ouvert.
       'Sol se tourne vers toi.',
-      '— Écoute la hauteur, la durée, l’intensité.',
+      '— Approche. Écoute, et tape avec.',
     ],
   },
 ];
@@ -436,19 +436,36 @@ export const ACTES: Acte[] = [
     resume: 'Le sous-traitant s’en va. Quatre ans de sonneries sont perdus.',
     etapes: [
       ...PROLOGUE,
-      /* ⚠️ Les quatre mots de `HISTOIRE.md` — « la hauteur ; la durée ;
-       * l'intensité ; le silence » — et rien d'autre.
+      /* ⚠️ L'acte 0 se joue avec les MAINS, pas avec un questionnaire.
        *
-       * L'acte utilisait `nommer` et `regler`, deux verbes de VOCABULAIRE, dans
-       * un acte où l'Atelier est FERMÉ : on demandait de nommer des curseurs
-       * jamais vus (« je ne sais même pas expliquer ce que c'est decay »).
-       * Ils déménagent à l'acte 2, où les mots sont enfin sur des boutons que
-       * le joueur a rencontrés. Ici il ne reste que `lequel`, qui parle en
-       * propriétés, et le verbe du silence. */
+       * Il posait quatre questions à choix multiples : trois `lequel` (la
+       * hauteur, la durée, l'intensité, les quatre mots de `HISTOIRE.md`) et
+       * le `silence`. Demande de Yann : *« l'acte 0 est à refaire à 0, il faut
+       * enlever les questions "lequel", mettre les questions de tap »*.
+       *
+       * Ce qui change n'est pas la difficulté, c'est la NATURE de ce qu'on
+       * demande. `lequel` demande un jugement — « laquelle sonne la plus
+       * grave ? » — à quelqu'un qui n'a encore rien touché et à qui aucun
+       * bouton n'a été montré : c'est un test d'entrée. `jouer` demande un
+       * geste que tout le monde a déjà : taper avec ce qu'on entend. Le
+       * premier écran du jeu met donc les mains sur la machine au lieu de
+       * faire remplir un formulaire.
+       *
+       * Ce qui est perdu — les trois mots hauteur / durée / intensité — n'est
+       * pas perdu : ils sont enseignés à l'acte 2, par `nommer` et `regler`,
+       * c'est-à-dire à l'écran qui porte enfin les boutons correspondants. Les
+       * niveaux 49, 50 et 51 restent au réservoir (un niveau ne se supprime
+       * jamais, il cesse d'être cité) : la salle de répétition les proposera
+       * dès qu'un acte les rencontre.
+       *
+       * Le `silence` (niveau 52), lui, reste : ce n'est pas un `lequel`, il ne
+       * demande aucun vocabulaire, et il est le contrepoint exact des trois
+       * exercices de frappe — on vient de taper ce qu'on entend, on va
+       * maintenant montrer ce qu'on n'entend PAS. */
       {
         kind: 'exercice',
-        niveau: 49,
-        commande: '— Tu fais quoi exactement ici ? — Le café. — Je sais. Écoute ça.',
+        niveau: 64,
+        commande: '— Tu fais quoi exactement ici ? — Le café. — Je sais. Écoute ça, et tape avec.',
       },
       {
         kind: 'recit',
@@ -463,11 +480,32 @@ export const ACTES: Acte[] = [
           '— C’est onze centimes de plus qu’un album.',
         ],
       },
-      // ⚠️ Aucune de ces commandes ne nomme le SENS de la question : `paramSens`
-      // est tiré à chaque partie. « Lequel dure le plus ? » mentait une fois
-      // sur deux, sur l'écran d'à côté qui demandait le plus court.
-      { kind: 'exercice', niveau: 50, commande: 'Elle recommence. — Même exercice. Là, c’est la durée qui change.' },
-      { kind: 'exercice', niveau: 51, commande: 'Encore. — Et celui-là, il est plus fort ou plus doux ?' },
+      {
+        kind: 'exercice',
+        niveau: 65,
+        commande: '— Recommence. Il y a un coup de plus, et il ne tombe pas sur un temps.',
+      },
+      /* L'écran qui prépare « à vue » — et, sans en avoir l'air, tout l'acte 1.
+       * Le joueur voit la grille pour la première fois ici, dessinée sur du
+       * papier : quand l'Atelier s'ouvrira, il saura déjà ce qu'il regarde. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'LA GRILLE',
+        lignes: [
+          'Elle sort une feuille quadrillée du tiroir.',
+          'Une colonne par croche, une croix par coup.',
+          '— C’est comme ça qu’on les écrit.',
+          '— Et on les lit comment ?',
+          '— Comme ça.',
+          'Elle tape sur la table en suivant les croix.',
+        ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 66,
+        commande: '— Là je coupe le son du kick. Tu l’as sous les yeux : joue-le.',
+      },
       {
         kind: 'recit',
         source: 'lcd',
@@ -1459,9 +1497,15 @@ export const EPILOGUE: EtapeRecit[] = [
       'Un début.',
     ],
   },
-  /* ⚠️ La dernière image est la PREMIÈRE du jeu — « lequel est le plus grave ? »
-   * est la question du niveau 49, celui que Sol pose au joueur cinq mois plus
-   * tôt à l'acte 0. Ne pas la réécrire : c'est la citation qui fait la boucle. */
+  /* ⚠️ La dernière image est la PREMIÈRE du jeu, et c'est la citation qui fait
+   * la boucle — ne pas la réécrire sans réécrire l'acte 0 avec.
+   *
+   * Elle a changé le jour où l'acte 0 a changé : c'était « lequel est le plus
+   * grave ? », la question du niveau 49, tant que l'acte 0 ouvrait sur un
+   * `lequel`. Il ouvre maintenant sur « écoute ça, et tape avec » — la boucle
+   * cite donc ce geste-là. Elle y gagne, en plus : un geste se voit de la
+   * pièce voisine, une question à choix multiples non, et l'écran suivant
+   * repose entièrement sur ce que le joueur ENTEND depuis l'autre pièce. */
   {
     kind: 'recit',
     source: 'lcd',
@@ -1469,9 +1513,9 @@ export const EPILOGUE: EtapeRecit[] = [
     lignes: [
       'Il fait le café. Sol lui montre la machine.',
       '— Elle fuit quand tu remplis trop.',
-      'Puis elle lui fait écouter deux sons.',
-      '— Lequel est le plus grave ?',
-      'Il répond. Sol en fait écouter deux autres.',
+      'Puis elle lance une boucle, quatre coups, rien d’autre.',
+      '— Écoute ça, et tape avec.',
+      'Il tape. Il est à côté. Sol relance la boucle.',
     ],
   },
   {
@@ -1480,7 +1524,8 @@ export const EPILOGUE: EtapeRecit[] = [
     entete: 'LA PIÈCE VOISINE',
     lignes: [
       'Tu es dans la pièce voisine.',
-      'Tu t’arrêtes. Tu écoutes. Tu souris.',
+      'Tu entends les coups à travers la cloison.',
+      'Tu t’arrêtes. Tu comptes avec lui. Tu souris.',
       'Sol regarde le nouveau.',
       '— Lundi, tu fais les sonneries.',
       '— Et sinon, je fais quoi ?',

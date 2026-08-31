@@ -219,9 +219,16 @@ describe('les niveaux', () => {
     for (const l of campagne) expect(l.exercise).toBe('reproduire');
   });
 
-  it('« jouer » existe dans ses deux sens, jamais les deux à la fois', () => {
+  /* ⚠️ Le compte était gravé (« exactement un de chaque ») ; il ne l'est plus,
+   * et c'est le point : l'acte 0 a été refait avec trois exercices de frappe
+   * (« enlever les questions "lequel", mettre les questions de tap »). Ce qui
+   * doit rester vrai n'est pas un nombre, c'est que les DEUX sens existent —
+   * un niveau `jouer` qui n'aurait plus que l'un des deux voudrait dire qu'une
+   * moitié du verbe n'est jouée nulle part. */
+  it('« jouer » existe dans ses deux sens, et le champ ne fuit pas ailleurs', () => {
     const jouer = LEVELS.filter((l) => l.exercise === 'jouer');
-    expect(jouer.map((l) => l.jouerIndice).sort()).toEqual(['ecoute', 'lecture']);
+    const sens = new Set(jouer.map((l) => l.jouerIndice));
+    expect([...sens].sort()).toEqual(['ecoute', 'lecture']);
     // Le défaut ne doit pas fuiter sur les autres verbes : le champ existe
     // partout mais n'a de sens que pour « jouer ».
     for (const l of LEVELS.filter((x) => x.exercise !== 'jouer')) {

@@ -164,6 +164,50 @@ describe('chaque niveau écrit tient ce que son préambule annonce', () => {
   });
 });
 
+/* Les trois rythmes de FRAPPE de l'acte 0 — même exigence, autre verbe.
+ *
+ * Ils sont écrits pour la même raison que ceux de l'acte 1 (une courbe de trois
+ * exercices ne se dessine pas avec un générateur de densité), et ils ont en
+ * plus une contrainte que `reproduire` n'a pas : c'est le KICK qu'on tape, donc
+ * c'est lui seul qui décide de ce qu'il y a à faire. Une case posée ailleurs
+ * change ce qu'on entend sans changer ce qu'on note.
+ */
+describe('l’acte 0 tient ce que ses trois frappes annoncent', () => {
+  it('64 — « quatre coups, un par temps, rien d’autre »', () => {
+    const l = niveau(64);
+    expect(ligne(l, 'kick')).toEqual([1, 0, 1, 0, 1, 0, 1, 0]);
+    // « rien d'autre » : les deux autres lignes sont muettes, sans quoi le
+    // premier exercice du jeu ferait entendre ce qu'il ne demande pas.
+    expect(ligne(l, 'snare').every((v) => v === 0)).toBe(true);
+    expect(ligne(l, 'hat').every((v) => v === 0)).toBe(true);
+  });
+
+  it('65 — « un coup de plus, juste après le deuxième temps »', () => {
+    const l = niveau(65);
+    const k = ligne(l, 'kick');
+    // Les quatre temps sont toujours là…
+    for (const i of [0, 2, 4, 6]) expect(k[i], `le temps ${i / 2 + 1}`).toBe(1);
+    // …et il y a exactement UN coup entre deux temps, le « et » du deuxième.
+    const horsTemps = k.map((v, i) => (v && i % 2 === 1 ? i : -1)).filter((i) => i >= 0);
+    expect(horsTemps, 'un contretemps, pas deux').toEqual([3]);
+  });
+
+  it('66 — « le kick est muet, le charley donne la pulsation »', () => {
+    const l = niveau(66);
+    expect(l.jouerIndice, 'c’est ce sens-là qui coupe le kick').toBe('lecture');
+    // « huit croches régulières » — la pulsation, pas un motif : le kick étant
+    // coupé, c'est la seule chose que le joueur entend.
+    expect(ligne(l, 'hat')).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+    const k = ligne(l, 'kick');
+    for (const i of [0, 2, 4, 6]) expect(k[i]).toBe(1);
+    const horsTemps = k.map((v, i) => (v && i % 2 === 1 ? i : -1)).filter((i) => i >= 0);
+    // « le contretemps a changé de place » : ailleurs qu'au niveau 65.
+    expect(horsTemps).toHaveLength(1);
+    const precedent = ligne(niveau(65), 'kick').findIndex((v, i) => v > 0 && i % 2 === 1);
+    expect(horsTemps[0], 'sinon il se rejoue de mémoire au lieu de se lire').not.toBe(precedent);
+  });
+});
+
 describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
   it('chacun de ses exercices cite un niveau à la grille écrite', () => {
     // C'est l'invariant de fond : une progression où chaque niveau ajoute
