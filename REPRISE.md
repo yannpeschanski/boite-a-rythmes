@@ -3,7 +3,7 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-27, après la partie complète de Yann.
+> Dernière mise à jour : 2026-08-31, après la refonte de l'acte 0.
 
 ## Où en est le projet
 
@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 411 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 423 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -22,7 +22,7 @@ attente dans `HISTOIRE.md`.
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
-| Niveaux | 61 (34 de campagne + le reste du réservoir) |
+| Niveaux | 66 (34 de campagne + le reste du réservoir) |
 | Commandes (production à livrer) | 5, aux actes 2 à 6 |
 
 ## Le déverrouillage — tranché le 2026-08-26
@@ -128,12 +128,22 @@ reste est là, dans l'ordre où je propose de le prendre.
 Les deux touchent les 44 écrans de récit et demandent la même passe : attribuer
 chaque ligne à un locuteur. À faire ensemble.
 
-### Reste — l'acte 0, qui ne marche pas
+### ~~Reste — l'acte 0, qui ne marche pas~~ — refait le 2026-08-31
 
-6. « En l'état ça marche pas, c'est pas fun, trop dur à comprendre. » La trame
-   proposée : faire un tempo → le tempo désigne un style → deviner le style
-   parmi quatre séquences → puis répéter la mesure (l'intrus, le pitch en
-   hausse, l'attaque au minimum), **le tout sur une seule séquence**.
+6. ~~« En l'état ça marche pas, c'est pas fun, trop dur à comprendre. »~~ Refait
+   sur une demande plus tardive et plus précise : *« il faut enlever les
+   questions "lequel", mettre les questions de tap qu'on voit dans l'acte 8 »*.
+   L'acte 0 enchaîne maintenant **trois exercices de frappe écrits** (les quatre
+   temps → un contretemps → le kick muet, à lire) puis le `silence` ; plus une
+   seule question à choix multiples. Le fond : `lequel` demande un JUGEMENT à
+   quelqu'un qui n'a rien touché, `jouer` demande un GESTE que tout le monde a
+   déjà. Les niveaux 49-51 restent au réservoir, leurs trois mots (hauteur,
+   durée, intensité) sont enseignés à l'acte 2 où les boutons existent.
+   ⚠️ **Ce qui n'a PAS été fait de la trame proposée en août** : « faire un
+   tempo → le tempo désigne un style → deviner le style parmi quatre
+   séquences », le tout sur une seule séquence. C'est un autre chantier — il
+   demande un verbe qui n'existe pas (poser un tempo) et le verbe `style` est à
+   l'acte 5. À rouvrir si l'acte 0 ne convainc toujours pas.
 
 ### Reste — la courbe et le contenu
 
@@ -160,7 +170,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 411 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 423 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales

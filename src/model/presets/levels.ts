@@ -1128,4 +1128,80 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     paramsAutorises: ['ghostDensity', 'randomVelocity', 'spontRoll'],
     preamble: "Trois boucles, la même grille. Ce qui change ici n'est écrit dans aucune case : la machine ajoute des coups, ou fait varier leur force, toute seule. C'est ce qui sépare une boîte à rythmes d'un batteur.",
     subdivOptions: [8], tempoOptions: [96] }),
+  /* ---------- L'acte 0 se joue avec les MAINS ----------
+   *
+   * ⚠️ Refonte demandée par Yann : *« l'acte 0 est à refaire à 0, il faut
+   * enlever les questions "lequel", mettre les questions de tap qu'on voit
+   * dans l'acte 8 [= l'acte 7], bizarrement, elles seraient peut-être plus
+   * pertinentes ici »*.
+   *
+   * Il avait raison, et la raison se dit en une phrase : **`lequel` demande un
+   * JUGEMENT, `jouer` demande un GESTE.** Le tout premier écran du jeu
+   * proposait trois questions à choix multiples à quelqu'un qui n'a encore
+   * touché à rien — c'est un questionnaire d'entrée, pas une prise en main.
+   * Taper le temps ne demande aucun mot, aucun bouton, aucune vocabulaire :
+   * c'est la seule chose qu'un débutant sait déjà faire, et la seule qui le
+   * mette tout de suite dans le rythme plutôt que devant lui. Ça répond aussi
+   * au retour de testeur (« le jeu reste trop longtemps trop facile ») par
+   * l'autre bout : ce n'est pas plus DUR, c'est plus ENGAGEANT.
+   *
+   * Les trois niveaux sont ÉCRITS, pas tirés — même raison qu'à l'acte 1 : une
+   * courbe de trois exercices ne se dessine pas avec un générateur de densité.
+   * Chacun n'ajoute qu'une chose :
+   *
+   *   64  les quatre temps, rien d'autre        — taper avec ce qu'on entend
+   *   65  un coup de plus, hors des temps       — le contretemps
+   *   66  le kick devient muet, le charley reste — lire au lieu d'entendre
+   *
+   * ⚠️ Les niveaux 37 et 38 de l'acte 7 RESTENT à l'acte 7 : ils sont cités
+   * là-bas par décision documentée (`justesseDesFrappes` retient la meilleure
+   * mesure consécutive, donc la notation pardonne un début raté — mot pour mot
+   * ce que Sol répond avant de brancher les enceintes). On ajoute une paire à
+   * l'acte 0, on ne déplace pas la leur. La différence est la difficulté : ici
+   * la grille est posée et régulière, là-bas elle est tirée.
+   *
+   * ⚠️ Et c'est le premier écran du jeu qui expose la LATENCE de l'appareil.
+   * Le calibrage est un bouton (🎚 Latence) et pas un passage obligé — le forcer
+   * ferait commencer le jeu par un réglage. Deux filets existent déjà : le
+   * préambule du 64 nomme le bouton, et l'écran propose de lui-même le
+   * calibrage dès que quatre frappes tombent du même côté de plus de 25 ms. */
+  mkLevel(64, 'Le temps', {
+    exercise: 'jouer', jouerIndice: 'ecoute',
+    preamble: "Quatre coups, un par temps, rien d'autre. Écoute la boucle autant de fois que tu veux, puis « ⏺ Jouer » : quatre clics de précompte te donnent le tempo, et tu tapes avec le kick. Si toutes tes frappes tombent du même côté, le bouton 🎚 Latence règle le retard de ton appareil une fois pour toutes.",
+    // Le tempo reste tiré (deux valeurs) : ce n'est pas lui qu'on enseigne, et
+    // la tolérance de placement est absolue (±130 ms), donc il ne change pas la
+    // note — seulement le confort. 76-84, l'allure d'un pas.
+    tempoOptions: [76, 84],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 1, 0, 1, 0, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      hat:   [0, 0, 0, 0, 0, 0, 0, 0],
+    } }),
+  mkLevel(65, 'Le contretemps', {
+    exercise: 'jouer', jouerIndice: 'ecoute',
+    preamble: "Les quatre temps sont toujours là, et il y a un coup de plus — juste après le deuxième. Il ne tombe sur aucun temps : il tombe entre deux. C'est ça, un contretemps, et c'est ce qui sépare un rythme d'un métronome. Écoute-le avant de le jouer.",
+    tempoOptions: [80, 88],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      // Les quatre temps (0, 2, 4, 6) + le « et » du 2e temps (3).
+      kick:  [1, 0, 1, 1, 1, 0, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      hat:   [0, 0, 0, 0, 0, 0, 0, 0],
+    } }),
+  mkLevel(66, 'À vue', {
+    exercise: 'jouer', jouerIndice: 'lecture',
+    preamble: "Cette fois le kick est MUET : tu vois le motif dessiné, tu ne l'entends pas. Le charley te donne la pulsation — huit croches régulières — et le contretemps a changé de place. Écoute d'abord si tu veux, puis « ⏺ Jouer ».",
+    // Plus lent que le 65 : lire un motif ET le jouer, ce sont deux choses.
+    tempoOptions: [72, 80],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      // Les quatre temps + le « et » du 3e (5), pas celui du 2e : le motif se
+      // LIT, il ne se rejoue pas de mémoire depuis l'exercice précédent.
+      kick:  [1, 0, 1, 0, 1, 1, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      // ⚠️ Sans cette ligne, « à vue » se jouerait dans le silence, donc au
+      // hasard : le kick étant coupé, c'est le charley qui porte la pulsation.
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
 ];

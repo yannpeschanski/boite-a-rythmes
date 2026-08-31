@@ -174,6 +174,24 @@ s'enseigne dans l'acte de son objet — variantes et rafales sont des gestes de
 grille, donc de l'acte 1, pas de l'acte « groove » où personne ne les
 expliquait.
 
+⚠️ **L'acte 0 se joue avec les MAINS — `lequel` demande un jugement, `jouer`
+demande un GESTE.** Le tout premier contact avec le jeu posait quatre questions
+à choix multiples à quelqu'un qui n'a rien touché, à qui aucun bouton n'a été
+montré, et dont le rôle est de faire le café : c'est un test d'entrée. Il
+enchaîne maintenant trois exercices de frappe ÉCRITS (64 les quatre temps, 65
+un contretemps, 66 le kick muet et le charley qui porte la pulsation) puis le
+`silence`, qui reste parce qu'il n'exige aucun vocabulaire et qu'il est le
+contrepoint exact des trois autres. Trois choses payées d'avance : les niveaux
+49-51 restent au RÉSERVOIR et leurs trois mots (hauteur, durée, intensité) sont
+enseignés à l'acte 2, où les boutons existent ; les niveaux 37/38 restent à
+l'acte 7 (on ajoute une paire, on ne déplace pas la leur) ; et le contretemps
+du 66 est ailleurs que celui du 65, sinon « à vue » se rejoue de mémoire au
+lieu de se lire. ⚠️ Corollaire : c'est désormais le premier écran du jeu qui
+expose la LATENCE de l'appareil, et le calibrage reste **un bouton, pas une
+porte** — commencer le jeu par un réglage serait pire que le décalage.
+⚠️ Et la dernière image de l'épilogue cite le premier exercice de l'acte 0 :
+elle a changé avec lui, et son test la **dérive** au lieu de la graver.
+
 ⚠️ **Une COMMANDE ouvre les modules qu'elle exige — `modulesRequis`.** L'acte 3
 était un cul-de-sac : sa commande demande une basse, or `moduleUnlocked`
 n'ouvre le Synthé qu'une fois l'acte 3 FRANCHI, et la commande est la dernière

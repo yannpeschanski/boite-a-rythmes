@@ -465,11 +465,67 @@ describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
     }
   });
 
-  // Les quatre mots de HISTOIRE.md : « la hauteur ; la durée ; l'intensité ;
-  // le silence ». Quatre exercices, un par mot, dans cet ordre.
-  it('suit les quatre mots de l’écoute, dans l’ordre', () => {
-    const titres = niveauxDeLActe(ACTES[0]).map((n) => LEVELS.find((x) => x.id === n)!.teach);
-    expect(titres).toEqual(['La hauteur', 'La durée', 'L’intensité', 'Le silence']);
+  /* ⚠️ L'acte 0 se joue avec les MAINS — et ce test remplace « les quatre mots
+   * de l'écoute, dans l'ordre » (hauteur, durée, intensité, silence).
+   *
+   * Demande de Yann : *« il faut enlever les questions "lequel", mettre les
+   * questions de tap »*. `lequel` demande un JUGEMENT sur un son à quelqu'un
+   * qui n'a encore rien touché ; `jouer` demande un GESTE que tout le monde a
+   * déjà. Les trois mots ne sont pas perdus : ils sont enseignés à l'acte 2,
+   * par `nommer` et `regler`, à l'écran qui porte enfin les boutons.
+   *
+   * Ce qui se verrouille ici, c'est la FORME de l'acte : trois frappes puis le
+   * silence, et pas un questionnaire. */
+  it('ne pose plus une seule question à choix multiples sur un son', () => {
+    for (const n of niveauxDeLActe(ACTES[0])) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      expect(l.exercise, `niveau ${n}`).not.toBe('lequel');
+    }
+  });
+
+  it('met les mains sur la machine, puis fait entendre l’absence', () => {
+    const verbes = niveauxDeLActe(ACTES[0]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
+    expect(verbes).toEqual(['jouer', 'jouer', 'jouer', 'silence']);
+  });
+
+  /* Les trois frappes sont une COURBE, donc écrites : la deuxième ajoute un
+   * coup hors des temps, la troisième coupe le son du kick. Un générateur de
+   * densité ne sait pas ce qu'il vient d'ajouter — même raison qu'à l'acte 1. */
+  it('écrit ses trois rythmes de frappe, et n’en tire aucun', () => {
+    const frappes = niveauxDeLActe(ACTES[0])
+      .map((n) => LEVELS.find((x) => x.id === n)!)
+      .filter((l) => l.exercise === 'jouer');
+    expect(frappes.map((l) => l.jouerIndice)).toEqual(['ecoute', 'ecoute', 'lecture']);
+    for (const l of frappes) {
+      expect(l.grille, `niveau ${l.id} : tiré au sort`).toBeTruthy();
+      const k = l.grille!.kick.slice(0, l.grille!.subdiv.kick);
+      // Deux frappes au moins, sinon on n'appuie pas : on tape une fois.
+      expect(k.filter((v) => v > 0).length, `niveau ${l.id}`).toBeGreaterThanOrEqual(2);
+    }
+    // Le premier ne pose QUE les temps ; les deux suivants ajoutent un coup
+    // entre deux temps — c'est la seule chose qui change d'un exercice à
+    // l'autre, et elle doit être dans les données, pas dans le préambule.
+    const horsTemps = (l: (typeof frappes)[number]) =>
+      l.grille!.kick.slice(0, l.grille!.subdiv.kick).filter((v, i) => v > 0 && i % 2 === 1).length;
+    expect(horsTemps(frappes[0]), 'le premier ne pose que les temps').toBe(0);
+    expect(horsTemps(frappes[1]), 'le deuxième pose un contretemps').toBe(1);
+    expect(horsTemps(frappes[2]), 'le troisième aussi, ailleurs').toBe(1);
+    // ⚠️ Et il est ailleurs : « à vue » se lit, il ne se rejoue pas de mémoire.
+    const place = (l: (typeof frappes)[number]) =>
+      l.grille!.kick.findIndex((v, i) => v > 0 && i % 2 === 1);
+    expect(place(frappes[2])).not.toBe(place(frappes[1]));
+  });
+
+  /* ⚠️ « À vue » coupe le son du kick : sans une autre ligne pour porter la
+   * pulsation, l'exercice se jouerait dans le silence, donc au hasard. C'est
+   * exactement pourquoi le niveau 38 porte un charley (voir `jouerIndice`). */
+  it('donne une pulsation à l’exercice où le kick est muet', () => {
+    const aVue = niveauxDeLActe(ACTES[0])
+      .map((n) => LEVELS.find((x) => x.id === n)!)
+      .find((l) => l.exercise === 'jouer' && l.jouerIndice === 'lecture')!;
+    const g = aVue.grille!;
+    const autres = [...g.snare.slice(0, g.subdiv.snare), ...g.hat.slice(0, g.subdiv.hat)];
+    expect(autres.filter((v) => v > 0).length).toBeGreaterThan(0);
   });
 });
 
@@ -997,17 +1053,30 @@ describe('L’épilogue ferme le jeu sans être un neuvième acte', () => {
     for (const e of EPILOGUE) expect(e.kind).toBe('recit');
   });
 
-  /* ⚠️ La dernière image est la PREMIÈRE du jeu : Sol fait écouter deux sons à
-   * un nouveau stagiaire et demande « lequel est le plus grave ? » — la
-   * question du niveau 49, le tout premier exercice de l'acte 0. C'est la
-   * citation qui fait la boucle ; la réécrire la casserait. */
-  it('rejoue la toute première question du jeu', () => {
+  /* ⚠️ La dernière image est la PREMIÈRE du jeu, et c'est ça qui fait la boucle.
+   *
+   * Elle citait « lequel est le plus grave ? », la question du niveau 49, tant
+   * que l'acte 0 ouvrait sur un `lequel`. L'acte 0 ouvre maintenant sur une
+   * frappe — la citation a suivi, et c'est le seul endroit du jeu où deux
+   * textes doivent rester identiques à des mois d'intervalle.
+   *
+   * Le test ne grave donc pas la phrase : il la DÉRIVE de la commande du
+   * premier exercice de l'acte 0. Réécrire l'un sans l'autre le fait tomber,
+   * ce qui est exactement le service qu'on lui demande. */
+  it('rejoue le tout premier geste du jeu', () => {
+    const premiereEtape = ACTES[0].etapes.find((e) => e.kind === 'exercice')!;
+    const commande = premiereEtape.kind === 'exercice' ? premiereEtape.commande! : '';
+    // La DERNIÈRE phrase de la commande — celle qui dit le geste. Les
+    // précédentes sont le dialogue qui l'amène (« — Tu fais quoi exactement
+    // ici ? — Le café. — Je sais. »), et elles n'ont rien à faire cinq mois
+    // plus tard, avec quelqu'un d'autre.
+    const phrase = commande.split(/[.?!]/).filter((x) => x.trim()).pop()!.trim();
+    expect(phrase.length, 'la commande du premier exercice').toBeGreaterThan(10);
     const texte = EPILOGUE.flatMap((e) => e.lignes).join(' ');
-    expect(texte).toMatch(/lequel est le plus grave/i);
-    // Et le niveau que cette question désigne existe bien, sur le bon bouton.
+    expect(texte, `l’épilogue ne cite plus « ${phrase} »`).toContain(phrase);
+    // Et le niveau que ce geste désigne est bien un exercice de frappe.
     const premier = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[0])[0])!;
-    expect(premier.exercise).toBe('lequel');
-    expect(premier.paramsAutorises).toContain('pitch');
+    expect(premier.exercise).toBe('jouer');
   });
 
   it('finit sur FB-015 au mur, et ne promet rien après', () => {

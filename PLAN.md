@@ -7144,6 +7144,128 @@ qu'un ajout en fin de lot.
 
 ---
 
+### ✅ L'acte 0 se joue avec les MAINS — les `lequel` sortent, le tap entre (2026-08-31)
+
+> « l'acte 0 est à refaire à 0, il faut enlever les questions "lequel", mettre
+> les questions de tap qu'on voit dans l'acte 8, bizarrement, elles seraient
+> peut-être plus pertinentes ici » (Yann)
+
+**Le fond, en une phrase : `lequel` demande un JUGEMENT, `jouer` demande un
+GESTE.** L'acte 0 était le tout premier contact avec le jeu, et il posait
+quatre questions à choix multiples à quelqu'un qui n'a encore rien touché,
+à qui aucun bouton n'a été montré et dont le seul rôle jusque-là est de faire
+le café. C'est un test d'entrée. Taper le temps ne demande ni mot, ni bouton,
+ni vocabulaire : c'est la seule chose qu'un débutant sait déjà faire, et la
+seule qui le mette *dans* le rythme plutôt que devant lui.
+
+Ça répond aussi, par l'autre bout, au retour de testeur qui a produit le
+palier de l'acte 2 (« le jeu reste trop longtemps trop facile ») : ce n'est
+pas plus **dur**, c'est plus **engageant** — et les deux premières minutes du
+jeu sont celles où la différence compte le plus.
+
+#### Ce qui remplace quoi
+
+| avant | après |
+| --- | --- |
+| 49 `lequel` — La hauteur | **64 `jouer` (écoute) — Le temps** |
+| 50 `lequel` — La durée | **65 `jouer` (écoute) — Le contretemps** |
+| 51 `lequel` — L'intensité | **66 `jouer` (lecture) — À vue** |
+| 52 `silence` — Le silence | 52 `silence` — Le silence *(inchangé)* |
+
+Le `silence` reste : ce n'est pas un `lequel`, il n'exige aucun vocabulaire, et
+il est le contrepoint exact des trois frappes — on vient de taper ce qu'on
+entend, on montre maintenant ce qu'on n'entend PAS.
+
+Les niveaux 49, 50 et 51 **restent au réservoir** (un niveau ne se supprime
+jamais, il cesse d'être cité) et les trois mots qu'ils portaient — hauteur,
+durée, intensité — ne sont pas perdus : ils sont enseignés à l'acte 2, par
+`nommer` et `regler`, c'est-à-dire à l'écran qui porte enfin les boutons
+correspondants. C'est exactement l'arbitrage déjà pris sur ces deux verbes
+(« je ne sais même pas expliquer ce que c'est decay »), poussé d'un cran.
+
+#### Les trois rythmes sont ÉCRITS, et chacun n'ajoute qu'une chose
+
+Même raison qu'à l'acte 1 : une courbe de trois exercices ne se dessine pas
+avec un générateur de densité, qui ne sait pas ce qu'il vient de poser.
+
+| niveau | kick (croches) | ce qui est neuf | tempo |
+| --- | --- | --- | --- |
+| 64 « Le temps » | `1 0 1 0 1 0 1 0` | rien — les quatre temps | 76-84 |
+| 65 « Le contretemps » | `1 0 1 **1** 1 0 1 0` | un coup entre deux temps | 80-88 |
+| 66 « À vue » | `1 0 1 0 1 **1** 1 0` | le kick devient MUET | 72-80 |
+
+⚠️ Le contretemps du 66 est **ailleurs** que celui du 65 (le « et » du 3ᵉ
+temps au lieu du 2ᵉ) : sinon « à vue » se rejouerait de mémoire au lieu de se
+lire, et l'exercice ne mesurerait plus rien. Un test le tient.
+
+⚠️ Le 66 porte un charley sur les huit croches. Le kick étant coupé (c'est ce
+que fait `jouerIndice: 'lecture'` dans `buildState`), sans cette ligne
+l'exercice se jouerait dans le silence, donc au hasard — c'est déjà pourquoi le
+niveau 38 en porte un. Vérifié dans le navigateur : `rows.kick.muted === true`
+et huit coups de charley sur le 66, kick audible et charley vide sur 64/65.
+
+#### Ce qui a été gardé de force
+
+**Les niveaux 37 et 38 restent à l'acte 7.** Leur citation là-bas est une
+décision documentée — `justesseDesFrappes` retient la meilleure mesure
+consécutive, donc la notation pardonne un début raté et récompense la reprise,
+mot pour mot ce que Sol répond avant de brancher les enceintes. On **ajoute**
+une paire à l'acte 0, on ne déplace pas la leur. La différence entre les deux
+paires est la difficulté : ici la grille est écrite et régulière, là-bas elle
+est tirée.
+
+**La boucle de l'épilogue a suivi.** Sa dernière image est la première du jeu ;
+elle citait « lequel est le plus grave ? », la question du niveau 49. Elle cite
+maintenant le geste : *« Puis elle lance une boucle, quatre coups, rien
+d'autre. — Écoute ça, et tape avec. »* Elle y gagne, en plus — un geste
+s'entend de la pièce voisine, une question à choix multiples non, et l'écran
+suivant repose entièrement sur ce que le joueur entend à travers la cloison.
+⚠️ Le test ne grave plus la phrase : il la **dérive** de la commande du premier
+exercice de l'acte 0, donc réécrire l'un sans l'autre le fait tomber.
+
+#### L'écran « LA GRILLE », ajouté
+
+Un récit de plus entre le 65 et le 66 : Sol sort une feuille quadrillée, une
+colonne par croche, une croix par coup. Il prépare « à vue » (on ne demande pas
+de lire ce qu'on n'a jamais vu écrit) et, sans en avoir l'air, tout l'acte 1 —
+quand l'Atelier s'ouvrira, le joueur saura ce qu'il regarde. La dernière ligne
+du prologue change avec : « — Écoute la hauteur, la durée, l'intensité »
+devient « — Approche. Écoute, et tape avec », parce qu'un écran ne doit
+annoncer que ce que l'écran suivant demande.
+
+#### La latence, et pourquoi elle n'est pas un passage obligé
+
+C'est désormais le **premier** écran du jeu qui expose la latence de
+l'appareil. Le calibrage reste un bouton (🎚 Latence) et pas une porte : forcer
+un réglage avant le premier son ferait commencer le jeu par de la
+configuration. Deux filets existaient déjà et sont maintenant nommés dans le
+préambule du 64 — l'écran propose de lui-même le calibrage dès que quatre
+frappes tombent du même côté de plus de 25 ms.
+
+#### Fichiers touchés
+
+- `src/model/presets/levels.ts` — niveaux 64, 65, 66 (posés en FIN de tableau,
+  comme la règle l'exige)
+- `src/model/carriere.ts` — acte 0 réécrit, écran « LA GRILLE », dernière ligne
+  du prologue, deux écrans de l'épilogue
+- `tests/carriere.test.ts` — « les quatre mots de l'écoute » remplacé par
+  quatre tests de FORME (aucun `lequel` ; `jouer ×3` puis `silence` ; les trois
+  grilles écrites et leur contretemps déplacé ; une pulsation là où le kick est
+  muet) ; la boucle de l'épilogue devient dérivée
+- `tests/grilles-ecrites.test.ts` — un test par promesse pour 64, 65 et 66
+- `tests/exercises.test.ts` — « exactement un de chaque sens » devient « les
+  deux sens existent » : le compte était gravé, il ne pouvait pas l'être
+
+#### Vérifications
+
+`npm run check` 0 erreur · 423 tests · les deux builds ·
+`scripts/parcours-carriere.cjs` sur un serveur fraîchement redémarré (les huit
+actes, six productions, épilogue atteint, aucune erreur console) · les douze
+étapes de l'acte 0 parcourues à la capture en 390×844, zéro débordement
+horizontal, zéro erreur console.
+
+---
+
 ### ✅ Le jeu se termine à nouveau — deux blocages trouvés EN JOUANT (2026-08-27)
 
 > « je viens de faire une session carrière depuis le début »
