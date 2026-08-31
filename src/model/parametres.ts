@@ -34,13 +34,25 @@ export type FamilleParam = 'timbre' | 'filtre' | 'groove' | 'sequence';
  * pour toute fréquence — hauteur comme coupure. */
 export type EchelleParam = 'lineaire' | 'log';
 
+/* Les champs de `PatternStateV2` (et non d'une ligne) qu'un bouton peut régler.
+ * Une union nommée plutôt qu'un `string` : un identifiant inventé réglerait un
+ * champ que personne ne lit, donc trois versions identiques et un niveau
+ * impossible — muet sur la raison. */
+export type ChampGlobalParam =
+  | 'swing'
+  | 'drag'
+  | 'ghostDensity'
+  | 'randomVelocity'
+  | 'spontRoll'
+  | 'globalSaturation';
+
 export interface DescripteurParam {
   /* Clé EXACTE du champ réglé — dans `DrumRowState` pour un bouton de ligne,
    * dans l'état global pour un bouton global (voir `cible`). Un identifiant
    * inventé réglerait un champ que personne ne lit : le jeu tirerait deux sons
    * identiques et le niveau serait impossible sans que rien ne le dise. C'est
    * l'union qui garde cette garantie, pas un `string` libre. */
-  id: (keyof DrumRowState | 'swing' | 'drag') & string;
+  id: (keyof DrumRowState | ChampGlobalParam) & string;
   /** Le libellé EXACT du curseur dans l'Atelier — le jeu et l'atelier doivent
    *  nommer la même chose de la même façon, sinon le jeu n'apprend rien
    *  d'utilisable. */
@@ -237,6 +249,86 @@ export const PARAMETRES: DescripteurParam[] = [
     plus: 'le plus répété', moins: 'le plus net',
     lignes: ['kick', 'snare', 'hat'], facteurEtat: 0.01,
   },
+
+  /* ---- Ce qui bouge tout seul, et le grain ----------------------------
+   *
+   * ⚠️ Quatre boutons GLOBAUX ajoutés le 2026-08-31, et chacun a été mesuré
+   * DANS LE CONTEXTE RÉEL d'un exercice de paramètre — une seule ligne posée
+   * sur [0, 2, 4, 6] plus un repère, pas un kit complet. Mesurer sur un kit
+   * dirait qu'un bouton s'entend là où le jeu ne le fait pas entendre.
+   *
+   * Deux candidats ont été ÉCARTÉS par la mesure, et c'est le principal
+   * résultat de cette passe :
+   *   - `globalCompression` : l'écart au réglage bas n'est pas monotone (mi-
+   *     chemin 0,67 contre 0,48 au maximum, mesuré deux fois dans deux
+   *     contextes). « Lequel est le plus compressé ? » n'aurait pas de réponse
+   *     fiable ;
+   *   - `globalBitcrush` : même défaut, en moins net.
+   * Un bouton dont l'effet n'est pas monotone ne peut pas porter « le plus… ».
+   */
+  {
+    id: 'ghostDensity', label: 'Ghost notes', famille: 'groove', cible: 'global',
+    min: 0, max: 40, step: 1, unite: ' %', echelle: 'lineaire',
+    /* Mesuré en rejouant le scheduler, 40 graines : 14 événements et un écart
+     * de gain de 0,048 à zéro ; 15,3 et 0,158 à 20 ; 16,7 et 0,218 à 40.
+     * Monotone sur les deux. La moitié basse porte l'essentiel du changement,
+     * d'où une tolérance serrée. */
+    tolerance: 6, ecartMini: 16,
+    plus: 'le plus fourmillant', moins: 'le plus net',
+    /* ⚠️ La claire SEULE : les ghost notes tombent sur `state.ghostRow`, qui
+     * vaut « snare » par défaut. Tirées sur une autre ligne, elles sonneraient
+     * ailleurs que là où le jeu fait écouter — donc trois versions identiques. */
+    lignes: ['snare'], facteurEtat: 1,
+    /* Le repère est celui avec lequel la mesure a été faite : une ligne qui
+     * sonne à côté, sur les temps. Sans lui, le bouton s'entendrait dans le
+     * vide — et surtout, le jeu ne ferait pas entendre ce qui a été mesuré. */
+    contexte: { repere: 'kick' },
+  },
+  {
+    id: 'randomVelocity', label: 'Vélocité aléatoire', famille: 'groove', cible: 'global',
+    min: 0, max: 100, step: 1, unite: ' %', echelle: 'lineaire',
+    /* Le nombre de coups ne bouge pas — c'est leur FORCE qui varie : écart de
+     * gain 0,048 → 0,089 → 0,157 pour 0 / 50 / 100. Monotone. */
+    tolerance: 12, ecartMini: 35,
+    plus: 'le plus vivant', moins: 'le plus mécanique',
+    lignes: ['kick', 'snare', 'hat'], facteurEtat: 1,
+    /* Le repère est celui avec lequel la mesure a été faite : une ligne qui
+     * sonne à côté, sur les temps. Sans lui, le bouton s'entendrait dans le
+     * vide — et surtout, le jeu ne ferait pas entendre ce qui a été mesuré. */
+    contexte: { repere: 'kick' },
+  },
+  {
+    id: 'spontRoll', label: 'Rafales spontanées', famille: 'groove', cible: 'global',
+    min: 0, max: 100, step: 1, unite: ' %', echelle: 'lineaire',
+    /* 14 → 22,6 → 32,1 événements pour 0 / 50 / 100 : le bouton double le
+     * nombre de frappes. C'est le plus franc des trois. */
+    tolerance: 12, ecartMini: 35,
+    plus: 'le plus bavard', moins: 'le plus sobre',
+    /* ⚠️ LE CHARLEY, ET RIEN D'AUTRE — mesuré, pas supposé. `scheduler.ts` ne
+     * consulte `spontRoll` que dans la voie du hat : sur la caisse claire, 0 et
+     * 100 donnent exactement 14 événements et le même écart de gain. Déclaré
+     * ailleurs, ce bouton aurait posé trois versions identiques. C'est le cas
+     * d'école du champ `lignes`. */
+    lignes: ['hat'], facteurEtat: 1,
+    /* Le repère est celui avec lequel la mesure a été faite : une ligne qui
+     * sonne à côté, sur les temps. Sans lui, le bouton s'entendrait dans le
+     * vide — et surtout, le jeu ne ferait pas entendre ce qui a été mesuré. */
+    contexte: { repere: 'kick' },
+  },
+  {
+    id: 'globalSaturation', label: 'Saturation', famille: 'timbre', cible: 'global',
+    min: 0, max: 100, step: 1, unite: ' %', echelle: 'lineaire',
+    /* Le plus franc de tous : rendu hors ligne, l'écart RMS entre 0 et 100 vaut
+     * 2,7 fois le RMS du morceau lui-même. Il passe par le bus de batterie,
+     * donc il s'entend quelle que soit la ligne. */
+    tolerance: 10, ecartMini: 30,
+    plus: 'le plus sale', moins: 'le plus propre',
+    lignes: ['kick', 'snare', 'hat'], facteurEtat: 1,
+    /* Le repère est celui avec lequel la mesure a été faite : une ligne qui
+     * sonne à côté, sur les temps. Sans lui, le bouton s'entendrait dans le
+     * vide — et surtout, le jeu ne ferait pas entendre ce qui a été mesuré. */
+    contexte: { repere: 'kick' },
+  },
 ];
 
 /** Applique une valeur AFFICHÉE (celle du curseur) à l'état d'une ligne. */
@@ -248,7 +340,7 @@ export function appliquerParam(row: DrumRowState, p: DescripteurParam, valeur: n
  * Deux fonctions plutôt qu'une qui prendrait tout l'état : chacune dit dans son
  * nom où elle écrit, et l'appelant doit avoir lu `p.cible` pour choisir. */
 export function appliquerParamGlobal(
-  state: { swing: number; drag: number },
+  state: Record<ChampGlobalParam, number>,
   p: DescripteurParam,
   valeur: number,
 ): void {

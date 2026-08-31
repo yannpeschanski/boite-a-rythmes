@@ -665,7 +665,9 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
   // fait pas reproduire un balancement qu'on n'a pas encore isolé à l'oreille.
   it('va d’entendre à régler, dans cet ordre', () => {
     const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    expect(verbes).toEqual(['lequel', 'reproduire', 'lequel', 'reproduire', 'nommer', 'regler', 'reproduire']);
+    expect(verbes).toEqual([
+      'lequel', 'reproduire', 'lequel', 'reproduire', 'nommer', 'regler', 'reproduire', 'lequel',
+    ]);
     // Chaque reproduction suit l'écoute qui l'a préparée.
     expect(verbes.indexOf('reproduire')).toBeGreaterThan(verbes.indexOf('lequel'));
   });

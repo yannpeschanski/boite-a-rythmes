@@ -7211,6 +7211,111 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Les ghost notes existent enfin — quatre boutons enseignés (2026-08-31)
+
+> « Il faudrait pouvoir progressivement jouer avec beaucoup plus de paramètres.
+> Il faut aussi prendre le temps d'expliquer chaque paramètre au moment où on le
+> découvre, avec une différence suffisamment audible. »
+
+L'audit avait chiffré le manque : **10 boutons enseignés sur 155 réglages**.
+Cette passe en ajoute quatre, et le principal résultat est ce qu'elle a
+REFUSÉ d'ajouter.
+
+#### La cartographie d'abord : le synthé coûte cher, les globaux ne coûtent rien
+
+Tout le machinery des verbes de paramètre construit une grille de **batterie** —
+`paramLigne` est un `GameDrumRowName`, le contexte pose des cases de kick, snare
+et hat. Ajouter un bouton de synthé, c'est toucher cinq endroits (le type, le
+tirage, `buildState`, la vue, le contexte), pas une table de données.
+
+En revanche, huit boutons **globaux** passent par le chemin `cible: 'global'` qui
+existe déjà. C'est là qu'était le gisement — et deux d'entre eux sont exactement
+ce que les niveaux 20 et 21 promettaient sans jamais le poser.
+
+#### ⚠️ La première mesure a menti
+
+Rendre deux fois le morceau hors ligne et comparer les RMS donnait :
+
+```
+spontRoll  0→100   RMS relatif 0,411   (sur une caisse claire)
+```
+
+Un effet franc, apparemment. **Il n'y en a aucun** : `scheduler.ts` ne consulte
+`spontRoll` que dans la voie du charley. Le RMS mesurait la différence entre
+deux tirages du hasard, pas l'effet du bouton — un bouton d'aléa change le
+rendu même quand il ne change rien.
+
+Ce qui se mesure vraiment, c'est le **nombre d'événements** et la **dispersion
+des gains**, en rejouant le scheduler sur 30 à 40 graines :
+
+| bouton | ligne | 0 | milieu | max |
+|---|---|---|---|---|
+| `ghostDensity` | snare | 14 évts · 0,048 | 15,3 · 0,158 | 16,7 · 0,218 |
+| `randomVelocity` | toutes | 14 · 0,048 | 14 · 0,089 | 14 · 0,157 |
+| `spontRoll` | **charley** | 14 · 0,144 | 22,6 · 0,252 | 32,1 · 0,259 |
+| `spontRoll` | claire | 14 · 0,048 | **14 · 0,048** | **14 · 0,048** |
+
+La dernière ligne est le cas d'école du champ `lignes` : déclaré sur la caisse
+claire, ce bouton aurait posé trois versions rigoureusement identiques — un
+niveau impossible, et muet sur la raison.
+
+#### Deux candidats écartés par la mesure
+
+`globalCompression` et `globalBitcrush` ne sont **pas monotones** : mesuré deux
+fois, dans deux contextes, le réglage à mi-chemin s'écarte du minimum de 0,67
+quand le maximum ne s'en écarte que de 0,48. « Lequel est le plus compressé ? »
+n'aurait pas de réponse fiable. Un bouton dont l'effet n'est pas monotone ne
+peut pas porter un superlatif.
+
+C'est le résultat le plus utile de la passe : **quatre boutons ajoutés, deux
+refusés**, et la raison du refus est écrite dans le catalogue.
+
+#### Le niveau 62, et le piège qu'il a révélé
+
+`mkLevel(62, 'Ce qui bouge tout seul')` tire dans les trois boutons d'aléa, et
+l'acte 2 le cite — c'est l'acte du groove, et ces boutons sont exactement ce qui
+empêche une boucle de sonner comme une machine. Kelvin vient de dire « ça fait
+réveil » ; c'est la réponse qui manquait.
+
+⚠️ **En enrichissant la famille `groove`, j'ai failli casser le niveau 47.**
+`nommer` prend ses leurres dans toute la famille : passant de deux boutons à
+cinq, « Swing ou décalage ? » serait devenu une question à **quatre** choix dont
+le titre en annonce deux — sans qu'aucun test ne bronche. Sa liste est donc
+explicite désormais. Enrichir un catalogue peut casser un niveau écrit des mois
+plus tôt, en silence.
+
+#### Et une consigne qui mentait une fois sur deux
+
+Ma première rédaction disait « Écoute laquelle en fait **le plus** ». Le test
+« ne promet jamais un SENS que le tirage ne tient pas » l'a refusée
+immédiatement : `paramSens` est tiré au sort, donc la question est aussi souvent
+« laquelle en fait le moins ». La consigne pose maintenant la PROPRIÉTÉ (« là,
+c'est la quantité qui change ») et laisse l'écran poser la question. La règle
+existait, le test l'a appliquée.
+
+#### Ce qui le vérifie
+
+408 tests (11 neufs), 0 erreur de types, les deux builds, parcours complet sur
+serveur fraîchement démarré : acte 2 à 13 étapes, six productions au bout,
+aucune erreur console. Le test de `lignes` vérifié rouge par mutation.
+
+**Le compteur : 10 boutons enseignés → 14.**
+
+#### Fichiers touchés
+
+`src/model/parametres.ts` (`ChampGlobalParam`, quatre entrées mesurées),
+`src/model/presets/levels.ts` (niveau 62, liste explicite du 47),
+`src/model/carriere.ts` (acte 2), `tests/params-alea.test.ts` (neuf),
+`tests/carriere.test.ts`, `CLAUDE.md`, `PLAN.md`, `REPRISE.md`.
+
+#### Écart de portée assumé
+
+Les paramètres de SYNTHÉ restent hors du jeu — la cartographie ci-dessus dit
+pourquoi, et le chiffrage est fait. C'est un chantier à part, pas une table de
+données à rallonger.
+
+---
+
 ### ✅ Chantier B, tranche 1 — la boucle de Kelvin se transforme (2026-08-28)
 
 > « Pour l'acte 2 avec Calvin, on pourrait commencer par retranscrire dans le

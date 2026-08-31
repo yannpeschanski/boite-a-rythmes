@@ -375,6 +375,30 @@ tresillo promet « variante et rafale ajoutées pour l'occasion », or le preset
 n'en a aucune). Deux tests génériques le tiennent, sur tout niveau qui déclare
 un forçage — ceux à venir compris.
 
+⚠️ **Un bouton d'ALÉA se mesure en ÉVÉNEMENTS, pas en RMS.** Les trois boutons
+qui font « bouger tout seul » (`ghostDensity`, `randomVelocity`, `spontRoll`)
+sont enseignés depuis le 2026-08-31, et la première mesure a MENTI : comparer
+deux rendus au RMS donnait à `spontRoll` un effet franc sur la caisse claire
+(0,41 fois le RMS du morceau) alors qu'il n'en a **aucun** — `scheduler.ts` ne
+le consulte que dans la voie du charley. Le RMS mesurait la différence entre
+deux tirages du hasard, pas l'effet du bouton. Ce qui se mesure, c'est le
+**nombre d'événements** et la **dispersion des gains**, en rejouant le scheduler
+(`tests/params-alea.test.ts`). Trois conséquences : `spontRoll` ne se déclare
+que sur `['hat']` (cas d'école du champ `lignes`) ; `ghostDensity` que sur
+`['snare']`, parce que les ghost notes tombent sur `state.ghostRow` ; et deux
+candidats ont été **écartés par la mesure** — `globalCompression` et
+`globalBitcrush`, dont l'effet n'est pas monotone (mi-chemin 0,67 contre 0,48 au
+maximum, vérifié dans deux contextes). Un bouton dont l'effet n'est pas monotone
+ne peut pas porter « le plus… ».
+
+⚠️ **Un niveau dont le TITRE nomme ses choix ne doit pas en gagner en silence.**
+`nommer` prend ses leurres dans toute la famille : la famille `groove` passant
+de deux boutons à cinq, le niveau 47 (« Swing ou décalage ? ») serait devenu une
+question à quatre choix dont le titre en annonce deux, sans qu'aucun test ne
+bronche. Sa liste `paramsAutorises` est donc explicite. C'est la version
+discrète du préambule qui ment — enrichir un catalogue peut casser un niveau
+écrit des mois plus tôt.
+
 ⚠️ **Une question dont la réponse est inaudible n'est pas une question.** Le
 kick balaie jusqu'à `max(20, 38 × mult)` : sous −10 demi-tons, toute la moitié
 basse du curseur finit sur le même plancher de 20 Hz, et trois versions tirées

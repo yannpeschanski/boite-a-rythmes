@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 397 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 408 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -160,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 397 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 408 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -239,8 +239,12 @@ Mesuré sur le code, pas de mémoire (`main de2eaa4`) :
   mesure longue. C'est la moitié du jeu qui n'existe que dans le tableau (seuls
   les presets 27 et 32 sont rattrapés par l'acte 5).
 - **La carrière dure 60 à 125 min**, la cible de Yann est 120 au minimum.
-- **10 boutons enseignés sur 155 réglages**, la carrière en fait jouer 8, et
-  **aucun du synthé**.
+- ~~10 boutons enseignés sur 155 réglages~~ → **14 depuis le 2026-08-31** :
+  ghost notes, vélocité aléatoire, rafales spontanées et saturation, tous mesurés
+  en rejouant le scheduler. Deux candidats **écartés par la mesure** (compression
+  et bitcrush, effet non monotone). Toujours **aucun du synthé** : la
+  cartographie est faite, c'est un chantier à part (le machinery des verbes de
+  paramètre construit une grille de batterie, pas une ligne de synthé).
 - Un verbe porte 13 des 32 exercices ; `completer` et `intrus` ne sont jamais
   cités ; l'acte 6 n'a aucun exercice.
 
@@ -297,6 +301,12 @@ permis **à condition que le cahier exige ce que ce rythme n'a pas**, et
 route : `Contrainte.interdit` (une interdiction est légitimement cochée au
 départ) et le fait qu'un état « qui satisfait tous les cahiers » n'existe pas —
 la fiche techno veut un charley plein, Kelvin veut un charley troué.
+
+**Les ghost notes existent enfin.** Les niveaux 20 et 21 les annonçaient sans
+que le code les pose ; le niveau 62 (« Ce qui bouge tout seul ») les fait
+entendre pour de bon, cité par l'acte 2. Piège trouvé au passage : enrichir la
+famille `groove` aurait fait du niveau 47 (« Swing ou décalage ? ») une question
+à quatre choix dont le titre en annonce deux — sa liste est explicite désormais.
 
 **Reste du chantier B** : les cinq autres commandes partent encore d'une table
 rase. Chacune demande le même travail — choisir le rythme de départ, puis
