@@ -61,7 +61,7 @@ const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
  * que le joueur vient de reproduire. Une commande qui TRANSFORME compare à son
  * propre départ, pas à la table rase : sinon « il faut y avoir touché » serait
  * coché dès l'ouverture, puisque l'Atelier n'est justement pas vide. */
-const NIVEAU_KELVIN = LEVELS.find((l) => l.id === 17)!;
+const NIVEAU_KELVIN = LEVELS.find((l) => l.id === 63)!;
 const DEPART_KELVIN = etatDepuisGrille(NIVEAU_KELVIN.grille!, NIVEAU_KELVIN.tempoOptions[0]);
 
 /* La fiche du genre commandé par Zik'Mobile. Chargée une fois : elle sert à la
@@ -747,6 +747,20 @@ export const ACTES: Acte[] = [
          * sur deux. On pose la PROPRIÉTÉ, l'écran pose la question. */
         commande: 'Sol ajoute un dernier truc : — La machine peut jouer à côté toute seule. Là, c’est la quantité qui change.',
       },
+      /* ⚠️ LE PALIER — retour de testeur : « le jeu reste trop longtemps trop
+       * facile ». Mesuré : l'acte 1 finissait à 24 cases avec deux variantes,
+       * et l'acte 2 n'avait jamais dépassé 24 cases sans variante. Il était un
+       * cran EN ARRIÈRE, et le premier exercice plus dur que la fin de l'acte 1
+       * n'arrivait qu'au 33e sur 42.
+       *
+       * Ce niveau double la résolution (seize cases par ligne) et devient le
+       * point de départ de la commande : c'est la boucle que Kelvin a en tête,
+       * et c'est elle qu'on transforme juste après. */
+      {
+        kind: 'exercice',
+        niveau: 63,
+        commande: 'Kelvin repose la cassette. — Celle-là. C’est celle-là que je veux, mais elle bouge pas assez.',
+      },
       {
         kind: 'commande',
         entete: 'KELVIN — IL ATTEND SA BOUCLE',
@@ -757,8 +771,8 @@ export const ACTES: Acte[] = [
           'Va dans l’Atelier. Fais-en une qui respire.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
-        /* ⚠️ L'Atelier s'ouvre SUR le rythme du niveau 17 — celui que le
-         * joueur vient de reproduire, celui que Kelvin a entendu. Le travail
+        /* ⚠️ L'Atelier s'ouvre SUR le rythme du niveau 63 — celui que le
+         * joueur vient de reproduire, celui que Kelvin a en tête. Le travail
          * n'est plus « fais-en une », c'est « transforme celle-là ».
          *
          * Le cahier est donc écrit contre ce point de départ : le rythme de
@@ -767,7 +781,7 @@ export const ACTES: Acte[] = [
          * aucune place), pas une variante. La check-list s'ouvre à 0/3 et
          * chaque case demande un vrai geste — c'est la condition qui remplace
          * « l'Atelier part vide ». `tests/transformer.test.ts` la tient. */
-        partirDu: 17,
+        partirDu: 63,
         cahier: [
           pasLeMotifDeDepart(DEPART_KELVIN, 'Il faut y avoir touché'),
           kickQuiSortDuTemps('Fais bouger le kick — qu’il sorte du temps'),

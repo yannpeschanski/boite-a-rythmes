@@ -301,6 +301,20 @@ elle est hors de `parametres.ts`). Les niveaux 15 et 18 restent donc orphelins
 **par décision**, pas par oubli. `tests/feel-ecrit.test.ts` mesure les trois en
 rejouant le scheduler, harnais partagé dans `tests/helpers/rejeu.ts`.
 
+⚠️ **La COURBE se mesure dans l'ordre où la carrière joue, pas acte par acte.**
+Retour de testeur (2026-08-31) : *« le jeu reste trop longtemps trop facile »*.
+Mesuré en parcourant les 42 exercices dans leur ordre réel : l'acte 1 finissait
+à 24 cases avec deux variantes et une rafale, et l'acte 2 plafonnait à **24
+cases sans aucune variante** — il était un cran EN ARRIÈRE. Le premier exercice
+plus dur que la fin de l'acte 1 n'arrivait qu'au **33e sur 42**. Chaque acte
+était cohérent avec lui-même ; c'est l'enchaînement qui ne l'était pas, et
+aucun test ne regardait l'enchaînement. Le niveau 63 (seize cases par ligne)
+donne son palier à l'acte 2 et ramène ce seuil au 21e exercice. La règle à
+garder : un acte ne doit jamais finir plus facile que le précédent, et
+`tests/carriere.test.ts` le vérifie désormais pour l'acte 2. ⚠️ Ce qui rend un
+niveau plus dur ici n'est pas un empilement de nouveautés mais la
+**RÉSOLUTION** — deux fois plus de cases, rien de neuf à apprendre.
+
 ⚠️ **L'acte 2 porte DEUX arbitrages successifs — ne pas restaurer l'un en
 croyant corriger l'autre.** Il citait cinq grilles générées ; retirées parce
 qu'elles posaient « des rafales, des charleys ouverts, des rim shots » sans

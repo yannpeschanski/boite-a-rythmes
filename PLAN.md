@@ -7211,6 +7211,97 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Le palier de l'acte 2 — « trop longtemps trop facile », mesuré (2026-08-31)
+
+> Retour d'un testeur : « le jeu reste trop longtemps trop facile ».
+
+#### Ce que la mesure dit
+
+Les 42 exercices, parcourus dans l'ordre où la carrière les joue, poids = cases
+à déterminer (somme des subdivisions des lignes montrées) :
+
+```
+actes 0-1   ex. 1-12    12 → 24 cases, jusqu'à 2 variantes et 1 rafale
+acte 2      ex. 13-20   24 cases, 0 variante, 0 rafale — TROIS FOIS
+actes 3-4   ex. 21-29   neuf exercices d'affilée SANS AUCUNE grille
+acte 5      ex. 30-40   ça remonte enfin : 40 cases à l'exercice 33
+acte 7      ex. 41-42   deux « jouer »
+```
+
+Deux constats, et le second est le vrai :
+
+1. **L'acte 2 était un cran EN ARRIÈRE de l'acte 1** — même nombre de cases,
+   mais zéro variante là où l'acte 1 en posait deux.
+2. **Le premier exercice plus dur que la fin de l'acte 1 arrivait au 33e sur
+   42**, soit à 79 % du parcours.
+
+⚠️ **Chaque acte était cohérent avec lui-même. C'est l'ENCHAÎNEMENT qui ne
+l'était pas** — et aucun test ne regardait l'enchaînement. Les tests
+vérifiaient qu'un acte monte, jamais qu'il monte plus haut que le précédent.
+
+#### Ce qui n'a pas été touché, et pourquoi
+
+Les trois grilles identiques de l'acte 2 (14, 23, 17) **restent identiques**.
+C'est la seule façon de comparer deux balancements — on ne peut pas savoir si
+ce qu'on entend vient du feel ou d'un autre motif. Le palier s'ajoute APRÈS
+elles ; il ne les remplace pas.
+
+Mon propre test de la PR #128 exigeait d'ailleurs que *toutes* les grilles de
+l'acte soient identiques, et il a bloqué l'ajout. C'était une règle trop large :
+elle porte sur le **groupe à comparer**, pas sur l'acte. Il regroupe désormais
+par RÉSOLUTION — à subdivision égale, les grilles doivent être identiques.
+
+#### Le niveau 63
+
+Ce qui le rend plus dur n'est pas un empilement de nouveautés, c'est la
+**résolution** : seize cases par ligne au lieu de huit, et une caisse claire qui
+ne tombe plus sur les temps. Rien de neuf à apprendre, tout à entendre plus
+finement.
+
+```
+kick  1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0     swing 20
+snare 0 0 0 1 0 0 1 0 0 0 0 1 0 1 0 0
+hat   1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+```
+
+⚠️ Il devient le **point de départ de la commande de Kelvin** (`partirDu: 63`),
+et il est écrit pour ne satisfaire AUCUNE de ses exigences : kick sur les quatre
+temps (donc jamais entre deux), charley sur les seize cases (donc aucune place),
+pas une variante. Vérifié dans l'appli : le cahier s'ouvre toujours à **0/4**,
+sur un rythme deux fois plus dense.
+
+#### Résultat mesuré
+
+**Le premier exercice plus dur que la fin de l'acte 1 passe du 33e au 21e** —
+de 79 % à 49 % du parcours. Et un test empêche désormais l'acte 2 de repasser
+sous l'acte 1 en silence.
+
+#### Ce qui reste, mesuré et non traité
+
+Deux creux subsistent, tous deux structurels :
+
+- **Exercices 22 à 30 : neuf d'affilée sans aucune grille** (actes 3 et 4). Leur
+  sujet est la mélodie et la production, donc y poser une reproduction de rythme
+  demande de décider ce qu'elle enseigne — c'est un arbitrage de contenu.
+- **L'acte 5 repart à 16 cases** après le palier à 48, puis serpente sans ordre :
+  16, 16, 20, 40, 36, 32, 24, 24, 28, 22. Le trier par difficulté est un
+  changement de données trivial, mais chaque preset est attaché à une réplique
+  (« Sol vérifie les classiques », « Kelvin vérifie le hip-hop ») : trier
+  demande de réécrire ces lignes.
+
+#### Ce qui le vérifie
+
+411 tests (2 neufs, 2 réécrits), 0 erreur de types, les deux builds, parcours
+complet sur serveur fraîchement démarré : acte 2 à 14 étapes, six productions au
+bout, aucune erreur console. Cahier de Kelvin à 0/4 vérifié dans l'appli.
+
+#### Fichiers touchés
+
+`src/model/presets/levels.ts` (niveau 63), `src/model/carriere.ts` (acte 2,
+`partirDu`), `tests/carriere.test.ts`, `CLAUDE.md`, `PLAN.md`, `REPRISE.md`.
+
+---
+
 ### ✅ Les ghost notes existent enfin — quatre boutons enseignés (2026-08-31)
 
 > « Il faudrait pouvoir progressivement jouer avec beaucoup plus de paramètres.

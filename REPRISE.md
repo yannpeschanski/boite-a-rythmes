@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 408 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 411 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -160,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 408 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 411 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -314,6 +314,30 @@ réécrire son cahier contre ce rythme. C'est la moitié coûteuse et elle ne se
 délègue pas à un test. Les ghost notes et les fills (niveaux 20, 21) attendent
 toujours leur maison : un cahier sait demander « ajoute des ghost notes », une
 grille ne sait pas les dessiner.
+
+## La COURBE de difficulté — retour de testeur, 2026-08-31
+
+> « Le jeu reste trop longtemps trop facile. »
+
+Mesuré dans l'ordre où la carrière joue ses 42 exercices : **le premier
+exercice plus dur que la fin de l'acte 1 arrivait au 33e sur 42**, et l'acte 2
+était même un cran EN ARRIÈRE (24 cases sans variante contre 24 avec deux).
+Chaque acte était cohérent avec lui-même ; c'est l'**enchaînement** qui ne
+l'était pas, et aucun test ne le regardait.
+
+Le niveau 63 (seize cases par ligne) donne son palier à l'acte 2 : le seuil
+passe au **21e exercice**, de 79 % à 49 % du parcours. Un test empêche
+désormais l'acte 2 de repasser sous l'acte 1.
+
+**Les deux creux qui restent, mesurés, à arbitrer :**
+
+- **Exercices 22 à 30 : neuf d'affilée sans aucune grille** (actes 3 et 4).
+  Leur sujet est la mélodie et la production ; y poser une reproduction demande
+  de décider ce qu'elle enseigne.
+- **L'acte 5 repart à 16 cases** après le palier à 48, puis serpente : 16, 16,
+  20, 40, 36, 32, 24, 24, 28, 22. Le trier est trivial côté données, mais chaque
+  preset est attaché à une réplique (« Kelvin vérifie le hip-hop ») — trier
+  demande de réécrire ces lignes.
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 

@@ -1079,6 +1079,39 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       rolls: { hat: [1, 1, 1, 1, 1, 3, 1, 1] },
     } }),
 
+  /* ---------- Le palier de l'acte 2 ----------
+   *
+   * ⚠️ Écrit après un retour de testeur : « le jeu reste trop longtemps trop
+   * facile ». Mesuré en parcourant les 42 exercices dans l'ordre où la
+   * carrière les joue : l'acte 1 finit à 24 cases avec deux variantes et une
+   * rafale (niveau 61), et l'acte 2 n'a jamais dépassé 24 cases AVEC ZÉRO
+   * variante — il était donc un cran EN ARRIÈRE. Le premier exercice plus dur
+   * que la fin de l'acte 1 n'arrivait qu'au 33e sur 42.
+   *
+   * Les trois grilles identiques de l'acte 2 (14, 23, 17) restent identiques :
+   * c'est la seule façon de comparer deux balancements, et ça ne se négocie
+   * pas. Le palier s'ajoute APRÈS elles.
+   *
+   * Ce qui le rend plus dur n'est pas un empilement de nouveautés — c'est la
+   * RÉSOLUTION : seize cases par ligne au lieu de huit, et une caisse claire
+   * qui ne tombe plus sur les temps. Rien de neuf à apprendre, tout à
+   * entendre plus finement.
+   *
+   * ⚠️ Et il est écrit pour ne satisfaire AUCUNE exigence de la commande de
+   * Kelvin, dont il est devenu le point de départ (`partirDu`) : kick sur les
+   * quatre temps (donc jamais entre deux), charley sur les seize cases (donc
+   * aucune place), pas une variante. Le cahier s'ouvre toujours à 0/4. */
+  mkLevel(63, 'Le double du double', {
+    preamble: "Même durée, deux fois plus de cases : on descend à la double-croche. Le kick et le charley ne bougent pas — c'est la caisse claire qu'il faut suivre, et elle ne tombe plus là où tu l'attends.",
+    tempoOptions: [88, 92],
+    grille: {
+      subdiv: { kick: 16, snare: 16, hat: 16 },
+      kick:  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      swing: 20,
+    } }),
+
   /* ---------- Ce qui bouge tout seul ----------
    *
    * Le premier niveau qui fait entendre les trois boutons d'ALÉA du groove —
