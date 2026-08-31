@@ -185,6 +185,31 @@ intention explicite ouvre ce qu'il faut pour l'honorer, et rien de plus.
 `tests/commande.test.ts` croise désormais le cahier ET le verrou à l'instant où
 la commande se joue.
 
+⚠️ **Une commande peut aussi TRANSFORMER — `partirDu`, et sa condition.**
+*« Pour l'acte 2 avec Kelvin : commencer par retranscrire le rythme demandé,
+puis partir directement de ce rythme dans l'Atelier et le transformer
+progressivement. On ne les apprend pas de manière abstraite, on les utilise
+parce qu'on en a besoin »* (Yann). Ça n'annule pas la règle ci-dessous, ça la
+déplace, et il faut savoir laquelle gouverne : ce qu'elle interdit n'est pas un
+Atelier non vide, c'est **une case cochée avant qu'on ait touché à quoi que ce
+soit**. Partir d'un rythme est donc permis à une condition, et une seule — le
+cahier doit exiger ce que ce rythme n'a PAS. Trois choses tenues par
+`tests/transformer.test.ts` : aucune TÂCHE cochée à l'ouverture (pour toutes les
+commandes, pas seulement celles qui transforment) ; `partirDu` ne cite qu'un
+niveau à **grille écrite**, sinon le point de départ serait tiré au sort et le
+travail demandé avec lui ; et ce niveau doit être joué **dans le même acte**,
+sinon « transforme celle-là » désigne un rythme jamais vu. Le test confronte
+aussi les données au CÂBLAGE (`departCommande()`) — la dernière fois qu'un
+cahier s'est coché tout seul, c'est parce que le `DEPART` comparé n'était pas
+celui que l'écran affichait.
+
+⚠️ **Une INTERDICTION n'est pas une tâche — `Contrainte.interdit`.** « Ton
+morceau, pas le preset chargé » est satisfaite tant qu'on ne triche pas et se
+DÉcoche si on triche : l'exiger décochée à l'ouverture voudrait dire « commence
+par tricher ». Elle est marquée dans les données plutôt que nommée à la main
+dans un test — une exception qu'on ne voit qu'en lisant un test est une
+exception que personne ne voit.
+
 ⚠️ **Une commande part d'un Atelier VIDE — `etatVierge()`.** `defaultState()`
 est le motif d'accueil, et ce motif est du Motown : ouvrir une commande dessus
 cochait des cases du cahier avant que le joueur ait touché quoi que ce soit

@@ -65,6 +65,19 @@ export interface Contrainte {
    * qui n'afficherait que son verdict global dirait « pas assez dancehall »,
    * ce qui n'est pas un retour. */
   details?: (etat: PatternStateV2) => Array<{ id: string; libelle: string; ok: boolean }>;
+  /* ⚠️ Une INTERDICTION, pas une tâche — et la distinction n'est pas cosmétique.
+   *
+   * Presque toutes les lignes d'un cahier décrivent quelque chose à FAIRE, donc
+   * décoché à l'ouverture et coché quand c'est fait. « Ton morceau, pas le
+   * preset chargé depuis le menu » est l'inverse : elle est satisfaite tant
+   * qu'on ne triche pas, et elle se DÉcoche si on triche.
+   *
+   * Sans ce champ, la règle « aucune case n'est cochée à l'ouverture » —
+   * celle qui garantit qu'un cahier n'est pas du théâtre — devrait faire une
+   * exception nommée à la main dans un test, c'est-à-dire une exception que
+   * personne ne verrait en lisant les données. `tests/transformer.test.ts`
+   * s'en sert pour ne mesurer que ce qui est une tâche. */
+  interdit?: boolean;
 }
 
 /** Le verdict d'une livraison : une case par ligne du cahier, et le total. */
@@ -317,7 +330,9 @@ export function deLEspaceSansSoupe(
 export function pasUnPresetCharge(
   libelle = 'Ton morceau, pas un preset chargé',
 ): Contrainte {
-  return { id: 'pas-un-preset', libelle, verifie: (_e, ctx) => !ctx?.presetCharge };
+  // Une INTERDICTION : satisfaite tant qu'on ne triche pas, décochée si on
+  // triche. Voir `Contrainte.interdit`.
+  return { id: 'pas-un-preset', libelle, interdit: true, verifie: (_e, ctx) => !ctx?.presetCharge };
 }
 
 /* ⚠️ La contrainte qui doit être dans TOUTES les commandes, et qui n'a rien
@@ -333,6 +348,55 @@ export function pasUnPresetCharge(
  * Une commande doit constater qu'on a PRODUIT quelque chose. On compare aux
  * grilles de départ, pas à une cible : n'importe quelle modification suffit.
  */
+/* ---- Ce qu'un client demande quand il part d'un rythme existant --------
+ *
+ * ⚠️ Ces deux contraintes existent pour une raison précise : une commande qui
+ * TRANSFORME (voir `etatDepuisGrille`) doit exiger ce que son point de départ
+ * n'a pas. Sinon la check-list se coche à l'ouverture — le défaut que
+ * `etatVierge()` avait corrigé, et qu'on réintroduirait par la porte de
+ * derrière en repartant d'un rythme.
+ */
+
+/** Au moins un coup de kick ENTRE deux temps — la syncope de l'acte 1. */
+export function kickQuiSortDuTemps(
+  libelle = 'Le kick sort du temps au moins une fois',
+): Contrainte {
+  return {
+    id: 'kick-syncope',
+    libelle,
+    verifie: (e) => {
+      const r = e.rows.kick;
+      if (r.muted) return false;
+      const parTemps = r.subdiv / 4;
+      // Une subdivision qui ne se divise pas en quatre temps n'a pas de
+      // « entre deux temps » définissable : on ne prétend pas la juger.
+      if (!Number.isInteger(parTemps) || parTemps < 2) return false;
+      return r.pattern.slice(0, r.subdiv).some((v, i) => v > 0 && i % parTemps !== 0);
+    },
+  };
+}
+
+/** Le charley laisse des trous — de la place pour ce qui se pose dessus. */
+export function dePlacePourLaVoix(
+  libelle = 'Le charley laisse de la place',
+): Contrainte {
+  return {
+    id: 'place-voix',
+    libelle,
+    verifie: (e) => {
+      const r = e.rows.hat;
+      if (r.muted) return false;
+      const pas = r.pattern.slice(0, r.subdiv);
+      const joues = pas.filter((v) => v > 0).length;
+      /* Il faut que le charley SONNE (un charley coupé n'est pas « de la
+       * place », c'est une ligne en moins) et qu'il laisse au moins un trou.
+       * Un charley plein n'est pas une faute en soi — mesuré, 18 presets sur
+       * 34 en ont un — mais c'est ce que CE client demande de changer. */
+      return joues > 0 && joues < r.subdiv;
+    },
+  };
+}
+
 export function pasLeMotifDeDepart(
   depart: PatternStateV2,
   libelle = 'Il faut y avoir touché',

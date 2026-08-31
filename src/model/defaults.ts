@@ -10,6 +10,7 @@ import {
   type SynthRowState,
   type SynthRowName,
   type SynthGlobalState,
+  type DrumStep,
 } from './types';
 import { defaultSynthVoice } from './presets/voices';
 
@@ -160,4 +161,58 @@ export function defaultState(): PatternStateV2 {
     synthGlobal: defaultSynthGlobal(),
     ghostRow: 'snare',
   };
+}
+
+/* Un état d'Atelier bâti à partir d'un rythme ÉCRIT — le point de départ d'une
+ * commande qui se TRANSFORME au lieu de se créer.
+ *
+ * ⚠️ Retour de Yann : *« pour l'acte 2 avec Kelvin, on pourrait commencer par
+ * retranscrire dans le séquenceur le rythme demandé, puis partir directement de
+ * ce rythme dans l'atelier, le transformer progressivement en jouant avec
+ * différents paramètres, et arriver à une production correspondant à ce qu'il
+ * demande. C'est une bonne manière de faire découvrir les paramètres : on ne
+ * les apprend pas de manière abstraite, on les utilise parce qu'on en a besoin
+ * pour fabriquer quelque chose. »*
+ *
+ * ⚠️ Ça n'annule PAS la règle « une commande part d'un Atelier vide », ça la
+ * déplace, et il faut comprendre laquelle des deux on garde. Le défaut
+ * d'origine n'était pas « l'Atelier n'est pas vide » : c'était **la check-list
+ * se cochait toute seule**. Partir d'un rythme est donc permis à une condition
+ * stricte, et une seule — que le cahier exige ce que ce rythme n'a PAS. Un
+ * cahier satisfait par son propre point de départ est du théâtre, exactement
+ * comme avant. `tests/transformer.test.ts` en fait le test central.
+ *
+ * ⚠️ Et le départ vient d'une grille ÉCRITE, jamais d'un niveau généré : sinon
+ * le point de départ serait tiré au sort, donc le travail demandé aussi, et on
+ * ne saurait plus ce que la commande fait faire.
+ */
+export function etatDepuisGrille(
+  g: {
+    subdiv: { kick: number; snare: number; hat: number };
+    kick: number[];
+    snare: number[];
+    hat: number[];
+    rolls?: Partial<Record<'kick' | 'snare' | 'hat', number[]>>;
+    swing?: number;
+    drag?: number;
+    shift?: Partial<Record<'kick' | 'snare' | 'hat', number>>;
+  },
+  tempo: number,
+): PatternStateV2 {
+  const st = etatVierge();
+  st.tempo = tempo;
+  st.swing = g.swing ?? 0;
+  st.drag = g.drag ?? 0;
+  for (const l of ['kick', 'snare', 'hat'] as const) {
+    const r = st.rows[l];
+    r.subdiv = g.subdiv[l];
+    r.pattern = new Array(MAXSTEPS).fill(0);
+    r.rolls = new Array(MAXSTEPS).fill(1);
+    for (let i = 0; i < g.subdiv[l]; i++) {
+      r.pattern[i] = (g[l][i] ?? 0) as DrumStep;
+      r.rolls[i] = g.rolls?.[l]?.[i] ?? 1;
+    }
+    r.shiftPct = g.shift?.[l] ?? 0;
+  }
+  return st;
 }

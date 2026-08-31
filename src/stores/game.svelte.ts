@@ -52,7 +52,7 @@ import {
   LONGUEUR_EPILOGUE,
 } from '../model/carriere';
 import { evaluerCommande, type Verdict, type ContexteLivraison } from '../model/commande';
-import { etatVierge } from '../model/defaults';
+import { etatVierge, etatDepuisGrille } from '../model/defaults';
 import { pattern } from './pattern.svelte';
 import { history } from './history.svelte';
 import {
@@ -571,15 +571,36 @@ class GameStore {
   ouvrirCommande(): void {
     if (this.etapeCourante?.kind !== 'commande') return;
     this.commandeEnCours = { acte: this.acteActif, etape: this.etapeActive };
-    /* ⚠️ L'Atelier part de RIEN. `defaultState()` est le motif d'accueil, et ce
-     * motif est du Motown : ouvrir une commande dessus cochait des cases du
-     * cahier avant que le joueur ait touché quoi que ce soit (retour de Yann
-     * après une partie complète). Une commande demande de produire — elle part
-     * d'une table rase, `etatVierge()`. */
+    /* ⚠️ D'où part l'Atelier, et pourquoi il y a DEUX réponses.
+     *
+     * Par défaut : de RIEN. `defaultState()` est le motif d'accueil, et ce
+     * motif est du Motown — ouvrir une commande dessus cochait des cases du
+     * cahier avant que le joueur ait touché quoi que ce soit.
+     *
+     * Mais une commande peut aussi partir du rythme qu'on vient de reproduire
+     * (`partirDu`), et le travail devient alors une TRANSFORMATION. Ce n'est
+     * pas un retour en arrière sur la règle : ce qu'elle interdit, c'est une
+     * check-list cochée d'avance, pas un Atelier non vide. La condition est
+     * donc reportée sur le CAHIER, qui doit exiger ce que le rythme de départ
+     * n'a pas — et c'est vérifié par un test, pas par la vigilance. */
     history.push();
-    pattern.replace(etatVierge());
+    pattern.replace(this.departCommande());
     this.commandeVerdict = null;
     this.commandeAcceptee = null;
+  }
+
+  /* L'état sur lequel s'ouvre l'Atelier pour la commande courante.
+   *
+   * Table rase par défaut ; le rythme d'un niveau ÉCRIT si l'étape le demande.
+   * Un `partirDu` qui pointe vers un niveau sans grille écrite retombe sur la
+   * table rase plutôt que de partir d'un rythme tiré au sort — mais c'est un
+   * défaut de données, et `tests/transformer.test.ts` le refuse. */
+  departCommande(): PatternStateV2 {
+    const e = this.etapeCourante;
+    if (e?.kind !== 'commande' || e.partirDu === undefined) return etatVierge();
+    const l = LEVELS.find((x) => x.id === e.partirDu);
+    if (!l?.grille) return etatVierge();
+    return etatDepuisGrille(l.grille, l.tempoOptions[0]);
   }
 
   /* Livrer le morceau qu'on vient de faire.

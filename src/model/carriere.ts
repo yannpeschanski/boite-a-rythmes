@@ -39,9 +39,12 @@ import {
   kickQuiPorte,
   avoirEnleve,
   deLEspaceSansSoupe,
+  kickQuiSortDuTemps,
+  dePlacePourLaVoix,
+  auMoinsUneVariante,
 } from './commande';
 import { ficheStyle } from './styles';
-import { etatVierge } from './defaults';
+import { etatVierge, etatDepuisGrille } from './defaults';
 
 /* Le point de départ d'une commande, figé une fois : toutes s'en servent pour
  * refuser une livraison qu'on n'a pas touchée (voir `pasLeMotifDeDepart`).
@@ -53,6 +56,13 @@ import { etatVierge } from './defaults';
  * toute seule à l'ouverture, exactement le défaut que Yann a signalé. */
 const DEPART = etatVierge();
 const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
+
+/* Le point de départ de la commande de Kelvin — le rythme du niveau 17, celui
+ * que le joueur vient de reproduire. Une commande qui TRANSFORME compare à son
+ * propre départ, pas à la table rase : sinon « il faut y avoir touché » serait
+ * coché dès l'ouverture, puisque l'Atelier n'est justement pas vide. */
+const NIVEAU_KELVIN = LEVELS.find((l) => l.id === 17)!;
+const DEPART_KELVIN = etatDepuisGrille(NIVEAU_KELVIN.grille!, NIVEAU_KELVIN.tempoOptions[0]);
 
 /* La fiche du genre commandé par Zik'Mobile. Chargée une fois : elle sert à la
  * fois de brief affiché et de juge (voir `model/styles.ts`). */
@@ -185,6 +195,22 @@ export interface EtapeCommande {
    * n'est pas ce qu'on lui enseigne (retour de Yann : « il faut avoir une
    * description du style éventuellement »). */
   chapeau?: string[];
+  /* ⚠️ D'où part l'Atelier — l'`id` d'un niveau à GRILLE ÉCRITE.
+   *
+   * Sans ce champ, une commande part d'une table rase (`etatVierge()`). Avec
+   * lui, elle part du rythme que le joueur vient de reproduire, et le travail
+   * demandé devient une TRANSFORMATION : « on n'apprend pas les paramètres de
+   * manière abstraite, on les utilise parce qu'on en a besoin pour fabriquer
+   * quelque chose » (Yann).
+   *
+   * ⚠️ Deux conditions, non négociables — voir `etatDepuisGrille` :
+   *   - le niveau cité doit avoir une grille ÉCRITE, jamais générée, sinon le
+   *     point de départ serait tiré au sort et le travail demandé avec lui ;
+   *   - le cahier doit exiger ce que ce rythme n'a PAS. Un cahier satisfait
+   *     par son propre point de départ est du théâtre, et c'est exactement le
+   *     défaut que `etatVierge()` avait corrigé.
+   * `tests/transformer.test.ts` tient les deux. */
+  partirDu?: number;
   /** Ce que Sol dit quand elle accepte. */
   accepte: string;
   /** Le titre sous lequel la discographie range le morceau livré. */
@@ -715,10 +741,22 @@ export const ACTES: Acte[] = [
           'Va dans l’Atelier. Fais-en une qui respire.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
+        /* ⚠️ L'Atelier s'ouvre SUR le rythme du niveau 17 — celui que le
+         * joueur vient de reproduire, celui que Kelvin a entendu. Le travail
+         * n'est plus « fais-en une », c'est « transforme celle-là ».
+         *
+         * Le cahier est donc écrit contre ce point de départ : le rythme de
+         * départ ne satisfait AUCUNE des trois exigences. Kick sur 1 et 3
+         * (donc jamais entre deux temps), charley sur les huit cases (donc
+         * aucune place), pas une variante. La check-list s'ouvre à 0/3 et
+         * chaque case demande un vrai geste — c'est la condition qui remplace
+         * « l'Atelier part vide ». `tests/transformer.test.ts` la tient. */
+        partirDu: 17,
         cahier: [
-          AVOIR_PRODUIT,
-          lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes, comme il les attend'),
-          swingAuMoins(8, 'Pas carré — personne ne danse carré'),
+          pasLeMotifDeDepart(DEPART_KELVIN, 'Il faut y avoir touché'),
+          kickQuiSortDuTemps('Fais bouger le kick — qu’il sorte du temps'),
+          dePlacePourLaVoix('Laisse de la place : le charley ne joue pas tout'),
+          auMoinsUneVariante('Quelque chose qui ne se répète pas — rim shot ou charley ouvert'),
         ],
         accepte: '— Là. Ça respire. Tu vois quand tu veux.',
         titre: 'SANS TITRE',

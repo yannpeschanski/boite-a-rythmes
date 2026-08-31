@@ -7211,6 +7211,114 @@ dates, acte 0 à refaire, roasts, besaces, courbe de difficulté). Priorisé dan
 
 ---
 
+### ✅ Chantier B, tranche 1 — la boucle de Kelvin se transforme (2026-08-28)
+
+> « Pour l'acte 2 avec Calvin, on pourrait commencer par retranscrire dans le
+> séquenceur le rythme demandé, puis partir directement de ce rythme dans
+> l'atelier, le transformer progressivement en jouant avec différents
+> paramètres, et arriver à une production correspondant à ce qu'il demande.
+> C'est une bonne manière de faire découvrir les paramètres : on ne les apprend
+> pas de manière abstraite, on les utilise parce qu'on en a besoin. »
+
+Premier morceau du chantier B, sur l'exemple exact de Yann.
+
+#### ⚠️ Le conflit, traité et non contourné
+
+La demande contredit **deux arbitrages écrits** : « une commande part d'un
+Atelier VIDE » (`etatVierge()`, CLAUDE.md) et « on n'emporte PAS la grille du
+dernier exercice — une commande est un travail à faire, pas une correction à
+retoucher » (GameView).
+
+Relire *pourquoi* ces règles existent résout le conflit au lieu de choisir un
+camp. Le défaut d'origine n'était pas « l'Atelier n'est pas vide » : c'était
+**la check-list se cochait toute seule** (« la check-list dans l'atelier est
+déjà remplie quand on ouvre l'exercice »). Partir d'un rythme est donc permis à
+une condition, et une seule : **le cahier doit exiger ce que ce rythme n'a
+pas.** La règle se déplace du point de départ vers le cahier — et devient
+testable, ce qu'elle n'était pas.
+
+#### Ce qui a été construit
+
+- `etatDepuisGrille()` (`model/defaults.ts`) — un état d'Atelier bâti depuis une
+  grille écrite, feel compris. Pure, donc testable.
+- `EtapeCommande.partirDu?: number` — l'`id` du niveau dont on part.
+- `game.departCommande()` — table rase par défaut, le rythme cité sinon.
+- Deux contraintes neuves, calibrées sur les 34 presets : `kickQuiSortDuTemps`
+  (16/34) et `dePlacePourLaVoix` (12/34). Satisfaisables par de vraies
+  musiques, jamais gratuites.
+
+#### Le cahier de Kelvin, réécrit contre son point de départ
+
+L'Atelier s'ouvre sur le rythme du niveau 17 — celui que le joueur vient de
+reproduire, celui que Kelvin a entendu :
+
+```
+kick  1 0 0 0 1 0 0 0      swing 30
+snare 0 0 1 0 0 0 1 0
+hat   1 1 1 1 1 1 1 1
+```
+
+Ce rythme ne satisfait **aucune** des trois exigences : kick sur 1 et 3 (jamais
+entre deux temps), charley sur les huit cases (aucune place), pas une variante.
+Mesuré dans l'appli : la check-list s'ouvre à **0/4**.
+
+L'ancien cahier, lui, aurait été coché à 2/3 dès l'ouverture — « les trois
+lignes » et « pas carré » sont vraies du rythme de départ. C'est exactement le
+défaut que la nouvelle règle interdit, et c'est pourquoi le cahier a dû être
+réécrit et pas seulement déplacé.
+
+#### ⚠️ Une distinction qui manquait : tâche ou interdiction
+
+Le test « aucune case cochée à l'ouverture » a immédiatement trouvé un cas :
+« Ton morceau — pas le preset chargé depuis le menu » EST cochée au départ, et
+c'est normal — c'est une **interdiction**, satisfaite tant qu'on ne triche pas.
+L'exiger décochée voudrait dire « commence par tricher ».
+
+D'où `Contrainte.interdit`, marqué dans les DONNÉES et pas nommé à la main dans
+un test : une exception qu'on ne voit qu'en lisant un test est une exception que
+personne ne voit. Deux tests en découlent — les tâches sont décochées à
+l'ouverture, et les interdictions sont cochées (sinon le marquage serait faux).
+
+#### Un état « qui satisfait tout » n'existe pas
+
+Le constructeur de `tests/commande.test.ts` posait ses gestes
+inconditionnellement. Les deux nouveaux **cassaient la fiche techno de l'acte
+4** : un charley troué contredit un charley en doubles-croches, et redessiner le
+kick efface le four-on-the-floor. Les gestes sont donc appliqués **seulement si
+le cahier les demande**. Deux clients peuvent demander l'inverse l'un de
+l'autre — c'est même le signe que les cahiers disent quelque chose.
+
+Même correction dans `scripts/parcours-carriere.cjs`, qui s'est bloqué à l'acte
+2 au premier essai : il jouait le jeu et ne savait pas produire les nouveaux
+gestes. Il a fait son travail.
+
+#### Ce qui le vérifie
+
+397 tests (9 neufs), 0 erreur de types, les deux builds. Parcours complet sur
+serveur fraîchement démarré : les six commandes acceptées, six productions au
+bout. Et la vérification qui compte, dans l'appli en marche : l'Atelier s'ouvre
+sur `kick 10001000 / snare 00100010 / hat 11111111 / swing 30`, cahier à 0/4,
+aucune erreur console.
+
+#### Fichiers touchés
+
+`src/model/defaults.ts` (`etatDepuisGrille`), `src/model/commande.ts`
+(`kickQuiSortDuTemps`, `dePlacePourLaVoix`, `Contrainte.interdit`),
+`src/model/carriere.ts` (`partirDu`, cahier de Kelvin),
+`src/stores/game.svelte.ts` (`departCommande`), `tests/transformer.test.ts`
+(neuf), `tests/commande.test.ts`, `scripts/parcours-carriere.cjs`, `CLAUDE.md`,
+`PLAN.md`, `REPRISE.md`.
+
+#### Reste du chantier B
+
+Les cinq autres commandes partent encore d'une table rase. Chacune demande le
+même travail : choisir le rythme de départ, puis réécrire son cahier contre ce
+rythme — c'est la moitié coûteuse, et elle ne se délègue pas à un test. Et les
+ghost notes et les fills attendent toujours leur maison : un cahier sait
+demander « ajoute des ghost notes », une grille ne sait pas les dessiner.
+
+---
+
 ### ✅ Chantier A, tranche 3 — cinq polyrythmies pour deux idées (2026-08-27)
 
 Dernière tranche du rattrapage. Les données disaient elles-mêmes ce qu'il
