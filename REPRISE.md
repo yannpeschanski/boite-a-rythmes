@@ -3,7 +3,8 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-31, après la passe de difficulté (acte 1 à 7).
+> Dernière mise à jour : 2026-08-31, après la seconde passe de difficulté
+> (actes 1 et 2 : un sujet, deux exercices).
 
 ## Où en est le projet
 
@@ -11,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 426 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 441 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -22,7 +23,7 @@ attente dans `HISTOIRE.md`.
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
-| Niveaux | 66 (34 de campagne + le reste du réservoir) |
+| Niveaux | 73 (34 de campagne + le reste du réservoir) |
 | Commandes (production à livrer) | 5, aux actes 2 à 6 |
 
 ## Le déverrouillage — tranché le 2026-08-26
@@ -155,8 +156,12 @@ chaque ligne à un locuteur. À faire ensemble.
    trop lente, tu peux rendre le jeu nettement plus difficile »* (2026-08-31) :
    la suite des cases faisait une **SCIE** (12, 16, 20, 16, 16, 24, 16, 24),
    parce que chaque nouveauté était montrée sur un backbeat remis au propre.
-   Elle monte désormais sans reculer (12, 16, 24, 24, 24, 32, 32, 32) et l'acte
-   2 ouvre à 48. Voir `PLAN.md`, « La courbe monte deux fois plus haut ».
+   Elle monte désormais sans reculer et l'acte 2 ouvre à son sommet. Puis une
+   seconde passe le même jour — *« ça n'a pas assez changé […] on ne doit pas
+   simplement changer une note en une rafale pour introduire rafale »* : une
+   nouveauté se pose désormais au PLURIEL et un sujet vaut DEUX exercices.
+   L'acte 1 passe à douze exercices (12 → 48 cases, 4 → 26 notes), l'acte 2 à
+   douze. Voir `PLAN.md`, « Un sujet, deux exercices ».
    **Reste l'acte 2** : beaucoup d'exercices d'atelier.
 10. **Étendre les grilles écrites au-delà de l'acte 1** — les autres actes citent
     encore des niveaux générés (~28 exercices de grille). Même chantier, même
