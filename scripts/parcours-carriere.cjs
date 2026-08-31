@@ -121,6 +121,26 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         st.rows.kick.tone = 60;
         st.rows.hat.filterCutoff = 6000;
         st.rows.snare.reverbSend = 0.2;
+        /* Les gestes d'une commande qui TRANSFORME (acte 2 depuis le
+           2026-08-28) : le joueur part du rythme qu'il vient de reproduire et
+           doit le changer. On applique donc les deux gestes demandés — mais
+           SEULEMENT si le cahier les réclame, jamais sur une commande de
+           genre : un charley troué contredirait la fiche techno, et redessiner
+           le kick effacerait le four-on-the-floor. Un état « qui satisfait
+           tout » n'existe pas, et c'est le signe que les cahiers disent
+           quelque chose. */
+        const exige = (id) => e.cahier.some((c) => c.id === id);
+        if (exige('kick-syncope')) {
+          st.rows.kick.subdiv = 8;
+          st.rows.kick.pattern = new Array(32).fill(0);
+          [0, 3, 4].forEach((i) => (st.rows.kick.pattern[i] = 1));
+        }
+        if (exige('place-voix')) {
+          st.rows.hat.subdiv = 8;
+          st.rows.hat.pattern = new Array(32).fill(0);
+          [0, 1, 2, 4, 5, 6].forEach((i) => (st.rows.hat.pattern[i] = 1));
+          st.rows.hat.pattern[7] = 2;
+        }
         // Une rafale d'accent sur le charley — la techno en demande une.
         st.rows.hat.rolls = new Array(32).fill(1);
         st.rows.hat.rolls[3] = 3;

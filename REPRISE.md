@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 388 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 397 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -160,7 +160,7 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 388 tests (les tests aléatoires affirment ce qui est vrai à
+**Vérifié** — types, 397 tests (les tests aléatoires affirment ce qui est vrai à
 chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
 par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
 mesurées dans l'appli en marche : elles sont posées au bit près, rafales
@@ -284,10 +284,26 @@ contre 32 à l'audit, sans qu'un seul niveau ait été écrit de zéro. Les 20 q
 restent le sont chacun pour une raison écrite (voir PLAN.md, tranche 3) — plus
 aucun par accident.
 
-**Prochain : chantier B** — l'Atelier au cœur de chaque acte (reproduire →
-transformer → livrer). C'est le point central du brief de Yann, celui qui achète
-les heures qui manquent, et la bonne maison pour les ghost notes et les fills
-qu'une grille ne sait pas dessiner.
+**Chantier B — tranche 1 FAITE (2026-08-28).** L'acte 2 est la première commande
+qui TRANSFORME : l'Atelier s'ouvre sur le rythme du niveau 17 que le joueur
+vient de reproduire, et le cahier de Kelvin a été réécrit contre ce rythme —
+check-list à **0/4** à l'ouverture, mesuré dans l'appli.
+
+⚠️ **Le conflit à ne pas rouvrir.** Deux règles écrites disaient « une commande
+part d'un Atelier vide ». Elles ne sont pas annulées : ce qu'elles interdisent
+est une case cochée d'avance, pas un Atelier non vide. Partir d'un rythme est
+permis **à condition que le cahier exige ce que ce rythme n'a pas**, et
+`tests/transformer.test.ts` est cette condition. Deux corollaires trouvés en
+route : `Contrainte.interdit` (une interdiction est légitimement cochée au
+départ) et le fait qu'un état « qui satisfait tous les cahiers » n'existe pas —
+la fiche techno veut un charley plein, Kelvin veut un charley troué.
+
+**Reste du chantier B** : les cinq autres commandes partent encore d'une table
+rase. Chacune demande le même travail — choisir le rythme de départ, puis
+réécrire son cahier contre ce rythme. C'est la moitié coûteuse et elle ne se
+délègue pas à un test. Les ghost notes et les fills (niveaux 20, 21) attendent
+toujours leur maison : un cahier sait demander « ajoute des ghost notes », une
+grille ne sait pas les dessiner.
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 

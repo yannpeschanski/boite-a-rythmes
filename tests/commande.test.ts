@@ -239,6 +239,25 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
   st.rows.kick.tone = 60;
   st.rows.hat.filterCutoff = 6000;
   st.rows.snare.reverbSend = 0.2;
+  /* ⚠️ Les gestes d'une commande qui TRANSFORME (acte 2) sont appliqués
+   * SEULEMENT si le cahier les demande, et jamais sur une commande de genre.
+   *
+   * Posés inconditionnellement, ils cassaient la fiche techno de l'acte 4 : un
+   * charley troué contredit un charley en doubles-croches, et redessiner le
+   * kick efface le four-on-the-floor. Un état « qui satisfait tout » n'existe
+   * pas — deux clients peuvent demander l'inverse l'un de l'autre, et c'est
+   * même le signe que les cahiers disent quelque chose. */
+  const demande = (id: string) => cahier.some((c) => c.id === id);
+  if (demande('kick-syncope')) {
+    st.rows.kick.subdiv = 8;
+    st.rows.kick.pattern = [1, 0, 0, 1, 1, 0, 0, 0] as never;
+    st.rows.kick.rolls = [3, 1, 1, 1, 1, 1, 1, 1];
+  }
+  if (demande('place-voix')) {
+    st.rows.hat.subdiv = 8;
+    st.rows.hat.pattern = [1, 1, 1, 0, 1, 1, 1, 2] as never;
+    st.rows.hat.rolls = [1, 1, 1, 1, 1, 1, 1, 1];
+  }
   return st;
 }
 
@@ -259,16 +278,28 @@ describe('aucune commande du récit n’est un cul-de-sac', () => {
     }
   });
 
-  it('et refuse une livraison qu’on n’a pas touchée', async () => {
-    // L'état RÉEL au moment où la commande s'ouvre : la table rase. Ouvrir une
-    // commande vide l'Atelier depuis le 2026-08-27 — tester `defaultState()`
-    // ici ne dirait plus rien de ce que le joueur a sous les yeux.
+  it('et refuse une livraison qu’on n’a pas touchée — depuis SON point de départ', async () => {
+    /* ⚠️ L'état réel au moment où la commande s'ouvre n'est plus toujours la
+     * table rase : depuis `partirDu`, une commande peut s'ouvrir sur le rythme
+     * qu'on vient de reproduire (acte 2). Tester `etatVierge()` pour toutes
+     * ne dirait plus rien de ce que le joueur a sous les yeux — et laisserait
+     * passer exactement le défaut qu'on veut éviter, une check-list cochée à
+     * l'ouverture.
+     *
+     * On compare donc chaque commande à SON propre départ. */
     const { ACTES } = await import('../src/model/carriere');
-    const { etatVierge } = await import('../src/model/defaults');
+    const { etatVierge, etatDepuisGrille } = await import('../src/model/defaults');
+    const { LEVELS } = await import('../src/model/presets/levels');
     for (const a of ACTES) {
       for (const e of a.etapes) {
         if (e.kind !== 'commande') continue;
-        const v = evaluerCommande(etatVierge(), e.cahier);
+        let depart = etatVierge();
+        if (e.partirDu !== undefined) {
+          const l = LEVELS.find((x) => x.id === e.partirDu);
+          expect(l?.grille, `acte ${a.id} : partirDu ${e.partirDu} sans grille écrite`).toBeTruthy();
+          depart = etatDepuisGrille(l!.grille!, l!.tempoOptions[0]);
+        }
+        const v = evaluerCommande(depart, e.cahier);
         expect(v.accepte, `acte ${a.id} — « ${e.entete} »`).toBe(false);
         // Et « il faut y avoir touché » doit être DÉCOCHÉ : une case cochée à
         // l'ouverture est ce qui a fait dire « la check-list est déjà remplie ».
