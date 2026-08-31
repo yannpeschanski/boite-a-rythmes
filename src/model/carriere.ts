@@ -607,7 +607,7 @@ export const ACTES: Acte[] = [
        * progression avec des tirages. */
       { kind: 'exercice', niveau: 5, commande: 'La claire du dernier temps part en rim shot. Repère-la.' },
       { kind: 'exercice', niveau: 59, commande: 'Le charley, lui, s’ouvre une fois. À la toute fin.' },
-      { kind: 'exercice', niveau: 60, commande: 'Les deux dans le même rythme, sur un kick qui sort du temps.' },
+      { kind: 'exercice', niveau: 60, commande: 'Les deux dans le même rythme — et le charley descend à la double-croche. Seize cases pour lui seul.' },
       { kind: 'exercice', niveau: 8, commande: 'Et une seule part en rafale. C’est elle qui donne l’urgence.' },
       { kind: 'exercice', niveau: 61, commande: 'Le dernier. Tout ce que tu sais, dans une mesure.' },
       {
@@ -719,7 +719,7 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 14,
-        commande: 'Maintenant refais-le, avec le balancement dedans. Les cases sont simples : c’est de les entendre qui ne l’est pas.',
+        commande: 'Maintenant refais-le, avec le balancement dedans. Seize cases par ligne : ce n’est plus seulement de l’entendre, c’est de le tenir.',
       },
       {
         kind: 'recit',

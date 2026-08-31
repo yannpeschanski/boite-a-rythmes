@@ -706,23 +706,22 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
      * impossible — on ne savait pas si ce qu'on entendait venait du feel ou
      * d'un motif différent.
      *
-     * ⚠️ La règle porte sur le GROUPE À COMPARER, pas sur l'acte entier. La
-     * première version exigeait que toutes les grilles de l'acte soient
-     * identiques ; elle a bloqué l'ajout du palier de difficulté (niveau 63,
-     * seize cases) alors que ce niveau n'est pas là pour être comparé aux
-     * trois autres — il est là pour être plus dur. On regroupe donc par
-     * SUBDIVISION : à résolution égale, les grilles doivent être identiques. */
-    const grilles = grillesDeLActe2();
-    expect(grilles.length).toBeGreaterThanOrEqual(3);
-    const cases = (l: (typeof grilles)[number]) =>
+     * ⚠️ La règle porte sur le GROUPE À COMPARER, pas sur l'acte entier — et
+     * ce groupe est NOMMÉ, il ne se devine plus. Deux heuristiques ont déjà
+     * cédé ici : « toutes les grilles de l'acte » (cassée par l'ajout du
+     * palier 63), puis « à résolution égale, identiques » (cassée le
+     * 2026-08-31, quand le trio est passé lui aussi en doubles-croches pour
+     * monter la difficulté). Une heuristique qui se re-corrige à chaque
+     * ajustement de contenu ne vérifie plus une intention, elle décrit l'état
+     * du fichier. Les trois niveaux à comparer sont 14, 17 et 23. */
+    const TRIO = [14, 17, 23];
+    const trio = TRIO.map((id) => LEVELS.find((l) => l.id === id)!);
+    for (const l of trio) expect(l.grille, `niveau ${l.id} : grille écrite`).toBeTruthy();
+    // Et ils sont bien tous les trois joués dans l'acte 2.
+    const joues = niveauxDeLActe(ACTES[2]);
+    for (const id of TRIO) expect(joues, `niveau ${id} absent de l’acte 2`).toContain(id);
+    const cases = (l: (typeof trio)[number]) =>
       JSON.stringify([l.grille!.subdiv, l.grille!.kick, l.grille!.snare, l.grille!.hat]);
-    const parResolution = new Map<number, typeof grilles>();
-    for (const l of grilles) {
-      const r = l.grille!.subdiv.hat;
-      parResolution.set(r, [...(parResolution.get(r) ?? []), l]);
-    }
-    const trio = [...parResolution.values()].sort((a, b) => b.length - a.length)[0];
-    expect(trio.length, 'il faut au moins trois grilles comparables').toBeGreaterThanOrEqual(3);
     expect([...new Set(trio.map(cases))], 'les grilles du trio diffèrent').toHaveLength(1);
     // Et le feel, lui, diffère bien d'un niveau à l'autre du trio.
     const feels = trio.map((l) => JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]));

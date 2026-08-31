@@ -151,16 +151,24 @@ describe('chaque niveau écrit tient ce que son préambule annonce', () => {
     expect(compte(ligne(l, 'hat'), 2)).toBe(0);
   });
 
-  it('61 — « la syncope, le rim shot, l’ouverture, et une rafale »', () => {
+  it('61 — « DEUX syncopes, le rim shot, l’ouverture, et deux rafales »', () => {
     const l = niveau(61);
-    expect(ligne(l, 'kick')[3], 'la syncope').toBe(1);
+    const k = ligne(l, 'kick');
+    // « le « et » de 2 ET le « et » de 4 » : huit croches, les contretemps
+    // sont les index impairs.
+    expect(k.map((v, i) => (v && i % 2 === 1 ? i : -1)).filter((i) => i >= 0), 'deux syncopes').toEqual([3, 7]);
     expect(compte(ligne(l, 'snare'), 2), 'le rim shot').toBe(1);
-    expect(compte(ligne(l, 'hat'), 2), 'l’ouverture').toBe(1);
+    const h = ligne(l, 'hat');
+    expect(l.grille!.subdiv.hat, 'le charley en doubles-croches').toBe(16);
+    expect(compte(h, 2), 'l’ouverture').toBe(1);
+    expect(h[h.length - 1], 'sur la toute dernière double-croche').toBe(2);
     const r = rafales(l, 'hat');
-    expect(r.filter((v) => v > 1), 'une rafale, une seule').toHaveLength(1);
-    // « sur le « et » du troisième temps » : huit croches, le 3e temps
-    // commence à l'index 4, son « et » est le 5.
-    expect(r[5], 'sur le « et » du 3e temps').toBeGreaterThan(1);
+    expect(r.filter((v) => v > 1), 'deux rafales').toHaveLength(2);
+    // « celle du « et » du troisième temps » : seize cases, le 3e temps
+    // commence à l'index 8, son « et » est le 10.
+    expect(r[10], 'sur le « et » du 3e temps').toBeGreaterThan(1);
+    // « et celle qui relance la boucle » : dans le dernier temps.
+    expect(r.slice(12).some((v) => v > 1), 'la relance').toBe(true);
   });
 });
 
@@ -205,6 +213,90 @@ describe('l’acte 0 tient ce que ses trois frappes annoncent', () => {
     expect(horsTemps).toHaveLength(1);
     const precedent = ligne(niveau(65), 'kick').findIndex((v, i) => v > 0 && i % 2 === 1);
     expect(horsTemps[0], 'sinon il se rejoue de mémoire au lieu de se lire').not.toBe(precedent);
+  });
+});
+
+/* ---- LA COURBE, DANS L'ORDRE OÙ ELLE SE JOUE --------------------------
+ *
+ * ⚠️ Retour de Yann (2026-08-31) : « acte 1 : la progression est trop lente,
+ * tu peux rendre le jeu nettement plus difficile ; acte 2 : idem ». Mesuré
+ * dans l'ordre réel de la carrière, l'acte 1 était une SCIE : 12 cases, 16,
+ * 20, puis retour à 16 pour le rim shot, encore 16 pour l'ouverture, 24, de
+ * nouveau 16 pour la rafale, 24. Chaque nouveauté repartait du backbeat le
+ * plus simple, donc six exercices sur huit se jouaient au niveau du deuxième.
+ *
+ * Chaque niveau était cohérent avec lui-même ; c'est l'ENCHAÎNEMENT qui ne
+ * l'était pas — et c'est exactement ce qu'aucun test ne regardait, déjà la
+ * cause du palier de l'acte 2. On mesure donc la suite, pas les niveaux. */
+describe('la courbe ne redescend jamais', () => {
+  /* ⚠️ Ce qu'on mesure est la RÉSOLUTION — le nombre de cases à lire — et pas
+   * un score de difficulté fourre-tout.
+   *
+   * Un niveau qui ISOLE une nouveauté en retire délibérément d'autres : le
+   * niveau 8 (« la rafale ») repose la claire et referme le charley pour
+   * qu'on n'écoute que la rafale, donc il porte MOINS de variantes que celui
+   * d'avant, exprès. Compter les variantes dans le poids ferait échouer ce
+   * test sur une décision pédagogique juste. La résolution, elle, n'a aucune
+   * raison de redescendre : elle est ce qui s'ACQUIERT, et c'est très
+   * exactement ce qui redescendait. */
+  const poids = (l: GameLevel) => {
+    const g = l.grille!;
+    return g.subdiv.kick + g.subdiv.snare + g.subdiv.hat;
+  };
+
+  const suiteEcrite = (acte: number) =>
+    ACTES.find((a) => a.id === acte)!
+      .etapes.filter((e) => e.kind === 'exercice')
+      .map((e) => niveau((e as { niveau: number }).niveau))
+      .filter((l) => l.grille);
+
+  it('⚠️ l’acte 1 ne revient jamais à une résolution déjà quittée', () => {
+    const suite = suiteEcrite(1);
+    expect(suite.length, 'les huit rythmes écrits').toBe(8);
+    const poidss = suite.map(poids);
+    poidss.forEach((p, i) => {
+      if (i === 0) return;
+      expect(
+        p,
+        `niveau ${suite[i].id} (${p} cases) redescend sous le niveau ${suite[i - 1].id} (${poidss[i - 1]})`,
+      ).toBeGreaterThanOrEqual(poidss[i - 1]);
+    });
+    // Et elle monte VRAIMENT : le dernier a plus du double des cases du premier.
+    expect(poidss[poidss.length - 1]).toBeGreaterThanOrEqual(2 * poidss[0]);
+  });
+
+  it('⚠️ et chaque nouveauté de l’acte 1 est POSÉE sur la grille acquise', () => {
+    /* L'autre moitié du même défaut : la scie ne venait pas d'un oubli mais
+     * d'une habitude — on réécrivait le backbeat le plus simple pour montrer
+     * la nouveauté « au propre ». Résultat : le rim shot et la rafale
+     * s'apprenaient sur un rythme plus facile que celui d'avant, et le joueur
+     * refaisait trois fois le niveau 3. Une nouveauté se montre sur ce qu'on
+     * sait déjà faire. */
+    const suite = suiteEcrite(1);
+    // Les six derniers partent tous du kick syncopé du niveau 7.
+    const syncope = ligne(niveau(7), 'kick');
+    for (const l of suite.slice(2)) {
+      expect(l.grille!.subdiv.kick, `niveau ${l.id} : le kick a perdu sa résolution`).toBe(8);
+      const k = ligne(l, 'kick');
+      expect(
+        k.some((v, i) => v > 0 && i % 2 === 1),
+        `niveau ${l.id} : la syncope acquise au niveau 7 a disparu`,
+      ).toBe(true);
+      // Le niveau 61 en ajoute une seconde ; aucun n'en enlève.
+      expect(k.filter((v) => v > 0).length, `niveau ${l.id}`).toBeGreaterThanOrEqual(
+        syncope.filter((v) => v > 0).length,
+      );
+    }
+  });
+
+  it('⚠️ et l’acte 2 commence au-dessus de la fin de l’acte 1', () => {
+    /* Le défaut mesuré en août : l'acte 2 plafonnait sous la fin de l'acte 1,
+     * donc le récit avançait pendant que les exercices reculaient. On exige
+     * désormais que sa PREMIÈRE grille soit déjà au niveau de la dernière de
+     * l'acte 1 — pas seulement son maximum. */
+    const fin1 = poids(suiteEcrite(1).at(-1)!);
+    const debut2 = poids(suiteEcrite(2)[0]);
+    expect(debut2, `acte 2 démarre à ${debut2}, acte 1 finit à ${fin1}`).toBeGreaterThanOrEqual(fin1);
   });
 });
 

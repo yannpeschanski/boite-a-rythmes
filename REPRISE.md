@@ -3,7 +3,7 @@
 > À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
 > ceci en est la carte). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-31, après la refonte de l'acte 0.
+> Dernière mise à jour : 2026-08-31, après la passe de difficulté (acte 1 à 7).
 
 ## Où en est le projet
 
@@ -11,7 +11,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 423 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 426 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -150,10 +150,13 @@ chaque ligne à un locuteur. À faire ensemble.
 7. **Acte 2** : remplacer les quiz « lequel » par des réglages.
 8. **Acte 2** : la commande en plusieurs étapes (« fais d'abord un poom check
    poom poom chack », puis le reste du cahier).
-9. ~~**Monter la difficulté de l'acte 1**~~ — fait. Cinq exercices → huit, tous
-   à **grille écrite** : backbeat, trio, syncope, puis rim shot, charley ouvert,
-   les deux ensemble, rafale, tout ensemble. Chacun n'ajoute qu'une chose, ce
-   qu'un tirage ne sait pas faire (`GrilleEcrite`, `tests/grilles-ecrites.test.ts`).
+9. ~~**Monter la difficulté de l'acte 1**~~ — fait deux fois. D'abord cinq
+   exercices → huit, tous à **grille écrite**. Puis, sur *« la progression est
+   trop lente, tu peux rendre le jeu nettement plus difficile »* (2026-08-31) :
+   la suite des cases faisait une **SCIE** (12, 16, 20, 16, 16, 24, 16, 24),
+   parce que chaque nouveauté était montrée sur un backbeat remis au propre.
+   Elle monte désormais sans reculer (12, 16, 24, 24, 24, 32, 32, 32) et l'acte
+   2 ouvre à 48. Voir `PLAN.md`, « La courbe monte deux fois plus haut ».
    **Reste l'acte 2** : beaucoup d'exercices d'atelier.
 10. **Étendre les grilles écrites au-delà de l'acte 1** — les autres actes citent
     encore des niveaux générés (~28 exercices de grille). Même chantier, même
@@ -248,7 +251,10 @@ Mesuré sur le code, pas de mémoire (`main de2eaa4`) :
   la plage 14 à 34 : swing, traîne, ghost notes, fill, décalage, polyrythmie,
   mesure longue. C'est la moitié du jeu qui n'existe que dans le tableau (seuls
   les presets 27 et 32 sont rattrapés par l'acte 5).
-- **La carrière dure 60 à 125 min**, la cible de Yann est 120 au minimum.
+- **La carrière dure 60 à 125 min**, la cible de Yann est 120 au minimum. La
+  passe de difficulté du 31 août ne change pas le NOMBRE d'exercices (43) : elle
+  monte les marches, elle n'en ajoute pas — allonger les actes aurait aggravé
+  « la progression est trop lente ».
 - ~~10 boutons enseignés sur 155 réglages~~ → **14 depuis le 2026-08-31** :
   ghost notes, vélocité aléatoire, rafales spontanées et saturation, tous mesurés
   en rejouant le scheduler. Deux candidats **écartés par la mesure** (compression
