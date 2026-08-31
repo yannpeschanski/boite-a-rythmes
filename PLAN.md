@@ -7144,6 +7144,91 @@ qu'un ajout en fin de lot.
 
 ---
 
+### ✅ La courbe monte deux fois plus haut — la scie de l'acte 1 (2026-08-31)
+
+> « acte 0 : ok pour le moment. acte 1 : la progression est trop lente, tu peux
+> rendre le jeu nettement plus difficile. acte 2 : idem. etc. Je préfère que ce
+> soit trop difficile que pas assez. » — Yann
+
+**Ce qui a été mesuré d'abord.** Les 43 exercices parcourus dans l'ordre réel de
+la carrière, chacun réduit à ce qu'il demande : cases à lire, notes à poser,
+variantes, rafales. L'acte 1 faisait une **SCIE** —
+
+| | 2 | 3 | 7 | 5 | 59 | 60 | 8 | 61 |
+|---|---|---|---|---|---|---|---|---|
+| avant | 12 | 16 | 20 | **16** | **16** | 24 | **16** | 24 |
+| après | 12 | 16 | 24 | 24 | 24 | 32 | 32 | 32 |
+
+**La cause n'était pas un oubli, c'était une habitude de rédaction :** chaque
+niveau réécrivait le backbeat le plus simple pour montrer sa nouveauté « au
+propre ». Le rim shot, l'ouverture et la rafale s'apprenaient donc sur un
+rythme PLUS FACILE que celui d'avant, et six exercices sur huit se jouaient au
+niveau du deuxième. C'est ça, « la progression est trop lente » : ce n'est pas
+que l'acte monte doucement, c'est qu'il redescend cinq fois.
+
+**Ce qui a changé.**
+
+- **Acte 1** — les six derniers rythmes partent tous du kick syncopé du niveau
+  7 et n'en redescendent jamais ; le charley passe en doubles-croches au niveau
+  60 (la nouveauté de ce niveau-là est la RÉSOLUTION, les deux variantes étant
+  acquises) et y reste. Le niveau 61, la sonnerie qu'on exporte, passe de
+  13 notes / 2 variantes / 1 rafale à **22 notes / 2 variantes / 2 rafales**,
+  avec deux syncopes au lieu d'une.
+- **Acte 2** — le trio comparatif (14, 23, 17) passe en **doubles-croches** :
+  48 cases, 23 notes, contre 24 et 12. Le kick et la claire y sont syncopés mais
+  restent sur des pas **PAIRS**, seuls non retardés par le swing : « le kick
+  tient le temps » reste vrai au bit près, et `tests/feel-ecrit.test.ts` continue
+  de le mesurer. Le niveau 63 perd son rôle (« le double du double » était déjà
+  fait) et prend celui que le cahier de Kelvin laisse libre — **la claire**, six
+  coups dont quatre sur des pas impairs, donc déplacés par le balancement. Le
+  kick sur les quatre temps, le charley sur les seize cases et l'absence de
+  variante sont **inchangés** : le cahier s'ouvre toujours à 0/4, vérifié.
+- **Acte 3** — la mélodie : 3-4 notes → **5-6** (42), 2-3 → **3-4** (43, la
+  moitié pleine du motif), 4-5 → **6-7** sur toute la gamme (44). Une phrase de
+  trois notes se retient sans l'entendre.
+- **Acte 5** — le niveau 24 fermait l'acte sur **12 cases**, la grille la plus
+  légère du jeu après le tout premier backbeat, en 41e position sur 43. Les
+  cycles restent premiers entre eux (c'est la leçon) mais passent de 3/4/5 à
+  **5/7/9** : aucun pas partagé ailleurs qu'au tout début, vérifié.
+- **Acte 7** — « jouer » : 2-3 coups en plus de l'ancre → **3-4** (37) et
+  **4-5** (38). ⚠️ Le TEMPO n'a pas bougé — il a été baissé deux fois après
+  essai, ce n'est pas lui qu'on remonte.
+
+**Deux textes qui mentaient après coup**, corrigés dans `carriere.ts` : « les
+cases sont simples » devant le trio de l'acte 2 (elles ne le sont plus), et la
+commande du niveau 60, qui ne disait pas la double-croche qu'elle introduit.
+
+**Ce que les tests regardent maintenant.** `tests/grilles-ecrites.test.ts` gagne
+un bloc « la courbe ne redescend jamais » : la résolution ne recule jamais à
+l'intérieur de l'acte 1, le dernier a plus du double des cases du premier,
+chaque niveau après le 7 garde sa syncope, et l'acte 2 démarre au-dessus de la
+fin de l'acte 1. ⚠️ Le poids mesuré est la **résolution seule** : un premier
+jet comptait aussi variantes et rafales et échouait sur le niveau 8, qui repose
+la claire et referme le charley EXPRÈS pour qu'on n'entende que la rafale. Un
+test qui punit une décision juste mesure la mauvaise chose.
+
+⚠️ **Le test du trio de l'acte 2 nomme désormais ses trois niveaux.** Deux
+heuristiques y ont cédé successivement — « toutes les grilles de l'acte »
+(cassée par l'ajout du palier 63), puis « à résolution égale, identiques »
+(cassée ici, quand le trio est passé lui aussi en doubles-croches). Une
+heuristique qui se re-corrige à chaque ajustement de contenu ne vérifie plus
+une intention, elle décrit l'état du fichier.
+
+**Vérifié :** 426 tests, 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf (huit actes, cinq
+commandes acceptées, six productions, épilogue atteint, aucune erreur console) ;
+et quatre captures Playwright en 390×840 sur les grilles qui changent de forme —
+0 px de débordement horizontal, cases de 18,7 px à seize par ligne, 35,5 px sur
+le 5/7/9.
+
+**Écart de portée assumé :** aucun exercice n'a été AJOUTÉ. « La progression est
+trop lente » se corrige en montant les marches, pas en en ajoutant — allonger
+les actes aurait aggravé le symptôme. Les niveaux `reproduire` de preset de
+l'acte 5 (dix exercices sur dix-huit) ne bougent pas non plus : leur difficulté
+est celle des presets réels, et la toucher voudrait dire réécrire les morceaux.
+
+---
+
 ### ✅ L'acte 0 se joue avec les MAINS — les `lequel` sortent, le tap entre (2026-08-31)
 
 > « l'acte 0 est à refaire à 0, il faut enlever les questions "lequel", mettre

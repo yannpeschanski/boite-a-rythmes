@@ -560,13 +560,14 @@ export const LEVELS: GameLevel[] = [
     presetId: 'motown' }),
   // ---------- Variante (2 niveaux : une seule, puis complète) ----------
   mkLevel(5, 'Un rim shot', {
-    preamble: "Une case active peut porter une VARIANTE : reclique-la et la caisse claire passe en rim shot — le bord du fût, pas la peau, un claquement sec. Ici, une seule des deux claires en porte une. C'est la dernière.",
-    tempoOptions: [84, 92],
+    preamble: "Une case active peut porter une VARIANTE : reclique-la et la caisse claire passe en rim shot — le bord du fût, pas la peau, un claquement sec. Le rythme, lui, est celui que tu viens de faire, syncope comprise : une seule des deux claires porte la variante, et c'est la dernière.",
+    tempoOptions: [88, 96],
     variant: { snare: true, hat: true },
     grille: {
-      subdiv: { kick: 4, snare: 4, hat: 8 },
-      kick:  [1, 0, 1, 0],
-      snare: [0, 1, 0, 2],
+      // La grille du niveau 7, à l'identique : on n'ajoute QUE le rim shot.
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 2, 0],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1],
     } }),
   mkLevel(6, 'Variante (complète)', {
@@ -576,26 +577,33 @@ export const LEVELS: GameLevel[] = [
     density: { kickMin: 0, kickMax: 0, snareMin: 1, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
   // ---------- Round 1 : Subdivision + Rafale, entrelacés, avec presets ----------
   mkLevel(7, 'Le kick qui sort du temps', {
-    preamble: "La mesure se découpe en huit cases pour le kick et le charley : il peut maintenant tomber ENTRE deux temps. Ce décalage-là a un nom, la syncope, et c'est ce qui sépare un rythme qui marche d'un rythme qui groove.",
+    preamble: "Les trois lignes passent en croches : huit cases chacune, et le kick peut désormais tomber ENTRE deux temps. Ce décalage-là a un nom, la syncope, et c'est ce qui sépare un rythme qui marche d'un rythme qui groove.",
     tempoOptions: [88, 96],
     grille: {
       // kick sur 1, sur le « et » de 2, et sur 3 — il quitte la grille des
       // temps une fois, et c'est tout ce qu'on demande d'entendre ici.
-      subdiv: { kick: 8, snare: 4, hat: 8 },
+      //
+      // ⚠️ La claire passe en croches elle aussi (elle sonne aux mêmes
+      // instants qu'au niveau 3, sur les temps 2 et 4) : ce n'est pas une
+      // nouveauté de plus, c'est la RÉSOLUTION qui monte et ne redescendra
+      // plus. Les six niveaux qui suivent partent tous de cette grille-ci.
+      subdiv: { kick: 8, snare: 8, hat: 8 },
       kick:  [1, 0, 0, 1, 1, 0, 0, 0],
-      snare: [0, 1, 0, 1],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1],
     } }),
   mkLevel(8, 'Une rafale', {
-    preamble: "Clic droit (ou appui long) sur une case active : elle part en RAFALE, plusieurs coups rapprochés au lieu d'un seul. Une seule ici, sur le tout dernier charley — c'est elle qui relance la boucle.",
-    tempoOptions: [84, 92],
+    preamble: "Clic droit (ou appui long) sur une case active : elle part en RAFALE, plusieurs coups rapprochés au lieu d'un seul. Une seule ici, sur la toute dernière double-croche du charley — c'est elle qui relance la boucle. Aucune variante à côté : c'est la rafale qu'on écoute.",
+    tempoOptions: [88, 96],
     variant: { snare: true, hat: true }, rollMax: 3,
     grille: {
-      subdiv: { kick: 4, snare: 4, hat: 8 },
-      kick:  [1, 0, 1, 0],
-      snare: [0, 1, 0, 1],
-      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
-      rolls: { hat: [1, 1, 1, 1, 1, 1, 1, 3] },
+      // Le charley reste en doubles-croches (acquis au niveau 60) ; seule la
+      // rafale est neuve, et elle est seule pour qu'on l'entende.
+      subdiv: { kick: 8, snare: 8, hat: 16 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      rolls: { hat: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3] },
     } }),
   mkLevel(9, 'Reproduire un preset (Tresillo)', {
     preamble: "La cellule tresillo (3+3+2), toute simple à l'origine — variante et rafale y sont ajoutées pour l'occasion, histoire de vérifier que ça reste acquis.",
@@ -623,17 +631,26 @@ export const LEVELS: GameLevel[] = [
    * impossible — on ne pouvait pas savoir si ce qu'on entendait venait du
    * balancement ou d'un motif différent.
    *
-   * Le motif est un backbeat en croches : le charley couvre les pas IMPAIRS,
-   * seuls retardés par le swing (voir `contexte` dans parametres.ts). Sur un
-   * motif posé sur [0, 2, 4, 6], le swing n'aurait aucun effet audible. */
+   * Le charley couvre les seize cases, donc tous les pas IMPAIRS, seuls
+   * retardés par le swing (voir `contexte` dans parametres.ts). Sur un motif
+   * posé uniquement sur les pas pairs, le swing n'aurait aucun effet audible.
+   *
+   * ⚠️ LA GRILLE EST EN DOUBLES-CROCHES depuis le 2026-08-31, et ce n'est pas
+   * cosmétique. Retour de Yann : « acte 1 : la progression est trop lente, tu
+   * peux rendre le jeu nettement plus difficile ; acte 2 : idem ». Mesuré dans
+   * l'ordre réel de la carrière, le trio valait 24 cases et 12 notes — soit
+   * moins que le 6e exercice de l'acte 1, joué huit exercices plus tôt. Il en
+   * vaut 48 et 23. Ce qui monte est la RÉSOLUTION, pas le nombre d'idées : le
+   * kick et la claire restent sur des pas PAIRS (donc jamais retardés par le
+   * swing), ce qui laisse « le kick tient le temps » exactement vrai. */
   mkLevel(14, 'Le balancement', {
-    preamble: "Le rythme peut « balancer » : les cases entre les temps arrivent un peu en retard, et la boucle cesse d'être carrée. Ici c'est léger. Les cases, elles, sont là où tu les attends — c'est ce qui change entre elles qu'il faut entendre.",
+    preamble: "Seize cases par ligne, et un rythme qui ne tombe plus là où tu l'attends : le kick sort du temps deux fois, la claire aussi. Par-dessus, le charley « balance » — les doubles-croches arrivent un peu en retard, et la boucle cesse d'être carrée. Ici c'est léger. Retiens la grille : les deux exercices suivants la reprennent case pour case.",
     tempoOptions: [88, 92],
     grille: {
-      subdiv: { kick: 8, snare: 8, hat: 8 },
-      kick:  [1, 0, 0, 0, 1, 0, 0, 0],
-      snare: [0, 0, 1, 0, 0, 0, 1, 0],
-      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      subdiv: { kick: 16, snare: 16, hat: 16 },
+      kick:  [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       swing: 12,
     } }),
   mkLevel(15, 'Traîne (drag)', {
@@ -648,10 +665,10 @@ export const LEVELS: GameLevel[] = [
     preamble: "La même grille, exactement. Seul le balancement change, et il est franc cette fois. Compare : ce sont les mêmes cases qui sonnent, elles ne tombent simplement plus au même endroit.",
     tempoOptions: [88, 92],
     grille: {
-      subdiv: { kick: 8, snare: 8, hat: 8 },
-      kick:  [1, 0, 0, 0, 1, 0, 0, 0],
-      snare: [0, 0, 1, 0, 0, 0, 1, 0],
-      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      subdiv: { kick: 16, snare: 16, hat: 16 },
+      kick:  [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       swing: 30,
     } }),
   mkLevel(18, 'Traîne (drag)', {
@@ -685,10 +702,10 @@ export const LEVELS: GameLevel[] = [
     preamble: "Toujours la même grille, sans balancement — mais le charley traîne derrière les deux autres. Une ligne peut être décalée toute seule, en avance ou en retard : c'est ce qui fait qu'un batteur ne sonne pas comme une machine.",
     tempoOptions: [88, 92],
     grille: {
-      subdiv: { kick: 8, snare: 8, hat: 8 },
-      kick:  [1, 0, 0, 0, 1, 0, 0, 0],
-      snare: [0, 0, 1, 0, 0, 0, 1, 0],
-      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+      subdiv: { kick: 16, snare: 16, hat: 16 },
+      kick:  [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       swing: 0,
       /* Le charley seul, et en RETARD : décalé contre deux lignes qui, elles,
        * ne bougent pas. Un décalage n'existe que par rapport à un point fixe —
@@ -713,14 +730,20 @@ export const LEVELS: GameLevel[] = [
    * Les trois autres restent au réservoir, jamais cités — un niveau ne se
    * supprime pas (voir la recherche par id dans `demarrerEtape`), il cesse
    * d'être cité. */
+  /* ⚠️ 3/4/5 et six notes jusqu'au 2026-08-31 : DOUZE cases, la grille la plus
+   * légère du jeu après le tout premier backbeat — et c'était le DERNIER
+   * exercice de l'acte 5, joué en 41e position sur 43. Un acte ne finit pas
+   * sur son exercice le plus facile. Les cycles restent premiers entre eux
+   * (c'est ça, la leçon), ils sont simplement assez longs pour qu'on ne les
+   * compte plus d'un coup d'œil : 5, 7 et 9. */
   mkLevel(24, 'Trois cycles à la fois', {
-    preamble: "Chaque ligne peut avoir sa propre longueur de cycle. Ici le kick boucle en 3, la claire en 4, le charley en 5 : les trois ne retombent ensemble qu'à la fin de la mesure. C'est ça, une polyrythmie.",
+    preamble: "Chaque ligne peut avoir sa propre longueur de cycle. Ici le kick boucle en 5, la claire en 7, le charley en 9 : aucune des trois ne partage un pas avec une autre ailleurs qu'au tout début, et elles ne retombent ensemble qu'à la fin de la mesure. C'est ça, une polyrythmie.",
     tempoOptions: [96, 104],
     grille: {
-      subdiv: { kick: 3, snare: 4, hat: 5 },
-      kick:  [1, 0, 0],
-      snare: [1, 0, 1, 0],
-      hat:   [1, 0, 1, 0, 1],
+      subdiv: { kick: 5, snare: 7, hat: 9 },
+      kick:  [1, 0, 1, 0, 0],
+      snare: [1, 0, 0, 1, 0, 1, 0],
+      hat:   [1, 0, 1, 1, 0, 1, 0, 1, 0],
     } }),
 mkLevel(25, 'Reproduire un preset (Clave)', {
     preamble: "Kick, snare et hat n'ont déjà plus du tout la même subdivision entre eux dans ce preset — la meilleure passerelle vers la polyrythmie.",
@@ -826,7 +849,10 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     // cause principale (voir justesseDesFrappes, qui moyennait tout le tour au
     // lieu de retenir la meilleure mesure), mais à l'oreille il faut entendre,
     // retenir PUIS placer — trois choses, et chacune prend du temps.
-    tempoOptions: [64, 72], density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+    // ⚠️ Le TEMPO reste bas — il a été baissé deux fois après essai, et ce
+    // n'est pas lui qu'on remonte. Ce qui monte est le nombre de coups à
+    // retenir : 2-3 → 3-4, sur les mêmes huit cases.
+    tempoOptions: [64, 72], density: { kickMin: 3, kickMax: 4, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
   mkLevel(38, 'Joue en rythme — à vue', {
     exercise: 'jouer', jouerIndice: 'lecture',
     preamble: "Cette fois le kick est muet : tu vois le motif, tu ne l'entends pas. Le hat te donne la pulsation, à toi de poser les coups au bon endroit. Écoute d'abord si tu veux, puis « ⏺ Jouer ».",
@@ -836,7 +862,9 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     tempoOptions: [68, 76],
     // Hat sur toutes les croches : c'est la pulsation, pas un motif. Sans elle,
     // « à vue » se jouerait dans le silence — donc au hasard.
-    density: { kickMin: 2, kickMax: 3, snareMin: 0, snareMax: 0, hatMin: 1, hatMax: 1 } }),
+    // 2-3 → 4-5 coups en plus de l'ancre : « à vue » est le plus dur des deux
+    // pilotes, il doit aussi être le plus chargé.
+    density: { kickMin: 4, kickMax: 5, snareMin: 0, snareMax: 0, hatMin: 1, hatMax: 1 } }),
 
   /* ---------- Pilotes des trois verbes de PARAMÈTRE (famille Timbre) ----------
    *
@@ -899,17 +927,23 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     exercise: 'melodie',
     preamble: "Une ligne de basse joue en boucle. Repose-la : choisis une case, appuie sur le degré entendu, la case suivante se sélectionne toute seule. La tonique du premier pas t'est donnée — c'est le repère. Les cinq premiers degrés seulement, de quoi entendre monter et descendre sans se perdre.",
     tempoOptions: [86, 92],
-    melodie: { pas: 8, degreMax: 5, notesMin: 3, notesMax: 4 } }),
+    // 3-4 notes → 5-6 : une phrase de trois notes se retient sans l'entendre,
+    // c'est de la chance autant que de l'oreille (« la progression est trop
+    // lente », Yann, 2026-08-31).
+    melodie: { pas: 8, degreMax: 5, notesMin: 5, notesMax: 6 } }),
   mkLevel(43, 'Un motif qui se répète', {
     exercise: 'melodie',
     preamble: "Cette fois la phrase se répète : la seconde moitié reprend la première, note pour note. Il n'y a donc que quatre pas à trouver — et une chose à entendre, celle qui fait qu'une mélodie tient : elle revient. Le ⌫ efface la case choisie.",
     tempoOptions: [86, 92],
-    melodie: { pas: 8, degreMax: 5, notesMin: 2, notesMax: 3, motif: true } }),
+    // Le motif n'a que quatre pas utiles : 3-4 notes, c'est la moitié pleine.
+    melodie: { pas: 8, degreMax: 5, notesMin: 3, notesMax: 4, motif: true } }),
   mkLevel(44, 'Toute la gamme', {
     exercise: 'melodie',
-    preamble: "Les sept degrés de la gamme, et une note de plus à placer. Les degrés hauts sont les plus durs à situer : compte depuis la tonique si tu te perds — c'est le degré 1, et c'est là que la phrase se repose.",
+    preamble: "Les sept degrés de la gamme, et une phrase presque pleine à replacer. Les degrés hauts sont les plus durs à situer : compte depuis la tonique si tu te perds — c'est le degré 1, et c'est là que la phrase se repose.",
     tempoOptions: [80, 88],
-    melodie: { pas: 8, degreMax: 7, notesMin: 4, notesMax: 5 } }),
+    // Le sommet de l'acte : toute la gamme ET la densité maximale (7 pas sur
+    // 8, la tonique donnée comprise).
+    melodie: { pas: 8, degreMax: 7, notesMin: 6, notesMax: 7 } }),
 
   /* ---------- Acte 2, « Le groove » : des paramètres qu'on RÈGLE ----------
    *
@@ -1048,66 +1082,77 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * (niveau 5) viennent l'ouverture du charley, les deux ensemble, puis tout
    * ensemble. Chacun ajoute UNE chose. */
   mkLevel(59, 'Un charley ouvert', {
-    preamble: "Le charleston aussi a sa variante : reclique-le et il s'OUVRE — un « tss » qui traîne au lieu d'un « tic » sec. Un seul ici, sur la toute dernière croche : c'est ce qui fait respirer la mesure avant qu'elle recommence.",
-    tempoOptions: [84, 92],
+    preamble: "Le charleston aussi a sa variante : reclique-le et il s'OUVRE — un « tss » qui traîne au lieu d'un « tic » sec. Un seul ici, sur la toute dernière croche : c'est ce qui fait respirer la mesure avant qu'elle recommence. La claire, elle, revient au repos — une nouveauté à la fois.",
+    tempoOptions: [88, 96],
     variant: { snare: true, hat: true },
     grille: {
-      subdiv: { kick: 4, snare: 4, hat: 8 },
-      kick:  [1, 0, 1, 0],
-      snare: [0, 1, 0, 1],
+      // Toujours la grille du niveau 7 : seule l'ouverture est neuve.
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
       hat:   [1, 1, 1, 1, 1, 1, 1, 2],
     } }),
   mkLevel(60, 'Les deux à la fois', {
-    preamble: "Rim shot ET charley ouvert dans le même rythme, sur un kick syncopé. Rien de neuf : ce sont les trois choses que tu viens d'apprendre, posées ensemble. C'est là qu'on voit si elles sont acquises.",
+    preamble: "Rim shot ET charley ouvert dans le même rythme. Et le charley descend d'un cran : seize cases au lieu de huit, deux fois plus de coups sur la même durée — c'est la double-croche, le débit de presque tout ce que tu écoutes. Le kick et la claire ne bougent pas.",
     tempoOptions: [88, 96],
     variant: { snare: true, hat: true },
     grille: {
-      subdiv: { kick: 8, snare: 8, hat: 8 },
+      /* ⚠️ Le charley passe en DOUBLES-CROCHES, et c'est la seule nouveauté :
+       * les deux variantes sont acquises (niveaux 5 et 59), le kick et la
+       * claire sont ceux du niveau 7. Ce qui rend ce niveau plus dur n'est pas
+       * un empilement, c'est la RÉSOLUTION — deux fois plus de cases à lire. */
+      subdiv: { kick: 8, snare: 8, hat: 16 },
       kick:  [1, 0, 0, 1, 1, 0, 0, 0],
       snare: [0, 0, 1, 0, 0, 0, 2, 0],
-      hat:   [1, 1, 1, 1, 1, 1, 1, 2],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
     } }),
   mkLevel(61, 'Tout ensemble', {
-    preamble: "Le dernier de la série, et il ne contient rien que tu n'aies déjà fait : la syncope, le rim shot, l'ouverture, et une rafale sur le « et » du troisième temps. Quatre choses, une mesure. C'est ta sonnerie.",
+    preamble: "Le dernier de la série, et il ne contient rien que tu n'aies déjà fait : DEUX syncopes du kick, le rim shot sur la dernière claire, l'ouverture sur la dernière double-croche, et deux rafales — celle du « et » du troisième temps, et celle qui relance la boucle. C'est ta sonnerie.",
     tempoOptions: [88, 96],
     variant: { snare: true, hat: true }, rollMax: 3,
     grille: {
-      subdiv: { kick: 8, snare: 8, hat: 8 },
-      kick:  [1, 0, 0, 1, 1, 0, 0, 0],
+      /* Le sommet de l'acte : rien de neuf, tout à la fois, et deux fois
+       * plutôt qu'une là où le niveau qui l'enseignait n'en posait qu'une.
+       * Le kick sort du temps sur le « et » de 2 ET sur le « et » de 4. */
+      subdiv: { kick: 8, snare: 8, hat: 16 },
+      kick:  [1, 0, 0, 1, 1, 0, 0, 1],
       snare: [0, 0, 1, 0, 0, 0, 2, 0],
-      hat:   [1, 1, 1, 1, 1, 1, 1, 2],
-      rolls: { hat: [1, 1, 1, 1, 1, 3, 1, 1] },
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+      // Seize cases : le 3e temps commence à l'index 8, son « et » est le 10.
+      rolls: { hat: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1] },
     } }),
 
   /* ---------- Le palier de l'acte 2 ----------
    *
    * ⚠️ Écrit après un retour de testeur : « le jeu reste trop longtemps trop
-   * facile ». Mesuré en parcourant les 42 exercices dans l'ordre où la
-   * carrière les joue : l'acte 1 finit à 24 cases avec deux variantes et une
-   * rafale (niveau 61), et l'acte 2 n'a jamais dépassé 24 cases AVEC ZÉRO
-   * variante — il était donc un cran EN ARRIÈRE. Le premier exercice plus dur
-   * que la fin de l'acte 1 n'arrivait qu'au 33e sur 42.
+   * facile ». Mesuré en parcourant les exercices dans l'ordre où la carrière
+   * les joue : l'acte 1 finissait à 24 cases avec deux variantes et une
+   * rafale (niveau 61), et l'acte 2 n'avait jamais dépassé 24 cases AVEC ZÉRO
+   * variante — il était donc un cran EN ARRIÈRE.
    *
    * Les trois grilles identiques de l'acte 2 (14, 23, 17) restent identiques :
    * c'est la seule façon de comparer deux balancements, et ça ne se négocie
    * pas. Le palier s'ajoute APRÈS elles.
    *
-   * Ce qui le rend plus dur n'est pas un empilement de nouveautés — c'est la
-   * RÉSOLUTION : seize cases par ligne au lieu de huit, et une caisse claire
-   * qui ne tombe plus sur les temps. Rien de neuf à apprendre, tout à
-   * entendre plus finement.
+   * ⚠️ Depuis le 2026-08-31 le trio est LUI AUSSI en doubles-croches (« acte 2
+   * : idem », Yann) : ce niveau ne peut donc plus être « celui qui double la
+   * résolution », c'était déjà fait. Ce qui le rend plus dur est ce que le
+   * cahier de Kelvin laisse libre — LA CLAIRE. Le kick et le charley sont
+   * imposés par la commande ; la claire, elle, se faufile sur six cases dont
+   * quatre sont des pas IMPAIRS, ceux que le swing retarde. C'est la seule
+   * ligne de tout le jeu qu'il faut placer contre un balancement.
    *
    * ⚠️ Et il est écrit pour ne satisfaire AUCUNE exigence de la commande de
-   * Kelvin, dont il est devenu le point de départ (`partirDu`) : kick sur les
+   * Kelvin, dont il est le point de départ (`partirDu`) : kick sur les
    * quatre temps (donc jamais entre deux), charley sur les seize cases (donc
    * aucune place), pas une variante. Le cahier s'ouvre toujours à 0/4. */
-  mkLevel(63, 'Le double du double', {
-    preamble: "Même durée, deux fois plus de cases : on descend à la double-croche. Le kick et le charley ne bougent pas — c'est la caisse claire qu'il faut suivre, et elle ne tombe plus là où tu l'attends.",
+  mkLevel(63, 'La claire qui se faufile', {
+    preamble: "Le kick tient les quatre temps, le charley couvre les seize cases : ces deux-là ne bougent plus de l'exercice. Toute la difficulté est sur la caisse claire, qui tombe six fois et presque jamais sur un temps — et le balancement la déplace encore. C'est le rythme que Kelvin a en tête.",
     tempoOptions: [88, 92],
     grille: {
       subdiv: { kick: 16, snare: 16, hat: 16 },
       kick:  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-      snare: [0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+      snare: [0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       swing: 20,
     } }),

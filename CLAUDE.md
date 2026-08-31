@@ -320,18 +320,31 @@ elle est hors de `parametres.ts`). Les niveaux 15 et 18 restent donc orphelins
 rejouant le scheduler, harnais partagé dans `tests/helpers/rejeu.ts`.
 
 ⚠️ **La COURBE se mesure dans l'ordre où la carrière joue, pas acte par acte.**
-Retour de testeur (2026-08-31) : *« le jeu reste trop longtemps trop facile »*.
-Mesuré en parcourant les 42 exercices dans leur ordre réel : l'acte 1 finissait
-à 24 cases avec deux variantes et une rafale, et l'acte 2 plafonnait à **24
-cases sans aucune variante** — il était un cran EN ARRIÈRE. Le premier exercice
-plus dur que la fin de l'acte 1 n'arrivait qu'au **33e sur 42**. Chaque acte
-était cohérent avec lui-même ; c'est l'enchaînement qui ne l'était pas, et
-aucun test ne regardait l'enchaînement. Le niveau 63 (seize cases par ligne)
-donne son palier à l'acte 2 et ramène ce seuil au 21e exercice. La règle à
-garder : un acte ne doit jamais finir plus facile que le précédent, et
-`tests/carriere.test.ts` le vérifie désormais pour l'acte 2. ⚠️ Ce qui rend un
-niveau plus dur ici n'est pas un empilement de nouveautés mais la
-**RÉSOLUTION** — deux fois plus de cases, rien de neuf à apprendre.
+Retour de testeur (2026-08-31) : *« le jeu reste trop longtemps trop facile »*,
+puis, de Yann : *« acte 1 : la progression est trop lente, tu peux rendre le jeu
+nettement plus difficile ; acte 2 : idem, etc. Je préfère que ce soit trop
+difficile que pas assez. »* Chaque acte était cohérent avec lui-même ; c'est
+l'ENCHAÎNEMENT qui ne l'était pas, et aucun test ne le regardait.
+
+⚠️ **Une nouveauté se montre sur ce qu'on sait déjà faire — pas sur une grille
+remise au propre.** C'est la cause, et elle est contre-intuitive : chaque
+niveau de l'acte 1 réécrivait le backbeat le plus simple pour isoler ce qu'il
+enseignait, si bien que la suite des cases faisait une SCIE — 12, 16, 20, puis
+retour à 16 pour le rim shot, 16 pour l'ouverture, 24, retour à 16 pour la
+rafale, 24. Six exercices sur huit se jouaient au niveau du deuxième. La série
+part désormais du kick syncopé du niveau 7 et n'en redescend jamais : 12, 16,
+24, 24, 24, 32, 32, 32, et l'acte 2 ouvre à 48. ⚠️ Ce qui rend un niveau plus
+dur ici n'est pas un empilement de nouveautés mais la **RÉSOLUTION** — deux
+fois plus de cases, rien de neuf à apprendre.
+
+Deux règles tenues par `tests/grilles-ecrites.test.ts` (« la courbe ne
+redescend jamais ») et une par `tests/carriere.test.ts` : la résolution ne
+recule jamais à l'intérieur de l'acte 1, chaque niveau de l'acte 1 garde la
+syncope acquise, et l'acte 2 démarre au-dessus de la fin de l'acte 1. ⚠️ Le
+poids mesuré est la RÉSOLUTION SEULE, jamais un score composite : un niveau qui
+isole une nouveauté en retire délibérément d'autres (le 8 repose la claire et
+referme le charley pour qu'on n'entende que la rafale), donc compter les
+variantes ferait échouer le test sur une décision juste.
 
 ⚠️ **L'acte 2 porte DEUX arbitrages successifs — ne pas restaurer l'un en
 croyant corriger l'autre.** Il citait cinq grilles générées ; retirées parce
@@ -342,7 +355,14 @@ ce qui revient n'est pas ce qui était parti : les niveaux 14, 17 et 23 sont
 **écrits**, sans une variante ni une rafale, et tous les trois sur la **même
 grille** — seul le feel change, ce qui est la seule façon de rendre deux
 balancements comparables. L'acte alterne désormais entendre → reposer →
-nommer → régler.
+nommer → régler. ⚠️ Depuis le 2026-08-31 ce trio est en **doubles-croches**
+(48 cases, kick et claire syncopés sur des pas PAIRS, donc jamais retardés par
+le swing) et le niveau 63 n'est plus « celui qui double la résolution » : il est
+la CLAIRE, la seule ligne que le cahier de Kelvin laisse libre. Et le trio se
+nomme désormais **par ses ids** dans le test : deux heuristiques y ont déjà
+cédé (« toutes les grilles de l'acte », puis « à résolution égale,
+identiques »), et une heuristique qui se re-corrige à chaque ajustement de
+contenu décrit l'état du fichier au lieu de vérifier une intention.
 
 ⚠️ **Un exercice qui se joue UNE fois ne se tire pas au sort — `GrilleEcrite`.**
 Arbitrage de Yann (2026-08-27) : « chaque personne ne les ferait qu'une seule
