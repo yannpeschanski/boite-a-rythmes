@@ -932,8 +932,14 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     exercise: 'lequel', familleParam: 'groove', paramsAutorises: ['shiftPct'],
     preamble: "Cette fois c'est la ligne entière qui glisse, en avance ou en retard sur le kick. Un décalage ne s'entend que par rapport à quelque chose : écoute le kick, il ne bouge pas.",
     subdivOptions: [8], tempoOptions: [92] }),
+  /* ⚠️ La liste est EXPLICITE, et c'est le titre qui l'impose : « Swing ou
+   * décalage ? » nomme deux réglages. `nommer` prend ses leurres dans toute la
+   * famille — la famille `groove` en comptant cinq depuis 2026-08-31, ce niveau
+   * serait devenu une question à quatre choix dont le titre annonce deux, sans
+   * qu'aucun test ne bronche. Un niveau qui gagne des leurres en silence parce
+   * qu'on a enrichi un catalogue est la version discrète du préambule qui ment. */
   mkLevel(47, 'Swing ou décalage ?', {
-    exercise: 'nommer', familleParam: 'groove',
+    exercise: 'nommer', familleParam: 'groove', paramsAutorises: ['swing', 'shiftPct'],
     preamble: "Deux boucles, un seul réglage les sépare. Le swing ne touche qu'un temps sur deux ; le décalage pousse toute la ligne. Mettre un nom sur ce qu'on entend, c'est ce qui permet ensuite d'aller le régler.",
     subdivOptions: [8], tempoOptions: [92] }),
   mkLevel(48, 'Règle le swing', {
@@ -1072,4 +1078,21 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       hat:   [1, 1, 1, 1, 1, 1, 1, 2],
       rolls: { hat: [1, 1, 1, 1, 1, 3, 1, 1] },
     } }),
+
+  /* ---------- Ce qui bouge tout seul ----------
+   *
+   * Le premier niveau qui fait entendre les trois boutons d'ALÉA du groove —
+   * ghost notes, vélocité aléatoire, rafales spontanées. Ils existaient dans
+   * l'Atelier depuis toujours et le jeu n'en enseignait aucun ; les niveaux 20
+   * et 21 les ANNONÇAIENT (« Ghost notes », « Fill ») sans que le code les
+   * pose jamais, faute de champs lus (`GameLevel.ghost` / `.fill`).
+   *
+   * Les trois sont mesurés dans le contexte réel de l'exercice, et deux
+   * candidats de plus ont été écartés parce que leur effet n'est pas monotone
+   * (voir `parametres.ts`). */
+  mkLevel(62, 'Ce qui bouge tout seul', {
+    exercise: 'lequel', familleParam: 'groove',
+    paramsAutorises: ['ghostDensity', 'randomVelocity', 'spontRoll'],
+    preamble: "Trois boucles, la même grille. Ce qui change ici n'est écrit dans aucune case : la machine ajoute des coups, ou fait varier leur force, toute seule. C'est ce qui sépare une boîte à rythmes d'un batteur.",
+    subdivOptions: [8], tempoOptions: [96] }),
 ];

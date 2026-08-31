@@ -731,6 +731,22 @@ export const ACTES: Acte[] = [
         niveau: 17,
         commande: 'Le sien, c’est celui-là. Franc. Refais-le une dernière fois avant de lui rendre sa boucle.',
       },
+      /* ⚠️ Le premier endroit du jeu où les boutons d'ALÉA s'entendent — ghost
+       * notes, vélocité aléatoire, rafales spontanées. Ils existaient dans
+       * l'Atelier depuis toujours et rien ne les enseignait ; les niveaux 20 et
+       * 21 les ANNONÇAIENT sans que le code les pose jamais.
+       *
+       * Ils tombent ici parce que c'est l'acte du groove, et que ce sont
+       * exactement ça : ce qui empêche une boucle de sonner comme une machine.
+       * Kelvin vient de dire « ça fait réveil » — c'est la réponse qui manquait. */
+      {
+        kind: 'exercice',
+        niveau: 62,
+        /* ⚠️ Pas de superlatif : le SENS de la question est tiré au sort
+         * (`paramSens`), donc « laquelle en fait le plus » mentirait une fois
+         * sur deux. On pose la PROPRIÉTÉ, l'écran pose la question. */
+        commande: 'Sol ajoute un dernier truc : — La machine peut jouer à côté toute seule. Là, c’est la quantité qui change.',
+      },
       {
         kind: 'commande',
         entete: 'KELVIN — IL ATTEND SA BOUCLE',
