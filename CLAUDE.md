@@ -337,14 +337,47 @@ part désormais du kick syncopé du niveau 7 et n'en redescend jamais : 12, 16,
 dur ici n'est pas un empilement de nouveautés mais la **RÉSOLUTION** — deux
 fois plus de cases, rien de neuf à apprendre.
 
-Deux règles tenues par `tests/grilles-ecrites.test.ts` (« la courbe ne
-redescend jamais ») et une par `tests/carriere.test.ts` : la résolution ne
-recule jamais à l'intérieur de l'acte 1, chaque niveau de l'acte 1 garde la
-syncope acquise, et l'acte 2 démarre au-dessus de la fin de l'acte 1. ⚠️ Le
-poids mesuré est la RÉSOLUTION SEULE, jamais un score composite : un niveau qui
-isole une nouveauté en retire délibérément d'autres (le 8 repose la claire et
-referme le charley pour qu'on n'entende que la rafale), donc compter les
-variantes ferait échouer le test sur une décision juste.
+⚠️ **Une nouveauté se pose au PLURIEL, et un sujet vaut deux exercices.**
+Second retour, le même jour : *« ça n'a pas assez changé […] on ne doit pas
+simplement changer une note en une rafale pour introduire rafale, il faut que
+ce soit bien plus difficile. Pour chaque niveau, on a le sujet. On peut faire
+plus d'exercices, prendre plus notre temps. »* Deux conséquences, tenues par
+des tests :
+
+- **une occurrence unique se trouve par ÉLIMINATION** — une seule variante sur
+  une ligne qui en compte deux, une seule rafale au dernier pas : le joueur
+  apprend le geste sans jamais entendre ce qu'il produit. Les niveaux posent
+  donc deux à quatre occurrences, **de longueurs et de timbres différents**
+  (quatre rafales de deux longueurs sur deux lignes au niveau 8), et les
+  variantes ne sont **ni la première ni la dernière** case de la ligne ;
+- **un sujet a deux exercices** — le premier le POSE, le second l'exige
+  ailleurs. L'acte 1 passe de huit à douze exercices (la base 2/67, le charley
+  3/68, la syncope 7/69, les variantes 5/59/60, la rafale 8/70, puis 61), et
+  l'acte 2 de neuf à douze (le swing, puis le décalage, chacun entendu, reposé
+  et **réglé**, puis les deux cumulés, puis l'aléa entendu et **nommé**).
+
+Ce n'est pas en contradiction avec « la progression est trop lente » : ce qui
+était lent, c'était la MONTÉE, pas le nombre d'écrans. On ajoute des marches,
+on n'en aplatit aucune.
+
+⚠️ **Seize cases par ligne est le plafond, et il est mesuré** — 18,7 px la case
+en 390 px de large. Trente-deux cases donneraient 9 px : on rendrait le jeu
+illisible en croyant le rendre difficile. Au-delà de l'acte 1, la difficulté
+change donc d'AXE plutôt que de résolution : **toutes** les grilles de l'acte 2
+portent un feel (swing, décalage, ou les deux), aucune de l'acte 1 n'en porte —
+les cases ne sonnent plus là où elles sont dessinées. C'est ce que vérifie
+`tests/carriere.test.ts`, à la place de l'ancien « strictement plus de cases ».
+
+Les règles sont tenues par `tests/grilles-ecrites.test.ts` (« la courbe ne
+redescend jamais ») et `tests/carriere.test.ts` : la résolution ne recule jamais
+à l'intérieur de l'acte 1, chaque niveau après le 7 garde une syncope, chaque
+nouveauté y est posée au moins deux fois, chaque sujet a son exercice
+d'application juste après sa découverte, et l'acte 2 démarre au niveau où
+l'acte 1 s'arrête, feel en plus. ⚠️ Le poids mesuré est la RÉSOLUTION SEULE,
+jamais un score composite : un niveau qui isole une nouveauté en retire
+délibérément d'autres (le 8 repose la claire et referme le charley pour qu'on
+n'entende que la rafale), donc compter les variantes ferait échouer le test sur
+une décision juste.
 
 ⚠️ **L'acte 2 porte DEUX arbitrages successifs — ne pas restaurer l'un en
 croyant corriger l'autre.** Il citait cinq grilles générées ; retirées parce

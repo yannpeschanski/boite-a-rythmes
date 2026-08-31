@@ -7144,6 +7144,90 @@ qu'un ajout en fin de lot.
 
 ---
 
+### ✅ Un sujet, deux exercices — et jamais une seule occurrence (2026-08-31)
+
+> « Ça n'a pas assez changé, il faut modifier les niveaux pour que ce soit plus
+> difficile, beaucoup plus difficile. Par exemple : on ne doit pas simplement
+> changer une note en une rafale pour introduire rafale, il faut que ce soit
+> bien plus difficile. Pour chaque niveau, on a le sujet. On peut faire plus
+> d'exercices, prendre plus notre temps… » — Yann, après la passe précédente
+
+**Le diagnostic tient dans l'exemple donné.** Le niveau « la rafale » posait UNE
+rafale, sur la dernière double-croche du charley. On la trouve à sa POSITION —
+la dernière case — sans jamais l'avoir écoutée : le geste est acquis, la leçon
+ne l'est pas. Même chose pour le rim shot (une variante sur une ligne qui en
+comptait deux : la mauvaise réponse est éliminée avant d'être entendue) et pour
+l'ouverture du charley. La passe précédente avait corrigé la COURBE ; celle-ci
+corrige ce que chaque marche contient.
+
+**Deux règles neuves, et elles vont ensemble.**
+
+1. **Une nouveauté se pose au PLURIEL**, de longueurs et de timbres différents.
+2. **Un sujet vaut deux exercices** — le premier le pose, le second l'exige
+   ailleurs. C'est le « prendre plus notre temps ».
+
+**L'acte 1 passe de 8 à 12 exercices**, six sujets, quatre niveaux neufs
+(67, 68, 69, 70) :
+
+| # | sujet | niveau | cases | notes | var | raf |
+|---|---|---|---|---|---|---|
+| 1 | la base | 2 | 12 | 4 | | |
+| 2 | la base | **67** Les quatre temps | 24 | 6 | | |
+| 3 | le charley | 3 Le trio | 24 | 14 | | |
+| 4 | le charley | **68** Le charley qui double | 32 | 22 | | |
+| 5 | la syncope | 7 Le kick qui sort du temps | 32 | 22 | | |
+| 6 | la syncope | **69** La claire sort du temps aussi | 32 | 23 | | |
+| 7 | les variantes | 5 Les rim shots | 32 | 24 | 2 | |
+| 8 | les variantes | 59 Les charleys ouverts | 32 | 22 | 3 | |
+| 9 | les variantes | 60 Les deux à la fois | 48 | 25 | 5 | |
+| 10 | la rafale | 8 Les rafales | 48 | 24 | | 4 |
+| 11 | la rafale | **70** La relance | 48 | 21 | 2 | 2 |
+| 12 | tout | 61 Tout ensemble | 48 | 26 | 5 | 3 |
+
+Le niveau 61 — la sonnerie qu'on exporte — passe de **13 notes / 2 variantes /
+1 rafale** (état de ce matin) à **26 notes / 5 variantes / 3 rafales**, sur
+trois lignes de seize. Le niveau 8 pose quatre rafales de deux longueurs sur
+deux lignes : la seule façon de le reposer est de COMPTER les coups de chacune.
+Et le 70 donne enfin une raison aux rafales — le charley s'arrête sur le
+dernier temps, la claire relance dans le trou. C'est un fill.
+
+**L'acte 2 passe de 9 à 12**, rangé par sujet plutôt qu'en alternance : le
+swing en entier (entendre → reposer léger → reposer franc → **régler**), puis le
+décalage en entier (entendre → reposer → **régler**, niveau 71 neuf), puis les
+deux (nommer → **les cumuler**, niveau 72 neuf : la seule grille où swing et
+décalage jouent ensemble), puis l'aléa (entendre → **nommer**, niveau 73 neuf),
+puis le palier. Le trio comparatif (14, 17, 23) garde sa grille unique, densifiée
+à 26 notes.
+
+⚠️ **Le plafond de résolution est atteint, et c'est mesuré.** Seize cases par
+ligne font 18,7 px la case en 390 px de large ; trente-deux en feraient 9. Le
+test de l'acte 2 ne peut donc plus exiger « strictement plus de cases que
+l'acte 1 » — il exigerait de rendre le jeu illisible. Il exige à la place que
+**toutes** les grilles de l'acte 2 portent un feel (swing, décalage, ou les
+deux) et qu'**aucune** de l'acte 1 n'en porte : au-delà du plafond, la
+difficulté change d'axe. Les cases ne sonnent plus là où elles sont dessinées.
+
+**Tests.** `tests/grilles-ecrites.test.ts` : chaque promesse de préambule
+réécrite contre sa nouvelle grille (5, 8, 59, 60, 61 au pluriel ; 67, 68, 70
+neufs), plus deux règles génériques — « une nouveauté se pose au pluriel »
+(toute variante ou rafale d'un niveau de l'acte 1 y est au moins deux fois) et
+« chaque sujet a deux exercices » (l'application suit immédiatement la
+découverte). La syncope acquise se mesure désormais en TEMPS et non en index,
+pour rester vraie quand une ligne change de subdivision.
+
+**Vérifié :** 441 tests, 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf (acte 1 à 16 étapes, acte
+2 à 17, cinq commandes acceptées, six productions, épilogue, aucune erreur
+console) ; quatre captures en 390×840 sur les grilles les plus lourdes —
+0 px de débordement, 48 cases à 18,7 px.
+
+**Écart de portée assumé :** les actes 3 à 7 gardent la passe précédente (notes
+de mélodie, polyrythmie 5/7/9, densité de « jouer »). Les dix niveaux
+`reproduire` de preset de l'acte 5 restent inchangés : leur difficulté est celle
+des morceaux réels, la toucher voudrait dire réécrire les presets.
+
+---
+
 ### ✅ La courbe monte deux fois plus haut — la scie de l'acte 1 (2026-08-31)
 
 > « acte 0 : ok pour le moment. acte 1 : la progression est trop lente, tu peux

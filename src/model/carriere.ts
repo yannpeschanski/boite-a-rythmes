@@ -572,9 +572,18 @@ export const ACTES: Acte[] = [
        * une grille où les deux autres lignes étaient explicitement vides : un
        * écran où il n'y a rien à arbitrer. Le niveau reste dans le réservoir,
        * la carrière ne le cite plus. */
+      /* ⚠️ UN SUJET, DEUX EXERCICES — « on peut faire plus d'exercices, prendre
+       * plus notre temps » (Yann, 2026-08-31). La série passe de huit à douze :
+       * la base (2, 67), le charley (3, 68), la syncope (7, 69), les variantes
+       * (5, 59, 60), la rafale (8, 70), puis tout (61). Le premier exercice
+       * d'un sujet le POSE, le second l'exige ailleurs — c'est là qu'on voit
+       * s'il est acquis. */
       { kind: 'exercice', niveau: 2, commande: 'La première sonnerie. Le kick tient le temps, la claire répond.' },
-      { kind: 'exercice', niveau: 3, commande: 'La deuxième. Le charley par-dessus, et le trio est complet.' },
-      { kind: 'exercice', niveau: 7, commande: 'La troisième. Le kick sort du temps une fois — c’est là que ça groove.' },
+      { kind: 'exercice', niveau: 67, commande: 'La même, en croches : huit cases par ligne, et le kick sur les quatre temps.' },
+      { kind: 'exercice', niveau: 3, commande: 'Le charley par-dessus, et le trio est complet.' },
+      { kind: 'exercice', niveau: 68, commande: 'Le charley descend à la double-croche : seize cases pour lui seul.' },
+      { kind: 'exercice', niveau: 7, commande: 'Et le kick sort du temps une fois — c’est là que ça groove.' },
+      { kind: 'exercice', niveau: 69, commande: 'Deux fois maintenant, et la claire s’y met aussi. Plus rien n’est où tu l’attends.' },
       /* ⚠️ Les variantes et les rafales atterrissent ICI, et c'est un
        * déménagement demandé : elles vivaient à l'acte 2, où « on ne comprend pas
        * pourquoi il y a les rafales et les charleys ouverts, rim shot,
@@ -605,11 +614,12 @@ export const ACTES: Acte[] = [
        * ensemble, la rafale, puis tout ensemble. Ça n'a été possible qu'une
        * fois les grilles ÉCRITES (voir `GrilleEcrite`) — on ne dessine pas une
        * progression avec des tirages. */
-      { kind: 'exercice', niveau: 5, commande: 'La claire du dernier temps part en rim shot. Repère-la.' },
-      { kind: 'exercice', niveau: 59, commande: 'Le charley, lui, s’ouvre une fois. À la toute fin.' },
-      { kind: 'exercice', niveau: 60, commande: 'Les deux dans le même rythme — et le charley descend à la double-croche. Seize cases pour lui seul.' },
-      { kind: 'exercice', niveau: 8, commande: 'Et une seule part en rafale. C’est elle qui donne l’urgence.' },
-      { kind: 'exercice', niveau: 61, commande: 'Le dernier. Tout ce que tu sais, dans une mesure.' },
+      { kind: 'exercice', niveau: 5, commande: 'La claire frappe quatre fois. DEUX sont des rim shots — lesquelles ?' },
+      { kind: 'exercice', niveau: 59, commande: 'Le charley, lui, s’ouvre trois fois. Trouve-les parmi seize.' },
+      { kind: 'exercice', niveau: 60, commande: 'Les deux ensemble, et les trois lignes en doubles-croches.' },
+      { kind: 'exercice', niveau: 8, commande: 'Quatre rafales, deux longueurs, deux lignes. Compte les coups.' },
+      { kind: 'exercice', niveau: 70, commande: 'Et voilà à quoi elles servent : le charley s’arrête, la claire relance.' },
+      { kind: 'exercice', niveau: 61, commande: 'Le dernier. Tout ce que tu sais, dans une mesure — et rien au singulier.' },
       {
         kind: 'recit',
         source: 'lcd',
@@ -735,18 +745,8 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 46,
-        commande: 'Autre bouton : là, c’est la ligne entière qui glisse. Le kick, lui, ne bouge pas.',
-      },
-      {
-        kind: 'exercice',
-        niveau: 23,
-        commande: 'Même grille encore, sans balancement — mais le charley traîne derrière. Repose-la.',
-      },
-      {
-        kind: 'exercice',
-        niveau: 47,
-        commande: 'Kelvin en a repéré deux. Il ne sait pas les nommer. Toi, si.',
+        niveau: 17,
+        commande: 'La même grille, un balancement franc. Compare : mêmes cases, autres instants.',
       },
       {
         kind: 'recit',
@@ -766,8 +766,34 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 17,
-        commande: 'Le sien, c’est celui-là. Franc. Refais-le une dernière fois avant de lui rendre sa boucle.',
+        niveau: 46,
+        commande: 'Autre bouton : là, c’est la ligne entière qui glisse. Le kick, lui, ne bouge pas.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 23,
+        commande: 'Même grille encore, sans balancement — mais le charley traîne derrière. Repose-la.',
+      },
+      /* ⚠️ Le pendant du niveau 48 : on faisait RÉGLER le swing et jamais le
+       * décalage, alors que l'acte les enseigne à égalité. Un sujet qu'on
+       * entend et qu'on repose sans jamais le viser reste une reconnaissance. */
+      {
+        kind: 'exercice',
+        niveau: 71,
+        commande: 'Et celui-là aussi se règle. De quel côté glisse-t-il, et de combien ?',
+      },
+      {
+        kind: 'exercice',
+        niveau: 47,
+        commande: 'Kelvin en a repéré deux. Il ne sait pas les nommer. Toi, si.',
+      },
+      /* La seule grille où les DEUX feels jouent ensemble — le trio les isole
+       * l'un après l'autre, celle-ci les cumule. Grille différente exprès :
+       * elle n'appartient pas au trio comparatif. */
+      {
+        kind: 'exercice',
+        niveau: 72,
+        commande: 'Les deux sur la même ligne : le charley balance ET traîne. Repose-la.',
       },
       /* ⚠️ Le premier endroit du jeu où les boutons d'ALÉA s'entendent — ghost
        * notes, vélocité aléatoire, rafales spontanées. Ils existaient dans
@@ -784,6 +810,13 @@ export const ACTES: Acte[] = [
          * (`paramSens`), donc « laquelle en fait le plus » mentirait une fois
          * sur deux. On pose la PROPRIÉTÉ, l'écran pose la question. */
         commande: 'Sol ajoute un dernier truc : — La machine peut jouer à côté toute seule. Là, c’est la quantité qui change.',
+      },
+      /* Entendre puis NOMMER, comme pour le swing et le décalage : les trois
+       * boutons d'aléa n'avaient que leur exercice d'écoute. */
+      {
+        kind: 'exercice',
+        niveau: 73,
+        commande: '— Et là ? Trois façons de ne pas jouer deux fois pareil. Dis laquelle.',
       },
       /* ⚠️ LE PALIER — retour de testeur : « le jeu reste trop longtemps trop
        * facile ». Mesuré : l'acte 1 finissait à 24 cases avec deux variantes,

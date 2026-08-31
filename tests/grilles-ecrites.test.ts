@@ -106,8 +106,31 @@ describe('chaque niveau écrit tient ce que son préambule annonce', () => {
 
   it('3 — « le charleston joue en croches, deux fois par temps »', () => {
     const l = niveau(3);
-    expect(l.grille!.subdiv.hat).toBe(2 * l.grille!.subdiv.kick);
+    // Une mesure, quatre temps : « deux fois par temps » = huit coups pleins.
+    expect(l.grille!.subdiv.hat).toBe(8);
     expect(ligne(l, 'hat').every((v) => v === 1)).toBe(true);
+    expect(compte(ligne(l, 'hat'), 1) / 4, 'deux coups par temps').toBe(2);
+    // « le kick garde ses quatre temps, la claire répond sur 2 et 4 »
+    expect(ligne(l, 'kick')).toEqual(ligne(niveau(67), 'kick'));
+    expect(ligne(l, 'snare')).toEqual(ligne(niveau(67), 'snare'));
+  });
+
+  it('67 — « le kick frappe les QUATRE temps, huit cases par ligne »', () => {
+    const l = niveau(67);
+    expect(l.grille!.subdiv.kick, 'huit cases').toBe(8);
+    expect(ligne(l, 'kick')).toEqual([1, 0, 1, 0, 1, 0, 1, 0]);
+    expect(ligne(l, 'snare'), 'la claire sur 2 et 4').toEqual([0, 0, 1, 0, 0, 0, 1, 0]);
+    // « rien de neuf à comprendre » : le charley n'est pas encore là.
+    expect(ligne(l, 'hat').every((v) => v === 0)).toBe(true);
+  });
+
+  it('68 — « seize cases au lieu de huit, le kick et la claire ne bougent pas »', () => {
+    const l = niveau(68);
+    expect(l.grille!.subdiv.hat, 'la double-croche').toBe(16);
+    expect(ligne(l, 'hat').every((v) => v === 1), 'seize coups pleins').toBe(true);
+    // « eux ne bougent pas » : exactement la grille du niveau 3.
+    expect(ligne(l, 'kick')).toEqual(ligne(niveau(3), 'kick'));
+    expect(ligne(l, 'snare')).toEqual(ligne(niveau(3), 'snare'));
   });
 
   it('7 — « le kick tombe ENTRE deux temps » (une fois, et une seule)', () => {
@@ -118,57 +141,103 @@ describe('chaque niveau écrit tient ce que son préambule annonce', () => {
     expect(horsTemps, 'une syncope, pas deux').toHaveLength(1);
   });
 
-  it('5 — « une seule des deux claires en porte une. C’est la dernière »', () => {
+  it('5 — « la claire joue quatre fois, DEUX sont des rim shots »', () => {
     const l = niveau(5);
     const s = ligne(l, 'snare');
-    expect(compte(s, 2), 'un seul rim shot').toBe(1);
-    expect(s.lastIndexOf(2), 'sur la DERNIÈRE claire').toBe(s.map((v) => (v ? 1 : 0)).lastIndexOf(1));
+    expect(s.filter((v) => v > 0), 'quatre claires').toHaveLength(4);
+    expect(compte(s, 2), 'deux rim shots').toBe(2);
+    /* ⚠️ Et ils ne sont NI le premier NI le dernier coup : une variante posée
+     * à un bout se trouve par élimination, sans jamais l'entendre. C'est le
+     * défaut que ce niveau corrigeait (« pas simplement changer une note »). */
+    const joues = s.map((v, i) => (v > 0 ? i : -1)).filter((i) => i >= 0);
+    expect(compte(s, 2), 'pas tous les coups').toBeLessThan(joues.length);
     expect(compte(ligne(l, 'hat'), 2), 'et rien sur le charley').toBe(0);
   });
 
-  it('59 — « un seul charley ouvert, sur la toute dernière croche »', () => {
+  it('59 — « TROIS ouvertures, réparties, parmi seize croches fermées »', () => {
     const l = niveau(59);
     const h = ligne(l, 'hat');
-    expect(compte(h, 2)).toBe(1);
-    expect(h[h.length - 1]).toBe(2);
+    expect(l.grille!.subdiv.hat, 'seize').toBe(16);
+    expect(compte(h, 2), 'trois ouvertures').toBe(3);
+    // « réparties » : pas trois cases voisines, et pas seulement à la fin.
+    const ouvertes = h.map((v, i) => (v === 2 ? i : -1)).filter((i) => i >= 0);
+    expect(Math.min(...ouvertes), 'la première tombe tôt').toBeLessThan(8);
+    expect(new Set(ouvertes.map((i) => Math.floor(i / 4))).size, 'sur des temps différents').toBe(3);
     expect(compte(ligne(l, 'snare'), 2), 'la claire est au repos').toBe(0);
   });
 
-  it('60 — « rim shot ET charley ouvert, sur un kick syncopé »', () => {
+  it('60 — « rim shots ET charleys ouverts, les trois lignes en doubles-croches »', () => {
     const l = niveau(60);
-    expect(compte(ligne(l, 'snare'), 2), 'le rim shot').toBe(1);
-    expect(compte(ligne(l, 'hat'), 2), 'l’ouverture').toBe(1);
-    expect(ligne(l, 'kick')[3], 'le kick sur le « et » de 2').toBe(1);
-    expect(Math.max(...rafales(l, 'hat')), 'rien de neuf : pas encore de rafale').toBe(1);
+    const g = l.grille!;
+    expect([g.subdiv.kick, g.subdiv.snare, g.subdiv.hat], 'les TROIS lignes').toEqual([16, 16, 16]);
+    expect(compte(ligne(l, 'snare'), 2), 'des rim shots, au pluriel').toBeGreaterThanOrEqual(2);
+    expect(compte(ligne(l, 'hat'), 2), 'des ouvertures, au pluriel').toBeGreaterThanOrEqual(2);
+    // « la claire tombe deux fois hors des temps » : sur des seizièmes.
+    const horsTemps = ligne(l, 'snare').map((v, i) => (v > 0 && i % 4 !== 0 ? i : -1)).filter((i) => i >= 0);
+    expect(horsTemps.length, 'la claire hors des temps').toBeGreaterThanOrEqual(2);
+    expect(
+      LIGNES.every((r) => Math.max(...rafales(l, r)) === 1),
+      'rien de neuf : pas encore de rafale',
+    ).toBe(true);
   });
 
-  it('8 — « une seule rafale, sur le tout dernier charley »', () => {
+  it('8 — « QUATRE rafales, deux longueurs, sur le charley comme sur la claire »', () => {
+    /* ⚠️ Le test que le retour de Yann a rendu nécessaire : « on ne doit pas
+     * simplement changer une note en une rafale pour introduire rafale ». Une
+     * rafale unique et finale se repère à sa POSITION — on n'a jamais eu à
+     * l'écouter. Ce qui rend le niveau réel, c'est qu'il faut COMPTER les
+     * coups de chacune, donc plusieurs, de longueurs différentes. */
     const l = niveau(8);
-    const r = rafales(l, 'hat');
-    expect(r.filter((v) => v > 1), 'une seule').toHaveLength(1);
-    expect(r[r.length - 1], 'la dernière').toBeGreaterThan(1);
-    expect(compte(ligne(l, 'snare'), 2), 'et aucune variante à côté').toBe(0);
+    const toutes = LIGNES.flatMap((r) => rafales(l, r).filter((v) => v > 1));
+    expect(toutes, 'quatre rafales').toHaveLength(4);
+    expect(new Set(toutes).size, 'deux longueurs au moins').toBeGreaterThanOrEqual(2);
+    const lignesAvec = LIGNES.filter((r) => rafales(l, r).some((v) => v > 1));
+    expect(lignesAvec, 'sur deux lignes').toEqual(['snare', 'hat']);
+    // « aucune variante à côté : c'est la rafale qu'on écoute »
+    expect(compte(ligne(l, 'snare'), 2)).toBe(0);
     expect(compte(ligne(l, 'hat'), 2)).toBe(0);
   });
 
-  it('61 — « DEUX syncopes, le rim shot, l’ouverture, et deux rafales »', () => {
-    const l = niveau(61);
-    const k = ligne(l, 'kick');
-    // « le « et » de 2 ET le « et » de 4 » : huit croches, les contretemps
-    // sont les index impairs.
-    expect(k.map((v, i) => (v && i % 2 === 1 ? i : -1)).filter((i) => i >= 0), 'deux syncopes').toEqual([3, 7]);
-    expect(compte(ligne(l, 'snare'), 2), 'le rim shot').toBe(1);
+  it('70 — « le charley s’ARRÊTE, la claire relance »', () => {
+    const l = niveau(70);
     const h = ligne(l, 'hat');
-    expect(l.grille!.subdiv.hat, 'le charley en doubles-croches').toBe(16);
-    expect(compte(h, 2), 'l’ouverture').toBe(1);
-    expect(h[h.length - 1], 'sur la toute dernière double-croche').toBe(2);
-    const r = rafales(l, 'hat');
-    expect(r.filter((v) => v > 1), 'deux rafales').toHaveLength(2);
-    // « celle du « et » du troisième temps » : seize cases, le 3e temps
-    // commence à l'index 8, son « et » est le 10.
-    expect(r[10], 'sur le « et » du 3e temps').toBeGreaterThan(1);
-    // « et celle qui relance la boucle » : dans le dernier temps.
-    expect(r.slice(12).some((v) => v > 1), 'la relance').toBe(true);
+    // « douze cases pleines puis quatre vides » — c'est le trou qui fait le fill.
+    expect(h.slice(0, 12).every((v) => v > 0), 'le charley tient la première moitié').toBe(true);
+    expect(h.slice(12).every((v) => v === 0), 'et s’arrête sur le dernier temps').toBe(true);
+    // « quatre coups d'affilée » sur la claire, dans ce même dernier temps.
+    expect(ligne(l, 'snare').slice(12).filter((v) => v > 0), 'la relance').toHaveLength(4);
+    const r = rafales(l, 'snare').slice(12).filter((v) => v > 1);
+    expect(r, 'deux d’entre eux en rafale').toHaveLength(2);
+    expect(compte(ligne(l, 'snare'), 2), 'deux en rim shot').toBe(2);
+  });
+
+  it('61 — « trois syncopes dont une sur un seizième, cinq claires, trois ouvertures, trois rafales »', () => {
+    const l = niveau(61);
+    const g = l.grille!;
+    expect([g.subdiv.kick, g.subdiv.snare, g.subdiv.hat]).toEqual([16, 16, 16]);
+    // Seize cases : les temps sont les multiples de 4, les croches les pairs.
+    const k = ligne(l, 'kick');
+    const horsTemps = k.map((v, i) => (v > 0 && i % 4 !== 0 ? i : -1)).filter((i) => i >= 0);
+    expect(horsTemps, 'trois syncopes').toHaveLength(3);
+    expect(horsTemps.filter((i) => i % 2 === 1), 'dont une sur un vrai seizième').toHaveLength(1);
+    const sn = ligne(l, 'snare');
+    expect(sn.filter((v) => v > 0), 'cinq claires').toHaveLength(5);
+    expect(compte(sn, 2), 'dont deux en rim shot').toBe(2);
+    expect(compte(ligne(l, 'hat'), 2), 'trois charleys ouverts').toBe(3);
+    const toutes = LIGNES.flatMap((r) => rafales(l, r).filter((v) => v > 1));
+    expect(toutes, 'trois rafales').toHaveLength(3);
+    expect(new Set(toutes).size, 'de deux longueurs').toBeGreaterThanOrEqual(2);
+    expect(
+      LIGNES.filter((r) => rafales(l, r).some((v) => v > 1)),
+      'sur deux lignes',
+    ).toEqual(['snare', 'hat']);
+    // « le 3e temps commence à l'index 8, son « et » est le 10 »
+    expect(rafales(l, 'hat')[10], 'la rafale du « et » du 3e temps').toBeGreaterThan(1);
+    // Vingt-six coups, comme l'annonce le préambule.
+    expect(
+      LIGNES.reduce((n, r) => n + ligne(l, r).filter((v) => v > 0).length, 0),
+      'vingt-six coups',
+    ).toBe(26);
   });
 });
 
@@ -252,7 +321,9 @@ describe('la courbe ne redescend jamais', () => {
 
   it('⚠️ l’acte 1 ne revient jamais à une résolution déjà quittée', () => {
     const suite = suiteEcrite(1);
-    expect(suite.length, 'les huit rythmes écrits').toBe(8);
+    // Douze depuis le 2026-08-31 : « on peut faire plus d'exercices, prendre
+    // plus notre temps » — un SUJET, deux exercices.
+    expect(suite.length, 'les douze rythmes écrits').toBe(12);
     const poidss = suite.map(poids);
     poidss.forEach((p, i) => {
       if (i === 0) return;
@@ -273,19 +344,51 @@ describe('la courbe ne redescend jamais', () => {
      * refaisait trois fois le niveau 3. Une nouveauté se montre sur ce qu'on
      * sait déjà faire. */
     const suite = suiteEcrite(1);
-    // Les six derniers partent tous du kick syncopé du niveau 7.
-    const syncope = ligne(niveau(7), 'kick');
-    for (const l of suite.slice(2)) {
-      expect(l.grille!.subdiv.kick, `niveau ${l.id} : le kick a perdu sa résolution`).toBe(8);
-      const k = ligne(l, 'kick');
-      expect(
-        k.some((v, i) => v > 0 && i % 2 === 1),
-        `niveau ${l.id} : la syncope acquise au niveau 7 a disparu`,
-      ).toBe(true);
-      // Le niveau 61 en ajoute une seconde ; aucun n'en enlève.
-      expect(k.filter((v) => v > 0).length, `niveau ${l.id}`).toBeGreaterThanOrEqual(
-        syncope.filter((v) => v > 0).length,
-      );
+    const iSyncope = suite.findIndex((l) => l.id === 7);
+    expect(iSyncope, 'le niveau qui enseigne la syncope').toBeGreaterThan(0);
+    // Une case est « hors du temps » quand elle ne tombe pas sur un des quatre
+    // temps — vrai quelle que soit la subdivision de la ligne.
+    const horsTemps = (l: GameLevel) => {
+      const pas = l.grille!.subdiv.kick / 4;
+      return ligne(l, 'kick').filter((v, i) => v > 0 && i % pas !== 0).length;
+    };
+    for (const l of suite.slice(iSyncope)) {
+      expect(horsTemps(l), `niveau ${l.id} : la syncope acquise au niveau 7 a disparu`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('⚠️ et une nouveauté se pose au PLURIEL, jamais une seule fois', () => {
+    /* Le cœur du retour de Yann (2026-08-31) : « on ne doit pas simplement
+     * changer une note en une rafale pour introduire rafale ». Une occurrence
+     * unique se trouve par élimination — le joueur apprend le GESTE sans
+     * jamais entendre ce qu'il produit. Chaque niveau de l'acte 1 qui pose une
+     * variante ou une rafale en pose donc au moins deux. */
+    for (const l of suiteEcrite(1)) {
+      for (const r of ['snare', 'hat'] as const) {
+        const n = compte(ligne(l, r), 2);
+        if (n > 0) expect(n, `niveau ${l.id} : une seule variante sur ${r}`).toBeGreaterThanOrEqual(2);
+      }
+      const rafs = LIGNES.reduce((n, r) => n + rafales(l, r).filter((v) => v > 1).length, 0);
+      if (rafs > 0) expect(rafs, `niveau ${l.id} : une seule rafale`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('⚠️ chaque SUJET de l’acte 1 a deux exercices — « prendre plus notre temps »', () => {
+    /* Un sujet posé une seule fois est un sujet montré, pas enseigné. La série
+     * en compte six, et cinq d'entre eux ont leur exercice d'application :
+     * la base (2, 67), le charley (3, 68), la syncope (7, 69), les variantes
+     * (5, 59, 60), la rafale (8, 70). Seul « tout ensemble » (61) est unique,
+     * et c'est sa nature : il n'enseigne rien, il vérifie tout. */
+    const ids = suiteEcrite(1).map((l) => l.id);
+    for (const [sujet, paire] of [
+      ['la base', [2, 67]],
+      ['le charley', [3, 68]],
+      ['la syncope', [7, 69]],
+      ['la rafale', [8, 70]],
+    ] as [string, number[]][]) {
+      for (const id of paire) expect(ids, `${sujet} : niveau ${id} absent`).toContain(id);
+      const [a, b] = paire.map((id) => ids.indexOf(id));
+      expect(b, `${sujet} : l’application ne suit pas la découverte`).toBe(a + 1);
     }
   });
 
@@ -307,7 +410,7 @@ describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
     // nouveautés d'un coup ou aucune.
     const acte1 = ACTES.find((a) => a.id === 1)!;
     const cites = acte1.etapes.filter((e) => e.kind === 'exercice').map((e) => (e as { niveau: number }).niveau);
-    expect(cites.length, 'la série a été allongée à huit').toBe(8);
+    expect(cites.length, 'la série a été allongée à douze').toBe(12);
     for (const id of cites) expect(niveau(id).grille, `niveau ${id} : tiré au sort`).toBeTruthy();
   });
 

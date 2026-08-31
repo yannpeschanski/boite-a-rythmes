@@ -728,28 +728,64 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
     expect(new Set(feels).size, 'deux niveaux du trio au même feel').toBe(trio.length);
   });
 
-  it('⚠️ et l’acte finit PLUS DUR que l’acte 1 — le retour du testeur', () => {
-    /* « Le jeu reste trop longtemps trop facile. » Mesuré : l'acte 1 finit à
-     * 24 cases (niveau 61) et l'acte 2 plafonnait à 24 sans variante — un cran
-     * en arrière. Ce test empêche que ça se reproduise en silence. */
+  it('⚠️ et l’acte reprend là où l’acte 1 s’arrête, PLUS le feel', () => {
+    /* « Le jeu reste trop longtemps trop facile. » Mesuré en août : l'acte 1
+     * finissait à 24 cases et l'acte 2 plafonnait à 24 sans variante — un cran
+     * en arrière.
+     *
+     * ⚠️ La formulation a changé le 2026-08-31, et il faut savoir pourquoi.
+     * Les deux actes sont désormais à la résolution MAXIMALE lisible sur un
+     * téléphone (seize cases par ligne, mesuré : 18,7 px la case en 390 px de
+     * large). Exiger « strictement plus de cases » qu'à l'acte 1 forcerait
+     * trente-deux cases, c'est-à-dire des cases de 9 px — on rendrait le jeu
+     * illisible en croyant le rendre difficile.
+     *
+     * L'escalade de l'acte 2 est sur un AUTRE axe, et c'est son sujet même :
+     * toutes ses grilles portent un feel — swing, décalage, ou les deux — donc
+     * les cases ne sonnent plus là où elles sont dessinées. Aucune grille de
+     * l'acte 1 n'en porte. C'est ça qu'on vérifie. */
     const poids = (id: number) => {
       const g = LEVELS.find((x) => x.id === id)!.grille!;
       return g.subdiv.kick + g.subdiv.snare + g.subdiv.hat;
     };
     const finActe1 = poids(61);
-    const maxActe2 = Math.max(...grillesDeLActe2().map((l) => poids(l.id)));
-    expect(maxActe2, `acte 2 plafonne à ${maxActe2}, acte 1 finit à ${finActe1}`).toBeGreaterThan(
-      finActe1,
-    );
+    for (const l of grillesDeLActe2()) {
+      expect(poids(l.id), `acte 2, niveau ${l.id} : sous la fin de l’acte 1`).toBeGreaterThanOrEqual(
+        finActe1,
+      );
+      const g = l.grille!;
+      const feel = (g.swing ?? 0) !== 0 || Object.values(g.shift ?? {}).some((v) => v !== 0);
+      expect(feel, `acte 2, niveau ${l.id} : une grille sans feel`).toBe(true);
+    }
+    // Et l'acte 1, lui, n'en pose aucun : le feel est la nouveauté de l'acte 2.
+    for (const n of niveauxDeLActe(ACTES[1])) {
+      const g = LEVELS.find((x) => x.id === n)!.grille;
+      if (!g) continue;
+      expect((g.swing ?? 0) === 0, `acte 1, niveau ${n} : du swing écrit`).toBe(true);
+      expect(Object.keys(g.shift ?? {}), `acte 1, niveau ${n} : un décalage écrit`).toHaveLength(0);
+    }
   });
 
   // Entendre, puis reposer, puis nommer, puis viser — l'ordre est le contenu
   // de l'acte : on ne fait pas nommer ce qu'on n'a pas encore entendu, et on ne
   // fait pas reproduire un balancement qu'on n'a pas encore isolé à l'oreille.
   it('va d’entendre à régler, dans cet ordre', () => {
+    /* ⚠️ Douze exercices depuis le 2026-08-31 (« on peut faire plus
+     * d'exercices, prendre plus notre temps »), rangés par SUJET plutôt qu'en
+     * alternance : le swing en entier (entendre, reposer deux fois, régler),
+     * puis le décalage en entier, puis les deux, puis l'aléa, puis le palier.
+     * Chaque sujet finit sur son exercice le plus exigeant. */
     const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
     expect(verbes).toEqual([
-      'lequel', 'reproduire', 'lequel', 'reproduire', 'nommer', 'regler', 'reproduire', 'lequel',
+      // le swing : entendre → reposer léger → reposer franc → régler
+      'lequel', 'reproduire', 'reproduire', 'regler',
+      // le décalage : entendre → reposer → régler
+      'lequel', 'reproduire', 'regler',
+      // les deux : nommer lequel des deux → les cumuler
+      'nommer', 'reproduire',
+      // l'aléa : entendre → nommer
+      'lequel', 'nommer',
+      // le palier, qui devient le départ de la commande
       'reproduire',
     ]);
     // Chaque reproduction suit l'écoute qui l'a préparée.
