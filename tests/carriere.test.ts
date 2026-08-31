@@ -644,20 +644,48 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
     }
   });
 
-  it('⚠️ et elles sont TOUTES la même grille — seul le feel change', () => {
+  it('⚠️ le TRIO à comparer partage une seule grille — seul le feel change', () => {
     /* C'est ce qui fait l'exercice : on ne peut comparer deux balancements que
      * si tout le reste est identique. Une densité tirée rendait la question
      * impossible — on ne savait pas si ce qu'on entendait venait du feel ou
-     * d'un motif différent. */
+     * d'un motif différent.
+     *
+     * ⚠️ La règle porte sur le GROUPE À COMPARER, pas sur l'acte entier. La
+     * première version exigeait que toutes les grilles de l'acte soient
+     * identiques ; elle a bloqué l'ajout du palier de difficulté (niveau 63,
+     * seize cases) alors que ce niveau n'est pas là pour être comparé aux
+     * trois autres — il est là pour être plus dur. On regroupe donc par
+     * SUBDIVISION : à résolution égale, les grilles doivent être identiques. */
     const grilles = grillesDeLActe2();
-    expect(grilles.length).toBeGreaterThanOrEqual(2);
+    expect(grilles.length).toBeGreaterThanOrEqual(3);
     const cases = (l: (typeof grilles)[number]) =>
       JSON.stringify([l.grille!.subdiv, l.grille!.kick, l.grille!.snare, l.grille!.hat]);
-    const refs = new Set(grilles.map(cases));
-    expect([...refs], 'les grilles diffèrent').toHaveLength(1);
-    // Et le feel, lui, diffère bien d'un niveau à l'autre.
-    const feels = grilles.map((l) => JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]));
-    expect(new Set(feels).size, 'deux niveaux au même feel').toBe(grilles.length);
+    const parResolution = new Map<number, typeof grilles>();
+    for (const l of grilles) {
+      const r = l.grille!.subdiv.hat;
+      parResolution.set(r, [...(parResolution.get(r) ?? []), l]);
+    }
+    const trio = [...parResolution.values()].sort((a, b) => b.length - a.length)[0];
+    expect(trio.length, 'il faut au moins trois grilles comparables').toBeGreaterThanOrEqual(3);
+    expect([...new Set(trio.map(cases))], 'les grilles du trio diffèrent').toHaveLength(1);
+    // Et le feel, lui, diffère bien d'un niveau à l'autre du trio.
+    const feels = trio.map((l) => JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]));
+    expect(new Set(feels).size, 'deux niveaux du trio au même feel').toBe(trio.length);
+  });
+
+  it('⚠️ et l’acte finit PLUS DUR que l’acte 1 — le retour du testeur', () => {
+    /* « Le jeu reste trop longtemps trop facile. » Mesuré : l'acte 1 finit à
+     * 24 cases (niveau 61) et l'acte 2 plafonnait à 24 sans variante — un cran
+     * en arrière. Ce test empêche que ça se reproduise en silence. */
+    const poids = (id: number) => {
+      const g = LEVELS.find((x) => x.id === id)!.grille!;
+      return g.subdiv.kick + g.subdiv.snare + g.subdiv.hat;
+    };
+    const finActe1 = poids(61);
+    const maxActe2 = Math.max(...grillesDeLActe2().map((l) => poids(l.id)));
+    expect(maxActe2, `acte 2 plafonne à ${maxActe2}, acte 1 finit à ${finActe1}`).toBeGreaterThan(
+      finActe1,
+    );
   });
 
   // Entendre, puis reposer, puis nommer, puis viser — l'ordre est le contenu
@@ -667,6 +695,7 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
     const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
     expect(verbes).toEqual([
       'lequel', 'reproduire', 'lequel', 'reproduire', 'nommer', 'regler', 'reproduire', 'lequel',
+      'reproduire',
     ]);
     // Chaque reproduction suit l'écoute qui l'a préparée.
     expect(verbes.indexOf('reproduire')).toBeGreaterThan(verbes.indexOf('lequel'));
