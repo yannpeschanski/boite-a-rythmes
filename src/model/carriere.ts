@@ -951,12 +951,12 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 42,
-        commande: 'Tu commences par la basse. Les hauteurs, une par une.',
+        commande: 'Tu commences par la mélodie — c’est elle qu’on fredonne. Les hauteurs, une par une.',
       },
       {
         kind: 'exercice',
         niveau: 43,
-        commande: 'Puis le motif — ce qui fait qu’une phrase revient.',
+        commande: 'Puis la basse, dessous. Elle se répète : c’est ce qui la rend tenable.',
       },
       {
         kind: 'recit',
@@ -976,7 +976,7 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 44,
-        commande: 'Encore une. Toute la gamme, cette fois — la sienne est dedans.',
+        commande: 'La deuxième, celle qu’il réclame. Toute la gamme, seize pas, aucune reprise.',
       },
       /* ⚠️ L'ACTE SE TERMINE EN TROIS ENVOIS — refait le 2026-09-01, sur la même
        * demande que l'acte 4 : *« il faut que tout soit en atelier avec des

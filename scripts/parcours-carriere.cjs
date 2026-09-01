@@ -111,10 +111,17 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         }
         st.rows.snare.pattern[4] = 2;
         st.rows.kick.rolls = new Array(32).fill(1); st.rows.kick.rolls[0] = 3;
-        st.synthRows.bass.muted = false;
-        st.synthRows.bass.subdivisions = 8;
-        st.synthRows.bass.pattern = new Array(8).fill(null);
-        st.synthRows.bass.pattern[0] = { degree: 1, octave: 0 };
+        /* Les TROIS lignes de synthé, et une texture sur chacune : l'acte 3
+           les demande toutes depuis le 2026-09-01 (« les additionner »). */
+        for (const l of ['bass', 'melody', 'pad']) {
+          st.synthRows[l].muted = false;
+          st.synthRows[l].subdivisions = 8;
+          st.synthRows[l].pattern = new Array(8).fill(null);
+          st.synthRows[l].pattern[0] = { degree: 1, octave: 0 };
+          if (e.cahier.some((c) => c.id === 'voix')) {
+            st.synthRows[l].voice = { ...st.synthRows[l].voice, attack: 0.42 };
+          }
+        }
         /* Le MIXAGE de l'acte 4 : le Tunnel renvoie le morceau deux fois
            depuis le 2026-09-01. Les gestes de base restent inconditionnels —
            ils ne contredisent aucune fiche — et les gestes BORNÉS sont posés

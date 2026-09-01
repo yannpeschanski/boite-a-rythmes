@@ -66,7 +66,8 @@ quiz n'aurait rien réglé.
 | | tranche | état |
 |---|---|---|
 | 1 | l'outillage des cahiers + **l'acte 4 refait** en trois envois | ✅ livré |
-| 2 | **l'acte 3** : mélodie → basse → nappe, additionnées, plus les textures | ✅ livré |
+| 2a | **l'acte 3**, les exercices : `melodie` gagne sa ligne, mélodie → basse | ✅ livré |
+| 2b | **l'acte 3**, les cahiers : mélodie → + basse → + nappe, plus les textures | ✅ livré |
 | 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | à faire |
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | à faire |
 | 5 | **actes 5 et 6** en cahiers, le 6 le plus complet du jeu | à faire |
