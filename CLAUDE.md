@@ -649,18 +649,21 @@ non authentifiée est bloquée : elle répond un JSON d'erreur sans la clé atte
 donc une boucle `until [ -n "$(curl … )" ]` **ne se termine jamais**. Penser aussi
 à arrêter les tâches de fond dès que la PR est mergée.
 
-⚠️ **Et JAMAIS `actions_list method=list_workflow_runs` :** il renvoie ~93 Ko
-(≈ 23 000 tokens) quel que soit `per_page`, parce que chaque run porte son message
-de commit entier. Trois appels dans une seule session ont coûté 70 000 tokens pour
-lire trois statuts. Les deux recettes qui marchent :
+⚠️ **Lire un statut de CI : deux chemins, et seulement deux.**
 
-- **sur une PR** → `pull_request_read method=get_check_runs` (quelques centaines
-  d'octets) ;
-- **sur `main` après un merge** → l'id du run se lit une fois dans le résultat de
-  la PR, puis `actions_get method=get_workflow_run` et
-  `actions_list method=list_workflow_jobs` sur cet id. Si un gros retour a déjà
-  été déversé dans un fichier, le parser en `python3`, ne jamais le relire en
-  entier.
+- **Sur une PR** → `pull_request_read method=get_check_runs`. Direct, quelques
+  centaines d'octets. C'est le seul à utiliser tant qu'on est sur une PR.
+- **Sur `main` après un merge** → il n'y a **pas** de raccourci, et deux fausses
+  pistes coûtent du temps : `get_commit` n'expose pas les check runs, et deviner
+  un id de run répond 404. La méthode est donc `actions_list
+  method=list_workflow_runs` (filtre `branch: main`), **une fois** : son résultat
+  fait ~93 Ko, le harness le déverse dans un fichier et ne rend qu'une erreur —
+  ce n'est donc **pas** un gouffre à tokens, mais il faut savoir que c'est
+  attendu. Parser le fichier en `python3` (`json.load` → `workflow_runs[0]`) pour
+  en tirer l'id, puis `actions_list method=list_workflow_jobs` sur cet id, qui
+  donne les deux jobs (« Tests & build » et « Déploiement Vercel »).
+
+⚠️ Ne jamais relire un fichier déversé en entier : le parser.
 
 ⚠️ **Vert sur la PR ne veut pas dire vert sur `main`.** Un test qui dépend du
 hasard doit affirmer ce qui est vrai à CHAQUE tirage et répéter (60 fois). Une
