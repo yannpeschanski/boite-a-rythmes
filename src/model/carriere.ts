@@ -42,6 +42,11 @@ import {
   kickQuiSortDuTemps,
   dePlacePourLaVoix,
   auMoinsUneVariante,
+  filtreQuiCoupe,
+  delayEngage,
+  reverbDosee,
+  contrasteDeVolume,
+  chaqueLigneRetouchee,
 } from './commande';
 import { ficheStyle } from './styles';
 import { etatVierge, etatDepuisGrille } from './defaults';
@@ -211,6 +216,20 @@ export interface EtapeCommande {
    *     défaut que `etatVierge()` avait corrigé.
    * `tests/transformer.test.ts` tient les deux. */
   partirDu?: number;
+  /* ⚠️ Partir de la PRODUCTION déjà livrée dans cet acte, au lieu d'un niveau.
+   *
+   * Retour de Yann (2026-09-01) sur l'acte 4 : *« les livraisons intermédiaires
+   * doivent être remplacées par les nouvelles jusqu'à la fin de l'acte »*. Un
+   * acte de production n'est pas une suite d'exercices sur un morceau neuf à
+   * chaque fois : c'est UN morceau qu'un client renvoie, et qu'on reprend.
+   *
+   * `partirDu` ne pouvait pas le faire — il cite un niveau à grille écrite,
+   * donc un point de départ figé dans les données. Ici le départ est ce que le
+   * JOUEUR a livré à l'étape précédente, relu dans la discographie
+   * (`productionDeLActe`). S'il n'y a rien encore — acte rejoué depuis une
+   * sauvegarde ancienne, discographie vidée — on retombe sur la table rase
+   * plutôt que de bloquer la carrière. */
+  partirDeLaLivraison?: boolean;
   /** Ce que Sol dit quand elle accepte. */
   accepte: string;
   /** Le titre sous lequel la discographie range le morceau livré. */
@@ -991,17 +1010,31 @@ export const ACTES: Acte[] = [
     module: 'production',
     resume: 'Ça sonne bien ici et mal partout ailleurs.',
     etapes: [
-      /* ⚠️ L'acte tient sur UNE phrase de `HISTOIRE.md` — « Ton morceau est bon
-       * dans ton ordinateur. Ici, il est mauvais. » — et elle ne peut pas être
-       * racontée : il faut l'entendre. D'où le petit haut-parleur, qui est un
-       * étage de moteur (`graph.ts`) et non un texte, et le verbe `laverie` qui
-       * s'en sert. Il ouvre l'acte : les trois exercices de mixage qui suivent
-       * n'ont de raison d'être que parce qu'on a entendu le problème.
+      /* ⚠️ L'ACTE REFAIT LE 2026-09-01 — cinq exercices supprimés, trois envois
+       * à la place. Relecture de Yann, sur chacun des cinq : *« NOK »*, et sur
+       * l'acte : *« ça ne marche pas l'exercice du petit haut-parleur, cet
+       * élément de scénario ne tient pas la route. Il faudrait démarrer par
+       * l'atelier avec un cahier des charges progressif et au niveau de
+       * difficulté poussé, toucher à beaucoup de composantes dont la reverb,
+       * le delay, les filtres. Les livraisons intermédiaires doivent être
+       * remplacées par les nouvelles jusqu'à la fin de l'acte. »*
        *
-       * L'EQ et la compression, que le texte cite aussi, ne sont PAS ici :
-       * elles sont globales dans le format v2, donc sans version par ligne à
-       * faire entendre. Citées à moitié, elles auraient produit exactement le
-       * défaut de l'acte 0 — un mot sans bouton derrière. */
+       * L'acte tient toujours sur la même phrase de `HISTOIRE.md` — « Ton
+       * morceau est bon dans ton ordinateur. Ici, il est mauvais. » — mais ce
+       * n'est plus un exercice qui la porte, c'est un CLIENT qui renvoie le
+       * morceau trois fois. Le geste demandé remplace le mot appris : on ne
+       * nomme plus un filtre, on s'en sert parce que le morceau est refusé
+       * sans lui.
+       *
+       * ⚠️ Les niveaux 53 à 57 ne sont pas supprimés — ils restent au
+       * réservoir, comme tout niveau qui cesse d'être cité. Le verbe `laverie`
+       * et son étage de moteur restent eux aussi : le petit haut-parleur garde
+       * sa valeur d'OUTIL d'écoute dans la Production, il perd seulement son
+       * rôle d'exercice noté.
+       *
+       * L'EQ et la compression, que le texte cite aussi, restent hors du
+       * cahier : elles sont globales dans le format v2, donc impossibles à
+       * exiger ligne par ligne sans mentir sur ce qu'on demande. */
       {
         kind: 'recit',
         source: 'fax',
@@ -1016,6 +1049,34 @@ export const ACTES: Acte[] = [
         ],
       },
       {
+        kind: 'commande',
+        entete: 'LE TUNNEL — PREMIER ENVOI',
+        lignes: [
+          'Tu as jusqu’à samedi pour renvoyer le morceau.',
+          'Trois cents personnes, un système de club.',
+          '— Enlève ce qui ne sert pas.',
+          '— Et mets une basse qui existe encore à la laverie.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        chapeau: FICHE_TECHNO.chapeau,
+        /* ⚠️ PREMIER des trois envois. Il ne demande QUE le morceau : le
+         * mixage viendra parce que le client le renverra, pas parce qu'un
+         * cahier de neuf lignes l'annonçait d'avance. C'est la différence
+         * entre « voilà tout ce qu'il faut faire » et « ça ne va pas, refais ». */
+        cahier: [
+          ...dansLaSection(LE_MORCEAU, [
+            AVOIR_PRODUIT,
+            pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+            dansLeStyleFiche(FICHE_TECHNO, 'Un morceau techno — c’est un club, pas un salon'),
+            lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes qui tiennent le morceau'),
+            ligneSynthPresente('bass', 'Une basse — sans elle il n’y a rien à faire danser'),
+          ]),
+        ],
+        accepte: '— Reçu. On le passe samedi. On te rappelle.',
+        titre: 'LE TUNNEL',
+        client: 'LE TUNNEL',
+      },
+      {
         kind: 'recit',
         source: 'repondeur',
         entete: 'MESSAGE — LUNDI, 9 s',
@@ -1026,65 +1087,84 @@ export const ACTES: Acte[] = [
           '— Parce que personne ne bouge.',
           'Elle raccroche. Elle débranche le haut-parleur',
           'de la laverie et le pose sur la table.',
-          '— Écoute ça là-dedans.',
+          '— Écoute le tien là-dedans.',
         ],
-      },
-      {
-        kind: 'exercice',
-        niveau: 53,
-        commande: 'Tout le grave a disparu. — Laquelle tient encore ?',
       },
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'SOL',
         lignes: [
-          '— Tu vois ?',
-          '— Non.',
+          '— Tu entends ? Tout le grave est parti.',
+          '— Et les trois lignes sonnent au même endroit.',
           '— Ton morceau est bon dans ton ordinateur.',
           'Elle tapote le petit boîtier.',
           '— Ici, il est mauvais. Et c’est ici qu’on l’écoute.',
           '— Je fais quoi ?',
-          '— Tu enlèves. Ensuite seulement, tu ajoutes.',
+          '— Tu enlèves, et tu ranges. Ajouter, c’est après.',
         ],
       },
-      { kind: 'exercice', niveau: 54, commande: 'On commence par enlever. Le filtre, c’est le geste qui enlève.' },
-      { kind: 'exercice', niveau: 55, commande: 'Puis l’espace. Ce qui met un son au fond de la pièce.' },
-      { kind: 'exercice', niveau: 56, commande: 'Deux façons d’en faire, et personne ne les distingue. Toi si.' },
-      { kind: 'exercice', niveau: 57, commande: 'La même distance que la cible. Pas le même chiffre.' },
       {
         kind: 'commande',
         entete: 'LE TUNNEL — DEUXIÈME ENVOI',
         lignes: [
-          'Tu as jusqu’à samedi pour renvoyer le morceau.',
-          'Trois cents personnes, un système de club.',
-          '— Enlève ce qui ne sert pas.',
-          '— Et mets une basse qui existe encore à la laverie.',
+          'Le même morceau, repris là où tu l’as laissé.',
+          '— Enlève ce qui traîne en haut.',
+          '— Et arrête de tout mettre au même volume :',
+          'trois cents personnes ne dansent pas sur une bouillie.',
         ],
-        bouton: 'Ouvrir l’Atelier ▸',
-        chapeau: FICHE_TECHNO.chapeau,
-        /* ⚠️ La commande refondue le 2026-08-26, sur le retour de Yann :
-         * l'acte 4 ne vérifiait AUCUN mixage. Le joueur entendait le problème
-         * à la laverie, apprenait à nommer un filtre, puis livrait un morceau
-         * jugé sur « kick + snare + hat + une basse » — rien ne reliait la
-         * leçon à la livraison. Elle se fait maintenant en deux temps : le
-         * morceau, puis le mixage qui le fait tenir sur le petit
-         * haut-parleur. Voir `kickQuiPorte` / `avoirEnleve` /
-         * `deLEspaceSansSoupe` dans `commande.ts`. */
+        bouton: 'Reprendre le morceau ▸',
+        modulesRequis: ['production'],
+        /* ⚠️ Il REPART de ce qui vient d'être livré — c'est tout le sens de la
+         * chaîne. Le cahier n'exige donc rien du morceau lui-même : il est
+         * déjà accepté. Il n'exige que des GESTES de mixage, et chacun est
+         * borné pour ne pas se satisfaire d'un curseur poussé à fond. */
+        partirDeLaLivraison: true,
         cahier: [
-          ...dansLaSection(LE_MORCEAU, [
-            AVOIR_PRODUIT,
-            pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
-            dansLeStyleFiche(FICHE_TECHNO, 'Un morceau techno — c’est un club, pas un salon'),
-          ]),
-          ...dansLaSection(LE_MIXAGE, [
-            kickQuiPorte(),
-            avoirEnleve(),
-            deLEspaceSansSoupe(),
-          ]),
+          filtreQuiCoupe(9000, 2, 'Enlève en haut — au moins deux lignes filtrées'),
+          contrasteDeVolume(0.18, 'Range les plans : tout n’est pas au même volume'),
+          kickQuiPorte(),
+        ],
+        accepte: '— Là ça tient. Il manque encore quelque chose, mais ça tient.',
+        titre: 'LE TUNNEL (V2)',
+        client: 'LE TUNNEL',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— C’est propre. C’est plat.',
+          '— Tu m’as dit d’enlever.',
+          '— Je t’ai dit d’enlever D’ABORD.',
+          'Elle pousse deux curseurs, l’un après l’autre.',
+          '— La réverbe éloigne. Le delay répète.',
+          '— On les confond tout le temps, et ce sont deux pièces différentes.',
+          '— Maintenant tu ajoutes. Un peu.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'LE TUNNEL — TROISIÈME ENVOI',
+        lignes: [
+          'Toujours le même morceau. C’est le dernier aller-retour.',
+          '— De l’espace, mais pas une cathédrale.',
+          '— Un delay qui répond, pas qui bave.',
+          '— Et je veux que tu aies regardé chaque ligne.',
+        ],
+        bouton: 'Reprendre le morceau ▸',
+        modulesRequis: ['production'],
+        partirDeLaLivraison: true,
+        cahier: [
+          reverbDosee(0.18, 0.55, 'De l’espace — et pas une cathédrale'),
+          delayEngage(0.15, 'Un delay qui répond vraiment (il lui faut du retour)'),
+          chaqueLigneRetouchee(
+            ['kick', 'snare', 'hat'],
+            'Chaque ligne a été regardée — pas seulement la plus forte',
+          ),
         ],
         accepte: '— Cette fois, les gens bougent. Le lundi, ils paient.',
-        titre: 'LE TUNNEL (V2)',
+        titre: 'LE TUNNEL (V3)',
         client: 'LE TUNNEL',
       },
       {

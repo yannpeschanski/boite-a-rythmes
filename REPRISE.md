@@ -54,7 +54,43 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
 
-## Le chantier en cours — revoir les niveaux en profondeur
+## Le chantier en cours — le jeu devient une suite de CAHIERS DES CHARGES
+
+Relecture complète de Yann le 2026-09-01 (75 cases annotées, une par exercice et
+par acte). Elle dit une seule chose : **« il faut que tout soit en atelier avec
+des cahiers des charges assez complexes »**. Sa nuance sur les 56 % de
+`reproduire` le confirme en creux — *« les autres verbes ne sont pas forcément
+tous intéressants : lequel, régler et nommer »*. Remplacer du recopiage par des
+quiz n'aurait rien réglé.
+
+| | tranche | état |
+|---|---|---|
+| 1 | l'outillage des cahiers + **l'acte 4 refait** en trois envois | ✅ livré |
+| 2 | **l'acte 3** : mélodie → basse → nappe, additionnées, plus les textures | à faire |
+| 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | à faire |
+| 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | à faire |
+| 5 | **actes 5 et 6** en cahiers, le 6 le plus complet du jeu | à faire |
+| 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
+| — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
+
+**Quatre arbitrages pris**, à ne pas rouvrir sans raison :
+
+- **le trio 14/17/23 perd sa grille unique** — Yann écrit cinq fois « les rythmes
+  se ressemblent trop » ; la comparaison de deux balancements passera par
+  `régler`, pas par trois reproductions ;
+- **`laverie` sort de la carrière, son étage de moteur reste** — outil d'écoute,
+  plus exercice noté ;
+- **le bouton abandon ne bouge pas** — *« en version de développement, ce bouton
+  est pratique pour balayer les niveaux »* ;
+- ⚠️ **renuméroter les niveaux vient EN DERNIER** — `PlayerProgress.level`,
+  `niveauxRencontres`, `partirDu` et toutes les sauvegardes citent les ids.
+  Renuméroter avant que le contenu soit stable coûterait deux fois.
+
+**Ce que Yann demande et qui n'est pas encore planifié** : retrouver ses propres
+morceaux d'Atelier (aujourd'hui seule la discographie de carrière est gardée), et
+fusionner la carte et la salle de répétition en un seul écran.
+
+## Le chantier précédent — revoir les niveaux en profondeur
 
 Retours de Yann (2026-08-26) sur la difficulté et l'amusement : *« bizarre les
 exercices pour la production »*, *« il faut pousser les exercices à faire en

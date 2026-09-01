@@ -596,10 +596,27 @@ grille du preset, et punir ça punirait le joueur d'avoir bien travaillé. La
 provenance vit dans `pattern.presetCharge` (hors format v2) et voyage par
 `ContexteLivraison`.
 
+⚠️ **Un acte de production est une CHAÎNE D'ENVOIS, pas une suite d'exercices.**
+L'acte 4 enchaîne trois commandes sur le MÊME morceau : la première ne juge que
+le morceau, les deux suivantes ne demandent que du mixage et repartent de ce qui
+vient d'être livré (`partirDeLaLivraison`, lu dans la discographie par
+`departCommande`). C'est ce qui remplace les cinq exercices de l'acte, tous
+déclarés « NOK » en jeu : on ne nomme plus un filtre, on s'en sert parce que le
+client renvoie le morceau sans lui. ⚠️ Le verbe `laverie` et son étage de moteur
+RESTENT — le petit haut-parleur garde sa valeur d'outil d'écoute, il perd son
+rôle d'exercice noté ; et les niveaux 53-57 restent au réservoir.
+
+⚠️ **Une contrainte qui mesure un GESTE lit le départ dans le CONTEXTE.**
+`ContexteLivraison.depart` porte l'état sur lequel l'Atelier s'est ouvert :
+depuis la chaîne d'envois, ce n'est plus une donnée figée dans le cahier. Absent,
+ces contraintes répondent **faux** — une case cochée faute d'information est le
+théâtre que le cahier interdit. Corollaire : toute borne d'un cahier de mixage a
+un **plafond** (`reverbDosee`, `filtreQuiCoupe`), sinon elle se satisfait en
+poussant un curseur à fond, ce que l'acte enseigne justement à ne pas faire.
+
 ⚠️ **Une leçon de PRODUCTION se mesure sur l'ÉTAT, et chaque critère exige un
-GESTE.** L'acte 4 se fait en deux temps — produire un morceau techno, puis le
-régler pour qu'il tienne sur le petit haut-parleur (`kickQuiPorte`, `avoirEnleve`,
-`deLEspaceSansSoupe`). Trois choses payées : rendre le morceau dans un
+GESTE.** (`kickQuiPorte`, `contrasteDeVolume`, `filtreQuiCoupe`, `reverbDosee`,
+`delayEngage`, `chaqueLigneRetouchee`.) Trois choses payées : rendre le morceau dans un
 `OfflineAudioContext` à chaque frappe rendrait le cahier vivant asynchrone, donc on
 mesure l'état et on calibre le seuil (`tone >= LAVERIE_DRIVES[1]`) ; un critère
 satisfait sans rien toucher est du théâtre, d'où « de l'espace **mais pas de la
@@ -607,6 +624,11 @@ soupe** » plutôt qu'un simple plafond de réverbe ; et le kick est **exclu** d
 as enlevé », parce que lui couper les aigus retirerait ce qui vient de le sauver.
 `Contrainte.section` porte les titres d'étape : six lignes à plat ne disent pas
 qu'il y a deux gestes, ni dans quel ordre.
+
+⚠️ **Une seule commande par acte n'est PLUS la règle.** Elle l'était tant qu'un
+acte enseignait par des exercices et concluait par une livraison. Ce qui reste
+tenu : après la DERNIÈRE commande d'un acte il ne reste que du récit, et dans une
+chaîne, seule la première part d'autre chose qu'une livraison.
 
 ⚠️ **Une RÉACTION à la livraison cite un fait de l'état, et son seuil se calibre
 sur les 34 presets.** `src/model/reactions.ts` lit le MORCEAU, là où les roasts de

@@ -92,8 +92,68 @@ describe('les DEUX chemins qui produisent un morceau vivent dans le STORE', () =
   });
 });
 
+/* ⚠️ UNE CHAÎNE D'ENVOIS REPART DE CE QU'ON VIENT DE LIVRER.
+ *
+ * `partirDeLaLivraison` (acte 4, 2026-09-01) : *« les livraisons intermédiaires
+ * doivent être remplacées par les nouvelles jusqu'à la fin de l'acte »* (Yann).
+ * Sans ce test, la mécanique casserait en silence — le deuxième envoi
+ * s'ouvrirait sur une table rase, le cahier de mixage deviendrait insatisfiable
+ * pour une raison invisible, et le joueur chercherait longtemps.
+ *
+ * On monte le vrai store : ce qui est vérifié ici est un CÂBLAGE (la
+ * discographie relue par `departCommande`), pas un calcul.
+ */
+describe('un envoi reprend le morceau livré à l’étape d’avant', () => {
+  /* ⚠️ On RÉUTILISE le stockage déjà posé plus haut au lieu d'en installer un.
+   * En poser un second remplaçait la référence que le test précédent tient
+   * encore, et ce test-là se mettait à lire un stockage vide — un échec qui
+   * n'a rien à voir avec ce qu'il vérifie. Deux describes qui se partagent un
+   * global doivent se le partager pour de bon. */
+  if (!(globalThis as { localStorage?: unknown }).localStorage) {
+    class Stockage {
+      private map = new Map<string, string>();
+      getItem(k: string) { return this.map.get(k) ?? null; }
+      setItem(k: string, v: string) { this.map.set(k, v); }
+      removeItem(k: string) { this.map.delete(k); }
+      clear() { this.map.clear(); }
+    }
+    (globalThis as unknown as { localStorage: Stockage }).localStorage = new Stockage();
+  }
+
+  it('⚠️ l’Atelier s’ouvre sur la production de l’acte, pas sur une table rase', async () => {
+    const { game } = await import('../src/stores/game.svelte');
+    const { etatVierge } = await import('../src/model/defaults');
+    game.pseudo = '';
+    game.setPseudo('chaine');
+
+    // On se pose sur le DEUXIÈME envoi de l'acte 4 — celui qui reprend.
+    const acte4 = ACTES.find((a) => a.id === 4)!;
+    const i = acte4.etapes.findIndex(
+      (e) => e.kind === 'commande' && (e as { partirDeLaLivraison?: boolean }).partirDeLaLivraison,
+    );
+    expect(i, 'aucune commande qui reprend une livraison').toBeGreaterThan(0);
+    game.enCarriere = true;
+    game.acteActif = 4;
+    game.etapeActive = i;
+
+    // Rien de livré : on retombe sur la table rase plutôt que de bloquer.
+    expect(game.productions.filter((p) => p.acte === 4)).toHaveLength(0);
+    expect(serializeState(game.departCommande())).toBe(serializeState(etatVierge()));
+
+    // Une fois le premier envoi livré, c'est LUI qu'on reprend.
+    const livre = defaultState();
+    livre.tempo = 137;
+    livre.rows.kick.filterCutoff = 4321;
+    game.archiverProduction(livre, { acte: 4, titre: 'LE TUNNEL', client: 'LE TUNNEL', quand: 'un jour' });
+
+    const depart = game.departCommande();
+    expect(depart.tempo, 'le tempo du morceau livré').toBe(137);
+    expect(depart.rows.kick.filterCutoff, 'et son mixage').toBe(4321);
+  });
+});
+
 describe('chaque production du récit a un nom et un destinataire', () => {
-  it('les six livraisons sont nommées', () => {
+  it('les huit livraisons sont nommées', () => {
     /* Sans titre ni client, la discographie serait une liste de fichiers.
      * C'est le récit qui range les morceaux, pas une date. */
     const prod = ACTES.flatMap((a) =>
@@ -101,7 +161,11 @@ describe('chaque production du récit a un nom et un destinataire', () => {
         .filter((e) => e.kind === 'commande' || e.kind === 'livraison')
         .map((e) => ({ acte: a.id, e: e as { titre: string; client: string } })),
     );
-    expect(prod).toHaveLength(6);
+    /* Huit depuis que l'acte 4 enchaîne trois envois du même morceau (2026-09-01).
+     * ⚠️ Ils portent des titres DIFFÉRENTS (LE TUNNEL, V2, V3) alors qu'une
+     * production par acte remplace la précédente : c'est voulu, c'est le titre
+     * qui dit au joueur laquelle des trois il réécoute. */
+    expect(prod).toHaveLength(8);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();
