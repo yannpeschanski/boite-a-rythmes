@@ -446,6 +446,95 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
   });
 });
 
+/* ⚠️ L'ACTE 3 EMPILE TROIS ENVOIS — refait le 2026-09-01.
+ *
+ * Demande de Yann après relecture complète : *« il faut que tout soit en
+ * atelier avec des cahiers des charges assez complexes »*, et pour cet
+ * acte-ci : *« mélodie, basse, nappe, additionnées, plus les textures »*.
+ *
+ * Ce que ce describe tient, et qu'aucun autre ne verrait : l'ordre des couches
+ * (une commande qui demanderait la nappe avant la mélodie raconterait autre
+ * chose), le fait que chaque envoi n'exige que la couche qu'il AJOUTE, et — le
+ * vrai point de conception — que les couches précédentes sont protégées SANS
+ * interdiction, par des contraintes relationnelles.
+ */
+describe('L’acte 3 empile trois envois du même jingle', () => {
+  const envois = ACTES[3].etapes.filter((e) => e.kind === 'commande');
+  const ids = (i: number) => (envois[i] as { cahier: Array<{ id: string }> }).cahier.map((c) => c.id);
+
+  it('en a trois, et seul le premier ne reprend pas une livraison', () => {
+    expect(envois).toHaveLength(3);
+    const suite = envois as Array<{ partirDeLaLivraison?: boolean }>;
+    expect(suite[0].partirDeLaLivraison).toBeFalsy();
+    expect(suite[1].partirDeLaLivraison).toBe(true);
+    expect(suite[2].partirDeLaLivraison).toBe(true);
+  });
+
+  it('demande les couches dans l’ordre du récit : mélodie, puis basse, puis nappe', () => {
+    // ⚠️ Chaque envoi n'exige QUE ce qu'il ajoute — un envoi qui redemanderait
+    // la couche précédente la présenterait comme une case déjà cochée.
+    expect(ids(0)).toContain('phrase:melody');
+    expect(ids(0).some((i) => i.startsWith('synth:'))).toBe(false);
+
+    expect(ids(1)).toContain('synth:bass');
+    expect(ids(1)).not.toContain('phrase:melody');
+    expect(ids(1)).not.toContain('synth:pad');
+
+    expect(ids(2)).toContain('synth:pad');
+    expect(ids(2)).not.toContain('synth:bass');
+  });
+
+  it('et finit par les TEXTURES — une voix choisie sur chaque ligne', () => {
+    /* « Une note n'est pas un son » : les trois lignes doivent avoir quitté la
+     * voix d'usine à la fin de l'acte, la basse au deuxième envoi et les deux
+     * autres au troisième. */
+    const voix = [...ids(1), ...ids(2)].filter((i) => i.startsWith('voix:'));
+    const lignes = voix.flatMap((i) => i.slice(5).split('+'));
+    expect(new Set(lignes)).toEqual(new Set(['bass', 'melody', 'pad']));
+  });
+
+  it('⚠️ ouvre le Synthé sur les trois — sinon l’acte est un cul-de-sac', () => {
+    // Le Synthé ne s'ouvre qu'une fois l'acte 3 FRANCHI : c'est `modulesRequis`
+    // qui le prête le temps de la commande (le défaut trouvé en JOUANT).
+    for (const e of envois as Array<{ modulesRequis?: string[] }>) {
+      expect(e.modulesRequis).toContain('synth');
+    }
+  });
+
+  it('⚠️ protège la couche précédente SANS l’interdire — un envoi qui l’efface est refusé', async () => {
+    /* Le cœur de la conception : aucun envoi ne dit « ne touche pas à la
+     * mélodie ». C'est « la basse tient moins de notes que la mélodie » qui
+     * rend son effacement impossible — une exigence relationnelle plutôt
+     * qu'une interdiction, donc l'Atelier reste libre tant que le résultat
+     * tient. */
+    const { evaluerCommande } = await import('../src/model/commande');
+    const { etatVierge } = await import('../src/model/defaults');
+
+    const livre = etatVierge();
+    const m = livre.synthRows.melody;
+    m.subdivisions = 8;
+    m.pattern = new Array(8).fill(null);
+    m.pattern[0] = { degree: 5, octave: 0 };
+    m.pattern[2] = { degree: 3, octave: 0 };
+    m.pattern[4] = { degree: 2, octave: 0 };
+    m.pattern[6] = { degree: 1, octave: 0 };
+    const b = livre.synthRows.bass;
+    b.subdivisions = 8;
+    b.pattern = new Array(8).fill(null);
+    b.pattern[0] = { degree: 1, octave: 0 };
+
+    const cahier = (envois[1] as { cahier: Parameters<typeof evaluerCommande>[1] }).cahier;
+    const tient = (e: typeof livre) =>
+      evaluerCommande(e, cahier).lignes.find((l) => l.contrainte.id === 'basse-tient')!.ok;
+    expect(tient(livre)).toBe(true);
+
+    // La même basse, mais la mélodie effacée : la ligne retombe.
+    const sansMelodie = structuredClone(livre);
+    sansMelodie.synthRows.melody.pattern = new Array(8).fill(null);
+    expect(tient(sansMelodie)).toBe(false);
+  });
+});
+
 /* Les actes 0, 1 et 2, refondus sur trois retours de Yann d'un coup.
  *
  * Chacun de ces tests garde un défaut PRÉCIS qu'il a rencontré à l'écran : un

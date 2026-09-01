@@ -28,8 +28,9 @@
  *
  * Module PUR : ni rune, ni DOM, ni audio. Il ne lit qu'un `PatternStateV2`.
  */
-import type { PatternStateV2, DrumRowName, SynthRowName } from './types';
+import type { PatternStateV2, DrumRowName, SynthRowName, SynthNote } from './types';
 import { evaluerStyle, type FicheStyle } from './styles';
+import { matchVoicePreset } from './presets/voices';
 import { LAVERIE_DRIVES } from './exercises';
 
 /* Ce qu'une contrainte peut avoir besoin de savoir EN PLUS du morceau livré.
@@ -538,4 +539,179 @@ export function pasLeMotifDeDepart(
       .join('|');
   const avant = empreinte(depart);
   return { id: 'produit', libelle, verifie: (e) => empreinte(e) !== avant };
+}
+
+/* ---------------------------------------------------------------------------
+ * LES COUCHES DU SYNTHÉ — le vocabulaire de l'acte 3 refait
+ *
+ * ⚠️ Même remède que l'acte 4, sur la demande de Yann après relecture
+ * complète : *« il faut que tout soit en atelier avec des cahiers des charges
+ * assez complexes »*. L'acte 3 concluait sur une commande de trois lignes
+ * (« une basse », « de quoi tenir le temps ») qu'un morceau quelconque
+ * satisfaisait ; il enchaîne désormais trois envois du MÊME jingle, une couche
+ * à la fois — la mélodie, puis la basse, puis la nappe et les textures.
+ *
+ * Ce que ces contraintes-là ont de particulier : elles sont RELATIONNELLES.
+ * « La basse tient » n'a pas de sens toute seule — elle se mesure contre la
+ * mélodie qui est déjà là. C'est ce qui protège les couches précédentes sans
+ * avoir à interdire d'y toucher : un envoi qui détruirait la mélodie ne
+ * pourrait plus satisfaire la basse qu'on lui demande.
+ * ------------------------------------------------------------------------- */
+
+/** Les notes réellement jouées par une ligne mélodique (basse ou mélodie). */
+function notesDe(e: PatternStateV2, ligne: 'bass' | 'melody'): SynthNote[] {
+  const r = e.synthRows[ligne];
+  if (r.muted) return [];
+  return r.pattern
+    .slice(0, r.subdivisions)
+    .filter(
+      (v): v is SynthNote =>
+        v !== null && typeof v === 'object' && typeof v.degree === 'number' && v.degree > 0,
+    );
+}
+
+/** Combien la ligne joue de notes PAR MESURE — une ligne peut boucler sur
+ *  plusieurs mesures, comparer des totaux bruts comparerait des durées. */
+function parMesure(e: PatternStateV2, ligne: 'bass' | 'melody'): number {
+  return notesDe(e, ligne).length / Math.max(1, e.synthRows[ligne].cycleBars);
+}
+
+/* Une PHRASE, pas une note répétée.
+ *
+ * Le premier envoi ne demande qu'une mélodie : sans seuil, une seule case
+ * allumée la satisferait, et `ligneSynthPresente` fait déjà ça. Ce qu'on veut
+ * ici est ce que les niveaux 42-44 viennent d'enseigner — plusieurs notes, et
+ * plusieurs HAUTEURS différentes : une même note répétée quatre fois est un
+ * rythme, pas une mélodie. */
+export function unePhrase(
+  ligne: 'bass' | 'melody',
+  notesMin: number,
+  hauteursMin: number,
+  libelle: string,
+): Contrainte {
+  return {
+    id: `phrase:${ligne}`,
+    libelle,
+    verifie: (e) => {
+      const n = notesDe(e, ligne);
+      const hauteurs = new Set(n.map((x) => `${x.degree}/${x.octave}`));
+      return n.length >= notesMin && hauteurs.size >= hauteursMin;
+    },
+  };
+}
+
+/* Elle se REPOSE : la dernière note est la tonique.
+ *
+ * ⚠️ C'est le seul jugement musical de l'acte, et il est repris mot pour mot du
+ * préambule du niveau 44 (« c'est le degré 1, et c'est là que la phrase se
+ * repose »). Une commande n'enseigne rien de neuf : elle exige ce qu'un écran
+ * a déjà expliqué. Le degré s'affiche en clair dans la case de l'Atelier, donc
+ * la ligne se vérifie à l'œil autant qu'à l'oreille. */
+export function seReposeSurLaTonique(ligne: 'bass' | 'melody', libelle: string): Contrainte {
+  return {
+    id: `tonique:${ligne}`,
+    libelle,
+    verifie: (e) => {
+      const n = notesDe(e, ligne);
+      return n.length > 0 && n[n.length - 1].degree === 1;
+    },
+  };
+}
+
+/** La ligne pose le PREMIER pas — le repère sur lequel tout le reste se cale. */
+export function poseLePremierTemps(ligne: 'bass' | 'melody', libelle: string): Contrainte {
+  return {
+    id: `premier-temps:${ligne}`,
+    libelle,
+    verifie: (e) => {
+      const r = e.synthRows[ligne];
+      const v = r.pattern[0];
+      return !r.muted && v !== null && typeof v === 'object' && v.degree > 0;
+    },
+  };
+}
+
+/* La basse TIENT — elle ne court pas après la mélodie.
+ *
+ * ⚠️ Relationnelle, et c'est le point : elle exige que la mélodie soit encore
+ * là (sinon « moins que la mélodie » se satisfait de zéro contre zéro) et que
+ * la basse joue vraiment. Un envoi qui effacerait la couche précédente ne
+ * pourrait donc pas passer, sans qu'on ait eu besoin d'interdire quoi que ce
+ * soit. */
+export function basseQuiTient(libelle: string): Contrainte {
+  return {
+    id: 'basse-tient',
+    libelle,
+    verifie: (e) => {
+      const basse = parMesure(e, 'bass');
+      const melodie = parMesure(e, 'melody');
+      return basse > 0 && melodie > 0 && basse < melodie;
+    },
+  };
+}
+
+/* La nappe ne reste pas un BLOC.
+ *
+ * Trois façons de la faire bouger, toutes à un clic dans la ligne Nappe :
+ * l'arpège (elle égrène l'accord), le bourdon (elle tient une seule note
+ * longue) et l'étalement (les notes de l'accord arrivent l'une après l'autre).
+ * On en demande une, pas une en particulier — un cahier qui nommerait le
+ * bouton serait `nommer` déguisé en commande. */
+export function nappeQuiRespire(libelle: string): Contrainte {
+  return {
+    id: 'nappe-respire',
+    libelle,
+    verifie: (e) => {
+      const r = e.synthRows.pad;
+      const accords = r.pattern
+        .slice(0, r.subdivisions)
+        .some((v) => typeof v === 'number' && v >= 0);
+      if (r.muted || !accords) return false;
+      return e.synthGlobal.padArpEnabled || e.synthGlobal.padDroneEnabled || (r.strum ?? 0) > 0;
+    },
+  };
+}
+
+/* Chaque ligne citée a une VOIX choisie — pas celle d'usine.
+ *
+ * ⚠️ « Une note n'est pas un son » : c'est la leçon de texture de l'acte, et
+ * elle se mesure en comparant la voix de la ligne aux presets de
+ * `presets/voices.ts`. Trois cas, pas deux — un preset (choisi), aucun preset
+ * (les curseurs ont écarté la voix, donc touchée aussi), ou `default`, le seul
+ * qui ne compte pas. Le détail nomme les lignes restées d'usine : un refus qui
+ * ne dit pas laquelle n'est pas un retour. */
+const NOM_LIGNE: Record<SynthRowName, string> = {
+  bass: 'basse',
+  pad: 'nappe',
+  melody: 'mélodie',
+};
+
+export function voixChoisie(lignes: SynthRowName[], libelle: string): Contrainte {
+  const choisie = (e: PatternStateV2, l: SynthRowName) =>
+    matchVoicePreset(l, e.synthRows[l].voice as Record<string, unknown>) !== 'default';
+  return {
+    id: `voix:${lignes.join('+')}`,
+    libelle,
+    verifie: (e) => lignes.every((l) => choisie(e, l)),
+    /* ⚠️ Le détail n'existe QUE s'il y a plusieurs lignes à distinguer : sur
+     * une seule, il répète le libellé sous le libellé (mesuré à l'écran —
+     * « ☐ Choisis-lui une voix » suivi de « · basse »). Un retour qui ne dit
+     * rien de plus que la ligne au-dessus est du bruit. */
+    details:
+      lignes.length > 1
+        ? (e) => lignes.map((l) => ({ id: `voix-${l}`, libelle: NOM_LIGNE[l], ok: choisie(e, l) }))
+        : undefined,
+  };
+}
+
+/* Le GLIDE — la note glisse jusqu'à la suivante au lieu de la remplacer.
+ *
+ * Le portamento est la texture qui s'entend le mieux sur une basse, et c'est
+ * un curseur à zéro par défaut : la ligne ne peut pas se cocher toute seule. */
+export function duGlide(ligne: SynthRowName, min: number, libelle: string): Contrainte {
+  return {
+    id: `glide:${ligne}`,
+    libelle,
+    verifie: (e) => !e.synthRows[ligne].muted && e.synthRows[ligne].glide >= min,
+  };
 }

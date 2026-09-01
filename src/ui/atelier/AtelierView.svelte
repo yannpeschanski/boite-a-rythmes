@@ -466,8 +466,12 @@
           {/if}
         {/each}
       </ul>
+      <!-- ⚠️ Le bouton nomme le CLIENT de la commande, pas Sol. Défaut noté en
+           livrant l'acte 4 (« LIVRER À SOL » alors que le client est Le
+           Tunnel) et corrigé ici, l'acte 3 en ayant fait le troisième cas :
+           Sol n'est pas la destinataire, elle est la patronne. -->
       <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
-        Livrer à Sol ▸
+        Livrer à {commande.client} ▸
       </button>
     </div>
   {/if}
