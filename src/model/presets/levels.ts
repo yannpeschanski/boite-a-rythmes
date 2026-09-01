@@ -675,15 +675,26 @@ export const LEVELS: GameLevel[] = [
    * vaut 48 et 23. Ce qui monte est la RÉSOLUTION, pas le nombre d'idées : le
    * kick et la claire restent sur des pas PAIRS (donc jamais retardés par le
    * swing), ce qui laisse « le kick tient le temps » exactement vrai. */
+  /* ⚠️ LE BALANCEMENT, seul de son espèce depuis le 2026-09-01.
+   *
+   * Ce niveau ouvrait un TRIO (14, 17, 23) qui partageait une seule grille,
+   * pour que deux balancements soient comparables. Retour de Yann, cinq fois
+   * dans la même relecture : *« les rythmes se ressemblent trop »*. La
+   * comparaison passe désormais par `regler` — un curseur qu'on vise contre une
+   * cible dit la même chose qu'une seconde reproduction, en un geste et sans
+   * refaire seize cases. Les grilles de l'acte 2 sont donc toutes différentes.
+   *
+   * Son balancement monte de 12 à 26 : « léger » n'avait de sens que face au
+   * « franc » du niveau 17. Seul, il doit s'entendre. */
   mkLevel(14, 'Le balancement', {
-    preamble: "Seize cases par ligne, et un rythme qui ne tombe plus là où tu l'attends : le kick sort du temps deux fois, la claire aussi. Par-dessus, le charley « balance » — les doubles-croches arrivent un peu en retard, et la boucle cesse d'être carrée. Ici c'est léger. Retiens la grille : les deux exercices suivants la reprennent case pour case.",
+    preamble: "Seize cases par ligne, et un rythme qui ne tombe plus là où tu l'attends : le kick sort du temps trois fois, la claire aussi. Par-dessus, le charley « balance » — les doubles-croches arrivent un peu en retard, et la boucle cesse d'être carrée. Tu viens de le régler au curseur ; là, il faut le tenir.",
     tempoOptions: [88, 92],
     grille: {
       subdiv: { kick: 16, snare: 16, hat: 16 },
       kick:  [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
       snare: [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      swing: 12,
+      swing: 26,
     } }),
   mkLevel(15, 'Traîne (drag)', {
     preamble: "Une ligne entière peut traîner légèrement derrière le tempo (drag) — un décalage collectif et constant, pas note par note.",
@@ -693,8 +704,13 @@ export const LEVELS: GameLevel[] = [
   mkLevel(16, 'Reproduire un preset (UK Garage)', {
     preamble: "Le swing de ce preset est très marqué (45%) — pas un hasard, c'est ce chapitre qu'il illustre.",
     variant: { snare: true, hat: true }, rollMax: 2, presetId: 'garage', forceVariantCount: 1, forceRollCount: 1 }),
+  /* ⚠️ Au RÉSERVOIR depuis le 2026-09-01 : il était la seconde moitié du trio
+   * comparatif (« la même grille, exactement »), et le trio est dissous. Un
+   * niveau ne se supprime jamais, il cesse d'être cité — mais son préambule ne
+   * peut plus parler d'une grille voisine, sinon il ment en salle de
+   * répétition, où on le joue seul. */
   mkLevel(17, 'Le balancement, prononcé', {
-    preamble: "La même grille, exactement. Seul le balancement change, et il est franc cette fois. Compare : ce sont les mêmes cases qui sonnent, elles ne tombent simplement plus au même endroit.",
+    preamble: "Un balancement franc, celui qu'on ne peut pas rater : un temps sur deux arrive nettement en retard. Le kick, lui, ne bouge pas — c'est contre lui que tout se mesure.",
     tempoOptions: [88, 92],
     grille: {
       subdiv: { kick: 16, snare: 16, hat: 16 },
@@ -730,13 +746,18 @@ export const LEVELS: GameLevel[] = [
     forceVariantCount: 1, forceRollCount: 1,
     presetGhostDensity: 15, presetGhostRow: 'snare', presetFillEvery: 4 }),
   // ---------- Round 4 : Décalage (seul) + Polyrythmie, avec presets ----------
+  /* ⚠️ GRILLE NEUVE (2026-09-01) — elle reprenait celle du 14 case pour case,
+   * au titre du trio comparatif dissous. Ce qu'elle garde du trio : aucune
+   * variante, aucune rafale, et le kick sur des pas PAIRS, les seuls que le
+   * swing ne retarde pas — le point fixe reste fixe, ce qui est la condition
+   * pour qu'un décalage s'entende. */
   mkLevel(23, 'Une ligne en retard', {
-    preamble: "Toujours la même grille, sans balancement — mais le charley traîne derrière les deux autres. Une ligne peut être décalée toute seule, en avance ou en retard : c'est ce qui fait qu'un batteur ne sonne pas comme une machine.",
+    preamble: "Une autre grille, sans balancement du tout — mais le charley traîne derrière les deux autres. Une ligne peut être décalée toute seule, en avance ou en retard : c'est ce qui fait qu'un batteur ne sonne pas comme une machine. Le kick et la claire, eux, ne bougent pas.",
     tempoOptions: [88, 92],
     grille: {
       subdiv: { kick: 16, snare: 16, hat: 16 },
-      kick:  [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0],
-      snare: [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1],
+      kick:  [1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0],
+      snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       swing: 0,
       /* Le charley seul, et en RETARD : décalé contre deux lignes qui, elles,

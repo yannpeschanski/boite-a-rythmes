@@ -47,6 +47,8 @@ import {
   reverbDosee,
   contrasteDeVolume,
   chaqueLigneRetouchee,
+  uneLigneQuiGlisse,
+  deLAlea,
   unePhrase,
   seReposeSurLaTonique,
   poseLePremierTemps,
@@ -702,30 +704,38 @@ export const ACTES: Acte[] = [
     module: null,
     resume: 'Kelvin a seize ans, il vient le mardi, et il trouve ça nul.',
     etapes: [
-      /* ⚠️ L'acte citait cinq GRILLES à reproduire (presets, swing, traîne,
-       * ghost notes, décalage). Retour de Yann : « pour le groove, on ne
-       * comprend pas pourquoi il y a les rafales et les charleys ouverts, rim
-       * shot, personne n'explique, ce n'est pas lié au groove. Le groove, ce
-       * sont des paramètres qu'on doit pouvoir régler. »
+      /* ⚠️ TROIS ARBITRAGES SUCCESSIFS, et il faut les garder tous les trois —
+       * ne pas « restaurer » l'un en croyant corriger l'autre.
        *
-       * Il a d'abord été réduit aux trois verbes de PARAMÈTRE sur la famille
-       * `groove` : entendre (`lequel`), nommer (`nommer`), viser (`regler`).
+       * 1. (2026-08-27) « Pour le groove, on ne comprend pas pourquoi il y a
+       *    les rafales et les charleys ouverts, rim shot ; ce n'est pas lié au
+       *    groove. Le groove, ce sont des paramètres qu'on doit pouvoir
+       *    régler. » → l'acte passe aux verbes de PARAMÈTRE, et ses grilles
+       *    n'apportent ni variante ni rafale.
+       * 2. (plus tard) « Les quiz sont moins intéressants que les exercices de
+       *    reproduction. » → les grilles reviennent, écrites.
+       * 3. (2026-09-01, relecture complète) *« les rythmes se ressemblent
+       *    trop »* — cinq fois — et *« les autres verbes ne sont pas forcément
+       *    tous intéressants : lequel, régler et nommer »*, avec une consigne
+       *    d'ordre : **régler en premier**, et **l'aléa dans le cahier**.
        *
-       * ⚠️ Puis les grilles sont REVENUES, et il faut garder les deux
-       * arbitrages : « les quiz sont moins intéressants que les exercices de
-       * reproduction ». Ce qui revient n'est pas ce qui était parti — les
-       * niveaux 14, 17 et 23 sont ÉCRITS, sans une variante ni une rafale
-       * (c'était ça, le reproche), et tous les trois sur la MÊME grille. Seul
-       * le feel change : balancement léger, décalage du charley, balancement
-       * franc. C'est ce qui rend la comparaison possible, et c'est la seule
-       * forme sous laquelle une grille a sa place dans cet acte.
-       * `tests/carriere.test.ts` tient les deux règles.
+       * Ce que le 3 change, et pourquoi ça ne contredit pas le 2 : le TRIO
+       * comparatif (14, 17, 23 sur une seule grille) est dissous. Comparer
+       * deux balancements ne demandait pas trois reproductions — un curseur
+       * qu'on vise contre une cible le dit mieux, et c'est `regler`. Chaque
+       * sujet s'ouvre donc sur son réglage et se referme sur UNE grille, toutes
+       * différentes ; les trois `lequel` sortent (désigner A ou B est le même
+       * jugement, en moins engageant) ; les deux exercices d'aléa sortent aussi
+       * et deviennent une exigence du cahier de Kelvin, où l'on POSE l'aléa au
+       * lieu de le reconnaître.
        *
-       * C'est aussi le premier endroit où `nommer` et `regler` ont un sens :
-       * l'Atelier est ouvert depuis l'acte 1, les mots « Swing » et
-       * « Décalage » sont enfin sur des curseurs que le joueur a vus. À l'acte
-       * 0 ils ne renvoyaient à rien — « je ne sais même pas expliquer ce que
-       * c'est decay ».
+       * Les niveaux 17, 45, 46, 62 et 73 restent au réservoir : un niveau ne se
+       * supprime jamais, il cesse d'être cité.
+       *
+       * `nommer` reste, une fois : c'est le seul écran du jeu qui met les deux
+       * mots côte à côte, et l'Atelier est ouvert depuis l'acte 1 — les mots
+       * « Swing » et « Décalage » sont sur des curseurs déjà vus. À l'acte 0 ils
+       * ne renvoyaient à rien.
        *
        * La traîne (`drag`) n'y est pas, et c'est un choix : elle est GLOBALE
        * dans le format v2 (un seul champ pour tout le morceau), donc
@@ -746,30 +756,16 @@ export const ACTES: Acte[] = [
           '— C’est carré. Personne ne danse carré.',
         ],
       },
-      {
-        kind: 'exercice',
-        niveau: 45,
-        commande: 'Sol, sans lever les yeux : — Il a raison. Écoute : même rythme, pas le même balancement.',
-      },
-      /* ⚠️ ENTENDRE puis REFAIRE. L'acte ne faisait que désigner (`lequel`,
-       * `nommer`, `regler`) : trois écrans où l'on reconnaît, aucun où l'on
-       * pose. Retour de Yann : « les quiz sont moins intéressants que les
-       * exercices de reproduction et surtout que ceux de l'atelier ».
-       *
-       * Les niveaux 14, 17 et 23 partagent la MÊME grille et ne diffèrent que
-       * par le feel — c'est ce qui rend la comparaison possible, et c'est ce
-       * qu'un tirage de densité interdisait. Ils dormaient dans le réservoir
-       * depuis que la carrière a remplacé la campagne linéaire. */
-      {
-        kind: 'exercice',
-        niveau: 14,
-        commande: 'Maintenant refais-le, avec le balancement dedans. Seize cases par ligne : ce n’est plus seulement de l’entendre, c’est de le tenir.',
-      },
+      /* ⚠️ Le mot AVANT le curseur. Le récit nomme le swing, puis on le règle,
+       * puis on le repose dans une grille — un exercice n'enseigne que ce qu'un
+       * écran a déjà expliqué, et c'est d'autant plus vrai depuis que les
+       * `lequel` d'écoute sont partis. */
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'SOL',
         lignes: [
+          'Sol, sans lever les yeux : — Il a raison.',
           '— Ça s’appelle le swing.',
           'Un temps sur deux arrive un peu en retard.',
           'Toujours le même, toujours du même retard.',
@@ -777,10 +773,19 @@ export const ACTES: Acte[] = [
           '— Tout est réglable. C’est bien le problème.',
         ],
       },
+      /* ⚠️ RÉGLER D'ABORD, REPOSER ENSUITE — l'ordre demandé par Yann. Viser
+       * un curseur contre une cible remplace le `lequel` qui ouvrait l'acte :
+       * c'est le même jugement d'oreille, mais on le pose au lieu de le
+       * désigner, et c'est le geste qu'on refera dans l'Atelier. */
       {
         kind: 'exercice',
-        niveau: 17,
-        commande: 'La même grille, un balancement franc. Compare : mêmes cases, autres instants.',
+        niveau: 48,
+        commande: 'Trouve-le au curseur. Pas le chiffre : le balancement.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 14,
+        commande: 'Maintenant tiens-le sur seize cases. Ce n’est plus de l’entendre, c’est de le poser.',
       },
       {
         kind: 'recit',
@@ -791,66 +796,51 @@ export const ACTES: Acte[] = [
           '— Comme ça.',
           '— Ça fait combien, « comme ça » ?',
           '— J’en sais rien. Comme ça.',
+          'Sol : — Il y en a un autre. Là, c’est la ligne entière qui glisse.',
+          '— Le kick, lui, ne bouge pas. C’est contre lui qu’on l’entend.',
         ],
       },
       {
         kind: 'exercice',
-        niveau: 48,
-        commande: 'Alors trouve-le au curseur. Pas le chiffre : le balancement.',
+        niveau: 71,
+        commande: 'Celui-là aussi se règle. De quel côté glisse-t-il, et de combien ?',
       },
-      {
-        kind: 'exercice',
-        niveau: 46,
-        commande: 'Autre bouton : là, c’est la ligne entière qui glisse. Le kick, lui, ne bouge pas.',
-      },
+      /* ⚠️ Une AUTRE grille, et c'est le sujet de la passe du 2026-09-01 : ce
+       * niveau reprenait celle du 14 case pour case. */
       {
         kind: 'exercice',
         niveau: 23,
-        commande: 'Même grille encore, sans balancement — mais le charley traîne derrière. Repose-la.',
-      },
-      /* ⚠️ Le pendant du niveau 48 : on faisait RÉGLER le swing et jamais le
-       * décalage, alors que l'acte les enseigne à égalité. Un sujet qu'on
-       * entend et qu'on repose sans jamais le viser reste une reconnaissance. */
-      {
-        kind: 'exercice',
-        niveau: 71,
-        commande: 'Et celui-là aussi se règle. De quel côté glisse-t-il, et de combien ?',
+        commande: 'Une autre boucle, sans balancement — mais le charley traîne derrière. Repose-la.',
       },
       {
         kind: 'exercice',
         niveau: 47,
         commande: 'Kelvin en a repéré deux. Il ne sait pas les nommer. Toi, si.',
       },
-      /* La seule grille où les DEUX feels jouent ensemble — le trio les isole
-       * l'un après l'autre, celle-ci les cumule. Grille différente exprès :
-       * elle n'appartient pas au trio comparatif. */
+      /* La seule grille où les DEUX feels jouent ensemble : les deux exercices
+       * précédents les isolent, celle-ci les cumule. */
       {
         kind: 'exercice',
         niveau: 72,
         commande: 'Les deux sur la même ligne : le charley balance ET traîne. Repose-la.',
       },
-      /* ⚠️ Le premier endroit du jeu où les boutons d'ALÉA s'entendent — ghost
-       * notes, vélocité aléatoire, rafales spontanées. Ils existaient dans
-       * l'Atelier depuis toujours et rien ne les enseignait ; les niveaux 20 et
-       * 21 les ANNONÇAIENT sans que le code les pose jamais.
-       *
-       * Ils tombent ici parce que c'est l'acte du groove, et que ce sont
-       * exactement ça : ce qui empêche une boucle de sonner comme une machine.
-       * Kelvin vient de dire « ça fait réveil » — c'est la réponse qui manquait. */
+      /* ⚠️ L'ALÉA n'a plus d'exercice — il est dans le CAHIER, en bas de l'acte.
+       * Les niveaux 62 et 73 faisaient reconnaître trois boutons ; la commande
+       * demande de les POSER, ce qui est la seule façon d'apprendre à quoi ils
+       * servent. Le récit garde ce qu'ils avaient d'utile : le mot, et
+       * l'idée. */
       {
-        kind: 'exercice',
-        niveau: 62,
-        /* ⚠️ Pas de superlatif : le SENS de la question est tiré au sort
-         * (`paramSens`), donc « laquelle en fait le plus » mentirait une fois
-         * sur deux. On pose la PROPRIÉTÉ, l'écran pose la question. */
-        commande: 'Sol ajoute un dernier truc : — La machine peut jouer à côté toute seule. Là, c’est la quantité qui change.',
-      },
-      /* Entendre puis NOMMER, comme pour le swing et le décalage : les trois
-       * boutons d'aléa n'avaient que leur exercice d'écoute. */
-      {
-        kind: 'exercice',
-        niveau: 73,
-        commande: '— Et là ? Trois façons de ne pas jouer deux fois pareil. Dis laquelle.',
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— Il reste un truc, et c’est celui qu’on n’écrit pas.',
+          '— La machine peut jouer à côté toute seule :',
+          'des coups en plus, ou pas toujours la même force.',
+          '— Ghost notes, vélocité, rafales. Trois boutons.',
+          '— C’est ce qui sépare une boîte à rythmes d’un batteur.',
+          '— Et ça, tu ne le reconnaîtras qu’en l’ayant mis toi-même.',
+        ],
       },
       /* ⚠️ LE PALIER — retour de testeur : « le jeu reste trop longtemps trop
        * facile ». Mesuré : l'acte 1 finissait à 24 cases avec deux variantes,
@@ -887,11 +877,24 @@ export const ACTES: Acte[] = [
          * chaque case demande un vrai geste — c'est la condition qui remplace
          * « l'Atelier part vide ». `tests/transformer.test.ts` la tient. */
         partirDu: 63,
+        /* ⚠️ SIX lignes depuis le 2026-09-01, et les deux dernières sont la
+         * leçon de l'acte : *« l'aléa dans le cahier »* (Yann). L'acte
+         * enseignait le décalage et les trois boutons d'aléa par des quiz, et
+         * sa commande n'en demandait rien — on pouvait donc traverser l'acte du
+         * GROOVE et livrer une boucle carrée, c'est-à-dire exactement ce que
+         * Kelvin refuse au premier écran (« ça fait réveil »).
+         *
+         * ⚠️ Le swing, lui, n'est PAS exigé : la grille de départ (niveau 63)
+         * en porte déjà 20, donc la case serait cochée à l'ouverture — le
+         * défaut que `tests/transformer.test.ts` interdit. Ce qu'on demande est
+         * ce que le départ n'a pas : une ligne qui glisse contre les autres. */
         cahier: [
           pasLeMotifDeDepart(DEPART_KELVIN, 'Il faut y avoir touché'),
           kickQuiSortDuTemps('Fais bouger le kick — qu’il sorte du temps'),
           dePlacePourLaVoix('Laisse de la place : le charley ne joue pas tout'),
           auMoinsUneVariante('Quelque chose qui ne se répète pas — rim shot ou charley ouvert'),
+          uneLigneQuiGlisse(6, 'Une ligne qui glisse contre les autres — et une qui ne bouge pas'),
+          deLAlea('Que la machine ne joue pas deux fois pareil — un des trois boutons'),
         ],
         accepte: '— Là. Ça respire. Tu vois quand tu veux.',
         titre: 'SANS TITRE',

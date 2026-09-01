@@ -174,6 +174,16 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         if (exige('retouchees')) {
           for (const n of ['kick', 'snare', 'hat']) st.rows[n].tone = 42;
         }
+        /* Le GROOVE exigé par le cahier de Kelvin (acte 2, 2026-09-01) : un
+           décalage sur UNE ligne — les autres restent en place, c'est contre
+           elles qu'il s'entend — et un des trois boutons d'aléa, au seuil
+           mesuré (`ALEA_MINI`) et pas à fond. */
+        if (exige('ligne-glisse')) {
+          st.rows.hat.shiftPct = 10;
+          st.rows.kick.shiftPct = 0;
+          st.rows.snare.shiftPct = 0;
+        }
+        if (exige('alea')) st.ghostDensity = 8;
         /* Les COUCHES DU SYNTHÉ de la chaîne de l'acte 3 (2026-09-01) : la
            mélodie, puis la basse, puis la nappe et les textures. La mélodie
            est posée aussi quand `basse-tient` est exigée — c'est une contrainte

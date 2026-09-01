@@ -283,13 +283,21 @@ describe('Le prologue situe l’histoire avant de la commencer', () => {
    * Ce qui se teste, c'est le SUPERLATIF — « le plus », « la moins » : c'est
    * lui qui désigne un extrême, donc un seul des deux sens. Une commande reste
    * libre de nommer la propriété (« c'est la durée qui change ») ou d'offrir la
-   * paire (« plus fort ou plus doux ? »), qui ne tranche rien. */
+   * paire (« plus fort ou plus doux ? »), qui ne tranche rien.
+   *
+   * ⚠️ L'ancre a bougé le 2026-09-01 : elle ne portait que sur `lequel`, et
+   * `lequel` a quitté la carrière quand l'acte 2 est passé à « régler
+   * d'abord ». Un garde-fou dont la population est vide passe en silence. Elle
+   * porte donc sur les TROIS verbes de paramètre, ce qui est plus large qu'elle
+   * ne l'était : `regler` tire sa cible et `nommer` ses leurres, un superlatif
+   * y mentirait de la même façon. */
   it('ne promet jamais un SENS que le tirage ne tient pas', () => {
+    const VERBES = ['lequel', 'nommer', 'regler'];
     const commandes = ACTES.flatMap((a) =>
       a.etapes.flatMap((e) => {
         if (e.kind !== 'exercice' || !e.commande) return [];
         const l = LEVELS.find((x) => x.id === e.niveau)!;
-        return l.exercise === 'lequel' ? [[e.niveau, e.commande] as const] : [];
+        return VERBES.includes(l.exercise) ? [[e.niveau, e.commande] as const] : [];
       }),
     );
     expect(commandes.length).toBeGreaterThan(0);
@@ -789,32 +797,33 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
     }
   });
 
-  it('⚠️ le TRIO à comparer partage une seule grille — seul le feel change', () => {
-    /* C'est ce qui fait l'exercice : on ne peut comparer deux balancements que
-     * si tout le reste est identique. Une densité tirée rendait la question
-     * impossible — on ne savait pas si ce qu'on entendait venait du feel ou
-     * d'un motif différent.
+  it('⚠️ ses grilles sont TOUTES DIFFÉRENTES — le trio est dissous', () => {
+    /* ⚠️ CE TEST DIT L'INVERSE DE CE QU'IL DISAIT, et c'est un arbitrage, pas
+     * une régression. Il exigeait que les niveaux 14, 17 et 23 partagent une
+     * seule grille : c'était la condition pour comparer deux balancements —
+     * mêmes cases, autres instants.
      *
-     * ⚠️ La règle porte sur le GROUPE À COMPARER, pas sur l'acte entier — et
-     * ce groupe est NOMMÉ, il ne se devine plus. Deux heuristiques ont déjà
-     * cédé ici : « toutes les grilles de l'acte » (cassée par l'ajout du
-     * palier 63), puis « à résolution égale, identiques » (cassée le
-     * 2026-08-31, quand le trio est passé lui aussi en doubles-croches pour
-     * monter la difficulté). Une heuristique qui se re-corrige à chaque
-     * ajustement de contenu ne vérifie plus une intention, elle décrit l'état
-     * du fichier. Les trois niveaux à comparer sont 14, 17 et 23. */
-    const TRIO = [14, 17, 23];
-    const trio = TRIO.map((id) => LEVELS.find((l) => l.id === id)!);
-    for (const l of trio) expect(l.grille, `niveau ${l.id} : grille écrite`).toBeTruthy();
-    // Et ils sont bien tous les trois joués dans l'acte 2.
-    const joues = niveauxDeLActe(ACTES[2]);
-    for (const id of TRIO) expect(joues, `niveau ${id} absent de l’acte 2`).toContain(id);
-    const cases = (l: (typeof trio)[number]) =>
+     * Retour de Yann (relecture complète, 2026-09-01), cinq fois dans le même
+     * document : *« les rythmes se ressemblent trop »*. Trois reproductions de
+     * la même grille, c'est trois fois le même travail de lecture pour une
+     * seule idée. La comparaison passe donc par `regler` — un curseur visé
+     * contre une cible dit la même chose en un geste — et les grilles de
+     * l'acte, elles, sont toutes différentes.
+     *
+     * Ce que la version d'avant protégeait et qui reste tenu ailleurs : une
+     * grille de cet acte n'apporte ni variante ni rafale (test au-dessus), et
+     * porte toujours un feel (test en dessous). */
+    const grilles = grillesDeLActe2();
+    expect(grilles.length).toBeGreaterThanOrEqual(3);
+    const cases = (l: (typeof grilles)[number]) =>
       JSON.stringify([l.grille!.subdiv, l.grille!.kick, l.grille!.snare, l.grille!.hat]);
-    expect([...new Set(trio.map(cases))], 'les grilles du trio diffèrent').toHaveLength(1);
-    // Et le feel, lui, diffère bien d'un niveau à l'autre du trio.
-    const feels = trio.map((l) => JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]));
-    expect(new Set(feels).size, 'deux niveaux du trio au même feel').toBe(trio.length);
+    const vues = grilles.map(cases);
+    expect(new Set(vues).size, 'deux grilles identiques dans l’acte 2').toBe(grilles.length);
+    // Et le feel diffère aussi : deux grilles ne racontent pas la même chose.
+    const feels = grilles.map((l) =>
+      JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]),
+    );
+    expect(new Set(feels).size, 'deux grilles au même feel').toBe(grilles.length);
   });
 
   it('⚠️ et l’acte reprend là où l’acte 1 s’arrête, PLUS le feel', () => {
@@ -855,30 +864,55 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
     }
   });
 
-  // Entendre, puis reposer, puis nommer, puis viser — l'ordre est le contenu
-  // de l'acte : on ne fait pas nommer ce qu'on n'a pas encore entendu, et on ne
-  // fait pas reproduire un balancement qu'on n'a pas encore isolé à l'oreille.
-  it('va d’entendre à régler, dans cet ordre', () => {
-    /* ⚠️ Douze exercices depuis le 2026-08-31 (« on peut faire plus
-     * d'exercices, prendre plus notre temps »), rangés par SUJET plutôt qu'en
-     * alternance : le swing en entier (entendre, reposer deux fois, régler),
-     * puis le décalage en entier, puis les deux, puis l'aléa, puis le palier.
-     * Chaque sujet finit sur son exercice le plus exigeant. */
+  it('⚠️ RÈGLE d’abord, repose ensuite — l’ordre est le contenu de l’acte', () => {
+    /* ⚠️ L'ordre a changé le 2026-09-01, sur une consigne d'une ligne :
+     * *« régler en premier »*, et *« les autres verbes ne sont pas forcément
+     * tous intéressants : lequel, régler et nommer »*.
+     *
+     * Ce qui part : les trois `lequel` (désigner A ou B est le même jugement
+     * d'oreille que viser un curseur, en moins engageant) et les deux
+     * exercices d'ALÉA, qui deviennent une exigence du cahier de Kelvin — on
+     * ne reconnaît plus des ghost notes, on en pose.
+     *
+     * Ce qui reste : chaque sujet s'ouvre sur son RÉGLAGE et se referme sur une
+     * grille, et `nommer` garde son écran, le seul du jeu qui mette les deux
+     * mots côte à côte. */
     const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
     expect(verbes).toEqual([
-      // le swing : entendre → reposer léger → reposer franc → régler
-      'lequel', 'reproduire', 'reproduire', 'regler',
-      // le décalage : entendre → reposer → régler
-      'lequel', 'reproduire', 'regler',
+      // le swing : régler au curseur → tenir sur seize cases
+      'regler', 'reproduire',
+      // le décalage : régler → reposer
+      'regler', 'reproduire',
       // les deux : nommer lequel des deux → les cumuler
       'nommer', 'reproduire',
-      // l'aléa : entendre → nommer
-      'lequel', 'nommer',
       // le palier, qui devient le départ de la commande
       'reproduire',
     ]);
-    // Chaque reproduction suit l'écoute qui l'a préparée.
-    expect(verbes.indexOf('reproduire')).toBeGreaterThan(verbes.indexOf('lequel'));
+    // Aucune reproduction avant le réglage qui l'a préparée.
+    expect(verbes.indexOf('regler')).toBeLessThan(verbes.indexOf('reproduire'));
+    // Et plus aucun quiz d'écoute : ce que l'acte demande, il le fait poser.
+    expect(verbes).not.toContain('lequel');
+  });
+
+  /* ⚠️ L'ALÉA A DÉMÉNAGÉ DANS LE CAHIER — *« l'aléa dans le cahier »* (Yann).
+   *
+   * Le défaut qu'il corrige se voit en jouant : on traversait l'acte du GROOVE
+   * en reconnaissant des boutons, et sa commande n'en demandait aucun. On
+   * pouvait donc livrer à Kelvin une boucle carrée — exactement ce qu'il refuse
+   * au premier écran (« ça fait réveil »). */
+  it('demande le groove dans la LIVRAISON, pas seulement dans les exercices', () => {
+    const cmd = ACTES[2].etapes.find((e) => e.kind === 'commande')!;
+    const ids = cmd.cahier.map((c) => c.id);
+    expect(ids).toContain('alea');
+    expect(ids).toContain('ligne-glisse');
+    // Et plus aucun exercice de l'acte ne porte sur l'aléa : c'est l'un OU
+    // l'autre, sinon on demande deux fois la même chose.
+    for (const n of niveauxDeLActe(ACTES[2])) {
+      const l = LEVELS.find((x) => x.id === n)!;
+      for (const p of l.paramsAutorises ?? []) {
+        expect(['ghostDensity', 'randomVelocity', 'spontRoll'], `niveau ${n}`).not.toContain(p);
+      }
+    }
   });
 
   // Et il arrive APRÈS l'acte qui ouvre l'Atelier : `nommer` et `regler`

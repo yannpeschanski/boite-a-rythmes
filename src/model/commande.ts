@@ -715,3 +715,81 @@ export function duGlide(ligne: SynthRowName, min: number, libelle: string): Cont
     verifie: (e) => !e.synthRows[ligne].muted && e.synthRows[ligne].glide >= min,
   };
 }
+
+/* ---------------------------------------------------------------------------
+ * LE GROOVE DANS LE MORCEAU LIVRÉ — l'acte 2 refait
+ *
+ * ⚠️ Retour de Yann (relecture complète, 2026-09-01) : l'acte du groove
+ * enseignait le balancement, le décalage et l'aléa par des QUIZ, et sa commande
+ * n'en demandait aucun. On pouvait donc traverser l'acte du groove et livrer
+ * une boucle carrée — « ça fait réveil », exactement ce que Kelvin refuse au
+ * premier écran. Ces deux contraintes-là font passer la leçon dans le cahier.
+ * ------------------------------------------------------------------------- */
+
+/* Une ligne GLISSE contre les autres — et il en faut une qui ne glisse pas.
+ *
+ * ⚠️ La seconde moitié n'est pas un raffinement : un décalage ne s'entend que
+ * CONTRE un point fixe (c'est déjà la raison pour laquelle la traîne, globale,
+ * est hors du catalogue de `parametres.ts` et n'a jamais fait un exercice).
+ * Tout décaler du même montant ne s'entend contre rien ; une contrainte qui
+ * l'accepterait enseignerait le contraire de l'acte. */
+export function uneLigneQuiGlisse(min: number, libelle: string): Contrainte {
+  return {
+    id: 'ligne-glisse',
+    libelle,
+    verifie: (e) => {
+      const vivantes = LIGNES_MIX.filter((l) => ligneVivante(e, l));
+      return (
+        vivantes.some((l) => Math.abs(e.rows[l].shiftPct) >= min) &&
+        vivantes.some((l) => Math.abs(e.rows[l].shiftPct) < min)
+      );
+    },
+  };
+}
+
+/* Les trois boutons qui jouent tout seuls, et leur seuil MESURÉ.
+ *
+ * ⚠️ Les valeurs viennent du rejeu du scheduler (même harnais que
+ * `tests/params-alea.test.ts`, 40 graines, deux mesures), pas d'un avis : au
+ * seuil, `ghostDensity` double la dispersion des gains (0,048 → 0,101),
+ * `spontRoll` ajoute 16 % d'événements, `randomVelocity` — qui n'ajoute jamais
+ * un coup, par construction — atteint une dispersion de 0,063, du même ordre.
+ * Trois échelles différentes, donc trois nombres différents : un seuil unique
+ * aurait voulu dire trois choses (`serialize.ts` clamp 0-40 le premier, 0-100
+ * les deux autres). */
+export const ALEA_MINI = { ghostDensity: 8, randomVelocity: 40, spontRoll: 10 };
+
+/* ⚠️ Un bouton d'aléa ne compte que si SA ligne sonne. `spontRoll` n'est
+ * consulté que dans la voie du charley et `ghostDensity` que sur la ligne des
+ * ghost notes (`ghostRow`, la claire par défaut) — les compter sur un morceau
+ * qui n'a pas cette ligne cocherait une case pour quelque chose d'inaudible,
+ * ce que le cahier interdit. */
+export function deLAlea(libelle: string): Contrainte {
+  const engage = (e: PatternStateV2) => ({
+    ghostDensity:
+      e.ghostDensity >= ALEA_MINI.ghostDensity && ligneVivante(e, e.ghostRow ?? 'snare'),
+    randomVelocity:
+      e.randomVelocity >= ALEA_MINI.randomVelocity && LIGNES_MIX.some((l) => ligneVivante(e, l)),
+    spontRoll: e.spontRoll >= ALEA_MINI.spontRoll && ligneVivante(e, 'hat'),
+  });
+  const NOMS: Record<keyof ReturnType<typeof engage>, string> = {
+    ghostDensity: 'ghost notes',
+    randomVelocity: 'vélocité aléatoire',
+    spontRoll: 'rafales spontanées',
+  };
+  return {
+    id: 'alea',
+    libelle,
+    verifie: (e) => Object.values(engage(e)).some(Boolean),
+    /* Le détail liste les trois boutons plutôt qu'un seul : on en demande UN,
+     * et dire lequel serait choisir à la place du joueur. */
+    details: (e) => {
+      const etat = engage(e);
+      return (Object.keys(NOMS) as Array<keyof typeof NOMS>).map((k) => ({
+        id: `alea-${k}`,
+        libelle: NOMS[k],
+        ok: etat[k],
+      }));
+    },
+  };
+}

@@ -249,6 +249,72 @@ describe('chaque niveau écrit tient ce que son préambule annonce', () => {
  * c'est lui seul qui décide de ce qu'il y a à faire. Une case posée ailleurs
  * change ce qu'on entend sans changer ce qu'on note.
  */
+/* ⚠️ LES GRILLES DE L'ACTE 2, qui n'avaient aucune de ces confrontations.
+ *
+ * Le trou se voyait dès qu'on y touchait : la passe du 2026-09-01 a dissous le
+ * trio comparatif (14, 17, 23 sur une seule grille — « les rythmes se
+ * ressemblent trop ») et réécrit celle du 23, sans qu'aucun test ne lise ce que
+ * son préambule promet. Quatre grilles, quatre promesses.
+ *
+ * ⚠️ La promesse commune, et la plus facile à casser en réécrivant une grille :
+ * le KICK reste sur des pas PAIRS — les seuls que le swing ne retarde pas. Le
+ * point fixe doit rester fixe, sinon « le kick, lui, ne bouge pas » est faux au
+ * bit près et le décalage n'a plus rien contre quoi s'entendre. */
+describe('l’acte 2 tient ce que ses quatre grilles annoncent', () => {
+  const horsTemps = (a: number[], parTemps: number) =>
+    a.map((v, i) => (v && i % parTemps !== 0 ? i : -1)).filter((i) => i >= 0);
+
+  it('14 — « le kick sort du temps trois fois, la claire aussi » + un balancement écrit', () => {
+    const l = niveau(14);
+    expect(l.grille!.subdiv.kick).toBe(16);
+    expect(horsTemps(ligne(l, 'kick'), 4), 'trois syncopes de kick').toHaveLength(3);
+    expect(horsTemps(ligne(l, 'snare'), 4).length, 'la claire aussi').toBeGreaterThanOrEqual(2);
+    expect(l.grille!.swing ?? 0, 'un balancement écrit').toBeGreaterThan(0);
+    expect(l.grille!.shift ?? {}, 'et rien qui glisse : ici c’est le swing').toEqual({});
+  });
+
+  it('23 — « sans balancement du tout, le charley traîne, le kick et la claire ne bougent pas »', () => {
+    const l = niveau(23);
+    expect(l.grille!.swing ?? 0, 'sans balancement').toBe(0);
+    expect(l.grille!.shift?.hat ?? 0, 'le charley traîne').toBeGreaterThan(0);
+    // « eux ne bougent pas » — et c'est vrai au bit près : pas PAIRS seulement.
+    for (const r of ['kick', 'snare'] as const) {
+      const impairs = ligne(l, r).map((v, i) => (v && i % 2 === 1 ? i : -1)).filter((i) => i >= 0);
+      expect(impairs, `${r} sur un pas impair`).toEqual([]);
+    }
+    expect(ligne(l, 'hat').every((v) => v === 1), 'le charley couvre tout').toBe(true);
+  });
+
+  it('⚠️ 14 et 23 ne racontent PAS le même rythme — le trio est dissous', () => {
+    /* La règle qui a changé de sens le 2026-09-01 : ces deux niveaux
+     * partageaient leurs cases pour rendre deux feels comparables. La
+     * comparaison passe par `regler` désormais ; les grilles, elles, doivent
+     * différer. */
+    for (const r of ['kick', 'snare'] as const) {
+      expect(ligne(niveau(14), r), `${r} identique`).not.toEqual(ligne(niveau(23), r));
+    }
+  });
+
+  it('72 — « le charley balance ET traîne, le kick ne bouge toujours pas »', () => {
+    const l = niveau(72);
+    expect(l.grille!.swing ?? 0).toBeGreaterThan(0);
+    expect(l.grille!.shift?.hat ?? 0).toBeGreaterThan(0);
+    const impairs = ligne(l, 'kick').map((v, i) => (v && i % 2 === 1 ? i : -1)).filter((i) => i >= 0);
+    expect(impairs, 'le kick doit rester le point fixe').toEqual([]);
+  });
+
+  it('63 — « le kick tient les quatre temps, la claire tombe six fois et presque jamais dessus »', () => {
+    const l = niveau(63);
+    expect(ligne(l, 'kick'), 'les quatre temps, et rien d’autre').toEqual(
+      [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    );
+    const s = ligne(l, 'snare');
+    expect(compte(s, 1), 'six fois').toBe(6);
+    expect(horsTemps(s, 4).length, 'presque jamais sur un temps').toBeGreaterThanOrEqual(5);
+    expect(ligne(l, 'hat').every((v) => v === 1), 'seize cases de charley').toBe(true);
+  });
+});
+
 describe('l’acte 0 tient ce que ses trois frappes annoncent', () => {
   it('64 — « quatre coups, un par temps, rien d’autre »', () => {
     const l = niveau(64);
