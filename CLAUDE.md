@@ -505,21 +505,29 @@ niveau qui isole une nouveauté en retire délibérément d'autres (le 8 repose 
 claire pour qu'on n'entende que la rafale), donc compter les variantes ferait
 échouer le test sur une décision juste.
 
-⚠️ **L'acte 2 porte DEUX arbitrages successifs — ne pas restaurer l'un en croyant
-corriger l'autre.** Ses cinq grilles générées ont été retirées (elles posaient des
-rafales et des rim shots sans rapport avec le groove), puis les grilles sont
-revenues (« les quiz sont moins intéressants que les exercices de reproduction »).
-Les deux tiennent parce que ce qui revient n'est pas ce qui était parti : les
-niveaux 14, 17 et 23 sont **écrits**, sans variante ni rafale, et sur la **même
-grille** — seul le feel change, seule façon de rendre deux balancements
-comparables. Le trio est en doubles-croches, et ⚠️ **son kick et sa claire
-restent sur des pas PAIRS** — les seuls que le swing ne retarde pas, donc « le
-kick tient le temps » reste vrai au bit près et `tests/feel-ecrit.test.ts` le
-mesure. Le niveau 63 est la CLAIRE, la seule ligne que le cahier de Kelvin laisse
-libre. ⚠️ Le trio se nomme **par ses
-ids** dans le test : deux heuristiques y ont déjà cédé, et une heuristique qui se
-re-corrige à chaque ajustement de contenu décrit l'état du fichier au lieu de
-vérifier une intention.
+⚠️ **L'acte 2 porte TROIS arbitrages successifs — ne pas restaurer l'un en
+croyant corriger l'autre.** Ses cinq grilles générées ont été retirées (elles
+posaient des rafales et des rim shots sans rapport avec le groove) ; puis les
+grilles sont revenues, **écrites**, sans variante ni rafale (« les quiz sont
+moins intéressants que les exercices de reproduction ») ; puis le TRIO
+comparatif — 14, 17 et 23 sur une seule grille — a été **dissous** (« les rythmes
+se ressemblent trop »). Comparer deux balancements ne demande pas trois
+reproductions : un curseur visé contre une cible le dit en un geste, et c'est
+`regler`. D'où l'ordre de l'acte, **régler puis reproduire**, des grilles
+**toutes différentes**, et l'ALÉA dans le cahier de Kelvin plutôt qu'en quiz.
+Les niveaux 17, 45, 46, 62 et 73 restent au réservoir.
+⚠️ **Le kick d'une grille de cet acte reste sur des pas PAIRS** — les seuls que
+le swing ne retarde pas, donc « le kick tient le temps » est vrai au bit près et
+un décalage a un point fixe contre quoi s'entendre ; `tests/feel-ecrit.test.ts`
+et `tests/grilles-ecrites.test.ts` le mesurent. Le niveau 63 est la CLAIRE, la
+seule ligne que le cahier de Kelvin laisse libre.
+
+⚠️ **Un garde-fou dont la population devient vide passe en silence.** Le test
+« une commande de `lequel` ne promet jamais un superlatif » s'ouvrait sur
+`expect(commandes.length).toBeGreaterThan(0)` — la seule chose qui l'a empêché de
+devenir décoratif le jour où `lequel` a quitté la carrière. Réancrer sur une
+population plus large (les trois verbes de paramètre), jamais retirer le
+compte.
 
 ⚠️ **Un test instable est un bug, pas un test à recalibrer.** « `régler` ne place
 pas le curseur déjà sur la cible » échouait une fois sur quatre : la cause n'était

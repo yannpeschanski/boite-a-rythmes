@@ -42,6 +42,83 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 2 règle d'abord — tranche 3 (2026-09-01)
+
+> « Les rythmes se ressemblent trop » (cinq fois dans la même relecture), « les
+> autres verbes ne sont pas forcément tous intéressants : lequel, régler et
+> nommer », et la consigne de tranche : **grilles différentes, `régler` en
+> premier, l'aléa dans le cahier.** — Yann
+
+**Le trio est dissous.** Les niveaux 14, 17 et 23 partageaient une seule grille
+pour rendre deux balancements comparables — mêmes cases, autres instants. C'était
+défendable et c'est ce que Yann a lu comme de la répétition : trois fois le même
+travail de lecture pour une seule idée. La comparaison passe désormais par
+`regler`, qui la fait en un geste (un curseur visé contre une cible), et les
+grilles de l'acte sont **toutes différentes** — celle du 23 est réécrite.
+
+**L'ordre change de principe : RÉGLER, puis REPOSER.**
+
+| | avant (12 exercices) | après (7) |
+|---|---|---|
+| swing | entendre → reposer léger → reposer franc → régler | **régler → reposer** |
+| décalage | entendre → reposer → régler | **régler → reposer** |
+| les deux | nommer → cumuler | nommer → cumuler |
+| l'aléa | entendre → nommer | **dans le cahier** |
+| le palier | reproduire | reproduire |
+
+Les trois `lequel` sortent : désigner A ou B est le même jugement d'oreille que
+viser un curseur, en moins engageant. `nommer` reste une fois — c'est le seul
+écran du jeu qui mette les deux mots côte à côte. Les niveaux 17, 45, 46, 62 et
+73 restent au réservoir : un niveau ne se supprime jamais, il cesse d'être cité.
+
+**L'aléa passe dans le cahier de Kelvin**, qui passe de quatre à six lignes. Le
+défaut que ça corrige se voyait en jouant : on traversait l'acte du GROOVE en
+reconnaissant des boutons, et sa commande n'en demandait aucun — on pouvait donc
+livrer une boucle carrée, exactement ce que Kelvin refuse au premier écran.
+
+- `uneLigneQuiGlisse(6, …)` exige un décalage **et** une ligne qui ne bouge pas :
+  tout décaler du même montant, c'est de la traîne, et ça ne s'entend contre rien.
+  La contrainte encode la règle qui a déjà écarté `drag` du catalogue.
+- `deLAlea(…)` demande **un** des trois boutons. ⚠️ Un bouton ne compte que si SA
+  ligne sonne — `spontRoll` n'est consulté que dans la voie du charley,
+  `ghostDensity` que sur `ghostRow`.
+- ⚠️ Le swing, lui, n'est PAS exigé : la grille de départ (niveau 63) en porte
+  déjà 20, donc la case serait cochée à l'ouverture.
+
+**`ALEA_MINI` est MESURÉ, pas choisi** — rejeu du scheduler, 40 graines, ligne
+déclarée : `ghostDensity` 8 (dispersion des gains 0,048 → 0,101, ×2,1),
+`spontRoll` 10 (+16 % d'événements), `randomVelocity` 40 (dispersion 0,063 ; il
+n'ajoute jamais un coup, par construction). Trois échelles, donc trois nombres —
+`serialize.ts` clamp le premier à 0-40 et les deux autres à 0-100.
+`tests/params-alea.test.ts` refait la mesure au seuil.
+
+**Trois tests ont changé de sens, et c'est écrit dans chacun** : « le trio
+partage une seule grille » devient « les grilles sont toutes différentes » ;
+l'ordre des verbes passe de douze à sept ; et la mesure du balancement
+(`feel-ecrit`) se fait sur **une** grille à deux réglages au lieu de deux niveaux
+qui devaient rester égaux — plus juste, et débarrassé d'une coïncidence de
+données que plus rien n'obligeait.
+
+⚠️ **Un garde-fou est devenu vide et l'a dit** : « une commande de `lequel` ne
+promet jamais un superlatif » commençait par `expect(commandes.length)
+.toBeGreaterThan(0)`. `lequel` ayant quitté la carrière, ce compte est tombé —
+c'est la seule chose qui a empêché le test de devenir décoratif. Réancré sur les
+trois verbes de paramètre, il est plus large qu'avant.
+
+**Et un trou comblé au passage** : aucune grille de l'acte 2 n'était confrontée à
+son préambule (`tests/grilles-ecrites.test.ts` ne couvrait que les actes 0 et 1).
+Quatre promesses ajoutées — dont celle qui se casse le plus facilement en
+réécrivant une grille : le **kick sur des pas pairs**, les seuls que le swing ne
+retarde pas. La confrontation a d'ailleurs trouvé une erreur de comptage dans le
+préambule du 14 (« deux fois » pour trois syncopes).
+
+**Vérifié :** 468 tests (12 neufs), 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf — l'acte 2 passe de 17 à 13
+étapes, sa commande est acceptée, aucune erreur console ; et le cahier mesuré à
+l'écran en 390×840 : **0/6 à l'ouverture**, 0 px de débordement.
+
+---
+
 ### ✅ L'acte 3 empile ses couches — tranche 2 (2026-09-01)
 
 > « Il faut que tout soit en atelier avec des cahiers des charges assez

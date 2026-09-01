@@ -57,13 +57,17 @@ function instants(s: PatternStateV2, prefixe: string): number[] {
 const grilleDe = (id: number) => LEVELS.find((l) => l.id === id)!.grille!;
 
 describe('le balancement écrit s’entend, et il ne bouge que ce qu’il doit', () => {
-  const leger = etatDe(grilleDe(14));
-  const franc = etatDe(grilleDe(17));
+  /* ⚠️ La mesure se fait sur UNE grille à deux réglages, plus sur deux niveaux
+   * qui devaient partager leurs cases (14 et 17, le trio dissous le
+   * 2026-09-01 — « les rythmes se ressemblent trop »). C'est plus juste ET plus
+   * solide : on isole la seule variable qui nous intéresse, et le test cesse de
+   * dépendre d'une coïncidence entre deux jeux de données que rien n'oblige
+   * plus à rester égaux. */
+  const leger = etatDe({ ...grilleDe(14), swing: 12 });
+  const franc = etatDe({ ...grilleDe(14), swing: 30 });
 
-  it('les deux niveaux ont bien la même grille — sinon la comparaison ne dit rien', () => {
-    const g14 = grilleDe(14);
-    const g17 = grilleDe(17);
-    expect([g14.subdiv, g14.kick, g14.snare, g14.hat]).toEqual([g17.subdiv, g17.kick, g17.snare, g17.hat]);
+  it('la grille du niveau porte bien un balancement écrit', () => {
+    expect(grilleDe(14).swing ?? 0).toBeGreaterThan(0);
   });
 
   it('le charley d’un balancement franc ne tombe PAS aux mêmes instants', () => {
@@ -90,7 +94,6 @@ describe('le balancement écrit s’entend, et il ne bouge que ce qu’il doit',
 });
 
 describe('le décalage par ligne s’entend CONTRE les autres lignes', () => {
-  const droit = etatDe(grilleDe(14));
   const decale = etatDe(grilleDe(23));
 
   it('⚠️ le niveau 23 pose un décalage réel — il était forcé à zéro', () => {
@@ -118,7 +121,6 @@ describe('le décalage par ligne s’entend CONTRE les autres lignes', () => {
     const ecarts = instants(decale, 'hatC').map((t, i) => +(t - instants(sansSwing, 'hatC')[i]).toFixed(6));
     expect(new Set(ecarts).size, 'un décalage est CONSTANT').toBe(1);
     expect(ecarts[0]).toBeGreaterThan(0);
-    expect(droit).toBeTruthy();
   });
 });
 

@@ -22,6 +22,9 @@ import {
   nappeQuiRespire,
   voixChoisie,
   duGlide,
+  uneLigneQuiGlisse,
+  deLAlea,
+  ALEA_MINI,
 } from '../src/model/commande';
 import { defaultState } from '../src/model/defaults';
 import { PRESETS } from '../src/model/presets/songs';
@@ -237,6 +240,58 @@ describe('chaque contrainte sait dire NON', () => {
     expect(c.verifie(st)).toBe(false);
   });
 
+  /* ---- Le GROOVE dans la livraison (acte 2, 2026-09-01) ---- */
+
+  it('⚠️ un décalage ne compte que s’il reste une ligne CONTRE laquelle l’entendre', () => {
+    const c = uneLigneQuiGlisse(6, 'Une ligne qui glisse');
+    const st = etatDuPreset('boombap');
+    expect(c.verifie(st)).toBe(false);
+    st.rows.hat.shiftPct = 10;
+    expect(c.verifie(st)).toBe(true);
+    /* Tout décaler du même montant, c'est de la traîne : ça ne s'entend contre
+     * rien. C'est la raison pour laquelle `drag` n'a jamais fait un exercice
+     * (`tests/feel-ecrit.test.ts`), et la contrainte doit le refuser. */
+    for (const l of ['kick', 'snare', 'hat'] as const) st.rows[l].shiftPct = 10;
+    expect(c.verifie(st)).toBe(false);
+    // Un décalage en AVANCE compte autant qu'un décalage en retard.
+    st.rows.kick.shiftPct = 0;
+    st.rows.snare.shiftPct = 0;
+    st.rows.hat.shiftPct = -10;
+    expect(c.verifie(st)).toBe(true);
+    // Sous le seuil, il ne s'entend pas : la case ne se coche pas.
+    st.rows.hat.shiftPct = -5;
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  it('⚠️ un bouton d’aléa ne compte que si SA ligne sonne', () => {
+    const c = deLAlea('Que la machine ne joue pas deux fois pareil');
+    const st = etatDuPreset('boombap');
+    expect(c.verifie(st)).toBe(false);
+    // Sous le seuil mesuré : rien.
+    st.ghostDensity = ALEA_MINI.ghostDensity - 1;
+    expect(c.verifie(st)).toBe(false);
+    st.ghostDensity = ALEA_MINI.ghostDensity;
+    expect(c.verifie(st)).toBe(true);
+    /* ⚠️ Les ghost notes tombent sur `ghostRow` (la claire par défaut) : sans
+     * claire, le bouton est poussé et rien ne s'entend. Le scheduler ne
+     * consulte `spontRoll` que dans la voie du charley — même règle. */
+    st.rows.snare.muted = true;
+    expect(c.verifie(st)).toBe(false);
+    st.spontRoll = ALEA_MINI.spontRoll;
+    expect(c.verifie(st), 'le charley, lui, sonne').toBe(true);
+    st.rows.hat.muted = true;
+    expect(c.verifie(st)).toBe(false);
+    // La vélocité aléatoire, elle, porte sur toutes les lignes qui sonnent.
+    st.randomVelocity = ALEA_MINI.randomVelocity;
+    expect(c.verifie(st)).toBe(true);
+    // Et le détail nomme les trois boutons, pas seulement celui qui passe.
+    expect(c.details!(st).map((d) => d.libelle)).toEqual([
+      'ghost notes',
+      'vélocité aléatoire',
+      'rafales spontanées',
+    ]);
+  });
+
   it('le tempo est un intervalle, bornes comprises', () => {
     const c = tempoEntre(88, 96, 'Entre 88 et 96');
     const st = defaultState();
@@ -430,6 +485,14 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
     st.rows.hat.pattern = [1, 1, 1, 0, 1, 1, 1, 2] as never;
     st.rows.hat.rolls = [1, 1, 1, 1, 1, 1, 1, 1];
   }
+  /* Le GROOVE exigé à la livraison (acte 2, 2026-09-01). Le décalage se pose
+     sur UNE ligne : c'est contre les autres, restées en place, qu'il s'entend. */
+  if (demande('ligne-glisse')) {
+    st.rows.hat.shiftPct = 10;
+    st.rows.kick.shiftPct = 0;
+  }
+  // Un seul des trois boutons d'aléa suffit — au seuil mesuré, pas à fond.
+  if (demande('alea')) st.ghostDensity = ALEA_MINI.ghostDensity;
   /* ⚠️ Les COUCHES DU SYNTHÉ de l'acte 3 (2026-09-01), même discipline : on ne
    * pose que ce qui est demandé, et au plus juste. La mélodie est posée aussi
    * pour `basse-tient`, qui est RELATIONNELLE — « moins de notes que la

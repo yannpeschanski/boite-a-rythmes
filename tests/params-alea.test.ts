@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { defaultState } from '../src/model/defaults';
 import { PARAMETRES, parametre } from '../src/model/parametres';
 import { LEVELS } from '../src/model/presets/levels';
+import { ALEA_MINI } from '../src/model/commande';
 import { renderEvents } from './helpers/rejeu';
 import type { PatternStateV2, DrumRowName } from '../src/model/types';
 
@@ -141,5 +142,49 @@ describe('⚠️ un niveau dont le TITRE nomme ses choix ne doit pas en gagner e
   it('et la famille groove a bien grandi — sinon ce test ne protège rien', () => {
     const groove = PARAMETRES.filter((p) => p.famille === 'groove');
     expect(groove.length).toBeGreaterThanOrEqual(5);
+  });
+});
+
+/* ⚠️ LE SEUIL DU CAHIER — un nombre écrit dans `commande.ts` doit être mesuré.
+ *
+ * L'acte 2 ne fait plus RECONNAÎTRE les trois boutons d'aléa (les niveaux 62 et
+ * 73 sont retournés au réservoir le 2026-09-01) : sa commande demande d'en
+ * POSER un — « l'aléa dans le cahier » (Yann). Un cahier qui exige une valeur
+ * exige donc que cette valeur s'entende, sinon il fait cocher une case pour
+ * rien, ce que la règle du dépôt interdit.
+ *
+ * `ALEA_MINI` porte trois nombres différents parce que les trois échelles le
+ * sont (`serialize.ts` : 0-40 pour les ghost notes, 0-100 pour les deux
+ * autres). Ce test les confronte à la même mesure que le reste du fichier —
+ * rejeu du scheduler, ligne déclarée, moyenne sur 30 graines.
+ */
+describe('le seuil exigé par le cahier de l’acte 2 s’entend', () => {
+  for (const id of ALEA) {
+    it(`${id} — à ALEA_MINI, la mesure a déjà bougé`, () => {
+      const p = parametre(id)!;
+      const ligne = p.lignes[0];
+      const repere = p.contexte?.repere ?? 'kick';
+      const zero = effet(id, 0, ligne, repere);
+      const seuil = effet(id, ALEA_MINI[id], ligne, repere);
+      /* Les mêmes deux mesures que plus haut, et le même OU : un bouton d'aléa
+       * ajoute des frappes ou fait varier leur force. `randomVelocity`, par
+       * construction, n'ajoute jamais un coup — il ne peut passer que par la
+       * seconde. */
+      const plusDEvenements = seuil.evts > zero.evts * 1.05;
+      const plusDeVariation = seuil.ecart > zero.ecart + 0.02;
+      expect(
+        plusDEvenements || plusDeVariation,
+        `${id} au seuil ${ALEA_MINI[id]} : ${zero.evts.toFixed(1)} évts/${zero.ecart.toFixed(3)} → ${seuil.evts.toFixed(1)}/${seuil.ecart.toFixed(3)}`,
+      ).toBe(true);
+    });
+  }
+
+  it('et le seuil reste dans les bornes du curseur — sinon il est inatteignable', () => {
+    // Une exigence au-dessus du maximum du bouton serait un cul-de-sac muet.
+    for (const id of ALEA) {
+      const p = parametre(id)!;
+      expect(ALEA_MINI[id], `${id} : au-dessus du maximum`).toBeLessThanOrEqual(p.max);
+      expect(ALEA_MINI[id], `${id} : un seuil nul n’exige rien`).toBeGreaterThan(0);
+    }
   });
 });

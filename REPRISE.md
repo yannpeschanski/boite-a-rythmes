@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-01, après la tranche 2 du chantier des cahiers
-> des charges (l'acte 3 empile ses couches en trois envois).
+> Dernière mise à jour : 2026-09-01, après la tranche 3 du chantier des cahiers
+> des charges (l'acte 2 règle d'abord, et son aléa passe dans le cahier).
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 456 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 468 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -68,7 +68,7 @@ quiz n'aurait rien réglé.
 | 1 | l'outillage des cahiers + **l'acte 4 refait** en trois envois | ✅ livré |
 | 2a | **l'acte 3**, les exercices : `melodie` gagne sa ligne, mélodie → basse | ✅ livré |
 | 2b | **l'acte 3**, les cahiers : mélodie → + basse → + nappe, plus les textures | ✅ livré |
-| 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | à faire |
+| 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | ✅ livré |
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | à faire |
 | 5 | **actes 5 et 6** en cahiers, le 6 le plus complet du jeu | à faire |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
@@ -86,6 +86,21 @@ empile ses couches ») :
   rend celle-là insatisfiable ;
 - le bouton de livraison nomme enfin **le client** et non Sol (défaut noté à la
   tranche 1).
+
+**Ce que la tranche 3 a tranché en passant** (détail dans `PLAN.md`, « L'acte 2
+règle d'abord ») :
+
+- **le trio 14/17/23 est dissous** et les grilles de l'acte sont toutes
+  différentes — comparer deux balancements passe par `regler`, pas par trois
+  reproductions ;
+- **`lequel` quitte la carrière** (45, 46, 62 au réservoir) : désigner A ou B est
+  le même jugement que viser un curseur, en moins engageant. `nommer` reste une
+  fois, le seul écran qui mette les deux mots côte à côte ;
+- **l'aléa est une exigence du cahier**, plus un quiz — et son seuil (`ALEA_MINI`)
+  est mesuré en rejouant le scheduler, pas choisi ;
+- ⚠️ un garde-fou de test est devenu **vide** quand `lequel` a quitté la
+  carrière ; il ne l'a dit que parce qu'il comptait sa population. Réancrer, ne
+  jamais retirer le compte.
 
 **Quatre arbitrages pris**, à ne pas rouvrir sans raison :
 
@@ -198,9 +213,13 @@ chaque ligne à un locuteur. À faire ensemble.
 
 ### Reste — la courbe et le contenu
 
-7. **Acte 2** : remplacer les quiz « lequel » par des réglages.
+7. ~~**Acte 2** : remplacer les quiz « lequel » par des réglages.~~ — fait le
+   2026-09-01 (tranche 3) : chaque sujet s'ouvre sur son réglage, les trois
+   `lequel` sont rendus au réservoir.
 8. **Acte 2** : la commande en plusieurs étapes (« fais d'abord un poom check
-   poom poom chack », puis le reste du cahier).
+   poom poom chack », puis le reste du cahier). ⚠️ Non fait : le cahier de Kelvin
+   est passé à six lignes d'un bloc, pas en sections successives. L'outillage
+   existe pourtant (`Contrainte.section`, `partirDeLaLivraison`).
 9. ~~**Monter la difficulté de l'acte 1**~~ — fait deux fois. D'abord cinq
    exercices → huit, tous à **grille écrite**. Puis, sur *« la progression est
    trop lente, tu peux rendre le jeu nettement plus difficile »* (2026-08-31) :
