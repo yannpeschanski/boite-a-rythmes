@@ -649,6 +649,19 @@ non authentifiée est bloquée : elle répond un JSON d'erreur sans la clé atte
 donc une boucle `until [ -n "$(curl … )" ]` **ne se termine jamais**. Penser aussi
 à arrêter les tâches de fond dès que la PR est mergée.
 
+⚠️ **Et JAMAIS `actions_list method=list_workflow_runs` :** il renvoie ~93 Ko
+(≈ 23 000 tokens) quel que soit `per_page`, parce que chaque run porte son message
+de commit entier. Trois appels dans une seule session ont coûté 70 000 tokens pour
+lire trois statuts. Les deux recettes qui marchent :
+
+- **sur une PR** → `pull_request_read method=get_check_runs` (quelques centaines
+  d'octets) ;
+- **sur `main` après un merge** → l'id du run se lit une fois dans le résultat de
+  la PR, puis `actions_get method=get_workflow_run` et
+  `actions_list method=list_workflow_jobs` sur cet id. Si un gros retour a déjà
+  été déversé dans un fichier, le parser en `python3`, ne jamais le relire en
+  entier.
+
 ⚠️ **Vert sur la PR ne veut pas dire vert sur `main`.** Un test qui dépend du
 hasard doit affirmer ce qui est vrai à CHAQUE tirage et répéter (60 fois). Une
 assertion à un seul tirage est passée en local et sur la PR, puis a échoué sur
