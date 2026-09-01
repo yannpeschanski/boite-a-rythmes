@@ -42,6 +42,64 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 3 empile ses couches — tranche 2 (2026-09-01)
+
+> « Il faut que tout soit en atelier avec des cahiers des charges assez
+> complexes », et pour cet acte-ci : « mélodie, basse, nappe, additionnées, plus
+> les textures. » — Yann, relecture complète
+
+**Ce que l'acte était** : trois exercices de mélodie, puis une commande de trois
+lignes (« une basse », « de quoi tenir le temps ») qu'un morceau quelconque
+satisfaisait. **Ce qu'il est** : les trois exercices, puis trois envois du MÊME
+jingle, une couche à la fois.
+
+| envoi | ce qu'il ajoute | part de |
+|---|---|---|
+| 1 | la PHRASE — quatre notes, trois hauteurs, elle se repose sur la tonique | table rase |
+| 2 | la BASSE — elle pose le premier temps, tient moins de notes, a une voix | la livraison 1 |
+| 3 | la NAPPE et les TEXTURES — accords qui bougent, voix, glide | la livraison 2 |
+
+**⚠️ Les trois exercices de mélodie RESTENT**, contrairement à l'acte 4 où les
+cinq sont partis. Ce ne sont pas des quiz : on y écrit des notes au clavier de
+l'Atelier, donc exactement le geste que les envois demandent ensuite — et sans
+eux, « la dernière note est la tonique » emploierait un mot que rien n'a
+enseigné.
+
+**Le point de conception : des contraintes RELATIONNELLES plutôt qu'une
+interdiction.** Un envoi qui effacerait la mélodie livrée devrait être refusé.
+La façon évidente — « ne touche pas à la mélodie », marquée `interdit` — punit
+l'essai, ce que l'Atelier n'a pas à faire. `basseQuiTient` compare la densité de
+la basse à celle de la mélodie : sans mélodie, elle répond faux, donc la couche
+est protégée par ce qu'on demande d'AJOUTER, pas par ce qu'on interdit.
+`tests/carriere.test.ts` mesure les deux sens.
+
+**Sept contraintes neuves dans `commande.ts`** : `unePhrase` (des notes ET des
+hauteurs — quatre fois la même note est un rythme), `seReposeSurLaTonique` (la
+dernière note JOUÉE, pas la dernière case), `poseLePremierTemps`,
+`basseQuiTient` (par MESURE : une ligne peut boucler sur plusieurs),
+`nappeQuiRespire` (arpège, bourdon ou étalement — on demande le mouvement, pas
+le bouton, sinon c'est `nommer` déguisé), `voixChoisie` (trois cas, pas deux :
+un preset, aucun preset, ou `default` — seul le troisième ne compte pas) et
+`duGlide`.
+
+**Deux détails mesurés à l'écran, pas supposés.**
+
+1. `voixChoisie` sur UNE seule ligne affichait « ☐ Choisis-lui une voix » suivi
+   de « · basse » : un détail qui répète son libellé est du bruit. Le détail
+   n'existe plus qu'à partir de deux lignes.
+2. Le bouton disait **« LIVRER À SOL »** alors que le client est Rachid — défaut
+   noté en livrant la tranche 1 (c'était Le Tunnel), corrigé ici : il nomme le
+   client de la commande. Sol n'est pas la destinataire, elle est la patronne.
+
+**Vérifié :** 456 tests (12 neufs), 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf — les trois envois
+acceptés, la discographie de l'acte 3 affiche **JINGLE LAVERIE (V3)**, donc la
+livraison est bien remplacée et non empilée ; et trois captures en 390×840,
+0 px de débordement. Le script a dû apprendre les gestes neufs, comme pour
+l'acte 4.
+
+---
+
 ### ✅ L'acte 3 : le verbe `melodie` gagne sa ligne — tranche 2a (2026-09-01)
 
 > « Acte beaucoup trop court par rapport à ce qu'on a de nouveau : il faut

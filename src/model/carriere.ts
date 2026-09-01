@@ -47,7 +47,13 @@ import {
   reverbDosee,
   contrasteDeVolume,
   chaqueLigneRetouchee,
+  unePhrase,
+  seReposeSurLaTonique,
+  poseLePremierTemps,
+  basseQuiTient,
+  nappeQuiRespire,
   voixChoisie,
+  duGlide,
 } from './commande';
 import { ficheStyle } from './styles';
 import { etatVierge, etatDepuisGrille } from './defaults';
@@ -80,6 +86,14 @@ const FICHE_TECHNO = ficheStyle('techno')!;
  * régler les paramètres pour avoir un meilleur son ». */
 const LE_MORCEAU = '1 · LE MORCEAU';
 const LE_MIXAGE = '2 · LE MIXAGE — pour que ça tienne à la laverie';
+
+/* Les couches du jingle de Rachid, une par envoi — « mélodie, basse, nappe,
+ * additionnées, plus les textures » (Yann). Le titre de section dit CE QU'ON
+ * AJOUTE : un cahier à plat ne dirait pas que c'est un empilement. */
+const LA_PHRASE = 'LA PHRASE — ce qu’il a entendu dans l’escalier';
+const LA_BASSE = 'LA BASSE — ce qu’il y a dessous';
+const LA_NAPPE = '1 · LA NAPPE — ce qu’il y a derrière';
+const LES_TEXTURES = '2 · LES TEXTURES — une note n’est pas un son';
 
 function dansLaSection<T extends { section?: string }>(section: string, lignes: T[]): T[] {
   return lignes.map((l) => ({ ...l, section }));
@@ -964,33 +978,132 @@ export const ACTES: Acte[] = [
         niveau: 44,
         commande: 'La deuxième, celle qu’il réclame. Toute la gamme, seize pas, aucune reprise.',
       },
+      /* ⚠️ L'ACTE SE TERMINE EN TROIS ENVOIS — refait le 2026-09-01, sur la même
+       * demande que l'acte 4 : *« il faut que tout soit en atelier avec des
+       * cahiers des charges assez complexes »* (Yann, relecture complète), et
+       * une consigne d'ordre pour celui-ci — *« mélodie, basse, nappe,
+       * additionnées, plus les textures »*.
+       *
+       * Ce que l'acte avait : une commande de trois lignes (« une basse », « de
+       * quoi tenir le temps ») qu'un morceau quelconque satisfaisait. Ce qu'il
+       * a : le MÊME jingle renvoyé trois fois, une couche à la fois.
+       *
+       * ⚠️ Les trois exercices de mélodie RESTENT, contrairement à l'acte 4 où
+       * les cinq sont partis. Ce ne sont pas des quiz : on y écrit des notes
+       * avec le clavier de l'Atelier, c'est-à-dire exactement le geste que les
+       * trois envois demandent ensuite. Ils enseignent le mot « degré » sans
+       * lequel « la dernière note est la tonique » ne voudrait rien dire.
+       *
+       * ⚠️ Aucun envoi n'interdit de toucher aux couches précédentes : les
+       * contraintes sont RELATIONNELLES (« la basse tient sous la mélodie »,
+       * « la nappe passe derrière »), donc effacer une couche rend la suivante
+       * insatisfiable. Une interdiction aurait dit la même chose en punissant
+       * l'essai, ce que l'Atelier n'a pas à faire. */
       {
         kind: 'commande',
-        entete: 'RACHID — IL SORT SON PORTEFEUILLE',
+        entete: 'RACHID — PREMIER ENVOI',
         lignes: [
           '— C’est combien ?',
           '— Vous voulez quoi, exactement ?',
-          '— Quelque chose qui donne envie de rentrer chez soi.',
+          '— Ce que j’ai entendu dans l’escalier.',
           'C’est tout le brief. Il n’y en aura pas d’autre.',
+          'Une phrase, et de quoi la faire tenir debout.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
-        // La commande demande une basse : le Synthé s'ouvre pour la faire.
+        // Le cahier demande une ligne de synthé : le Synthé s'ouvre pour elle.
         modulesRequis: ['synth'],
-        /* ⚠️ Le cahier était « une basse + kick/snare » — *« beaucoup trop
-         * simpliste »* (Yann, 2026-09-01), et il l'était doublement : l'acte
-         * venait d'enseigner la MÉLODIE et la BASSE, et n'en demandait qu'une.
-         * Il demande maintenant les trois lignes de synthé — c'est le « les
-         * additionner » du retour — plus une texture choisie sur chacune. */
         cahier: [
-          AVOIR_PRODUIT,
-          ligneSynthPresente('melody', 'La phrase — c’est elle qu’il fredonnera'),
-          ligneSynthPresente('bass', 'La basse dessous, pour qu’elle tienne debout'),
-          ligneSynthPresente('pad', 'Une nappe derrière — c’est elle qui fait la pièce'),
-          voixChoisie(['melody', 'bass', 'pad'], 'Une voix choisie sur chacune, pas celle d’usine'),
-          lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
+          ...dansLaSection(LA_PHRASE, [
+            AVOIR_PRODUIT,
+            pasUnPresetCharge('Ta phrase — pas un preset chargé depuis le menu'),
+            unePhrase('melody', 4, 3, 'Une vraie phrase : quatre notes au moins, trois hauteurs différentes'),
+            seReposeSurLaTonique('melody', 'Elle se repose : la dernière note est la tonique (degré 1)'),
+            lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
+          ]),
         ],
         accepte: '— Ça. Je sais pas pourquoi. C’est combien ?',
         titre: 'JINGLE LAVERIE',
+        client: 'RACHID',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— Il l’a prise. Elle est maigre.',
+          '— Elle lui plaît.',
+          '— Elle plaira moins la deux-centième fois.',
+          'Elle pose un doigt sous la ligne.',
+          '— Une mélodie toute seule, c’est un sifflement.',
+          '— Mets ce qu’il y a dessous. La basse ne rejoue pas la mélodie :',
+          '— elle la porte. Moins de notes, et le premier temps.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'RACHID — DEUXIÈME ENVOI',
+        lignes: [
+          'Le même jingle, repris là où tu l’as laissé.',
+          '— Dans la machine, on n’entend que le haut.',
+          '— Il faut que ça descende.',
+          'Sol traduit : une basse qui tient, et un son choisi pour elle.',
+        ],
+        bouton: 'Reprendre le jingle ▸',
+        modulesRequis: ['synth'],
+        /* Il REPART de ce qui vient d'être livré. Le cahier n'exige donc rien
+         * de la mélodie — elle est déjà acceptée — mais la basse se mesure
+         * CONTRE elle, ce qui suffit à la protéger. */
+        partirDeLaLivraison: true,
+        cahier: [
+          ...dansLaSection(LA_BASSE, [
+            ligneSynthPresente('bass', 'Une basse — c’est elle qui pose le sol'),
+            poseLePremierTemps('bass', 'Elle pose le premier temps — c’est le repère'),
+            basseQuiTient('Elle TIENT : moins de notes que la mélodie, pas une course'),
+            voixChoisie(['bass'], 'Choisis-lui une voix : ronde, pincée, profonde'),
+          ]),
+        ],
+        accepte: '— Là on l’entend depuis le fond du magasin.',
+        titre: 'JINGLE LAVERIE (V2)',
+        client: 'RACHID',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          '— C’est juste. C’est nu.',
+          'Elle ouvre la troisième ligne.',
+          '— La nappe, c’est ce qu’il y a derrière.',
+          '— On ne l’écoute jamais. On la remarque quand elle part.',
+          '— Et elle ne reste pas un bloc : elle bouge, un peu.',
+          '— Dernière chose : arrête de tout laisser sur la voix d’usine.',
+          '— Une note, ce n’est pas un son. Choisis-lui un son.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'RACHID — TROISIÈME ENVOI',
+        lignes: [
+          'Toujours le même jingle. C’est le dernier aller-retour.',
+          '— Il va tourner huit heures par jour.',
+          '— Il faut qu’on le supporte encore le soir.',
+          'De la chaleur derrière, et un son choisi pour chaque ligne.',
+        ],
+        bouton: 'Reprendre le jingle ▸',
+        modulesRequis: ['synth'],
+        partirDeLaLivraison: true,
+        cahier: [
+          ...dansLaSection(LA_NAPPE, [
+            ligneSynthPresente('pad', 'Des accords qui tiennent derrière'),
+            nappeQuiRespire('Elle ne reste pas un bloc : arpège, bourdon ou étalement'),
+          ]),
+          ...dansLaSection(LES_TEXTURES, [
+            voixChoisie(['melody', 'pad'], 'Une voix choisie pour la mélodie ET pour la nappe'),
+            duGlide('bass', 0.15, 'La basse glisse d’une note à l’autre — un peu de glide'),
+          ]),
+        ],
+        accepte: '— Trois semaines plus tard, les clients le fredonnent.',
+        titre: 'JINGLE LAVERIE (V3)',
         client: 'RACHID',
       },
       {
@@ -1002,9 +1115,9 @@ export const ACTES: Acte[] = [
           'racheté par le voisin du dessous.',
           'Il passe huit heures par jour, six jours sur sept.',
           'Trois semaines plus tard, les clients le fredonnent.',
-          'La deuxième version tourne quatre jours.',
-          'Trois clientes se plaignent.',
-          'Il remet la première et n’en reparle plus.',
+          'Des mois après, tu en proposes une quatrième version.',
+          'Elle tourne quatre jours. Trois clientes se plaignent.',
+          'Rachid remet la troisième et n’en reparle plus.',
         ],
       },
     ],

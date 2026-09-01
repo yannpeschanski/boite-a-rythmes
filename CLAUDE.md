@@ -639,6 +639,14 @@ acte enseignait par des exercices et concluait par une livraison. Ce qui reste
 tenu : après la DERNIÈRE commande d'un acte il ne reste que du récit, et dans une
 chaîne, seule la première part d'autre chose qu'une livraison.
 
+⚠️ **Une couche déjà livrée se protège par ce qu'on AJOUTE, pas par une
+interdiction.** Les trois envois de l'acte 3 (mélodie → basse → nappe) ne
+défendent jamais d'y toucher : `basseQuiTient` compare la basse à la mélodie, si
+bien qu'effacer celle-ci rend celle-là insatisfiable. Une interdiction punirait
+l'essai, ce que l'Atelier n'a pas à faire. Corollaire d'écriture : un envoi
+n'exige QUE la couche qu'il ajoute — redemander la précédente l'afficherait
+comme une case cochée d'avance.
+
 ⚠️ **Une RÉACTION à la livraison cite un fait de l'état, et son seuil se calibre
 sur les 34 presets.** `src/model/reactions.ts` lit le MORCEAU, là où les roasts de
 `gameData.ts` commentent la FAÇON DE JOUER. Quatre règles : une observation cite

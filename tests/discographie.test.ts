@@ -161,11 +161,12 @@ describe('chaque production du récit a un nom et un destinataire', () => {
         .filter((e) => e.kind === 'commande' || e.kind === 'livraison')
         .map((e) => ({ acte: a.id, e: e as { titre: string; client: string } })),
     );
-    /* Huit depuis que l'acte 4 enchaîne trois envois du même morceau (2026-09-01).
+    /* Dix depuis que les actes 3 ET 4 enchaînent trois envois du même morceau
+     * (2026-09-01).
      * ⚠️ Ils portent des titres DIFFÉRENTS (LE TUNNEL, V2, V3) alors qu'une
      * production par acte remplace la précédente : c'est voulu, c'est le titre
      * qui dit au joueur laquelle des trois il réécoute. */
-    expect(prod).toHaveLength(8);
+    expect(prod).toHaveLength(10);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();
