@@ -42,6 +42,58 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 3 : le verbe `melodie` gagne sa ligne — tranche 2a (2026-09-01)
+
+> « Acte beaucoup trop court par rapport à ce qu'on a de nouveau : il faut
+> compléter avec les autres composantes du synthé. Commencer par la ligne de
+> mélodie puis la basse puis la nappe, les additionner. Il y a également les
+> textures à travailler à chaque fois… On a de quoi faire un acte très long. »
+> Plus, sur deux des trois exercices : « trop facile ». Et sur le cahier de
+> Rachid : « beaucoup trop simpliste ».
+
+**Le verbe avait la basse en dur.** `melodie.ligne` la déclare désormais ; la
+surface était petite (deux points dans le store, deux dans l'UI), la
+cartographie l'a montrée avant d'écrire une ligne. ⚠️ La NAPPE reste hors du
+verbe : il est monophonique par conception, elle joue des accords — un exercice
+mentirait sur ce qu'elle fait. Elle s'ajoutera par un cahier (tranche 2b).
+
+| niveau | avant | après |
+|---|---|---|
+| 42 | « Reposer une basse », 8 pas, 5 degrés | **« Reposer une phrase »**, ligne `melody` |
+| 43 | motif, 8 pas dont 4 utiles, 3-4 notes | **basse**, 16 pas dont 8 utiles, 7 degrés, 6-8 notes |
+| 44 | 8 pas, 6-7 notes | **mélodie**, 16 pas, **sans motif**, 9-11 notes |
+
+Le motif divisait le travail par deux au niveau 43 ; il est retiré du 44, qui
+devient le sommet de l'acte.
+
+**Le cahier de Rachid** exigeait « une basse + kick/snare » alors que l'acte
+venait d'enseigner deux lignes. Il demande maintenant les **trois** lignes de
+synthé plus une **texture choisie sur chacune** (`voixChoisie`, comparée à
+`defaultSynthVoice`). C'est le premier endroit du jeu qui enseigne un réglage de
+synthé — il y en avait seize dans `SYNTH_VOICE_PRESETS`, et zéro enseigné.
+⚠️ La contrainte accepte n'importe quel écart au défaut plutôt qu'un preset
+nommé : exiger un preset précis ferait de la texture un QCM, ce que l'acte 4
+vient justement de quitter.
+
+**⚠️ DEUX DÉFAUTS D'AFFICHAGE TROUVÉS EN MESURANT, dont un bloquant.**
+
+1. À seize pas, la grille de cases **débordait de son conteneur et se faisait
+   couper** : les six derniers pas étaient injoignables, donc l'exercice
+   impossible. Et ma mesure disait « débordement 0 » — parce qu'elle ne
+   regardait que `document.documentElement`. Un conteneur qui coupe ses enfants
+   ne fait pas défiler la page. Le script de mesure vérifie désormais
+   `scrollWidth > clientWidth` sur **chaque** élément.
+2. Une fois la grille passée à huit colonnes, les deux grilles empilées
+   (cases, puis numéros) mettaient les numéros **1-8 sous la seconde rangée de
+   cases** : un « 5 » qui désigne le pas 13. Cases et numéros sont maintenant
+   entrelacés par mesure de huit.
+
+**Vérifié :** 444 tests, 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf, complet ; et trois
+captures en 390×840 — 40,4 px la case aux trois niveaux, y compris à seize pas.
+
+---
+
 ### ✅ L'acte 4 devient une chaîne d'envois — tranche 1 (2026-09-01)
 
 > « Ça ne marche pas l'exercice du petit haut-parleur… cet élément de scénario

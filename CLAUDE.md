@@ -354,13 +354,22 @@ niveaux 15 et 18 restent orphelins **par décision**. `tests/feel-ecrit.test.ts`
 mesure les trois en rejouant le scheduler (harnais `tests/helpers/rejeu.ts`).
 
 ⚠️ **`melodie` est le huitième verbe, et le seul qui sorte de la batterie.** Une
-ligne de basse monophonique, une note par pas, des DEGRÉS (0 = silence, 1-7). Il
-n'étend pas `GameDrumRowName` : à la place `comparerGrilles` a été **généralisé**
+ligne de synthé monophonique, une note par pas, des DEGRÉS (0 = silence, 1-7).
+⚠️ **Le niveau déclare SA ligne** (`melodie.ligne`) : l'acte 3 va de la mélodie à
+la basse, et le verbe avait la basse en dur. La NAPPE reste hors de ce verbe —
+il est monophonique par conception, elle joue des accords ; elle s'ajoute par un
+cahier. Il n'étend pas `GameDrumRowName` : à la place `comparerGrilles` a été **généralisé**
 (`Grille<N>` sur `number[]`), la mélodie a son propre état, et on reste sur **une
 octave, sans accord**. La tonique tombe toujours sur le premier pas.
 
 ⚠️ **L'exercice de mélodie s'écrit comme dans l'Atelier : CASES + CLAVIER.** Une
 ligne de cases porte les degrés, un clavier les écrit, la sélection avance seule.
+⚠️ **Huit cases par rangée, cases et numéros ENTRELACÉS par mesure.** À seize pas
+sur une rangée, la grille déborde de son conteneur et se fait COUPER — six pas
+injoignables, l'exercice impossible, et la PAGE ne déborde pas : une mesure qui
+ne regarde que `document.documentElement` ne le voit pas. Mesurer aussi les
+conteneurs (`scrollWidth > clientWidth`). Et deux grilles empilées séparément
+mettent les numéros 1-8 sous la seconde rangée de cases.
 ⚠️ La **tonique du premier pas est DONNÉE, verrouillée** : sans quoi le joueur
 devait retrouver une note que la conception considère acquise. Corollaire de
 câblage : un `$effect` qui recale la sélection doit se garder du **premier

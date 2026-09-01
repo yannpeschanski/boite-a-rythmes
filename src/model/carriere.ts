@@ -47,6 +47,7 @@ import {
   reverbDosee,
   contrasteDeVolume,
   chaqueLigneRetouchee,
+  voixChoisie,
 } from './commande';
 import { ficheStyle } from './styles';
 import { etatVierge, etatDepuisGrille } from './defaults';
@@ -936,12 +937,12 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 42,
-        commande: 'Tu commences par la basse. Les hauteurs, une par une.',
+        commande: 'Tu commences par la mélodie — c’est elle qu’on fredonne. Les hauteurs, une par une.',
       },
       {
         kind: 'exercice',
         niveau: 43,
-        commande: 'Puis le motif — ce qui fait qu’une phrase revient.',
+        commande: 'Puis la basse, dessous. Elle se répète : c’est ce qui la rend tenable.',
       },
       {
         kind: 'recit',
@@ -961,7 +962,7 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 44,
-        commande: 'La deuxième, celle qu’il réclame. Toute la gamme, cette fois.',
+        commande: 'La deuxième, celle qu’il réclame. Toute la gamme, seize pas, aucune reprise.',
       },
       {
         kind: 'commande',
@@ -975,9 +976,17 @@ export const ACTES: Acte[] = [
         bouton: 'Ouvrir l’Atelier ▸',
         // La commande demande une basse : le Synthé s'ouvre pour la faire.
         modulesRequis: ['synth'],
+        /* ⚠️ Le cahier était « une basse + kick/snare » — *« beaucoup trop
+         * simpliste »* (Yann, 2026-09-01), et il l'était doublement : l'acte
+         * venait d'enseigner la MÉLODIE et la BASSE, et n'en demandait qu'une.
+         * Il demande maintenant les trois lignes de synthé — c'est le « les
+         * additionner » du retour — plus une texture choisie sur chacune. */
         cahier: [
           AVOIR_PRODUIT,
-          ligneSynthPresente('bass', 'Une basse — c’est elle qui porte la mélodie'),
+          ligneSynthPresente('melody', 'La phrase — c’est elle qu’il fredonnera'),
+          ligneSynthPresente('bass', 'La basse dessous, pour qu’elle tienne debout'),
+          ligneSynthPresente('pad', 'Une nappe derrière — c’est elle qui fait la pièce'),
+          voixChoisie(['melody', 'bass', 'pad'], 'Une voix choisie sur chacune, pas celle d’usine'),
           lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
         ],
         accepte: '— Ça. Je sais pas pourquoi. C’est combien ?',

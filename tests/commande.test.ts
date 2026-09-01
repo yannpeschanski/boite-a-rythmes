@@ -230,10 +230,23 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
   // Une rafale d'accent sur le charley — la fiche techno en demande une.
   const hatActif = st.rows.hat.pattern.findIndex((v) => (v as number) > 0);
   if (hatActif >= 0) st.rows.hat.rolls[hatActif] = 3;
-  st.synthRows.bass.muted = false;
-  st.synthRows.bass.subdivisions = 8;
-  st.synthRows.bass.pattern = new Array(8).fill(null);
-  st.synthRows.bass.pattern[0] = { degree: 1, octave: 0 };
+  /* Les TROIS lignes de synthé jouent : l'acte 3 les demande toutes depuis le
+   * 2026-09-01 (« les additionner »). Les poser inconditionnellement est sans
+   * effet sur les cahiers qui n'en demandent qu'une — `ligneSynthPresente`
+   * vérifie une présence, pas une absence. */
+  for (const l of ['bass', 'melody', 'pad'] as const) {
+    st.synthRows[l].muted = false;
+    st.synthRows[l].subdivisions = 8;
+    st.synthRows[l].pattern = new Array(8).fill(null);
+    st.synthRows[l].pattern[0] = { degree: 1, octave: 0 };
+  }
+  /* Et une TEXTURE choisie sur chacune. `voixChoisie` compare à
+   * `defaultSynthVoice` : n'importe quel écart suffit, ici l'attaque. */
+  if (demandeVoix(cahier)) {
+    for (const l of ['bass', 'melody', 'pad'] as const) {
+      st.synthRows[l].voice = { ...st.synthRows[l].voice, attack: 0.42 };
+    }
+  }
   // Les trois gestes de mixage de l'acte 4 (voir tests/mixage.test.ts). Sans
   // effet sur les cahiers qui ne les demandent pas.
   st.rows.kick.tone = 60;
@@ -284,6 +297,8 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
   }
   return st;
 }
+
+const demandeVoix = (cahier: Array<{ id: string }>) => cahier.some((c) => c.id === 'voix');
 
 /* Toutes les commandes du récit doivent être SATISFIABLES — une commande dont
  * le cahier ne peut pas être rempli est un cul-de-sac que seul un joueur

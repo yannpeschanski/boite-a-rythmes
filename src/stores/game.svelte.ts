@@ -2,6 +2,7 @@
 // Vérifier. Les cases exactes (état ET rafale) se verrouillent avec ✓.
 // Port de la logique de l. 7467–8734, sans la couche DOM.
 import type { DrumStep, PatternStateV2 } from '../model/types';
+import { SYNTH_ROW_NAMES } from '../model/types';
 import { defaultState } from '../model/defaults';
 import {
   LEVELS,
@@ -1413,6 +1414,10 @@ class GameStore {
      * seul le sens des nombres change (un degré au lieu d'un coup). */
     if (this.level.exercise === 'melodie') {
       const rafales = this.melodieRafales;
+      /* La comparaison ne dépend pas de la ligne — c'est `comparerGrilles`
+       * généralisé sur `number[]`. On garde donc la clé `bass` comme simple
+       * étiquette locale : changer de ligne ne change rien à ce qui est
+       * comparé, seulement à ce qui SONNE (voir `etatPour`). */
       const r = comparerGrilles<'bass'>(
         { bass: this.melodieCible },
         { bass: rafales },
@@ -1670,9 +1675,12 @@ class GameStore {
     if (this.level.exercise === 'melodie') {
       const degres = which === 'guess' ? this.melodieGuess : this.melodieCible;
       GAME_DRUM_ROWS.forEach((n) => (state.rows[n].muted = true));
-      state.synthRows.pad.muted = true;
-      state.synthRows.melody.muted = true;
-      const row = state.synthRows.bass;
+      // La ligne du niveau sonne, les deux autres se taisent : un exercice
+      // monophonique qui laisserait deux lignes ouvertes ferait entendre autre
+      // chose que ce qu'il demande de reposer.
+      const ligne = this.level.melodie.ligne;
+      for (const n of SYNTH_ROW_NAMES) state.synthRows[n].muted = n !== ligne;
+      const row = state.synthRows[ligne];
       row.muted = false;
       row.cycleBars = 1;
       row.subdivisions = Math.max(1, degres.length);

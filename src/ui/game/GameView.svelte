@@ -4,6 +4,7 @@
   import { pattern } from '../../stores/pattern.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { GameDrumRowName } from '../../model/presets/levels';
+  import type { SynthRowName } from '../../model/types';
   import { parametre } from '../../model/parametres';
   import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
@@ -44,14 +45,23 @@
   // dans l'Atelier (AtelierView.svelte) — sans cette boucle, aucune case ne
   // s'illumine pendant la lecture et il est impossible de suivre le rythme.
   let playhead = $state<Record<GameDrumRowName, number>>({ kick: -1, snare: -1, hat: -1 });
-  /* La basse a son propre curseur : elle ne fait pas partie des trois lignes de
-     batterie, et `PlayheadEvent.name` couvre déjà les lignes de synthé. */
+  /* La ligne de synthé a son propre curseur : elle ne fait pas partie des trois
+     lignes de batterie, et `PlayheadEvent.name` couvre déjà les lignes de
+     synthé. ⚠️ Elle n'est plus forcément la BASSE — le niveau la déclare
+     (`melodie.ligne`), depuis que l'acte 3 travaille aussi la mélodie. */
   let playheadBass = $state(-1);
+  /* Le nom des trois lignes de synthé, du point de vue du joueur. Une seule
+     définition : deux libellés pour la même ligne finissent par diverger. */
+  const LIBELLE_LIGNE: Record<SynthRowName, string> = {
+    bass: 'la basse',
+    pad: 'la nappe',
+    melody: 'la mélodie',
+  };
   let raf = 0;
   function loop() {
     for (const ev of engine.consumePlayhead()) {
       if (ev.name in playhead) playhead[ev.name as GameDrumRowName] = ev.col;
-      if (ev.name === 'bass') playheadBass = ev.col;
+      if (ev.name === game.level.melodie.ligne) playheadBass = ev.col;
       // Repère temporel du pas courant du kick : c'est contre lui que se
       // mesure l'écart d'une frappe.
       if (ev.name === 'kick' && ev.col !== dernierKickVu && game.target.kick[ev.col] > 0) {
@@ -642,7 +652,7 @@
                 : ex === 'silence'
                   ? '🔊 Écouter la pulsation'
                   : ex === 'melodie'
-                  ? '🔊 Écouter la basse'
+                  ? `🔊 Écouter ${LIBELLE_LIGNE[game.level.melodie.ligne]}`
                   : '🔊 Écouter le rythme à trouver'}
           </button>
           {#if ex !== 'silence' && ex !== 'style'}
@@ -914,37 +924,47 @@
              l'y préparer — et quarante cases pour poser trois notes se lisent
              comme un tableur, pas comme un instrument.
              
-             Ici : une ligne de cases qui EST la ligne de basse, chacune
+             Ici : une ligne de cases qui EST la ligne de synthé visée, chacune
              portant son degré, et un clavier dessous. On choisit une case, on
              appuie sur un degré, la sélection avance — c'est le geste
              d'écriture du pad de l'Atelier. -->
-        <div class="mel-cases" style:--pas={game.melodieCible.length}>
-          {#each game.melodieCible as _, col (col)}
-            {@const pose = game.melodieGuess[col]}
-            {@const montre = (game.solved || game.revealed) ? game.melodieCible[col] : pose}
-            <button
-              class="mel-case"
-              class:vide={!montre}
-              class:sel={melSel === col && !game.solved && !game.revealed}
-              class:verrou={game.melodieLocked[col]}
-              class:revelee={(game.solved || game.revealed) && !pose && game.melodieCible[col] > 0}
-              class:playing={playheadBass === col}
-              class:win-flash={winFlash}
-              aria-label="Pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}"
-              onclick={() => {
-                melSel = col;
-                echec = false;
-              }}
-            >
-              {montre > 0 ? montre : '·'}
-            </button>
-          {/each}
-        </div>
-        <div class="mel-pieds" style:--pas={game.melodieCible.length}>
-          {#each game.melodieCible as _, col (col)}
-            <span class="mel-pas" class:fort={col % 4 === 0}>{col + 1}</span>
-          {/each}
-        </div>
+        <!-- ⚠️ Une MESURE par rangée, cases et numéros ENTRELACÉS.
+             Au-delà de huit pas la grille passe à la ligne (voir `.mel-cases`),
+             et deux grilles empilées séparément mettaient alors les numéros
+             1-8 sous la SECONDE rangée de cases : un « 5 » qui désigne le pas
+             13. On découpe donc par tranches de huit, et chaque rangée porte
+             ses propres numéros — c'est le même rendu qu'avant à huit pas. -->
+        {#each Array.from({ length: Math.ceil(game.melodieCible.length / 8) }, (_, m) => m) as mes (mes)}
+          {@const cols = Math.min(game.melodieCible.length - mes * 8, 8)}
+          <div class="mel-cases" style:--cols={cols}>
+            {#each game.melodieCible.slice(mes * 8, mes * 8 + 8) as _, i (i)}
+              {@const col = mes * 8 + i}
+              {@const pose = game.melodieGuess[col]}
+              {@const montre = (game.solved || game.revealed) ? game.melodieCible[col] : pose}
+              <button
+                class="mel-case"
+                class:vide={!montre}
+                class:sel={melSel === col && !game.solved && !game.revealed}
+                class:verrou={game.melodieLocked[col]}
+                class:revelee={(game.solved || game.revealed) && !pose && game.melodieCible[col] > 0}
+                class:playing={playheadBass === col}
+                class:win-flash={winFlash}
+                aria-label="Pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}"
+                onclick={() => {
+                  melSel = col;
+                  echec = false;
+                }}
+              >
+                {montre > 0 ? montre : '·'}
+              </button>
+            {/each}
+          </div>
+          <div class="mel-pieds" style:--cols={cols}>
+            {#each game.melodieCible.slice(mes * 8, mes * 8 + 8) as _, i (i)}
+              <span class="mel-pas" class:fort={(mes * 8 + i) % 4 === 0}>{mes * 8 + i + 1}</span>
+            {/each}
+          </div>
+        {/each}
         <!-- Le clavier : les degrés dans l'ordre, grave à gauche, comme un
              instrument. `⌫` efface la case choisie — sans lui, retirer une
              note demanderait de retrouver quel degré on y avait posé. -->
@@ -1199,10 +1219,19 @@
      creusées, biseau d'un pixel, vert d'afficheur quand c'est allumé — mais en
      deux dimensions : le temps en abscisse, la hauteur en ordonnée. */
   /* La ligne de basse : une case par pas, comme une ligne du séquenceur. */
+  /* ⚠️ HUIT COLONNES AU PLUS, et une phrase de seize pas passe donc sur DEUX
+     rangées. Mesuré : à seize colonnes, `min-height: 34px` sur la case donne
+     589 px de large dans un conteneur de 330 — la grille débordait et se
+     faisait COUPER, donc les six derniers pas étaient injoignables et
+     l'exercice impossible. La page, elle, ne débordait pas : c'est un
+     débordement de CONTENEUR, invisible à une mesure qui ne regarde que
+     `document.documentElement`.
+     Huit plutôt qu'un `auto-fill` : une rangée = une mesure, et c'est ce qui
+     rend lisible un motif dont la seconde moitié reprend la première. */
   .mel-cases {
     margin: 8px 0 2px;
     display: grid;
-    grid-template-columns: repeat(var(--pas, 8), 1fr);
+    grid-template-columns: repeat(var(--cols, 8), 1fr);
     gap: 3px;
   }
   .mel-case {
@@ -1248,9 +1277,11 @@
   .mel-case.win-flash:not(.vide) {
     background: #7dffa0;
   }
+  /* Les numéros suivent les cases, colonne pour colonne : deux grilles qui
+     doivent rester alignées ne peuvent pas avoir deux comptes de colonnes. */
   .mel-pieds {
     display: grid;
-    grid-template-columns: repeat(var(--pas, 8), 1fr);
+    grid-template-columns: repeat(var(--cols, 8), 1fr);
     gap: 3px;
     margin-bottom: 8px;
   }

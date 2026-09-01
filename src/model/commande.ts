@@ -29,6 +29,7 @@
  * Module PUR : ni rune, ni DOM, ni audio. Il ne lit qu'un `PatternStateV2`.
  */
 import type { PatternStateV2, DrumRowName, SynthRowName } from './types';
+import { defaultSynthVoice } from './presets/voices';
 import { evaluerStyle, type FicheStyle } from './styles';
 import { LAVERIE_DRIVES } from './exercises';
 
@@ -525,6 +526,35 @@ export function chaqueLigneRetouchee(lignes: DrumRowName[], libelle: string): Co
         libelle: l,
         ok: !!ctx?.depart && bougee(e, ctx.depart, l),
       })),
+  };
+}
+
+/* Une TEXTURE choisie sur chaque ligne citée — pas la voix d'usine.
+ *
+ * ⚠️ Retour de Yann sur l'acte 3 (2026-09-01) : *« il y a également les
+ * textures à travailler à chaque fois »*, et le cahier de Rachid est *« beaucoup
+ * trop simpliste »*. Le jeu n'enseignait AUCUN réglage du synthé alors que
+ * l'acte lui est consacré et que `SYNTH_VOICE_PRESETS` en propose seize.
+ *
+ * On compare à `defaultSynthVoice(ligne)` : la contrainte est donc fausse à
+ * l'ouverture par construction, comme toutes celles qui exigent un geste. Elle
+ * accepte n'importe quel écart plutôt qu'un preset nommé — choisir « Sub » ou
+ * bouger l'attaque à la main sont le même apprentissage, et exiger un preset
+ * précis ferait de la texture un QCM, ce que l'acte 4 vient justement de
+ * quitter. */
+export function voixChoisie(lignes: SynthRowName[], libelle: string): Contrainte {
+  const differe = (e: PatternStateV2, l: SynthRowName) => {
+    const d = defaultSynthVoice(l) as Record<string, unknown>;
+    const v = e.synthRows[l].voice as Record<string, unknown>;
+    return Object.keys(d).some((k) => v[k] !== undefined && v[k] !== d[k]);
+  };
+  return {
+    id: 'voix',
+    libelle,
+    verifie: (e) => lignes.every((l) => differe(e, l)),
+    // Dire LAQUELLE est restée d'usine : sinon « une voix sur chacune » refuse
+    // sans indiquer où chercher.
+    details: (e) => lignes.map((l) => ({ id: `voix-${l}`, libelle: l, ok: differe(e, l) })),
   };
 }
 

@@ -18,7 +18,7 @@
 // 3. Les fonctions qui utilisaient Math.random reçoivent un paramètre
 //    `rng: () => number` (défaut Math.random), logique inchangée.
 
-import type { DrumStep } from '../types';
+import type { DrumStep, SynthRowName } from '../types';
 
 // Mode jeu volontairement limité à kick/snare/hat (PLAN.md §6, clap/shaker
 // ajoutées à l'Atelier mais pas ici) — type LOCAL plutôt que le `DrumRowName`
@@ -105,6 +105,19 @@ export interface GameLevel {
    * que pour ce verbe-là, et `pas: 0` dit « ce niveau n'est pas mélodique »
    * sans avoir à consulter `exercise`. */
   melodie: {
+    /* ⚠️ SUR QUELLE LIGNE de synthé on écrit — `bass` par défaut.
+     *
+     * Le verbe est né sur la basse et l'y avait codée en dur. Retour de Yann
+     * (2026-09-01) sur l'acte 3 : *« il faut compléter avec les autres
+     * composantes du synthé. Commencer par la ligne de mélodie puis la basse
+     * puis la nappe, les additionner »* — l'acte enseigne trois lignes, pas
+     * une, et il n'y a aucune raison que l'exercice n'en connaisse qu'une.
+     *
+     * ⚠️ La NAPPE reste hors de ce verbe : `melodie` est monophonique par
+     * conception (« une octave, sans accord »), et la nappe joue des accords.
+     * On l'ajoute par un CAHIER, pas par un exercice qui mentirait sur ce
+     * qu'elle fait. */
+    ligne: SynthRowName;
     /** Nombre de pas de la boucle. 0 = niveau non mélodique. */
     pas: number;
     /** Degré le plus haut tiré. 5 pour rester dans le pentatonique du bas de
@@ -204,7 +217,10 @@ export interface MkLevelOptions {
   jouerIndice?: 'ecoute' | 'lecture';
   familleParam?: FamilleParam;
   paramsAutorises?: string[];
-  melodie?: { pas?: number; degreMax?: number; notesMin?: number; notesMax?: number; motif?: boolean };
+  melodie?: {
+    ligne?: SynthRowName;
+    pas?: number; degreMax?: number; notesMin?: number; notesMax?: number; motif?: boolean;
+  };
   silencePas?: number;
   stylePool?: string[];
 }
@@ -479,6 +495,7 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
     familleParam: o.familleParam || 'timbre',
     paramsAutorises: o.paramsAutorises ?? [],
     melodie: {
+      ligne: o.melodie?.ligne ?? 'bass',
       pas: o.melodie?.pas ?? 0,
       degreMax: o.melodie?.degreMax ?? 5,
       notesMin: o.melodie?.notesMin ?? 3,
@@ -938,27 +955,39 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * tel quel (une case porte un nombre, le comparateur ne fait que des `===`)
    * au lieu d'un second comparateur qui finirait par diverger.
    */
-  mkLevel(42, 'Reposer une basse', {
+  /* ---------- L'acte 3 : mélodie, PUIS basse ----------
+   *
+   * ⚠️ L'ordre vient de Yann (2026-09-01) : *« commencer par la ligne de
+   * mélodie puis la basse puis la nappe, les additionner »*. Il n'est pas
+   * décoratif — une phrase se chante, une basse se sent ; on retrouve plus
+   * facilement à l'oreille ce qu'on saurait fredonner. La basse vient ensuite
+   * parce qu'elle se pose SOUS quelque chose.
+   *
+   * ⚠️ La NAPPE n'a pas d'exercice : `melodie` est monophonique par conception
+   * et la nappe joue des accords. Elle s'ajoute par un cahier — un exercice
+   * mentirait sur ce qu'elle fait. */
+  mkLevel(42, 'Reposer une phrase', {
     exercise: 'melodie',
-    preamble: "Une ligne de basse joue en boucle. Repose-la : choisis une case, appuie sur le degré entendu, la case suivante se sélectionne toute seule. La tonique du premier pas t'est donnée — c'est le repère. Les cinq premiers degrés seulement, de quoi entendre monter et descendre sans se perdre.",
+    preamble: "Une phrase de mélodie joue en boucle. Repose-la : choisis une case, appuie sur le degré entendu, la case suivante se sélectionne toute seule. La tonique du premier pas t'est donnée — c'est le repère. Les cinq premiers degrés seulement, de quoi entendre monter et descendre sans se perdre.",
     tempoOptions: [86, 92],
     // 3-4 notes → 5-6 : une phrase de trois notes se retient sans l'entendre,
-    // c'est de la chance autant que de l'oreille (« la progression est trop
-    // lente », Yann, 2026-08-31).
-    melodie: { pas: 8, degreMax: 5, notesMin: 5, notesMax: 6 } }),
-  mkLevel(43, 'Un motif qui se répète', {
+    // c'est de la chance autant que de l'oreille.
+    melodie: { ligne: 'melody', pas: 8, degreMax: 5, notesMin: 5, notesMax: 6 } }),
+  mkLevel(43, 'La basse, sous la phrase', {
     exercise: 'melodie',
-    preamble: "Cette fois la phrase se répète : la seconde moitié reprend la première, note pour note. Il n'y a donc que quatre pas à trouver — et une chose à entendre, celle qui fait qu'une mélodie tient : elle revient. Le ⌫ efface la case choisie.",
+    preamble: "On descend d'un étage : la basse. Elle se répète — la seconde moitié reprend la première, note pour note — et c'est ce qui la rend tenable : une basse qui change tout le temps ne porte rien. Seize pas, huit à trouver. Le ⌫ efface la case choisie.",
     tempoOptions: [86, 92],
-    // Le motif n'a que quatre pas utiles : 3-4 notes, c'est la moitié pleine.
-    melodie: { pas: 8, degreMax: 5, notesMin: 3, notesMax: 4, motif: true } }),
+    /* « Trop facile » (Yann, 2026-09-01), et il avait raison sur les chiffres :
+     * huit pas dont un motif de quatre, c'était trois notes à retrouver. Seize
+     * pas dont un motif de huit, sur toute la gamme, en fait sept. */
+    melodie: { ligne: 'bass', pas: 16, degreMax: 7, notesMin: 6, notesMax: 8, motif: true } }),
   mkLevel(44, 'Toute la gamme', {
     exercise: 'melodie',
-    preamble: "Les sept degrés de la gamme, et une phrase presque pleine à replacer. Les degrés hauts sont les plus durs à situer : compte depuis la tonique si tu te perds — c'est le degré 1, et c'est là que la phrase se repose.",
+    preamble: "Les sept degrés, seize pas, et aucune répétition pour t'aider : la phrase ne revient pas sur elle-même. Les degrés hauts sont les plus durs à situer — compte depuis la tonique si tu te perds, c'est le degré 1, et c'est là que la phrase se repose.",
     tempoOptions: [80, 88],
-    // Le sommet de l'acte : toute la gamme ET la densité maximale (7 pas sur
-    // 8, la tonique donnée comprise).
-    melodie: { pas: 8, degreMax: 7, notesMin: 6, notesMax: 7 } }),
+    /* Le sommet de l'acte : toute la gamme, seize pas, et le motif RETIRÉ —
+     * c'est lui qui divisait le travail par deux au niveau d'avant. */
+    melodie: { ligne: 'melody', pas: 16, degreMax: 7, notesMin: 9, notesMax: 11 } }),
 
   /* ---------- Acte 2, « Le groove » : des paramètres qu'on RÈGLE ----------
    *
