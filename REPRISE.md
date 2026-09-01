@@ -3,8 +3,9 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-01, après la tranche 3 du chantier des cahiers
-> des charges (l'acte 2 règle d'abord, et son aléa passe dans le cahier).
+> Dernière mise à jour : 2026-09-01, après la tranche 4 du chantier des cahiers
+> des charges (l'acte 1 fusionne ses douze exercices en sept, et gagne une
+> polyrythmie).
 
 ## Où en est le projet
 
@@ -12,7 +13,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 468 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 471 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -23,7 +24,7 @@ attente dans `HISTOIRE.md`.
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
-| Niveaux | 73 (34 de campagne + le reste du réservoir) |
+| Niveaux | 74 (34 de campagne + le reste du réservoir) |
 | Commandes (production à livrer) | 9, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois) |
 
 ## Le déverrouillage — tranché le 2026-08-26
@@ -69,7 +70,7 @@ quiz n'aurait rien réglé.
 | 2a | **l'acte 3**, les exercices : `melodie` gagne sa ligne, mélodie → basse | ✅ livré |
 | 2b | **l'acte 3**, les cahiers : mélodie → + basse → + nappe, plus les textures | ✅ livré |
 | 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | ✅ livré |
-| 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | à faire |
+| 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | ✅ livré |
 | 5 | **actes 5 et 6** en cahiers, le 6 le plus complet du jeu | à faire |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
@@ -101,6 +102,17 @@ règle d'abord ») :
 - ⚠️ un garde-fou de test est devenu **vide** quand `lequel` a quitté la
   carrière ; il ne l'a dit que parce qu'il comptait sa population. Réancrer, ne
   jamais retirer le compte.
+
+**Ce que la tranche 4 a tranché en passant** (détail dans `PLAN.md`, « L'acte 1
+fusionne ») :
+
+- **« un sujet, deux exercices » est RÉVOQUÉ** — la règle datait du 2026-08-31 ;
+  sur chaque paire c'est désormais le plus DENSE qui reste (67, 68, 69, 74, 60,
+  8, 61), l'autre retourne au réservoir ;
+- ce qui la remplace est plus fort : **une nouveauté n'est demandée qu'après
+  avoir été montrée à l'écran** — le test regarde le récit, pas le compte ;
+- **la polyrythmie de l'acte 1 est ÉCRITE** (niveau 74) : les cinq du réservoir
+  sont soit déjà jouées à l'acte 5, soit générées.
 
 **Quatre arbitrages pris**, à ne pas rouvrir sans raison :
 

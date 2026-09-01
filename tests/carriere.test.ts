@@ -627,13 +627,21 @@ describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
 });
 
 describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
-  // « Niveau 1 à supprimer, on peut passer au niveau 2 directement » : il ne
-  // faisait poser que des kicks sur une grille dont les deux autres lignes
-  // étaient explicitement vides. Il reste au réservoir, la carrière ne le cite
-  // plus.
-  it('ne cite plus le niveau 1', () => {
+  /* Deux retraits, deux demandes, et la même raison à chaque fois : un écran
+   * où il n'y a presque rien à faire.
+   *
+   * — « Niveau 1 à supprimer, on peut passer au niveau 2 directement » : il ne
+   *   faisait poser que des kicks sur une grille dont les deux autres lignes
+   *   étaient vides.
+   * — ⚠️ « Le niveau 2 retiré » (2026-09-01) : douze cases, deux coups de kick
+   *   et deux de claire — la grille la plus légère de toute la carrière, en
+   *   ouverture de l'acte qui doit monter.
+   *
+   * Les deux restent au réservoir : un niveau ne se supprime jamais. */
+  it('ne cite plus les niveaux 1 et 2 — il ouvre sur les quatre temps', () => {
     expect(niveauxDeLActe(ACTES[1])).not.toContain(1);
-    expect(niveauxDeLActe(ACTES[1])[0]).toBe(2);
+    expect(niveauxDeLActe(ACTES[1])).not.toContain(2);
+    expect(niveauxDeLActe(ACTES[1])[0]).toBe(67);
   });
 
   /* ⚠️ Les variantes (rim shot, charley ouvert) et les rafales ont déménagé de
@@ -644,9 +652,12 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
   it('enseigne la variante et la rafale, et les explique avant de les demander', () => {
     const e = ACTES[1].etapes;
     const niveaux = niveauxDeLActe(ACTES[1]);
-    expect(niveaux).toContain(5);
+    // ⚠️ Le premier niveau à variantes est le 60 depuis la fusion du
+    // 2026-09-01 : le 5 (rim shots seuls) est retourné au réservoir, et Sol
+    // fait maintenant les DEUX gestes avant qu'on les demande ensemble.
+    expect(niveaux).toContain(60);
     expect(niveaux).toContain(8);
-    const premierAvecVariante = e.findIndex((x) => x.kind === 'exercice' && x.niveau === 5);
+    const premierAvecVariante = e.findIndex((x) => x.kind === 'exercice' && x.niveau === 60);
     const explication = e.findIndex(
       (x) => x.kind === 'recit' && x.lignes.join(' ').includes('rim shot'),
     );
@@ -764,9 +775,13 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
    *
    * Les deux tiennent ensemble parce que ce qui est revenu n'est pas ce qui
    * était parti : les grilles de l'acte 2 sont ÉCRITES, sans une variante ni
-   * une rafale, et toutes les trois IDENTIQUES — seul le feel change. C'est ce
-   * que ce fichier vérifie, et c'est la seule forme sous laquelle une grille a
-   * sa place ici. */
+   * une rafale.
+   *
+   * ⚠️ Un TROISIÈME arbitrage s'y est ajouté le 2026-09-01 (« les rythmes se
+   * ressemblent trop ») : elles étaient jusque-là toutes IDENTIQUES, seul le
+   * feel changeant, pour rendre deux balancements comparables. Elles sont
+   * désormais toutes DIFFÉRENTES, et la comparaison passe par `regler`. Le
+   * `it` correspondant, plus bas, porte le détail. */
   const grillesDeLActe2 = () =>
     niveauxDeLActe(ACTES[2])
       .map((n) => LEVELS.find((x) => x.id === n)!)

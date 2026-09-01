@@ -1159,7 +1159,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       hat:   [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2],
     } }),
   mkLevel(60, 'Les deux à la fois', {
-    preamble: "Rim shots ET charleys ouverts dans le même rythme — et les trois lignes descendent à la double-croche. Seize cases chacune, la claire tombe deux fois hors des temps, et rien n'est neuf : ce sont les deux variantes que tu viens d'apprendre, posées ensemble sur une grille deux fois plus fine.",
+    preamble: "Les deux gestes que Sol vient de faire, dans le même rythme. Reclique une claire allumée : elle passe en RIM SHOT, le bord du fût et pas la peau. Reclique un charley : il s'OUVRE, un « tss » qui traîne. DEUX rim shots et TROIS ouvertures ici, sur trois lignes descendues à la double-croche — seize cases chacune, et la claire tombe deux fois hors des temps.",
     tempoOptions: [88, 96],
     variant: { snare: true, hat: true },
     grille: {
@@ -1353,7 +1353,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * répétition citent les niveaux par leur `id`. */
 
   mkLevel(67, 'Les quatre temps', {
-    preamble: "Le même backbeat, mais chaque ligne se découpe maintenant en huit cases : le kick frappe les QUATRE temps au lieu de deux, la claire répond toujours sur 2 et 4. Rien de neuf à comprendre — deux fois plus de cases à lire.",
+    preamble: "Le premier rythme, et il tient en deux lignes : le kick frappe les QUATRE temps, la claire répond sur 2 et 4. Huit cases chacune. C'est le backbeat — la base de presque tout, et le fond de commerce de la maison.",
     tempoOptions: [84, 92],
     rowsActive: { kick: true, snare: true, hat: false },
     grille: {
@@ -1364,7 +1364,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     } }),
 
   mkLevel(68, 'Le charley qui double', {
-    preamble: "Le charleston descend d'un cran : seize cases au lieu de huit, deux fois plus de coups sur la même durée. C'est la double-croche, et c'est le débit de presque tout ce que tu écoutes. Le kick et la claire, eux, ne bougent pas.",
+    preamble: "Le charleston complète le trio, et il arrive directement à son débit habituel : SEIZE cases pour lui seul, quatre fois par temps là où le kick en fait un. C'est la double-croche, c'est ce qui donne le tempo à l'oreille. Le kick et la claire, eux, ne bougent pas.",
     tempoOptions: [84, 92],
     grille: {
       subdiv: { kick: 8, snare: 8, hat: 16 },
@@ -1374,7 +1374,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     } }),
 
   mkLevel(69, 'La claire sort du temps aussi', {
-    preamble: "Le second exercice de la syncope, et cette fois elle est partout : le kick quitte la grille DEUX fois, et la caisse claire cesse elle aussi de tomber sur les temps. Plus un seul repère à sa place habituelle — sauf le charley, qui tient la mesure du début à la fin.",
+    preamble: "Un coup peut tomber ENTRE deux temps : c'est la syncope, et c'est ce qui sépare un rythme qui marche d'un rythme qui groove. Ici elle est partout — le kick quitte la grille DEUX fois et la caisse claire cesse elle aussi de tomber sur les temps. Plus un seul repère à sa place habituelle, sauf le charley, qui tient la mesure du début à la fin.",
     tempoOptions: [88, 96],
     grille: {
       /* Le kick sur le « et » de 2 et le « et » de 4 ; la claire sur le temps
@@ -1438,6 +1438,38 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       swing: 24,
       shift: { hat: 10 },
+    } }),
+
+  /* ⚠️ LA POLYRYTHMIE DE L'ACTE 1 — écrite le 2026-09-01, sur la demande de
+   * Yann : *« l'acte 1 fusionné 12 → 6-7, le niveau 2 retiré, plus une
+   * polyrythmie »*.
+   *
+   * Pourquoi un niveau NEUF plutôt qu'une citation : les cinq polyrythmies du
+   * réservoir sont soit déjà citées par l'acte 5 (24, 29), soit GÉNÉRÉES (26,
+   * 30, 31) — un tirage de densité donnerait un point de départ différent à
+   * chaque partie, ce que les grilles écrites ont justement supprimé.
+   *
+   * Pourquoi 16 contre 12, et pourquoi la CLAIRE : c'est le rapport 4:3, le
+   * plus répandu au monde (voir le niveau 29), à la résolution où l'acte 1 est
+   * rendu. Le charley reste en seize cases pleines — il est le repère fixe,
+   * sans lequel un décalage ne s'entend contre rien — et le kick garde ses
+   * quatre temps plus la syncope acquise deux exercices plus tôt. La ligne qui
+   * sort du compte est donc la claire, seule, et on l'entend glisser contre
+   * les deux autres.
+   *
+   * ⚠️ Ses quatre coups tombent sur les pas 2, 5, 8 et 11 d'un cycle de douze :
+   * aucun ne coïncide avec une case de seize, ce qui est la définition même de
+   * la polyrythmie et ce que `tests/grilles-ecrites.test.ts` mesure. Posés sur
+   * 0, 3, 6, 9 ils seraient retombés sur les temps, et l'exercice n'aurait
+   * rien enseigné. */
+  mkLevel(74, 'Trois contre quatre', {
+    preamble: "Chaque ligne peut avoir sa propre longueur de cycle. Le kick et le charley comptent seize cases ; la claire, elle, n'en compte que DOUZE — trois coups là où les autres en comptent quatre. Aucun de ses coups ne tombe sur une case des deux autres lignes : c'est ça, une polyrythmie, et c'est l'ossature de presque tout ce qui vient d'Afrique. Le charley ne bouge pas : c'est contre lui que tu la situes.",
+    tempoOptions: [88, 96],
+    grille: {
+      subdiv: { kick: 16, snare: 12, hat: 16 },
+      kick:  [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+      snare: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     } }),
 
   mkLevel(73, 'Lequel des trois ?', {
