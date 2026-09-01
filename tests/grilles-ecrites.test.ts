@@ -387,9 +387,14 @@ describe('la courbe ne redescend jamais', () => {
 
   it('⚠️ l’acte 1 ne revient jamais à une résolution déjà quittée', () => {
     const suite = suiteEcrite(1);
-    // Douze depuis le 2026-08-31 : « on peut faire plus d'exercices, prendre
-    // plus notre temps » — un SUJET, deux exercices.
-    expect(suite.length, 'les douze rythmes écrits').toBe(12);
+    /* ⚠️ SEPT depuis le 2026-09-01, et c'est l'inverse de la consigne
+     * précédente. « On peut faire plus d'exercices, prendre plus notre temps »
+     * (2026-08-31) avait porté la série à douze en doublant chaque sujet ;
+     * la relecture complète tranche l'autre sens : *« l'acte 1 fusionné
+     * 12 → 6-7, le niveau 2 retiré, plus une polyrythmie »*. Deux lectures de
+     * seize cases pour une seule idée neuve, c'est de la longueur, pas de la
+     * difficulté. */
+    expect(suite.length, 'les sept rythmes écrits').toBe(7);
     const poidss = suite.map(poids);
     poidss.forEach((p, i) => {
       if (i === 0) return;
@@ -410,7 +415,9 @@ describe('la courbe ne redescend jamais', () => {
      * refaisait trois fois le niveau 3. Une nouveauté se montre sur ce qu'on
      * sait déjà faire. */
     const suite = suiteEcrite(1);
-    const iSyncope = suite.findIndex((l) => l.id === 7);
+    // ⚠️ L'ancre a changé avec la fusion : la syncope s'enseigne au niveau 69
+    // (le 7, qui la posait seule, est retourné au réservoir).
+    const iSyncope = suite.findIndex((l) => l.id === 69);
     expect(iSyncope, 'le niveau qui enseigne la syncope').toBeGreaterThan(0);
     // Une case est « hors du temps » quand elle ne tombe pas sur un des quatre
     // temps — vrai quelle que soit la subdivision de la ligne.
@@ -439,23 +446,58 @@ describe('la courbe ne redescend jamais', () => {
     }
   });
 
-  it('⚠️ chaque SUJET de l’acte 1 a deux exercices — « prendre plus notre temps »', () => {
-    /* Un sujet posé une seule fois est un sujet montré, pas enseigné. La série
-     * en compte six, et cinq d'entre eux ont leur exercice d'application :
-     * la base (2, 67), le charley (3, 68), la syncope (7, 69), les variantes
-     * (5, 59, 60), la rafale (8, 70). Seul « tout ensemble » (61) est unique,
-     * et c'est sa nature : il n'enseigne rien, il vérifie tout. */
-    const ids = suiteEcrite(1).map((l) => l.id);
-    for (const [sujet, paire] of [
-      ['la base', [2, 67]],
-      ['le charley', [3, 68]],
-      ['la syncope', [7, 69]],
-      ['la rafale', [8, 70]],
-    ] as [string, number[]][]) {
-      for (const id of paire) expect(ids, `${sujet} : niveau ${id} absent`).toContain(id);
-      const [a, b] = paire.map((id) => ids.indexOf(id));
-      expect(b, `${sujet} : l’application ne suit pas la découverte`).toBe(a + 1);
+  it('⚠️ un SUJET, UN exercice — et c’est le plus DENSE de la paire', () => {
+    /* ⚠️ CE TEST DIT L'INVERSE DE CE QU'IL DISAIT, et c'est un arbitrage.
+     * Il exigeait deux exercices par sujet — un qui pose, un qui applique
+     * (« prendre plus notre temps », 2026-08-31). La relecture complète du
+     * 2026-09-01 le révoque : *« l'acte 1 fusionné 12 → 6-7 »*.
+     *
+     * Ce qui reste vérifiable, et qui est la vraie décision : sur chaque paire,
+     * c'est l'exercice le plus DENSE qui survit — jamais le plus facile. Un
+     * « on fusionne » qui garderait le premier de chaque paire ferait redescendre
+     * l'acte, ce qui est le défaut que toute cette section combat. */
+    const garde = suiteEcrite(1).map((l) => l.id);
+    for (const [sujet, gardé, rendu] of [
+      ['la base', 67, 2],
+      ['le charley', 68, 3],
+      ['la syncope', 69, 7],
+      ['les variantes', 60, 5],
+      ['les variantes', 60, 59],
+      ['la rafale', 8, 70],
+    ] as [string, number, number][]) {
+      expect(garde, `${sujet} : le niveau ${gardé} devrait être cité`).toContain(gardé);
+      expect(garde, `${sujet} : le niveau ${rendu} devrait être au réservoir`).not.toContain(rendu);
+      expect(
+        poids(niveau(gardé)),
+        `${sujet} : on a gardé le plus léger (${gardé}) au lieu du ${rendu}`,
+      ).toBeGreaterThanOrEqual(poids(niveau(rendu)));
     }
+  });
+
+  /* ⚠️ LA POLYRYTHMIE de l'acte 1 — demandée dans la même phrase que la fusion.
+   *
+   * Ce qui en fait une polyrythmie et pas une ligne « plus courte » : aucun de
+   * ses coups ne tombe sur une case des autres lignes. Posée sur 0, 3, 6, 9
+   * d'un cycle de douze, la claire retomberait sur les quatre temps et
+   * l'exercice n'enseignerait rien — c'est le seul piège de ce niveau, et il
+   * est invisible à la lecture. */
+  it('⚠️ 74 — « la claire n’en compte que douze », et elle ne retombe jamais avec les autres', () => {
+    const l = niveau(74);
+    const g = l.grille!;
+    expect(suiteEcrite(1).map((x) => x.id), 'la polyrythmie est bien jouée').toContain(74);
+    expect(g.subdiv.snare, 'la claire en douze').toBe(12);
+    expect(g.subdiv.kick, 'le kick en seize').toBe(16);
+    expect(g.subdiv.hat, 'le charley en seize').toBe(16);
+    // Les instants, en fraction de mesure : aucun partagé avec la grille de 16.
+    const instants = (r: 'kick' | 'snare' | 'hat') =>
+      ligne(l, r).map((v, i) => (v > 0 ? i / g.subdiv[r] : -1)).filter((x) => x >= 0);
+    const seize = new Set([...instants('kick'), ...instants('hat')].map((x) => x.toFixed(6)));
+    for (const t of instants('snare')) {
+      expect(seize.has(t.toFixed(6)), `la claire retombe sur ${t} avec les autres lignes`).toBe(false);
+    }
+    expect(instants('snare').length, 'au pluriel, comme toute nouveauté').toBeGreaterThanOrEqual(3);
+    // Le charley reste le repère fixe : seize cases pleines.
+    expect(ligne(l, 'hat').every((v) => v === 1)).toBe(true);
   });
 
   it('⚠️ et l’acte 2 commence au-dessus de la fin de l’acte 1', () => {
@@ -476,24 +518,40 @@ describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
     // nouveautés d'un coup ou aucune.
     const acte1 = ACTES.find((a) => a.id === 1)!;
     const cites = acte1.etapes.filter((e) => e.kind === 'exercice').map((e) => (e as { niveau: number }).niveau);
-    expect(cites.length, 'la série a été allongée à douze').toBe(12);
+    expect(cites.length, 'la série fusionnée en compte sept').toBe(7);
     for (const id of cites) expect(niveau(id).grille, `niveau ${id} : tiré au sort`).toBeTruthy();
   });
 
-  it('et la série n’ajoute jamais deux nouveautés d’un coup', () => {
-    // Lu sur les données : le nombre de CHOSES nouvelles (variante de claire,
-    // ouverture de charley, rafale) ne monte que d'un cran à la fois.
+  it('⚠️ et aucune nouveauté n’est demandée avant d’avoir été MONTRÉE à l’écran', () => {
+    /* ⚠️ Remplace « la série n'ajoute jamais deux nouveautés d'un coup »
+     * (2026-09-01). Cette règle-là interdisait au niveau 60 de demander le rim
+     * shot ET l'ouverture du charley ensemble — or c'est exactement ce que la
+     * fusion demande, et ce n'est pas un raccourci : Sol fait les DEUX gestes à
+     * l'écran, juste avant, dans l'étape de récit qui précède.
+     *
+     * L'invariant qui compte n'était donc pas le compte des nouveautés mais
+     * leur ORDRE par rapport à l'explication. C'est lui qu'on tient ici, et il
+     * est plus fort : il regarde le récit, pas seulement les grilles. */
     const acte1 = ACTES.find((a) => a.id === 1)!;
-    const cites = acte1.etapes.filter((e) => e.kind === 'exercice').map((e) => (e as { niveau: number }).niveau);
-    let precedent = 0;
-    for (const id of cites) {
-      const l = niveau(id);
-      const n =
-        (compte(ligne(l, 'snare'), 2) > 0 ? 1 : 0) +
-        (compte(ligne(l, 'hat'), 2) > 0 ? 1 : 0) +
-        (LIGNES.some((r) => Math.max(...rafales(l, r)) > 1) ? 1 : 0);
-      expect(n, `niveau ${id} : ${n} nouveautés après ${precedent}`).toBeLessThanOrEqual(precedent + 1);
-      precedent = Math.max(precedent, n);
-    }
+    const dit = (i: number, mot: RegExp) => {
+      const e = acte1.etapes[i];
+      return e.kind === 'recit' && mot.test(e.lignes.join(' '));
+    };
+    const premier = (predicat: (l: GameLevel) => boolean) =>
+      acte1.etapes.findIndex(
+        (e) => e.kind === 'exercice' && predicat(niveau((e as { niveau: number }).niveau)),
+      );
+    const explique = (mot: RegExp) => acte1.etapes.findIndex((_, i) => dit(i, mot));
+
+    const iVariante = premier(
+      (l) => compte(ligne(l, 'snare'), 2) > 0 || compte(ligne(l, 'hat'), 2) > 0,
+    );
+    const iRafale = premier((l) => LIGNES.some((r) => Math.max(...rafales(l, r)) > 1));
+    expect(iVariante, 'aucun exercice ne pose de variante').toBeGreaterThan(0);
+    expect(iRafale, 'aucun exercice ne pose de rafale').toBeGreaterThan(0);
+    expect(explique(/rim shot/i), 'le rim shot n’est expliqué nulle part').toBeGreaterThanOrEqual(0);
+    expect(explique(/rafale/i), 'la rafale n’est expliquée nulle part').toBeGreaterThanOrEqual(0);
+    expect(explique(/rim shot/i), 'la variante est demandée avant d’être montrée').toBeLessThan(iVariante);
+    expect(explique(/rafale/i), 'la rafale est demandée avant d’être montrée').toBeLessThan(iRafale);
   });
 });

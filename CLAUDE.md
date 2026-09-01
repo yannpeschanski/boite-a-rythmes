@@ -25,7 +25,7 @@ npm run build:singlefile # fichier HTML autonome  -> dist-singlefile/index.html
 ## Architecture
 
 ```
-src/model/    état v2 typé, sérialisation, données (34 presets, 73 niveaux, gammes, voix)
+src/model/    état v2 typé, sérialisation, données (34 presets, 74 niveaux, gammes, voix)
 src/engine/   moteur audio TypeScript pur — aucune dépendance UI
 src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partage)
 src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
@@ -476,19 +476,28 @@ six exercices sur huit se jouaient au niveau du deuxième. La série part désor
 du kick syncopé du niveau 7 et n'en redescend jamais. ⚠️ Ce qui rend un niveau plus
 dur ici n'est pas un empilement de nouveautés mais la **RÉSOLUTION**.
 
-⚠️ **Une nouveauté se pose au PLURIEL, et un sujet vaut deux exercices.**
+⚠️ **Une nouveauté se pose au PLURIEL.** Une occurrence unique se trouve par
+ÉLIMINATION — une seule variante sur une ligne qui en compte deux, une seule
+rafale au dernier pas : le joueur apprend le geste sans jamais entendre ce qu'il
+produit. Les niveaux posent donc deux à quatre occurrences, **de longueurs et de
+timbres différents**, et les variantes ne sont **ni la première ni la dernière**
+case de la ligne.
 
-- **une occurrence unique se trouve par ÉLIMINATION** — une seule variante sur une
-  ligne qui en compte deux, une seule rafale au dernier pas : le joueur apprend le
-  geste sans jamais entendre ce qu'il produit. Les niveaux posent donc deux à
-  quatre occurrences, **de longueurs et de timbres différents**, et les variantes
-  ne sont **ni la première ni la dernière** case de la ligne ;
-- **un sujet a deux exercices** — le premier le POSE, le second l'exige ailleurs.
-  L'acte 1 en compte douze (la base 2/67, le charley 3/68, la syncope 7/69, les
-  variantes 5/59/60, la rafale 8/70, puis 61), l'acte 2 douze aussi.
+⚠️ **Mais un sujet ne vaut qu'UN exercice — le plus dense.** La règle inverse
+(« un exercice pose, le suivant applique ») a tenu du 2026-08-31 au 2026-09-01 et
+a été révoquée : *« l'acte 1 fusionné 12 → 6-7, le niveau 2 retiré, plus une
+polyrythmie »*. Deux lectures de seize cases pour une seule idée neuve font de la
+longueur, pas de la difficulté. Sur chaque paire, **c'est le plus dense qui
+reste** (67, 68, 69, 74, 60, 8, 61) ; l'autre retourne au réservoir. Ce qui
+remplace l'ancienne règle : **une nouveauté n'est demandée qu'après avoir été
+MONTRÉE à l'écran** — Sol fait le rim shot et la rafale avant que le niveau 60 les
+exige ensemble. `tests/grilles-ecrites.test.ts` tient l'ordre, pas le compte.
 
-Ce n'est pas en contradiction avec « la progression est trop lente » : ce qui était
-lent, c'était la MONTÉE, pas le nombre d'écrans.
+⚠️ **La polyrythmie de l'acte 1 (niveau 74) est écrite, pas citée.** Les cinq du
+réservoir sont soit déjà jouées à l'acte 5, soit GÉNÉRÉES. Elle vaut par une
+propriété qui ne se lit pas dans la grille et se mesure : **aucun de ses coups de
+claire (12 cases) ne coïncide avec une case des deux autres lignes (16)** — posés
+sur 0/3/6/9, ils retomberaient sur les temps et l'exercice n'enseignerait rien.
 
 ⚠️ **Seize cases par ligne est le plafond, et il est mesuré** — 18,7 px la case en
 390 px de large ; trente-deux donneraient 9 px. Au-delà de l'acte 1, la difficulté

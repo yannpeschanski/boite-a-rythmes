@@ -42,6 +42,74 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 1 fusionne, et gagne une polyrythmie — tranche 4 (2026-09-01)
+
+> « L'acte 1 fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie. »
+> — Yann, relecture complète
+
+**Ce qui est révoqué, et il faut le dire clairement :** la règle « un sujet, deux
+exercices », écrite le 2026-08-31 sur *« on peut faire plus d'exercices, prendre
+plus notre temps »*. Elle avait porté l'acte de huit à douze en doublant chaque
+sujet — un exercice qui POSE, un qui APPLIQUE. Ce que ça donne à jouer : deux
+lectures de seize cases pour une seule idée neuve. C'est de la longueur, pas de
+la difficulté.
+
+| sujet | avant | après |
+|---|---|---|
+| la base | 2 (12 cases) + 67 | **67** |
+| le charley | 3 + 68 | **68** |
+| la syncope | 7 + 69 | **69** |
+| la polyrythmie | — | **74** (neuf) |
+| les variantes | 5 + 59 + 60 | **60** |
+| la rafale | 8 + 70 | **8** |
+| tout | 61 | **61** |
+
+**Le critère de fusion est écrit et testé : on garde le plus DENSE de chaque
+paire**, jamais le plus facile. Un « on fusionne » qui garderait le premier de
+chaque paire ferait redescendre l'acte, ce que toute cette section combat. La
+courbe mesurée : **24, 32, 32, 44, 48, 48, 48** — monotone, et le niveau 2 (douze
+cases, la grille la plus légère de la carrière) est nommément retiré.
+
+**Ce qui remplace « une seule nouveauté à la fois ».** L'ancien test interdisait
+au niveau 60 de demander le rim shot ET l'ouverture du charley ensemble. Or c'est
+exactement ce que la fusion demande, et ce n'est pas un raccourci : **Sol fait les
+deux gestes à l'écran**, dans l'étape de récit juste avant. L'invariant qui
+comptait n'était donc pas le compte des nouveautés mais leur ORDRE par rapport à
+l'explication — et le test qui le tient regarde désormais le RÉCIT, pas seulement
+les grilles. Il est plus fort que celui qu'il remplace.
+
+**La polyrythmie (niveau 74, « Trois contre quatre »).** Écrite plutôt que citée :
+les cinq du réservoir sont soit déjà jouées à l'acte 5 (24, 29), soit générées
+(26, 30, 31) — un tirage donnerait un point de départ différent à chaque partie.
+Kick et charley en seize cases, **claire en douze**, rapport 4:3.
+
+⚠️ Sa seule propriété qui compte ne se lit pas dans la grille : **aucun coup de
+claire ne coïncide avec une case des deux autres lignes**. Posés sur 0/3/6/9 ils
+seraient retombés sur les quatre temps et l'exercice n'aurait rien enseigné ; ils
+sont sur 2/5/8/11. Mesuré en rejouant le scheduler : claire à 0,167 · 0,417 ·
+0,667 · 0,917 de la mesure, kick à 0 · 0,25 · 0,375 · 0,5 · 0,75, **zéro
+collision**.
+
+⚠️ Elle se place **après la syncope et avant les variantes**, et ce n'est pas
+esthétique : après, parce que c'est la même idée d'un cran plus loin (une ligne
+qui ne tombe plus où on l'attend, puis une ligne qui ne compte plus comme les
+autres) ; avant, parce que ses 44 cases s'insèrent entre les 32 du 69 et les 48
+du 60 — la résolution ne redescend jamais.
+
+**Quatre préambules réécrits**, parce qu'ils citaient un voisin qui n'est plus
+joué : le 67 (« le même backbeat » que le 2), le 68 (« seize cases au lieu de
+huit » que le 3), le 69 (« le second exercice de la syncope » après le 7), le 60
+(« les deux variantes que tu viens d'apprendre » aux 5 et 59). Un niveau rendu au
+réservoir doit tenir debout seul : on le rejoue en salle de répétition.
+
+**Vérifié :** 471 tests, 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf (l'acte 1 passe de 16 à 11
+étapes, aucune erreur console) ; la polyrythmie mesurée au scheduler ET à l'écran
+en 390×840 — 16 cases de 18,7 px au kick, **12 de 25,9 px à la claire** (le cycle
+différent se VOIT), 0 px de débordement.
+
+---
+
 ### ✅ L'acte 2 règle d'abord — tranche 3 (2026-09-01)
 
 > « Les rythmes se ressemblent trop » (cinq fois dans la même relecture), « les

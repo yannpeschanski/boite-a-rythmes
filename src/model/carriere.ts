@@ -608,18 +608,31 @@ export const ACTES: Acte[] = [
        * une grille où les deux autres lignes étaient explicitement vides : un
        * écran où il n'y a rien à arbitrer. Le niveau reste dans le réservoir,
        * la carrière ne le cite plus. */
-      /* ⚠️ UN SUJET, DEUX EXERCICES — « on peut faire plus d'exercices, prendre
-       * plus notre temps » (Yann, 2026-08-31). La série passe de huit à douze :
-       * la base (2, 67), le charley (3, 68), la syncope (7, 69), les variantes
-       * (5, 59, 60), la rafale (8, 70), puis tout (61). Le premier exercice
-       * d'un sujet le POSE, le second l'exige ailleurs — c'est là qu'on voit
-       * s'il est acquis. */
-      { kind: 'exercice', niveau: 2, commande: 'La première sonnerie. Le kick tient le temps, la claire répond.' },
-      { kind: 'exercice', niveau: 67, commande: 'La même, en croches : huit cases par ligne, et le kick sur les quatre temps.' },
-      { kind: 'exercice', niveau: 3, commande: 'Le charley par-dessus, et le trio est complet.' },
-      { kind: 'exercice', niveau: 68, commande: 'Le charley descend à la double-croche : seize cases pour lui seul.' },
-      { kind: 'exercice', niveau: 7, commande: 'Et le kick sort du temps une fois — c’est là que ça groove.' },
-      { kind: 'exercice', niveau: 69, commande: 'Deux fois maintenant, et la claire s’y met aussi. Plus rien n’est où tu l’attends.' },
+      /* ⚠️ UN SUJET, UN EXERCICE — et c'est l'INVERSE de la règle du
+       * 2026-08-31, révoquée par la relecture complète : *« l'acte 1 fusionné
+       * 12 → 6-7, le niveau 2 retiré, plus une polyrythmie »* (Yann).
+       *
+       * La série de douze doublait chaque sujet : un exercice le POSAIT, le
+       * suivant l'exigeait ailleurs. Ce que ça donnait à jouer, c'est deux
+       * lectures de seize cases pour une seule idée neuve — et l'acte
+       * s'étirait sans monter. Chaque sujet garde donc son exercice le plus
+       * DENSE, celui qui demande le plus de travail : la base (67), le charley
+       * en doubles-croches (68), la syncope partout (69), la polyrythmie (74),
+       * les deux variantes ensemble (60), les rafales (8), puis tout (61).
+       *
+       * Les niveaux 2, 3, 5, 7, 59 et 70 restent au réservoir — un niveau ne se
+       * supprime jamais, il cesse d'être cité. Le 2 est nommément retiré : à
+       * douze cases, il était le plus léger de la carrière.
+       *
+       * ⚠️ La polyrythmie se pose APRÈS la syncope et AVANT les variantes.
+       * Après, parce que c'est la même idée d'un cran plus loin — une ligne qui
+       * ne tombe plus là où on l'attend, puis une ligne qui ne compte même plus
+       * comme les autres. Avant, parce que la résolution ne redescend jamais
+       * (44 cases, entre les 32 du 69 et les 48 du 60). */
+      { kind: 'exercice', niveau: 67, commande: 'La première sonnerie. Le kick tient les quatre temps, la claire répond sur 2 et 4.' },
+      { kind: 'exercice', niveau: 68, commande: 'Le charley par-dessus, et tout de suite à la double-croche : seize cases pour lui seul.' },
+      { kind: 'exercice', niveau: 69, commande: 'Maintenant le kick sort du temps — deux fois — et la claire s’y met aussi. Plus rien n’est où tu l’attends.' },
+      { kind: 'exercice', niveau: 74, commande: 'Et si une ligne ne comptait plus comme les autres ? La claire boucle en douze, les deux autres en seize.' },
       /* ⚠️ Les variantes et les rafales atterrissent ICI, et c'est un
        * déménagement demandé : elles vivaient à l'acte 2, où « on ne comprend pas
        * pourquoi il y a les rafales et les charleys ouverts, rim shot,
@@ -641,20 +654,17 @@ export const ACTES: Acte[] = [
           'une sonnerie d’un réveille-matin.',
         ],
       },
-      /* ⚠️ La série s'est ALLONGÉE (2026-08-27) : « c'est un peu trop rapide
-       * d'arriver à l'acte 3 à mon goût, il faudrait monter en difficulté les
-       * actes 1 et 2 — acte 1 : plus de rythme à refaire ».
+      /* ⚠️ Trois exercices après la leçon de Sol, et non plus cinq : le rim
+       * shot et l'ouverture du charley ne s'apprennent plus séparément avant
+       * d'être réunis, ils arrivent ENSEMBLE (60), parce que Sol vient de faire
+       * les deux gestes à l'écran. Puis la rafale (8), puis tout (61).
        *
-       * Cinq exercices après la leçon de Sol au lieu de deux, et chacun
-       * n'ajoute qu'UNE chose : le rim shot, l'ouverture du charley, les deux
-       * ensemble, la rafale, puis tout ensemble. Ça n'a été possible qu'une
-       * fois les grilles ÉCRITES (voir `GrilleEcrite`) — on ne dessine pas une
-       * progression avec des tirages. */
-      { kind: 'exercice', niveau: 5, commande: 'La claire frappe quatre fois. DEUX sont des rim shots — lesquelles ?' },
-      { kind: 'exercice', niveau: 59, commande: 'Le charley, lui, s’ouvre trois fois. Trouve-les parmi seize.' },
-      { kind: 'exercice', niveau: 60, commande: 'Les deux ensemble, et les trois lignes en doubles-croches.' },
+       * Ce qui reste vrai de la passe du 2026-08-27 (« monter en difficulté
+       * l'acte 1 ») : ces trois-là sont les plus denses de la série, quarante-
+       * huit cases chacun. Ce qui a changé, c'est qu'on n'y arrive plus par une
+       * marche d'escalier par nouveauté. */
+      { kind: 'exercice', niveau: 60, commande: 'Les deux gestes de Sol dans le même rythme — deux rim shots, trois ouvertures.' },
       { kind: 'exercice', niveau: 8, commande: 'Quatre rafales, deux longueurs, deux lignes. Compte les coups.' },
-      { kind: 'exercice', niveau: 70, commande: 'Et voilà à quoi elles servent : le charley s’arrête, la claire relance.' },
       { kind: 'exercice', niveau: 61, commande: 'Le dernier. Tout ce que tu sais, dans une mesure — et rien au singulier.' },
       {
         kind: 'recit',
