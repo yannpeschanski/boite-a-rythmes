@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-08-31, après la seconde passe de difficulté
-> (actes 1 et 2 : un sujet, deux exercices).
+> Dernière mise à jour : 2026-09-01, après la tranche 2 du chantier des cahiers
+> des charges (l'acte 3 empile ses couches en trois envois).
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 441 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 456 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -24,7 +24,7 @@ attente dans `HISTOIRE.md`.
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
 | Niveaux | 73 (34 de campagne + le reste du réservoir) |
-| Commandes (production à livrer) | 5, aux actes 2 à 6 |
+| Commandes (production à livrer) | 9, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois) |
 
 ## Le déverrouillage — tranché le 2026-08-26
 
@@ -66,12 +66,25 @@ quiz n'aurait rien réglé.
 | | tranche | état |
 |---|---|---|
 | 1 | l'outillage des cahiers + **l'acte 4 refait** en trois envois | ✅ livré |
-| 2 | **l'acte 3** : mélodie → basse → nappe, additionnées, plus les textures | à faire |
+| 2 | **l'acte 3** : mélodie → basse → nappe, additionnées, plus les textures | ✅ livré |
 | 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | à faire |
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | à faire |
 | 5 | **actes 5 et 6** en cahiers, le 6 le plus complet du jeu | à faire |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
+
+**Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
+empile ses couches ») :
+
+- **les trois exercices de mélodie RESTENT** — contrairement à l'acte 4, ce ne
+  sont pas des quiz : on y écrit des notes au clavier de l'Atelier, donc le geste
+  même que les envois demandent, et ils enseignent le mot « tonique » qu'un
+  cahier emploie ensuite ;
+- **une couche livrée se protège par ce qu'on AJOUTE**, jamais par une
+  interdiction — `basseQuiTient` compare la basse à la mélodie, effacer celle-ci
+  rend celle-là insatisfiable ;
+- le bouton de livraison nomme enfin **le client** et non Sol (défaut noté à la
+  tranche 1).
 
 **Quatre arbitrages pris**, à ne pas rouvrir sans raison :
 

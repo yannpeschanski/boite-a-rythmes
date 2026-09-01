@@ -53,6 +53,7 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     const { pattern } = await import('/src/stores/pattern.svelte.ts');
     const { unlocks } = await import('/src/stores/unlocks.svelte.ts');
     const { PRESETS } = await import('/src/model/presets/songs.ts');
+    const { resolveVoicePreset } = await import('/src/model/presets/voices.ts');
     const log = [];
     const modules = () => ['atelier', 'synth', 'production', 'live'].filter((m) => unlocks.has(m)).join(',') || '—';
 
@@ -165,6 +166,39 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         }
         if (exige('retouchees')) {
           for (const n of ['kick', 'snare', 'hat']) st.rows[n].tone = 42;
+        }
+        /* Les COUCHES DU SYNTHÉ de la chaîne de l'acte 3 (2026-09-01) : la
+           mélodie, puis la basse, puis la nappe et les textures. La mélodie
+           est posée aussi quand `basse-tient` est exigée — c'est une contrainte
+           RELATIONNELLE, elle compare la basse à la mélodie livrée. */
+        if (exige('phrase:melody') || exige('tonique:melody') || exige('basse-tient')) {
+          const m = st.synthRows.melody;
+          m.muted = false;
+          m.cycleBars = 1;
+          m.subdivisions = 8;
+          m.pattern = new Array(8).fill(null);
+          m.pattern[0] = { degree: 5, octave: 0 };
+          m.pattern[2] = { degree: 3, octave: 0 };
+          m.pattern[4] = { degree: 2, octave: 0 };
+          // Elle se repose sur la tonique : c'est la dernière note entendue.
+          m.pattern[6] = { degree: 1, octave: 0 };
+        }
+        if (exige('nappe-respire') || exige('synth:pad')) {
+          const pad = st.synthRows.pad;
+          pad.muted = false;
+          pad.subdivisions = 4;
+          pad.pattern = [0, -1, 3, -1];
+          st.synthGlobal.padArpEnabled = true;
+        }
+        if (exige('glide:bass')) st.synthRows.bass.glide = 0.2;
+        // « Une note n'est pas un son » : une voix choisie sur chaque ligne
+        // citée, n'importe laquelle sauf celle d'usine.
+        const VOIX = { bass: 'round', pad: 'rhodes', melody: 'soft' };
+        for (const c of e.cahier) {
+          if (!c.id.startsWith('voix:')) continue;
+          for (const l of c.id.slice(5).split('+')) {
+            st.synthRows[l].voice = resolveVoicePreset(l, VOIX[l]);
+          }
         }
         /* ⚠️ Le CONTEXTE, sans quoi deux contraintes ne peuvent rien conclure :
            la provenance du preset, et le DÉPART sur lequel l'Atelier s'est

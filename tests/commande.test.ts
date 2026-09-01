@@ -15,11 +15,19 @@ import {
   ligneSynthPresente,
   tempoEntre,
   pasLeMotifDeDepart,
+  unePhrase,
+  seReposeSurLaTonique,
+  poseLePremierTemps,
+  basseQuiTient,
+  nappeQuiRespire,
+  voixChoisie,
+  duGlide,
 } from '../src/model/commande';
 import { defaultState } from '../src/model/defaults';
 import { PRESETS } from '../src/model/presets/songs';
+import { resolveVoicePreset } from '../src/model/presets/voices';
 import { rankPresets } from '../src/engine/similarity';
-import type { PatternStateV2 } from '../src/model/types';
+import type { PatternStateV2, SynthRowName } from '../src/model/types';
 
 /** Un état qui reprend les trois lignes d'un preset — le morceau « livré ». */
 function etatDuPreset(id: string): PatternStateV2 {
@@ -97,6 +105,133 @@ describe('chaque contrainte sait dire NON', () => {
     st.synthRows.bass.pattern = new Array(8).fill(null);
     expect(c.verifie(st)).toBe(false);
     st.synthRows.bass.pattern[0] = { degree: 1, octave: 0 };
+    expect(c.verifie(st)).toBe(true);
+    st.synthRows.bass.muted = true;
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  /* ---- Les COUCHES DU SYNTHÉ (acte 3, 2026-09-01) ----
+   *
+   * Même discipline que ci-dessus : chacune doit savoir dire non. Elles ont en
+   * plus une propriété que les autres n'ont pas — deux d'entre elles sont
+   * RELATIONNELLES, et c'est ce qui protège les couches déjà livrées. */
+
+  /** Une ligne mélodique écrite à la main, degré par degré. */
+  function poserNotes(st: PatternStateV2, ligne: 'bass' | 'melody', degres: Array<number | null>) {
+    const r = st.synthRows[ligne];
+    r.muted = false;
+    r.cycleBars = 1;
+    r.subdivisions = degres.length;
+    r.pattern = degres.map((d) => (d === null ? null : { degree: d, octave: 0 }));
+  }
+
+  it('une phrase, ce sont plusieurs notes ET plusieurs hauteurs', () => {
+    const c = unePhrase('melody', 4, 3, 'Une vraie phrase');
+    const st = defaultState();
+    // Quatre notes, mais une seule hauteur : c'est un rythme, pas une mélodie.
+    poserNotes(st, 'melody', [3, 3, 3, 3]);
+    expect(c.verifie(st)).toBe(false);
+    // Trois hauteurs, mais trois notes seulement : trop court.
+    poserNotes(st, 'melody', [1, 3, 5, null]);
+    expect(c.verifie(st)).toBe(false);
+    poserNotes(st, 'melody', [1, 3, 5, 3]);
+    expect(c.verifie(st)).toBe(true);
+    // Coupée : elle ne s'entend pas, elle ne compte pas.
+    st.synthRows.melody.muted = true;
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  it('« elle se repose » regarde la DERNIÈRE note jouée, pas la dernière case', () => {
+    const c = seReposeSurLaTonique('melody', 'Elle se repose sur la tonique');
+    const st = defaultState();
+    poserNotes(st, 'melody', [1, 3, 5, 2]);
+    expect(c.verifie(st)).toBe(false);
+    poserNotes(st, 'melody', [3, 5, 1, null]);
+    // ⚠️ Les cases vides après la dernière note ne changent rien : ce qui
+    // compte est ce qu'on ENTEND en dernier.
+    expect(c.verifie(st)).toBe(true);
+    poserNotes(st, 'melody', []);
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  it('le premier temps se pose sur le premier PAS, pas n’importe où', () => {
+    const c = poseLePremierTemps('bass', 'Elle pose le premier temps');
+    const st = defaultState();
+    poserNotes(st, 'bass', [null, 1, null, 5]);
+    expect(c.verifie(st)).toBe(false);
+    poserNotes(st, 'bass', [1, null, null, 5]);
+    expect(c.verifie(st)).toBe(true);
+    st.synthRows.bass.muted = true;
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  it('⚠️ « la basse tient » se mesure CONTRE la mélodie, par mesure', () => {
+    const c = basseQuiTient('Elle tient');
+    const st = defaultState();
+    poserNotes(st, 'melody', [1, 3, 5, 3]);
+    // Aussi bavarde que la mélodie : elle court après elle.
+    poserNotes(st, 'bass', [1, 1, 5, 5]);
+    expect(c.verifie(st)).toBe(false);
+    poserNotes(st, 'bass', [1, null, 5, null]);
+    expect(c.verifie(st)).toBe(true);
+    // Sans mélodie, la question n'a pas de sens — et surtout, zéro contre zéro
+    // ne doit pas cocher la case : c'est ce qui protège la couche livrée.
+    poserNotes(st, 'melody', []);
+    expect(c.verifie(st)).toBe(false);
+    // Et deux mesures de basse pour une de mélodie se comparent quand même :
+    // huit notes sur deux mesures, c'est quatre par mesure.
+    poserNotes(st, 'melody', [1, 3, 5, 3]);
+    poserNotes(st, 'bass', [1, 2, 3, 4, 5, 4, 3, 2]);
+    st.synthRows.bass.cycleBars = 2;
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  it('la nappe doit SONNER et BOUGER — l’un sans l’autre ne suffit pas', () => {
+    const c = nappeQuiRespire('Elle ne reste pas un bloc');
+    const st = defaultState();
+    const pad = st.synthRows.pad;
+    pad.muted = false;
+    pad.subdivisions = 4;
+    pad.pattern = [-1, -1, -1, -1];
+    // Elle bouge, mais elle ne joue aucun accord.
+    st.synthGlobal.padArpEnabled = true;
+    expect(c.verifie(st)).toBe(false);
+    pad.pattern = [0, -1, 2, -1];
+    expect(c.verifie(st)).toBe(true);
+    // Les trois façons de la faire bouger comptent, et aucune n'est privilégiée.
+    st.synthGlobal.padArpEnabled = false;
+    expect(c.verifie(st)).toBe(false);
+    st.synthGlobal.padDroneEnabled = true;
+    expect(c.verifie(st)).toBe(true);
+    st.synthGlobal.padDroneEnabled = false;
+    pad.strum = 0.3;
+    expect(c.verifie(st)).toBe(true);
+    pad.muted = true;
+    expect(c.verifie(st)).toBe(false);
+  });
+
+  it('une voix « choisie » est tout sauf celle d’usine — preset ou curseurs', () => {
+    const c = voixChoisie(['bass', 'pad'], 'Une voix par ligne');
+    const st = defaultState();
+    expect(c.verifie(st)).toBe(false);
+    st.synthRows.bass.voice = resolveVoicePreset('bass', 'round')!;
+    // Une seule des deux : refusée, et le détail dit laquelle manque.
+    expect(c.verifie(st)).toBe(false);
+    expect(c.details!(st).filter((d) => !d.ok).map((d) => d.libelle)).toEqual(['nappe']);
+    // ⚠️ Une voix écartée de tout preset aux curseurs compte aussi : ce qu'on
+    // demande est d'avoir choisi, pas d'avoir pris dans la liste.
+    st.synthRows.pad.voice = { ...st.synthRows.pad.voice, cutoff: 1234 };
+    expect(c.verifie(st)).toBe(true);
+  });
+
+  it('le glide se compare à un seuil, et une ligne coupée ne compte pas', () => {
+    const c = duGlide('bass', 0.15, 'Un peu de glide');
+    const st = defaultState();
+    expect(st.synthRows.bass.glide).toBe(0);
+    expect(c.verifie(st)).toBe(false);
+    st.synthRows.bass.glide = 0.14;
+    expect(c.verifie(st)).toBe(false);
+    st.synthRows.bass.glide = 0.15;
     expect(c.verifie(st)).toBe(true);
     st.synthRows.bass.muted = true;
     expect(c.verifie(st)).toBe(false);
@@ -281,6 +416,38 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
     st.rows.hat.subdiv = 8;
     st.rows.hat.pattern = [1, 1, 1, 0, 1, 1, 1, 2] as never;
     st.rows.hat.rolls = [1, 1, 1, 1, 1, 1, 1, 1];
+  }
+  /* ⚠️ Les COUCHES DU SYNTHÉ de l'acte 3 (2026-09-01), même discipline : on ne
+   * pose que ce qui est demandé, et au plus juste. La mélodie est posée aussi
+   * pour `basse-tient`, qui est RELATIONNELLE — « moins de notes que la
+   * mélodie » n'a pas de sens sans mélodie, et c'est précisément ce qui
+   * protège la couche précédente d'un envoi à l'autre. */
+  if (demande('phrase:melody') || demande('tonique:melody') || demande('basse-tient')) {
+    const m = st.synthRows.melody;
+    m.muted = false;
+    m.subdivisions = 8;
+    m.pattern = new Array(8).fill(null);
+    m.pattern[0] = { degree: 5, octave: 0 };
+    m.pattern[2] = { degree: 3, octave: 0 };
+    m.pattern[4] = { degree: 2, octave: 0 };
+    // Elle se repose sur la tonique — la dernière note jouée est le degré 1.
+    m.pattern[6] = { degree: 1, octave: 0 };
+  }
+  if (demande('nappe-respire') || demande('synth:pad')) {
+    const pad = st.synthRows.pad;
+    pad.muted = false;
+    pad.subdivisions = 4;
+    pad.pattern = [0, -1, 3, -1];
+    st.synthGlobal.padArpEnabled = true;
+  }
+  if (demande('glide:bass')) st.synthRows.bass.glide = 0.2;
+  // Une voix choisie par ligne citée — n'importe laquelle sauf « Défaut ».
+  const VOIX: Record<SynthRowName, string> = { bass: 'round', pad: 'rhodes', melody: 'soft' };
+  for (const c of cahier) {
+    if (!c.id.startsWith('voix:')) continue;
+    for (const l of c.id.slice(5).split('+') as SynthRowName[]) {
+      st.synthRows[l].voice = resolveVoicePreset(l, VOIX[l])!;
+    }
   }
   return st;
 }
