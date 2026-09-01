@@ -64,9 +64,9 @@ import {
   ROAST_LOOP,
   type BagItem,
 } from '../model/presets/gameData';
-import { ranger, type Production } from '../model/discographie';
+import { ranger, productionDeLActe, type Production } from '../model/discographie';
 import { reactionA, type Reaction } from '../model/reactions';
-import { serializeState } from '../model/serialize';
+import { serializeState, deserializeState } from '../model/serialize';
 
 // Mode jeu limité à kick/snare/hat (PLAN.md §6, voir GameDrumRowName dans
 // presets/levels.ts) — PAS `DRUM_ROW_NAMES` du modèle (désormais élargi à
@@ -597,7 +597,15 @@ class GameStore {
    * défaut de données, et `tests/transformer.test.ts` le refuse. */
   departCommande(): PatternStateV2 {
     const e = this.etapeCourante;
-    if (e?.kind !== 'commande' || e.partirDu === undefined) return etatVierge();
+    if (e?.kind !== 'commande') return etatVierge();
+    /* La chaîne d'envois d'un même acte : on reprend le morceau qu'on vient de
+     * livrer, pas une table rase — « les livraisons intermédiaires doivent être
+     * remplacées par les nouvelles jusqu'à la fin de l'acte » (Yann). */
+    if (e.partirDeLaLivraison) {
+      const p = productionDeLActe(this.productions, this.acteActif);
+      return p ? deserializeState(p.etat) : etatVierge();
+    }
+    if (e.partirDu === undefined) return etatVierge();
     const l = LEVELS.find((x) => x.id === e.partirDu);
     if (!l?.grille) return etatVierge();
     return etatDepuisGrille(l.grille, l.tempoOptions[0]);

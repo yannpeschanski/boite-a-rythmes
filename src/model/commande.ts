@@ -43,6 +43,17 @@ export interface ContexteLivraison {
   /** L'identifiant du preset chargé TEL QUEL, `null` dès la première
    *  modification. Voir `pattern.presetCharge`. */
   presetCharge?: string | null;
+  /* ⚠️ L'état sur lequel l'Atelier s'est OUVERT pour cette commande.
+   *
+   * Une contrainte qui mesure un GESTE doit comparer à quelque chose, et ce
+   * quelque chose n'est pas connu quand le cahier est construit : depuis
+   * `partirDeLaLivraison`, le départ est ce que le joueur a livré à l'étape
+   * précédente. Il voyage donc par le contexte, comme la provenance du preset.
+   *
+   * Absent = on ne peut rien conclure sur un geste : les contraintes qui en
+   * dépendent répondent FAUX plutôt que vrai. Une case cochée faute
+   * d'information est exactement le théâtre que le cahier interdit. */
+  depart?: PatternStateV2;
 }
 
 export interface Contrainte {
@@ -64,7 +75,10 @@ export interface Contrainte {
    * que le joueur doit LIRE pour savoir quoi changer. Une contrainte de style
    * qui n'afficherait que son verdict global dirait « pas assez dancehall »,
    * ce qui n'est pas un retour. */
-  details?: (etat: PatternStateV2) => Array<{ id: string; libelle: string; ok: boolean }>;
+  details?: (
+    etat: PatternStateV2,
+    ctx?: ContexteLivraison,
+  ) => Array<{ id: string; libelle: string; ok: boolean }>;
   /* ⚠️ Une INTERDICTION, pas une tâche — et la distinction n'est pas cosmétique.
    *
    * Presque toutes les lignes d'un cahier décrivent quelque chose à FAIRE, donc
@@ -394,6 +408,123 @@ export function dePlacePourLaVoix(
        * 34 en ont un — mais c'est ce que CE client demande de changer. */
       return joues > 0 && joues < r.subdiv;
     },
+  };
+}
+
+/* ---------------------------------------------------------------------------
+ * LES GESTES DE PRODUCTION — le vocabulaire de l'acte 4 refait
+ *
+ * ⚠️ Retour de Yann après relecture complète (2026-09-01) : les cinq exercices
+ * de l'acte 4 sont *« NOK »*, verbe `laverie` compris, et le remède est nommé —
+ * *« démarrer par l'atelier avec un cahier des charges progressif et au niveau
+ * de difficulté poussé, toucher à beaucoup de composantes dont la reverb, le
+ * delay, les filtres »*. Un quiz sur un bouton n'apprend pas à mixer ; un
+ * cahier qui refuse un morceau tant qu'il n'a pas été mixé, si.
+ *
+ * Chaque contrainte ci-dessous exige un GESTE, jamais un état par défaut :
+ * c'est la règle déjà écrite pour l'acte 4 (« un critère satisfait sans rien
+ * toucher est du théâtre »), et elle vaut pour tout ce vocabulaire.
+ * ------------------------------------------------------------------------- */
+
+/** Les lignes de batterie dont la production est réglable une par une. */
+const LIGNES_MIX: DrumRowName[] = ['kick', 'snare', 'hat', 'clap', 'shaker'];
+
+/** Une ligne qui SONNE : présente, non coupée, et qui joue au moins un pas. */
+function ligneVivante(e: PatternStateV2, l: DrumRowName): boolean {
+  const r = e.rows[l];
+  return !r.muted && r.pattern.slice(0, r.subdiv).some((v) => v > 0);
+}
+
+/* Le filtre passe-bas COUPE vraiment.
+ *
+ * `filterCutoff` va jusqu'à 20 000 Hz, c'est-à-dire au-dessus de l'audible :
+ * la valeur par défaut ne coupe rien. Exiger « un filtre » sans seuil serait
+ * donc satisfait d'entrée — le théâtre que la règle interdit. */
+export function filtreQuiCoupe(
+  maxHz: number,
+  combien: number,
+  libelle: string,
+): Contrainte {
+  return {
+    id: `filtre-${maxHz}`,
+    libelle,
+    verifie: (e) =>
+      LIGNES_MIX.filter((l) => ligneVivante(e, l) && e.rows[l].filterCutoff <= maxHz).length >= combien,
+  };
+}
+
+/* Le delay est ENGAGÉ, et il se compte.
+ *
+ * ⚠️ Un envoi de delay sans retour audible ne s'entend pas : `delayFeedback`
+ * doit être non nul, sinon la répétition ne revient qu'une fois et le joueur
+ * a coché une case sans rien changer à ce qu'il entend. Ce champ est GLOBAL
+ * (`synthGlobal`) et non par ligne, malgré son voisinage avec `delaySend`. */
+export function delayEngage(min: number, libelle: string): Contrainte {
+  return {
+    id: 'delay',
+    libelle,
+    verifie: (e) =>
+      e.synthGlobal.delayFeedback > 0 &&
+      LIGNES_MIX.some((l) => ligneVivante(e, l) && e.rows[l].delaySend >= min),
+  };
+}
+
+/* De la réverbe DOSÉE : au moins une ligne dedans, aucune au-delà.
+ *
+ * C'est la forme généralisée de `deLEspaceSansSoupe` : « de l'espace » seul se
+ * satisfait en poussant tout à fond, ce qui est précisément le défaut que
+ * l'acte enseigne à éviter. Une borne haute rend la ligne infalsifiable. */
+export function reverbDosee(min: number, max: number, libelle: string): Contrainte {
+  return {
+    id: 'reverb-dosee',
+    libelle,
+    verifie: (e) => {
+      const envois = LIGNES_MIX.filter((l) => ligneVivante(e, l)).map((l) => e.rows[l].reverbSend);
+      return envois.some((v) => v >= min) && envois.every((v) => v <= max);
+    },
+  };
+}
+
+/* Faire de la PLACE : toutes les lignes ne sont pas au même volume.
+ *
+ * Le geste de mixage le plus élémentaire, et le seul qui ne demande aucun
+ * effet — c'est pour ça qu'il ouvre le cahier. L'écart se mesure entre la
+ * ligne la plus forte et la plus faible de celles qui sonnent. */
+export function contrasteDeVolume(ecart: number, libelle: string): Contrainte {
+  return {
+    id: 'contraste',
+    libelle,
+    verifie: (e) => {
+      const v = LIGNES_MIX.filter((l) => ligneVivante(e, l)).map((l) => e.rows[l].volume);
+      return v.length >= 2 && Math.max(...v) - Math.min(...v) >= ecart;
+    },
+  };
+}
+
+/* Chaque ligne citée a été RETOUCHÉE depuis le point de départ.
+ *
+ * ⚠️ La contrainte qui rend un cahier de mixage honnête. Les autres se
+ * satisfont en poussant un seul curseur très fort ; celle-ci demande d'avoir
+ * regardé chaque ligne. Elle compare à l'état de DÉPART, donc elle ne peut pas
+ * être vraie à l'ouverture — c'est la même mécanique que
+ * `pasLeMotifDeDepart`, appliquée à la production plutôt qu'aux cases. */
+export function chaqueLigneRetouchee(lignes: DrumRowName[], libelle: string): Contrainte {
+  const champs = ['volume', 'filterCutoff', 'reverbSend', 'delaySend', 'tone', 'pitch'] as const;
+  const bougee = (e: PatternStateV2, d: PatternStateV2, l: DrumRowName) =>
+    champs.some((c) => e.rows[l][c] !== d.rows[l][c]);
+  return {
+    id: 'retouchees',
+    libelle,
+    verifie: (e, ctx) => !!ctx?.depart && lignes.every((l) => bougee(e, ctx.depart!, l)),
+    /* Le détail nomme les lignes restées intactes : « chaque ligne a été
+     * regardée » sans dire LAQUELLE manque n'est pas un retour, c'est un
+     * refus. */
+    details: (e, ctx) =>
+      lignes.map((l) => ({
+        id: `retouche-${l}`,
+        libelle: l,
+        ok: !!ctx?.depart && bougee(e, ctx.depart, l),
+      })),
   };
 }
 

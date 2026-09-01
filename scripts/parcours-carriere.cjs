@@ -114,10 +114,11 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         st.synthRows.bass.subdivisions = 8;
         st.synthRows.bass.pattern = new Array(8).fill(null);
         st.synthRows.bass.pattern[0] = { degree: 1, octave: 0 };
-        /* Le MIXAGE de l'acte 4 : la commande du Tunnel se fait en deux temps
-           depuis le 2026-08-26 (voir `kickQuiPorte` / `avoirEnleve` /
-           `deLEspaceSansSoupe`). On fait les trois gestes, comme un joueur qui
-           sort de l'exercice de la laverie. */
+        /* Le MIXAGE de l'acte 4 : le Tunnel renvoie le morceau deux fois
+           depuis le 2026-09-01. Les gestes de base restent inconditionnels —
+           ils ne contredisent aucune fiche — et les gestes BORNÉS sont posés
+           au coup par coup plus bas, parce qu'un filtre à 6 000 Hz sur trois
+           lignes contredirait un genre qui a besoin d'aigus. */
         st.rows.kick.tone = 60;
         st.rows.hat.filterCutoff = 6000;
         st.rows.snare.reverbSend = 0.2;
@@ -144,7 +145,34 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         // Une rafale d'accent sur le charley — la techno en demande une.
         st.rows.hat.rolls = new Array(32).fill(1);
         st.rows.hat.rolls[3] = 3;
-        const v = game.livrerCommande(pattern.snapshot());
+        /* Les gestes de MIXAGE de la chaîne d'envois (acte 4, 2026-09-01).
+           Posés au plus juste au-dessus du seuil : un parcours qui pousse tout
+           à fond ne prouverait pas qu'un cahier est atteignable. */
+        if (exige('filtre-9000')) {
+          st.rows.kick.filterCutoff = 8000;
+          st.rows.hat.filterCutoff = 7000;
+        }
+        if (exige('contraste')) {
+          st.rows.kick.volume = 0.9;
+          st.rows.hat.volume = 0.5;
+        }
+        if (exige('reverb-dosee')) {
+          for (const n of ['kick', 'snare', 'hat', 'clap', 'shaker']) st.rows[n].reverbSend = 0.3;
+        }
+        if (exige('delay')) {
+          st.rows.snare.delaySend = 0.25;
+          st.synthGlobal.delayFeedback = 0.3;
+        }
+        if (exige('retouchees')) {
+          for (const n of ['kick', 'snare', 'hat']) st.rows[n].tone = 42;
+        }
+        /* ⚠️ Le CONTEXTE, sans quoi deux contraintes ne peuvent rien conclure :
+           la provenance du preset, et le DÉPART sur lequel l'Atelier s'est
+           ouvert — c'est contre lui que « chaque ligne a été regardée » se
+           mesure. Livrer sans contexte, c'est ce que faisait ce script, et
+           `retouchees` répondait faux à juste titre. */
+        const ctx = { presetCharge: pattern.presetCharge, depart: game.departCommande() };
+        const v = game.livrerCommande(pattern.snapshot(), ctx);
         const manque = v.lignes.filter((l) => !l.ok).map((l) => l.contrainte.libelle);
         log.push(`   commande « ${e.entete} » → ${v.accepte ? 'ACCEPTÉE' : 'refusée : ' + manque.join(' / ')}`);
         if (!v.accepte) {

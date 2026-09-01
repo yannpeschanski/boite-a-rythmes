@@ -814,40 +814,62 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
     expect(moduleUnlocked('production', { level: 1, acte: 5 })).toBe(true);
   });
 
-  /* ⚠️ Le petit haut-parleur OUVRE l'acte, et l'ordre est la leçon : les trois
-   * exercices de mixage qui suivent n'ont de raison d'être que parce qu'on a
-   * entendu le problème. Placé après, on apprendrait des boutons puis on
-   * découvrirait pourquoi — soit exactement le défaut de l'acte 0. */
-  it('pose le problème avant d’enseigner les outils', () => {
-    const niveaux = niveauxDeLActe(ACTES[4]);
-    const verbes = niveaux.map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    expect(verbes[0]).toBe('laverie');
-    expect(verbes.slice(1)).toEqual(['lequel', 'lequel', 'nommer', 'regler']);
+  /* ⚠️ CE QUE CET ACTE VÉRIFIE A CHANGÉ le 2026-09-01, et il faut savoir
+   * pourquoi avant de « restaurer » quoi que ce soit.
+   *
+   * Il vérifiait un ORDRE D'EXERCICES : le petit haut-parleur (`laverie`)
+   * d'abord, puis quatre quiz de paramètre. Yann a joué l'acte et a écrit
+   * « NOK » sur les cinq, plus : *« ça ne marche pas l'exercice du petit
+   * haut-parleur, cet élément de scénario ne tient pas la route »*. Ce n'était
+   * donc pas l'ordre qui était faux, c'était la FORME.
+   *
+   * L'acte n'a plus un seul exercice. Il a trois envois du même morceau, et ce
+   * qu'on tient maintenant, c'est ça : on ne demande le mixage qu'APRÈS avoir
+   * accepté le morceau, et chaque envoi repart du précédent. */
+  it('ne pose plus aucun exercice — il se joue entièrement à l’Atelier', () => {
+    expect(niveauxDeLActe(ACTES[4])).toEqual([]);
   });
 
-  // Les outils cités sont ceux du modèle, et rien d'autre. `HISTOIRE.md` parle
-  // aussi d'EQ et de compression : elles sont GLOBALES dans le format v2, donc
-  // sans version par ligne à faire entendre. Non citées plutôt que citées à
-  // moitié — un mot sans bouton derrière est ce qui a cassé l'acte 0.
-  it('ne cite que des boutons qui existent par ligne', () => {
-    for (const n of niveauxDeLActe(ACTES[4]).slice(1)) {
-      const l = LEVELS.find((x) => x.id === n)!;
-      expect(l.familleParam, `niveau ${n}`).toBe('filtre');
-      for (const id of l.paramsAutorises) {
-        const p = parametre(id as never);
-        expect(p, `niveau ${n} : ${id}`).not.toBeNull();
-        expect(p!.cible ?? 'ligne', `niveau ${n} : ${id}`).toBe('ligne');
-      }
+  it('enchaîne trois envois du même morceau, et le premier ne juge que le morceau', () => {
+    const cmds = ACTES[4].etapes.filter((e) => e.kind === 'commande') as Array<{
+      entete: string;
+      cahier: Array<{ id: string }>;
+      partirDeLaLivraison?: boolean;
+    }>;
+    expect(cmds).toHaveLength(3);
+    // Le premier : rien de mixage, il ne demande QUE d'avoir fait le morceau.
+    const mix = ['filtre-9000', 'contraste', 'kick-porte', 'reverb-dosee', 'delay', 'retouchees'];
+    expect(cmds[0].cahier.filter((c) => mix.includes(c.id))).toEqual([]);
+    // Les deux suivants : que du mixage, et ils reprennent la livraison.
+    for (const c of cmds.slice(1)) {
+      expect(c.partirDeLaLivraison, c.entete).toBe(true);
+      expect(c.cahier.every((l) => mix.includes(l.id)), c.entete).toBe(true);
     }
   });
 
+  /* ⚠️ Le mixage se demande dans l'ORDRE où il se fait : on enlève et on range
+   * avant d'ajouter de l'espace. Sol le dit à l'écran (« Tu enlèves, et tu
+   * ranges. Ajouter, c'est après »), donc l'ordre des envois doit le tenir —
+   * sinon le récit décrit une méthode que le jeu ne demande pas. */
+  it('enlève et range AVANT d’ajouter de l’espace', () => {
+    const cmds = ACTES[4].etapes.filter((e) => e.kind === 'commande') as Array<{
+      cahier: Array<{ id: string }>;
+    }>;
+    const ids = (i: number) => cmds[i].cahier.map((c) => c.id);
+    expect(ids(1)).toContain('filtre-9000');
+    expect(ids(1)).toContain('contraste');
+    expect(ids(1)).not.toContain('reverb-dosee');
+    expect(ids(2)).toContain('reverb-dosee');
+    expect(ids(2)).toContain('delay');
+  });
+
   // Le mot du récit et le mot de l'écran sont le même : si le texte dit « la
-  // laverie », l'exercice doit s'y passer.
-  it('nomme la laverie dans le récit qui l’amène', () => {
+  // laverie », c'est là que le morceau doit être renvoyé.
+  it('nomme la laverie dans le récit qui amène le deuxième envoi', () => {
     const e = ACTES[4].etapes;
-    const iExo = e.findIndex((x) => x.kind === 'exercice');
+    const i = e.findIndex((x) => x.kind === 'commande' && /DEUXIÈME/.test(x.entete));
     const avant = e
-      .slice(0, iExo)
+      .slice(0, i)
       .flatMap((x) => (x.kind === 'recit' ? x.lignes : []))
       .join(' ');
     expect(avant).toMatch(/laverie/i);
@@ -983,17 +1005,42 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
     expect(moduleUnlocked('atelier', { level: 1, acte: 2 })).toBe(true);
   });
 
-  // Une par acte au plus : la commande est le moment où l'acte se conclut, pas
-  // un exercice de plus.
-  it('au plus une par acte, et elle vient près de la fin', () => {
+  /* ⚠️ LA RÈGLE A CHANGÉ le 2026-09-01, et il faut savoir laquelle a cédé.
+   *
+   * Elle disait « au plus une commande par acte : la commande est le moment où
+   * l'acte se conclut, pas un exercice de plus ». Vrai tant qu'un acte
+   * enseignait par des exercices et concluait par une livraison. Faux depuis
+   * que l'acte 4 est une CHAÎNE D'ENVOIS — *« les livraisons intermédiaires
+   * doivent être remplacées par les nouvelles jusqu'à la fin de l'acte »*
+   * (Yann). Un client qui renvoie le morceau trois fois, c'est trois commandes,
+   * et c'est le contenu de l'acte, pas sa conclusion.
+   *
+   * Ce qui reste vrai et qu'on continue de tenir : après la DERNIÈRE commande
+   * d'un acte, il ne reste rien à FAIRE — ce qui suit est du récit. Sinon la
+   * livraison cesse d'être une fin et devient une étape parmi d'autres. */
+  it('la dernière d’un acte n’est suivie que de récit', () => {
     for (const a of ACTES) {
       const idx = a.etapes.flatMap((e, i) => (e.kind === 'commande' ? [i] : []));
-      expect(idx.length, `acte ${a.id}`).toBeLessThanOrEqual(1);
-      if (idx.length === 1) {
-        // Rien d'autre à FAIRE après elle : ce qui suit est du récit.
-        for (const e of a.etapes.slice(idx[0] + 1)) {
-          expect(e.kind, `acte ${a.id}`).toBe('recit');
-        }
+      if (!idx.length) continue;
+      for (const e of a.etapes.slice(idx[idx.length - 1] + 1)) {
+        expect(e.kind, `acte ${a.id}`).toBe('recit');
+      }
+    }
+  });
+
+  /* ⚠️ Une chaîne d'envois REPART de ce qu'on vient de livrer — sinon ce ne
+   * sont pas des envois, ce sont des commandes indépendantes qui se suivent.
+   * Seule la PREMIÈRE d'un acte part d'autre chose. */
+  it('dans un acte qui en enchaîne plusieurs, les suivantes reprennent la livraison', () => {
+    for (const a of ACTES) {
+      const cmds = a.etapes.filter((e) => e.kind === 'commande') as Array<{
+        entete: string;
+        partirDeLaLivraison?: boolean;
+      }>;
+      if (cmds.length < 2) continue;
+      expect(cmds[0].partirDeLaLivraison, `acte ${a.id} : la première`).toBeFalsy();
+      for (const c of cmds.slice(1)) {
+        expect(c.partirDeLaLivraison, `acte ${a.id} — « ${c.entete} »`).toBe(true);
       }
     }
   });

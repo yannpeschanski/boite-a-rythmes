@@ -248,6 +248,30 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
    * pas — deux clients peuvent demander l'inverse l'un de l'autre, et c'est
    * même le signe que les cahiers disent quelque chose. */
   const demande = (id: string) => cahier.some((c) => c.id === id);
+  /* ⚠️ Les gestes de MIXAGE de l'acte 4 (2026-09-01). Mêmes règles que
+   * ci-dessus : appliqués seulement s'ils sont demandés, parce qu'un filtre à
+   * 6 000 Hz sur trois lignes contredirait une fiche de style qui exige des
+   * aigus. On les pose au plus juste au-dessus du seuil, pas à fond : un test
+   * qui satisfait un cahier en poussant tout au maximum ne prouve pas que le
+   * cahier est atteignable, il prouve que ses bornes hautes sont absentes. */
+  if (demande('filtre-9000')) {
+    st.rows.kick.filterCutoff = 8000;
+    st.rows.hat.filterCutoff = 7000;
+  }
+  if (demande('contraste')) {
+    st.rows.kick.volume = 0.9;
+    st.rows.hat.volume = 0.5;
+  }
+  if (demande('reverb-dosee')) {
+    for (const l of ['kick', 'snare', 'hat', 'clap', 'shaker'] as const) st.rows[l].reverbSend = 0.3;
+  }
+  if (demande('delay')) {
+    st.rows.snare.delaySend = 0.25;
+    st.synthGlobal.delayFeedback = 0.3;
+  }
+  if (demande('retouchees')) {
+    for (const l of ['kick', 'snare', 'hat'] as const) st.rows[l].tone = 42;
+  }
   if (demande('kick-syncope')) {
     st.rows.kick.subdiv = 8;
     st.rows.kick.pattern = [1, 0, 0, 1, 1, 0, 0, 0] as never;
@@ -272,7 +296,13 @@ describe('aucune commande du récit n’est un cul-de-sac', () => {
     );
     expect(commandes.length).toBeGreaterThan(0);
     for (const { acte, e } of commandes) {
-      const v = evaluerCommande(await etatQuiSatisfait(e.cahier), e.cahier);
+      /* Le départ voyage par le contexte depuis que l'acte 4 enchaîne des
+       * envois : sans lui, « chaque ligne a été regardée » ne peut rien
+       * conclure et répond FAUX — ce qui est le bon défaut, mais rendrait ce
+       * test-ci ininterprétable. */
+      const v = evaluerCommande(await etatQuiSatisfait(e.cahier), e.cahier, {
+        depart: (await import('../src/model/defaults')).etatVierge(),
+      });
       const manquantes = v.lignes.filter((l) => !l.ok).map((l) => l.contrainte.libelle);
       expect(manquantes, `acte ${acte} — « ${e.entete} »`).toEqual([]);
     }
@@ -299,12 +329,17 @@ describe('aucune commande du récit n’est un cul-de-sac', () => {
           expect(l?.grille, `acte ${a.id} : partirDu ${e.partirDu} sans grille écrite`).toBeTruthy();
           depart = etatDepuisGrille(l!.grille!, l!.tempoOptions[0]);
         }
-        const v = evaluerCommande(depart, e.cahier);
+        const v = evaluerCommande(depart, e.cahier, { depart });
         expect(v.accepte, `acte ${a.id} — « ${e.entete} »`).toBe(false);
-        // Et « il faut y avoir touché » doit être DÉCOCHÉ : une case cochée à
-        // l'ouverture est ce qui a fait dire « la check-list est déjà remplie ».
+        /* Et « il faut y avoir touché » doit être DÉCOCHÉ : une case cochée à
+         * l'ouverture est ce qui a fait dire « la check-list est déjà remplie ».
+         *
+         * ⚠️ Toutes les commandes ne portent pas cette ligne : celles qui
+         * REPRENNENT une livraison (acte 4) n'ont rien à exiger du morceau, il
+         * est déjà accepté — ce sont leurs contraintes de mixage qui jouent ce
+         * rôle, et le `expect` ci-dessus les couvre déjà. */
         const produit = v.lignes.find((l) => l.contrainte.id === 'produit');
-        expect(produit?.ok, `acte ${a.id} — « ${e.entete} » : déjà coché`).toBe(false);
+        if (produit) expect(produit.ok, `acte ${a.id} — « ${e.entete} » : déjà coché`).toBe(false);
       }
     }
   });

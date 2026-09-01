@@ -49,7 +49,15 @@
   /* La provenance ne vit pas dans l'état livré (voir `pattern.presetCharge`) :
      elle voyage à côté, et le cahier la reçoit ici — en direct comme à la
      livraison, sinon la case se cocherait à l'écran et refuserait au clic. */
-  const contexteLivraison = () => ({ presetCharge: pattern.presetCharge });
+  /* ⚠️ Le DÉPART voyage avec la livraison, comme la provenance du preset.
+     Une contrainte qui mesure un geste (« chaque ligne a été regardée ») doit
+     comparer à l'état sur lequel l'Atelier s'est ouvert — et depuis
+     `partirDeLaLivraison`, ce n'est plus une donnée figée dans le cahier mais
+     le morceau que le joueur a livré à l'étape d'avant. */
+  const contexteLivraison = () => ({
+    presetCharge: pattern.presetCharge,
+    depart: game.departCommande(),
+  });
   const verdict = $derived(
     commande ? evaluerCommande(pattern.snapshot(), commande.cahier, contexteLivraison()) : null,
   );
@@ -451,7 +459,7 @@
                  « pas assez dancehall », ce qui n'est pas un retour — on ne
                  sait pas quoi changer. -->
             <ul class="critères">
-              {#each l.contrainte.details(pattern.state) as d (d.id)}
+              {#each l.contrainte.details(pattern.state, contexteLivraison()) as d (d.id)}
                 <li class:ok={d.ok}>{d.ok ? '✓' : '·'} {d.libelle}</li>
               {/each}
             </ul>

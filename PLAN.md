@@ -42,6 +42,74 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 4 devient une chaîne d'envois — tranche 1 (2026-09-01)
+
+> « Ça ne marche pas l'exercice du petit haut-parleur… cet élément de scénario
+> ne tient pas la route. Il faudrait démarrer par l'atelier avec un cahier des
+> charges progressif et au niveau de difficulté poussé, toucher à beaucoup de
+> composantes dont la reverb, le delay, les filtres. Les livraisons
+> intermédiaires doivent être remplacées par les nouvelles jusqu'à la fin de
+> l'acte. » — Yann, relecture complète, cinq « NOK » sur cinq exercices
+
+**Ce que l'acte était** : un exercice `laverie` (entendre le défaut), puis quatre
+quiz de paramètre, puis une commande en deux sections. **Ce qu'il est** : trois
+commandes sur le MÊME morceau, zéro exercice.
+
+| envoi | ce qu'il demande | part de |
+|---|---|---|
+| 1 | le morceau seul — fiche techno, les trois lignes, une basse | table rase |
+| 2 | enlever et ranger — filtre, contraste de volume, kick qui porte | la livraison 1 |
+| 3 | ajouter — réverbe dosée, delay engagé, chaque ligne retouchée | la livraison 2 |
+
+**L'outillage, réutilisable par les tranches suivantes.**
+
+- Cinq contraintes de production dans `commande.ts` : `filtreQuiCoupe`,
+  `contrasteDeVolume`, `reverbDosee`, `delayEngage`, `chaqueLigneRetouchee`.
+  ⚠️ Chacune a un **plafond** ou compare à un départ — sans quoi elle se
+  satisfait en poussant un curseur à fond, ce que l'acte enseigne à ne pas faire.
+- `EtapeCommande.partirDeLaLivraison` + `departCommande()` relit la production de
+  l'acte dans la discographie. Repli sur la table rase si rien n'est livré (acte
+  rejoué, sauvegarde ancienne) plutôt que de bloquer la carrière.
+- `ContexteLivraison.depart` : une contrainte qui mesure un GESTE ne peut pas
+  connaître son point de comparaison à la construction du cahier. Absent → la
+  contrainte répond **faux**. `Contrainte.details` reçoit le contexte lui aussi,
+  sinon « chaque ligne a été regardée » ne pourrait pas dire LAQUELLE manque —
+  un refus sans retour.
+
+**Une règle du dépôt est tombée, et c'est documenté :** « au plus une commande
+par acte ». Elle valait tant qu'un acte enseignait par des exercices et concluait
+par une livraison. Ce qui reste tenu : après la dernière commande d'un acte il ne
+reste que du récit, et dans une chaîne, seule la première part d'autre chose
+qu'une livraison. Deux tests neufs le disent.
+
+⚠️ **`laverie` et son étage de moteur restent.** Le petit haut-parleur est une
+branche parallèle à gain nul dans `graph.ts` — il garde sa valeur d'OUTIL
+d'écoute pour vérifier un mixage. Il perd son rôle d'exercice noté, rien d'autre.
+Les niveaux 53 à 57 restent au réservoir : un niveau ne se supprime jamais.
+
+**Deux pièges payés.**
+
+1. `delayFeedback` vit dans `synthGlobal`, pas sur la ligne, malgré son voisinage
+   avec `delaySend`. Un envoi de delay sans retour ne s'entend pas : la
+   contrainte exige les deux.
+2. `tests/discographie.test.ts` posait un `localStorage` factice au niveau du
+   module ; mon second `describe` en a installé un autre, et le test précédent
+   s'est mis à lire un stockage vide. Deux `describe` qui se partagent un global
+   doivent se le partager pour de bon — le second réutilise celui qui existe.
+
+**Vérifié :** 444 tests (4 neufs), 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf — les trois envois
+acceptés, la discographie de l'acte 4 affiche **LE TUNNEL (V3)**, donc la
+livraison est bien REMPLACÉE et non empilée ; et trois captures en 390×840,
+0 px de débordement. Le script a d'ailleurs bloqué au deuxième envoi avant
+d'apprendre les gestes neufs — c'est exactement ce pour quoi il existe.
+
+**Écart de portée assumé :** le libellé du bouton de livraison dit « LIVRER À
+SOL » alors que le client est Le Tunnel. Défaut préexistant, hors périmètre de
+cette tranche, noté ici pour ne pas le perdre.
+
+---
+
 ### ✅ L'histoire du Mode carrière — `HISTOIRE.md` (2026-08-22)
 
 Demande de Yann : *« un label a perdu tous ses artistes / le perso est
