@@ -1,0 +1,1417 @@
+# Plan de migration — le document d’origine
+
+> Archive détachée de `PLAN.md` le 2026-09-01, **sans une ligne
+> réécrite ni réordonnée**. Le journal vivant est resté dans `PLAN.md`.
+
+Le plan de réécriture tel qu'il a été écrit avant la première ligne de code,
+plus le brief de reprise du 21 août (**périmé** : c'est `REPRISE.md` qui fait foi
+aujourd'hui) et les sections §1 à §7 — architecture cible, design system, ordre
+de migration, améliorations, risques, features en plus, idées pas mûres.
+
+⚠️ **Document d'archive.** Plusieurs de ses affirmations ont été renversées
+depuis, et le disent elles-mêmes (« SUPPRIMÉE le 2026-08-15 », « SOUS CONDITION
+depuis… »). Les règles qui font autorité sont dans `CLAUDE.md`.
+
+---
+
+## 🧭 Brief de reprise — au 2026-08-21
+
+**À lire en premier, en entier. Trois minutes.** Le reste fait 5 000 lignes et
+une trentaine de sections datées : n'y descends que pour le détail d'un point,
+en suivant les liens en fin de brief.
+
+### Où en est le projet
+
+Site en ligne : <https://boite-a-rythmes.vercel.app> · tout est mergé sur `main`
+(`0911ac4`), arbre propre. `npm run check` 0 erreur · **119 tests** · les deux
+builds passent · déploiement Vercel vérifié.
+
+L'appli est **testée sur téléphone** (arbitrage D4) : le desktop reste en friche
+et assumé. Toute mesure d'interface se fait à **390×844**, vérifiée de 320 à 1280.
+
+⚠️ **La direction visuelle est tranchée et livrée** — skin Winamp 2.x pour tous
+les modes, une seule langue visuelle. Ne pas rouvrir : `CLAUDE.md` fait foi.
+
+### La grande affaire de la dernière session : le Mode jeu
+
+Il est passé **d'un seul verbe à sept**, et de 34 niveaux à 41. Neuf PR (#87 →
+#95), toutes détaillées en fin de document.
+
+| Verbes de GRILLE | Verbes de PARAMÈTRE |
+|---|---|
+| `reproduire` (les 34 niveaux d'origine) | `lequel` — entendre la direction d'un bouton |
+| `completer` — un temps vidé à retrouver | `nommer` — mettre un nom sur ce qui a changé |
+| `intrus` — quatre mesures, une diffère | `regler` — viser un son, pas un chiffre |
+| `jouer` — frapper en rythme, noté au placement | |
+
+Les quatre verbes de grille sont **validés par Yann** (« ça a très bien
+fonctionné là »). Les trois verbes de paramètre sont livrés en pilotes (niveaux
+39-41, famille Timbre) mais **pas encore essayés par lui**.
+
+⚠️ **Cinq symptômes rapportés, cinq causes qui n'étaient pas là où on
+regardait** — et aucune n'était un réglage de difficulté. C'est la leçon
+principale de la session, détaillée à l'étape « les quatre pilotes sont
+validés » : `outputLatency` absent de WebKit, une avance de déclenchement qui
+mangeait l'attaque des voix, un métronome de calibrage qui ne durait que 7 s et
+jetait les frappes en silence, une note qui moyennait tout le tour au lieu de
+retenir la meilleure mesure. Les règles qui en sortent sont dans `CLAUDE.md` —
+**les lire avant de toucher à la latence ou à la notation**.
+
+### ✅ ARBITRÉ — le scénario est la colonne vertébrale du Mode jeu
+
+Yann, le 2026-08-23 : *« on part sur le scénario pour le moment pour développer
+le mode jeu »*. L'architecture proposée plus bas est donc **tranchée sur ses
+deux premières questions**, et la première tranche est livrée.
+
+**L'état d'aujourd'hui, en trois phrases.** Le Mode jeu s'ouvre désormais sur le
+**Mode carrière** : les huit actes de [`HISTOIRE.md`](HISTOIRE.md), dont les
+trois premiers sont jouables. Les 41 niveaux ne sont plus la campagne, ils sont
+la **salle de répétition**, toujours atteignable d'un bouton. Les modules
+s'ouvrent parce qu'un acte en a besoin — l'acte 1 « Le rythme » ouvre l'Atelier
+— les anciens seuils de niveau restant un plancher pour ne priver personne.
+
+Détail complet, avec ce qui a été fait AUTREMENT que proposé :
+[« Mode carrière — la charpente en huit actes »](#-mode-carrière--la-charpente-en-huit-actes-actes-0-à-2-jouables-2026-08-23).
+
+**Ce qui reste à trancher** : les questions 3 (le joueur compose-t-il ou
+reconstruit-il ?) et 4 (le public change-t-il le jugement ?) de la proposition.
+Elles portent sur les actes 4 et 6, pas encore écrits — rien n'est bloqué par
+elles aujourd'hui.
+
+**Le prochain pas le moins cher : l'acte 5, « Les styles ».** Quinze genres à
+reconstruire, et les 34 presets existent déjà. Les actes 3, 4 et 6 demandent du
+mécanisme neuf (le synthé, le contrôle de mix mesuré, la notation d'une
+composition sur son brief) ; le 5 ne demande que du contenu.
+
+### Ce qui attend aussi une décision (ne pas coder sans)
+
+1. **Où poser l'entrée du calibrage de latence dans l'Atelier** — menu
+   Affichage, menu Aide, ou onglet Production ? Le réglage vaut désormais pour
+   toute l'appli, mais n'est atteignable que depuis les niveaux « jouer ».
+2. **La grille de déverrouillage contrôle par contrôle** — proposition écrite et
+   retenue par Yann (rafale niv. 11, swing 14, ghost 20, fill 21, décalage 23),
+   **prête à appliquer**. Mais elle serait à revoir si l'architecture EP passe.
+3. **La famille « Séquence » des jeux de paramètre** — *Pas* et *Coups
+   euclidiens* changent la grille, donc font doublon avec « reproduire », et
+   *Volume* seul est un mauvais exercice d'oreille. Je propose de la fondre dans
+   les verbes existants plutôt que de lui faire des jeux à part.
+4. **`ui/xp/systemSounds.ts`** — les sons système XP ne collent plus à la
+   direction, mais `AtelierView` et `ToolBar` s'en servent encore.
+
+### Chantiers ouverts, hors décision
+
+- **L'extension du Mode jeu au synthé** — le gros morceau. `GameDrumRowName` ne
+  connaît que kick/snare/hat ; `CLAUDE.md` impose de **cartographier tous les
+  points de contact avant de coder**.
+- **Les familles Filtre & espace, Groove** — la première est déjà décrite dans
+  `model/parametres.ts` et ne demande qu'un niveau ; la seconde exige d'étendre
+  le catalogue à l'état **global** (swing, traîne…) et non à la ligne.
+- **Le Mode Live est à reprendre — APRÈS le Mode jeu**, demandé par Yann avec cet
+  ordre explicite. Beaucoup a bougé sans passe d'ensemble.
+- **B6** — mise en page du splash et du Mode jeu (contenu collé en haut, ~70 % de
+  vide).
+- **Le biseau en haute densité** — jamais vérifié sur un vrai appareil.
+
+### Les pièges qui ont coûté le plus cher, et qui reviendront
+
+- **Un module pur et testé peut être branché sur une valeur morte.**
+  `synthStepAt` était un objet non réactif : le pad d'écriture n'a **jamais**
+  quantifié pendant la lecture. Quand le calcul est juste et le comportement
+  faux, **suspecter le câblage**.
+- **Un test qui dépend de `Math.random()` doit affirmer ce qui est vrai à CHAQUE
+  tirage**, et répéter (60 fois). Une assertion à un tirage est passée en local
+  et sur la PR, puis a échoué sur `main` — build non produit, **déploiement
+  sauté, site inchangé**.
+- **Vert sur la PR ≠ vert sur `main`.** Après un merge, vérifier le run de
+  `main` ET le job « Déploiement Vercel » (`success`, pas `skipped`).
+- **`npm run check` APRÈS avoir écrit les tests**, pas avant : `svelte-check`
+  vérifie aussi `tests/`.
+- **Le squash-merge décale le SHA** : `git fetch origin main && git checkout -B
+  <branche> origin/main` avant tout nouveau commit.
+
+### Où trouver le détail
+
+- [Architecture du Mode jeu — proposition](#-architecture-du-mode-jeu--proposition-en-attente-darbitrage-2026-08-21)
+  — **le sujet en cours**, avec les quatre questions à trancher.
+- [Les quatre pilotes sont validés](#-les-quatre-pilotes-du-mode-jeu-sont-validés-2026-08-21)
+  — le tableau symptôme/cause réelle, à lire avant de toucher au Mode jeu.
+- [Décision Winamp 2.x](#-décision--winamp-2x-pour-tous-les-modes-2026-08-18)
+  — l'argument et les douze étapes de mise en œuvre.
+- [§7.5 dette d'interface](#75-dette-dinterface--section-permanente-créée-le-2026-08-15-audit-c2)
+  — les trois règles d'écriture, dont « un ✅ n'est pas définitif ».
+
+---
+
+
+## 1. Architecture cible
+
+### Principe directeur
+
+**Le JSON v2 devient le modèle d'état central.** Aujourd'hui, `exportState()` *collecte* l'état depuis le DOM (`el.swing.value`, etc.) ; dans la cible, on inverse : l'état vit dans des stores Svelte typés dont la forme **est** le format v2, l'UI en dérive, et export/import/undo/autosave deviennent triviaux (`JSON.stringify(state)`).
+
+**Le moteur audio est du TS pur, sans import Svelte.** Il reçoit : (a) un `BaseAudioContext` (live `AudioContext` ou `OfflineAudioContext` — même code), (b) un *snapshot* d'état plain-object (via `$state.snapshot()` côté Svelte), (c) un RNG injecté (Math.random en live, seedé en export). Il ne lit jamais le DOM.
+
+### Arborescence — SUPPRIMÉE le 2026-08-15 (audit C6)
+
+> L'arborescence « cible » qui vivait ici décrivait un dépôt qui n'a jamais
+> existé : 26 fichiers planifiés jamais écrits (`clock.ts`, `sidechain.ts`,
+> `theory.ts` — devenu `harmony.ts` —, `transport/session/ui.svelte.ts`,
+> `XpButton/XpCheckbox/XpSelect/XpBalloon/XpMenuBar`, `StepGrid/StepCell`,
+> les 7 modules d'atelier, les 5 composants de jeu, les 2 fichiers de
+> thème…), et à l'inverse aucune mention de `ui/live/` — ~3 270 lignes, la
+> plus grosse surface d'UI du projet. Le code a mieux tourné que le plan ;
+> le problème était qu'un bloc intitulé « Architecture cible » fasse
+> autorité alors qu'il était faux depuis longtemps.
+>
+> **La vraie arborescence se lit dans `src/`**, et les trois unifications
+> qui comptent vraiment sont dans `CLAUDE.md` (un builder de graphe, un
+> scheduler, un modèle d'état) — au bon endroit, celui que tout le monde
+> lit avant de coder. Elles restent détaillées ci-dessous pour le
+> « pourquoi ».
+
+### Unifications clés (réponses aux duplications)
+
+**Un seul scheduler.** Cœur pur : `scheduleWindow(fromTime, toTime, state, rng, emit)` qui calcule les événements (note, temps, gain, voix, ghost?) et les passe à `emit`. Trois consommateurs :
+- *Live atelier* : `clock.ts` tick 25 ms, `emit` → `voices/*` sur l'AudioContext + push dans la file de playhead visuel (rAF, inchangé dans l'esprit).
+- *Jeu* : même scheduler avec un état restreint (3 lignes drum + `gameParams` de shift/groove) — `gameScheduler` disparaît. Les offsets spécifiques (`gameRowOffset`) deviennent des paramètres du state.
+- *Offline* : boucle `while (t < duration) scheduleWindow(t, t+chunk, …)` — plus de setInterval, plus de duplication de la boucle synthé live/offline.
+- Le `splashScheduler` disparaît (code dormant abandonné, décision 4).
+
+**Un seul builder de graphe.** `buildGraph(ctx, state)` retourne un objet `GraphNodes` (finalStage, masterGain, drumLineGain, synthLineGain, limiters, sends, duckGains, sharedReverb/Delay, noiseBuffer…) **possédé par une instance `AudioEngine`**, jamais par des globales. L'export devient : `new AudioEngine(new OfflineAudioContext(...), snapshot)` → adieu le bloc `prev = {…18 globales…}`. C'est aussi ce qui rend le choke du hat sûr : `activeOpenHat` devient un champ d'instance.
+
+**Un seul cercle.** `StepCircle.svelte` avec props `{rows, colors, playhead, editable, onCellTap, dirty}` — `drawCircle`/`drawGameCircle` et `stepFromEvent`/`stepFromEventOnCanvas` fusionnent.
+
+**Une seule couche state↔UI.** Plus aucune fonction `reflectXxxUI`/`setSliderValue`/sync ×3 : `<XpSlider bind:value={pattern.swing}>` et c'est tout. `loadPreset` (170 l.) devient `pattern.replace(presetToState(preset))` ; la réactivité fait le reste. Le HTML synthé triplé devient `{#each ['bass','pad','melody'] as line}<SynthModule {line}/>{/each}`.
+
+**Partage atelier/jeu.** Le jeu manipule deux `PatternStateV2` partiels (cible cachée + proposition du joueur) et instancie le même `AudioEngine`. `saveGameRhythmToAtelier` = merge des 3 lignes drum dans `pattern.svelte.ts`.
+
+**Les commentaires « pourquoi »** migrent avec le code : chaque fonction portée garde son bloc de commentaire d'origine (ratios 808/909, choix du seuil de limiteur, pourquoi ±50 decay resserré, etc.). C'est un critère de revue de chaque phase.
+
+---
+
+## 2. Design system XP
+
+### Tokens (`ui/xp/tokens.css`)
+
+```css
+:root[data-theme="luna"] { /* atelier, beige clair */
+  --xp-face: #ece9d8; --xp-title-grad: linear-gradient(#0058e6,#3a93ff,#0058e6);
+  --xp-border-raised: inset -1px -1px #808080, inset 1px 1px #fff;
+  --xp-accent-amber / -violet / -teal   /* les 3 familles de modules */
+  --xp-font: "Tahoma", "Pixelated MS Sans Serif", sans-serif; …
+}
+:root[data-theme="noir"] { /* jeu, chrome sombre existant */ … }
+```
+Le thème se pose sur le conteneur de vue → le mode jeu garde son identité sans sur-spécificité CSS. Toutes les couleurs/reliefs/espacements du CSS actuel (l. 11–1032) sont convertis en tokens ; les règles deviennent plates.
+
+### Composants
+
+- **XpWindow** (props : `title, icon, accent, collapsible, closable`) avec **XpTitlebar** (_ □ ×) — le « _ » replie réellement (état dans `ui.svelte.ts`), le « × » ferme les fenêtres optionnelles.
+- **XpMenuBar/XpMenu** : Fichier/Édition/Affichage actuels + entrées nouvelles (Édition → Annuler/Rétablir, Affichage → thème, raccourcis).
+- **XpSlider** : port fidèle des ~170 lignes maison (loupe flottante, mode précis vertical, tap = saisie clavier) en un composant + une action ; ajouté : flèches clavier, `role="slider"` + `aria-valuenow`.
+- **XpButton, XpCheckbox, XpSelect, XpTabs, XpBalloon**, `actions/longpress.ts` (port du long-press générique).
+
+### Pousser le look XP plus loin — ⚠️ SOUS CONDITION depuis le 2026-08-15 (audit C3)
+
+> **Condition d'entrée, à vérifier avant de coder l'une de ces idées.** Elles
+> ajoutent TOUTES du chrome permanent, alors que l'audit de design a mesuré
+> que le chrome occupe déjà **64 % du premier écran mobile** avant la
+> première case jouable (constat A1). Tant que ce budget n'est pas rétabli,
+> aucune n'est à prendre : ce ne sont pas des idées mortes, ce sont des
+> idées **bloquées derrière A1**. Et quand elles reviendront : desktop
+> uniquement, jamais sur la vue tactile.
+>
+> Sans cette condition écrite, elles finiront codées un jour « parce
+> qu'elles étaient dans le plan » — et l'écran mobile empirera d'autant.
+
+- ⚠️ **Fenêtres déplaçables sur desktop uniquement** (`actions/draggable.ts`, activé par media query pointer:fine ; en mobile les fenêtres restent en flux vertical comme aujourd'hui). Bonus faible coût, grand effet.
+- ✅ **Sons système synthétisés** — fait (`ui/xp/systemSounds.ts`, voir §6). Seule entrée de cette liste qui n'ajoutait aucun pixel : c'est aussi pour ça qu'elle a pu passer sans arbitrage.
+- ⚠️ **Curseurs souris XP** (curseurs CSS inline SVG, desktop uniquement), **bulles d'aide XpBalloon** pour remplacer les tooltips natifs — noter que les explications par paramètre (§7.4) ont finalement été rendues *dans* `XpSlider` plutôt que via un composant `XpBalloon` dédié, qui n'existe pas ; **écran de démarrage** façon boot pour le splash, éventuellement une **barre des tâches** en bas sur desktop montrant les fenêtres réduites.
+- Police : Tahoma avec fallback ; via fontsource, une pixel-font d'appoint pour les titres si souhaité (auto-hébergée). *(Neutre en chrome — pas concerné par la condition.)*
+
+---
+
+## 3. Ordre de migration — ARCHIVÉ le 2026-08-15 (audit C7)
+
+> Le découpage en 6 phases avec pourcentages (« Phase 0 — Socle ≈5 % »…)
+> et le ratio port/réécriture 55/45 ont piloté la migration jusqu'à son
+> terme. **La migration est finie** : ces repères ne décrivent plus aucun
+> travail à venir et fausseraient toute lecture du reste du document.
+> Conservé en une ligne pour mémoire : les phases 0 à 6 ont toutes été
+> livrées, et le projet est depuis longtemps allé au-delà (Mode Live,
+> clap/shaker, bourdon, banque de séquences, euclidien, explications par
+> paramètre, sons système).
+>
+> **Conséquence sur la « source unique de vérité ».**
+> `original/boite-a-rythme-69.html` reste la référence **pour les
+> constantes et les choix audio uniquement** (ratios 808/909 du banc du
+> hat, plafonds de release, seuils des limiteurs, valeurs de decay
+> resserrées) — c'est ainsi que `CLAUDE.md` le formule, et c'est la bonne
+> portée. Ce n'est **pas** une référence d'interface : la grammaire
+> « panneau de configuration » critiquée dans l'audit de design du
+> 2026-08-15 vient précisément de là. Ne plus s'y référer pour l'UI.
+
+---
+
+## 4. Améliorations au-delà de l'iso-fonctionnalité
+
+- **ScriptProcessorNode → AudioWorklet** (recommandé plutôt que MediaRecorder : WAV sans perte, pas de dépendance codec navigateur, latence maîtrisée ; MediaRecorder produirait du webm/opus, changement de fonctionnalité). Worklet inline (`?worker&inline`-équivalent via Blob URL) pour rester compatible singlefile.
+- **lamejs** : `@breezystack/lamejs` en dépendance npm, importée **dynamiquement dans un Worker** au premier clic export — plus de script CDN bloquant, plus de `typeof lamejs === 'undefined'`. En build singlefile, le worker est inliné.
+- **Polices auto-hébergées** via fontsource (plus de Google Fonts CDN).
+- **Raccourcis clavier** : Espace lecture/stop, B break, Ctrl+Z/Y, 1/2/3 mute lignes, flèches sur cellule focusée, ? = aide-mémoire dans une XpWindow.
+- ❌ **Accessibilité — JAMAIS FAITE, sorti des acquis le 2026-08-15 (audit C5).**
+  Cette ligne était écrite au passé au milieu d'améliorations livrées, donc
+  invisible comme reste-à-faire. Compté dans le code le 15/08 :
+  `role="grid"`/`gridcell` → **0**, `aria-pressed` → **0**, label par pas
+  (« Kick, pas 5, actif, roll ×2 ») → **0**, `prefers-reduced-motion` →
+  **0**. Seul `XpSlider` a bien reçu son `role="slider"` + `aria-valuenow`
+  (§2). Le reste est à faire ou à assumer comme non-objectif — mais plus à
+  laisser passer pour acquis. Promu en entrée de backlog : voir §7.5.
+- **Autosave** : snapshot du pattern (format v2) debouncé 1 s dans localStorage + proposition « Restaurer la session précédente ? » au démarrage — sans casser la philosophie actuelle (pas d'écrasement silencieux).
+- **Undo/redo** quasi gratuit : `history.svelte.ts` empile `$state.snapshot(pattern)` (≤100 entrées, coalescence des drags de slider).
+- **Robustesse** : `unhandledrejection` en plus de `onerror`, plus d'`escapeHtml` nécessaire (Svelte échappe par défaut), scheduler optionnellement piloté par un Worker-clock (immunisé au throttling arrière-plan ; on garde la pause sur `visibilitychange` en réglage).
+- **Tests** : Vitest sur `model/` et `engine/` (théorie musicale, buildChordsForScale, générateur de niveaux avec seed, similarité, sérialisation/migration, groove). **Déterminisme d'export en 2 étages** : (1) rapide, en CI — snapshot JSON de la liste d'événements schedulés à seed fixe (pur, sans Web Audio) ; (2) profond, Playwright — rendu OfflineAudioContext réel dans Chromium, hash SHA du Float32Array (stable pour une même version de navigateur, épinglée en CI). Le (1) attrape 95 % des régressions pour presque rien.
+  - ✅ **Étage (1) fait le 2026-08-15** (audit C4 — prévu ici dès le départ,
+    jamais écrit pendant trois semaines alors que c'était le seul filet sous
+    l'invariant le plus dur de `CLAUDE.md`). `tests/scheduler.test.ts` :
+    faux `DrumKit`/`SynthKit` qui enregistrent les appels au lieu de produire
+    du son, rejouant EXACTEMENT la boucle de `renderPattern` (mesure par
+    mesure, drum puis synthé, mêmes curseurs, même RNG seedé) — donc aucun
+    Web Audio, ~13 ms en CI. Cinq tests : reproductibilité à graine égale,
+    divergence à graine différente (sinon le premier serait vide de sens),
+    **ordre d'itération figé**, instantané de référence de la séquence
+    complète, et « une ligne au motif vide ne consomme aucun tirage quel que
+    soit son nombre de pas » (la propriété sur laquelle reposait l'ajout de
+    clap/shaker, §6 — vérifiée en faisant varier les pas de 4 à 32 plutôt
+    qu'en comparant à un code disparu). **Validé par régressions
+    simulées** : réordonner deux lignes fait tomber 2 tests, et ajouter un
+    `rng()` sans effet audible en fait tomber 1 — c'est exactement le
+    scénario silencieux que rien n'attrapait. Au passage, `CLAUDE.md` citait
+    encore l'ordre à six lignes d'avant clap/shaker : corrigé.
+  - Étage (2) (hash du rendu offline réel sous Playwright) : toujours pas
+    fait. Moins urgent maintenant que (1) existe.
+- **CI** : lint + tests + build site + build singlefile + budget de taille du fichier unique (échec si > seuil).
+- **PWA optionnelle** (vite-plugin-pwa, build site uniquement) — la version singlefile EST déjà l'offline de secours.
+- **Incohérence MAXSTEPS 32 vs 128** : ne pas unifier les modèles pendant la migration (risque de régression) ; documenter dans `types.ts` deux types distincts `DrumRow`/`SynthRow`, et traiter l'unification comme amélioration post-v1 si souhaitée.
+
+---
+
+## 5. Risques et pièges
+
+- **Autoplay policies** : conserver le rôle du splash comme geste de déverrouillage (`unlockAudioBuffer` l. 8809) ; `AudioEngine` doit `resume()` sur chaque geste de lecture et exposer l'état `suspended` à l'UI.
+- **Déterminisme de l'export après refactor** : le PRNG seedé est consommé dans un ordre précis ; si le nouveau scheduler réordonne les appels (ex. itérer les lignes dans un autre ordre), le rendu change. Parade : figer l'ordre d'itération (kick→snare→hat→bass→pad→melody, colonnes croissantes), et le test de snapshot d'événements de la phase 2 le verrouille. Comparer aussi un MP3 ancien/nouveau à seed égale à l'oreille.
+- **OfflineAudioContext** : pas de `setInterval` pendant le rendu (déjà géré, à préserver dans `clock.ts`) ; attention aux nœuds au comportement légèrement différent offline (DynamicsCompressor a un état interne — le graphe neuf par rendu, comme aujourd'hui, est la bonne approche) ; garder le `maybeYield` (l. 4400) pour ne pas geler l'UI pendant l'encodage.
+- **iOS Safari** : sampleRate imposé par le matériel (ne jamais supposer 44100 en live ; l'offline peut le fixer), interruptions d'appel (`statechange` → resume), préfixe `webkitOfflineAudioContext`, AudioWorklet OK depuis iOS 14.5 mais tester le recorder en vrai ; la loupe des sliders utilise des événements pointeur — retester le `touch-action`.
+- **Bundle singlefile** : lamejs en import dynamique s'oppose à l'inlining — solution : worker inliné + `build.rollupOptions` sans code-splitting en mode singlefile ; viser < 1,5 Mo (l'original fait ~450 Ko, Svelte compile petit, lamejs ~150 Ko) ; le budget CI le surveille.
+- **Régressions de feel** — les points chauds identifiés : timing lookahead (garder 25 ms/0,25 s), **choke du hat** (état `activeOpenHat` par instance, testé : ouvert puis fermé sur le même pas → choke), **sidechain** (le duck doit s'appliquer au temps schedulé, pas au temps courant), enveloppes de decay resserrées (commentaire l. 3646 — à préserver), budget 40 voix, limiteurs par ligne présents dans l'export.
+- **Checklist A/B iso-fonctionnalité** (à dérouler en fin de phases 3/4/5, original ouvert dans un onglet voisin) : charger le même JSON v2 dans les deux, écouter à l'aveugle 5 presets contrastés ; exporter le même pattern en MP3 à seed égale et comparer ; vérifier : polyrythmie 3/4/5 pas, rolls ×4, rim, hat ouvert→choke, Break, fills toutes les N mesures, ghost notes, sidechain audible, arpégiateur, glide/strum, justesse affichée, similarité « morceau le plus proche », niveau 1 et niveau 34 du jeu, étoiles/roast/besace, import d'un fichier v1, comportement en arrière-plan, mobile (long-press, loupe slider, cercle tactile).
+
+---
+
+## 6. Features en plus — idées au-delà de l'iso-fonctionnalité
+
+Classées par rapport effort/effet. Les ⭐ sont celles qui collent le mieux à l'esprit de l'app (XP + pédagogie + fun).
+
+### Petites (quelques heures chacune, gros effet)
+- ✅⭐ **Partage par URL** — fait (`stores/share.ts`), pas marqué à l'époque : le pattern compressé dans le hash de l'URL.
+- ✅⭐ **Tap tempo** — fait (`ToolBar.svelte`, bouton 👆 Tap tempo), pas marqué à l'époque.
+- ✅ **Métronome + précompte** avant l'enregistrement WAV (palier 1 du
+  backlog priorisé du 13/08, item 4/5). Une mesure 4/4 de clics au tempo
+  courant (`AudioEngine.countIn`, premier temps accentué) avant que
+  `startLiveRecording` ne commence à capturer — le précompte standard de
+  n'importe quel logiciel d'enregistrement, qui manquait complètement.
+  Nouveau `engine/metronome.ts` (`scheduleClick`) : connecté DIRECTEMENT à
+  `ctx.destination`, jamais au graphe de mixage (`finalGain`, le point de
+  capture de `LiveRecorder`) — audible au performer, jamais dans le WAV
+  capturé, même si précompte et début d'enregistrement se chevauchaient
+  d'une frame. `doRecordLive()` (`ExportBar.svelte`) affiche le décompte
+  dans son `status` existant (« Précompte… 1 » → 2 → 3 → 4) via le
+  callback `onTick` de `countIn`, sans dupliquer le calcul du tempo — le
+  prop `engine` élargi d'une méthode plutôt qu'un nouveau prop dédié.
+  Scope volontairement limité à l'enregistrement du DIRECT (capture
+  réelle) : l'export MP3/WAV classique est un rendu offline déterministe,
+  pas une prise à préparer. Vérifié par script Playwright : séquence de
+  statuts observée = Précompte… → 1 → 2 → 3 → 4 → Enregistrement en cours.
+- ✅⭐ **Sons système XP** synthétisés (retour de Yann : « sons système XP
+  maintenant »). Nouveau module `ui/xp/systemSounds.ts` — chirps Web Audio
+  courts, contexte audio dédié séparé de toute instance `AudioEngine`
+  (`XpWindow`, composant générique réutilisé partout, ne doit dépendre
+  d'aucun graphe audio précis). Portée précisée par rapport au libellé §2 :
+  « étoile gagnée » est en réalité déjà couverte par `playWinChime` (Mode
+  jeu, §7.3 — tier 1/3 essais = exactement le cas 3 étoiles) et reste un
+  son de *gameplay* propre à son moteur, pas rattaché à ce nouveau réglage ;
+  ce qui restait vraiment à faire — repli/dépliage de fenêtre et erreur —
+  est fait : chirp montant/descendant sur `XpWindow` replier/déplier
+  (gardé derrière un test d'état pour qu'un clic répété sur le même bouton
+  ne le rejoue pas), chirp grave (carré, plus dur) sur fichier illisible à
+  l'import (`AtelierView.importJson`). Désactivable — persisté en
+  localStorage, activé par défaut — bascule dans Affichage ▸ Sons système
+  de la barre de menus (`ToolBar.svelte`).
+- ✅ **Générateur euclidien** (retour de Yann : « next ! », choisi parmi les
+  idées §6 restantes). Bouton « répartir N coups uniformément » par ligne —
+  `euclideanRhythm(steps, pulses)` (nouveau, `engine/generators.ts`),
+  algorithme de Bjorklund par bissection de groupes homogènes (pas la
+  récursion originale, même résultat, plus lisible) ; testé contre le motif
+  canonique E(3,8) (tresillo cubain) et des cas limites (0 coup, autant de
+  coups que de pas), voir `tests/model.test.ts`. `applyEuclideanRhythm`
+  remplace tout le contenu de la ligne (état simple, pas d'accent/rim) et
+  réinitialise les rafales. UI : slider « Coups euclidiens » + bouton
+  🔵 Répartir dans le fieldset Séquence de chaque ligne drum
+  (`DrumRowView.svelte`) — nombre de coups gardé en état de composant
+  local (pas un champ du pattern), même logique que `fillRate` côté
+  Synthé (`SynthModule.svelte`).
+
+### Moyennes (une à quelques journées)
+- ⭐ **Mode Song / chaînage de patterns** : 4 slots A/B/C/D + une timeline simple (AABA…) — la demande n°1 de toute boîte à rythmes. Le modèle d'état sérialisable rend ça peu coûteux (un slot = un `PatternStateV2`).
+  - ✅ **Sous-brique plus simple, retour de Yann 2026-08-13, faite le jour
+    même (« pars sur les niveaux 1 »)** : « mettre en banque plusieurs
+    séquences dans l'Atelier et pouvoir basculer de l'une à l'autre depuis
+    le Mode Live ». C'est le Mode Song SANS la timeline auto-enchaînée
+    (AABA…) — juste une bibliothèque de patterns nommés. Nouveau store
+    partagé `stores/bank.svelte.ts` (`sequenceBank`, classe `$state`
+    minimale : `entries`, `save`/`load`/`rename`/`remove`) réutilisant TEL
+    QUEL la sérialisation existante (`pattern.toJson()`/`loadJson()`, même
+    mécanique que l'autosave de `stores/share.ts`) — chaque entrée est un
+    JSON v2 nommé, persistée dans `localStorage`
+    (`boite-a-rythme:sequence-bank`), pas de format dédié ni de cap
+    arbitraire sur le nombre d'entrées.
+    - **Atelier** : nouveau composant `SequenceBank.svelte`, même charte
+      que `PresetPicker.svelte` juste au-dessus (select + Charger) plutôt
+      qu'une fenêtre XP dédiée — même interaction (choisir dans une liste,
+      charger), pas besoin de plus. `➕` sauvegarde le pattern actuel sous
+      un nom (`prompt()`, comme l'erreur d'import illisible utilise déjà
+      `alert()` — dialogues natifs acceptés dans ce fichier), `✏️`
+      renomme, `🗑` supprime (`confirm()`) ; jamais d'écrasement silencieux,
+      toujours une nouvelle entrée à la sauvegarde.
+    - **Live** : nouvelle entrée « BANQUE DE SÉQUENCES » dans la liste de
+      l'overlay ⚙ (à côté de VISUALISEUR), ouvre le même `picker-card` que
+      les autres catalogues mais un tap CHARGE et ferme immédiatement
+      (`commitBankLoad`, comme `commitViz` mais sur `sequenceBank.load(id)`
+      plutôt que sur `assignments` — ce n'est pas une assignation
+      persistée, rien à retenir dans `LiveAssignments`, juste un
+      `pattern.replace` en direct que le scheduler relit au tick suivant).
+      État vide géré (message plutôt qu'une liste blanche) plutôt que de
+      cacher l'entrée tant que la banque n'a rien.
+    - **Vérifié bout en bout** (script Playwright) : tempo réglé à 140 dans
+      l'Atelier, sauvegardé sous « Séquence 140 », page rechargée (le
+      Live démarre à 120 par défaut), rappel depuis l'overlay ⚙ du Mode
+      Live → le LCD affiche bien 140 BPM immédiatement.
+    - Bon point de départ pour Mode Song en deux temps : cette brique
+      d'abord (banque + bascule manuelle), la timeline AABA ensuite si le
+      besoin se confirme à l'usage. Pas encore fait : bouton catalogue
+      dédié pour changer de séquence sans repasser par ⚙ (piste v2 si la
+      liste dans l'overlay se révèle trop lente en plein set).
+- ✅⭐ **Nouvelles voix drum : clap et shaker** (retour de Yann 2026-08-13 — tom
+  et cowbell laissés de côté, choix explicite de Yann). Cartographie
+  exhaustive faite avant de coder (25 fichiers touchés) — le moteur
+  n'accueille PAS ces voix « sans changement d'architecture » comme espéré
+  au départ : `DrumRowName` est un contrat central dont dépendent le
+  scheduler (ordre de consommation du générateur aléatoire, contrainte
+  CLAUDE.md), le Mode jeu (34 niveaux câblés en dur sur 3 lignes), le Mode
+  Live (catalogue d'actions, visualiseurs), la vue circulaire et
+  l'indicateur de similarité.
+  - **Modèle** : `DrumRowName` étendu à `'kick'|'snare'|'hat'|'clap'|'shaker'`
+    (`model/types.ts`), binaires (pas d'état 2, contrairement à snare/hat).
+    Motif vide par défaut (`defaults.ts`) — ce sont des voix à découvrir, pas
+    une base attendue au premier chargement. `serialize.ts` était déjà
+    tolérant à l'absence d'une ligne (`if (!src) return`, repli sur
+    `defaultState()`) : un vieux fichier de sauvegarde sans clap/shaker
+    importe donc proprement sans rien à changer côté désérialisation —
+    vérifié par un nouveau test dédié (`tests/model.test.ts`).
+  - **Synthèse** (`engine/voices/drums.ts`) : `playClap` — plusieurs
+    impulsions de bruit bandpass très rapprochées (les « mains » qui ne
+    tombent jamais exactement ensemble sur une vraie 909) suivies d'une
+    traîne plus longue pour le corps ; `playShaker` — bruit passe-haut large
+    bande, pas de banc d'oscillateurs (contrairement au hat) ni de
+    passe-bande étroit (contrairement au clap), enveloppe courte. Les deux
+    reprennent `resolveVoice`/`pitchMult`/`decayMult`/`attackAdd`/
+    `filterDest` comme kick/snare/hat, timbre réglable à l'identique.
+  - **Scheduler** (`engine/scheduler.ts`) : clap suit le modèle kick/snare
+    (`triggerKickSnareStep` élargie à `'kick'|'snare'|'clap'` — candidat aux
+    ghost notes/fills/breaks, PAS le fill de fin de mesure réservé à la
+    snare) ; shaker suit une version simplifiée du modèle hat
+    (`triggerShakerStep`/`scheduleShakerRows`, nouvelles fonctions —
+    binaire, pas de choke ni de rafales spontanées/fill/break, texture en
+    continu plutôt qu'un élément qui « explose » avec le reste : portée
+    réduite volontairement, à revoir si le besoin s'en fait sentir). Clap
+    ajoutée à la boucle kick/snare existante (après, jamais entre elles) ;
+    shaker programmée après le hat. Motif vide par défaut = zéro tirage
+    aléatoire consommé tant qu'on n'y programme rien (le early-return sur
+    pas inactif précède tout appel à `rng()`), donc les patterns déjà
+    sauvegardés/exportés ne sont pas affectés par ce changement.
+  - **Atelier** : deux nouvelles lignes dans le séquenceur linéaire
+    (`DrumRowView`, fenêtre renommée « Kick / Snare / Hat / Clap / Shaker »),
+    raccourcis clavier Mute étendus à 1-5. Bug latent corrigé au passage :
+    `maxState` (nombre d'états par pas) et le switch de `AudioEngine.preview`
+    présumaient tous deux « tout ce qui n'est ni kick ni snare est le hat » —
+    aurait fait jouer/afficher le hat à la place de clap/shaker sans le
+    correctif explicite. Couleurs dédiées `--cell-clap` (vert) et
+    `--cell-shaker` (cyan) dans `tokens.css` — les deux teintes encore
+    libres entre les 3 couleurs batterie et les 3 couleurs synthé
+    existantes.
+  - **Portée volontairement exclue de cette passe** (à reprendre plus tard
+    si besoin, PAS un oubli) :
+    - **Mode jeu** : les 34 niveaux restent figés à kick/snare/hat — nouveau
+      type local `GameDrumRowName` (`presets/levels.ts`) utilisé par
+      `GameVoice`/`LevelRhythm`/`Grid`/`Rolls` à la place du `DrumRowName`
+      global élargi, pour que le jeu n'ait pas à gérer 2 lignes qu'il ne
+      connaît pas. `game.svelte.ts`/`GameView.svelte` suivent.
+    - **Vue circulaire** (StepCircle, Atelier) : reste à 3 anneaux — 5
+      anneaux concentriques tasseraient l'anneau intérieur au point d'être
+      illisible au doigt (type local `CircleRowName`, même principe).
+    - **Anneau batterie compact** (TransportRings, barre de transport) :
+      même raisonnement sur un canvas de 50px (type local `RING_DRUM_ROWS`).
+    - **Indicateur « le plus proche »** (`similarity.ts`) : reste sur
+      kick/snare/hat — avec 5 lignes le nombre de permutations testées
+      passerait de 6 (3!) à 120 (5!) ; clap/shaker n'existent de toute façon
+      pas dans les 34 presets.
+    - **Mode Live — actions** : pas de mute/roll clap/shaker dans le
+      catalogue (`liveActions.ts` inchangé) — `rollHeld`/`muted` gardent des
+      entrées clap/shaker inertes juste pour satisfaire le type élargi.
+    - **Mode Live — visualisation** : à l'inverse, PAS exclue : l'égaliseur
+      (viz①, `LINE_EQ_POS`/`DRUM_COLOR`) et le séquenceur linéaire du Live
+      affichent bien clap/shaker (ces lignes sonnent réellement en Live
+      puisque le pattern est partagé avec l'Atelier — les exclure aurait
+      été un vrai manque, pas juste une réduction de portée).
+    - **Contenu des 34 presets** (`songs.ts`) : clap/shaker restent vides
+      par défaut dans tous les presets existants — `presetAdapter.ts` ne
+      les touche pas du tout, aucun changement nécessaire, `defaultState()`
+      fournit déjà des lignes silencieuses.
+  - Vérifié : `npm run check`/`test`/`build`/`build:singlefile` verts,
+    script Playwright (clic sur une case clap/shaker + lecture 1,5s sans
+    erreur console, capture des états vide/rempli) et fumée Mode Live
+    (play/stop sans erreur).
+
+- ✅⭐ **Bourdon (drone) sur la Nappe** (retour de Yann, dans la foulée de
+  clap/shaker : « on peut aussi imaginer un drone dans le synthé aussi »).
+  Deux approches possibles, Yann a choisi celle recommandée : un mode sur la
+  ligne Nappe existante plutôt qu'une 4ᵉ ligne synthé dédiée (pas de
+  changement de `SynthRowName`, `MAXSTEPS`, ni de la sérialisation des
+  lignes — juste un booléen `synthGlobal.padDroneEnabled`, même
+  emplacement/esprit que `padArpEnabled`).
+  - **Scheduler** (`engine/scheduler.ts`) : en mode bourdon, la Nappe ignore
+    `cycleBars`/`subdivisions`/`row.pattern` (inchangés, juste pas lus) —
+    une seule position tenue `DRONE_BAR_SPAN` (8) mesures avant retrigger,
+    sur l'accord du 1er pas (accord I si ce pas est vide, plutôt qu'un
+    bourdon silencieux). Pas de rafale (`roll` forcé à 1, y compris pendant
+    l'explosion d'un Break) — une rafale sur une note tenue romprait le
+    principe.
+  - **Pas de nouveau code de synthèse** : réutilise `SynthKit.playPadChord`/
+    `playPadArp` tel quel avec une durée longue plutôt qu'un nouveau
+    mécanisme de maintien indéfini — l'enveloppe existante
+    (`playSynthNote`, `engine/voices/synth.ts`) tient déjà le gain au
+    plateau jusqu'à `time + dur` puis relâche sur `release` : un `dur` de
+    plusieurs mesures produit directement un maintien long, sans changement
+    d'architecture audio. **Limite assumée** : pas un maintien VRAIMENT
+    indéfini (aucun nœud audio à durée de vie découplée du scheduler dans
+    ce moteur) — de longues notes retriggées toutes les 8 mesures,
+    perceptivement continues sur le même accord (le retrigger est quasi
+    imperceptible), pas un unique oscillateur qui tournerait sans fin. À
+    revisiter si Yann trouve la coupure audible à l'usage.
+  - **Atelier** : nouveau fieldset « Bourdon de nappe » dans
+    `SynthModule.svelte`, juste après l'Arpégiateur — une case à cocher +
+    une phrase d'avertissement (cycle/pas de la Nappe sans effet tant que
+    c'est actif, pour éviter la confusion si un pas édité ne change rien
+    au son).
+  - **Hors scope** (comme clap/shaker, cohérence de portée) : pas de
+    contrôle dédié en Mode Live pour l'instant — le champ est un `Pick`
+    partiel dans `liveSynthGlobalOverride`, l'ajouter est trivial plus
+    tard si le besoin se confirme.
+  - Vérifié : `npm run check`/`test`/`build`/`build:singlefile` verts,
+    script Playwright (bascule de la case, lecture 2,5s avec bourdon actif
+    sans erreur console, capture du fieldset).
+- ⭐ **Défi du jour** : un niveau généré seedé par la date (même rythme pour tout le monde, façon Wordle/Motus quotidien), avec partage du score en emojis 🟩🟨 — prolonge naturellement le mode jeu Motus existant.
+- ❌ **Visualiseur façon Winamp** dans une fenêtre XP déplaçable (oscilloscope/spectre sur AnalyserNode) — abandonné, retour de Yann 2026-08-13. Ne pas reproposer.
+- **Finger drumming** : jouer kick/snare/hat au clavier (A/Z/E), avec enregistrement quantifié dans la grille pendant la lecture.
+- **Export MIDI** du pattern (writer MIDI ~100 lignes, aucune dépendance) — ouvre l'app vers les vrais DAW.
+
+### Grosses (projets en soi, à décider plus tard)
+- **Clippy « Rythmy »** 📎 : l'aide à la production existante (conseils contextuels) incarnée dans un assistant animé façon Clippy, avec les roasts du mode jeu — c'est LE mariage parfait design XP × contenu existant.
+- **Barre des tâches + menu Démarrer** sur desktop : les fenêtres réduites s'y rangent, le menu Démarrer navigue entre Atelier/Jeu/options — pousse le délire XP au bout.
+- **Écran de veille** après inactivité (logo qui rebondit, réactif au beat si lecture en cours).
+- **WebMIDI out** : piloter du vrai matériel avec le séquenceur.
+- **Mode radio** : enchaîne les 34 presets avec crossfade + affichage des textes historiques, façon Windows Media Player — valorise les ~880 lignes de contenu pédagogique déjà écrites.
+- **Succès/achievements** branchés sur la besace existante (« 3★ sur 10 niveaux », « premier export MP3 », « 32 pas sur les 3 lignes »…).
+
+---
+
+## 7. Idées pas mûres (à creuser plus tard, pas encore planifiées)
+
+Pas encore assez cadrées pour aller dans la section 6 (pas d'estimation d'effort,
+parfois plusieurs pistes concurrentes). Plan d'action remis en ordre le
+2026-08-12 : tout ce qui reste ouvert est listé en 7.1–7.3 par ordre suggéré,
+⚠️ marque ce qui a besoin d'un arbitrage de Yann avant de coder.
+
+### 7.1 Mode Live
+
+Manette paysage (pavé XY + boutons assignables), esthétique Winamp (skin
+violet/bleu nuit + LCD verte + accents ambre, grip pointillé sur la titlebar,
+seekbar décorative). Code dans `src/ui/live/` (`LiveView.svelte`,
+`liveActions.ts`). Accessible depuis la navigation normale (bouton
+"🎛 Mode Live" sur le splash et le switcher).
+
+**✅ Fait** :
+- squelette + verrouillage d'orientation + flux de permission
+  `DeviceOrientationEvent` (jamais testé en vrai sur téléphone — à demander
+  si pas déjà fait) ;
+- câblage réel : BREAK/FILL (`requestBreak`/`liveRequestFill`), MUTE K/S/H et
+  ROLL×2 (overrides du scheduler `liveMute`/`forceHatRoll`, jamais écrits
+  dans le pattern sauvegardé), pad XY → filtre passe-bas + envoi réverbe
+  (`liveFilter`/`liveReverbSend`, neutres partout ailleurs), séquenceur
+  linéaire sur le vrai pattern, viz sur vrais niveaux (`getLineLevels()`,
+  un `AnalyserNode` par ligne) ;
+- overlay ⚙ d'assignation : chaque bouton/axe pointe vers une définition d'un
+  catalogue (`liveActions.ts`, 8 actions + 2 axes) plutôt que codé en dur,
+  persisté en localStorage ;
+- inclinaison assignable comme le pad (`axisTilt`), calibrée au premier
+  échantillon reçu après activation (pas un zéro absolu), plage large ±35° ;
+  pad et inclinaison peuvent viser le même paramètre, l'affichage reflète la
+  dernière source qui a écrit ; repli tactile pur déjà garanti si le capteur
+  est refusé (`tiltDenied`, mode toujours jouable) ;
+- viz②/③ (arty, défilement) choisissables depuis l'overlay (`LIVE_VIZ`) ;
+- bouton ⏺ REC — enregistrement WAV du live take réellement joué
+  (triggers/pad/inclinaison compris), `AudioEngine.startCapture`/
+  `stopCapture` (tap sur `finalGain`, start/stop au bouton plutôt qu'une
+  durée fixée en mesures comme l'Atelier) ;
+- viz① refaite en égaliseur : `EQ_BAR_COUNT` (22) barres façon spectre,
+  chacune composée de petits segments empilés des 6 éléments (`drawVizBars`),
+  pas une barre = une ligne comme avant ;
+- viz③ refaite en lapin (`drawVizRunner`) : mange la carotte la plus proche
+  au kick, gros saut au snare, sautille (oreilles qui frétillent) au hat —
+  un déclencheur par ligne (front montant sur `getLineLevels()`) plutôt que
+  le seul niveau de kick ;
+- catalogue de paramètres étendu à **55 axes** (`liveActions.ts`,
+  `LIVE_AXES`), largement au-delà des 12 premiers ajoutés — Yann : « il faut
+  qu'on puisse assigner beaucoup plus de paramètres ». Regroupés par
+  catégorie (`AXIS_GROUPS`) : GROOVE (swing, traîne, ghost notes, intensité
+  de fill), BUS BATTERIE (saturation/bitcrush/compression, bus drum
+  uniquement), MIX (volume, delay feedback, sidechain), et BASSE/NAPPE/
+  MÉLODIE — quasi tous les réglages de voix de `SynthRowView.svelte`
+  (cutoff, résonance, attack, release, sub, détune ×2, chorus, vibrato ×2,
+  tone, enveloppe de filtre ×2, glide, + étalement pour la nappe). Chaque
+  entrée du catalogue porte directement sa fonction d'application
+  (`apply(engine, value01)`) plutôt qu'un switch dans `LiveView.svelte` :
+  `LiveAxisId` est devenu une simple chaîne (catalogue trop large pour un
+  union littéral géant à maintenir à la main), validée à l'exécution comme
+  la persistance localStorage. Les 6 paramètres globaux restent appliqués
+  directement sur les nœuds du graphe déjà construits (jamais écrits dans le
+  pattern) ; groove et voix synthé sont des champs d'état simples, appliqués
+  via un override relu à chaque fenêtre de scheduling
+  (`AudioEngine.withLiveOverrides`, `setLiveGrooveParam`/
+  `setLiveSynthVoiceParam`/`setLiveSynthRowParam` génériques plutôt qu'une
+  méthode par champ) ;
+- **sélection dans une liste** plutôt que le cycle pas-à-pas d'origine —
+  Yann : « j'imaginais qu'on puisse choisir dans une liste assez longue ».
+  Taper une ligne d'assignation ouvre un panneau scrollable par-dessus la
+  carte (actions : liste plate avec couleur+description ; axes : groupés par
+  catégorie) plutôt que de cycler sur place, devenu inutilisable à 55
+  entrées ;
+- randomisation : les deux pistes envisagées, implémentées ensemble plutôt
+  que l'une ou l'autre — **CHAOS** est une entrée du catalogue d'actions
+  (assignable à un bouton comme les autres) qui tire un paramètre du
+  catalogue d'axes au hasard et lui donne une valeur aléatoire à chaque
+  appui ; **🔀 brasser** est un bouton séparé du topbar (à côté de ⚙) qui
+  réassigne tout le catalogue (6 boutons + 2 axes + inclinaison) d'un coup.
+
+**Diagnostic ergonomie retenu** (à respecter pour tout ajout futur) : ne
+jamais copier la taille des contrôles du vrai skin Winamp (pensés souris de
+bureau, 10-18px) — tout ce qui est interactif en live reste large (déjà le
+cas), seul le décoratif (grip, seekbar, bandes ambrées) peut rester petit.
+Le bouton ⚙ est éloigné du pad (mistap en plein set), le toggle inclinaison
+est sorti de la zone de drag du pad, plancher de luminosité LCD prévu pour
+la lisibilité en extérieur.
+
+**✅ Catalogue d'actions étendu de 9 à 19** (`liveActions.ts`, `LIVE_ACTIONS`),
+groupées par catégorie dans le même panneau de sélection que les axes
+(`ACTION_GROUPS`, même fonction `groupByCategory` réutilisée) : TRANSPORT
+(break/fill/chaos), MUTES BATTERIE (déjà là), **MUTES SYNTHÉ** — nouveau,
+basse/nappe/mélodie via `AudioEngine.liveSetSynthMute` (même garde-fou que
+les mutes batterie : n'ajoute jamais qu'une coupure, ne démute jamais un
+mute posé dans l'Atelier), **ROLL KICK** et **ROLL SNARE** — nouveau,
+symétrique du roll hat déjà là (`scheduler.ts` : `forceKickRoll`/
+`forceSnareRoll` sur `ScheduleContext`, même principe qu'un pas vide qui se
+met à sonner tant que le bouton est maintenu), ROLL HAT (déjà là), et MIX
+— nouveau, **BYPASS LIMITEURS** (`AudioEngine.setLiveLimiters`, mêmes
+valeurs enabled/disabled que `buildGraph`). Pistes encore en réserve, pas
+faites cette passe : snapshot d'assignation, randomize-la-ligne-synthé-
+courante (écrirait dans le pattern réel, contraire au principe des
+overlays Live — pas tranché).
+
+**✅ Assignation multiple par contrôleur** (retour de Yann : « on peut
+assigner plusieurs paramètres à un même contrôleur »). `LiveAssignments`
+passe de valeurs uniques à des tableaux (`slots: LiveActionId[][]`,
+`axisX/axisY/axisTilt: LiveAxisId[]`, jamais vides) — un bouton peut
+déclencher plusieurs actions d'un coup, un axe peut piloter plusieurs
+paramètres ensemble (macro, même valeur 0..1 appliquée à chacun via
+`applyAxisValue`). Le panneau de sélection bascule chaque entrée au lieu de
+committer-et-fermer (`toggleActionInSlot`/`toggleAxisInSlot`), retirer la
+dernière entrée d'un slot est un no-op silencieux plutôt qu'un slot vide.
+`liveActions.ts` : helpers pluriels `actionsFor`/`axesFor`, et
+`structuredClone` pour cloner les valeurs par défaut (les tableaux sont des
+références, un simple spread aurait partagé les slots entre deux sessions).
+🔀 brasser continue de tirer une seule entrée par slot/axe (le multi est un
+choix délibéré via le panneau, pas une surprise du hasard).
+
+**✅ Bouton SOLO MÉLO** (retour de Yann : « un bouton 'solo' qui permet de
+modifier la mélodie en faisant glisser son doigt ou tapotant » — analysé
+avant implémentation à sa demande explicite, deux points confirmés : geste
+sur le pad XY existant, fonctionnement maintenu/hold). Nouvelle catégorie de
+catalogue PERFORMANCE (`liveActions.ts`, `LIVE_ACTIONS`) : tant que le bouton
+assigné est tenu, le pad ne pilote plus ses axes habituels (X/Y) — il joue la
+mélodie au doigt à la place, et la mélodie programmée est coupée en direct
+(`AudioEngine.liveSetSynthMute('melody', true)`, même garde-fou que les
+autres mutes synthé) pour ne pas se télescoper avec ce qui est joué à la
+main. Mapping du pad : X quantisé en 7 zones = degré de la gamme courante
+(1-7), Y en tiers = octave (-1/0/+1, même inversion haut-du-pad=plus-haut que
+pour les axes normaux) ; fréquence via `degreeFreq` (`engine/harmony.ts`),
+jouée par `AudioEngine.playLiveMelodyNote` — nouvelle méthode ponctuelle,
+jamais écrite dans le pattern, qui relit `withLiveOverrides` (un
+cutoff/résonance mélodie réglé en direct sur un autre axe s'entend aussi
+ici) et applique le même calcul de portamento que le scheduler
+(`glideTime = glide * 0.12`, `scheduler.ts`) : sans axe glide assigné sur la
+mélodie, chaque zone déclenche une note franche ; avec, glisser d'une zone à
+l'autre glisse la note comme un pas à pas. Un tap (down+up sans changer de
+zone) joue une note ; un doigt qui glisse ne redéclenche qu'au changement de
+zone (pas de répétition sur un doigt immobile). Relâcher le bouton restaure
+le pad normal et démute la mélodie.
+
+**✅ 3 types de contrôleurs par bouton** (retour de Yann : « il faut encore
+plus de paramètres ! Je propose d'agencer les boutons selon 3 types :
+l'interrupteur, le bouton pas, contrôle fader » — clarifié avant
+implémentation : le bouton PAS avance de **nouveaux paramètres discrets**,
+pas des paliers sur les axes déjà là). Chaque bouton porte désormais un mode
+(`LiveAssignments.slotModes: SlotMode[]`, `'actions' | 'fader'`, bascule
+`⏻ ACTIONS`/`≈ FADER` au-dessus de sa ligne dans l'overlay ⚙) :
+- **Interrupteur** = le `kind: 'toggle'` déjà là (mutes, bypass limiteurs) —
+  rien de nouveau côté mécanique, juste formalisé comme l'un des 3 types ;
+  nouvel exemple : **ARPÈGE NAPPE** (`toggle-pad-arp`, bascule
+  `synthGlobal.padArpEnabled` en direct).
+- **Bouton pas** (`kind: 'step'`, nouveau) — un coup au pointerdown avance un
+  paramètre discret d'un cran, rien au relâché. Chaque entrée porte
+  directement son geste (`step: (engine) => …`, même principe que `apply()`
+  côté axes) plutôt qu'un cas par paramètre dans `runAction` — un `default:`
+  générique dans le switch les dispatche toutes. 10 nouvelles entrées :
+  **TON +1/−1** (`liveStepTranspose`, ±1 demi-ton, borné à ±1 octave autour
+  de la tonalité de l'Atelier), **GAMME →/←** (`liveStepScale`, cycle
+  circulaire dans les 5 modes de `SCALE_LIBRARY`), **VOIX
+  BASSE/NAPPE/MÉLODIE →/←** par ligne (`liveStepVoicePreset`, cycle
+  circulaire dans `SYNTH_VOICE_PRESETS[name]`, remplace le `voice` complet
+  comme le ferait un vrai changement de preset). Tonalité/gamme vivent dans
+  un nouvel override `liveSynthGlobalOverride` (même mécanisme relu à chaque
+  fenêtre que le groove), et `AudioEngine.liveMelodyFreqForDegree` relit cet
+  override pour que SOLO MÉLO (ci-dessus) entende un pas de
+  transposition/gamme donné en direct, pas seulement le séquenceur.
+- **Fader** (nouveau) — réutilise TEL QUEL le catalogue des 55 axes
+  (`LiveAssignments.slotFaders: LiveAxisId[][]`, un axe/bouton ou plusieurs
+  en macro comme le pad) : glisser verticalement sur le bouton pilote la
+  valeur, position = valeur (même convention que le pad, haut = 100%,
+  `faderPointerDown/Move`, `setFader`). Rendu comme `.abtn` avec un
+  remplissage (`.fader-fill`) qui monte/descend avec la valeur — même
+  `axisValues`/`applyAxisValue` que le pad, donc un fader et le pad peuvent
+  viser le même paramètre et rester synchronisés (dernière source qui a
+  écrit fait foi, comme pad/inclinaison).
+Actions et faders restent deux catalogues séparés par bouton plutôt que
+mélangés dans un seul tableau : les gestes (tap/hold pour les actions,
+glisser continu pour le fader) sont incompatibles sur la même surface en
+même temps. 🔀 brasser respecte le mode courant de chaque bouton (rebrasse
+`slots[i]` s'il est en ACTIONS, `slotFaders[i]` s'il est en FADER, jamais
+les deux).
+
+**✅ Vibration au trigger + snapshots d'assignation rappelables par appui
+long** (les deux items de la réserve regroupés dans une même passe, retour
+de Yann : « poursuis sur les travaux du mode live »).
+- **Vibration** — `hapticTick()` (`navigator.vibrate?.(12)`, optional
+  chaining plutôt qu'un guard `'vibrate' in navigator` : Safari iOS n'a pas
+  l'API, ça doit rester un no-op silencieux) appelé dans `onSlotDown`, donc
+  sur tout appui d'un bouton en mode ACTIONS (trigger/toggle/hold/pas) —
+  jamais sur le pad/fader, gestes continus où ça spammerait.
+- **Snapshots** — 3 emplacements fixes A/B/C (`SNAPSHOT_COUNT`,
+  `liveActions.ts`), persistés à part (`loadLiveSnapshots`/
+  `saveLiveSnapshots`, clé localStorage dédiée, réutilisent `isValid` pour
+  ignorer un snapshot corrompu/obsolète). Nouvelle rangée dans l'overlay ⚙,
+  sous la liste d'assignation. **Appui court = sauvegarder** l'assignation
+  courante dans l'emplacement (geste anodin, jamais destructeur) ; **appui
+  long (550 ms) = rappeler** (geste délibéré qui écrase toute l'assignation
+  courante en plein set — protégé comme le reste des gestes à risque de
+  mistap déjà identifiés dans le diagnostic ergonomie : bouton ⚙ éloigné du
+  pad, toggle inclinaison sorti de la zone de drag). `$state.snapshot()` des
+  deux côtés (pas `structuredClone`, qui lève une `DataCloneError` sur un
+  proxy `$state` — piège repéré et corrigé en vérification Playwright avant
+  merge, pas en production) : un snapshot est une copie figée plain-objet,
+  jamais une référence vivante vers `assignments`.
+
+**En réserve, pas prioritaire** : undo léger sur les triggers en direct
+(sémantique pas encore claire — annuler quoi, pour un mute qu'un second
+appui annule déjà ?) ; mode duo (deux téléphones connectés via le partage
+par URL existant, `stores/share.ts`).
+
+**Nouveau, retour de Yann 2026-08-13 — pas encore fait :**
+- ✅ **Fader horizontal** (retour de Yann 2026-08-13, fait le jour même) :
+  « il faudrait qu'il y ait un type de bouton où c'est un fader
+  gauche-droite au sein du bouton, où haut-bas, à voir le plus simple ».
+  Nouveau champ `LiveAssignments.faderOrientation: FaderOrientation[]`
+  (`liveActions.ts`, `'vertical' | 'horizontal'`, longueur SLOT_COUNT,
+  `'vertical'` par défaut — comportement inchangé tant qu'on n'y touche
+  pas), validé comme `slotLocked`. `setFader` (`LiveView.svelte`) prend
+  désormais `clientX` ET `clientY` et choisit l'axe/la dimension
+  (`clientX`/`rect.width` ou `clientY`/`rect.height`) selon l'orientation du
+  bouton ; convention distincte par orientation plutôt qu'unifiée : vertical
+  garde haut = 100 % (frac inversée, comme le pad), horizontal suit le sens
+  de lecture (gauche = 0 %, frac directe) — inverser l'horizontal aurait été
+  plus déroutant qu'utile. Toggle ↕/↔ dans l'overlay ⚙, quatrième icône du
+  `.toggle-row`, affiché SEULEMENT quand le bouton est en mode FADER
+  (l'orientation ne veut rien dire en mode ACTIONS). Rendu : `.fader-fill`
+  passe de `style:height` à `style:width` et d'un dégradé vertical à
+  horizontal quand `.horizontal` est posée sur `.fader-btn`, curseur
+  `ew-resize` plutôt que `ns-resize`. Vérifié par script Playwright :
+  glisser à 20 %/80 % depuis la gauche d'un fader horizontal lit
+  20 %/80 %.
+- ✅ **Verrouiller un bouton avant brassage** (retour de Yann 2026-08-13,
+  fait le jour même) : « il faudrait qu'on puisse verrouiller un bouton
+  qu'on veut garder avant le brassage pour le conserver ». Nouveau champ
+  `LiveAssignments.slotLocked: boolean[]` (`liveActions.ts`, longueur
+  SLOT_COUNT, `false` par défaut, validé comme les autres champs dans
+  `isValid`) — n'affecte que les 6 boutons, pas le pad ni l'inclinaison
+  (Yann a dit « un bouton », pas un axe). `toggleSlotLock` (`LiveView.svelte`)
+  bascule et persiste ; `shuffleAssignments` saute désormais tout slot
+  verrouillé et garde ses DEUX tableaux (`slots[i]` ET `slotFaders[i]`,
+  quel que soit le mode ACTIONS/FADER courant — un bouton verrouillé en
+  fader ne doit pas se faire rebrasser ses actions au prochain passage en
+  ACTIONS). Cadenas 🔒/🔓 dans l'overlay ⚙, à côté du toggle
+  ACTIONS/FADER existant (même gabarit `.mode-toggle`, accent ambre une
+  fois verrouillé — même code couleur que les emplacements de snapshot
+  remplis). Vérifié par script Playwright : bouton verrouillé inchangé
+  après 5 brassages consécutifs, bouton non verrouillé changé à chaque
+  fois.
+- ✅ **🎲 Random par bouton** (retour de Yann, dans la foulée du verrou :
+  « autant proposer un bouton d'assignement et un bouton random à côté de
+  chacun »). L'assignement existait déjà — taper la ligne BOUTON i ouvre le
+  panneau de sélection, inchangé ; ce qui manquait était un tirage direct
+  sans ouvrir ce panneau. `randomizeSlot(i)` (`LiveView.svelte`) tire un
+  seul nouveau réglage dans le catalogue du mode courant du bouton
+  (`pickAction`/`pickAxis`, désormais hissées en portée du composant et
+  partagées avec `shuffleAssignments` plutôt que redéfinies localement).
+  Troisième icône 🎲 dans le même `.toggle-row` que ⏻/🔒. Agit même sur un
+  bouton verrouillé — le verrou protège du brassage global accidentel par
+  🔀, pas d'un geste posé délibérément sur sa propre ligne ; vérifié par
+  script Playwright (🎲 change un bouton verrouillé, 🔀 ensuite ne le
+  touche pas).
+- ✅ **Paramètres de base toujours accessibles dans le bandeau du haut**
+  (audit demandé par Yann, fait le 2026-08-13 ; codé le même jour, « pars
+  sur les niveaux 1 ») : le `topbar` n'exposait **aucun contrôle direct** —
+  tout ce qui est réglable en direct passait par le catalogue d'assignation
+  (boutons/pad/fader), donc rien n'était garanti accessible sans
+  configuration préalable. Deux manques comblés :
+  - **Tempo** — stepper ±1 BPM (`tempoPointerDown`/`Up`, `LiveView.svelte`)
+    de part et d'autre du LCD, défilement automatique au maintien (400 ms
+    puis un cran/120 ms, même charte qu'un vrai stepper matériel) plutôt
+    que le glisser sur le LCD envisagé au départ — plus précis, aucun
+    risque de dérailler le tempo d'un geste imprécis sur une zone
+    minuscule. Écrit directement dans `pattern.state.tempo`, comme
+    `tapTempo()` de l'Atelier (`ToolBar.svelte`) — le tempo n'a jamais fait
+    partie du catalogue d'axes Live.
+  - **Volume master** — mini-fader horizontal dans le bandeau
+    (`vol-slider`, même mécanique que `.fader-btn.horizontal` mais hors
+    catalogue d'assignation), écrit via `applyAxisValue(['volume'], …)` —
+    reste donc synchronisé si 'volume' est *aussi* assigné à un bouton/axe
+    ailleurs (dernière source qui écrit fait foi, même convention que
+    pad/fader/inclinaison).
+  Piège de mise en page rencontré et corrigé : `.lcd-block` est un enfant
+  `flex:1` d'une colonne flex sans `align-items` explicite, donc `stretch`
+  par défaut — le groupe stepper+LCD+stepper héritait cette largeur totale
+  (~594px) et le bouton "+" se retrouvait collé à l'autre bout du bandeau,
+  loin du "−" et du nombre. `align-self: flex-start` sur `.lcd-tempo`
+  règle ça (repéré et corrigé en vérification Playwright avant commit, pas
+  après).
+- ✅ **Assigner/verrouiller/brasser directement autour de chaque bouton, sans
+  passer par ⚙** (retour de Yann 2026-08-13, « pars sur les niveaux 1 »,
+  fait le jour même) — avec demande explicite d'analyse d'ergonomie avant
+  de coder (« peux-tu analyser pour faire la meilleure ergonomie ?? »), et
+  une piste proposée par lui : un joystick circulaire sur le bouton du
+  milieu. Analyse faite le jour même :
+  - Un geste (appui long → menu radial/joystick) est **incompatible avec
+    deux des états qu'un bouton peut déjà porter** : les actions
+    `kind: 'hold'` (rolls) utilisent l'appui long comme LE geste live
+    (tenir = actif) — un menu radial déclenché au même seuil (550 ms,
+    convention snapshots) percuterait le roll en plein set ; et un bouton
+    en mode FADER utilise déjà le glisser comme geste live
+    (`faderPointerDown/Move`). Le même geste ferait donc des choses
+    différentes selon ce qui est actuellement assigné au bouton —
+    comportement imprévisible plutôt qu'ergonomique.
+  - Piste retenue : pas un geste, des **icônes persistantes minuscules dans
+    un coin de chaque bouton** (même esprit que 🔒/🎲 déjà dans l'overlay ⚙,
+    simplement déplacées sur la grille elle-même) — 🔒 et 🎲, toujours
+    visibles mais petites (~14px, coin haut-droit, hors de la zone d'appui
+    naturel du pouce), le reste du bouton garde exactement son comportement
+    live actuel (trigger/toggle/hold/fader). Une 3ᵉ icône ✏️ ouvrirait le
+    panneau de sélection DIRECTEMENT pour ce bouton (au lieu de
+    ⚙ → trouver la ligne → taper la ligne → panneau — un vrai raccourci
+    même si le panneau reste le même). Le toggle ACTIONS/FADER resterait
+    dans ⚙ seul — moins utile en plein set, et un mistap dessus change le
+    comportement du bouton au pire moment.
+  - Le joystick circulaire reste une bonne idée pour un *v2* limité aux
+    boutons `trigger`/`toggle`/`step` (où l'appui long est aujourd'hui un
+    vrai no-op), mais introduirait deux modèles d'interaction différents
+    selon ce qui est assigné — la cohérence l'emporte : icônes de coin
+    recommandées, joystick mis en réserve.
+  - **Implémenté** : nouveau conteneur `.abtn-wrap` par bouton de la grille
+    (`LiveView.svelte`), SIBLING du `.abtn`/`.fader-btn` plutôt qu'un
+    parent — un `<button>` ne peut pas contenir un autre `<button>`, et
+    être siblings (pas ancêtre/descendant) évite tout souci de bubbling :
+    taper une icône ne touche jamais le bouton en dessous, aucune
+    désambiguïation de geste à faire. `.corner-icons` en position absolue,
+    coin haut-droit, 3 icônes ~15px (🔒/🔓, 🎲, ✏️) réutilisant
+    `toggleSlotLock`/`randomizeSlot` déjà existants ; ✏️ ouvre le panneau de
+    sélection directement (`assignOpen = true` + `picker = …` — le picker
+    n'était rendu que sous l'overlay ⚙, il fallait aussi l'ouvrir, pas
+    seulement poser `picker`). Le toggle ACTIONS/FADER n'a PAS été ajouté
+    aux icônes de coin, comme prévu dans l'analyse. Vérifié par script
+    Playwright : taper le corps du bouton déclenche toujours l'action live
+    normale (mute qui s'active, fader qui glisse), taper une icône ne
+    déclenche jamais l'action du dessous.
+
+### 7.2 Atelier
+
+1. **✅ Réduire tous les paramètres — ⚠️ ROUVERT le 2026-08-15 (audit C1).**
+
+   > **Ce que cette passe a coûté**, mesuré trois semaines après :
+   > les trois nombres qu'elle a posés (`72px/1fr/36px` et le seuil
+   > `auto-fit` à 148px) sont les causes exactes des constats **A2**
+   > (pistes de curseur de 40px à 818px sur la même page, facteur 20),
+   > **B1** (6 boîtes de valeur qui débordent sur deux lignes, dont
+   > « 120 BPM » dès le premier écran) et **B2** (12 libellés tronqués, y
+   > compris quand 800px de piste restent vides à côté).
+   >
+   > Le marché passé était : une colonne de curseurs utilisables (~166px
+   > de piste sur téléphone) contre deux colonnes serrées (40px). **Et il
+   > n'a pas produit ce qu'il visait** — l'onglet Rythme déplié fait
+   > toujours 3,3 écrans de haut sur téléphone : la hauteur gagnée sur les
+   > curseurs a été reprise ailleurs.
+   >
+   > Corrigé le 2026-08-15 sans annuler l'intention (la densité mobile
+   > reste un objectif légitime) : voir §7.5. **Leçon à retenir au-delà de
+   > ce cas — un ✅ n'est pas définitif.** Une décision de design a un coût
+   > qui ne se voit qu'à l'usage ; ce document doit pouvoir la rouvrir.
+
+   Passe de densité sur `XpSlider`
+   (colonnes 72px/1fr/36px au lieu de 110/1fr/56, piste plus fine, marges
+   resserrées) + seuil des grilles `auto-fit` abaissé (148px au lieu de
+   190-260 selon les fichiers) dans `AtelierView`, `SynthModule`,
+   `DrumRowView` et `SynthRowView` — les groupes de curseurs (groove,
+   effets, harmonie, sidechain, réglages par ligne) passent officiellement
+   à 2 colonnes sur un écran de téléphone réel (mesuré : ~322px de large
+   utile à 390px de viewport, contre ~260-300px requis avant pour
+   déclencher 2 colonnes). Les labels longs tronqués un peu plus
+   agressivement (déjà le comportement existant, juste plus fréquent).
+   Complété ensuite (deux retours de Yann le jour même) : (a) les réglages
+   « toujours visibles » (Pas/Décalage/Volume en drum, Cycles/Notes/
+   Décalage/Volume/Glide/… en synthé) fusionnés dans le même dépliable
+   `▸ ⚙️ Réglages` que Timbre/filtre/espace, un seul repli par ligne, tout
+   caché par défaut ; (b) une fois déployé, un paramètre par ligne plutôt
+   que 2 colonnes (plus de pression d'espace une fois masqué par défaut) et
+   regroupé en encarts `<fieldset>` cohérents plutôt qu'une liste plate —
+   drum : Séquence / Timbre / Filtre & espace ; synthé : Séquence /
+   Oscillateur & enveloppe / Détune & modulation / Filtre / Espace
+   (`DrumRowView.svelte`, `SynthRowView.svelte`) ; (c) chaque encart se
+   déploie désormais indépendamment plutôt qu'un seul repli général —
+   `<legend>` cliquable par `<fieldset>` (`openGroups` par nom de groupe,
+   remplace le booléen unique `showSettings`). Réglages avancés en 2e
+   niveau de dépliable : pas encore fait, à voir à l'usage si le besoin se
+   confirme.
+2. **✅ Retirer le séquenceur kick/snare/hat de l'onglet Synthé, et le
+   remplacer sur Effets par un aperçu combiné des 6 lignes.** En relisant
+   `AtelierView.svelte` : ce n'était pas `TransportRings` (simple rappel
+   non éditable dans la barre sticky) mais le vrai séquenceur pas-à-pas
+   complet (`XpWindow "Séquenceur — Kick / Snare / Hat"`), rendu sans
+   condition d'onglet depuis une passe ergonomie précédente ("reste au même
+   endroit quel que soit l'onglet actif") — donc dupliqué sur Synthé ET sur
+   Effets, sans rapport avec le sujet de ces deux onglets. Repéré
+   directement dans le code plutôt que redemandé à Yann. Retiré de Synthé ;
+   sur Effets, remplacé (retour de Yann le jour même) par
+   `GeneralSequencer.svelte` — un aperçu en bandes colorées des 6 lignes
+   (batterie + synthé), même philosophie que `TransportRings` (lecture
+   seule, pas un second éditeur), en DOM plutôt qu'en canvas pour rester
+   cohérent avec le reste de l'Atelier.
+
+### 7.3 Audit de parité avec l'original
+
+Repérés dans `ANALYSE-ORIGINAL.md`, identifiés il y a longtemps.
+
+1. **✅ Son de victoire + flash des cases** en Mode jeu (original
+   `playChime`/`playWinSound` l. 8321-8340, `showGameResult` l. 8558-8564,
+   jamais portés). `AudioEngine.playWinChime(tier)` : mêmes fréquences/
+   durées/gains que l'original (tier 1 = arpège éclatant qui monte, tier 2 =
+   simple et positif, tier 3 = petite descente tiède), connecté à
+   `finalGain` plutôt qu'au « masterGain » de l'original — qui, malgré son
+   nom, est en réalité le bus batterie (passe par saturation/bitcrush/
+   compression), un hasard de nommage plutôt qu'un choix documenté ; le Mode
+   jeu part toujours d'un état neutre sur ces réglages donc le résultat est
+   identique à l'oreille. Flash : classe CSS `.win-flash` (même animation
+   `cellFlash`, 3 pulsations de luminosité) posée sur toutes les cases de
+   `GameView.svelte` pendant 1100ms, déclenchée dans `verify()` dès que
+   `game.solved` passe à `true` (le bouton ✓ Vérifier étant désactivé une
+   fois résolu, cette transition ne peut se produire que sur CET appel).
+   `tierForAttempts` (nouveau, `game.svelte.ts`) distinct de
+   `starsForAttempts` déjà là : à 3 essais tier vaut 3 alors que stars vaut
+   encore 2, l'original les calcule séparément.
+2. **✅ Bouton "Traduire l'arpège en Mélodie"** (original l. 3388–3435,
+   jamais porté). `translatePadArpToMelody(state, rng)` (nouveau,
+   `engine/generators.ts`, aux côtés de `randomizePad`/
+   `randomizePitchedLine`) : redimensionne la Mélodie à `pas Nappe × vitesse
+   d'arpège` (plafonné à 128), calée sur les mêmes mesures que la Nappe
+   (`resizeSynthLine`, déjà porté), puis rejoue `arpNoteOrder` (déjà exporté
+   par `voices/synth.ts`, injecté en `rng`) pour chaque pas de nappe ayant un
+   accord — un pas sans accord reste silencieux en Mélodie aussi. Octave
+   repliée dans [-1,1] avec le même décalage de -1 que l'original (la Nappe
+   joue -12 demi-tons plus bas que le registre par défaut de la Mélodie).
+   Remplace tout le contenu existant de la ligne — instantané figé, pas un
+   lien live. Bouton dans le fieldset "Arpégiateur de nappe"
+   (`SynthModule.svelte`), `rng = Math.random` comme les autres boutons 🎲
+   de remplissage aléatoire du même fichier (édition Atelier ponctuelle, pas
+   le rendu déterministe de l'export).
+3. **✅ Aide à la production contextuelle** (original `renderProductionHelp`
+   l. 8903–8972, jamais portée — cadrage fait ici plutôt que redemandé à
+   Yann : la seule vraie question ouverte était OÙ l'afficher dans le
+   nouveau design). Placée **au-dessus des onglets** (`AtelierView.svelte`,
+   juste sous le rappel de raccourcis clavier) plutôt que dans un seul
+   onglet : le conseil peut justement suggérer de CHANGER d'onglet
+   ("passe au Synthé"), il doit rester visible quel que soit celui actif —
+   et contrairement à ce rappel clavier, visible aussi sur tactile (pas
+   masqué par `@media (pointer: coarse)`), l'aide profite justement le plus
+   aux nouveaux venus. Même progression que l'original (pose le Kick → la
+   Snare → le Hat → passe au Synthé → explore les réglages avancés → liste
+   des modules pas encore touchés) et même mécanique de détection : `input`/
+   `change` délégués au niveau fenêtre (`markProductionTouched`,
+   `AtelierView.svelte`) plutôt qu'un handler par curseur — un attribut
+   `data-group` posé sur chaque `<fieldset>`/conteneur existant (13 groupes,
+   pas les 14 originaux 1:1 : ce port n'a pas le même découpage de DOM) fait
+   remonter le "touché" sans câblage supplémentaire, et comme
+   `DrumRowView`/`SynthRowView` sont un seul composant instancié 3× (une
+   fois par ligne), le même `data-group` sur leurs fieldsets agrège
+   naturellement les 3 lignes sous un groupe, exactement comme l'original.
+   Liste des modules non touchés repliée dans la même phrase (bande fine,
+   pas de second bloc séparé comme l'original) plutôt qu'affichée à part.
+   En mémoire seulement (pas de localStorage) : reflète l'exploration de
+   CETTE session, pas un score à conserver — recharger la page repart avec
+   des suggestions fraîches, comme l'original.
+
+### 7.4 Idées en réserve, pas prioritaires
+
+- **Cycles de fraction de mesure** pour les lignes synthé : 1/2, 1/3, 1/4 en
+  plus du cycle entier actuel.
+- **Débloquer des modules via le mode jeu** — progression du jeu qui ouvre
+  des contenus dans l'Atelier (voix, presets, effets ?), pas encore défini
+  quoi exactement ni comment articuler jeu ↔ atelier.
+- **Utiliser les gains de la besace** (actuellement juste comptés, pas
+  dépensés) :
+  - les échanger contre des modules (déblocage payant plutôt qu'automatique) ;
+  - personnaliser un EP après les 4 premiers enregistrements WAV.
+- **Améliorer l'entrée en jeu** pour la rendre plus intuitive au démarrage —
+  piste : ne proposer que le mode jeu au premier lancement (pas l'Atelier
+  tout de suite), et être très explicatif à chaque nouveauté introduite.
+- ✅ **Explications légères par paramètre** (retour de Yann, 2026-08-13 ;
+  codé le jour même, palier 1 du backlog priorisé, item 5/5) : une
+  micro-explication disponible pour chaque réglage, sans surcharger l'écran
+  ni noyer un nouvel arrivant. Nouveau `ui/xp/paramHints.svelte.ts` :
+  table `PARAM_HINTS: Record<string, string>` indexée sur le LIBELLÉ du
+  curseur (`XpSlider.label`) plutôt qu'un identifiant dédié à passer à
+  chaque appel — un même libellé ("Swing", "Attaque"…) revient sur
+  plusieurs lignes/pages avec le même sens, une seule entrée couvre toutes
+  ses occurrences, ajouter une ligne à la table suffit à faire apparaître
+  la bulle partout sans toucher aux dizaines de call sites. Contenu
+  volontiers incomplet (~30 entrées, les paramètres de groove/effets/synth
+  les plus chargés en jargon) plutôt que deviné — mieux vaut aucune bulle
+  qu'une explication approximative ; chaque phrase vérifiée contre le
+  comportement réel du scheduler/de la voix avant d'être écrite (ex.
+  Traîne ≠ Swing : la traîne retarde TOUS les pas, le swing un sur deux).
+  `XpSlider.svelte` cherche son propre hint (`hintFor(label)`) et bascule
+  son libellé en `<button class="lab has-hint">` (souligné en pointillés,
+  `cursor: help`) uniquement si un hint existe ET que le réglage est
+  activé — sinon `<span class="lab">` inchangé. Bulle jaune classique des
+  tooltips Windows (`#ffffe1`, bordure noire) plutôt qu'un composant
+  générique repeint, cohérent avec le design XP assumé. Affordance
+  choisie : le libellé LUI-MÊME est le déclencheur (survol/focus) — pas
+  d'icône ⓘ séparée, la colonne de libellé ne fait que 72px, une icône en
+  plus l'aurait surchargée pour rien. Déclenchement au survol/tap plutôt
+  qu'à l'appui long envisagé au départ : un appui long est un geste caché
+  qu'un nouvel arrivant ne découvre jamais tout seul, contraire à l'objectif
+  de prise en main — un libellé souligné en pointillés se découvre au
+  premier coup d'œil.
+  - **Réglage persistant** (Affichage ▸ Aide contextuelle, `ToolBar.svelte`,
+    activé par défaut) : même emplacement que Sons système, mais PAS le
+    même mécanisme de state — `systemSounds.ts` garde une variable de
+    module simple (suffisant, un son ne se déclenche qu'au prochain
+    événement) alors que `paramHintsSettings.enabled` est un `$state` de
+    classe (`ParamHintsSettings`) : ici la réactivité doit atteindre tous
+    les `XpSlider` déjà montés à l'écran dès qu'on bascule le réglage, pas
+    seulement influencer un futur appel. Vérifié par script Playwright :
+    désactiver le réglage fait disparaître l'affordance sur un `XpSlider`
+    déjà affiché, sans re-rendu manuel ni rechargement de page.
+- **Bouton retour utilisateur, v2** (bug / correction / idée) — le mailto:
+  du 2026-08-13 (menu Aide de l'Atelier) est réévalué le jour même : Yann ne
+  veut plus qu'il ouvre le client mail, veut un accès identique depuis les
+  trois modes (pas seulement l'Atelier — un bouton fixe, ex. bas-droite),
+  une saisie rapide du problème dans la page elle-même, et **l'envoi par
+  mail ne doit pas se voir depuis le site** (ni adresse en clair dans le
+  code source, ni app mail qui s'ouvre). Ça ne se fait plus sans un
+  intermédiaire côté serveur : le site est un SPA statique (`dist/` sur
+  Vercel), rien ne peut poster un e-mail sans exposer une clé quelque part.
+  Deux pistes :
+  - **Service de formulaire tiers** (type Formspree) : la page poste en
+    `fetch` vers un endpoint public propre au formulaire, le service
+    relaie par mail — zéro code serveur, zéro secret dans le bundle
+    (l'ID de formulaire n'est pas une clé sensible). Recommandé : le plus
+    rapide, cohérent avec « site statique déployé sur Vercel ».
+  - **Fonction serverless Vercel** (`api/feedback.ts`) qui appelle une API
+    d'e-mail transactionnel (ex. Resend) avec une clé en variable
+    d'environnement Vercel — plus de contrôle, mais introduit un vrai
+    backend au projet (rien de tel aujourd'hui) et une clé à provisionner.
+  Bloqué sur un choix de Yann (+ créer le compte/formulaire côté service
+  choisi, je ne peux pas le faire à sa place) avant de coder quoi que ce
+  soit. Bouton flottant (position à trancher, bas-droite proposé) + petit
+  formulaire inline (texte libre, pas de sujet/destinataire visibles)
+  remplacerait le menu Aide actuel, partagé entre Atelier/Jeu/Live plutôt
+  que spécifique à `ToolBar.svelte`.
+- **Fredonner une mélodie au micro → grille Mélodie** (retour de Yann,
+  2026-08-13). Détection de hauteur en direct (`getFloatTimeDomainData` +
+  autocorrélation ou YIN, pas de lib externe si évitable), quantification de
+  la fréquence détectée sur la gamme/tonalité courante puis sur la grille de
+  pas. Projet en soi (DSP temps réel + UX d'enregistrement) — à faire
+  descendre en section 6 « grosses » une fois cadré.
+- ✅ **Viz③ Mode Live (lapin coureur) : lien musique trop faible** (retour de
+  Yann, 2026-08-13, corrigé le jour même). Diagnostic (`LiveView.svelte`,
+  `drawVizRunner`) : le défilement (`scroll = now * 70`) tournait à vitesse
+  réelle fixe, indépendante du tempo et de l'état lecture/arrêt, et les
+  carottes étaient semées à un espacement pixel aléatoire (130–150 px + aléa)
+  plutôt qu'aux positions réelles des pas du pattern. Trois correctifs :
+  (1) horloge de course dédiée (`runnerClock`) qui n'avance que pendant la
+  lecture (`playing`) — le lapin s'immobilise net à l'arrêt au lieu de
+  continuer sur l'horloge murale, vérifié par capture d'écran (deux frames à
+  1,2 s d'écart à l'arrêt strictement identiques) ; (2) vitesse de défilement
+  dérivée du tempo réel (`runnerScrollSpeed`, `RUNNER_STEP_PX / stepDur`,
+  `stepDur = barDuration(tempo) / kick.subdiv` de `engine/groove.ts`),
+  calibrée pour retrouver ~70px/s au réglage par défaut (120 BPM, kick à
+  4 pas) ; (3) carottes semées sur le pattern réel de la ligne kick
+  (`runnerRefillCarrots`, un curseur de pas qui avance en boucle sur
+  `kick.pattern`/`kick.subdiv`, une carotte par pas actif, pas silencieux
+  comptés dans l'espacement) au lieu d'un espacement aléatoire — manger une
+  carotte correspond maintenant à un coup de kick effectivement programmé.
+  Le cycle de jambes (`run`) suit la même horloge et le même ratio de
+  vitesse pour rester visuellement cohérent avec le sol qui défile. La
+  détection de morsure (front montant sur `getLineLevels()`) reste sur
+  l'horloge murale réelle — c'est le seul repère fiable de ce qui sonne
+  vraiment.
+
+### 7.5 Dette d'interface — section permanente (créée le 2026-08-15, audit C2)
+
+> **Pourquoi cette section existe.** Sur ses 1 270 premières lignes, ce
+> document n'a quasiment jamais rien enlevé : chaque entrée ajoute une
+> voix, un mode, un catalogue, un réglage, une bulle. Les constats **A6**
+> (les mêmes commandes à trois endroits) et **A1** (quatre barres avant la
+> première case jouable) en sont le résultat mécanique, pas des accidents.
+> Un backlog qui ne fait que grossir produit exactement l'interface qu'on
+> a mesurée. Cette section est au même rang que le backlog de features, et
+> se lit avant lui.
+
+**Trois règles d'écriture, à appliquer aux prochaines entrées :**
+
+1. **Tout nouvel élément d'UI permanent nomme ce qu'il remplace, ou d'où
+   vient sa place.** Pas de réponse = l'élément n'est pas permanent (il
+   va dans un repli, un menu, une bulle) ou il ne se fait pas.
+2. **Chaque ✅ porte une ligne « ce que ça coûte à l'écran »**, à côté du
+   « pourquoi » déjà très bien tenu. Le coût ne se voit qu'à l'usage :
+   sans cette ligne, il n'est jamais relu (cas d'école : §7.2.1).
+3. **Un ✅ n'est pas définitif.** Une entrée livrée peut être rouverte
+   avec son coût mesuré, sans que ce soit un échec — c'est le seul moyen
+   qu'une décision de design vieillisse correctement.
+
+**Dette ouverte, par ordre de priorité** (issue de l'audit du 2026-08-15,
+détail des constats plus bas dans ce document) :
+
+- ✅ **A2 · B1 · B2 — proportions du curseur** (fait le 2026-08-15, voir
+  plus bas). Rouvre §7.2.1 sans annuler son intention.
+- ✅ **A3 — cibles tactiles** des dépliables, des mutes et de la barre
+  d'outils (fait le 2026-08-15, voir plus bas). **Ce que ça a coûté à
+  l'écran** (règle n°2 ci-dessus, première application) : le chrome du
+  premier écran mobile passe de 64 % à 69 %, les barres de menus et
+  d'outils ayant grandi. Assumé et à reprendre par A1 — la menubar est
+  justement l'un des blocs qu'il propose de fondre.
+- 🟡 **A1 — budget d'écran : premier passage fait le 2026-08-15**, sur les
+  trois coupes arbitrées par Yann. **69 % → 60 %** du premier écran mobile
+  (585px → 510px avant la première case ; le Kick est désormais visible
+  sans défiler, ce qui n'était pas le cas). Quatre barres empilées → trois.
+  - nav des 3 modes fondue dans un menu « Mode » de la barre de menus. La
+    barre de navigation ne subsiste que pour le Mode jeu, qui n'a pas de
+    barre de menus et dispose de toute la hauteur.
+  - explication de la Banque de séquences derrière un ⓘ (4 lignes pleines
+    affichées en permanence → 0 par défaut, le texte reste à un tap).
+  - conseil 💡 production ramené à une ligne tronquée, dépliable au tap :
+    il reste visible et découvrable — l'objectif de §7.3 — sans occuper la
+    moitié du bandeau en continu.
+- ✅ **A1 — 2ᵉ passage, le même jour** (Yann : « allons-y, testons ») :
+  `.preset-row` descendu SOUS le séquenceur. Il était coincé entre les
+  onglets et le contenu que les onglets commutent — taper « Synthé »
+  obligeait à traverser tempo + morceau + banque avant d'atteindre le
+  synthé. Pur réordonnancement, **rien n'est retiré** : ce qu'on joue
+  vient en premier, ce qu'on charge et ce qu'on règle vient après.
+  Lecture/Break/onglets n'ont pas bougé (barre sticky, joignables de
+  partout) et le tempo reste immédiatement sous le séquenceur.
+
+  **60 % → 34 %** du premier écran mobile, **56 % → 31 %** sur desktop.
+  Bilan complet de A1 : **64 % → 34 %** (585px → 288px avant la première
+  case). Trois lignes de batterie entières sont désormais visibles sans
+  défiler, là où on n'en voyait aucune.
+
+  Vérifié par script Playwright : ordre du DOM, Vue circulaire qui pilote
+  bien le séquenceur situé au-dessus d'elle, retour en vue linéaire,
+  tempo éditable au clavier ET au glissé, chargement d'un morceau depuis
+  sa nouvelle place, lecture audio réelle, bascule des 3 onglets. Zéro
+  erreur console.
+
+- ✅ **B7 + A6 (barre d'outils) — 3ᵉ passage, le même jour.** La barre de
+  menus tenait sur deux lignes sous ~460px et coupait ↶ de ↷. Elle tient
+  désormais sur **une seule ligne de 360px à 1280px** (34px au lieu de
+  ~70px). **34 % → 31 %** du premier écran mobile.
+
+  Le cadrage initial (« replier Tap tempo / ↶ / ↷ / Partager dans les
+  menus qui les contiennent déjà ») s'est révélé faux à la lecture, et a
+  été corrigé avant de coder :
+  - **🔗 Partager retiré** — celui-là était bien un doublon exact du menu
+    Fichier, et partager n'est pas un geste qu'on répète. [A6]
+  - **👆 Tap tempo déplacé, pas replié** — il n'était dans AUCUN menu, et
+    un menu lui serait de toute façon interdit : on ne peut pas taper un
+    rythme dans un menu qui se referme. Remonté contre le curseur Tempo
+    (bloc preset), c'est-à-dire contre le contrôle qu'il pilote — on voit
+    maintenant la valeur bouger à chaque frappe. Libellé raccourci en
+    « 👆 Tap ». `tapTempo()` a migré de `ToolBar.svelte` vers
+    `AtelierView.svelte` avec son bouton ; l'import `pattern` devenu mort
+    dans ToolBar a été retiré.
+  - **↶ / ↷ conservés** malgré leur doublon dans le menu Édition : sur
+    téléphone il n'y a pas de Ctrl+Z, ce sont les seuls accès à un clic.
+    Les retirer aurait été appliquer A6 mécaniquement contre l'ergonomie.
+    Groupés dans un conteneur `nowrap` pour ne plus jamais être séparés.
+  - Remplissage **horizontal** des menus resserré sous 460px — la hauteur
+    de cible reste à 28px, A3 n'est pas défait.
+
+  Vérifié par script Playwright : barre sur 1 ligne à 360/390/414/1280px,
+  tap tempo fonctionnel à sa nouvelle place (5 frappes à ~500ms → 110 BPM,
+  arrondi au pas de 10 comme prévu), Partager toujours opérant depuis le
+  menu Fichier, Annuler toujours à un clic. Zéro erreur console.
+
+- ✅ **A6 — le bloc preset supprimé** (2026-08-15, sur cadrage de Yann :
+  « à voir comment réorganiser ce point ? […] audit et propose »). Il
+  pesait 203 à 296px selon la largeur et, sur ses huit éléments, trois
+  n'étaient que des doublons des menus. Chaque famille a rejoint l'endroit
+  qui lui correspond :
+  - **Vue circulaire / Sauver / Charger** : supprimés, ils existaient déjà
+    à l'identique dans Affichage et Fichier.
+  - **Morceaux et banque** : passés dans le menu **Fichier**, en sections
+    après les entrées classiques. Un `<select>` de 34 entrées EST déjà une
+    liste déroulante — la passer en menu ne change rien à l'interaction et
+    coûte zéro pixel. *Essayé et abandonné* : un menu « Morceaux » de
+    premier niveau, qui refaisait passer la barre à deux lignes sur
+    téléphone (30px de chrome permanent) — et « charger un morceau » est
+    de toute façon un « ouvrir ».
+  - **Tempo + Tap** : sous le séquenceur (idée de Yann). Les trois
+    emplacements ont été mesurés : dans la barre sticky = +66px
+    PERMANENTS (il n'y tient pas sur la ligne de Lecture/Break à 390px,
+    donc il y prend sa propre rangée, présente sur les trois onglets) ;
+    juste sous la barre sticky = +46px au-dessus de la ligne de
+    flottaison ; sous le séquenceur = zéro coût sur les deux. Ce n'est pas
+    un contrôle qu'on chevauche comme Lecture ou Break.
+  - **Textes pédagogiques du morceau** : d'abord un `PresetNotes.svelte`
+    montrant le morceau CHARGÉ, remplacé le jour même par l'analyseur
+    ci-dessous. C'est la raison pour laquelle le choix du morceau n'a pas
+    été *seulement* basculé en menu : un menu porte 34 noms, pas ~880
+    lignes de contenu pédagogique, et ce contenu est un atout du projet.
+    Partage retenu : le menu CHARGE (gratuit en hauteur), l'onglet RACONTE
+    (a besoin de place).
+  - **Gestion de la banque** : dans l'onglet Production, en pleine
+    largeur — un CRUD (enregistrer/renommer/supprimer) tient mal dans un
+    menu. Le *chargement*, lui, est dans Fichier : le garder aux deux
+    endroits aurait recréé le doublon qu'on venait d'enlever.
+  - **Onglet « Effets » renommé « Production »** : il ne contient plus
+    seulement les effets de bus mais tout ce qui n'est pas l'édition des
+    notes.
+
+- ✅ **Analyseur de rythme** (2026-08-15, idée de Yann : « un analyseur de
+  son à la place de la section morceau chargé : il indique quel morceau se
+  rapproche le plus et explique le contexte »). Remplace `PresetNotes` —
+  et c'est mieux pour deux raisons : « Le morceau chargé » n'avait rien à
+  dire tant qu'on n'en avait pas chargé un, et devenait carrément FAUX dès
+  qu'on modifiait le pattern (il continuait d'afficher l'histoire d'un
+  morceau qu'on ne jouait plus). Le plus proche, lui, a toujours quelque
+  chose à raconter, y compris sur un rythme parti de rien.
+  - `similarity.ts` gagne `rankPresets()` (classement complet) à côté de
+    `findClosestPreset()`, qui en devient un simple appelant. Un seul
+    parcours des 34 presets × 6 permutations, en gardant le meilleur score
+    PAR preset — sinon un même morceau reviendrait plusieurs fois dans le
+    classement, une fois par permutation.
+  - Le panneau montre : le verdict avec son score, les textes historiques,
+    **les deux suivants avec leurs scores** (62 % contre 58 %, ce n'est pas
+    la même chose que 88 % contre 41 % — n'afficher que le premier
+    laisserait croire à une certitude qu'on n'a pas), une fiche technique
+    du rythme (tempo, signature, lignes qui sonnent, swing), les écarts
+    actionnables avec le style (tempo/swing, seuils larges pour ne
+    signaler que ce qui s'entend), et la **mention honnête** que le score
+    ne porte que sur kick/snare/hat.
+  - **Libère la ligne « le plus proche » du bandeau sticky**, où elle était
+    masquée sur mobile (`@media (pointer: coarse)`) : l'information devient
+    accessible au doigt, ce qu'elle n'était pas, et gagne le contexte qui
+    lui donnait un intérêt.
+  - Effet de bord : le calcul ne tourne plus QUE quand l'onglet Production
+    est ouvert. Avant, 34 presets × 6 permutations toutes les 300ms
+    pendant qu'on tapait sur la grille, pour alimenter une ligne de texte
+    invisible sur mobile.
+
+- ✅ **Aiguille de l'anneau au tempo** (retour de Yann : « la barre du
+  nouveau cercle devrait défiler au rythme du tempo »). Elle était calée sur
+  `pos`, l'INDEX du pas en cours : à 4 pas par mesure elle sautait par quarts
+  de tour. Elle interpole désormais entre deux pas.
+  Le repère de temps reste l'arrivée du pas lui-même, pas une horloge partie
+  de zéro : `pos` vient de `consumePlayhead()`, qui ne relâche un événement
+  que lorsque l'horloge AUDIO l'a atteint. On se recale donc sur le son à
+  chaque pas et on n'interpole qu'À L'INTÉRIEUR d'un pas — la dérive de
+  l'horloge murale sur ~0,5 s (120 BPM, 4 pas) ne se voit pas et repart de
+  zéro au pas suivant. Pas d'horloge parallèle au son, donc.
+  Piège rencontré : la prop du composant s'appelle `state`, ce qui entre en
+  conflit avec la rune `$state` (le compilateur lit `$state` comme
+  l'abonnement à un store nommé `state`). `needlePhase` est une variable
+  simple — `draw()` est appelé à la main depuis la boucle d'animation, rien
+  n'a besoin d'y réagir.
+  Vérifié en comptant les images distinctes du canvas pendant la lecture :
+  14/14 sur ~1,1 s (≈2 pas), là où un défilement pas-à-pas en aurait donné
+  2 ou 3.
+- ✅ **Bandeau des lignes synthé allégé** (retour de Yann : « un dessin de
+  filtre qui n'apporte pas grand chose, pas besoin de tester d'ailleurs »).
+  La courbe de filtre (`FilterCurve.svelte`, supprimé — plus aucun appelant)
+  et le bouton ▶ Tester quittent le bandeau ; il ne reste que le libellé, le
+  mute, le choix de voix et le 🎲. C'est le constat **B9** de l'audit (canvas
+  qui flottait à droite, graduations chevauchant la courbe, grand vide à sa
+  gauche), réglé par la suppression plutôt que par le replacement.
+  `AudioEngine.previewSynth()` n'a plus d'appelant côté UI : laissé en place,
+  c'est une capacité légitime du moteur, mais à noter comme non utilisée.
+
+  Résultat mesuré : page par défaut **1 369px → 1 203px** sur téléphone
+  (1,6 → 1,4 écran), chrome du premier écran **32 %** sur mobile ET sur
+  desktop (288px, contre 292 avant), barre sticky inchangée à 122px,
+  barre de menus toujours sur une ligne de 360 à 1280px.
+
+  - **Reste ouvert** : nit repéré en testant : taper la valeur d'un
+    curseur pré-remplit le champ sans le sélectionner — il faut effacer à
+    la main avant de saisir. Un `select()` au focus suffirait.
+- ✅ **Filtre du synthé résumé en deux macros, fusionné avec Espace**
+  (retour de Yann : « filtre on comprend rien, on peut pas résumer en un ou
+  deux paramètres les filtres du synthé, de manière à fusionner avec
+  espace ? »). Le panneau exposait quatre réglages en unités techniques —
+  Tone %, Filtre Hz, Ouv. filtre Hz, Ferm. filtre ms — et en mélangeait deux
+  choses sans rapport : **`voice.tone` n'est pas un filtre du tout**, c'est
+  un drive de waveshaper (`driveCurve`, `voices/synth.ts` l. 121-124), rangé
+  là par accident. Il rejoint « Oscillateur & enveloppe » sous son vrai nom,
+  **Saturation** — dont l'explication existante (« un ampli qu'on pousse un
+  peu fort ») le décrit correctement, contrairement à l'ancienne entrée
+  `Tone`, écrite pour le Tone de la BATTERIE, qui est un vrai réglage de
+  timbre grave/aigu. Une explication juste pour le mauvais paramètre : une
+  raison de plus pour laquelle le panneau ne voulait rien dire.
+  Restent deux macros nommées d'après ce qu'on ENTEND :
+  - **Brillance** → `voice.cutoff`, mappé exponentiellement sur 100-4000 Hz
+    (l'oreille perçoit les fréquences en ratios ; en linéaire tout le haut
+    de la course aurait sonné pareil).
+  - **Mouvement** → `filterEnvAmount` ET `filterEnvRelease` ensemble : à
+    faible ampleur une fermeture longue ne s'entend pas, à forte ampleur
+    une fermeture instantanée fait un clic. Les deux n'ont d'intérêt
+    séparément que pour qui sait déjà ce qu'est une enveloppe de filtre.
+
+  **Aucun champ d'état n'est supprimé** : le format v2 est le contrat central
+  (CLAUDE.md), seule l'UI est résumée. Un preset qui règle finement
+  `filterEnvRelease` continue de sonner à l'identique tant qu'on ne touche
+  pas à la macro. Vérifié que les valeurs des 34 presets tiennent dans les
+  bornes des macros (cutoff 600-3200, filterEnvAmount 1200-3200) : aucune
+  n'est écrasée par un aller-retour d'affichage.
+
+  **Ce que ça coûte à l'écran** (règle n°2) : ça en rend. Sur l'onglet
+  Synthé à 360px, les surfaces Filtre + Espace des 3 lignes ouvertes passent
+  de **1 110px à 723px (−35 %)**, 6 curseurs → 4, et une pastille de moins
+  par ligne (5 → 4 sur basse/mélodie). Page repliée inchangée (1 519px).
+  Les 43 libellés de curseur de l'appli ont toujours une explication
+  (vérifié en ouvrant tous les replis des 3 onglets, pas au jugé).
+- ⚠️ **A6 — dédoublonner les commandes** entre menus, barre d'outils et
+  bloc preset. À trancher : laquelle des trois surfaces garde quoi.
+  *(A5 était listé ici en ⚠️ « à trancher » alors qu'il a été livré le
+  même jour — son ✅ est juste en dessous. Ligne supprimée le 2026-08-16 :
+  une entrée ouverte qui décrit du travail fait est pire qu'absente, elle
+  fait rouvrir un débat déjà tranché.)*
+- ✅ **A4 — le mur d'encarts repliés** (2026-08-15). Replié, un
+  `<fieldset>` dessinait quand même un rectangle pleine largeur pour ne
+  contenir qu'un mot de `<legend>` : trois bandes vides par ligne de
+  batterie (quinze sur l'onglet Rythme), cinq à sept par ligne synthé
+  (une vingtaine sur l'onglet Synthé). Remplacés par **une rangée de
+  pastilles** par ligne, le panneau n'occupant de la place que lorsqu'il
+  est réellement ouvert. `data-group` reste sur le conteneur des
+  curseurs — l'aide à la production le retrouve par `closest()` comme
+  avant (vérifié). Accent ambre côté batterie, violet côté synthé, cible
+  tactile maintenue à 28px (A3).
+  **Hauteur de page par défaut : 2,1 → 1,6 écrans** sur téléphone
+  (1 751px → 1 369px) — les cinq lignes du séquenceur tiennent désormais
+  en un écran et demi au lieu de deux et des poussières.
+- ✅ **A5 — repères de temps dans la grille linéaire** (2026-08-15). Ce
+  qui rend la solution simple, et qui a été vérifié dans le moteur avant
+  de coder : `stepDuration = barDuration / subdiv` (`engine/groove.ts`),
+  donc **toute ligne couvre exactement une mesure**, quel que soit son
+  nombre de pas. Une mesure vaut 4 temps → les repères tombent à
+  0/25/50/75 % de la LARGEUR de chaque ligne, et s'alignent donc
+  parfaitement entre lignes **même quand les cases, elles, ne s'alignent
+  pas**. C'est précisément ce qui rend la polyrythmie lisible : on voit
+  contre quoi chaque case tombe. Plus une règle numérotée 1·2·3·4,
+  affichée une seule fois en tête plutôt que sur chaque ligne.
+  Utilitaire `.beat-grid` dans `styles/global.css` plutôt que dupliqué
+  dans les deux composants (le CSS Svelte est scopé, et le projet souffre
+  déjà d'un `.xp-btn` recopié six fois — audit C6). Lignes synthé :
+  `4 × cycleBars` temps, et repères **désactivés en affichage par
+  paquets** — un paquet commence à une fraction quelconque de la mesure,
+  les traits seraient déphasés, mieux vaut aucun repère qu'un repère qui
+  ment.
+  - ⚠️ **Correctif le jour même** (Yann : « et dans synthé, on peut en
+    faire de même non ? » — en allant vérifier, le défaut était chez moi).
+    Un temps ne mérite un trait que s'il reste plus espacé que les cases,
+    sinon on ne marque plus le rythme, on RAYE les cases. Cas qui l'a
+    révélé : la Nappe part à `cycleBars: 4` pour 4 cases
+    (`defaults.ts`), donc 16 temps sur 4 cases — trois traits au travers
+    de chaque case. Au-delà de 8 temps on retombe sur les seules barres
+    de mesure (les deux périodes du dégradé sont rendues égales, la
+    couche « mesure », plus marquée et dessinée par-dessus, recouvre
+    celle des temps). Seuil volontairement haut pour préserver LE cas qui
+    compte — hat à 3 pas contre 4 temps, la polyrythmie qu'on cherche
+    justement à rendre lisible.
+  - **Pas de règle de temps numérotée sur l'onglet Synthé**, contrairement
+    à Rythme, et c'est délibéré : sur Rythme toutes les lignes couvrent
+    une mesure, un « 1·2·3·4 » partagé est donc vrai pour toutes. Sur
+    Synthé les lignes ont des portées différentes (Basse/Mélodie 1
+    mesure, Nappe 4 par défaut) — une règle unique mentirait pour au
+    moins une ligne. À la place, la portée du cycle est accolée au
+    libellé de la ligne (« NAPPE · 4 mes. ») quand elle dépasse une
+    mesure : sans ça, deux grilles d'apparence identique ne représentent
+    pas du tout la même durée. Porté par le libellé existant plutôt que
+    par un badge séparé — aucun élément permanent de plus, aucune hauteur
+    gagnée (règle du §7.5).
+- **B3 · B4 · B6** (finitions) — voir le palier 3 de l'audit. **B8 fait le 2026-08-17** (voir plus bas).
+  **Mis à jour le 2026-08-16** : B7 (menubar sur deux lignes) est fait ;
+  **B5** (anneau synthé délavé) et **B9** (canvas `FilterCurve` qui flotte)
+  n'existent plus — les deux ont été résolus par *suppression* (un seul
+  anneau au lieu de deux, `FilterCurve.svelte` supprimé), pas par
+  correction. Quatre constats restants sur neuf.
+- 🅿️ **Accessibilité — SORTIE de la dette ouverte le 2026-08-16** (arbitrage
+  D4 de Yann : « l'App est pour le moment testée uniquement sur téléphone, le
+  mode ordinateur est en friche »). Le clavier est un sujet d'ordinateur, il
+  repart avec le chantier desktop. Ne plus la compter comme un item d'audit
+  non traité. Deux restes minuscules, à prendre en passant et pas à
+  planifier : un `aria-label` par case (les lecteurs d'écran de TÉLÉPHONE,
+  VoiceOver et TalkBack, sont concernés eux aussi) et le conflit de la barre
+  d'espace. Détail : voir « Arbitrages (suite) et 3e lot ». Ancien contenu de
+  l'entrée, conservé pour mémoire : `role="grid"`/
+  `gridcell`, `aria-pressed`, un libellé par pas (« Kick, pas 5, actif,
+  roll ×2 »), `prefers-reduced-motion` sur la loupe et les animations.
+  Tout est à 0 aujourd'hui. À faire, ou à assumer explicitement comme
+  non-objectif du projet — mais plus à laisser passer pour acquis.
+
+---

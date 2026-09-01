@@ -1,7 +1,7 @@
 # Reprise — brief de session
 
-> À lire en premier, avant `PLAN.md` (7 400 lignes, c'est le journal détaillé ;
-> ceci en est la carte). `CLAUDE.md` reste la source des règles.
+> À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
+> ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
 > Dernière mise à jour : 2026-08-31, après la seconde passe de difficulté
 > (actes 1 et 2 : un sujet, deux exercices).
@@ -240,7 +240,8 @@ retouché de la session.
 | Fichier | Ce qu'il porte |
 |---|---|
 | `CLAUDE.md` | les règles, les pièges, les invariants — **fait autorité** |
-| `PLAN.md` | le journal détaillé, une entrée ✅ par livraison |
+| `PLAN.md` | le journal du Mode jeu, une entrée ✅ par livraison |
+| `docs/plan/` | les quatre archives détachées de `PLAN.md` (migration, audits, maquettes) |
 | `HISTOIRE.md` | le récit source (entièrement porté) |
 | `src/model/carriere.ts` | les huit actes + l'épilogue |
 | `src/model/exercises.ts` | les 11 verbes, et la notation pure |
@@ -371,7 +372,8 @@ Aucune n'est engagée — demander avant de plonger.
   10 % du temps c'était la bonne réponse. Corrigé (`HORS_EPOQUE`), et le test
   existe maintenant. À retenir : « voulu mais jamais vérifié » veut dire « pas
   fait ».
-- L'arbitrage design A/B/C de `PLAN.md` (« XP est le cadre, l'instrument est
+- L'arbitrage design A/B/C (`docs/plan/04-maquettes-et-moodboards.md`,
+  « XP est le cadre, l'instrument est
   sombre ») est resté en attente depuis août — c'est la plus ancienne décision
   ouverte, et elle conditionne toute passe d'UI.
 - **Le Mode Live reste à l'acte 7**, donc derrière tout le récit, alors qu'il est

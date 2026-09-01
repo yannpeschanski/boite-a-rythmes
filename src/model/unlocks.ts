@@ -5,7 +5,7 @@
 // et désactivés par un `return true` sous ce commentaire : « TEMPORAIRE :
 // rien n'est bloqué pour le moment, le temps de décider comment relier
 // réellement les modules à la progression du Mode jeu. » Yann a tranché le
-// 2026-08-16 (PLAN.md, arbitrage D2) : verrou DUR, et le Mode jeu devient la
+// 2026-08-16 (docs/plan/02-audits-et-arbitrages.md, arbitrage D2) : verrou DUR, et le Mode jeu devient la
 // porte d'entrée qui ouvre les autres modes.
 //
 // Module PUR (aucune rune, aucun DOM) pour la même raison que `engine/` :
@@ -88,8 +88,9 @@ export interface UnlockContext {
    *
    * C'est désormais la voie PRINCIPALE d'ouverture d'un module : « ton morceau
    * a besoin d'une basse, voilà le Synthé » est un moment de récit, là où « le
-   * niveau 13 ouvre le Synthé » est un nombre à justifier (PLAN.md,
-   * « Architecture du Mode jeu » ; HISTOIRE.md, « Ce que le récit ouvre »).
+   * niveau 13 ouvre le Synthé » est un nombre à justifier
+   * (docs/plan/03-journal-migration.md, « Architecture du Mode jeu » ;
+   * HISTOIRE.md, « Ce que le récit ouvre »).
    */
   acte?: number;
   /** Contournement développeur (#boss) : tout est ouvert. */

@@ -3,7 +3,7 @@
 > Récit du Mode jeu. Version écrite par Yann le 2026-08-22, corrigée de dix-sept
 > incohérences. Les notes de production sont en annexe, à la fin.
 
-⚠️ **Rien n'est codé, rien n'est arbitré.** `PLAN.md` § « Architecture du Mode
+⚠️ **Rien n'est codé, rien n'est arbitré.** `docs/plan/03-journal-migration.md` § « Architecture du Mode
 jeu » dit ce que le jeu FAIT et attend toujours ses arbitrages. Ce document-ci
 dit ce qu'il RACONTE.
 

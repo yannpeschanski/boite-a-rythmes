@@ -34,7 +34,8 @@
 
   /* Le Mode jeu a désormais DEUX écrans, et la carrière est celui d'entrée :
    * c'est le récit qui donne le pourquoi, les niveaux donnent le comment
-   * (PLAN.md, « Architecture du Mode jeu » ; arbitrage du 2026-08-23). La
+   * (docs/plan/03-journal-migration.md, « Architecture du Mode jeu » ;
+   * arbitrage du 2026-08-23). La
    * salle de répétition — les 41 niveaux — reste atteignable d'un bouton :
    * « pas de scénario qui enferme l'outil » (HISTOIRE.md). */
   let ecran = $state<'carriere' | 'exercice'>('carriere');
