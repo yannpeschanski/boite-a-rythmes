@@ -4,7 +4,7 @@
  * --------------------------
  * `PlayerProgress.level` était UN SEUL entier qui portait trois choses sans
  * rapport : ce que le joueur sait, ce qui lui est ouvert, et pourquoi il
- * continue (PLAN.md, « Architecture du Mode jeu »). Tant qu'il n'y avait qu'un
+ * continue (docs/plan/03-journal-migration.md, « Architecture du Mode jeu »). Tant qu'il n'y avait qu'un
  * verbe et une ligne droite, ça tenait ; avec sept verbes, ça ne tient plus.
  *
  * L'arbitrage de Yann (2026-08-23, « on part sur le scénario ») sépare l'entier

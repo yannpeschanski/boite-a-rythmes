@@ -101,7 +101,7 @@ export interface PlayerProgress {
    * `level` et `stars` décrivent le RÉSERVOIR : ce que le joueur a réussi en
    * salle de répétition. `carriere` décrit l'HISTOIRE : ce qu'il a vécu, et
    * donc ce qui lui est ouvert. Un seul entier ne pouvait pas dire les deux
-   * (PLAN.md, « Architecture du Mode jeu ») — d'où deux champs, et pas un
+   * (docs/plan/03-journal-migration.md, « Architecture du Mode jeu ») — d'où deux champs, et pas un
    * numéro de niveau plus gros.
    *
    * Facultatif : une sauvegarde d'avant la carrière n'en a pas. Elle démarre

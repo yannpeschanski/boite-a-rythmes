@@ -61,7 +61,7 @@ pseudo-élément sous `@media (pointer: coarse)`. Trois pièges :
   `elementFromPoint` après un `scrollIntoView`.
 
 Trois exceptions revendiquées (largeur des cases, libellés d'aide, Mode Live)
-sont documentées dans `PLAN.md`, étape 6.
+sont documentées dans `docs/plan/03-journal-migration.md`, étape 6.
 
 **`<select>` et `<input type="text">` sont des éléments remplacés** : Chromium
 n'y rend aucun `::after`. Eux passent par `min-height: 44px`. Et
@@ -306,7 +306,7 @@ Le paramètre `colonnes` de `comparerGrilles` est le point de conception : il
 permet à « compléter » de réutiliser *exactement* la vérification de
 « reproduire ». **Ne pas écrire un second comparateur** — deux comparateurs qui
 doivent rester d'accord finissent par ne plus l'être. Deux pièges payés
-(`PLAN.md` étape 17) : le Mode jeu tient sur **une mesure** par ligne, et
+(`docs/plan/03-journal-migration.md`, étape 17) : le Mode jeu tient sur **une mesure** par ligne, et
 « jouer » mesure l'écart au dernier pas **actif** du kick.
 
 ⚠️ **Un exercice n'enseigne que ce que l'écran a DÉJÀ expliqué**, et le verbe

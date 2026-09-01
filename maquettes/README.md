@@ -1,7 +1,7 @@
 # Maquettes de direction visuelle — 2026-08-17
 
-Trois propositions pour l'audit design × DAW (voir `PLAN.md`, section
-« Audit design × DAW comparables »). **Jetables** : ce sont des fichiers HTML
+Trois propositions pour l'audit design × DAW (voir
+`docs/plan/03-journal-migration.md`, section « Audit design × DAW comparables »). **Jetables** : ce sont des fichiers HTML
 statiques autonomes, aucun lien avec `src/`. Ils servent à trancher sur des
 images plutôt que sur des descriptions.
 
