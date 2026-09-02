@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après la nappe dans l'arrangement et le
-> SON des niveaux.
+> Dernière mise à jour : 2026-09-02, après le mute d'écoute et les cycles de
+> durées différentes dans l'arrangement.
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 497 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 502 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -23,7 +23,7 @@ attente dans `HISTOIRE.md`.
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 12 (`ExerciseKind`) |
-| Niveaux | 77 (37 de campagne + le reste du réservoir) |
+| Niveaux | 78 (38 de campagne + le reste du réservoir) |
 | Commandes (production à livrer) | 12, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois, l'acte 5 en livre quatre) |
 
 ## Le déverrouillage — tranché le 2026-08-26
@@ -75,6 +75,7 @@ quiz n'aurait rien réglé.
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
 | — | **l'arrangement** : reposer plusieurs lignes à la fois (acte 3, niveaux 75-77) | ✅ livré |
 | — | **la nappe** dans l'arrangement + le **son** d'un niveau (`model/sons.ts`) | ✅ livré |
+| — | **couper une ligne à l'écoute** + des **cycles** de durées différentes (niveau 78) | ✅ livré |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
 
 **Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
@@ -127,6 +128,23 @@ produit au lieu de recopier ») :
   produire quatre genres pour n'en rendre qu'un ;
 - deux harnais (le test et le parcours) construisaient un genre en perdant son
   FEEL — ils partent désormais de `presetToState`.
+
+**Ce que l'ÉCOUTE et les CYCLES ont tranché en passant** (détail dans `PLAN.md`,
+« Couper une ligne à l'écoute, et des cycles de durées différentes ») :
+
+- **couper une ligne enlève de la difficulté d'ÉCOUTE, pas d'exercice** — c'est
+  la réponse au doute « ça rend pas le jeu trop facile ? » : toutes les lignes
+  restent comparées, et l'écran le dit ;
+- **des durées différentes, oui ; des subdivisions différentes, non** — une
+  colonne reste un instant, sinon c'est une polyrythmie et six lignes deviennent
+  illisibles. Une ligne courte se répète en pâle en face des suivantes ;
+- ⚠️ **les cycles sont réservés au SYNTHÉ** : `DrumRowState` n'a pas de
+  `cycleBars` ;
+- ⚠️ **la tête de lecture doit se recaler** : le moteur donne le pas DE LA LIGNE,
+  donc une batterie d'une mesure restait bloquée sur la moitié gauche de l'écran ;
+- **la règle de progression a été élargie, pas contournée** : un arrangement ne
+  recule pas sur les DEUX axes à la fois (voix, mesures) — le niveau qui
+  introduit les cycles pose moins de voix, exprès.
 
 **Ce que la NAPPE et les SONS ont tranché en passant** (détail dans `PLAN.md`,
 « La nappe et le son d'un niveau ») :

@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { game, LEVELS } from '../src/stores/game.svelte';
 import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../src/model/types';
+import { mesuresDeLArrangement } from '../src/model/presets/levels';
 import { renderEvents } from './helpers/rejeu';
 
 const INDICES = LEVELS.flatMap((l, i) => (l.exercise === 'arrangement' ? [i] : []));
@@ -130,5 +131,94 @@ describe('l’arrangement — le câblage des N lignes', () => {
     game.arrGuess[l.nom][c] = game.arrCible[l.nom][c];
     expect(game.verify()).toBe(false);
     expect(game.arrLocked[l.nom][c]).toBe(true);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* L'ÉCOUTE — couper une ligne pour s'y retrouver.                      */
+  /* ------------------------------------------------------------------ */
+
+  it('⚠️ couper une ligne la rend MUETTE sans rien changer à ce qui est demandé', () => {
+    /* La demande de Yann est un outil d'écoute : *« pouvoir muter des lignes
+     * quand on écoute pour s'y retrouver »*. Le risque, et c'est son doute —
+     * *« je me demande si ça rend pas le jeu trop facile »* — serait qu'une
+     * ligne coupée cesse aussi d'être demandée. Ce test dit que non : elle est
+     * toujours comparée, et une grille incomplète reste refusée. */
+    for (const i of INDICES) {
+      game.startLevel(i);
+      const l = game.arrLignes[0];
+      game.arrBasculerEcoute(l.nom);
+      const s = game.buildState('target');
+      const muette = l.nature === 'drum'
+        ? s.rows[l.nom as 'kick'].muted
+        : s.synthRows[l.nom as 'bass'].muted;
+      expect(muette, `niveau ${LEVELS[i].id} : « ${l.nom} » coupée s’entend encore`).toBe(true);
+
+      // On repose TOUT sauf la ligne coupée : ça doit être refusé.
+      for (const x of game.arrLignes) {
+        if (x.nom === l.nom) continue;
+        game.arrCible[x.nom].forEach((v, c) => (game.arrGuess[x.nom][c] = v));
+      }
+      const aTrouver = game.arrCible[l.nom].some((v, c) => v > 0 && !game.arrLocked[l.nom][c]);
+      if (aTrouver) {
+        expect(game.verify(), `niveau ${LEVELS[i].id} : une ligne coupée n’est plus notée`).toBe(false);
+      }
+      // Et une fois la ligne posée elle aussi, ça passe — coupée ou non.
+      game.arrCible[l.nom].forEach((v, c) => (game.arrGuess[l.nom][c] = v));
+      expect(game.verify(), `niveau ${LEVELS[i].id} : refusé alors que tout est juste`).toBe(true);
+    }
+  });
+
+  it('⚠️ l’écoute revient à neuf à chaque niveau, et « tout réentendre » rend tout', () => {
+    // Une ligne coupée qui le resterait au niveau suivant ferait un exercice
+    // silencieux que rien n'explique.
+    const i = INDICES[0];
+    game.startLevel(i);
+    game.arrBasculerEcoute(game.arrLignes[0].nom);
+    expect(game.arrDesLignesCoupees).toBe(true);
+    game.startLevel(i);
+    expect(game.arrDesLignesCoupees, 'une coupure a survécu au redémarrage').toBe(false);
+
+    for (const l of game.arrLignes) game.arrBasculerEcoute(l.nom);
+    expect(game.arrDesLignesCoupees).toBe(true);
+    game.arrToutEntendre();
+    expect(game.arrDesLignesCoupees).toBe(false);
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* LES CYCLES — des lignes qui n'ont pas la même durée.                 */
+  /* ------------------------------------------------------------------ */
+
+  it('⚠️ une ligne de deux mesures JOUE bien sa seconde mesure', () => {
+    /* Le piège : `subdivisions` laissé à `subdiv` avec `cycleBars` à 2 donne
+     * une ligne qui affiche seize cases et n'en joue que huit — la seconde
+     * moitié serait éditable, notée, et inaudible. On compte donc les
+     * événements sur deux mesures et on vérifie qu'ils correspondent aux cases
+     * posées sur TOUTE la longueur. */
+    const avecCycles = INDICES.filter((i) => mesuresDeLArrangement(LEVELS[i].arrangement!) > 1);
+    expect(avecCycles.length, 'aucun arrangement ne dépasse une mesure').toBeGreaterThan(0);
+    for (const i of avecCycles) {
+      game.startLevel(i);
+      const a = LEVELS[i].arrangement!;
+      const mesures = mesuresDeLArrangement(a);
+      const evs = renderEvents(game.buildState('target'), mesures, 7);
+      for (const l of game.arrLignes) {
+        if (l.nature !== 'degres') continue;
+        const attendus = game.arrCible[l.nom].filter((v) => v > 0).length;
+        const re = l.nom === 'pad' ? /^(pad|arp|drone) / : new RegExp(`^${l.nom} `);
+        const joues = evs.filter((e) => re.test(e)).length;
+        expect(joues, `niveau ${LEVELS[i].id}, ${l.nom} : ${joues} événements pour ${attendus} cases`).toBe(attendus);
+      }
+    }
+  });
+
+  it('⚠️ une ligne d’une mesure se RÉPÈTE en face des suivantes', () => {
+    // C'est ce que l'écran montre en pâle, et il ne doit pas mentir : la
+    // batterie rejoue sa mesure pendant que le synthé continue sa phrase.
+    const i = INDICES.find((k) => mesuresDeLArrangement(LEVELS[k].arrangement!) > 1)!;
+    game.startLevel(i);
+    const mesures = mesuresDeLArrangement(LEVELS[i].arrangement!);
+    const evs = renderEvents(game.buildState('target'), mesures, 7);
+    const kick = game.arrCible.kick.filter((v) => v > 0).length;
+    expect(evs.filter((e) => /^kick /.test(e)).length, 'la batterie ne reboucle pas').toBe(kick * mesures);
   });
 });

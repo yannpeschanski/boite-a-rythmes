@@ -14,7 +14,12 @@ import {
   ANNEE,
   dateDeLActe,
 } from '../src/model/carriere';
-import { LEVELS, degreMaxDeLigne } from '../src/model/presets/levels';
+import {
+  LEVELS,
+  degreMaxDeLigne,
+  longueurDeLigne,
+  mesuresDeLArrangement,
+} from '../src/model/presets/levels';
 import { parametre } from '../src/model/parametres';
 import { PRESETS } from '../src/model/presets/songs';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
@@ -486,13 +491,29 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
       }
     });
 
-    it('⚠️ chaque ligne a la longueur de la subdivision commune', () => {
-      // Une ligne plus courte que les autres serait une polyrythmie — un autre
-      // sujet — et le comparateur lirait des cases qui n'existent pas.
+    it('⚠️ chaque ligne fait exactement `subdiv × cycles`', () => {
+      /* La subdivision reste COMMUNE — une colonne est un instant, sinon c'est
+       * une polyrythmie, un autre sujet. Ce qui peut varier est le nombre de
+       * MESURES avant qu'une ligne se répète. Une longueur qui ne tombe pas
+       * juste ferait lire au comparateur des cases qui n'existent pas. */
       for (const l of arrs()) {
         const a = l.arrangement!;
         for (const ligne of a.lignes) {
-          expect(ligne.pas.length, `niveau ${l.id}, ligne ${ligne.nom}`).toBe(a.subdiv);
+          expect(ligne.pas.length, `niveau ${l.id}, ligne ${ligne.nom}`).toBe(longueurDeLigne(a, ligne));
+        }
+      }
+    });
+
+    it('⚠️ seules les lignes de SYNTHÉ tournent sur plusieurs mesures', () => {
+      /* `DrumRowState` n'a pas de `cycleBars` : une ligne de batterie reboucle
+       * sur sa mesure. Lui écrire `cycles: 2` donnerait une ligne affichée sur
+       * deux mesures dont la seconde ne joue jamais — la moitié des cases
+       * seraient inaudibles, et rien à l'écran ne le dirait. */
+      for (const l of arrs()) {
+        for (const ligne of l.arrangement!.lignes) {
+          if (ligne.nature === 'drum') {
+            expect(ligne.cycles ?? 1, `niveau ${l.id}, ligne ${ligne.nom}`).toBe(1);
+          }
         }
       }
     });
@@ -505,14 +526,34 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
       }
     });
 
-    it('⚠️ et le nombre de VOIX ne redescend jamais', () => {
-      // L'axe de difficulté propre à l'arrangement : les cases restent à huit,
-      // ce qui monte est le nombre de lignes à démêler.
-      const n = arrs().map((l) => l.arrangement!.lignes.length);
-      n.forEach((v, i) => {
-        if (i > 0) expect(v, `l’arrangement ${i + 1} perd une voix`).toBeGreaterThanOrEqual(n[i - 1]);
+    it('⚠️ un arrangement ne recule sur AUCUN de ses deux axes à la fois', () => {
+      /* ⚠️ Règle élargie le 2026-09-02, sur *« pour un morceau, il faut des
+       * cycles différents »*. L'axe était le nombre de VOIX seul, et il ne
+       * pouvait pas rester : le niveau qui introduit les cycles pose une
+       * question neuve (la ligne ne revient plus au bout d'une mesure) sur
+       * moins de lignes, exprès — empiler sept voix ET deux mesures d'un coup
+       * ferait deux nouveautés dans le même exercice.
+       *
+       * Ce qui reste vrai, et c'est la vraie règle : un arrangement plus loin
+       * dans l'acte demande PLUS sur au moins un des deux axes. Reculer sur les
+       * deux serait un exercice en arrière. */
+      const axes = arrs().map((l) => ({
+        id: l.id,
+        voix: l.arrangement!.lignes.length,
+        mesures: mesuresDeLArrangement(l.arrangement!),
+      }));
+      axes.forEach((a, i) => {
+        if (i === 0) return;
+        const p = axes[i - 1];
+        expect(
+          a.voix > p.voix || a.mesures > p.mesures || (a.voix === p.voix && a.mesures === p.mesures),
+          `le niveau ${a.id} recule sur les deux axes (${p.voix} voix/${p.mesures} mes. → ${a.voix}/${a.mesures})`,
+        ).toBe(true);
       });
-      expect(n[n.length - 1], 'le dernier devrait empiler au moins sept voix').toBeGreaterThanOrEqual(7);
+      // Et la série va bien quelque part : sept voix d'un côté, deux mesures
+      // de l'autre.
+      expect(Math.max(...axes.map((a) => a.voix)), 'aucun arrangement n’empile sept voix').toBeGreaterThanOrEqual(7);
+      expect(Math.max(...axes.map((a) => a.mesures)), 'aucun arrangement ne dépasse une mesure').toBeGreaterThanOrEqual(2);
     });
 
     it('⚠️ un degré ne dépasse jamais le clavier de SA ligne', () => {

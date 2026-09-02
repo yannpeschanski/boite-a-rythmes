@@ -221,9 +221,27 @@ export interface LigneArrangement {
   /** `kick`/`snare`/`hat` pour la batterie, `bass`/`melody` pour le synthé. */
   nom: string;
   nature: NatureLigne;
-  /* La cible, de la longueur de `subdiv`. Batterie : 0 vide, 1 coup, 2
+  /* La cible, de longueur `subdiv × cycles`. Batterie : 0 vide, 1 coup, 2
    * variante. Synthé : 0 silence, 1..7 le DEGRÉ dans la gamme. */
   pas: number[];
+  /* Sur combien de MESURES la ligne se déploie avant de se répéter (1 par
+   * défaut).
+   *
+   * ⚠️ Demande de Yann (2026-09-02) : *« on doit pouvoir explorer toutes les
+   * composantes, à savoir, des durées différentes de cycles par exemple. […]
+   * ce niveau à 8 cases est une bonne intro, d'ailleurs ça fait très sonnerie
+   * polyphonique… mais pour un morceau, il faut des cycles différents. »*
+   *
+   * ⚠️ Réservé aux lignes de SYNTHÉ, et ce n'est pas un oubli : `DrumRowState`
+   * n'a pas de `cycleBars` — une ligne de batterie boucle sur sa mesure, point.
+   * Lui écrire `cycles: 2` produirait une ligne qui s'affiche sur deux mesures
+   * et n'en joue qu'une : la moitié des cases seraient inaudibles. C'est
+   * `tests/arrangement.test.ts` qui le refuse.
+   *
+   * Ce n'est PAS une polyrythmie : la subdivision reste commune, donc une
+   * colonne reste un instant. Une ligne plus courte se RÉPÈTE en face des
+   * mesures suivantes — c'est exactement ce qu'on entend. */
+  cycles?: number;
 }
 
 export interface GrilleArrangement {
@@ -246,6 +264,23 @@ export const ACCORDS_DE_LA_NAPPE = 4;
 export function degreMaxDeLigne(a: GrilleArrangement, nom: string): number {
   const max = a.degreMax ?? 5;
   return nom === 'pad' ? Math.min(max, ACCORDS_DE_LA_NAPPE) : max;
+}
+
+/** Combien de cases une ligne porte vraiment : `subdiv × cycles`. */
+export function longueurDeLigne(a: GrilleArrangement, l: LigneArrangement): number {
+  return a.subdiv * Math.max(1, l.cycles ?? 1);
+}
+
+/** Sur combien de mesures tourne l'arrangement entier — la ligne la plus
+ *  longue décide, les autres se répètent en face. */
+export function mesuresDeLArrangement(a: GrilleArrangement): number {
+  return Math.max(1, ...a.lignes.map((l) => Math.max(1, l.cycles ?? 1)));
+}
+
+/** Le nombre de COLONNES affichées : la boucle entière, une colonne par
+ *  instant. */
+export function colonnesDeLArrangement(a: GrilleArrangement): number {
+  return a.subdiv * mesuresDeLArrangement(a);
 }
 
 export interface MkLevelOptions {
@@ -1638,6 +1673,44 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
         // La nappe : un accord par demi-mesure, et jamais plus de 4 (voir
         // `degreMaxDeLigne`). Le premier est donné, comme sur les deux autres.
         { nom: 'pad',    nature: 'degres', pas: [1, 0, 0, 0, 4, 0, 0, 0] },
+      ],
+    } }),
+
+  mkLevel(78, 'Deux mesures', {
+    exercise: 'arrangement',
+    preamble: "Jusqu'ici tout revenait au bout d'une mesure : huit cases, et ça recommence. C'est très bien pour une sonnerie, ça ne fait pas un morceau. Ici la batterie boucle comme avant, mais la basse et la nappe mettent DEUX mesures à revenir : la deuxième moitié n'est pas la copie de la première. Les cases pâles sont les répétitions de la batterie — elle rejoue la même chose pendant que le synthé continue sa phrase.",
+    tempoOptions: [88, 92],
+    /* Les trois lignes de synthé se séparent par le son autant que par la
+     * durée : la nappe tient le fond sur deux mesures, la basse marche
+     * dessous, la mélodie ponctue. */
+    sons: {
+      pad: { voix: 'rhodes', retouches: { attack: 0.3, release: 1.1 }, reverb: 0.42, strum: 0.3, volume: 0.65 },
+      bass: { voix: 'reggae', retouches: { release: 0.32 }, reverb: 0.06, volume: 1.05 },
+      melody: { voix: 'soft', retouches: { release: 0.14 }, delay: 0.28, reverb: 0.2, volume: 0.85 },
+      kick: { tone: 20, decay: 6 },
+      snare: { reverb: 0.16 },
+      hat: { filtre: 8500, volume: 0.55 },
+    },
+    /* ⚠️ Le premier niveau où les lignes n'ont pas la même DURÉE — demande de
+     * Yann : *« pour un morceau, il faut des cycles différents »*. La
+     * subdivision reste commune (une colonne = un instant) ; ce qui change est
+     * le nombre de MESURES avant que la ligne se répète. La batterie reste à
+     * une mesure, et c'est ce contraste qui s'entend : c'est elle qui donne le
+     * repère contre lequel la phrase de synthé se déploie. */
+    arrangement: {
+      subdiv: 8,
+      degreMax: 5,
+      lignes: [
+        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 0, 1, 1, 0, 1, 0] },
+        { nom: 'snare',  nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'hat',    nature: 'drum',   pas: [1, 0, 1, 1, 1, 0, 1, 1] },
+        // Deux mesures : la seconde répond à la première au lieu de la répéter.
+        { nom: 'bass',   nature: 'degres', cycles: 2,
+          pas: [1, 0, 0, 5, 0, 0, 3, 0,  1, 0, 0, 4, 0, 0, 2, 0] },
+        { nom: 'melody', nature: 'degres', cycles: 2,
+          pas: [3, 0, 5, 4, 0, 0, 3, 0,  3, 0, 5, 4, 0, 3, 2, 1] },
+        { nom: 'pad',    nature: 'degres', cycles: 2,
+          pas: [1, 0, 0, 0, 0, 0, 0, 0,  4, 0, 0, 0, 0, 0, 0, 0] },
       ],
     } }),
 

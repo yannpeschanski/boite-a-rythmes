@@ -25,7 +25,7 @@ npm run build:singlefile # fichier HTML autonome  -> dist-singlefile/index.html
 ## Architecture
 
 ```
-src/model/    état v2 typé, sérialisation, données (34 presets, 77 niveaux, gammes, voix)
+src/model/    état v2 typé, sérialisation, données (34 presets, 78 niveaux, gammes, voix)
 src/engine/   moteur audio TypeScript pur — aucune dépendance UI
 src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partage)
 src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
@@ -384,6 +384,23 @@ actes suivants ; son axe de difficulté est le **nombre de voix**, pas de cases
 ⚠️ Toute ligne NON citée doit être coupée, et le balayage passe par
 `DRUM_ROW_NAMES`, pas `GAME_DRUM_ROWS` — `defaultState()` ouvre les cinq lignes
 de batterie, pas les trois du jeu.
+
+⚠️ **Couper une ligne coupe l'ÉCOUTE, jamais la notation** (`arrEcoute`). Isoler
+une ligne est un geste de studio ; ce qui est demandé ne bouge pas d'une case,
+donc l'écran le dit (« elles restent à reposer ») et l'état repart neuf à chaque
+niveau.
+
+⚠️ **Des lignes de durées différentes, oui ; des subdivisions différentes, non.**
+`LigneArrangement.cycles` déploie une ligne sur plusieurs MESURES — une colonne
+reste un instant, sinon c'est une polyrythmie (niveau 74) et six lignes
+deviennent illisibles. Une ligne plus courte se **répète** en pâle en face des
+suivantes, et un trait de mesure toutes les `subdiv` colonnes empêche de lire
+seize cases comme une mesure de seize. ⚠️ Réservé au SYNTHÉ : `DrumRowState` n'a
+pas de `cycleBars`, donc `cycles: 2` sur une batterie afficherait une mesure
+qu'elle ne joue pas. ⚠️ Et le pas remonté par le moteur est celui DE LA LIGNE :
+la mesure courante se lit sur la ligne la plus longue, sinon la tête de lecture
+reste bloquée sur la première moitié de l'écran. Progression : un arrangement ne
+recule pas sur les **deux** axes à la fois (voix, mesures).
 
 ⚠️ **La NAPPE joue des ACCORDS : sa case porte un degré, le moteur reçoit un
 index** (`degré − 1`, `buildState`). Lui passer le `{ degree, octave }` des deux

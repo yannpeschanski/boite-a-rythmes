@@ -80,6 +80,40 @@
     }
     raf = requestAnimationFrame(loop);
   }
+  /* Où en est la lecture SUR L'ÉCRAN, quand les lignes n'ont pas la même
+   * longueur.
+   *
+   * ⚠️ Le moteur donne le pas DANS LA LIGNE : une batterie d'une mesure renvoie
+   * 0..7 même pendant la deuxième mesure. Afficher ce nombre tel quel allumerait
+   * la première moitié de l'écran pendant toute la boucle — la tête de lecture
+   * mentirait sur l'endroit où on est. On retrouve donc la mesure courante sur
+   * la ligne la plus LONGUE (la seule qui compte les mesures) et on décale les
+   * autres d'autant. */
+  function mesureCourante(): number {
+    const a = game.level.arrangement;
+    if (!a) return 0;
+    let max = 0;
+    let col = -1;
+    for (const l of game.arrLignes) {
+      const n = game.arrCible[l.nom]?.length ?? 0;
+      const c = playheadArr[l.nom];
+      if (n > max && c !== undefined && c >= 0) {
+        max = n;
+        col = c;
+      }
+    }
+    return col < 0 || !a.subdiv ? 0 : Math.floor(col / a.subdiv);
+  }
+  function playheadCol(l: { nom: string }, col: number, n: number): boolean {
+    const c = playheadArr[l.nom];
+    if (c === undefined || c < 0 || !n) return false;
+    const total = game.arrColonnes || n;
+    // Une ligne aussi longue que la boucle : le pas EST la colonne.
+    if (n >= total) return c === col;
+    const a = game.level.arrangement;
+    return col === mesureCourante() * (a?.subdiv ?? n) + c;
+  }
+
   function resetPlayhead() {
     playhead = { kick: -1, snare: -1, hat: -1 };
     playheadBass = -1;
@@ -939,47 +973,79 @@
              qui joue au même moment, et c'est le sujet de l'exercice. -->
         {#each game.arrLignes as l (l.nom)}
           {@const n = game.arrCible[l.nom]?.length ?? 0}
+          {@const total = game.arrColonnes || n}
           {@const posees = (game.arrGuess[l.nom] ?? []).filter((v) => v > 0).length}
           {@const attendues = (game.arrCible[l.nom] ?? []).filter((v) => v > 0).length}
-          <div class="row">
+          {@const entendue = game.arrEcoute[l.nom] !== false}
+          <div class="row" class:coupee={!entendue}>
             <div class="row-head">
-              <span class="row-label" class:synthe={l.nature === 'degres'}>{NOM_LIGNE[l.nom] ?? l.nom}</span>
+              <!-- ⚠️ Le libellé EST le bouton d'écoute : une ligne coupée doit
+                   se voir et se rendre au même endroit, et un second bouton par
+                   ligne coûterait une colonne de plus sur un téléphone. -->
+              <button
+                class="row-label ecoute tap44-y"
+                class:synthe={l.nature === 'degres'}
+                class:muette={!entendue}
+                aria-pressed={!entendue}
+                title={entendue ? 'Couper cette ligne à l’écoute' : 'Rendre cette ligne à l’écoute'}
+                onclick={() => game.arrBasculerEcoute(l.nom)}
+              >
+                <span class="hp">{entendue ? '🔊' : '🔇'}</span>{NOM_LIGNE[l.nom] ?? l.nom}
+              </button>
+              {#if n < total}
+                <!-- Une ligne plus courte que la boucle : elle se répète, et
+                     l'écran le dit plutôt que de laisser croire à un trou. -->
+                <span class="cycle">×{total / n}</span>
+              {/if}
               <span class="count" class:ok={posees === attendues}>{posees}/{attendues}</span>
             </div>
-            <div class="cells" style:--cols={n}>
-              {#each { length: n } as _, col (col)}
-                {@const pose = game.arrGuess[l.nom][col]}
-                {@const verrou = game.arrLocked[l.nom][col]}
-                {@const montre = (game.solved || game.revealed) ? game.arrCible[l.nom][col] : pose}
+            <div class="cells" style:--cols={total}>
+              {#each { length: total } as _, col (col)}
+                {@const vrai = n ? col % n : 0}
+                {@const echo = col >= n}
+                {@const debutMesure = col > 0 && col % (game.level.arrangement?.subdiv ?? 8) === 0}
+                {@const pose = game.arrGuess[l.nom][vrai]}
+                {@const verrou = game.arrLocked[l.nom][vrai]}
+                {@const montre = (game.solved || game.revealed) ? game.arrCible[l.nom][vrai] : pose}
                 {#if l.nature === 'drum'}
                   <button
                     class="cell state-{montre}"
                     class:locked={verrou}
-                    class:revealed={game.revealed && game.arrCible[l.nom][col] > 0 && !verrou}
-                    class:playing={playheadArr[l.nom] === col}
+                    class:echo
+                    class:debut-mesure={debutMesure}
+                    class:revealed={game.revealed && game.arrCible[l.nom][vrai] > 0 && !verrou}
+                    class:playing={playheadCol(l, col, n)}
                     class:win-flash={winFlash}
-                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}"
-                    onclick={() => { game.arrCycler(l.nom, col); echec = false; }}
+                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{echo ? ' (répétition)' : ''}"
+                    onclick={() => { game.arrCycler(l.nom, vrai); echec = false; }}
                   >
-                    {#if verrou}<span class="mark">✓</span>{/if}
+                    {#if verrou && !echo}<span class="mark">✓</span>{/if}
                   </button>
                 {:else}
                   <button
                     class="cell arr-note"
                     class:vide={!montre}
-                    class:sel={game.arrSel?.ligne === l.nom && game.arrSel?.pas === col && !game.solved && !game.revealed}
+                    class:echo
+                    class:debut-mesure={debutMesure}
+                    class:sel={game.arrSel?.ligne === l.nom && game.arrSel?.pas === vrai && !echo && !game.solved && !game.revealed}
                     class:locked={verrou}
-                    class:revealed={game.revealed && game.arrCible[l.nom][col] > 0 && !verrou}
-                    class:playing={playheadArr[l.nom] === col}
+                    class:revealed={game.revealed && game.arrCible[l.nom][vrai] > 0 && !verrou}
+                    class:playing={playheadCol(l, col, n)}
                     class:win-flash={winFlash}
-                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}"
-                    onclick={() => { game.arrViser(l.nom, col); echec = false; }}
+                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}{echo ? ' (répétition)' : ''}"
+                    onclick={() => { game.arrViser(l.nom, vrai); echec = false; }}
                   >{montre > 0 ? montre : ''}</button>
                 {/if}
               {/each}
             </div>
           </div>
         {/each}
+        {#if game.arrDesLignesCoupees}
+          <p class="muted arr-coupe">
+            Des lignes sont coupées à l’écoute — <b>elles restent à reposer</b>.
+            <button class="lien" onclick={() => game.arrToutEntendre()}>Tout réentendre</button>
+          </p>
+        {/if}
         <!-- Le clavier écrit sur la case VISÉE, et dit laquelle : sans ce
              rappel, sept touches sans destination affichée sont un piège. -->
         {#if game.arrSel}
@@ -1398,6 +1464,46 @@
      damier (même taille, même biseau) qui porte un chiffre au lieu d'un état.
      Elle emprunte sa teinte à la ligne de synthé de l'Atelier — le violet —
      pour qu'on voie d'un coup d'œil quelles lignes se jouent au clavier. */
+  /* Une ligne COUPÉE à l'écoute : elle reste lisible et éditable — ce n'est
+     pas un verrou, c'est un casque qu'on enlève. */
+  .row.coupee .cells { opacity: 0.55; }
+  .row-label.ecoute {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .row-label.ecoute .hp { font-size: 0.9em; opacity: 0.75; }
+  .row-label.muette { color: var(--xp-text-dim, #8a8fa3); }
+  .cycle {
+    margin-left: 6px;
+    font-size: var(--xp-size-xs, 10px);
+    color: var(--xp-accent-amber, #d9a441);
+  }
+  /* Les mesures RÉPÉTÉES d'une ligne courte : même contenu, moins fort. On les
+     montre plutôt que de laisser un blanc — le blanc se lirait comme un
+     silence, alors que la ligne joue. */
+  .cell.echo { opacity: 0.45; }
+  /* ⚠️ Le trait de MESURE. Sans lui, seize cases se lisent comme une seule
+     mesure de seize — c'est-à-dire deux fois plus vite — et « la deuxième
+     moitié n'est pas la copie de la première » devient invérifiable à l'œil. */
+  .cell.debut-mesure { box-shadow: inset 2px 0 0 var(--xp-accent-amber, #d9a441); }
+  .arr-coupe .lien {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--xp-accent-amber, #d9a441);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
   .cell.arr-note {
     color: var(--xp-lcd);
     font-weight: 700;

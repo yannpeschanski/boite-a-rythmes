@@ -1040,7 +1040,12 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 77,
-        commande: 'Six lignes d’un coup. Rien de neuf — tout ce que tu sais, en même temps.',
+        commande: 'Sept lignes d’un coup. Rien de neuf — tout ce que tu sais, en même temps.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 78,
+        commande: 'Deux mesures, pas une. La batterie boucle, le synthé raconte.',
       },
       /* ⚠️ L'ACTE SE TERMINE EN TROIS ENVOIS — refait le 2026-09-01, sur la même
        * demande que l'acte 4 : *« il faut que tout soit en atelier avec des

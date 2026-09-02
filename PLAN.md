@@ -42,6 +42,78 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Couper une ligne à l'écoute, et des cycles de durées différentes (2026-09-02)
+
+> « ce qui aiderait, ce serait de pouvoir muter des lignes quand on écoute pour
+> s'y retrouver, je me demande si ça rend pas le jeu trop facile… à voir mais là,
+> ça le rend inutilement difficile. […] on doit pouvoir explorer toutes les
+> composantes, à savoir, des durées différentes de cycles par exemple. ce niveau
+> à 8 cases est une bonne intro, d'ailleurs ça fait très sonnerie
+> polyphonique… mais pour un morceau, il faut des cycles différents. » — Yann
+
+**1 · L'ÉCOUTE se coupe, la NOTATION non.** C'est la réponse au doute (« trop
+facile ? ») : couper une ligne enlève de la difficulté **d'écoute**, pas de
+difficulté d'exercice. Toutes les lignes restent comparées, coupées ou non ; une
+grille incomplète reste refusée. Le libellé de la ligne **est** le bouton (un
+second bouton par ligne coûterait une colonne sur un téléphone), la grille passe
+à 55 % d'opacité, et un bandeau rappelle que *« elles restent à reposer »* avec
+un « Tout réentendre ». L'état repart neuf à chaque niveau — une coupure qui
+survivrait ferait un exercice silencieux que rien n'explique.
+
+**2 · Des cycles de durées différentes — `LigneArrangement.cycles`.** Jusqu'ici
+tout revenait au bout d'une mesure : c'est une sonnerie, pas un morceau. Une
+ligne peut désormais se déployer sur plusieurs mesures avant de se répéter.
+
+⚠️ **La subdivision reste COMMUNE, et ce n'est pas un demi-choix.** Une colonne
+reste un instant — sinon c'est une polyrythmie, un autre sujet déjà enseigné
+(niveau 74), et la lecture croisée de six lignes devient impossible. Ce qui varie
+est le nombre de **mesures**. Une ligne plus courte se **répète en face** des
+suivantes, affichée en pâle : le blanc se serait lu comme un silence alors que la
+ligne joue.
+
+⚠️ **Réservé aux lignes de SYNTHÉ.** `DrumRowState` n'a pas de `cycleBars` : une
+ligne de batterie reboucle sur sa mesure. Lui écrire `cycles: 2` donnerait une
+ligne affichée sur deux mesures dont la seconde ne joue jamais — la moitié des
+cases éditables, notées et inaudibles. `tests/arrangement.test.ts` le refuse.
+
+⚠️ **Deux pièges de câblage, tous deux invisibles à l'œil :**
+
+- `subdivisions` laissé à `subdiv` avec `cycleBars: 2` → la ligne affiche seize
+  cases et n'en joue que huit. Le test compte les événements sur deux mesures et
+  les confronte aux cases posées : il échoue bien quand on remet l'ancienne
+  valeur (vérifié).
+- le moteur donne le pas **dans la ligne** : une batterie d'une mesure renvoie
+  0-7 même pendant la deuxième. Affiché tel quel, la tête de lecture allumerait
+  la première moitié de l'écran pendant toute la boucle. On retrouve donc la
+  mesure courante sur la ligne la plus **longue** et on décale les autres —
+  mesuré en navigateur : les six lignes parcourent bien les colonnes 0 à 15.
+
+**Le niveau 78 « Deux mesures »** : batterie sur une mesure, basse, mélodie et
+nappe sur deux. Mesuré en 390 × 844 : **seize colonnes à 18,7 px** (exactement la
+largeur déjà mesurée sur la grille de batterie), page 888 px soit 44 px de
+défilement, aucun conteneur qui déborde. ⚠️ Un **trait de mesure** toutes les
+huit colonnes a été ajouté : sans lui, seize cases se lisent comme une seule
+mesure de seize — c'est-à-dire deux fois plus vite — et « la deuxième moitié
+n'est pas la copie de la première » devient invérifiable à l'œil.
+
+⚠️ **La règle de progression des arrangements a dû être élargie, pas contournée.**
+Elle disait « le nombre de voix ne redescend jamais » ; le 78 pose six voix après
+les sept du 77, exprès — empiler sept voix ET deux mesures ferait deux nouveautés
+dans le même exercice. La règle est donc : **un arrangement ne recule pas sur les
+DEUX axes à la fois** (voix, mesures). Ce que la série garantit encore : sept
+voix quelque part, deux mesures quelque part.
+
+**Vérifié :** 502 tests (4 neufs dans `tests/arrangement.test.ts` : la ligne
+coupée reste notée, l'écoute repart à neuf, une ligne de deux mesures joue sa
+seconde moitié, une ligne d'une mesure se répète), 0 erreur de types, les deux
+builds, le parcours complet depuis un joueur neuf. En navigateur : le mute coupe
+bien l'état, le bandeau et « Tout réentendre » fonctionnent, zéro erreur console.
+
+**Fichiers :** `src/model/presets/levels.ts` (`cycles`, `longueurDeLigne`,
+`mesuresDeLArrangement`, `colonnesDeLArrangement`, niveau 78),
+`src/stores/game.svelte.ts`, `src/ui/game/GameView.svelte`,
+`src/model/carriere.ts`, `tests/arrangement.test.ts`, `tests/carriere.test.ts`.
+
 ### ✅ La NAPPE et le SON d'un niveau (2026-09-02)
 
 > « top ce niveau 77, il manque la nappe ! aussi, il faut jouer avec tous les
