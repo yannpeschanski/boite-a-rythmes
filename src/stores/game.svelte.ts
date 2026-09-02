@@ -14,6 +14,8 @@ import {
   pick,
   strongPositions,
   degreMaxDeLigne,
+  longueurDeLigne,
+  colonnesDeLArrangement,
   type GameLevel,
   type GameVoice,
   type SubdivSpec,
@@ -319,6 +321,16 @@ class GameStore {
   arrLocked = $state<Record<string, boolean[]>>({});
   /** La case visée par le clavier : (ligne de synthé, pas). */
   arrSel = $state<{ ligne: string; pas: number } | null>(null);
+  /* Quelles lignes s'ENTENDENT — l'écoute seulement, jamais la réponse.
+   *
+   * ⚠️ Demande de Yann (2026-09-02) : *« ce qui aiderait, ce serait de pouvoir
+   * muter des lignes quand on écoute pour s'y retrouver, je me demande si ça
+   * rend pas le jeu trop facile… à voir mais là, ça le rend inutilement
+   * difficile »*. Isoler une ligne pour l'entendre est le geste de n'importe
+   * quel studio ; ce qui reste demandé, lui, ne bouge pas d'une case — toutes
+   * les lignes sont comparées, coupées ou non. Ça enlève de la difficulté
+   * D'ÉCOUTE, pas de la difficulté de l'exercice. */
+  arrEcoute = $state<Record<string, boolean>>({});
 
   melodieCible = $state<number[]>([]);
   melodieGuess = $state<number[]>([]);
@@ -1148,10 +1160,18 @@ class GameStore {
     const cible: Record<string, number[]> = {};
     const guess: Record<string, number[]> = {};
     const locked: Record<string, boolean[]> = {};
+    const ecoute: Record<string, boolean> = {};
     for (const l of a.lignes) {
-      cible[l.nom] = l.pas.slice(0, a.subdiv);
-      guess[l.nom] = new Array(a.subdiv).fill(0);
-      locked[l.nom] = new Array(a.subdiv).fill(false);
+      // ⚠️ Chaque ligne a SA longueur (`subdiv × cycles`) : une ligne de deux
+      // mesures porte deux fois plus de cases et se lit en face des mêmes
+      // colonnes. Découper tout le monde à `subdiv` amputait la seconde mesure.
+      const n = longueurDeLigne(a, l);
+      cible[l.nom] = l.pas.slice(0, n);
+      guess[l.nom] = new Array(n).fill(0);
+      locked[l.nom] = new Array(n).fill(false);
+      // Toutes les lignes s'entendent au départ : le bouton d'écoute est un
+      // outil qu'on prend, pas un état à défaire.
+      ecoute[l.nom] = true;
       if (l.nature === 'degres' && cible[l.nom][0] > 0) {
         guess[l.nom][0] = cible[l.nom][0];
         locked[l.nom][0] = true;
@@ -1160,6 +1180,7 @@ class GameStore {
     this.arrCible = cible;
     this.arrGuess = guess;
     this.arrLocked = locked;
+    this.arrEcoute = ecoute;
     // La première case libre d'une ligne de synthé : le clavier vise toujours
     // quelque chose, sinon sa première frappe ne va nulle part.
     const synth = a.lignes.find((l) => l.nature === 'degres');
@@ -1193,6 +1214,28 @@ class GameStore {
     if (degre > this.arrDegreMax(sel.ligne)) return;
     const ligne = this.arrGuess[sel.ligne];
     ligne[sel.pas] = ligne[sel.pas] === degre ? 0 : degre;
+  }
+
+  /** Combien de COLONNES l'écran affiche : la boucle entière. Une ligne plus
+   *  courte s'y répète — c'est ce qu'on entend. */
+  get arrColonnes(): number {
+    const a = this.level.arrangement;
+    return a ? colonnesDeLArrangement(a) : 0;
+  }
+
+  /** Couper ou rendre une ligne à l'écoute. Sans effet sur ce qui est noté. */
+  arrBasculerEcoute(ligne: string): void {
+    this.arrEcoute[ligne] = this.arrEcoute[ligne] === false;
+  }
+
+  /** Toutes les lignes reviennent — le geste de sortie, en un bouton. */
+  arrToutEntendre(): void {
+    for (const l of this.arrLignes) this.arrEcoute[l.nom] = true;
+  }
+
+  /** Y a-t-il au moins une ligne coupée ? (l'écran doit le dire) */
+  get arrDesLignesCoupees(): boolean {
+    return this.arrLignes.some((l) => this.arrEcoute[l.nom] === false);
   }
 
   /** Jusqu'où monte le clavier de la ligne visée — la nappe s'arrête aux
@@ -1807,18 +1850,28 @@ class GameStore {
       DRUM_ROW_NAMES.forEach((r) => (state.rows[r].muted = !nommees.has(r)));
       for (const nom of SYNTH_ROW_NAMES) state.synthRows[nom].muted = !nommees.has(nom);
       for (const l of this.arrLignes) {
+        /* ⚠️ L'ÉCOUTE coupe le son, jamais la réponse : une ligne coupée reste
+         * comparée par `verify()`. C'est un outil de studio posé sur la
+         * lecture, pas une réduction de ce qui est demandé. */
+        const entendue = this.arrEcoute[l.nom] !== false;
         if (l.nature === 'drum') {
           const row = state.rows[l.nom as DrumRowName];
-          row.muted = false;
+          row.muted = !entendue;
           row.subdiv = n;
           row.pattern = new Array(32).fill(0).map((z, i) => (grille[l.nom][i] ?? z) as DrumStep);
           row.rolls = new Array(32).fill(1);
           row.shiftPct = 0;
         } else {
           const row = state.synthRows[l.nom as SynthRowName];
-          row.muted = false;
-          row.cycleBars = 1;
-          row.subdivisions = n;
+          row.muted = !entendue;
+          /* ⚠️ Une ligne de synthé peut tourner sur PLUSIEURS mesures — c'est
+           * `cycleBars`, et c'est ce qui distingue un morceau d'une sonnerie.
+           * Les lignes de batterie n'en ont pas : elles rebouclent sur leur
+           * mesure, ce qui est exactement l'effet voulu quand la nappe, elle,
+           * met deux mesures à revenir. */
+          const mesures = Math.max(1, l.cycles ?? 1);
+          row.cycleBars = mesures;
+          row.subdivisions = n * mesures;
           /* ⚠️ La NAPPE ne joue pas des notes mais des ACCORDS : son pas est un
            * INDEX dans la liste des accords (0-based, `-1` pour le silence),
            * là où basse et mélodie portent un `{ degree, octave }`. Le jeu, lui,
@@ -1830,7 +1883,7 @@ class GameStore {
             l.nom === 'pad'
               ? grille[l.nom].map((d) => (d > 0 ? d - 1 : -1))
               : grille[l.nom].map((d) => (d > 0 ? { degree: d, octave: 0 } : null));
-          row.rolls = new Array(n).fill(1);
+          row.rolls = new Array(n * mesures).fill(1);
         }
       }
       return state;
