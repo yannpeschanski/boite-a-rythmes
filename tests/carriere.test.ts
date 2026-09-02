@@ -14,7 +14,7 @@ import {
   ANNEE,
   dateDeLActe,
 } from '../src/model/carriere';
-import { LEVELS } from '../src/model/presets/levels';
+import { LEVELS, degreMaxDeLigne } from '../src/model/presets/levels';
 import { parametre } from '../src/model/parametres';
 import { PRESETS } from '../src/model/presets/songs';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
@@ -512,21 +512,38 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
       n.forEach((v, i) => {
         if (i > 0) expect(v, `l’arrangement ${i + 1} perd une voix`).toBeGreaterThanOrEqual(n[i - 1]);
       });
-      expect(n[n.length - 1], 'le dernier devrait empiler au moins six voix').toBeGreaterThanOrEqual(6);
+      expect(n[n.length - 1], 'le dernier devrait empiler au moins sept voix').toBeGreaterThanOrEqual(7);
     });
 
-    it('⚠️ un degré ne dépasse jamais le clavier affiché', () => {
-      // Sinon la cible demande une note que le clavier ne sait pas écrire.
+    it('⚠️ un degré ne dépasse jamais le clavier de SA ligne', () => {
+      /* Sinon la cible demande une note que le clavier ne sait pas écrire — et
+       * sur la NAPPE le clavier est plus court que sur les autres : elle joue
+       * des accords, et il n'y en a que `chordCount`. Une cinquième touche y
+       * proposerait un accord inexistant, donc une case impossible à remplir
+       * dans un exercice qui exige l'exactitude. */
       for (const l of arrs()) {
         const a = l.arrangement!;
-        const max = a.degreMax ?? 5;
         for (const ligne of a.lignes) {
           if (ligne.nature !== 'degres') continue;
+          const max = degreMaxDeLigne(a, ligne.nom);
           for (const d of ligne.pas) {
             expect(d, `niveau ${l.id}, ligne ${ligne.nom} : degré ${d} hors clavier`).toBeLessThanOrEqual(max);
           }
         }
       }
+    });
+
+    it('⚠️ la NAPPE ne paraît qu’une fois les deux autres lignes de synthé posées', () => {
+      /* Un accord tenu ne s'entend comme un FOND que s'il y a quelque chose
+       * devant. Introduit seul, il passerait pour une quatrième note bizarre —
+       * même raison qui la tenait hors du verbe `melodie`, qui est
+       * monophonique. */
+      const avecNappe = arrs().findIndex((l) => l.arrangement!.lignes.some((x) => x.nom === 'pad'));
+      expect(avecNappe, 'aucun arrangement ne pose la nappe').toBeGreaterThanOrEqual(0);
+      const avant = arrs().slice(0, avecNappe);
+      const posees = new Set(avant.flatMap((l) => l.arrangement!.lignes.map((x) => x.nom)));
+      expect(posees.has('bass'), 'la nappe arrive avant la basse').toBe(true);
+      expect(posees.has('melody'), 'la nappe arrive avant la mélodie').toBe(true);
     });
 
     it('⚠️ une ligne de synthé commence par sa TONIQUE — elle est donnée', () => {

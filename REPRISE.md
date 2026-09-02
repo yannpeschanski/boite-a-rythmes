@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après le verbe `arrangement` (reposer
-> plusieurs lignes de batterie ET de synthé à la fois).
+> Dernière mise à jour : 2026-09-02, après la nappe dans l'arrangement et le
+> SON des niveaux.
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 489 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 497 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -74,6 +74,7 @@ quiz n'aurait rien réglé.
 | 5b | **l'acte 6** en cahier, le plus complet du jeu | ✅ livré |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
 | — | **l'arrangement** : reposer plusieurs lignes à la fois (acte 3, niveaux 75-77) | ✅ livré |
+| — | **la nappe** dans l'arrangement + le **son** d'un niveau (`model/sons.ts`) | ✅ livré |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
 
 **Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
@@ -126,6 +127,22 @@ produit au lieu de recopier ») :
   produire quatre genres pour n'en rendre qu'un ;
 - deux harnais (le test et le parcours) construisaient un genre en perdant son
   FEEL — ils partent désormais de `presetToState`.
+
+**Ce que la NAPPE et les SONS ont tranché en passant** (détail dans `PLAN.md`,
+« La nappe et le son d'un niveau ») :
+
+- **la nappe entre sans troisième nature de case** : sa case porte un degré, le
+  moteur reçoit un index d'accord. Lui passer un `{ degree, octave }` donne une
+  ligne affichée, éditable, notée et **muette** — c'est le test « chaque ligne
+  affichée s'entend » qui l'attrape, pas l'oreille ;
+- **un clavier suit la LIGNE visée**, pas le niveau : la nappe s'arrête à quatre
+  accords ;
+- **le SON d'un niveau est un décor** (`model/sons.ts`) — cible et version du
+  joueur le reçoivent à l'identique, il se pose AVANT la consigne d'un verbe de
+  paramètre, et les voix se citent au catalogue plutôt que de se réinventer ;
+- ⚠️ **un test à valeur sentinelle est instable par construction** : « attack »
+  est tombé sur la sentinelle et le test a échoué sur une réussite. Comparer le
+  même tirage AVEC et SANS, jamais contre une valeur choisie.
 
 **Ce que l'ARRANGEMENT a tranché en passant** (détail dans `PLAN.md`,
 « L'arrangement — reposer plusieurs lignes à la fois ») :

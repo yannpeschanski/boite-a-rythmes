@@ -27,6 +27,7 @@ import type { DrumStep, SynthRowName } from '../types';
 // gérer 2 lignes qu'ils ne connaissent pas.
 import type { ExerciseKind } from '../exercises';
 import type { FamilleParam } from '../parametres';
+import type { SonsDeNiveau } from '../sons';
 
 export type GameDrumRowName = 'kick' | 'snare' | 'hat';
 
@@ -59,6 +60,8 @@ export interface GameLevel {
   presetId: string | null;
   /** Cible à plusieurs lignes, écrite à la main (voir `GrilleArrangement`). */
   arrangement?: GrilleArrangement;
+  /** Le SON du niveau — décor, jamais réponse (voir `model/sons.ts`). */
+  sons?: SonsDeNiveau;
   /** Cible écrite à la main : elle remplace le tirage (voir `GrilleEcrite`). */
   grille: GrilleEcrite | null;
   subdivOptions: SubdivOption[];
@@ -205,10 +208,13 @@ export interface GrilleEcrite {
  * même colonne : c'est ce qui permet de voir QUI joue AU MÊME MOMENT, et c'est
  * le sujet de l'arrangement.
  *
- * ⚠️ La NAPPE reste dehors. Elle joue des accords (un index dans une liste),
- * pas des degrés : ce serait une troisième nature de case à lire et à écrire,
- * dans un exercice qui en a déjà deux. Elle s'ajoutera par ce champ le jour où
- * elle vaudra son écran. */
+ * ⚠️ La NAPPE est DEDANS depuis le 2026-09-02 (*« il manque la nappe ! »*), et
+ * sans troisième nature de case : sa case porte un DEGRÉ comme les autres, et
+ * c'est `buildState` qui le traduit en index d'accord (`degré − 1`). Le joueur
+ * écrit « 3 », la nappe joue l'accord du troisième degré. Une seule chose la
+ * distingue et elle est bornée par le moteur : ses degrés ne vont que jusqu'à
+ * `chordCount` (4 par défaut), là où basse et mélodie montent au clavier du
+ * niveau — d'où `degreMaxDeLigne`, qui décide aussi du clavier affiché. */
 export type NatureLigne = 'drum' | 'degres';
 
 export interface LigneArrangement {
@@ -229,11 +235,26 @@ export interface GrilleArrangement {
   swing?: number;
 }
 
+/* Jusqu'où monte le clavier d'UNE ligne de synthé.
+ *
+ * ⚠️ La nappe ne joue pas des notes mais des ACCORDS, et il n'y en a que
+ * `chordCount` (4 par défaut). Un clavier à cinq touches sur la nappe
+ * proposerait donc une cinquième touche qui ne joue rien : une case
+ * impossible à remplir, et un exercice bloqué sans rien à l'écran pour le
+ * dire. Le clavier suit la ligne visée. */
+export const ACCORDS_DE_LA_NAPPE = 4;
+export function degreMaxDeLigne(a: GrilleArrangement, nom: string): number {
+  const max = a.degreMax ?? 5;
+  return nom === 'pad' ? Math.min(max, ACCORDS_DE_LA_NAPPE) : max;
+}
+
 export interface MkLevelOptions {
   /** Une cible écrite à la main — voir `GrilleEcrite`. */
   grille?: GrilleEcrite;
   /** Une cible à PLUSIEURS lignes — voir `GrilleArrangement`. */
   arrangement?: GrilleArrangement;
+  /** Le SON du niveau — voir `model/sons.ts`. */
+  sons?: SonsDeNiveau;
   exercise?: ExerciseKind;
   preamble?: string;
   presetId?: string;
@@ -535,6 +556,7 @@ export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel
   return {
     id, teach, exercise: o.exercise || 'reproduire', jouerIndice: o.jouerIndice || 'ecoute',
     arrangement: o.arrangement,
+    sons: o.sons,
     familleParam: o.familleParam || 'timbre',
     paramsAutorises: o.paramsAutorises ?? [],
     melodie: {
@@ -1538,6 +1560,14 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     exercise: 'arrangement',
     preamble: "Pour la première fois, une batterie ET une ligne de synthé dans le même exercice. Le kick tient les quatre temps, la claire répond sur 2 et 4 — tu sais faire. Ce qui est neuf, c'est la BASSE par-dessus : quatre notes à retrouver en hauteur, comme aux exercices précédents, mais cette fois il faut les entendre à travers la batterie. Choisis une case de la ligne, appuie sur un degré.",
     tempoOptions: [84, 90],
+    /* ⚠️ Le SON fait partie du niveau (voir `model/sons.ts`) : une basse RONDE
+     * au release long, parce que c'est elle la nouveauté de l'exercice et
+     * qu'une basse sèche par défaut ne se distingue pas du kick. */
+    sons: {
+      bass: { voix: 'round', retouches: { release: 0.42 }, reverb: 0.08, volume: 1.05 },
+      kick: { tone: 22, decay: 6 },
+      snare: { reverb: 0.12 },
+    },
     arrangement: {
       subdiv: 8,
       degreMax: 5,
@@ -1552,6 +1582,16 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     exercise: 'arrangement',
     preamble: "Deux lignes de synthé maintenant, et elles ne disent pas la même chose : la basse tient le bas, rare et grave ; la mélodie bouge au-dessus, plus dense. Elles se répondent — c'est ce qu'on appelle un arrangement. La tonique du premier pas t'est donnée sur chacune : c'est le repère contre lequel le reste se situe.",
     tempoOptions: [84, 90],
+    /* Les deux lignes se SÉPARENT par le son autant que par le registre : la
+     * basse tient (release long, pas d'écho), la mélodie pique et s'en va
+     * (attaque courte, delay et réverbe). C'est ce qui rend « elles se
+     * répondent » audible au lieu d'être une affirmation du préambule. */
+    sons: {
+      bass: { voix: 'round', retouches: { release: 0.42 }, reverb: 0.08, volume: 1.05 },
+      melody: { voix: 'housepluck', retouches: { release: 0.07 }, delay: 0.3, reverb: 0.22 },
+      kick: { tone: 22, decay: 6 },
+      snare: { reverb: 0.12 },
+    },
     arrangement: {
       subdiv: 8,
       degreMax: 5,
@@ -1563,10 +1603,28 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       ],
     } }),
 
-  mkLevel(77, 'Six lignes', {
+  mkLevel(77, 'Sept lignes', {
     exercise: 'arrangement',
-    preamble: "Six lignes d'un coup : les quatre de la batterie, et les deux du synthé qui se répondent au-dessus. Rien de neuf à comprendre — c'est tout ce que tu sais déjà, en même temps. Le clap double la claire sur le deuxième temps et se tait sur le quatrième : c'est le genre de détail qu'on n'entend qu'en isolant une ligne. Écoute-les une par une.",
+    preamble: "Sept lignes d'un coup : les quatre de la batterie, et les trois du synthé. La nappe est neuve — sa case ne porte pas une note mais un ACCORD, écrit par son degré comme le reste, et elle n'en a que quatre. Elle tient le fond, la basse marche dessous, la mélodie pique au-dessus. Rien d'autre n'est nouveau : c'est tout ce que tu sais déjà, en même temps. Écoute une ligne à la fois.",
     tempoOptions: [84, 90],
+    /* ⚠️ SEPT lignes, pas six — *« top ce niveau 77, il manque la nappe ! »*
+     * (Yann, 2026-09-02). Elle vaut son écran ici et nulle part avant : c'est
+     * le seul exercice où trois lignes de synthé se répondent, donc le seul où
+     * un accord tenu s'entend comme un FOND et non comme une quatrième note.
+     *
+     * Le son suit la même idée — c'est le contraste des trois qui rend
+     * l'empilement lisible : nappe large et lointaine (attaque lente, étalée,
+     * beaucoup de réverbe), basse ronde et sèche, mélodie très courte avec
+     * delay. Trois registres, trois durées, trois places dans la salle. */
+    sons: {
+      pad: { voix: 'rhodes', retouches: { attack: 0.35, release: 0.9 }, reverb: 0.45, strum: 0.35, volume: 0.7 },
+      bass: { voix: 'round', retouches: { release: 0.42 }, reverb: 0.08, volume: 1.05 },
+      melody: { voix: 'housepluck', retouches: { release: 0.06 }, delay: 0.34, reverb: 0.24, volume: 0.9 },
+      kick: { tone: 24, decay: 8 },
+      snare: { reverb: 0.14 },
+      clap: { reverb: 0.3, volume: 0.75 },
+      hat: { filtre: 9000, volume: 0.6 },
+    },
     arrangement: {
       subdiv: 8,
       degreMax: 5,
@@ -1577,6 +1635,9 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
         { nom: 'hat',    nature: 'drum',   pas: [1, 1, 1, 1, 1, 1, 1, 1] },
         { nom: 'bass',   nature: 'degres', pas: [1, 0, 0, 1, 0, 5, 0, 0] },
         { nom: 'melody', nature: 'degres', pas: [5, 0, 4, 0, 3, 0, 2, 1] },
+        // La nappe : un accord par demi-mesure, et jamais plus de 4 (voir
+        // `degreMaxDeLigne`). Le premier est donné, comme sur les deux autres.
+        { nom: 'pad',    nature: 'degres', pas: [1, 0, 0, 0, 4, 0, 0, 0] },
       ],
     } }),
 

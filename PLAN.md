@@ -42,6 +42,85 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ La NAPPE et le SON d'un niveau (2026-09-02)
+
+> « top ce niveau 77, il manque la nappe ! aussi, il faut jouer avec tous les
+> paramètres même si on ne les bouge pas, ça peut rendre les son plus sympas.
+> Par exemple dans ce niveau 77 : on aurait pu avoir delay et reverb sur la
+> mélodie avec un son très court, une basse bien ronde au release élevé » — Yann
+
+Deux demandes, deux mécanismes, une seule livraison.
+
+**1 · La nappe entre dans l'arrangement — sans troisième nature de case.** Elle
+en était exclue par écrit (« elle joue des accords, pas des degrés : ce serait
+une troisième nature à lire et à écrire »). La sortie n'est pas de lui donner sa
+grammaire mais de garder celle des autres : sa case porte un **degré**, et
+`buildState` le traduit en index d'accord (`degré − 1`). Le joueur écrit « 3 »,
+la nappe joue l'accord du troisième degré.
+
+⚠️ **Ce qui se paie, et que seul un test attrape :** `scheduler.ts` lit le pas de
+la nappe comme un `number`. Le `{ degree, octave }` des deux autres lignes y
+devient `chordIdx = -1` — une ligne **affichée, éditable, notée et parfaitement
+muette**. C'est exactement ce que le test « chaque ligne affichée s'entend »
+détecte : je l'ai remis à l'ancienne version pour vérifier qu'il échoue bien.
+
+⚠️ **Et le clavier suit la LIGNE, pas le niveau.** La nappe n'a que `chordCount`
+accords (4) là où basse et mélodie montent à 5 : une cinquième touche y
+proposerait un accord qui n'existe pas, donc une case impossible à remplir dans
+un exercice qui exige l'exactitude. D'où `degreMaxDeLigne`, qui décide du
+clavier affiché ET de ce que `arrPoserNote` accepte. Mesuré en navigateur : 6
+touches sur la mélodie (5 degrés + l'effacement), 5 sur la nappe.
+
+Le niveau 77 s'appelle donc **« Sept lignes »** : quatre de batterie, trois de
+synthé. Mesuré en 390 × 844 — page 886 px, soit **42 px de défilement**, aucun
+conteneur qui déborde, cases toujours à 40,4 px. Cohérent avec le huit-lignes
+déjà mesuré (932 px).
+
+**2 · Le SON d'un niveau — `src/model/sons.ts`.** Un niveau écrit décide de ses
+timbres comme il décide de son feel : `sons` porte, par ligne, les envois de
+réverbe et de delay, le volume, le module Timbre pour la batterie, et pour le
+synthé une **voix citée au catalogue** (`SYNTH_VOICE_PRESETS`) plus des
+`retouches`. Citer plutôt que réinventer : un second jeu de voix dans les niveaux
+serait deux vérités qui divergent.
+
+Trois règles, et chacune a son test :
+
+- ⚠️ **le son n'est pas la réponse** — rien n'est comparé ni deviné ; la
+  **cible et la version du joueur reçoivent exactement le même son**, sinon
+  reposer une grille juste ne sonnerait pas comme le modèle et le joueur
+  croirait s'être trompé ;
+- ⚠️ **le décor passe AVANT la consigne** — `appliquerSons` est la première
+  instruction de `buildState`, pour qu'un verbe de paramètre (qui règle
+  lui-même le bouton qu'il fait entendre) gagne toujours ;
+- ⚠️ **une voix inconnue ne retombe pas en silence sur le défaut** — un
+  identifiant hors catalogue sonne « presque bien » et ne se voit qu'en
+  connaissant le son attendu ; le test refuse tout id absent.
+
+Ce que les trois niveaux entendent désormais : basse **ronde** au release long
+(0,42 s) sur les trois ; mélodie **très courte** (release 0,06 s) avec delay 0,34
+et réverbe 0,24 ; nappe **large et lointaine** (Rhodes, attaque 0,35 s, release
+0,9 s, réverbe 0,45, étalement 0,35, volume baissé). Trois registres, trois
+durées, trois places dans la salle — c'est le contraste qui rend l'empilement
+lisible, pas le volume.
+
+⚠️ **Un test instable est un bug, pas un test à recalibrer** — encore. La
+première version du test d'ordre posait une valeur SENTINELLE (3) et vérifiait
+que le champ ne la portait pas : « attack » est tombé sur 3 au bout de quelques
+tirages et le test a échoué sur une réussite. Il compare désormais le **même
+tirage avec et sans le son** — la seule formulation qui ne dépende d'aucun
+hasard.
+
+**Vérifié :** 497 tests (`tests/sons.test.ts`, 7 nouveaux, plus deux règles de
+données dans `tests/carriere.test.ts` : le degré borné par ligne, et la nappe qui
+n'arrive qu'après la basse et la mélodie), 0 erreur de types, les deux builds, le
+parcours complet depuis un joueur neuf, et en navigateur : 56 cases, **les sept
+têtes de lecture qui bougent**, zéro erreur console.
+
+**Fichiers :** `src/model/sons.ts` (neuf), `src/model/presets/levels.ts`
+(`degreMaxDeLigne`, `sons`, niveaux 75-77), `src/stores/game.svelte.ts`,
+`src/ui/game/GameView.svelte`, `tests/sons.test.ts` (neuf),
+`tests/carriere.test.ts`.
+
 ### ✅ L'ARRANGEMENT — reposer plusieurs lignes à la fois (2026-09-02)
 
 > « acte 3, je pensais à des exercices de reproduction de synthé avec en même
