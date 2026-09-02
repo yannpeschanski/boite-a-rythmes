@@ -1142,6 +1142,37 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     expect(c.cahier.some((l) => l.id === 'produit')).toBe(true);
   });
 
+  /* ⚠️ LE PLUS COMPLET DU JEU, et « complet » n'est pas « sévère ».
+   *
+   * Demande de Yann (2026-09-01) : *« l'acte 6, le plus complet du jeu »*. Elle
+   * entre en tension apparente avec la phrase de l'acte — aucun brief, aucun
+   * client, aucun style imposé — et la tension se résout dans ce que le cahier
+   * DEMANDE : il récapitule des gestes appris, il ne juge aucun goût. Ce test
+   * tient les deux moitiés ensemble, parce qu'une seule des deux se
+   * réintroduirait facilement en croyant bien faire. */
+  it('⚠️ porte le cahier le plus complet du jeu — mais n’exige aucun goût', () => {
+    const c = acte6().etapes.find((e) => e.kind === 'commande')!;
+    if (c.kind !== 'commande') return;
+    // La moitié « complet » : plus long que tous les autres cahiers du jeu.
+    const autres = ACTES.flatMap((a) =>
+      a.id === 6 ? [] : a.etapes.flatMap((e) => (e.kind === 'commande' ? [e.cahier.length] : [])),
+    );
+    expect(autres.length).toBeGreaterThan(0);
+    expect(c.cahier.length, 'FB-015 devrait être le plus long').toBeGreaterThan(Math.max(...autres));
+
+    // La moitié « pas sévère » : rien qui juge un genre ou une ressemblance.
+    for (const l of c.cahier) {
+      expect(l.id, l.libelle).not.toMatch(/^fiche:/);
+      expect(l.id, l.libelle).not.toMatch(/^pas-un-preset/);
+    }
+    expect(c.chapeau, 'un chapeau de genre serait un style imposé').toBeUndefined();
+
+    // Et il RÉCAPITULE : une section par acte traversé, pas une liste à plat.
+    const sections = [...new Set(c.cahier.map((l) => l.section).filter(Boolean))];
+    expect(sections.length, 'un cahier de dix lignes à plat ne dit pas d’où elles viennent')
+      .toBeGreaterThanOrEqual(4);
+  });
+
   // Sol demande son nom au joueur — le pseudo tapé au tout premier écran,
   // cinq mois de récit plus tôt.
   it('finit sur la question du nom', () => {

@@ -98,6 +98,14 @@ const LE_MIXAGE = '2 · LE MIXAGE — pour que ça tienne à la laverie';
 /* Les couches du jingle de Rachid, une par envoi — « mélodie, basse, nappe,
  * additionnées, plus les textures » (Yann). Le titre de section dit CE QU'ON
  * AJOUTE : un cahier à plat ne dirait pas que c'est un empilement. */
+/* Les quatre sections du cahier de FB-015 — une par acte traversé. C'est le
+ * seul cahier du jeu qui soit une RÉCAPITULATION : ses titres nomment ce qu'on
+ * a appris, pas ce qu'un client exige. */
+const FB_RYTHME = '1 · LE RYTHME — ce que tu sais faire depuis l’acte 1';
+const FB_GROOVE = '2 · LE GROOVE — pour que ça ne fasse pas réveil';
+const FB_COUCHES = '3 · LES COUCHES — la mélodie, la basse, la nappe';
+const FB_PRODUCTION = '4 · LA PRODUCTION — pour que ça tienne ailleurs qu’ici';
+
 const LA_PHRASE = 'LA PHRASE — ce qu’il a entendu dans l’escalier';
 const LA_BASSE = 'LA BASSE — ce qu’il y a dessous';
 const LA_NAPPE = '1 · LA NAPPE — ce qu’il y a derrière';
@@ -1567,9 +1575,20 @@ export const ACTES: Acte[] = [
     module: null,
     resume: 'Une référence libre dans le catalogue. La tienne.',
     etapes: [
-      /* ⚠️ L'acte où le cahier des charges doit presque DISPARAÎTRE, et c'est
+      /* ⚠️ L'acte où le cahier des charges ne demande RIEN À PERSONNE — et c'est
        * le texte qui l'exige : « Aucun brief. Aucun client. Aucun style
        * imposé. […] Cette fois, personne ne te dit si c'est bon. »
+       *
+       * ⚠️ Il est pourtant devenu le PLUS LONG du jeu le 2026-09-01 (« l'acte 6,
+       * le plus complet du jeu », Yann), et les deux tiennent ensemble parce
+       * que « complet » ne veut pas dire « sévère » : ses onze lignes ne jugent
+       * aucun goût, elles récapitulent les gestes des quatre actes précédents,
+       * une section par acte. Rien jusqu'ici ne les demandait ensemble.
+       *
+       * ⚠️ Il exige trois lignes de SYNTHÉ, donc un module que l'acte 3 ouvre —
+       * pas de `modulesRequis` ici : à l'acte 6 il l'est depuis longtemps, et
+       * `scripts/parcours-carriere.cjs` le prouve en jouant (la commande est
+       * acceptée avec « modules: atelier,synth,production »).
        *
        * C'est ce qui donne sa forme à toute la mécanique de commande : la
        * sévérité DÉCROÎT avec le récit. Les clients des actes 2 à 5 exigent des
@@ -1640,13 +1659,41 @@ export const ACTES: Acte[] = [
           'Mais cette fois, personne ne te dira si c’est bon.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
-        // Aucune exigence de client : on constate seulement qu'on s'est servi
-        // de ce qu'on a appris. Les libellés sont à la première personne.
+        /* ⚠️ LE CAHIER LE PLUS COMPLET DU JEU — onze lignes, quand les autres
+         * en comptent trois à six. Demande de Yann : *« l'acte 6, le plus complet
+         * du jeu »*.
+         *
+         * ⚠️ Et « complet » ne veut PAS dire « sévère » : la phrase de l'acte
+         * est « aucun brief, aucun client, aucun style imposé », et la règle
+         * qui en découle — la sévérité DÉCROÎT avec le récit — ne bouge pas.
+         * Ce cahier n'exige donc aucun genre, aucune ressemblance et aucun
+         * jugement de goût : il RÉCAPITULE. Une section par acte traversé, un
+         * geste par leçon, et des libellés écrits du point de vue du joueur
+         * plutôt que d'un client qui paie.
+         *
+         * C'est aussi le seul endroit où l'on vérifie que les cinq mois ont
+         * servi : les quatre actes précédents enseignent chacun deux ou trois
+         * gestes, et rien jusqu'ici ne les demandait ENSEMBLE. */
         cahier: [
           AVOIR_PRODUIT,
-          lignesPresentes(['kick', 'snare', 'hat'], 'La grille — acte 1'),
-          auMoinsUneRafale('Une rafale ou une variante — acte 1'),
-          ligneSynthPresente('bass', 'Une basse — acte 3'),
+          ...dansLaSection(FB_RYTHME, [
+            lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes de la grille'),
+            auMoinsUneVariante('Un rim shot ou un charley ouvert — les deux gestes de Sol'),
+            auMoinsUneRafale('Une rafale — ce qui casse la boucle avant qu’elle recommence'),
+          ]),
+          ...dansLaSection(FB_GROOVE, [
+            swingAuMoins(8, 'Que ça ne soit pas carré — du balancement'),
+            deLAlea('Que la machine ne joue pas deux fois pareil'),
+          ]),
+          ...dansLaSection(FB_COUCHES, [
+            ligneSynthPresente('melody', 'Une mélodie — c’est elle qu’on fredonne'),
+            ligneSynthPresente('bass', 'Une basse dessous, qui la porte'),
+            ligneSynthPresente('pad', 'Et une nappe derrière — on ne l’écoute jamais, on la remarque quand elle part'),
+          ]),
+          ...dansLaSection(FB_PRODUCTION, [
+            contrasteDeVolume(0.18, 'Des plans : tout n’est pas au même volume'),
+            reverbDosee(0.15, 0.5, 'De l’espace — et pas une cathédrale'),
+          ]),
         ],
         accepte: '— Je ne sais pas si c’est bon. […] C’est nouveau.',
         titre: 'FB-015',

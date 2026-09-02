@@ -594,6 +594,13 @@ l'impose : « aucun brief, aucun client, aucun style imposé ». Les clients des
 qu'on s'est servi de ce qu'on a appris. Et **jamais de commande avant l'acte 2** :
 l'acte 1 garde sa `livraison`, qui est un cadeau et non une épreuve.
 
+⚠️ **COMPLET n'est pas SÉVÈRE — le cahier de FB-015 est le plus long du jeu
+(onze lignes) et n'exige aucun goût.** Il RÉCAPITULE : une section par acte
+traversé, un geste par leçon, des libellés écrits du point de vue du joueur.
+Aucune fiche de style, aucun verrou de provenance, aucun chapeau de genre — les
+trois se réintroduiraient facilement en croyant « compléter ».
+`tests/carriere.test.ts` tient les deux moitiés ensemble.
+
 ⚠️ **« Dans le style de » se juge sur une FICHE, pas sur une ressemblance.**
 `src/model/styles.ts` décrit chaque genre par des CRITÈRES nommés — placements lus
 en *temps* et non en cases, tempo, instrument — et la livraison passe quand la part

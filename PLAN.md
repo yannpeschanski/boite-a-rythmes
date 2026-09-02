@@ -42,6 +42,55 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ FB-015 récapitule les cinq mois — tranche 5b (2026-09-02)
+
+> « L'acte 6, le plus complet du jeu. » — Yann
+
+**La tension à résoudre, et c'est tout le sujet.** L'acte 6 dit noir sur blanc
+*« aucun brief, aucun client, aucun style imposé »*, et la règle du dépôt qui en
+découle est que **la sévérité décroît avec le récit**. « Le plus complet » ne
+pouvait donc pas vouloir dire « le plus sévère » : un cahier qui jugerait un
+genre ou une ressemblance contredirait la phrase même de l'acte.
+
+**Ce que « complet » veut dire ici : la RÉCAPITULATION.** Le cahier passe de
+quatre lignes à **onze**, en quatre sections — une par acte traversé :
+
+| section | ce qu'elle redemande |
+|---|---|
+| 1 · LE RYTHME | les trois lignes, une variante, une rafale |
+| 2 · LE GROOVE | du balancement, et de l'aléa |
+| 3 · LES COUCHES | la mélodie, la basse, la nappe |
+| 4 · LA PRODUCTION | des plans de volume, de l'espace dosé |
+
+Aucune fiche de style, aucun verrou de provenance, aucun chapeau de genre —
+c'est-à-dire rien de ce qui juge un goût. Les libellés restent écrits du point de
+vue du joueur (« ce que tu sais faire depuis l'acte 1 ») et non d'un client qui
+paie. Et c'est le seul endroit du jeu où l'on vérifie que les cinq mois ont
+servi : chaque acte précédent enseigne deux ou trois gestes, rien jusqu'ici ne
+les demandait ENSEMBLE.
+
+**Le test tient les deux moitiés**, parce qu'une seule des deux se
+réintroduirait sans qu'on le voie : il exige que ce cahier soit strictement le
+plus long du jeu, qu'aucune de ses lignes ne soit une fiche ou un verrou de
+provenance, et qu'il porte au moins quatre sections — onze lignes à plat ne
+diraient pas d'où elles viennent.
+
+⚠️ **Une fausse alerte, et la leçon qui va avec.** La capture d'écran du cahier
+ne montrait pas l'onglet Synthé, alors que trois de ses lignes réclament une
+ligne de synthé : le cul-de-sac de l'acte 3, à l'identique. Vérifié dans le
+navigateur : `acteAtteint: 0` — ma fixture posait `progresCarriere` sans que
+ça prenne, et c'est la FIXTURE qui était fausse, pas le jeu.
+`scripts/parcours-carriere.cjs`, lui, joue la carrière et accepte la commande
+avec « modules: atelier,synth,production ». Une fixture ne joue pas le jeu :
+c'est écrit dans `CLAUDE.md` depuis sept PR, et ça vient de resservir.
+
+**Vérifié :** 476 tests (1 neuf), 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf ; et le cahier mesuré à
+l'écran en 390×840 — **0/11 à l'ouverture**, quatre sections, 0 px de
+débordement.
+
+---
+
 ### ✅ L'acte 5 produit au lieu de recopier — tranche 5a (2026-09-01)
 
 > « Sortir les niveaux reproduire 4/12/13/27/32 de l'acte 5 vers la salle de
