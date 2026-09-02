@@ -58,7 +58,9 @@ pseudo-élément sous `@media (pointer: coarse)`. Trois pièges :
 - un bloc `@media` posé au milieu d'un `<style>` Svelte est **écrasé par les
   règles écrites plus bas** : les mettre en fin de `<style>` ;
 - `getBoundingClientRect()` ne voit pas le pseudo-élément — mesurer avec
-  `elementFromPoint` après un `scrollIntoView`.
+  `elementFromPoint` après un `scrollIntoView`, **et dans un contexte tactile**
+  (`hasTouch`), sinon la règle `coarse` ne s'applique pas et la mesure accuse à
+  tort (10 « boutons trop petits » du Mode Live, en réalité un seul).
 
 Trois exceptions revendiquées (largeur des cases, libellés d'aide, Mode Live)
 sont documentées dans `docs/plan/03-journal-migration.md`, étape 6.
@@ -245,6 +247,16 @@ non nommée à l'écran est à refaire, pas à documenter.
 reculer est gratuit parce que le curseur enregistré ne bouge pas. Corollaire : une
 étape d'exercice revisitée doit pouvoir être re-dépassée SANS être rejouée
 (`etapeDejaFranchie`).
+
+⚠️ **La SCÈNE est le cinquième type d'étape — on n'y retrouve rien, on JOUE.**
+`EtapeScene` (acte 7, le rappel) emmène dans le Mode Live avec la production que
+le joueur a livrée à l'acte cité, jamais un motif de démonstration ; elle OUVRE
+le module (`modulesRequis`, fusionné avec celui de la commande dans
+`game.modulesRequis` — lu sur la seule commande, la scène restait dehors) ; et
+elle ne se NOTE pas : on redescend quand on veut, le récit avance.
+⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
+l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier : une
+seule commande sous 44 px de zone touchable, aucun débordement.
 
 ⚠️ **L'épilogue FAIT ENTENDRE le disque du joueur** — la production de
 `ACTE_DU_DISQUE` (déduit : l'acte de la dernière commande, jamais écrit en dur,

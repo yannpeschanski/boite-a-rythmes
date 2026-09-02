@@ -70,6 +70,16 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
 
       if (e.kind === 'recit') { game.avancerCarriere(); game.acteTermineAAnnoncer = null; continue; }
 
+      /* LA SCÈNE (acte 7) : on monte, on redescend. Il n'y a rien à réussir —
+         un concert ne se note pas — mais tout à vérifier : que le Mode Live
+         s'ouvre POUR l'étape, et que redescendre fait avancer le récit. */
+      if (e.kind === 'scene') {
+        game.ouvrirScene();
+        const ouvert = unlocks.has('live');
+        game.terminerScene();
+        log.push(`   scène « ${e.entete} » → Mode Live ${ouvert ? 'ouvert' : '⚠️ CADENASSÉ'}`);
+        continue;
+      }
       if (e.kind === 'livraison') {
         log.push(`   livraison — l'Atelier ouvert ? ${unlocks.has('atelier')}`);
         // ⚠️ `livrerSonnerie`, pas `avancerCarriere` : c'est le vrai chemin de

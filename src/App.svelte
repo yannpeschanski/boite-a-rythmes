@@ -61,6 +61,10 @@
   // overlay de verrouillage plutôt que d'escamoter le module. Une entrée qui
   // disparaît se lit comme une panne ; une entrée cadenassée se lit comme une
   // suite. « Dur » porte sur l'accès, pas sur la visibilité.
+  /* Le concert emprunte le Mode Live et le REND. Sans ce drapeau, la sortie du
+     Live retomberait sur l'Atelier — hors du récit, au milieu de l'acte 7. */
+  let retourDeScene = $state(false);
+
   function enter(v: 'atelier' | 'game' | 'live', mod?: LockedModule) {
     if (mod && !unlocks.has(mod)) return;
     view = v;
@@ -68,7 +72,20 @@
 </script>
 
 {#if view === 'live'}
-  <LiveView onExit={() => (view = 'atelier')} />
+  <!-- ⚠️ D'où l'on vient décide où l'on retourne. Le Mode Live rendait TOUJOURS
+       la main à l'Atelier ; monter sur scène pendant le concert et redescendre
+       dans l'Atelier ferait sortir du récit au milieu de l'acte 7. -->
+  <LiveView
+    onExit={() => {
+      if (retourDeScene) {
+        retourDeScene = false;
+        game.terminerScene();
+        view = 'game';
+      } else {
+        view = 'atelier';
+      }
+    }}
+  />
 {:else if view === 'splash'}
   <div class="splash">
     <h1>Face B</h1>
@@ -128,7 +145,13 @@
         <button onclick={() => enter('live', 'live')}>🎛 Mode Live</button>
       {/if}
     </nav>
-    <GameView onGoAtelier={() => (view = 'atelier')} />
+    <GameView
+      onGoAtelier={() => (view = 'atelier')}
+      onGoScene={() => {
+        retourDeScene = true;
+        view = 'live';
+      }}
+    />
   {/if}
 {/if}
 

@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après l'épilogue qui fait entendre le
-> disque du joueur (première moitié de la tranche 6).
+> Dernière mise à jour : 2026-09-02, après la TRANCHE 6 close — l'épilogue
+> fait entendre le disque du joueur, et le concert se joue en Mode Live.
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 504 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 511 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -72,7 +72,7 @@ quiz n'aurait rien réglé.
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | ✅ livré |
 | 5a | **l'acte 5** : quatre commandes de style, une par case du fax | ✅ livré |
 | 5b | **l'acte 6** en cahier, le plus complet du jeu | ✅ livré |
-| 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | ⏳ l'épilogue est fait ; le Mode Live reste |
+| 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | ✅ livré |
 | — | **l'arrangement** : reposer plusieurs lignes à la fois (acte 3, niveaux 75-77) | ✅ livré |
 | — | **la nappe** dans l'arrangement + le **son** d'un niveau (`model/sons.ts`) | ✅ livré |
 | — | **couper une ligne à l'écoute** + des **cycles** de durées différentes (niveau 78) | ✅ livré |
@@ -552,10 +552,11 @@ Aucune n'est engagée — demander avant de plonger.
   « XP est le cadre, l'instrument est
   sombre ») est resté en attente depuis août — c'est la plus ancienne décision
   ouverte, et elle conditionne toute passe d'UI.
-- **Le Mode Live reste à l'acte 7**, donc derrière tout le récit, alors qu'il est
-  le seul mode pensé pour le téléphone en paysage. Cohérent narrativement (l'acte
-  7 *est* le concert), jamais essayé sur un vrai téléphone. À trancher dans la
-  reprise du Mode Live.
+- ~~**Le Mode Live reste à l'acte 7**, jamais essayé en paysage~~ — **traité.**
+  Le concert s'y joue maintenant (`EtapeScene`), et le mode a été mesuré en
+  844 × 390 avec pointeur tactile : une seule commande sous 44 px de zone
+  touchable, aucun débordement. Reste à essayer sur un VRAI téléphone — une
+  mesure émulée n'est pas une main.
 - **Rien ne traverse les appareils** : téléphone et ordinateur sont deux joueurs
   distincts. Un « code de reprise » encodant la progression comme `share.ts`
   encode un rythme réglerait ça — chantier à part, non engagé.
