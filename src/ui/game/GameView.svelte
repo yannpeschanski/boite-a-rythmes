@@ -989,7 +989,10 @@
             {sel.pas + 1} — choisis une autre case pour le déplacer.
           </p>
           <div class="mel-clavier">
-            {#each Array.from({ length: game.level.arrangement?.degreMax ?? 5 }, (_, i) => i + 1) as d (d)}
+            <!-- ⚠️ Le clavier suit la LIGNE visée : la nappe joue des accords et
+                 il n'y en a que quatre. Une cinquième touche y proposerait un
+                 accord qui n'existe pas. -->
+            {#each Array.from({ length: game.arrDegreMax(sel.ligne) }, (_, i) => i + 1) as d (d)}
               <button
                 class="mel-touche tap44-y"
                 class:actif={game.arrGuess[sel.ligne]?.[sel.pas] === d}

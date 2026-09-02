@@ -13,6 +13,7 @@ import {
   presetForLevel,
   pick,
   strongPositions,
+  degreMaxDeLigne,
   type GameLevel,
   type GameVoice,
   type SubdivSpec,
@@ -55,6 +56,7 @@ import {
 } from '../model/carriere';
 import { evaluerCommande, type Verdict, type ContexteLivraison } from '../model/commande';
 import { etatVierge, etatDepuisGrille } from '../model/defaults';
+import { appliquerSons } from '../model/sons';
 import { pattern } from './pattern.svelte';
 import { history } from './history.svelte';
 import {
@@ -1186,8 +1188,18 @@ class GameStore {
   arrPoserNote(degre: number): void {
     const sel = this.arrSel;
     if (!sel || this.solved || this.revealed || this.arrLocked[sel.ligne]?.[sel.pas]) return;
+    // Un degré hors du clavier de CETTE ligne n'existe pas : sur la nappe, la
+    // cinquième touche ne correspond à aucun accord.
+    if (degre > this.arrDegreMax(sel.ligne)) return;
     const ligne = this.arrGuess[sel.ligne];
     ligne[sel.pas] = ligne[sel.pas] === degre ? 0 : degre;
+  }
+
+  /** Jusqu'où monte le clavier de la ligne visée — la nappe s'arrête aux
+   * accords disponibles (voir `degreMaxDeLigne`). */
+  arrDegreMax(ligne: string): number {
+    const a = this.level.arrangement;
+    return a ? degreMaxDeLigne(a, ligne) : 5;
   }
 
   /* Une pulsation régulière avec UN trou.
@@ -1733,6 +1745,13 @@ class GameStore {
   // Construit un état jouable par le moteur pour la cible ou la proposition.
   buildState(which: 'target' | 'guess' | 'intrus' | 'param'): PatternStateV2 {
     const state = defaultState();
+    /* ⚠️ Le SON du niveau se pose ICI, avant tout le reste — décor, pas
+     * consigne (voir `model/sons.ts`). Un exercice qui règle lui-même un
+     * bouton (les verbes de paramètre) ou qui tire un timbre de palier doit
+     * gagner sur lui, jamais l'inverse ; et la cible comme la version du
+     * joueur le reçoivent, sinon une grille juste ne sonnerait pas comme le
+     * modèle. */
+    appliquerSons(state, this.level.sons);
     state.tempo = this.tempo;
     state.swing = this.swing;
     state.drag = this.drag;
@@ -1800,7 +1819,17 @@ class GameStore {
           row.muted = false;
           row.cycleBars = 1;
           row.subdivisions = n;
-          row.pattern = grille[l.nom].map((d) => (d > 0 ? { degree: d, octave: 0 } : null));
+          /* ⚠️ La NAPPE ne joue pas des notes mais des ACCORDS : son pas est un
+           * INDEX dans la liste des accords (0-based, `-1` pour le silence),
+           * là où basse et mélodie portent un `{ degree, octave }`. Le jeu, lui,
+           * n'affiche qu'un nombre : le degré 1 est l'accord 0. Sans cette
+           * traduction, la nappe recevait un objet là où `scheduler.ts` attend
+           * un nombre — donc `chordIdx = -1`, donc une ligne affichée, éditable,
+           * notée, et parfaitement muette. */
+          row.pattern =
+            l.nom === 'pad'
+              ? grille[l.nom].map((d) => (d > 0 ? d - 1 : -1))
+              : grille[l.nom].map((d) => (d > 0 ? { degree: d, octave: 0 } : null));
           row.rolls = new Array(n).fill(1);
         }
       }

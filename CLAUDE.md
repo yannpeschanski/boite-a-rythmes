@@ -380,10 +380,26 @@ batterie qu'on allume au clic, un synthé en degrés qu'un clavier écrit, sur l
 même colonne. Un seul verbe couvre l'acte 3 et les grosses reproductions des
 actes suivants ; son axe de difficulté est le **nombre de voix**, pas de cases
 (huit partout). ⚠️ **Six lignes est le plafond qui tient sans défiler** en
-390 × 844 (mesuré : bas du clavier à 751 px) ; huit passent en faisant défiler
-la page, rien n'est coupé. ⚠️ Toute ligne NON citée doit être coupée, et le
-balayage passe par `DRUM_ROW_NAMES`, pas `GAME_DRUM_ROWS` — `defaultState()`
-ouvre les cinq lignes de batterie, pas les trois du jeu.
+390 × 844 (mesuré) ; sept en font défiler 42 px et huit 88, rien n'est coupé.
+⚠️ Toute ligne NON citée doit être coupée, et le balayage passe par
+`DRUM_ROW_NAMES`, pas `GAME_DRUM_ROWS` — `defaultState()` ouvre les cinq lignes
+de batterie, pas les trois du jeu.
+
+⚠️ **La NAPPE joue des ACCORDS : sa case porte un degré, le moteur reçoit un
+index** (`degré − 1`, `buildState`). Lui passer le `{ degree, octave }` des deux
+autres lignes donne `chordIdx = -1` — une ligne affichée, éditable, notée et
+muette. Et son clavier s'arrête à `chordCount` (4) quand les autres montent à
+5 : `degreMaxDeLigne` décide des deux, l'affichage et ce qu'`arrPoserNote`
+accepte.
+
+⚠️ **Le SON d'un niveau est un DÉCOR, pas une réponse — `model/sons.ts`.** Un
+niveau écrit décide de ses timbres comme de son feel : envois, volume, module
+Timbre, et pour le synthé une voix **citée** dans `SYNTH_VOICE_PRESETS` (jamais
+réinventée) plus des `retouches`. Trois invariants testés : la cible et la
+version du joueur reçoivent **le même son** (sinon une grille juste sonne faux) ;
+`appliquerSons` passe **en premier** dans `buildState`, pour qu'un verbe de
+paramètre garde la main sur le bouton qu'il fait entendre ; une voix hors
+catalogue ne doit pas retomber en silence sur le défaut.
 
 ⚠️ **`silence` a sa bonne réponse dans ce qu'on n'entend PAS.** Deux pièges payés
 et testés : le trou n'est jamais sur le premier pas, et le kick ne tient que ce
