@@ -327,7 +327,10 @@ de poser l'objet attendu.
 
 **Pas encore vérifié :** un vrai parcours à la souris/au doigt de bout en bout
 (le script pilote le store, il ne clique pas). Et le Mode Live n'a pas été
-retouché de la session.
+retouché de la session — mais il a été **audité** le 2026-09-02 :
+[`docs/plan/05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md). Cinq
+tranches proposées, aucune engagée ; les quatre premières sont indépendantes.
+Le mode n'a **toujours jamais tourné sur un vrai téléphone**.
 
 ## Les pièges qui ont coûté du temps
 
