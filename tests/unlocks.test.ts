@@ -137,3 +137,30 @@ describe('ce que le verrou dit', () => {
     }
   });
 });
+
+/* ⚠️ LA SCÈNE OUVRE LE MODE LIVE LE TEMPS DU CONCERT.
+ *
+ * L'acte 7 EST le concert, et son module (`live`) ne s'ouvrait qu'une fois
+ * l'acte FRANCHI : une étape qui envoie sur scène pendant l'acte trouvait donc
+ * le Mode Live cadenassé. C'est le cul-de-sac déjà payé à l'acte 3, où la
+ * commande réclamait une basse que le Synthé verrouillé ne laissait pas écrire.
+ *
+ * Le câblage passe par `game.modulesRequis`, qui fusionne ce que réclament la
+ * commande ET la scène : lu sur la seule commande, la scène restait dehors.
+ */
+describe('la scène ouvre le Mode Live pendant l’acte, pas après', () => {
+  // L'acte 7 en cours : le joueur y est, il ne l'a pas franchi.
+  const PENDANT_ACTE_7 = { level: 1, plancher: 1, acte: 7 };
+
+  it('sans scène ouverte, le Mode Live reste fermé pendant l’acte', () => {
+    expect(moduleUnlocked('live', PENDANT_ACTE_7)).toBe(false);
+  });
+
+  it('⚠️ la scène ouverte l’ouvre, et rien d’autre', () => {
+    const cx = { ...PENDANT_ACTE_7, modulesRequis: ['live' as const] };
+    expect(moduleUnlocked('live', cx)).toBe(true);
+    // Et pas les autres : ce qu'une étape ouvre, elle l'ouvre seule.
+    expect(moduleUnlocked('production', cx)).toBe(true); // ouvert par l'acte 5, franchi
+    expect(moduleUnlocked('live', PENDANT_ACTE_7)).toBe(false);
+  });
+});

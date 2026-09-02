@@ -1647,3 +1647,60 @@ describe('l’épilogue a un disque à faire entendre', () => {
     }
   });
 });
+
+/* ⚠️ LA SCÈNE — l'acte 7 se joue en Mode Live (seconde moitié de la tranche 6).
+ *
+ * Le concert se jouait au clavier du Mode jeu, et le Mode Live s'ouvrait APRÈS,
+ * en récompense : on décrivait au joueur ce qu'il aurait pu faire. Ces tests
+ * tiennent les trois chaînons qui peuvent se rompre en silence — le module
+ * fermé, le morceau absent, et une scène qui ne rendrait pas la main.
+ */
+describe('la scène — le seul endroit où l’on joue', () => {
+  const scenes = ACTES.flatMap((a) =>
+    a.etapes.flatMap((e, i) => (e.kind === 'scene' ? [{ acte: a, etape: e, i }] : [])),
+  );
+
+  it('il y a bien une scène — sinon ce fichier ne garde rien', () => {
+    expect(scenes.length).toBeGreaterThan(0);
+  });
+
+  it('⚠️ elle OUVRE le Mode Live, sinon elle envoie dans un module cadenassé', () => {
+    // Le cul-de-sac déjà payé à l'acte 3 : la commande réclamait une basse que
+    // le Synthé verrouillé ne laissait pas écrire.
+    for (const { etape } of scenes) {
+      expect(etape.modulesRequis, `scène « ${etape.entete} »`).toContain('live');
+    }
+  });
+
+  it('⚠️ le morceau qu’elle emporte EXISTE — l’acte cité a une commande', () => {
+    /* La scène joue la production du joueur. Si l'acte cité n'en produisait
+     * aucune, on monterait sur scène avec le motif d'accueil : une démo à la
+     * place de son propre morceau, et rien à l'écran pour le dire. */
+    for (const { etape } of scenes) {
+      const source = ACTES.find((a) => a.id === etape.morceauDeLActe);
+      expect(source, `l’acte ${etape.morceauDeLActe} n’existe pas`).toBeTruthy();
+      expect(
+        source!.etapes.some((e) => e.kind === 'commande' || e.kind === 'livraison'),
+        `l’acte ${etape.morceauDeLActe} ne produit rien — la scène n’aurait aucun morceau`,
+      ).toBe(true);
+    }
+  });
+
+  it('⚠️ elle se joue APRÈS l’acte qui produit son morceau', () => {
+    // Jouer à l'acte 7 un jingle qu'on n'a pas encore fait donnerait un morceau
+    // vide — et le récit dit « celui que tu as fait ».
+    for (const { acte, etape } of scenes) {
+      expect(etape.morceauDeLActe, `scène de l’acte ${acte.id}`).toBeLessThan(acte.id);
+    }
+  });
+
+  it('⚠️ après la scène, il ne reste que du récit', () => {
+    // Même règle que pour la dernière commande d'un acte : le concert est le
+    // dernier geste, ce qui suit le raconte.
+    for (const { acte, i } of scenes) {
+      for (const e of acte.etapes.slice(i + 1)) {
+        expect(e.kind, `une étape « ${e.kind} » suit la scène de l’acte ${acte.id}`).toBe('recit');
+      }
+    }
+  });
+});

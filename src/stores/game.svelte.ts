@@ -52,6 +52,7 @@ import {
   type Acte,
   type Etape,
   type EtapeCommande,
+  type EtapeScene,
   type EtapeRecit,
   EPILOGUE,
   LONGUEUR_EPILOGUE,
@@ -59,6 +60,7 @@ import {
 import { evaluerCommande, type Verdict, type ContexteLivraison } from '../model/commande';
 import { etatVierge, etatDepuisGrille } from '../model/defaults';
 import { appliquerSons } from '../model/sons';
+import type { LockedModule } from '../model/unlocks';
 import { pattern } from './pattern.svelte';
 import { history } from './history.svelte';
 import {
@@ -372,6 +374,10 @@ class GameStore {
    * livrer alors qu'on a relu un autre acte entre-temps ne doit pas valider la
    * mauvaise étape. */
   commandeEnCours = $state<{ acte: number; etape: number } | null>(null);
+  /* La SCÈNE en cours — même forme que la commande, et pour la même raison :
+   * l'étape doit survivre à un changement de vue (on part dans le Mode Live,
+   * qui n'est pas le Mode jeu). */
+  sceneEnCours = $state<{ acte: number; etape: number } | null>(null);
   /** Le verdict du dernier refus, pour que l'écran dise ce qui manque. */
   commandeVerdict = $state<Verdict | null>(null);
   /* Ce que le client dit en acceptant, à afficher UNE fois au retour.
@@ -598,6 +604,53 @@ class GameStore {
     if (!c) return null;
     const e = acteParId(c.acte).etapes[c.etape];
     return e && e.kind === 'commande' ? e : null;
+  }
+
+  /** La scène de l'étape courante, ou `null`. */
+  get scene(): EtapeScene | null {
+    const c = this.sceneEnCours;
+    if (!c) return null;
+    const e = acteParId(c.acte).etapes[c.etape];
+    return e && e.kind === 'scene' ? e : null;
+  }
+
+  /* ⚠️ Les modules ouverts par l'ÉTAPE en cours — commande OU scène.
+   *
+   * `unlocks` ne lisait que la commande. Une scène qui envoie dans le Mode Live
+   * sans l'ouvrir enverrait dans un module cadenassé : le cul-de-sac déjà payé
+   * à l'acte 3, où la commande réclamait une basse que le Synthé verrouillé ne
+   * laissait pas écrire. Une seule source pour les deux, sinon la règle vit à
+   * deux endroits et n'est appliquée qu'à un. */
+  get modulesRequis(): LockedModule[] | undefined {
+    const m = [...(this.commande?.modulesRequis ?? []), ...(this.scene?.modulesRequis ?? [])];
+    return m.length ? m : undefined;
+  }
+
+  /* Monter sur scène : on retient l'étape, et on emporte LE MORCEAU DU JOUEUR.
+   *
+   * ⚠️ Pas de `history.push()` ni de garde-fou sur l'Atelier : c'est le même
+   * geste que « Reprendre » dans la discographie, qui remplace déjà le contenu
+   * de l'Atelier par une production. Si le morceau manque (une partie qui
+   * n'aurait pas livré cet acte-là), on part avec ce qu'il y a : une scène ne
+   * doit jamais bloquer. */
+  ouvrirScene(): void {
+    if (this.etapeCourante?.kind !== 'scene') return;
+    this.sceneEnCours = { acte: this.acteActif, etape: this.etapeActive };
+    const p = productionDeLActe(this.productions, this.etapeCourante.morceauDeLActe);
+    if (p) pattern.replace(deserializeState(p.etat));
+  }
+
+  /* Redescendre. ⚠️ On AVANCE : le rappel a eu lieu, l'écran suivant le
+   * raconte. Un concert ne se note pas — il n'y a donc rien à vérifier, et
+   * revenir sans avancer ferait rejouer le même écran indéfiniment. */
+  terminerScene(): void {
+    const c = this.sceneEnCours;
+    this.sceneEnCours = null;
+    if (!c) return;
+    this.acteActif = c.acte;
+    this.etapeActive = c.etape;
+    this.avancerCarriere();
+    this.acteTermineAAnnoncer = null;
   }
 
   /** Partir travailler : on retient QUELLE étape attend une livraison. */

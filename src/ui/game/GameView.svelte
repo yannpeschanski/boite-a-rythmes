@@ -20,7 +20,10 @@
   import XpWindow from '../xp/XpWindow.svelte';
   import CarriereView from './CarriereView.svelte';
 
-  let { onGoAtelier }: { onGoAtelier?: () => void } = $props();
+  let {
+    onGoAtelier,
+    onGoScene,
+  }: { onGoAtelier?: () => void; onGoScene?: () => void } = $props();
 
   // État lu EN DIRECT par le moteur à chaque tick (comme pattern.snapshot()
   // pour l'Atelier), pas figé une fois pour toutes au clic sur ▶ — sinon,
@@ -588,6 +591,12 @@
         // ce qu'il avait — et l'acte 6, lui, part d'une page blanche.
         stopAll();
         onGoAtelier?.();
+      }}
+      onScene={() => {
+        // Le concert : on coupe tout ce que le Mode jeu faisait sonner avant
+        // de passer la main au Mode Live, sinon deux moteurs jouent ensemble.
+        stopAll();
+        onGoScene?.();
       }}
     />
   {:else}

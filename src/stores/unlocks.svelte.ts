@@ -75,8 +75,10 @@ class Unlocks {
       acte: game.progresCarriere.acte,
       bypass: this.boss,
       sharedPattern: this.sharedPattern,
-      // Ce que la commande ouverte réclame — voir `EtapeCommande.modulesRequis`.
-      modulesRequis: game.commande?.modulesRequis,
+      /* Ce que l'ÉTAPE ouverte réclame — commande ou scène (`game.modulesRequis`).
+         Une seule source pour les deux : lu ici sur la seule commande, une
+         scène qui envoie dans le Mode Live l'aurait trouvé cadenassé. */
+      modulesRequis: game.modulesRequis,
     };
   }
 

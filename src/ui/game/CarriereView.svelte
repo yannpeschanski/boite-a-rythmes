@@ -40,6 +40,7 @@
     onRepetition,
     onLivraison,
     onCommande,
+    onScene,
   }: {
     /** Une étape d'exercice commence : la vue de jeu prend la main. */
     onExercice: () => void;
@@ -47,6 +48,8 @@
     onRepetition: () => void;
     /** Emporter le rythme qu'on vient de faire dans l'Atelier. */
     onLivraison: () => void;
+    /** Monter sur scène : le Mode Live, avec le morceau du joueur dedans. */
+    onScene: () => void;
     /** Partir travailler sur une commande — l'Atelier devient l'outil. */
     onCommande: () => void;
   } = $props();
@@ -118,6 +121,14 @@
   function travailler() {
     game.ouvrirCommande();
     onCommande();
+  }
+
+  /* Monter sur scène. Le store retient l'étape et charge le morceau ; la vue
+     ne fait que naviguer — et coupe ce qu'elle était en train de lire. */
+  function monterSurScene() {
+    stopLecture();
+    game.ouvrirScene();
+    onScene();
   }
 
   function ouvrir(a: Acte) {
@@ -492,6 +503,34 @@
       <span class="position">Acte {acte.id} · {position}</span>
       <button class="xp-btn primary tap44-y" onclick={livrer}>{etape.bouton}</button>
     </div>
+  {:else if etape && etape.kind === 'scene'}
+    <!-- ⚠️ LA SCÈNE — le seul écran qui n'envoie ni retrouver ni produire, mais
+         JOUER. Il n'a pas de « Suite » : on ne passe pas le rappel sans monter
+         dessus, sinon l'acte redeviendrait le texte qu'il était. Le retour du
+         Mode Live avance tout seul (voir `terminerScene`). -->
+    <div class="appareil">
+      <div class="entete">ACTE {acte.id} — {acte.titre}</div>
+      <p class="tag-scene">{etape.entete}</p>
+      {#each etape.lignes as l, i (i)}
+        <p class="ligne">{texte(l)}</p>
+      {/each}
+    </div>
+    <div class="actions">
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
+      <span class="position">Acte {acte.id} · {position}</span>
+      <button class="xp-btn primary tap44-y" onclick={monterSurScene}>{etape.bouton}</button>
+    </div>
+    <!-- ⚠️ Le Mode Live ne s'ouvre qu'à l'HORIZONTALE : en portrait il affiche
+         « tourne ton téléphone » et rien d'autre. Envoyer le joueur dessus sans
+         le dire fait tomber le seul moment de concert du jeu sur un mur
+         d'instructions. Mesuré : en 844 × 390, tout tient et une seule commande
+         reste sous 44 px de zone touchable. -->
+    <p class="muted scene-note">
+      Le Mode Live se joue <b>à l’horizontale</b> — tourne ton téléphone. Tu redescends de
+      scène quand tu veux.
+    </p>
   {:else if etape && etape.kind === 'exercice'}
     <!-- Étape d'exercice atteinte sans être passée par `enchainer` (retour
          arrière du navigateur, relecture) : on ne saute pas dedans tout seul. -->
@@ -882,6 +921,17 @@
     color: var(--xp-lcd-dim);
     font-size: var(--xp-size-tag);
     letter-spacing: var(--xp-ls-tag);
+  }
+  .scene-note {
+    margin: 6px 0 0;
+    font-size: var(--xp-size-small);
+    color: var(--xp-muted);
+  }
+  .tag-scene {
+    margin: 0 0 6px;
+    font-size: var(--xp-size-tag);
+    letter-spacing: var(--xp-ls-tag);
+    color: var(--xp-accent-amber);
   }
   .pied {
     margin: 8px 0 0;

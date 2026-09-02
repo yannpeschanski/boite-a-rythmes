@@ -42,6 +42,65 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le concert se JOUE — l'acte 7 en Mode Live (2026-09-02)
+
+Seconde moitié de la tranche 6 : *« l'acte 7 en Mode Live jouable »*. Avec
+l'épilogue livré juste avant, la tranche est close.
+
+**Le problème.** L'acte 7 EST le concert, et il se jouait entièrement au clavier
+du Mode jeu : deux exercices de frappe et sept écrans de texte. Le Mode Live —
+le seul mode pensé pour ça — s'ouvrait **après**, en récompense. On décrivait au
+joueur ce qu'il aurait pu faire.
+
+**Un cinquième type d'étape : `EtapeScene`.** Le seul endroit du jeu où l'on ne
+retrouve rien et où l'on ne produit rien : on JOUE. Trois décisions dans le
+type :
+
+- ⚠️ **le morceau joué est CELUI DU JOUEUR** — la production livrée à l'acte
+  cité, pas un motif de démonstration. Le rappel réclame le jingle de la
+  laverie ; c'est donc le jingle de la laverie **du joueur** (acte 3) qui part
+  sur scène ;
+- ⚠️ **la scène OUVRE le Mode Live** (`modulesRequis`), comme une commande ouvre
+  le Synthé dont son cahier a besoin. Sans ça, l'étape enverrait dans un module
+  cadenassé — le cul-de-sac déjà payé à l'acte 3. Le câblage a demandé de
+  fusionner ce que réclament la commande ET la scène (`game.modulesRequis`) :
+  `unlocks` ne lisait que la commande ;
+- ⚠️ **un concert ne se NOTE pas.** Aucun score, aucune condition de sortie : on
+  joue le temps qu'on veut, on redescend, le récit avance. Noter le rappel
+  contredirait la seule phrase que l'acte répète — *« tu te planteras, mais
+  maintenant tu sais quoi faire après »*.
+
+**Où il tombe.** Juste avant « LE RAPPEL », qui raconte trente personnes en
+train de chanter douze secondes écrites pour vendre de la lessive. Le texte
+racontait déjà le joueur en train de jouer : il le raconte maintenant **après**
+qu'il l'a fait. La première ligne du RAPPEL a déménagé dans la scène, pour ne
+pas la dire deux fois.
+
+**Le Mode Live mesuré en PAYSAGE, pour la première fois** (844 × 390, pointeur
+grossier émulé) : 16 commandes, **une seule** sous 44 px de zone touchable
+(31 px), aucun débordement de page, et le séquenceur affiche bien le morceau
+chargé. ⚠️ La mesure au `getBoundingClientRect` disait « 10 boutons trop
+petits » — elle ne voit pas l'enveloppe `.tap44` (pseudo-élément sous
+`@media (pointer: coarse)`), exactement comme `CLAUDE.md` le dit. Mesurer la
+vraie zone demande `elementFromPoint` **et** un contexte tactile.
+
+⚠️ **Ce que la mesure a montré et qu'il a fallu dire** : en portrait, le Mode
+Live n'affiche que « TOURNE TON TÉLÉPHONE ». Envoyer le joueur sur scène sans le
+prévenir fait tomber le seul moment de concert du jeu sur un mur d'instructions.
+L'écran de scène le dit donc avant.
+
+**Vérifié :** 511 tests (5 de données sur la scène, 2 sur le déverrouillage),
+0 erreur de types, les deux builds, le parcours complet (l'acte 7 passe à
+10 étapes, « Mode Live ouvert » à la scène), et en navigateur le tour complet :
+scène → Live avec le jingle dedans → retour au récit à « LE RAPPEL », curseur
+avancé, `sceneEnCours` rendu, zéro erreur console.
+
+**Fichiers :** `src/model/carriere.ts` (`EtapeScene`, acte 7),
+`src/stores/game.svelte.ts` (`ouvrirScene`, `terminerScene`, `modulesRequis`),
+`src/stores/unlocks.svelte.ts`, `src/ui/game/CarriereView.svelte`,
+`src/ui/game/GameView.svelte`, `src/App.svelte`, `tests/carriere.test.ts`,
+`tests/unlocks.test.ts`, `scripts/parcours-carriere.cjs`.
+
 ### ✅ L'épilogue fait entendre le disque du joueur (2026-09-02)
 
 Première moitié de la tranche 6 — *« l'épilogue (« pas assez d'émotion ») »*.

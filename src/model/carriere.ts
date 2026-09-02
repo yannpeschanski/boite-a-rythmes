@@ -203,6 +203,41 @@ export interface EtapeLivraison {
  *
  * Ce qui est vérifié vit dans `model/commande.ts` — et c'est là qu'est le vrai
  * travail, pas ici. */
+/* La SCÈNE — le seul endroit du jeu où l'on ne retrouve rien et où l'on ne
+ * produit rien : on JOUE.
+ *
+ * ⚠️ Seconde moitié de la tranche 6 : *« l'acte 7 en Mode Live jouable »*.
+ * L'acte 7 EST le concert, et il se jouait entièrement au clavier du Mode jeu —
+ * deux exercices de frappe et sept écrans de texte. Le Mode Live, lui, est le
+ * seul mode pensé pour ça, et il s'ouvrait APRÈS, en récompense : on décrivait
+ * au joueur ce qu'il aurait pu faire.
+ *
+ * Trois décisions portées par ce type :
+ *
+ * - **le morceau joué est CELUI DU JOUEUR** — la production qu'il a livrée à
+ *   l'acte cité (`morceauDeLActe`), pas un motif de démonstration. Le rappel du
+ *   récit réclame le jingle de la laverie ; c'est donc le jingle de la laverie
+ *   du joueur qui part sur scène ;
+ * - **le Mode Live s'ouvre POUR la scène** (`modulesRequis`), exactement comme
+ *   une commande ouvre le Synthé dont son cahier a besoin. Sans ça l'étape
+ *   enverrait dans un module cadenassé — le cul-de-sac déjà payé à l'acte 3 ;
+ * - ⚠️ **un concert ne se NOTE pas.** Aucun score, aucune condition de sortie :
+ *   on joue le temps qu'on veut et on revient. Noter le rappel contredirait la
+ *   seule phrase que l'acte répète — « tu te planteras, mais maintenant tu sais
+ *   quoi faire après ». */
+export interface EtapeScene {
+  kind: 'scene';
+  entete: string;
+  lignes: string[];
+  /** Le libellé du bouton qui monte sur scène. */
+  bouton: string;
+  /** L'acte dont on emporte la production. Elle existe : cet acte a une
+   *  commande, et `tests/carriere.test.ts` le vérifie. */
+  morceauDeLActe: number;
+  /** Ouverts le temps de la scène — voir `EtapeCommande.modulesRequis`. */
+  modulesRequis?: LockedModule[];
+}
+
 export interface EtapeCommande {
   kind: 'commande';
   entete: string;
@@ -278,7 +313,7 @@ export interface EtapeCommande {
   client: string;
 }
 
-export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison | EtapeCommande;
+export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison | EtapeCommande | EtapeScene;
 
 export interface Acte {
   id: ActeId;
@@ -1866,12 +1901,35 @@ export const ACTES: Acte[] = [
           'Puis les applaudissements.',
         ],
       },
+      /* ⚠️ LE RAPPEL SE JOUE. L'écran suivant raconte trente personnes en train
+       * de chanter douze secondes écrites pour vendre de la lessive : le seul
+       * moment du jeu où le récit décrit le joueur en train de JOUER. Il se
+       * jouait au clavier du Mode jeu, et le Mode Live s'ouvrait après, en
+       * récompense. Il s'ouvre maintenant ICI, avec le jingle du joueur
+       * dedans — celui qu'il a livré à Rachid à l'acte 3. */
+      {
+        kind: 'scene',
+        entete: 'ON RÉCLAME LE JINGLE',
+        lignes: [
+          'Quelqu’un réclame le jingle de la laverie.',
+          'Celui de Rachid. Celui que tu as fait.',
+          'Kelvin siffle. Deux personnes tapent dans les mains.',
+          'Sol te regarde et hausse les épaules.',
+          '— Ils le connaissent mieux que toi.',
+        ],
+        bouton: 'Monter sur scène ▸',
+        // L'acte 3 est celui du jingle de la laverie — sa commande le range
+        // dans la discographie sous « JINGLE LAVERIE ».
+        morceauDeLActe: 3,
+        // Le concert OUVRE le Mode Live : sans ça, l'étape enverrait dans un
+        // module cadenassé.
+        modulesRequis: ['live'],
+      },
       {
         kind: 'recit',
         source: 'cassette',
         entete: 'LE RAPPEL',
         lignes: [
-          'Quelqu’un réclame le jingle de la laverie.',
           'Tout le monde le connaît.',
           'Trente personnes chantent douze secondes',
           'écrites pour vendre de la lessive,',
