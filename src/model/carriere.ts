@@ -1042,6 +1042,34 @@ export const ACTES: Acte[] = [
         niveau: 77,
         commande: 'Sept lignes d’un coup. Rien de neuf — tout ce que tu sais, en même temps.',
       },
+      /* ⚠️ UNE LECTURE AVANT LE 78, et c'est une règle du dépôt qui l'impose :
+       * une nouveauté n'est DEMANDÉE qu'après avoir été MONTRÉE à l'écran.
+       * Le 78 pose une idée neuve — une ligne qui ne revient plus au bout d'une
+       * mesure — et rien, avant, ne la disait : son préambule l'expliquait
+       * DANS l'exercice, c'est-à-dire trop tard. C'était aussi le cinquième
+       * exercice d'affilée de l'acte, sans un mot entre eux.
+       *
+       * Le constat est de Yann, en jouant : *« ce niveau à 8 cases est une
+       * bonne intro, d'ailleurs ça fait très sonnerie polyphonique… mais pour
+       * un morceau, il faut des cycles différents »*. C'est Rachid qui le dit,
+       * parce que c'est lui qui écoute et qui paie. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'RACHID, DEUX JOURS PLUS TARD',
+        lignes: [
+          'Il remonte l’escalier avec la cassette.',
+          '— C’est bien.',
+          '— Mais ?',
+          '— Au bout de trois fois, je sais ce qui vient.',
+          'Il cherche ses mots.',
+          '— Ça fait sonnerie. Je veux un morceau.',
+          'Sol, sans lever les yeux :',
+          '— Alors laisse-la finir sa phrase.',
+          'Une boucle d’une mesure revient toujours au même endroit.',
+          'Une phrase de deux mesures a le temps de répondre.',
+        ],
+      },
       {
         kind: 'exercice',
         niveau: 78,

@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après le mute d'écoute et les cycles de
-> durées différentes dans l'arrangement.
+> Dernière mise à jour : 2026-09-02, après le carnet qui dit qu'on peut relire
+> un acte, et l'écran qui annonce le niveau 78.
 
 ## Où en est le projet
 
@@ -76,6 +76,7 @@ quiz n'aurait rien réglé.
 | — | **l'arrangement** : reposer plusieurs lignes à la fois (acte 3, niveaux 75-77) | ✅ livré |
 | — | **la nappe** dans l'arrangement + le **son** d'un niveau (`model/sons.ts`) | ✅ livré |
 | — | **couper une ligne à l'écoute** + des **cycles** de durées différentes (niveau 78) | ✅ livré |
+| — | **relire un acte** rendu visible dans le carnet + le récit qui annonce le 78 | ✅ livré |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
 
 **Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
@@ -128,6 +129,19 @@ produit au lieu de recopier ») :
   produire quatre genres pour n'en rendre qu'un ;
 - deux harnais (le test et le parcours) construisaient un genre en perdant son
   FEEL — ils partent désormais de `presetToState`.
+
+**Ce que le CARNET a tranché en passant** (détail dans `PLAN.md`, « Relire un
+acte se voit ») :
+
+- **une capacité qu'aucun mot ne nomme n'existe pas** — relire un acte marchait
+  et était testé ; le carnet n'avait ni titre, ni relief, ni verbe, et la seule
+  phrase sous lui nommait la salle de répétition ;
+- **une nouveauté s'annonce avant de se demander** : le 78 était le cinquième
+  exercice d'affilée de l'acte 3 et n'expliquait son idée que dans son propre
+  préambule ;
+- ⚠️ **`progresCarriere` est un GETTER** : lui affecter une valeur dans un
+  `page.evaluate` ne fait rien, en silence. Trois scripts de mesure s'y sont
+  fait prendre dans la même session.
 
 **Ce que l'ÉCOUTE et les CYCLES ont tranché en passant** (détail dans `PLAN.md`,
 « Couper une ligne à l'écoute, et des cycles de durées différentes ») :
