@@ -57,6 +57,8 @@ export interface GameLevel {
   exercise: ExerciseKind;
   preamble: string;
   presetId: string | null;
+  /** Cible à plusieurs lignes, écrite à la main (voir `GrilleArrangement`). */
+  arrangement?: GrilleArrangement;
   /** Cible écrite à la main : elle remplace le tirage (voir `GrilleEcrite`). */
   grille: GrilleEcrite | null;
   subdivOptions: SubdivOption[];
@@ -189,9 +191,49 @@ export interface GrilleEcrite {
   shift?: Partial<Record<GameDrumRowName, number>>;
 }
 
+/* ⚠️ L'ARRANGEMENT — une cible écrite sur PLUSIEURS lignes de deux natures.
+ *
+ * Demande de Yann (2026-09-02) : *« des exercices de reproduction de synthé
+ * avec en même temps plusieurs lignes »*, puis *« des reproductions à 6 voire
+ * 8 lignes (drum + synthé) »*. C'est donc écrit d'emblée pour N lignes : le
+ * premier niveau en pose quatre, rien dans la forme n'empêche d'en poser huit.
+ *
+ * ⚠️ UNE SEULE SUBDIVISION pour tout l'arrangement, et c'est un choix. Des
+ * lignes à des subdivisions différentes seraient une polyrythmie — un autre
+ * sujet, déjà enseigné (niveau 74) — et rendraient la lecture croisée de huit
+ * lignes illisible sur un téléphone. Ici, toutes les lignes se lisent dans la
+ * même colonne : c'est ce qui permet de voir QUI joue AU MÊME MOMENT, et c'est
+ * le sujet de l'arrangement.
+ *
+ * ⚠️ La NAPPE reste dehors. Elle joue des accords (un index dans une liste),
+ * pas des degrés : ce serait une troisième nature de case à lire et à écrire,
+ * dans un exercice qui en a déjà deux. Elle s'ajoutera par ce champ le jour où
+ * elle vaudra son écran. */
+export type NatureLigne = 'drum' | 'degres';
+
+export interface LigneArrangement {
+  /** `kick`/`snare`/`hat` pour la batterie, `bass`/`melody` pour le synthé. */
+  nom: string;
+  nature: NatureLigne;
+  /* La cible, de la longueur de `subdiv`. Batterie : 0 vide, 1 coup, 2
+   * variante. Synthé : 0 silence, 1..7 le DEGRÉ dans la gamme. */
+  pas: number[];
+}
+
+export interface GrilleArrangement {
+  /** La même pour toutes les lignes — voir le commentaire ci-dessus. */
+  subdiv: number;
+  lignes: LigneArrangement[];
+  /** Le clavier des lignes de synthé (nombre de touches). */
+  degreMax?: number;
+  swing?: number;
+}
+
 export interface MkLevelOptions {
   /** Une cible écrite à la main — voir `GrilleEcrite`. */
   grille?: GrilleEcrite;
+  /** Une cible à PLUSIEURS lignes — voir `GrilleArrangement`. */
+  arrangement?: GrilleArrangement;
   exercise?: ExerciseKind;
   preamble?: string;
   presetId?: string;
@@ -492,6 +534,7 @@ export function voiceTierForLevel(id: number): VoiceTierName {
 export function mkLevel(id: number, teach: string, o: MkLevelOptions): GameLevel {
   return {
     id, teach, exercise: o.exercise || 'reproduire', jouerIndice: o.jouerIndice || 'ecoute',
+    arrangement: o.arrangement,
     familleParam: o.familleParam || 'timbre',
     paramsAutorises: o.paramsAutorises ?? [],
     melodie: {
@@ -1470,6 +1513,71 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       kick:  [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0],
       snare: [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
+
+  /* ---------- Les ARRANGEMENTS de l'acte 3 — batterie ET synthé ----------
+   *
+   * Demande de Yann (2026-09-02) : *« des exercices de reproduction de synthé
+   * avec en même temps plusieurs lignes »*, et sur la question « combien de
+   * lignes, et lesquelles » : **batterie + synthé tout de suite**.
+   *
+   * Les trois montent d'une ligne à chaque fois — quatre, puis cinq, puis six —
+   * et la progression n'est pas dans le nombre de cases (huit partout) mais
+   * dans le nombre de VOIX à démêler. C'est l'axe de difficulté propre à
+   * l'arrangement, comme le feel est celui de l'acte 2.
+   *
+   * ⚠️ Le kick et la claire restent SIMPLES (les temps, le backbeat) : ce
+   * qu'on demande d'entendre est la ligne de synthé CONTRE eux, pas un rythme
+   * de plus à lire. Le charley n'arrive qu'au troisième, quand les deux lignes
+   * de synthé sont acquises.
+   *
+   * ⚠️ La basse est plus GRAVE et plus rare que la mélodie — c'est ce que la
+   * commande de l'acte demande ensuite (« elle tient, elle ne court pas après
+   * la mélodie ») : l'exercice le fait entendre avant que le cahier l'exige. */
+  mkLevel(75, 'Deux lignes à la fois', {
+    exercise: 'arrangement',
+    preamble: "Pour la première fois, une batterie ET une ligne de synthé dans le même exercice. Le kick tient les quatre temps, la claire répond sur 2 et 4 — tu sais faire. Ce qui est neuf, c'est la BASSE par-dessus : quatre notes à retrouver en hauteur, comme aux exercices précédents, mais cette fois il faut les entendre à travers la batterie. Choisis une case de la ligne, appuie sur un degré.",
+    tempoOptions: [84, 90],
+    arrangement: {
+      subdiv: 8,
+      degreMax: 5,
+      lignes: [
+        { nom: 'kick',  nature: 'drum',   pas: [1, 0, 1, 0, 1, 0, 1, 0] },
+        { nom: 'snare', nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'bass',  nature: 'degres', pas: [1, 0, 0, 5, 0, 0, 3, 0] },
+      ],
+    } }),
+
+  mkLevel(76, 'La basse et la mélodie', {
+    exercise: 'arrangement',
+    preamble: "Deux lignes de synthé maintenant, et elles ne disent pas la même chose : la basse tient le bas, rare et grave ; la mélodie bouge au-dessus, plus dense. Elles se répondent — c'est ce qu'on appelle un arrangement. La tonique du premier pas t'est donnée sur chacune : c'est le repère contre lequel le reste se situe.",
+    tempoOptions: [84, 90],
+    arrangement: {
+      subdiv: 8,
+      degreMax: 5,
+      lignes: [
+        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 1, 0, 1, 0, 1, 0] },
+        { nom: 'snare',  nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'bass',   nature: 'degres', pas: [1, 0, 0, 0, 5, 0, 0, 0] },
+        { nom: 'melody', nature: 'degres', pas: [3, 0, 5, 4, 3, 0, 2, 1] },
+      ],
+    } }),
+
+  mkLevel(77, 'Six lignes', {
+    exercise: 'arrangement',
+    preamble: "Six lignes d'un coup : les quatre de la batterie, et les deux du synthé qui se répondent au-dessus. Rien de neuf à comprendre — c'est tout ce que tu sais déjà, en même temps. Le clap double la claire sur le deuxième temps et se tait sur le quatrième : c'est le genre de détail qu'on n'entend qu'en isolant une ligne. Écoute-les une par une.",
+    tempoOptions: [84, 90],
+    arrangement: {
+      subdiv: 8,
+      degreMax: 5,
+      lignes: [
+        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 1, 0, 1, 0, 1, 1] },
+        { nom: 'snare',  nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 2, 0] },
+        { nom: 'clap',   nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 0, 0] },
+        { nom: 'hat',    nature: 'drum',   pas: [1, 1, 1, 1, 1, 1, 1, 1] },
+        { nom: 'bass',   nature: 'degres', pas: [1, 0, 0, 1, 0, 5, 0, 0] },
+        { nom: 'melody', nature: 'degres', pas: [5, 0, 4, 0, 3, 0, 2, 1] },
+      ],
     } }),
 
   mkLevel(73, 'Lequel des trois ?', {

@@ -2,7 +2,7 @@
 // Vérifier. Les cases exactes (état ET rafale) se verrouillent avec ✓.
 // Port de la logique de l. 7467–8734, sans la couche DOM.
 import type { DrumStep, PatternStateV2 } from '../model/types';
-import { SYNTH_ROW_NAMES } from '../model/types';
+import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES, type DrumRowName, type SynthRowName } from '../model/types';
 import { defaultState } from '../model/defaults';
 import {
   LEVELS,
@@ -18,6 +18,7 @@ import {
   type SubdivSpec,
   type GamePresetLike,
   type GameDrumRowName,
+  type LigneArrangement,
 } from '../model/presets/levels';
 import {
   comparerGrilles,
@@ -300,6 +301,23 @@ class GameStore {
    * `Grid` de batterie : ce n'est ni la même forme (une seule ligne), ni la
    * même sémantique (une hauteur, pas un coup). Le COMPARATEUR, lui, est le
    * même — il ne fait que des `===`. */
+  /* ⚠️ L'ARRANGEMENT — l'état GÉNÉRIQUE, sur N lignes nommées.
+   *
+   * Les trois autres grilles du jeu sont figées : `target`/`guess`/`locked`
+   * portent exactement kick/snare/hat, et la mélodie a son propre état à une
+   * ligne. Celui-ci ne suppose ni le nombre ni la nature des lignes — il les
+   * lit dans le niveau — parce que la demande va jusqu'à huit (« drum +
+   * synthé »). Le jour où `reproduire` déménagera ici, ce sera un déplacement,
+   * pas une réécriture ; en attendant les deux coexistent, et c'est assumé :
+   * réécrire dix-sept niveaux testés pour trois niveaux neufs aurait été le
+   * mauvais ordre. */
+  arrLignes = $state<LigneArrangement[]>([]);
+  arrCible = $state<Record<string, number[]>>({});
+  arrGuess = $state<Record<string, number[]>>({});
+  arrLocked = $state<Record<string, boolean[]>>({});
+  /** La case visée par le clavier : (ligne de synthé, pas). */
+  arrSel = $state<{ ligne: string; pas: number } | null>(null);
+
   melodieCible = $state<number[]>([]);
   melodieGuess = $state<number[]>([]);
   melodieLocked = $state<boolean[]>([]);
@@ -1006,6 +1024,11 @@ class GameStore {
       return;
     }
 
+    if (this.level.exercise === 'arrangement') {
+      this.preparerArrangement();
+      return;
+    }
+
     if (this.level.exercise === 'melodie') {
       this.preparerMelodie();
       return;
@@ -1104,6 +1127,67 @@ class GameStore {
     locked[0] = true;
     this.melodieGuess = guess;
     this.melodieLocked = locked;
+  }
+
+  /* L'ARRANGEMENT : on recopie la cible écrite, ligne par ligne.
+   *
+   * Rien n'est tiré au sort — c'est la règle des grilles écrites, et elle vaut
+   * d'autant plus ici : un arrangement tiré ne saurait pas ce qu'il enseigne,
+   * et « qui joue en même temps que qui » est précisément ce qu'on ne peut pas
+   * obtenir d'un tirage de densité.
+   *
+   * ⚠️ Le PREMIER PAS de chaque ligne de synthé est donné et verrouillé, comme
+   * la tonique de la mélodie : sans point de départ, aucun degré ne se situe.
+   * Sur la batterie, rien n'est donné — un coup se situe tout seul. */
+  private preparerArrangement(): void {
+    const a = this.level.arrangement;
+    if (!a) return;
+    this.arrLignes = a.lignes;
+    const cible: Record<string, number[]> = {};
+    const guess: Record<string, number[]> = {};
+    const locked: Record<string, boolean[]> = {};
+    for (const l of a.lignes) {
+      cible[l.nom] = l.pas.slice(0, a.subdiv);
+      guess[l.nom] = new Array(a.subdiv).fill(0);
+      locked[l.nom] = new Array(a.subdiv).fill(false);
+      if (l.nature === 'degres' && cible[l.nom][0] > 0) {
+        guess[l.nom][0] = cible[l.nom][0];
+        locked[l.nom][0] = true;
+      }
+    }
+    this.arrCible = cible;
+    this.arrGuess = guess;
+    this.arrLocked = locked;
+    // La première case libre d'une ligne de synthé : le clavier vise toujours
+    // quelque chose, sinon sa première frappe ne va nulle part.
+    const synth = a.lignes.find((l) => l.nature === 'degres');
+    this.arrSel = synth ? { ligne: synth.nom, pas: locked[synth.nom][0] ? 1 : 0 } : null;
+    this.subdiv = { kick: a.subdiv, snare: a.subdiv, hat: a.subdiv };
+    this.swing = a.swing ?? 0;
+    this.drag = 0;
+    this.shift = { kick: 0, snare: 0, hat: 0 };
+  }
+
+  /** Poser un coup sur une ligne de BATTERIE de l'arrangement. */
+  arrCycler(ligne: string, pas: number): void {
+    if (this.solved || this.revealed || this.arrLocked[ligne]?.[pas]) return;
+    const max = ligne === 'kick' ? 1 : 2;
+    this.arrGuess[ligne][pas] = (this.arrGuess[ligne][pas] + 1) % (max + 1);
+  }
+
+  /** Viser une case de SYNTHÉ (c'est elle que le clavier écrira). */
+  arrViser(ligne: string, pas: number): void {
+    if (this.solved || this.revealed) return;
+    this.arrSel = { ligne, pas };
+  }
+
+  /** Écrire un degré sur la case visée. Le reposer l'efface, comme une case
+   *  de batterie qu'on reclique. */
+  arrPoserNote(degre: number): void {
+    const sel = this.arrSel;
+    if (!sel || this.solved || this.revealed || this.arrLocked[sel.ligne]?.[sel.pas]) return;
+    const ligne = this.arrGuess[sel.ligne];
+    ligne[sel.pas] = ligne[sel.pas] === degre ? 0 : degre;
   }
 
   /* Une pulsation régulière avec UN trou.
@@ -1411,6 +1495,19 @@ class GameStore {
       return juste;
     }
 
+    /* L'arrangement compare N lignes — le MÊME comparateur, une clé par ligne.
+     * Aucune rafale : ce que l'exercice demande est qui joue et quoi, pas
+     * combien de coups rapprochés. */
+    if (this.level.exercise === 'arrangement') {
+      const noms = this.arrLignes.map((l) => l.nom);
+      const uns: Record<string, number[]> = {};
+      for (const n of noms) uns[n] = new Array(this.arrCible[n].length).fill(1);
+      const r = comparerGrilles<string>(this.arrCible, uns, this.arrGuess, uns, noms);
+      r.aVerrouiller.forEach(({ row, col }) => (this.arrLocked[row][col] = true));
+      if (r.exact) this.win();
+      return r.exact;
+    }
+
     /* La mélodie compare UNE ligne, avec le même comparateur que la batterie —
      * seul le sens des nombres change (un degré au lieu d'un coup). */
     if (this.level.exercise === 'melodie') {
@@ -1673,6 +1770,43 @@ class GameStore {
      * nombres. L'octave est fixée à 0 : monophonique et sur un seul registre,
      * sans quoi deux hauteurs à l'octave seraient « la même note » à l'oreille
      * et deux réponses différentes à l'écran. */
+    /* L'ARRANGEMENT sonne comme un morceau : les lignes de batterie sur leurs
+     * voies, les lignes de synthé sur les leurs, tout le reste au repos. C'est
+     * le seul exercice où l'on entend plusieurs natures ensemble — c'est même
+     * sa définition. */
+    if (this.level.exercise === 'arrangement') {
+      const grille = which === 'guess' ? this.arrGuess : this.arrCible;
+      const n = this.level.arrangement?.subdiv ?? 16;
+      const nommees = new Set(this.arrLignes.map((l) => l.nom));
+      /* ⚠️ La coupure balaie les CINQ lignes de batterie, pas les trois du jeu.
+       * `GAME_DRUM_ROWS` s'arrête à kick/snare/hat ; un arrangement peut citer
+       * le clap ou le shaker, et surtout : une ligne que l'arrangement NE cite
+       * PAS doit se taire, même si le jeu ne l'utilise nulle part ailleurs.
+       * Avec les trois seules, le clap du niveau 77 sonnait sans être coupé
+       * ailleurs — ce qui marche par accident et casse au premier état de
+       * départ qui l'ouvre. */
+      DRUM_ROW_NAMES.forEach((r) => (state.rows[r].muted = !nommees.has(r)));
+      for (const nom of SYNTH_ROW_NAMES) state.synthRows[nom].muted = !nommees.has(nom);
+      for (const l of this.arrLignes) {
+        if (l.nature === 'drum') {
+          const row = state.rows[l.nom as DrumRowName];
+          row.muted = false;
+          row.subdiv = n;
+          row.pattern = new Array(32).fill(0).map((z, i) => (grille[l.nom][i] ?? z) as DrumStep);
+          row.rolls = new Array(32).fill(1);
+          row.shiftPct = 0;
+        } else {
+          const row = state.synthRows[l.nom as SynthRowName];
+          row.muted = false;
+          row.cycleBars = 1;
+          row.subdivisions = n;
+          row.pattern = grille[l.nom].map((d) => (d > 0 ? { degree: d, octave: 0 } : null));
+          row.rolls = new Array(n).fill(1);
+        }
+      }
+      return state;
+    }
+
     if (this.level.exercise === 'melodie') {
       const degres = which === 'guess' ? this.melodieGuess : this.melodieCible;
       GAME_DRUM_ROWS.forEach((n) => (state.rows[n].muted = true));

@@ -254,6 +254,12 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
       // Exercice : on le résout selon son verbe, puis on avance.
       const l = game.level;
       if (l.exercise === 'melodie') game.melodieCible.forEach((d, i) => (game.melodieGuess[i] = d));
+      else if (l.exercise === 'arrangement') {
+        // Plusieurs lignes de deux natures : on recopie chaque ligne de la cible.
+        for (const ligne of game.arrLignes) {
+          game.arrCible[ligne.nom].forEach((v, i) => (game.arrGuess[ligne.nom][i] = v));
+        }
+      }
       else if (l.exercise === 'silence') game.silenceChoix = game.silenceReponse;
       else if (l.exercise === 'style') game.styleChoix = game.styleReponse;
       else if (l.exercise === 'laverie') game.paramChoix = game.paramReponse;

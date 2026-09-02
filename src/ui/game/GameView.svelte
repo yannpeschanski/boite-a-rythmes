@@ -50,6 +50,10 @@
      synthé. ⚠️ Elle n'est plus forcément la BASSE — le niveau la déclare
      (`melodie.ligne`), depuis que l'acte 3 travaille aussi la mélodie. */
   let playheadBass = $state(-1);
+  /* ⚠️ L'ARRANGEMENT joue N lignes de deux natures : un curseur par NOM, pas
+     un par nature. Les deux curseurs ci-dessus restent — ils servent les
+     verbes qui n'ont qu'une grille — mais celui-ci ne suppose rien. */
+  let playheadArr = $state<Record<string, number>>({});
   /* Le nom des trois lignes de synthé, du point de vue du joueur. Une seule
      définition : deux libellés pour la même ligne finissent par diverger. */
   const LIBELLE_LIGNE: Record<SynthRowName, string> = {
@@ -62,6 +66,7 @@
     for (const ev of engine.consumePlayhead()) {
       if (ev.name in playhead) playhead[ev.name as GameDrumRowName] = ev.col;
       if (ev.name === game.level.melodie.ligne) playheadBass = ev.col;
+      if (ex === 'arrangement') playheadArr[ev.name] = ev.col;
       // Repère temporel du pas courant du kick : c'est contre lui que se
       // mesure l'écart d'une frappe.
       if (ev.name === 'kick' && ev.col !== dernierKickVu && game.target.kick[ev.col] > 0) {
@@ -78,6 +83,7 @@
   function resetPlayhead() {
     playhead = { kick: -1, snare: -1, hat: -1 };
     playheadBass = -1;
+    playheadArr = {};
     // Oublier l'ancre avec le curseur : sans ça, la première frappe du tour
     // suivant se mesurerait contre un repère vieux de plusieurs secondes.
     dernierKickVu = -1;
@@ -233,6 +239,7 @@
     style: 'Ce n’est pas ce genre-là. Réécoute : le tempo, la place de la caisse claire, ce que fait le hi-hat.',
     laverie: 'Ce n’est pas celle-là. Compare les deux haut-parleurs : ce qui compte, c’est ce qui reste.',
     melodie: 'Pas encore. Les notes justes sont verrouillées ✓ — reprends les autres.',
+    arrangement: 'Pas encore. Ce qui est juste est verrouillé ✓ — ligne par ligne, reprends le reste.',
     silence: 'Ce n’est pas là. Réécoute la boucle : le trou est ailleurs.',
     reproduire: 'Pas encore. Les cases justes sont verrouillées ✓ — reprends les autres.',
     completer: 'Pas encore. Les cases justes du temps manquant sont verrouillées ✓.',
@@ -423,6 +430,12 @@
     return a < TOLERANCE_MS ? 'dedans' : 'dehors';
   }
   const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
+  /* Le nom d'une ligne d'arrangement — batterie ou synthé, même carte : la
+     vue ne sait pas d'avance laquelle des huit le niveau va citer. */
+  const NOM_LIGNE: Record<string, string> = {
+    kick: 'Kick', snare: 'Snare', hat: 'Hat', clap: 'Clap', shaker: 'Shaker',
+    bass: 'Basse', melody: 'Mélodie', pad: 'Nappe',
+  };
 
   /* Les degrés, du plus HAUT en haut — comme sur une portée, et comme sur le
      pad de l'Atelier. Une grille de hauteurs qui monterait vers le bas
@@ -913,6 +926,89 @@
             </button>
           </div>
         </div>
+      {:else if ex === 'arrangement'}
+        <!-- ⚠️ L'ARRANGEMENT : les DEUX grammaires d'édition du jeu, côte à
+             côte, chacune gardée telle qu'elle est ailleurs.
+
+             Une ligne de BATTERIE est un damier qu'on allume au clic — le
+             geste de `reproduire`. Une ligne de SYNTHÉ est une bande de cases
+             qui portent un degré : on VISE une case, et le clavier du bas
+             l'écrit — le geste de `melodie`, et celui du pad de l'Atelier.
+
+             Les deux partagent la même colonne : c'est ce qui permet de lire
+             qui joue au même moment, et c'est le sujet de l'exercice. -->
+        {#each game.arrLignes as l (l.nom)}
+          {@const n = game.arrCible[l.nom]?.length ?? 0}
+          {@const posees = (game.arrGuess[l.nom] ?? []).filter((v) => v > 0).length}
+          {@const attendues = (game.arrCible[l.nom] ?? []).filter((v) => v > 0).length}
+          <div class="row">
+            <div class="row-head">
+              <span class="row-label" class:synthe={l.nature === 'degres'}>{NOM_LIGNE[l.nom] ?? l.nom}</span>
+              <span class="count" class:ok={posees === attendues}>{posees}/{attendues}</span>
+            </div>
+            <div class="cells" style:--cols={n}>
+              {#each { length: n } as _, col (col)}
+                {@const pose = game.arrGuess[l.nom][col]}
+                {@const verrou = game.arrLocked[l.nom][col]}
+                {@const montre = (game.solved || game.revealed) ? game.arrCible[l.nom][col] : pose}
+                {#if l.nature === 'drum'}
+                  <button
+                    class="cell state-{montre}"
+                    class:locked={verrou}
+                    class:revealed={game.revealed && game.arrCible[l.nom][col] > 0 && !verrou}
+                    class:playing={playheadArr[l.nom] === col}
+                    class:win-flash={winFlash}
+                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}"
+                    onclick={() => { game.arrCycler(l.nom, col); echec = false; }}
+                  >
+                    {#if verrou}<span class="mark">✓</span>{/if}
+                  </button>
+                {:else}
+                  <button
+                    class="cell arr-note"
+                    class:vide={!montre}
+                    class:sel={game.arrSel?.ligne === l.nom && game.arrSel?.pas === col && !game.solved && !game.revealed}
+                    class:locked={verrou}
+                    class:revealed={game.revealed && game.arrCible[l.nom][col] > 0 && !verrou}
+                    class:playing={playheadArr[l.nom] === col}
+                    class:win-flash={winFlash}
+                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}"
+                    onclick={() => { game.arrViser(l.nom, col); echec = false; }}
+                  >{montre > 0 ? montre : ''}</button>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/each}
+        <!-- Le clavier écrit sur la case VISÉE, et dit laquelle : sans ce
+             rappel, sept touches sans destination affichée sont un piège. -->
+        {#if game.arrSel}
+          {@const sel = game.arrSel}
+          <p class="muted arr-vise">
+            Le clavier écrit sur <b>{NOM_LIGNE[sel.ligne] ?? sel.ligne}</b>, pas
+            {sel.pas + 1} — choisis une autre case pour le déplacer.
+          </p>
+          <div class="mel-clavier">
+            {#each Array.from({ length: game.level.arrangement?.degreMax ?? 5 }, (_, i) => i + 1) as d (d)}
+              <button
+                class="mel-touche tap44-y"
+                class:actif={game.arrGuess[sel.ligne]?.[sel.pas] === d}
+                disabled={game.solved || game.revealed}
+                onclick={() => { game.arrPoserNote(d); echec = false; }}
+              >
+                {d}
+              </button>
+            {/each}
+            <button
+              class="mel-touche efface tap44-y"
+              disabled={game.solved || game.revealed || !game.arrGuess[sel.ligne]?.[sel.pas]}
+              aria-label="Effacer la note visée"
+              onclick={() => game.arrPoserNote(game.arrGuess[sel.ligne][sel.pas])}
+            >
+              ⌫
+            </button>
+          </div>
+        {/if}
       {:else if ex === 'melodie'}
         <!-- ⚠️ CELLULES + CLAVIER, comme dans l'Atelier (retour de Yann :
              « on devrait avoir la même interface que dans l'atelier non ? des
@@ -1295,6 +1391,23 @@
   }
   /* Le clavier — des touches, pas des cases : elles ne portent pas d'état de
      grille, elles écrivent dans celle du dessus. */
+  /* Une case de DEGRÉ dans la grille de l'arrangement : c'est une case du
+     damier (même taille, même biseau) qui porte un chiffre au lieu d'un état.
+     Elle emprunte sa teinte à la ligne de synthé de l'Atelier — le violet —
+     pour qu'on voie d'un coup d'œil quelles lignes se jouent au clavier. */
+  .cell.arr-note {
+    color: var(--xp-lcd);
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .cell.arr-note.vide { color: transparent; }
+  .cell.arr-note.sel {
+    outline: 2px solid var(--xp-accent-amber);
+    outline-offset: -2px;
+  }
+  .row-label.synthe { color: var(--xp-accent-amber); }
+  .arr-vise { margin: 2px 0 0; }
+
   .mel-clavier {
     display: flex;
     flex-wrap: wrap;
