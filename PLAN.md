@@ -42,6 +42,67 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 5 produit au lieu de recopier — tranche 5a (2026-09-01)
+
+> « Sortir les niveaux reproduire 4/12/13/27/32 de l'acte 5 vers la salle de
+> répétition, et les remplacer par des commandes de style — une fiche par
+> genre. » — Yann
+
+**Ce que l'acte était** : douze reproductions, dont cinq presets recopiés case
+par case, puis une commande de style. **Ce qu'il est** : quatre LIVRAISONS, une
+par catégorie du fax de Zik'Mobile — hip-hop authentique, club énergie, ambiance
+latino, urbain festif — et les reproductions qui restent sont celles qui
+préparent une commande.
+
+**Trois fiches neuves, et le calibrage a rejeté les deux premiers choix.**
+
+| catégorie | premier choix | mesuré | retenu |
+|---|---|---|---|
+| hip-hop | `boombap` | acceptait `dilla` (5/6) | **`dilla`** (drunk beat) |
+| club | `house` | acceptait `hardhouse` (5/6) | **`garage`** (UK 2-step) |
+| latino | `dembow` | ✅ du premier coup | **`dembow`** |
+
+⚠️ **La leçon, et elle vaut pour toute fiche future :** quand le genre voisin
+partage tout sauf un nombre, la fiche ne décrit rien. Le drunk beat EST un boom
+bap déquantifié ; le hard house EST de la house en plus rapide. La sortie n'est
+pas de rétrécir la borne jusqu'à ce que le voisin tombe — c'est de décrire celui
+des deux qui porte une propriété POSITIVE que l'autre n'a pas : la **traîne** et
+les **ghost notes** du drunk beat (le boom bap a 0 aux deux, donc deux critères
+d'écart par construction), le **shuffle à 45 %** du garage là où le catalogue
+plafonne à 10.
+
+⚠️ Un quatrième obstacle mesuré : la fiche du garage acceptait le **baile funk**
+à un critère près (même tempo, même kick syncopé, même backbeat). Ce qui les
+sépare est le charley — TROUÉ chez l'un, plein chez l'autre — d'où
+`densiteEntre`, un plafond de densité. C'est une description de ce qu'on entend
+(une ligne qui respire), pas l'exigence d'une absence : la règle qu'on ne casse
+pas est « une fiche ne demande jamais qu'un instrument se taise ».
+
+**La discographie change de clé : (acte, SÉRIE) au lieu de l'acte.** Le défaut
+se voyait en jouant, pas en lisant — le joueur produisait quatre genres et n'en
+retrouvait qu'un, les trois premiers écrasés par le dernier. Une chaîne d'envois
+(actes 3 et 4) garde une série vide et continue de se remplacer, comme Yann l'a
+demandé ; deux genres ont chacun la leur. Le champ est déclaré par l'étape
+(`EtapeCommande.serie`) plutôt que déduit : une règle devinée d'un autre champ
+se casse en silence.
+
+**Deux harnais ont dû apprendre le FEEL.** `etatQuiSatisfait`
+(`tests/commande.test.ts`) et `scripts/parcours-carriere.cjs` construisaient
+l'état d'un genre en recopiant ses trois grilles sur un état par défaut : ils
+perdaient le tempo, le swing, la traîne et les ghost notes. Tant que les fiches
+ne jugeaient que des placements, ça passait. Ils partent désormais de
+`presetToState`, l'adaptateur que l'appli utilise pour de vrai.
+
+**Vérifié :** 475 tests (5 neufs), 0 erreur de types, les deux builds ;
+`scripts/parcours-carriere.cjs` depuis un joueur neuf — les quatre commandes
+acceptées, et la discographie finit à **neuf morceaux** dont les quatre de
+l'acte 5 côte à côte ; le cahier de style mesuré à l'écran en 390×840 (six
+critères détaillés, essentiels marqués « sans ça, non », 0 px de débordement).
+
+**Reste de la tranche 5 :** l'acte 6 « le plus complet du jeu ».
+
+---
+
 ### ✅ L'acte 1 fusionne, et gagne une polyrythmie — tranche 4 (2026-09-01)
 
 > « L'acte 1 fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie. »

@@ -95,8 +95,24 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
            parcours s'arrête à l'acte 5 et ne dit rien de la suite. */
         const ficheId = (e.cahier.find((c) => c.id.startsWith('fiche:')) || {}).id;
         const preset = ficheId ? PRESETS.find((x) => x.id === ficheId.slice(6)) : null;
-        // Le tempo fait partie du genre : sans lui il manquerait un critère.
-        if (preset) st.tempo = preset.tempo;
+        /* Le tempo fait partie du genre — et depuis les fiches du 2026-09-01,
+           le FEEL aussi : la fiche du drunk beat demande une traîne et des
+           ghost notes, celle du garage un shuffle. Les recopier depuis le
+           preset, c'est ce que fait un joueur qui suit la description. */
+        if (preset) {
+          st.tempo = preset.tempo;
+          st.swing = preset.swing ?? 0;
+          st.drag = preset.drag ?? 0;
+          st.ghostDensity = preset.ghostDensity ?? 0;
+          for (const n of ['clap', 'shaker']) {
+            const src = preset[n];
+            st.rows[n].muted = false;
+            st.rows[n].subdiv = src ? src.subdiv : 8;
+            st.rows[n].pattern = new Array(32)
+              .fill(0)
+              .map((_, i) => (src && src.pattern[i] ? 1 : 0));
+          }
+        }
         for (const n of ['kick', 'snare', 'hat']) {
           st.rows[n].muted = false;
           if (preset) {
@@ -258,12 +274,17 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     }
     if (garde >= 400) log.push('⚠️ BOUCLE INFINIE — le parcours ne se termine pas');
     log.push(`état final : acte enregistré ${game.progresCarriere.acte}, modules ${modules()}`);
-    /* La DISCOGRAPHIE au bout du parcours. Elle doit contenir les six
-     * productions du récit (la sonnerie de l'acte 1 + les cinq commandes) :
-     * c'est la seule preuve qu'un morceau livré à l'acte 1 est encore là au
-     * mois de septembre. */
+    /* La DISCOGRAPHIE au bout du parcours. Elle doit contenir les NEUF
+     * productions du récit : la sonnerie de l'acte 1, une par acte pour les
+     * actes 2, 3, 4 et 6 — les chaînes d'envois se remplacent, on ne garde que
+     * la dernière version — et QUATRE pour l'acte 5, un genre par catégorie du
+     * fax, qui coexistent parce qu'elles ont chacune leur série. C'est la seule
+     * preuve qu'un morceau livré à l'acte 1 est encore là en septembre, et que
+     * quatre genres produits ne s'écrasent pas l'un l'autre. */
     log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
-    if (game.productions.length !== 6) log.push('   ⚠️ SIX productions attendues');
+    if (game.productions.length !== 9) log.push('   ⚠️ NEUF productions attendues');
+    if (game.productions.filter((p) => p.acte === 5).length !== 4)
+      log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
     return log;
   });
 

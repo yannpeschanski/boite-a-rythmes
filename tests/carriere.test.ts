@@ -1067,7 +1067,30 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
       .map((n) => LEVELS.find((x) => x.id === n)!.presetId)
       .filter((id): id is string => Boolean(id))
       .map((id) => PRESETS.find((p) => p.id === id)!.cat);
-    expect(new Set(cats).size).toBeGreaterThanOrEqual(3);
+    /* ⚠️ Deux depuis le 2026-09-01 : les cinq reconstructions de presets sont
+     * rendues au réservoir, et c'est aux COMMANDES que l'acte couvre ses
+     * familles — une par catégorie du fax. Ce que ce test protégeait (« pas
+     * cinq fois la même famille ») est donc mesuré plus bas, sur les fiches. */
+    expect(new Set(cats).size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('⚠️ et ses COMMANDES couvrent les quatre cases du fax, une famille chacune', () => {
+    /* Le vrai « pas cinq fois la même chose » depuis que l'acte produit au lieu
+     * de recopier : quatre livraisons, quatre genres, quatre fiches
+     * différentes. Deux commandes sur la même fiche seraient le même travail
+     * deux fois. */
+    const fiches = ACTES[5].etapes.flatMap((e) =>
+      e.kind === 'commande'
+        ? e.cahier.flatMap((c) => (c.id.startsWith('fiche:') ? [c.id.slice(6)] : []))
+        : [],
+    );
+    expect(fiches).toHaveLength(4);
+    expect(new Set(fiches).size, 'deux commandes sur le même genre').toBe(4);
+    // Et chacune range sa livraison dans SA série, sinon la discographie n'en
+    // garderait qu'une sur quatre (voir `discographie.ts`).
+    const series = ACTES[5].etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
+    expect(new Set(series).size, 'deux livraisons dans la même série').toBe(4);
+    for (const s of series) expect(s, 'une série vide se ferait écraser').toBeTruthy();
   });
 
   // Le mot du récit et le verbe de l'écran sont le même : si le texte fait
@@ -1169,16 +1192,29 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
   /* ⚠️ Une chaîne d'envois REPART de ce qu'on vient de livrer — sinon ce ne
    * sont pas des envois, ce sont des commandes indépendantes qui se suivent.
    * Seule la PREMIÈRE d'un acte part d'autre chose. */
-  it('dans un acte qui en enchaîne plusieurs, les suivantes reprennent la livraison', () => {
+  it('dans une CHAÎNE, les envois suivants reprennent la livraison', () => {
+    /* ⚠️ La règle porte sur une SÉRIE, pas sur un acte, depuis le 2026-09-01.
+     * Elle disait « dans un acte qui enchaîne plusieurs commandes » — vrai tant
+     * qu'un acte à plusieurs commandes était forcément une chaîne d'envois du
+     * même morceau (acte 3, acte 4). L'acte 5 en compte quatre qui n'ont rien à
+     * voir entre elles : quatre GENRES, quatre séries, chacune partant d'une
+     * table rase. Groupées par série, la règle redevient exacte — et c'est
+     * elle qui compte : ce qui doit reprendre la livraison, c'est un envoi qui
+     * continue le morceau précédent. */
     for (const a of ACTES) {
-      const cmds = a.etapes.filter((e) => e.kind === 'commande') as Array<{
-        entete: string;
-        partirDeLaLivraison?: boolean;
-      }>;
-      if (cmds.length < 2) continue;
-      expect(cmds[0].partirDeLaLivraison, `acte ${a.id} : la première`).toBeFalsy();
-      for (const c of cmds.slice(1)) {
-        expect(c.partirDeLaLivraison, `acte ${a.id} — « ${c.entete} »`).toBe(true);
+      const cmds = a.etapes.filter((e) => e.kind === 'commande');
+      const series = new Map<string, typeof cmds>();
+      for (const c of cmds) {
+        const k = (c as { serie?: string }).serie ?? '';
+        series.set(k, [...(series.get(k) ?? []), c]);
+      }
+      for (const [k, suite] of series) {
+        if (suite.length < 2) continue;
+        const s = suite as Array<{ entete: string; partirDeLaLivraison?: boolean }>;
+        expect(s[0].partirDeLaLivraison, `acte ${a.id}, série « ${k} » : la première`).toBeFalsy();
+        for (const c of s.slice(1)) {
+          expect(c.partirDeLaLivraison, `acte ${a.id} — « ${c.entete} »`).toBe(true);
+        }
       }
     }
   });
