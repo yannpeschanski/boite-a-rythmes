@@ -470,24 +470,43 @@
 
   <!-- Le carnet : les huit actes, comme une playlist. Un acte terminé se
        relit ; le curseur enregistré, lui, ne recule jamais (voir le store) —
-       relire l'acte 1 ne referme pas l'Atelier. -->
+       relire l'acte 1 ne referme pas l'Atelier.
+
+       ⚠️ IL FAUT QUE ÇA SE VOIE. Retour de Yann (2026-09-02) : *« on ne peut
+       pas refaire les actes une fois passée, seulement les niveaux dans la
+       salle de répétition »* — alors qu'on pouvait déjà, en cliquant ici. Le
+       carnet n'avait ni titre, ni relief, ni verbe : trois lignes de texte vert
+       sur fond d'afficheur se lisent comme un RÉSUMÉ, pas comme des boutons. Et
+       la seule phrase sous lui nommait la salle de répétition, c'est-à-dire
+       l'autre chemin — celui qu'il a trouvé. Une capacité qu'aucun mot ne nomme
+       n'existe pas : même règle que « ce qui n'a pas été porté n'existe pas »
+       (CLAUDE.md). -->
   {#if montrerCarnet}
+    <p class="carnet-titre">CARNET — <b>RELIRE UN ACTE</b>, RÉCIT ET EXERCICES</p>
     <ol class="carnet">
       {#each actesVisibles as a (a.id)}
         {@const fait = game.acteFait(a.id)}
         <li>
-          <button class="acte tap44-y" class:courant={a.id === acte.id} class:fait onclick={() => ouvrir(a)}>
+          <button
+            class="acte tap44-y"
+            class:courant={a.id === acte.id}
+            class:fait
+            title={fait ? `Relire l’acte ${a.id} depuis le début` : `Reprendre l’acte ${a.id}`}
+            onclick={() => ouvrir(a)}
+          >
             <span class="num">{fait ? '✓' : a.id}</span>
             <span class="titre">{a.titre}</span>
             <span class="resume">{a.resume}</span>
             <span class="comp">{fait ? a.competenceLabel : 'EN COURS'}</span>
+            <span class="verbe">{fait ? 'RELIRE ▸' : 'REPRENDRE ▸'}</span>
           </button>
         </li>
       {/each}
     </ol>
     <p class="pied">
-      La <strong>salle de répétition</strong> rassemble les exercices déjà rencontrés&nbsp;: on peut
-      tous les refaire, autant de fois qu’on veut.
+      Un acte se relit en entier — le récit <em>et</em> ses exercices — sans rien perdre&nbsp;: ce
+      qui est ouvert le reste. La <strong>salle de répétition</strong>, elle, rassemble les
+      exercices seuls, sans le récit.
     </p>
   {/if}
 </XpWindow>
@@ -732,10 +751,16 @@
     background: var(--xp-lcd-bg);
     border-radius: 2px;
   }
+  .carnet-titre {
+    margin: 12px 0 4px;
+    font-size: var(--xp-size-tag);
+    letter-spacing: var(--xp-ls-tag);
+    color: var(--xp-muted);
+  }
   .acte {
     display: grid;
     grid-template-columns: 18px 1fr auto;
-    grid-template-areas: 'num titre comp' 'num resume comp';
+    grid-template-areas: 'num titre comp' 'num resume verbe';
     gap: 0 8px;
     width: 100%;
     text-align: left;
@@ -750,6 +775,23 @@
   }
   .acte.courant {
     background: #0c1a0e;
+  }
+  /* ⚠️ Le relief d'un pixel EST la grammaire (CLAUDE.md) : sans lui, une ligne
+     du carnet ne se distingue pas d'une ligne de texte. C'est ce qui manquait. */
+  .acte:hover,
+  .acte:focus-visible {
+    background: #10230f;
+  }
+  .acte:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .verbe {
+    grid-area: verbe;
+    align-self: center;
+    justify-self: end;
+    font-size: var(--xp-size-tag);
+    letter-spacing: var(--xp-ls-tag);
+    color: var(--xp-accent-amber);
   }
   .acte.fait .titre {
     color: var(--xp-lcd-dim);

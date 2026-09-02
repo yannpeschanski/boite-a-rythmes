@@ -42,6 +42,66 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Relire un acte se VOIT, et le niveau 78 s'annonce (2026-09-02)
+
+> « comment tu comptes intégrer ce niveau ? d'ailleurs, remarque pour tester :
+> on ne peut pas refaire les actes une fois passée, seulement les niveaux dans
+> la salle de répétition, ce serait bien de pouvoir retourner sur un acte,
+> relire ce qui a été dit et refaire les niveaux » — Yann
+
+**1 · Le carnet — la capacité existait, l'écran la cachait.** Vérifié en jouant
+la carrière (pas en fixture, voir plus bas) : cliquer un acte du carnet ouvre
+bien l'acte à son premier écran, on relit, on avance, on refait les exercices,
+et le curseur enregistré ne bouge pas (`{acte:2, etape:11}` avant et après).
+`ouvrirActe` est même testé depuis longtemps.
+
+Ce qui manquait était **le mot**. Le carnet n'avait ni titre, ni relief, ni
+verbe : trois lignes vertes sur fond d'afficheur se lisent comme un RÉSUMÉ, et
+la seule phrase sous lui nommait… la salle de répétition — c'est-à-dire l'autre
+chemin, celui que Yann a trouvé. D'où : un titre (« CARNET — **RELIRE UN ACTE**,
+RÉCIT ET EXERCICES »), un verbe en ambre par ligne (`RELIRE ▸` / `REPRENDRE ▸`),
+un survol et un enfoncement (le biseau d'un pixel EST la grammaire), et un pied
+qui oppose enfin les deux chemins. Mesuré : lignes à 49 px (au-dessus des 44),
+aucun débordement.
+
+⚠️ **La règle qui en sort** : une capacité qu'aucun mot ne nomme n'existe pas —
+corollaire direct de « ce qui n'a pas été porté n'existe pas ». Elle est à
+refaire, pas à documenter.
+
+**2 · Le niveau 78 s'annonce avant de se demander.** La question « comment tu
+comptes l'intégrer ? » a une bonne réponse et une mauvaise. La mauvaise était
+l'état livré : le 78 était le **cinquième exercice d'affilée** de l'acte 3, et
+son idée neuve (une ligne qui ne revient plus au bout d'une mesure) n'était
+expliquée que par son préambule — c'est-à-dire **dans** l'exercice, donc trop
+tard. Le dépôt a déjà la règle : *une nouveauté n'est demandée qu'après avoir
+été MONTRÉE à l'écran*.
+
+Un écran de récit se pose donc avant lui, et c'est Rachid qui parle — lui qui
+écoute et qui paie : *« Au bout de trois fois, je sais ce qui vient. […] Ça fait
+sonnerie. Je veux un morceau. »*, et Sol : *« Alors laisse-la finir sa phrase. »*
+Les mots sont ceux de Yann en jouant (« ça fait très sonnerie polyphonique…
+mais pour un morceau, il faut des cycles différents »). Il coupe aussi la série
+de cinq exercices.
+
+⚠️ **Mesuré, pas relu** : une ligne se repliait (29 px contre 14) —
+« Sol, sans lever les yeux : — Alors laisse-la finir sa phrase. ». Corrigée en
+**coupant** la ligne, jamais en réécrivant le texte. Dix lignes, aucune qui se
+replie, l'écran tient dans 844 px.
+
+⚠️ **Le piège qui a coûté trois scripts de mesure** : `progresCarriere` est un
+**getter**. `game.progresCarriere = {...}` dans un `page.evaluate` ne fait
+**rien**, en silence (ce code n'est pas en mode strict). C'est ce qui avait fait
+croire à un cul-de-sac à l'acte 6, et ça a resservi ici deux fois. Poser
+`acteActif`/`etapeActive` — eux sont du `$state` — puis `demarrerEtape()`, ou
+jouer la carrière. Inscrit dans `CLAUDE.md`.
+
+**Vérifié :** 502 tests, 0 erreur de types, les deux builds, le parcours complet
+(acte 3 à 17 étapes), et en navigateur : le carnet ouvre l'acte, le curseur ne
+recule pas, zéro erreur console.
+
+**Fichiers :** `src/ui/game/CarriereView.svelte`, `src/model/carriere.ts`,
+`CLAUDE.md`.
+
 ### ✅ Couper une ligne à l'écoute, et des cycles de durées différentes (2026-09-02)
 
 > « ce qui aiderait, ce serait de pouvoir muter des lignes quand on écoute pour

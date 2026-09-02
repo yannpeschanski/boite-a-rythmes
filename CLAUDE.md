@@ -233,6 +233,14 @@ jamais deux lectures empilées entre deux exercices. Le nom complet de Sol
 (**Solange**) n'existe pas dans `HISTOIRE.md` : c'est une proposition, à un seul
 endroit du code.
 
+⚠️ **Une capacité qu'aucun mot ne nomme n'existe pas.** Relire un acte entier
+(récit ET exercices) marchait depuis toujours — `ouvrirActe`, testé — mais le
+carnet n'avait ni titre, ni relief, ni verbe : trois lignes vertes sur fond
+d'afficheur se lisent comme un résumé, et la seule phrase sous lui nommait la
+salle de répétition. Un joueur a donc rapporté que « on ne peut pas refaire les
+actes ». Corollaire du « ce qui n'a pas été porté n'existe pas » : une capacité
+non nommée à l'écran est à refaire, pas à documenter.
+
 ⚠️ **Le récit se lit dans les DEUX sens.** `reculerCarriere()` / `peutReculer` :
 reculer est gratuit parce que le curseur enregistré ne bouge pas. Corollaire : une
 étape d'exercice revisitée doit pouvoir être re-dépassée SANS être rejouée
@@ -799,6 +807,13 @@ vérification visuelle avec Playwright (headless, Chromium à `/opt/pw-browsers/
 driver global en CommonJS depuis `/opt/node22/lib/node_modules/playwright/index.js`).
 **Vérifier visuellement ne suffit pas pour une mise en page : mesurer.** Les
 scripts de mesure ont trouvé des défauts invisibles à l'œil.
+
+⚠️ **`progresCarriere` est un GETTER : lui affecter une valeur ne fait RIEN, en
+silence.** Dans un script de mesure, `game.progresCarriere = {...}` est avalé
+(le code de `page.evaluate` n'est pas en mode strict) — c'est ce qui a fait
+croire à un cul-de-sac à l'acte 6, et ça a resservi depuis. Poser
+`acteActif`/`etapeActive` (eux sont du `$state`) puis `demarrerEtape()`, ou
+jouer la carrière.
 
 ⚠️ **`scripts/parcours-carriere.cjs` exige un serveur de dev FRAÎCHEMENT démarré.**
 Le HMR de Vite ré-exécute un module modifié : le script obtient une seconde
