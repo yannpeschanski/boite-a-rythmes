@@ -23,6 +23,7 @@
     acteAVenir,
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
+    ACTE_DU_DISQUE,
     ANNEE,
     dateDeLActe,
     type Acte,
@@ -211,6 +212,21 @@
    * son morceau dans une liste juste après l'avoir fini. */
   const livree = $derived(productionDeLActe(game.productions, acte.id));
 
+  /* ⚠️ L'ÉPILOGUE FAIT ENTENDRE LE DISQUE DU JOUEUR — « pas assez d'émotion ».
+   *
+   * Cinq écrans de texte disaient « Mais FB-015 est sorti », et on ne
+   * l'entendait jamais. Le morceau existe pourtant : c'est celui que le joueur
+   * a livré à l'acte 6, sérialisé dans la discographie. Le dépôt a déjà la
+   * règle pour ça — *une leçon de production ne se raconte pas, elle se fait
+   * entendre* ; ici c'est la fin du jeu qui ne se raconte pas.
+   *
+   * Il démarre au DEUXIÈME écran, pas au premier : le premier finit sur « Mais
+   * FB-015 est sorti », et un disque qui démarre avant cette phrase la
+   * devance. Il tourne ensuite sous tous les écrans suivants, jusqu'à FIN. */
+  const DISQUE = 'epilogue-fb015';
+  const ECRAN_DU_DISQUE = 1;
+  const disque = $derived(productionDeLActe(game.productions, ACTE_DU_DISQUE));
+
   let discoOuverte = $state(false);
 
   /* Reprendre une production dans l'Atelier. Le morceau redevient matière —
@@ -225,6 +241,20 @@
   /* Quitter l'écran coupe le son : un morceau qui continue derrière l'écran
      suivant est un bug qu'on n'entend que trop tard. */
   $effect(() => () => lecteur.stop());
+
+  /* Le disque part tout seul au bon écran, et une seule fois : le relancer à
+     chaque rendu le ferait bégayer, et le relancer après un arrêt volontaire
+     retirerait au joueur le droit de l'arrêter. */
+  let disqueLance = $state(false);
+  $effect(() => {
+    if (!game.enEpilogue) {
+      disqueLance = false;
+      return;
+    }
+    if (disqueLance || !disque || game.etapeEpilogue < ECRAN_DU_DISQUE) return;
+    disqueLance = true;
+    lire(DISQUE, deserializeState(disque.etat));
+  });
 </script>
 
 <XpWindow title="Face B — Mode carrière" icon="📼" accent="none">
@@ -330,6 +360,22 @@
         <p class="ligne">{texte(l)}</p>
       {/each}
     </div>
+    <!-- ⚠️ Le disque se NOMME. Un morceau qui sort de l'appareil sans que rien
+         ne dise ce qu'il est passe pour une musique d'ambiance ; celui-ci est
+         celui que le joueur a fait, et c'est tout l'effet. Le bouton sert
+         aussi à l'arrêter : une fin de jeu n'impose pas sa bande-son. -->
+    {#if disque && game.etapeEpilogue >= ECRAN_DU_DISQUE}
+      <div class="disque">
+        <button
+          class="xp-btn tiny tap44-y"
+          onclick={() => lire(DISQUE, deserializeState(disque.etat))}
+        >
+          {enLecture === DISQUE ? '■' : '▶'}
+        </button>
+        <span class="disque-titre">{disque.titre}</span>
+        <span class="disque-note">ton morceau, celui qui est sorti</span>
+      </div>
+    {/if}
     <div class="actions">
       <button
         class="xp-btn tap44-y"
@@ -816,6 +862,26 @@
     font-size: var(--xp-size-tag);
     letter-spacing: var(--xp-ls-tag);
     color: var(--xp-lcd-dim);
+  }
+  .disque {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-in);
+    background: var(--xp-lcd-bg);
+  }
+  .disque-titre {
+    color: var(--xp-lcd);
+    letter-spacing: 0.12em;
+    font-size: var(--xp-size-small);
+  }
+  .disque-note {
+    color: var(--xp-lcd-dim);
+    font-size: var(--xp-size-tag);
+    letter-spacing: var(--xp-ls-tag);
   }
   .pied {
     margin: 8px 0 0;

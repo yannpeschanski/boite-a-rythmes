@@ -11,6 +11,7 @@ import {
   EPILOGUE,
   LONGUEUR_EPILOGUE,
   ETAPE_DU_COMPTE_A_REBOURS,
+  ACTE_DU_DISQUE,
   ANNEE,
   dateDeLActe,
 } from '../src/model/carriere';
@@ -1605,6 +1606,44 @@ describe('le calendrier du récit', () => {
       const enSemaines = /semaine/.test(a.quand);
       if (enSemaines) expect(a.jours, `acte ${a.id}`).toBeLessThanOrEqual(45);
       else if (/mois/.test(a.quand)) expect(a.jours, `acte ${a.id}`).toBeGreaterThan(45);
+    }
+  });
+});
+
+/* ⚠️ L'ÉPILOGUE FAIT ENTENDRE LE DISQUE DU JOUEUR — « pas assez d'émotion ».
+ *
+ * Cinq écrans disaient « Mais FB-015 est sorti » sans qu'on l'entende jamais.
+ * L'épilogue joue donc la production livrée en dernier. Ce que ces tests
+ * gardent est le CHAÎNON qui peut se rompre en silence : l'acte dont on prend
+ * le disque est déduit du récit, jamais écrit en dur — et si la dernière
+ * commande déménageait, l'épilogue se tairait sans que rien ne le dise.
+ */
+describe('l’épilogue a un disque à faire entendre', () => {
+  it('⚠️ l’acte du disque est celui de la DERNIÈRE commande du récit', () => {
+    const acte = ACTES.find((a) => a.id === ACTE_DU_DISQUE);
+    expect(acte, `l’acte ${ACTE_DU_DISQUE} n’existe pas`).toBeTruthy();
+    expect(
+      acte!.etapes.some((e) => e.kind === 'commande'),
+      `l’acte ${ACTE_DU_DISQUE} ne contient aucune commande — l’épilogue n’aurait rien à jouer`,
+    ).toBe(true);
+    // Et c'est bien le DERNIER : aucun acte plus loin n'en porte.
+    for (const a of ACTES) {
+      if (a.id <= ACTE_DU_DISQUE) continue;
+      expect(
+        a.etapes.some((e) => e.kind === 'commande'),
+        `l’acte ${a.id} porte une commande après celui du disque (${ACTE_DU_DISQUE})`,
+      ).toBe(false);
+    }
+  });
+
+  it('⚠️ après la dernière commande, il ne reste que du récit', () => {
+    // Règle déjà tenue ailleurs, redite ici parce que l'épilogue en dépend :
+    // le disque qu'il joue est le dernier livré, donc rien ne doit se produire
+    // après lui.
+    const acte = ACTES.find((a) => a.id === ACTE_DU_DISQUE)!;
+    const derniere = acte.etapes.map((e) => e.kind).lastIndexOf('commande');
+    for (const e of acte.etapes.slice(derniere + 1)) {
+      expect(e.kind, `une étape « ${e.kind} » suit la dernière commande`).toBe('recit');
     }
   });
 });

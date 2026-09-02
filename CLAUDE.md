@@ -246,6 +246,12 @@ reculer est gratuit parce que le curseur enregistré ne bouge pas. Corollaire : 
 étape d'exercice revisitée doit pouvoir être re-dépassée SANS être rejouée
 (`etapeDejaFranchie`).
 
+⚠️ **L'épilogue FAIT ENTENDRE le disque du joueur** — la production de
+`ACTE_DU_DISQUE` (déduit : l'acte de la dernière commande, jamais écrit en dur,
+sinon l'épilogue se tait en silence le jour où elle déménage). Il démarre au
+deuxième écran (le premier finit sur « FB-015 est sorti »), se nomme, et
+s'arrête : une fin de jeu n'impose pas sa bande-son.
+
 ⚠️ **L'ÉPILOGUE n'est pas un neuvième acte.** `EPILOGUE` (`carriere.ts`) est hors
 de `ACTES` : ni compétence, ni module, ni exercice, et des mois après le 14 juin —
 l'y mettre casserait `ActeId`, `JOURS` et le compte à rebours. Il a son curseur à

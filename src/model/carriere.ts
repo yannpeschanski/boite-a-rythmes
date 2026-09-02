@@ -1997,6 +1997,22 @@ export const EPILOGUE: EtapeRecit[] = [
   },
 ];
 
+/* ⚠️ LE DISQUE DE L'ÉPILOGUE — l'acte dont la production est LE morceau sorti.
+ *
+ * L'épilogue fait entendre ce que le joueur a livré en dernier ; il faut donc
+ * savoir de quel acte il s'agit. Écrit en dur (`6`) dans la vue, ce nombre
+ * serait devenu faux le jour où la dernière commande changerait d'acte — et
+ * l'épilogue se serait tu SANS RIEN DIRE, ce qui est précisément le genre de
+ * panne qu'on ne remarque qu'en jouant jusqu'au bout.
+ *
+ * Il se DÉDUIT donc : c'est l'acte de la dernière commande du récit. */
+export const ACTE_DU_DISQUE: number = (() => {
+  for (let i = ACTES.length - 1; i >= 0; i--) {
+    if (ACTES[i].etapes.some((e) => e.kind === 'commande')) return ACTES[i].id;
+  }
+  return 0;
+})();
+
 export const LONGUEUR_EPILOGUE = EPILOGUE.length;
 
 /** L'acte qui ouvre chaque module — c'est le récit qui décide, pas un seuil.

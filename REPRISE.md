@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après le carnet qui dit qu'on peut relire
-> un acte, et l'écran qui annonce le niveau 78.
+> Dernière mise à jour : 2026-09-02, après l'épilogue qui fait entendre le
+> disque du joueur (première moitié de la tranche 6).
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 502 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 504 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -72,7 +72,7 @@ quiz n'aurait rien réglé.
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | ✅ livré |
 | 5a | **l'acte 5** : quatre commandes de style, une par case du fax | ✅ livré |
 | 5b | **l'acte 6** en cahier, le plus complet du jeu | ✅ livré |
-| 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
+| 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | ⏳ l'épilogue est fait ; le Mode Live reste |
 | — | **l'arrangement** : reposer plusieurs lignes à la fois (acte 3, niveaux 75-77) | ✅ livré |
 | — | **la nappe** dans l'arrangement + le **son** d'un niveau (`model/sons.ts`) | ✅ livré |
 | — | **couper une ligne à l'écoute** + des **cycles** de durées différentes (niveau 78) | ✅ livré |

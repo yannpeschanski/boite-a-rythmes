@@ -42,6 +42,49 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'épilogue fait entendre le disque du joueur (2026-09-02)
+
+Première moitié de la tranche 6 — *« l'épilogue (« pas assez d'émotion ») »*.
+
+**Le diagnostic.** L'épilogue est bon à lire et il ne se passe rien : cinq
+écrans de texte, un « Suite ▸ », et une phrase — *« Mais FB-015 est sorti »* —
+qui parle d'un disque qu'on n'entend **jamais**. Or ce disque existe : c'est la
+production que le joueur a livrée à l'acte 6, sérialisée dans la discographie.
+Le dépôt a déjà la règle — *une leçon de production ne se raconte pas, elle se
+fait entendre* ; ici c'est la fin du jeu qui ne se racontait pas.
+
+**Ce qui a été fait.** Le morceau du joueur démarre pendant l'épilogue et tourne
+sous les écrans suivants, jusqu'à FIN.
+
+- ⚠️ **au DEUXIÈME écran, pas au premier** : le premier finit sur « Mais FB-015
+  est sorti », et un disque qui démarre avant cette phrase la devance ;
+- ⚠️ **il se NOMME** — « FB-015 · ton morceau, celui qui est sorti ». Un morceau
+  qui sort de l'appareil sans que rien ne dise ce qu'il est passe pour une
+  musique d'ambiance, alors que c'est celui du joueur, et c'est tout l'effet ;
+- ⚠️ **il s'arrête** : une fin de jeu n'impose pas sa bande-son. Et une fois
+  arrêté, il ne redémarre pas à l'écran suivant — sinon le bouton d'arrêt ne
+  voudrait rien dire.
+
+⚠️ **L'acte du disque se DÉDUIT, il ne s'écrit pas — `ACTE_DU_DISQUE`.** Écrit
+en dur (`6`) dans la vue, ce nombre serait devenu faux le jour où la dernière
+commande changerait d'acte, et **l'épilogue se serait tu sans rien dire** — la
+panne qu'on ne remarque qu'en rejouant jusqu'au bout. Il est donc dérivé : c'est
+l'acte de la dernière commande du récit. Deux tests le tiennent (aucune commande
+après lui ; rien que du récit après elle).
+
+**Vérifié :** 504 tests, 0 erreur de types, les deux builds, et surtout **la
+carrière entière jouée depuis un joueur neuf** (le harnais du parcours, prolongé
+jusqu'à l'épilogue) : écran 1 sans disque, écrans 2 à 5 avec le disque en
+lecture et nommé, zéro erreur console.
+
+⚠️ **Reste la seconde moitié de la tranche 6** : l'acte 7 (le concert) en Mode
+Live jouable. C'est une intégration à part — navigation, chargement du morceau,
+chemin de retour — et le Mode Live n'a toujours jamais été essayé sur un vrai
+téléphone en paysage.
+
+**Fichiers :** `src/ui/game/CarriereView.svelte`, `src/model/carriere.ts`
+(`ACTE_DU_DISQUE`), `tests/carriere.test.ts`.
+
 ### ✅ Relire un acte se VOIT, et le niveau 78 s'annonce (2026-09-02)
 
 > « comment tu comptes intégrer ce niveau ? d'ailleurs, remarque pour tester :
