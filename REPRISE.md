@@ -332,6 +332,25 @@ retouché de la session — mais il a été **audité** le 2026-09-02 :
 tranches proposées, aucune engagée ; les quatre premières sont indépendantes.
 Le mode n'a **toujours jamais tourné sur un vrai téléphone**.
 
+Puis un second audit le même jour, sur le **macro-séquenceur** demandé par
+Yann (« 8 cycles de A puis 8 cycles de B ») :
+[`docs/plan/06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md).
+Ce qu'il faut en retenir avant de coder quoi que ce soit sur le sujet :
+
+- **une ligne de batterie fait exactement UNE mesure**, toujours — donc rien
+  dans le format ne peut faire jouer à la batterie un couplet et un refrain
+  différents. C'est l'impossibilité structurelle qui justifie le chantier ;
+- **le motif a déjà un cycle propre, et il vaut 4 mesures** (la nappe :
+  30 presets sur 34) — « mono-cycle par défaut » décrit ce qu'on croit voir,
+  pas ce que l'appli joue. Le macro-séquenceur doit donc **calculer** le cycle
+  (ppcm des lignes non muettes), jamais le supposer ;
+- **la nappe porte une progression d'accords** : un blues 12 mesures tient
+  dans un seul motif, sans macro-séquenceur ;
+- ⚠️ **`isFillBar` lit le compteur ABSOLU de mesures** : les fills tomberaient
+  au milieu des sections. Défaut à corriger, indépendant du chantier ;
+- la limite des 10 min ne concerne pas le morceau (quelques centaines
+  d'octets) mais la **capture** : 10 min de ⏺ REC font 256 Mo de pic mémoire.
+
 ## Les pièges qui ont coûté du temps
 
 - **Le squash-merge.** La branche de travail garde l'ancien historique (déjà
