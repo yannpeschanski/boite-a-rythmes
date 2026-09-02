@@ -72,7 +72,6 @@
 {:else if view === 'splash'}
   <div class="splash">
     <h1>Face B</h1>
-    <p>Un label de sonneries qui a cinq mois pour ne pas fermer.</p>
     <!-- ⚠️ Ce qui est VERROUILLÉ ne s'affiche pas — arbitrage de Yann après
          une partie complète (« on devrait masquer tout ce qui est
          verrouillé »). Ça renverse la décision de 2026-08-16, qui gardait les
@@ -142,11 +141,7 @@
   }
   h1 {
     font-size: 34px;
-    margin: 0 0 6px;
-  }
-  .splash p {
     margin: 0 0 24px;
-    font-size: 11px;
   }
   .choices {
     display: flex;
