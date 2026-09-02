@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-01, après la tranche 5a (l'acte 5 produit
-> quatre genres au lieu d'en recopier cinq).
+> Dernière mise à jour : 2026-09-02, après la tranche 5b (FB-015 récapitule les
+> cinq mois — le cahier le plus complet du jeu).
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 475 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 476 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -71,7 +71,7 @@ quiz n'aurait rien réglé.
 | 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | ✅ livré |
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | ✅ livré |
 | 5a | **l'acte 5** : quatre commandes de style, une par case du fax | ✅ livré |
-| 5b | **l'acte 6** en cahier, le plus complet du jeu | à faire |
+| 5b | **l'acte 6** en cahier, le plus complet du jeu | ✅ livré |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
 
@@ -125,6 +125,18 @@ produit au lieu de recopier ») :
   produire quatre genres pour n'en rendre qu'un ;
 - deux harnais (le test et le parcours) construisaient un genre en perdant son
   FEEL — ils partent désormais de `presetToState`.
+
+**Ce que la tranche 5b a tranché en passant** (détail dans `PLAN.md`, « FB-015
+récapitule les cinq mois ») :
+
+- **COMPLET n'est pas SÉVÈRE** : le cahier de FB-015 est le plus long du jeu
+  (onze lignes, quatre sections) et n'exige aucun goût — pas de fiche, pas de
+  verrou de provenance, pas de chapeau de genre. Il récapitule, une section par
+  acte traversé ;
+- ⚠️ une capture semblait montrer un cul-de-sac (l'onglet Synthé absent d'un
+  cahier qui réclame trois lignes de synthé) : c'était la FIXTURE qui ne
+  progressait pas, pas le jeu. Le parcours, lui, accepte la commande. Une
+  fixture ne joue pas le jeu.
 
 ⚠️ **Les fiches de style sont cinq** (dancehall, techno, drunk beat, garage,
 dembow) et chacune est calibrée : son preset la satisfait entièrement, les 33
