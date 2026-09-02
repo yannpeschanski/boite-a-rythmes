@@ -638,6 +638,7 @@ class GameStore {
      * relivrer après relecture n'écraserait plus la bonne entrée. */
     this.archiverProduction(etat, {
       acte: cible.acte,
+      serie: c.serie,
       titre: c.titre,
       client: c.client,
       quand: this.acteCourant.quand,

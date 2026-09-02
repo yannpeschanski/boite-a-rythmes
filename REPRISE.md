@@ -3,9 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-01, après la tranche 4 du chantier des cahiers
-> des charges (l'acte 1 fusionne ses douze exercices en sept, et gagne une
-> polyrythmie).
+> Dernière mise à jour : 2026-09-01, après la tranche 5a (l'acte 5 produit
+> quatre genres au lieu d'en recopier cinq).
 
 ## Où en est le projet
 
@@ -13,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 471 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 475 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -25,7 +24,7 @@ attente dans `HISTOIRE.md`.
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 11 (`ExerciseKind`) |
 | Niveaux | 74 (34 de campagne + le reste du réservoir) |
-| Commandes (production à livrer) | 9, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois) |
+| Commandes (production à livrer) | 12, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois, l'acte 5 en livre quatre) |
 
 ## Le déverrouillage — tranché le 2026-08-26
 
@@ -71,7 +70,8 @@ quiz n'aurait rien réglé.
 | 2b | **l'acte 3**, les cahiers : mélodie → + basse → + nappe, plus les textures | ✅ livré |
 | 3 | **l'acte 2** : grilles différentes, `régler` en premier, l'aléa dans le cahier | ✅ livré |
 | 4 | **l'acte 1** fusionné 12 → 6-7, le niveau 2 retiré, plus une polyrythmie | ✅ livré |
-| 5 | **actes 5 et 6** en cahiers, le 6 le plus complet du jeu | à faire |
+| 5a | **l'acte 5** : quatre commandes de style, une par case du fax | ✅ livré |
+| 5b | **l'acte 6** en cahier, le plus complet du jeu | à faire |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
 
@@ -114,6 +114,23 @@ fusionne ») :
 - **la polyrythmie de l'acte 1 est ÉCRITE** (niveau 74) : les cinq du réservoir
   sont soit déjà jouées à l'acte 5, soit générées.
 
+**Ce que la tranche 5a a tranché en passant** (détail dans `PLAN.md`, « L'acte 5
+produit au lieu de recopier ») :
+
+- **une fiche ne peut pas décrire un genre dont le voisin partage tout sauf un
+  nombre** — la fiche du boom bap acceptait le drunk beat, celle de la house
+  acceptait le hard house. On décrit celui des deux qui porte une propriété
+  POSITIVE que l'autre n'a pas, jamais en rabotant une borne ;
+- **la discographie est rangée par (acte, SÉRIE)** : sans ça, l'acte 5 faisait
+  produire quatre genres pour n'en rendre qu'un ;
+- deux harnais (le test et le parcours) construisaient un genre en perdant son
+  FEEL — ils partent désormais de `presetToState`.
+
+⚠️ **Les fiches de style sont cinq** (dancehall, techno, drunk beat, garage,
+dembow) et chacune est calibrée : son preset la satisfait entièrement, les 33
+autres échouent, et le plus proche reste à deux critères. En écrire une sixième
+coûte une mesure, pas une opinion.
+
 **Quatre arbitrages pris**, à ne pas rouvrir sans raison :
 
 - **le trio 14/17/23 perd sa grille unique** — Yann écrit cinq fois « les rythmes
@@ -155,10 +172,11 @@ trois critères et pas dix, et **chacun exige un geste** — un critère coché 
 rien toucher est du théâtre. Le seuil du drive vient de la mesure du petit
 haut-parleur. Voir `PLAN.md`, « L'acte 4 en deux temps ».
 
-**Tranche 3 — à faire.** Sortir les niveaux `reproduire` 4/12/13/27/32 de l'acte
-5 vers la salle de répétition, et les remplacer par des commandes de style (une
-fiche par genre). Les verbes de paramètre 54-57 de l'acte 4 sont à déplacer de
-la même façon : ils ne sont pas mauvais, ils sont au mauvais endroit.
+**Tranche 3 — LIVRÉE (2026-09-01, tranche 5a).** Les niveaux `reproduire`
+4/12/13/27/32 sont sortis de l'acte 5 vers le réservoir, remplacés par trois
+commandes de style (une fiche par genre) qui s'ajoutent à celle du dancehall.
+Les verbes de paramètre 54-57 de l'acte 4 avaient été traités avant, par la
+tranche 1 du chantier des cahiers.
 
 ## Le retour de partie de Yann (2026-08-27) — ce qui est fait, ce qui reste
 

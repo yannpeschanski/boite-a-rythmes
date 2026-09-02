@@ -152,6 +152,54 @@ describe('un envoi reprend le morceau livré à l’étape d’avant', () => {
   });
 });
 
+/* ⚠️ QUATRE GENRES DANS UN ACTE, ET LA DISCOGRAPHIE LES GARDE TOUS.
+ *
+ * Le défaut que ce test empêche de revenir se voit en jouant, pas en lisant :
+ * l'acte 5 fait produire quatre morceaux (un par catégorie du fax de
+ * Zik'Mobile), et tant que la clé d'unicité était l'ACTE, les trois premiers
+ * étaient écrasés par le quatrième. Le joueur travaillait quatre fois pour
+ * repartir avec un seul morceau.
+ *
+ * On monte le vrai `ranger` : ce qui est vérifié est la CLÉ, pas une intention.
+ */
+describe('un acte qui livre plusieurs genres les garde tous', () => {
+  const p = (acte: number, serie: string | undefined, titre: string) => ({
+    acte,
+    serie,
+    titre,
+    client: 'X',
+    etat: '{}',
+    quand: 'un jour',
+  });
+
+  it('deux séries coexistent, une série se remplace', async () => {
+    const { ranger } = await import('../src/model/discographie');
+    let liste = ranger([], p(5, 'hip-hop', 'HIP-HOP'));
+    liste = ranger(liste, p(5, 'club', 'CLUB'));
+    expect(liste.map((x) => x.titre)).toEqual(['HIP-HOP', 'CLUB']);
+    // La même série, relivrée : elle remplace, elle n'empile pas.
+    liste = ranger(liste, p(5, 'hip-hop', 'HIP-HOP (bis)'));
+    expect(liste.map((x) => x.titre)).toEqual(['CLUB', 'HIP-HOP (bis)']);
+    expect(liste).toHaveLength(2);
+  });
+
+  it('⚠️ et une CHAÎNE d’envois se remplace toujours — même sans série', async () => {
+    const { ranger } = await import('../src/model/discographie');
+    // L'acte 4 : trois versions du même morceau, aucune série déclarée.
+    let liste = ranger([], p(4, undefined, 'LE TUNNEL'));
+    liste = ranger(liste, p(4, undefined, 'LE TUNNEL (V2)'));
+    liste = ranger(liste, p(4, undefined, 'LE TUNNEL (V3)'));
+    expect(liste.map((x) => x.titre)).toEqual(['LE TUNNEL (V3)']);
+  });
+
+  it('et l’acte 5 déclare bien quatre séries distinctes', async () => {
+    const cmds = ACTES.find((a) => a.id === 5)!.etapes.filter((e) => e.kind === 'commande');
+    const series = cmds.map((c) => (c as { serie?: string }).serie);
+    expect(series).toHaveLength(4);
+    expect(new Set(series).size).toBe(4);
+  });
+});
+
 describe('chaque production du récit a un nom et un destinataire', () => {
   it('les huit livraisons sont nommées', () => {
     /* Sans titre ni client, la discographie serait une liste de fichiers.
@@ -161,12 +209,13 @@ describe('chaque production du récit a un nom et un destinataire', () => {
         .filter((e) => e.kind === 'commande' || e.kind === 'livraison')
         .map((e) => ({ acte: a.id, e: e as { titre: string; client: string } })),
     );
-    /* Dix depuis que les actes 3 ET 4 enchaînent trois envois du même morceau
-     * (2026-09-01).
-     * ⚠️ Ils portent des titres DIFFÉRENTS (LE TUNNEL, V2, V3) alors qu'une
-     * production par acte remplace la précédente : c'est voulu, c'est le titre
-     * qui dit au joueur laquelle des trois il réécoute. */
-    expect(prod).toHaveLength(10);
+    /* Treize : les actes 3 et 4 enchaînent trois envois du même morceau, et
+     * l'acte 5 livre quatre GENRES depuis le 2026-09-01.
+     * ⚠️ Les trois du Tunnel portent des titres DIFFÉRENTS (LE TUNNEL, V2, V3)
+     * alors qu'ils se remplacent l'un l'autre : c'est voulu, c'est le titre qui
+     * dit au joueur laquelle des trois il réécoute. Les quatre de l'acte 5, à
+     * l'inverse, coexistent — elles ont chacune leur SÉRIE. */
+    expect(prod).toHaveLength(13);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();

@@ -28,6 +28,7 @@ import {
 } from '../src/model/commande';
 import { defaultState } from '../src/model/defaults';
 import { PRESETS } from '../src/model/presets/songs';
+import { presetToState } from '../src/model/presetAdapter';
 import { resolveVoicePreset } from '../src/model/presets/voices';
 import { rankPresets } from '../src/engine/similarity';
 import type { PatternStateV2, SynthRowName } from '../src/model/types';
@@ -412,7 +413,17 @@ describe('la commande survit au voyage jusqu’à l’Atelier', () => {
  * autorise (il refuse un preset CHARGÉ, pas une grille ressemblante). */
 async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV2> {
   const fiche = cahier.find((c) => c.id.startsWith('fiche:'))?.id.slice(6);
-  const st = etatDuPreset(fiche ?? 'dancehall');
+  /* ⚠️ Une commande de STYLE part du preset COMPLET, pas de ses trois grilles.
+   *
+   * `etatDuPreset` (plus haut) ne recopie que kick/snare/hat sur un état par
+   * défaut : il perd le tempo, le swing, la traîne et les ghost notes. Ça a
+   * suffi tant que les fiches ne jugeaient que des placements ; la fiche du
+   * drunk beat (2026-09-01) demande une traîne et des coups fantômes, et le
+   * test échouait sur un état qui n'était pas celui du genre. `presetToState`
+   * est l'adaptateur que l'appli utilise pour de vrai. */
+  const st = fiche
+    ? presetToState(PRESETS.find((p) => p.id === fiche)!, undefined, false)
+    : etatDuPreset('dancehall');
   st.swing = 30;
   st.rows.snare.pattern[4] = 2 as never;
   const actif = st.rows.kick.pattern.findIndex((v) => (v as number) > 0);

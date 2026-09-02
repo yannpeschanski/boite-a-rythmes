@@ -614,6 +614,22 @@ jamais » est le seul critère qui sépare la techno de la house). Une fiche se
 **calibre** : le preset du genre doit la satisfaire entièrement, les 33 autres
 échouer, et le plus proche rester à au moins **deux critères**.
 
+⚠️ **Une fiche ne peut pas décrire un genre dont le voisin partage tout sauf un
+nombre.** Mesuré deux fois de suite : la fiche du boom bap acceptait le drunk
+beat, celle de la house acceptait le hard house — un seul critère les séparait
+(le tempo). La sortie n'est pas de raboter une borne jusqu'à ce que le voisin
+tombe : c'est de décrire le membre de la famille qui a une propriété POSITIVE
+que les autres n'ont pas — la traîne et les ghost notes du drunk beat, le
+shuffle à 45 % du garage, le shaker du dembow. Un plafond de densité reste
+permis (le charley TROUÉ du garage) : c'est la description d'une ligne
+présente, pas l'exigence d'une absence.
+
+⚠️ **La discographie est rangée par (acte, SÉRIE), pas par acte.** Une chaîne
+d'envois garde une série et se remplace (« les livraisons intermédiaires sont
+remplacées », actes 3 et 4) ; deux genres différents dans un même acte ont
+chacun la leur et coexistent — sinon l'acte 5 fait produire quatre morceaux pour
+n'en rendre qu'un. `EtapeCommande.serie`, vide par défaut.
+
 ⚠️ **Une commande de style sans verrou de presets est un menu déroulant.** Le
 verrou est double : le menu Morceaux est désactivé pendant une commande, et
 `pasUnPresetCharge` refuse un preset chargé TEL QUEL. Ce qu'on refuse est la

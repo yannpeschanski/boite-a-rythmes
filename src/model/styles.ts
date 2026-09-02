@@ -144,6 +144,39 @@ export function densiteAuMoins(
   };
 }
 
+/* Une ligne DENSE MAIS TROUÉE — et c'est une description, pas une absence.
+ *
+ * ⚠️ Écrit pour le garage, et pour une raison mesurée : avec un simple
+ * plancher de densité, sa fiche acceptait le baile funk à un critère près (même
+ * tempo, même kick syncopé, même backbeat — mais charley PLEIN). Or le charley
+ * troué n'est pas un détail du garage, c'est une condition : la notice du
+ * preset le dit elle-même, il est clairsemé « pour que le shuffle ait la place
+ * de s'entendre ».
+ *
+ * Un plafond de densité reste une description de ce qu'on ENTEND (une ligne qui
+ * respire), pas l'exigence d'une absence — la règle qu'il ne faut pas casser
+ * est « une fiche ne demande jamais qu'un instrument se taise ». */
+export function densiteEntre(
+  id: string,
+  ligne: DrumRowName,
+  min: number,
+  max: number,
+  libelle: string,
+  opts: { subdivMini?: number } = {},
+): CritereStyle {
+  return {
+    id,
+    libelle,
+    verifie: (e) => {
+      const r = e.rows[ligne];
+      if (r.muted) return false;
+      if (opts.subdivMini !== undefined && r.subdiv < opts.subdivMini) return false;
+      const part = r.pattern.slice(0, r.subdiv).filter((v) => (v as number) > 0).length / r.subdiv;
+      return part >= min && part <= max;
+    },
+  };
+}
+
 /* Toutes les frappes de la ligne sont FERMÉES — aucune variante ouverte.
  *
  * C'est un critère de caractère, pas une absence : la ligne est là et on
@@ -184,6 +217,36 @@ export const CONTRETEMPS = [0.5, 1.5, 2.5, 3.5];
 
 export function tempoEntre(min: number, max: number, libelle: string): CritereStyle {
   return { id: 'tempo', libelle, verifie: (e) => e.tempo >= min && e.tempo <= max };
+}
+
+/* La boucle BALANCE — le swing écrit dans l'état, pas une impression.
+ *
+ * ⚠️ Il vaut comme critère de genre pour une raison mesurée : c'est ce qui
+ * sépare le boom bap de tout le reste du hip-hop dans le catalogue. Son preset
+ * est le seul de sa catégorie à porter un swing non nul (8), et un hip-hop
+ * carré n'est pas du boom bap — c'est de la trap. */
+export function avecSwing(
+  min: number,
+  libelle: string,
+  opts: { essentiel?: boolean } = {},
+): CritereStyle {
+  return { id: 'swing', libelle, essentiel: opts.essentiel, verifie: (e) => e.swing >= min };
+}
+
+/* La boucle TRAÎNE — tout arrive un peu après le temps.
+ *
+ * `drag` est GLOBAL (il retarde tout du même montant), ce qui le rend
+ * inutilisable comme exercice : dans une boucle, retarder tout ne s'entend
+ * contre rien (voir `tests/feel-ecrit.test.ts`). Mais comme critère de GENRE
+ * il dit quelque chose de vrai et d'audible à la première écoute — le morceau
+ * est en retard sur lui-même. C'est la moitié du « drunk beat ». */
+export function avecTraine(min: number, libelle: string): CritereStyle {
+  return { id: 'traine', libelle, verifie: (e) => e.drag >= min };
+}
+
+/** Des coups en plus, joués faible — l'autre moitié du drunk beat. */
+export function avecGhostNotes(min: number, libelle: string): CritereStyle {
+  return { id: 'ghost', libelle, verifie: (e) => e.ghostDensity >= min };
 }
 
 export function synthQuiJoue(
@@ -318,7 +381,122 @@ const TECHNO: FicheStyle = {
   ],
 };
 
-export const FICHES: FicheStyle[] = [DANCEHALL, TECHNO];
+/* LE DRUNK BEAT — « HIP-HOP AUTHENTIQUE », première catégorie du fax.
+ *
+ * ⚠️ POURQUOI CETTE FICHE ET PAS CELLE DU BOOM BAP, qui était le premier
+ * choix. Mesuré : la fiche du boom bap acceptait le preset `dilla` (5 critères
+ * sur 6), et c'est musicalement JUSTE — le drunk beat est un boom bap dont la
+ * quantification a été déréglée. Une fiche qui accepte le genre voisin ne
+ * décrit plus rien, et le calibrage exige deux critères d'écart.
+ *
+ * La sortie n'est pas de rétrécir le boom bap jusqu'à ce que son cousin
+ * tombe : c'est de décrire le cousin, dont les deux traits distinctifs sont
+ * POSITIFS et s'entendent — la TRAÎNE et les GHOST NOTES. Le boom bap échoue
+ * les deux (drag 0, ghostDensity 0), donc l'écart est de deux, par
+ * construction et non par rabotage.
+ *
+ * Relevé sur le preset `dilla` : kick subdiv 8 sur [0, 3, 5] (le 1 puis entre
+ * les temps), claire sur 2 et 4, tempo 88, swing 10, drag 15, ghostDensity 12.
+ */
+const DILLA: FicheStyle = {
+  id: 'dilla',
+  label: 'J Dilla « drunk beat »',
+  chapeau: [
+    'Detroit, fin des années 90, sur une MPC dont on a désactivé',
+    'la quantification. Le kick sort des temps comme dans le boom',
+    'bap — mais tout arrive un peu APRÈS, et des coups fantômes se',
+    'glissent entre les autres. Ça balance, ça traîne, c’est vivant.',
+  ],
+  seuil: 0.8,
+  criteres: [
+    surLesTemps('kick-hors-temps', ['kick'], [0, 1.5], 'Le kick sur le 1, puis ENTRE les temps', {
+      essentiel: true,
+    }),
+    surLesTemps('backbeat-24', ['snare', 'clap'], [1, 3], 'La claire répond sur 2 et 4'),
+    avecSwing(5, 'Ça balance — la boucle n’est pas carrée'),
+    avecTraine(10, 'Et ça TRAÎNE : tout arrive un peu après le temps'),
+    avecGhostNotes(8, 'Des coups fantômes, joués faible, entre les autres'),
+    tempoEntre(84, 96, 'Entre 84 et 96 — le tempo d’un break ralenti'),
+  ],
+};
+
+/* UK GARAGE — « CLUB ÉNERGIE », deuxième catégorie du fax.
+ *
+ * ⚠️ POURQUOI PAS LA HOUSE, qui était le premier choix. Mesuré : sa fiche
+ * acceptait `hardhouse` (5 critères sur 6 — le hard house EST de la house, en
+ * plus rapide), et aucun critère POSITIF ne les sépare : la seule différence
+ * lisible dans l'état est le tempo, et une fiche qui tient sur un seul nombre
+ * ne décrit pas un genre. Même famille, même impasse que le boom bap et le
+ * drunk beat.
+ *
+ * Le garage, lui, se nomme par une propriété que personne d'autre ne porte :
+ * un SHUFFLE de 45 % là où le catalogue plafonne à 10. Relevé sur le preset
+ * `garage` : tempo 130, swing 45, kick subdiv 8 sur [0, 3, 5], claire sur les
+ * temps 2 et 4, charley en doubles-croches clairsemé (7 sur 16) — troué
+ * exprès, « pour que le shuffle ait la place de s'entendre », dit sa notice.
+ *
+ * Il a en plus un mérite de récit : l'acte vient de le faire reproduire
+ * (niveau 16, « Londres, 2001 »). On commande un genre qu'on vient d'entendre.
+ */
+const GARAGE: FicheStyle = {
+  id: 'garage',
+  label: 'UK Garage / 2-step',
+  chapeau: [
+    'Londres, fin des années 90. Le tempo du club, mais rien n’y',
+    'tombe droit : le shuffle est ÉNORME, les croches boitent, et',
+    'le charley laisse des trous pour qu’on l’entende boiter. Le',
+    'kick sort des temps, la claire tient bon sur 2 et 4.',
+  ],
+  seuil: 0.8,
+  criteres: [
+    avecSwing(30, 'Un shuffle ÉNORME — c’est lui qui nomme le genre', { essentiel: true }),
+    surLesTemps('kick-garage', ['kick'], [0, 1.5], 'Le kick sur le 1, puis entre les temps'),
+    surLesTemps('backbeat-24', ['snare', 'clap'], [1, 3], 'La claire tient les temps 2 et 4'),
+    tempoEntre(124, 136, 'Entre 124 et 136 — le tempo du club'),
+    densiteEntre('hat-troue', 'hat', 0.35, 0.65, 'Un charley en doubles-croches, mais TROUÉ', {
+      subdivMini: 16,
+    }),
+    synthQuiJoue('bass', 'Une basse qui joue', { essentiel: true }),
+  ],
+};
+
+/* DEMBOW — « AMBIANCE LATINO », troisième catégorie du fax.
+ *
+ * Relevé sur le preset `dembow` : kick subdiv 16 sur [0, 6] — le 1 et le
+ * « et » du deuxième temps, c'est-à-dire la cellule 3+3+2 que l'acte vient de
+ * faire jouer au tresillo ; claire et clap en RIM SHOT sur les pas 4 et 7,
+ * soit le temps 2 et le seizième qui le suit ; shaker en croches pleines ;
+ * tempo 95.
+ *
+ * ⚠️ Le SHAKER est un critère à part entière, et c'est ce qui rend la fiche
+ * discriminante : deux presets sur trente-quatre en ont un qui joue. Le
+ * placement de la claire (temps 1,75) demande en plus une ligne en
+ * doubles-croches — on ne peut pas le poser par accident. */
+const DEMBOW: FicheStyle = {
+  id: 'dembow',
+  label: 'Dembow / reggaeton',
+  chapeau: [
+    'Panamá puis Porto Rico : le riddim qui a tout envahi.',
+    'Le kick pose le 1 et le « et » du deux — la cellule 3+3+2,',
+    'celle du tresillo. La claire répond juste après le temps 2,',
+    'sèche, en rim shot. Et un shaker tient la croche, sans arrêt.',
+  ],
+  seuil: 0.8,
+  criteres: [
+    surLesTemps('dembow-kick', ['kick'], [0, 1.5], 'Le kick sur le 1 et sur le « et » du 2', {
+      essentiel: true,
+    }),
+    surLesTemps('dembow-reponse', ['snare', 'clap'], [1, 1.75], 'La réponse juste après le temps 2'),
+    surLesTemps('dembow-rim', ['snare'], [1, 1.75], 'Cette réponse est sèche — en rim shot', {
+      variante: true,
+    }),
+    densiteAuMoins('shaker-8', 'shaker', 0.9, 'Un shaker qui tient la croche sans s’arrêter'),
+    tempoEntre(88, 102, 'Entre 88 et 102 — le tempo du riddim'),
+    synthQuiJoue('bass', 'Une basse qui joue', { essentiel: true }),
+  ],
+};
+
+export const FICHES: FicheStyle[] = [DANCEHALL, TECHNO, DILLA, GARAGE, DEMBOW];
 
 export function ficheStyle(id: string): FicheStyle | null {
   return FICHES.find((f) => f.id === id) ?? null;

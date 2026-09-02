@@ -82,6 +82,12 @@ const DEPART_KELVIN = etatDepuisGrille(NIVEAU_KELVIN.grille!, NIVEAU_KELVIN.temp
  * fois de brief affiché et de juge (voir `model/styles.ts`). */
 const FICHE_DANCEHALL = ficheStyle('dancehall')!;
 const FICHE_TECHNO = ficheStyle('techno')!;
+/* Les trois genres que l'acte 5 fait PRODUIRE, un par catégorie du fax de
+ * Zik'Mobile — hip-hop authentique, club énergie, ambiance latino. Le
+ * quatrième (urbain festif) est le dancehall, qui clôt l'acte depuis toujours. */
+const FICHE_DILLA = ficheStyle('dilla')!;
+const FICHE_GARAGE = ficheStyle('garage')!;
+const FICHE_DEMBOW = ficheStyle('dembow')!;
 
 /* Les deux temps de la commande du Tunnel, tels que Yann les a décrits :
  * « il faut d'abord remplir le séquenceur avec un morceau techno, puis ensuite
@@ -251,6 +257,15 @@ export interface EtapeCommande {
   accepte: string;
   /** Le titre sous lequel la discographie range le morceau livré. */
   titre: string;
+  /* ⚠️ Ce que cette livraison REMPLACE dans son acte (voir `discographie.ts`).
+   *
+   * Absente, la commande occupe la série par défaut de l'acte : c'est ce qu'il
+   * faut pour un acte qui ne livre qu'un morceau, et pour une CHAÎNE d'envois,
+   * dont les trois versions sont le même morceau et doivent se remplacer.
+   * Renseignée, elle ouvre une série à part — l'acte 5 livre quatre GENRES
+   * différents, et sur une clé d'acte le joueur en produisait quatre pour n'en
+   * retrouver qu'un. */
+  serie?: string;
   /** Qui l'a reçu — c'est ce qui fait d'une liste une discographie. */
   client: string;
 }
@@ -1336,10 +1351,25 @@ export const ACTES: Acte[] = [
        * quinze niveaux de reproduction qui auraient été le même exercice
        * quinze fois.
        *
-       * Les reconstructions, elles, existent déjà dans le réservoir depuis la
-       * campagne d'origine : l'acte les CITE (4, 12, 13, 27, 32 — Motown,
-       * House, Dancehall, Dembow, Funk), une par catégorie du fax. Un acte
-       * cite, il ne fabrique jamais. */
+       * ⚠️ REFAIT LE 2026-09-01 : *« sortir les niveaux reproduire 4/12/13/27/32
+       * de l'acte 5 vers la salle de répétition, et les remplacer par des
+       * commandes de style — une fiche par genre »* (Yann). Les cinq
+       * reconstructions de presets étaient le même geste cinq fois, et surtout
+       * le mauvais : on RECOPIAIT un genre au lieu d'en produire un. L'acte
+       * livre désormais QUATRE morceaux, un par catégorie du fax — hip-hop
+       * authentique (drunk beat), club énergie (garage), ambiance latino
+       * (dembow), urbain festif (dancehall).
+       *
+       * Ce qui RESTE en reproduction est ce qui prépare une commande : le
+       * carnet d'écoute (58), le garage de Londres (16) et la French touch (22)
+       * avant la commande de club, le tresillo (9) et la clave (25) avant celle
+       * de latino, les deux polyrythmies (29, 24) qui nomment ce dont tout ça
+       * descend. Les niveaux 4, 12, 13, 27 et 32 restent au réservoir.
+       *
+       * ⚠️ Quatre livraisons dans un acte, et la discographie les garde toutes
+       * les quatre : c'est ce qui a fait passer sa clé d'unicité de l'ACTE à
+       * (acte, série) — voir `discographie.ts`. Sans ça, le joueur produisait
+       * quatre genres pour n'en retrouver qu'un. */
       {
         kind: 'recit',
         source: 'fax',
@@ -1383,11 +1413,32 @@ export const ACTES: Acte[] = [
           'Tu écoutes. Tu reconstruis. Tu compares. Tu recommences.',
         ],
       },
-      { kind: 'exercice', niveau: 4, commande: 'Sol vérifie les classiques. Motown, pour commencer.' },
-      { kind: 'exercice', niveau: 12, commande: 'Le Tunnel vérifie les morceaux de club. Gratuitement, et sans ménagement.' },
-      { kind: 'exercice', niveau: 13, commande: 'Le dancehall du commercial. Celui qu’il ne savait pas nommer.' },
-      { kind: 'exercice', niveau: 27, commande: 'Ambiance latino, dit le fax. Dembow, dit le carnet.' },
-      { kind: 'exercice', niveau: 32, commande: 'Kelvin vérifie le hip-hop. Il commence par le funk d’où il vient.' },
+      /* ⚠️ HIP-HOP AUTHENTIQUE — la première case du fax, et la première
+       * commande. Aucun exercice ne la précède, et c'est délibéré : la FICHE
+       * est la leçon (elle décrit, elle juge et elle rend le détail en direct),
+       * et le drunk beat se décrit en deux propriétés qu'on entend tout de
+       * suite — ça balance, et ça traîne. */
+      {
+        kind: 'commande',
+        entete: 'ZIK’MOBILE — HIP-HOP AUTHENTIQUE',
+        lignes: [
+          'Première case du fax, et Sol a déjà le disque prêt.',
+          '— Detroit, fin des années 90. Écoute la batterie.',
+          '— Elle est en retard. Volontairement.',
+          '— Le gars a débranché la quantification de sa machine.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        chapeau: FICHE_DILLA.chapeau,
+        serie: 'hip-hop',
+        cahier: [
+          AVOIR_PRODUIT,
+          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          dansLeStyleFiche(FICHE_DILLA, 'Ça doit sonner comme ça — le genre, pas la copie'),
+        ],
+        accepte: '— Voilà. C’est bancal, et c’est exactement ce qu’il faut.',
+        titre: 'ZIK’MOBILE — HIP-HOP',
+        client: 'ZIK’MOBILE',
+      },
       /* ⚠️ Quatre presets qui dormaient dans le réservoir depuis que la
        * carrière a remplacé la campagne linéaire — l'acte des styles n'en
        * faisait rejouer que cinq sur trente. Ils sont TOUS de l'époque : le
@@ -1399,8 +1450,49 @@ export const ACTES: Acte[] = [
        * n'existe pas encore en 2005. */
       { kind: 'exercice', niveau: 16, commande: 'Londres, 2001. Le garage : la caisse claire glisse, elle n’est jamais où on l’attend.' },
       { kind: 'exercice', niveau: 22, commande: 'Paris, la French touch. Le même four-on-the-floor, filtré jusqu’à l’os.' },
+      {
+        kind: 'commande',
+        entete: 'ZIK’MOBILE — CLUB ÉNERGIE',
+        lignes: [
+          'Deuxième case. Le Tunnel écoutera, et ne fera pas de cadeau.',
+          '— Reprends celui de Londres. Pas la grille : le SHUFFLE.',
+          '— C’est lui qui fait la différence entre un club et un réveil.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        chapeau: FICHE_GARAGE.chapeau,
+        serie: 'club',
+        cahier: [
+          AVOIR_PRODUIT,
+          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          dansLeStyleFiche(FICHE_GARAGE, 'Ça doit boiter comme le garage — le genre, pas la copie'),
+        ],
+        accepte: '— Ça boite juste. C’est le mot le plus gentil que je connaisse.',
+        titre: 'ZIK’MOBILE — CLUB',
+        client: 'ZIK’MOBILE',
+      },
       { kind: 'exercice', niveau: 9, commande: 'Et la cellule dont tout le reste descend : trois notes, 3+3+2.' },
       { kind: 'exercice', niveau: 25, commande: 'Sa grande sœur, la clave. Sol : — Celle-là, tu la retrouveras partout.' },
+      {
+        kind: 'commande',
+        entete: 'ZIK’MOBILE — AMBIANCE LATINO',
+        lignes: [
+          'Troisième case. La cellule que tu viens de reposer deux fois',
+          'sert de fondation à un riddim entier.',
+          '— Le 1, puis le « et » du deux. Le reste répond après le temps.',
+          '— Et un shaker, tout du long, qui ne s’arrête jamais.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        chapeau: FICHE_DEMBOW.chapeau,
+        serie: 'latino',
+        cahier: [
+          AVOIR_PRODUIT,
+          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          dansLeStyleFiche(FICHE_DEMBOW, 'Ça doit sonner dembow — le genre, pas la copie'),
+        ],
+        accepte: '— C’est ça. Quatorze pays vont danser dessus sans le savoir.',
+        titre: 'ZIK’MOBILE — LATINO',
+        client: 'ZIK’MOBILE',
+      },
       /* ⚠️ Les polyrythmies atterrissent ICI, et pas ailleurs, parce que
        * l'acte vient de faire le tour de la famille latine et afro : le
        * tresillo, la clave, le dembow. La polyrythmie EST l'idée dont ces
@@ -1420,6 +1512,7 @@ export const ACTES: Acte[] = [
         ],
         bouton: 'Ouvrir l’Atelier ▸',
         chapeau: FICHE_DANCEHALL.chapeau,
+        serie: 'urbain-festif',
         /* ⚠️ Le cahier qui a changé de nature (2026-08-26). Il demandait un
          * RANG dans `rankPresets` — et charger le preset `dancehall` depuis le
          * menu suffisait à le satisfaire, mesuré. Il demande maintenant une
