@@ -59,6 +59,21 @@ export type ExerciseKind =
    * degré. C'est le seul qui sorte de la batterie — voir `melodie` dans
    * `GameLevel` et la grille de `GameView`. */
   | 'melodie'
+  /* ⚠️ Le verbe de l'ARRANGEMENT : reposer PLUSIEURS lignes à la fois, de deux
+   * natures — la batterie en coups (0/1/2) et le synthé en DEGRÉS.
+   *
+   * Demande de Yann (2026-09-02) : *« des exercices de reproduction de synthé
+   * avec en même temps plusieurs lignes »*, et *« on peut imaginer dans les
+   * actes suivants des reproductions à 6 voire 8 lignes (drum + synthé) »*.
+   *
+   * Il n'étend NI `reproduire` (trois lignes de batterie en dur) NI `melodie`
+   * (monophonique par conception, une seule ligne) : les deux gardent leurs
+   * niveaux et leurs tests. Ce qui est partagé, et qui rend ce verbe bon
+   * marché, c'est `comparerGrilles` — générique sur le nom de ligne depuis la
+   * mélodie, donc comparer huit lignes ne demande rien de neuf ici. Un seul
+   * comparateur, comme toujours : deux qui doivent rester d'accord finissent
+   * par ne plus l'être. */
+  | 'arrangement'
   /* Le verbe du SILENCE : une pulsation régulière, un coup manquant, lequel ?
    * Aucun vocabulaire, aucune grille — c'est le quatrième mot de l'acte 0. */
   | 'silence'
@@ -122,6 +137,7 @@ export const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   nommer: 'Qu’est-ce qui a changé ?',
   regler: 'Règle-le à l’oreille',
   melodie: 'Repose la mélodie',
+  arrangement: 'Repose l’arrangement',
   silence: 'Trouve le silence',
 };
 

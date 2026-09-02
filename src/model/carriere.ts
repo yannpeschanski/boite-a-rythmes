@@ -1014,6 +1014,34 @@ export const ACTES: Acte[] = [
         niveau: 44,
         commande: 'La deuxième, celle qu’il réclame. Toute la gamme, seize pas, aucune reprise.',
       },
+      /* ⚠️ LES ARRANGEMENTS — demande de Yann (2026-09-02) : *« des exercices
+       * de reproduction de synthé avec en même temps plusieurs lignes »*, et,
+       * sur le choix des lignes, **batterie + synthé tout de suite**.
+       *
+       * Ils tombent ICI, après les trois exercices de degrés et avant les trois
+       * envois : les degrés sont acquis, et la commande qui suit demande
+       * justement une mélodie, une basse et une batterie ENSEMBLE. L'exercice
+       * fait entendre l'empilement avant que le cahier l'exige — c'est la règle
+       * « une nouveauté n'est demandée qu'après avoir été montrée ».
+       *
+       * Ils montent d'une ligne à chaque fois (3, 4, 5) : l'axe de difficulté
+       * de l'arrangement est le nombre de VOIX à démêler, pas le nombre de
+       * cases — elles restent à huit partout. */
+      {
+        kind: 'exercice',
+        niveau: 75,
+        commande: 'Sol pose une batterie sous ta ligne. — Maintenant retrouve la basse à travers.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 76,
+        commande: 'Deux lignes de synthé qui se répondent. C’est ça, un arrangement.',
+      },
+      {
+        kind: 'exercice',
+        niveau: 77,
+        commande: 'Six lignes d’un coup. Rien de neuf — tout ce que tu sais, en même temps.',
+      },
       /* ⚠️ L'ACTE SE TERMINE EN TROIS ENVOIS — refait le 2026-09-01, sur la même
        * demande que l'acte 4 : *« il faut que tout soit en atelier avec des
        * cahiers des charges assez complexes »* (Yann, relecture complète), et

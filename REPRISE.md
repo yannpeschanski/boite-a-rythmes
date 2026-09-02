@@ -3,8 +3,8 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après la tranche 5b (FB-015 récapitule les
-> cinq mois — le cahier le plus complet du jeu).
+> Dernière mise à jour : 2026-09-02, après le verbe `arrangement` (reposer
+> plusieurs lignes de batterie ET de synthé à la fois).
 
 ## Où en est le projet
 
@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 476 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 489 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -22,8 +22,8 @@ attente dans `HISTOIRE.md`.
 | | |
 |---|---|
 | Actes jouables | 8 sur 8, plus l'épilogue |
-| Verbes d'exercice | 11 (`ExerciseKind`) |
-| Niveaux | 74 (34 de campagne + le reste du réservoir) |
+| Verbes d'exercice | 12 (`ExerciseKind`) |
+| Niveaux | 77 (37 de campagne + le reste du réservoir) |
 | Commandes (production à livrer) | 12, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois, l'acte 5 en livre quatre) |
 
 ## Le déverrouillage — tranché le 2026-08-26
@@ -73,6 +73,7 @@ quiz n'aurait rien réglé.
 | 5a | **l'acte 5** : quatre commandes de style, une par case du fax | ✅ livré |
 | 5b | **l'acte 6** en cahier, le plus complet du jeu | ✅ livré |
 | 6 | **l'acte 7** en Mode Live jouable + l'épilogue (« pas assez d'émotion ») | à faire |
+| — | **l'arrangement** : reposer plusieurs lignes à la fois (acte 3, niveaux 75-77) | ✅ livré |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
 
 **Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
@@ -125,6 +126,21 @@ produit au lieu de recopier ») :
   produire quatre genres pour n'en rendre qu'un ;
 - deux harnais (le test et le parcours) construisaient un genre en perdant son
   FEEL — ils partent désormais de `presetToState`.
+
+**Ce que l'ARRANGEMENT a tranché en passant** (détail dans `PLAN.md`,
+« L'arrangement — reposer plusieurs lignes à la fois ») :
+
+- **un seul verbe pour les deux demandes** — l'acte 3 et les reproductions à 6-8
+  lignes des actes suivants sont le même mécanisme, bâti d'emblée sur N lignes de
+  deux natures. Deux verbes auraient divergé ;
+- **six lignes tiennent sans défiler en 390 × 844, huit font défiler la page** et
+  rien n'est jamais coupé. Mesuré, y compris un huit-lignes monté à la main : les
+  actes suivants n'ont pas de travail de mise en page à prévoir ;
+- ⚠️ **`GAME_DRUM_ROWS` n'est pas la liste des lignes de batterie** — il s'arrête
+  aux trois du jeu, `defaultState()` en ouvre cinq. Toute coupure « tout le reste
+  au repos » doit balayer `DRUM_ROW_NAMES` ;
+- **le niveau 77 s'appelait « Six lignes » et en avait cinq** : c'est le clap qui
+  a été ajouté, pas le titre qui a été changé.
 
 **Ce que la tranche 5b a tranché en passant** (détail dans `PLAN.md`, « FB-015
 récapitule les cinq mois ») :

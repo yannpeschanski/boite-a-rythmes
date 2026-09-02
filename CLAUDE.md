@@ -25,7 +25,7 @@ npm run build:singlefile # fichier HTML autonome  -> dist-singlefile/index.html
 ## Architecture
 
 ```
-src/model/    état v2 typé, sérialisation, données (34 presets, 74 niveaux, gammes, voix)
+src/model/    état v2 typé, sérialisation, données (34 presets, 77 niveaux, gammes, voix)
 src/engine/   moteur audio TypeScript pur — aucune dépendance UI
 src/stores/   état réactif en runes Svelte 5 (pattern, jeu, historique, partage)
 src/ui/       design system (dossier `xp/`) + vues Atelier, Mode jeu et Mode Live
@@ -297,7 +297,7 @@ qui produisent un morceau vivent côte à côte dans le store (`livrerSonnerie` 
 **Le Mode jeu a plusieurs VERBES, pas un.** `ExerciseKind`
 (`src/model/exercises.ts`) discrimine ce qu'on demande. Quatre verbes de grille :
 `reproduire`, `completer`, `intrus`, `jouer`. Trois de paramètre : `lequel`,
-`nommer`, `regler`. Plus `melodie`, `silence`, `style`, `laverie`.
+`nommer`, `regler`. Plus `melodie`, `arrangement`, `silence`, `style`, `laverie`.
 
 La partie PURE de la notation vit dans `exercises.ts` — `comparerGrilles` (une
 case est exacte si son état **et** sa rafale coïncident), `colonnesDeTranche`,
@@ -374,6 +374,16 @@ mettent les numéros 1-8 sous la seconde rangée de cases.
 devait retrouver une note que la conception considère acquise. Corollaire de
 câblage : un `$effect` qui recale la sélection doit se garder du **premier
 rendu**, sinon il la ramène sur le pas verrouillé et le clavier n'écrit nulle part.
+
+⚠️ **`arrangement` repose PLUSIEURS lignes de deux natures à la fois** — une
+batterie qu'on allume au clic, un synthé en degrés qu'un clavier écrit, sur la
+même colonne. Un seul verbe couvre l'acte 3 et les grosses reproductions des
+actes suivants ; son axe de difficulté est le **nombre de voix**, pas de cases
+(huit partout). ⚠️ **Six lignes est le plafond qui tient sans défiler** en
+390 × 844 (mesuré : bas du clavier à 751 px) ; huit passent en faisant défiler
+la page, rien n'est coupé. ⚠️ Toute ligne NON citée doit être coupée, et le
+balayage passe par `DRUM_ROW_NAMES`, pas `GAME_DRUM_ROWS` — `defaultState()`
+ouvre les cinq lignes de batterie, pas les trois du jeu.
 
 ⚠️ **`silence` a sa bonne réponse dans ce qu'on n'entend PAS.** Deux pièges payés
 et testés : le trou n'est jamais sur le premier pas, et le kick ne tient que ce

@@ -445,12 +445,102 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
     expect(moduleUnlocked('synth', { level: 1, acte: 4 })).toBe(true);
   });
 
-  it('ne cite que des exercices de mélodie', () => {
+  it('ne cite que des verbes de HAUTEUR — les degrés, seuls puis empilés', () => {
+    /* ⚠️ Deux verbes depuis le 2026-09-02, et l'ordre est le contenu de
+     * l'acte : `melodie` pose les degrés sur UNE ligne, `arrangement` les
+     * empile avec la batterie et une seconde ligne de synthé. Demande de Yann :
+     * *« des exercices de reproduction de synthé avec en même temps plusieurs
+     * lignes »*, batterie comprise. Ce qui reste interdit ici, c'est un verbe
+     * qui ne parle pas de hauteur. */
+    const verbes = niveauxDeLActe(ACTES[3]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
+    for (const [i, v] of verbes.entries()) {
+      expect(['melodie', 'arrangement'], `niveau ${niveauxDeLActe(ACTES[3])[i]}`).toContain(v);
+    }
+    // Les degrés seuls AVANT les degrés empilés : on n'arrange pas ce qu'on ne
+    // sait pas encore écrire.
+    expect(verbes.lastIndexOf('melodie')).toBeLessThan(verbes.indexOf('arrangement'));
     for (const n of niveauxDeLActe(ACTES[3])) {
       const l = LEVELS.find((x) => x.id === n)!;
-      expect(l.exercise, `niveau ${n}`).toBe('melodie');
-      expect(l.melodie.pas, `niveau ${n}`).toBeGreaterThan(0);
+      if (l.exercise === 'melodie') expect(l.melodie.pas, `niveau ${n}`).toBeGreaterThan(0);
     }
+  });
+
+  /* ⚠️ L'ARRANGEMENT — le verbe qui repose PLUSIEURS lignes de deux natures.
+   *
+   * Ce que ces tests tiennent, et qu'aucun autre ne verrait : que la cible est
+   * ÉCRITE (un arrangement tiré ne saurait pas qui joue avec qui), que ses
+   * lignes partagent une subdivision (sinon c'est une polyrythmie, un autre
+   * sujet), et que la difficulté monte par le nombre de VOIX — le seul axe
+   * propre à ce verbe. */
+  describe('les arrangements empilent les voix, pas les cases', () => {
+    const arrs = () =>
+      niveauxDeLActe(ACTES[3])
+        .map((n) => LEVELS.find((x) => x.id === n)!)
+        .filter((l) => l.exercise === 'arrangement');
+
+    it('sont tous ÉCRITS, jamais tirés', () => {
+      expect(arrs().length).toBeGreaterThanOrEqual(3);
+      for (const l of arrs()) {
+        expect(l.arrangement, `niveau ${l.id}`).toBeTruthy();
+        expect(l.arrangement!.lignes.length, `niveau ${l.id}`).toBeGreaterThanOrEqual(3);
+      }
+    });
+
+    it('⚠️ chaque ligne a la longueur de la subdivision commune', () => {
+      // Une ligne plus courte que les autres serait une polyrythmie — un autre
+      // sujet — et le comparateur lirait des cases qui n'existent pas.
+      for (const l of arrs()) {
+        const a = l.arrangement!;
+        for (const ligne of a.lignes) {
+          expect(ligne.pas.length, `niveau ${l.id}, ligne ${ligne.nom}`).toBe(a.subdiv);
+        }
+      }
+    });
+
+    it('⚠️ mêlent bien les DEUX natures — c’est la demande', () => {
+      for (const l of arrs()) {
+        const natures = new Set(l.arrangement!.lignes.map((x) => x.nature));
+        expect(natures.has('drum'), `niveau ${l.id} : aucune batterie`).toBe(true);
+        expect(natures.has('degres'), `niveau ${l.id} : aucune ligne de synthé`).toBe(true);
+      }
+    });
+
+    it('⚠️ et le nombre de VOIX ne redescend jamais', () => {
+      // L'axe de difficulté propre à l'arrangement : les cases restent à huit,
+      // ce qui monte est le nombre de lignes à démêler.
+      const n = arrs().map((l) => l.arrangement!.lignes.length);
+      n.forEach((v, i) => {
+        if (i > 0) expect(v, `l’arrangement ${i + 1} perd une voix`).toBeGreaterThanOrEqual(n[i - 1]);
+      });
+      expect(n[n.length - 1], 'le dernier devrait empiler au moins six voix').toBeGreaterThanOrEqual(6);
+    });
+
+    it('⚠️ un degré ne dépasse jamais le clavier affiché', () => {
+      // Sinon la cible demande une note que le clavier ne sait pas écrire.
+      for (const l of arrs()) {
+        const a = l.arrangement!;
+        const max = a.degreMax ?? 5;
+        for (const ligne of a.lignes) {
+          if (ligne.nature !== 'degres') continue;
+          for (const d of ligne.pas) {
+            expect(d, `niveau ${l.id}, ligne ${ligne.nom} : degré ${d} hors clavier`).toBeLessThanOrEqual(max);
+          }
+        }
+      }
+    });
+
+    it('⚠️ une ligne de synthé commence par sa TONIQUE — elle est donnée', () => {
+      /* Le premier pas est posé et verrouillé par `preparerArrangement`, comme
+       * la tonique de la mélodie : sans point de départ, aucun degré ne se
+       * situe. Si la cible ne posait rien au premier pas, rien ne serait donné
+       * et la promesse du préambule serait fausse. */
+      for (const l of arrs()) {
+        for (const ligne of l.arrangement!.lignes) {
+          if (ligne.nature !== 'degres') continue;
+          expect(ligne.pas[0], `niveau ${l.id}, ligne ${ligne.nom}`).toBeGreaterThan(0);
+        }
+      }
+    });
   });
 });
 

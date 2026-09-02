@@ -42,6 +42,80 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'ARRANGEMENT — reposer plusieurs lignes à la fois (2026-09-02)
+
+> « acte 3, je pensais à des exercices de reproduction de synthé avec en même
+> temps plusieurs lignes ! d'ailleurs, on peut imaginer dans les actes suivants
+> des reproductions à 6 voire 8 lignes (drum + synthé) » — Yann
+
+**Un seul verbe neuf, pas deux.** La demande porte deux choses — l'acte 3 tout
+de suite, les grosses reproductions plus tard — et la tentation était d'écrire
+un verbe pour chacune. `arrangement` est bâti d'emblée sur **N lignes de deux
+natures** : une ligne de batterie s'allume au clic (le geste de `reproduire`),
+une ligne de synthé porte des degrés qu'un clavier écrit (le geste de
+`melodie`). Les deux partagent la même colonne — c'est ce qui permet de lire qui
+joue en même temps que qui, et c'est le sujet de l'exercice. `reproduire` et
+`melodie` ne bougent pas.
+
+**Les deux arbitrages de Yann** (posés en question, répondus avant le code) :
+batterie + synthé **dès le premier** exercice multi-lignes (pas deux lignes de
+synthé seules d'abord), et sur une ligne de synthé c'est le **degré exact** qui
+est demandé, pas la seule présence d'une note.
+
+| niveau | titre | lignes |
+|---|---|---|
+| 75 | Deux lignes à la fois | kick, snare, **basse** |
+| 76 | La basse et la mélodie | kick, snare, **basse, mélodie** |
+| 77 | Six lignes | kick, snare, clap, hat, **basse, mélodie** |
+
+Ils se posent à l'acte 3 **après** les trois exercices de `melodie` : on
+n'arrange pas ce qu'on ne sait pas encore écrire. L'axe de difficulté propre à
+ce verbe est le **nombre de voix**, pas le nombre de cases — elles restent à
+huit partout.
+
+**Ce que la mesure a donné (390 × 844, Chromium) :**
+
+| lignes | dernière rangée | bas du clavier | page |
+|---|---|---|---|
+| 3 (niveau 75) | 477 | 600 | 844, pas de défilement |
+| 6 (niveau 77) | 628 | 751 | 844, pas de défilement |
+| 8 (deux voix ajoutées à la main) | 746 | 869 | 932, la page défile de 88 px |
+
+Donc : **six lignes est le plafond qui tient sans défiler**, huit passent en
+faisant défiler la page, et rien n'est jamais coupé — aucun conteneur ne déborde
+(`scrollWidth > clientWidth`), la largeur des cases reste à 40,4 px, les touches
+du clavier à 56 × 40. Les 6-8 lignes des actes suivants ne demandent donc aucun
+travail de mise en page ; c'est mesuré, pas supposé.
+
+**Deux choses payées :**
+
+- **le titre du niveau 77 mentait** — « Six lignes » pour cinq rangées. Corrigé
+  en ajoutant le **clap** (qui double la claire sur le 2 et se tait sur le 4,
+  un détail qu'on n'entend qu'en isolant une ligne), pas en changeant le titre :
+  la demande parlait de six.
+- ⚠️ **la coupure des lignes non citées ne peut pas passer par
+  `GAME_DRUM_ROWS`** — il s'arrête à kick/snare/hat, alors que `defaultState()`
+  ouvre les **cinq** lignes de batterie. Le shaker restait donc ouvert dans tous
+  les arrangements (silencieux seulement parce que son motif est vide) et le
+  clap du niveau 77 ne sonnait que par l'effet du déblocage explicite. Le
+  balayage passe par `DRUM_ROW_NAMES`. C'est le test de câblage qui l'a montré,
+  pas l'écoute.
+
+**Vérifié :** `tests/arrangement.test.ts` (7 tests de CÂBLAGE — la cible copiée
+case pour case, la tonique donnée et verrouillée, toute ligne non citée muette,
+**chaque ligne affichée qui s'entend et rien d'autre** en rejouant le scheduler,
+le tour complet par le vrai comparateur, le verrouillage d'une case juste) et
+six tests de DONNÉES dans `tests/carriere.test.ts`. Plus, en navigateur : les
+six têtes de lecture bougent pendant une vraie lecture, 48 cases affichées,
+zéro erreur console. `scripts/parcours-carriere.cjs` a appris le verbe et joue
+la carrière entière depuis un joueur neuf.
+
+**Fichiers :** `src/model/exercises.ts`, `src/model/presets/levels.ts`
+(`NatureLigne`, `LigneArrangement`, `GrilleArrangement`, niveaux 75-77),
+`src/stores/game.svelte.ts`, `src/ui/game/GameView.svelte`,
+`src/model/carriere.ts`, `tests/arrangement.test.ts`, `tests/carriere.test.ts`,
+`scripts/parcours-carriere.cjs`.
+
 ### ✅ FB-015 récapitule les cinq mois — tranche 5b (2026-09-02)
 
 > « L'acte 6, le plus complet du jeu. » — Yann
