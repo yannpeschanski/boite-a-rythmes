@@ -337,9 +337,11 @@ Yann (« 8 cycles de A puis 8 cycles de B ») :
 [`docs/plan/06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md).
 Ce qu'il faut en retenir avant de coder quoi que ce soit sur le sujet :
 
-- **une ligne de batterie fait exactement UNE mesure**, toujours — donc rien
-  dans le format ne peut faire jouer à la batterie un couplet et un refrain
-  différents. C'est l'impossibilité structurelle qui justifie le chantier ;
+- ⚠️ **ce que le chantier apporte est de rendre la bascule JOUABLE, pas
+  possible.** Deux entrées de banque portent déjà deux batteries différentes et
+  `cycleBankSequence` bascule de l'une à l'autre — la première version de
+  l'audit affirmait le contraire et se trompait (relevé par Yann). Ce qui
+  manque : la bascule est manuelle et tombe au milieu de la mesure ;
 - **le motif a déjà un cycle propre, et il vaut 4 mesures** (la nappe :
   30 presets sur 34) — « mono-cycle par défaut » décrit ce qu'on croit voir,
   pas ce que l'appli joue. Le macro-séquenceur doit donc **calculer** le cycle

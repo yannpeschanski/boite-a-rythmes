@@ -30,6 +30,11 @@ la subdivision — 3, 7, 16, 32 — une ligne de batterie boucle en **une mesure
 pile**. La polyrythmie de la boîte est une affaire de subdivisions *dans* la
 mesure, jamais de longueurs de boucle inégales.
 
+⚠️ Ce fait sert **uniquement** à calculer le cycle propre d'un motif (§4). Il
+ne dit **rien** sur la possibilité d'avoir des batteries différentes d'une
+section à l'autre — deux entrées de banque le font déjà. La première version
+de ce document en avait tiré la conclusion inverse : voir §1.4.
+
 ### 1.2 Une ligne de SYNTHÉ fait 1 à 16 mesures — et la nappe en fait 4
 
 `SynthRowState.cycleBars: 1..16`, et
@@ -61,18 +66,33 @@ Son motif n'est pas un rythme mais une suite d'index d'accords sur
 C'était faux : elle en a une. Un blues 12 mesures **tient dans un seul motif**,
 sans macro-séquenceur. La correction change la conclusion, d'où le §1.4.
 
-### 1.4 ⇒ Où le macro-séquenceur gagne sa place — deux endroits, et deux seulement
+### 1.4 ⇒ Où le macro-séquenceur gagne sa place
 
-1. **Au-delà de 16 mesures** — le plafond de `cycleBars`. Un AABA de
-   32 mesures ne rentre pas dans un motif ; un blues de 12, si.
-2. **Dès que la BATTERIE change.** Une ligne de batterie fait une mesure,
-   toujours (§1.1). **Rien, dans le format actuel, ne peut faire jouer à la
-   batterie un couplet et un refrain différents.** C'est une impossibilité
-   structurelle, pas un manque d'interface — et c'est de très loin la
-   meilleure justification du chantier.
+⚠️ **Correction — la première version de ce document se trompait ici, et
+c'était son titre.** Elle affirmait : « une ligne de batterie fait une mesure,
+donc rien dans le format ne peut faire jouer à la batterie un couplet et un
+refrain différents ; c'est une impossibilité structurelle ». **C'est faux**, et
+Yann l'a relevé : deux entrées de banque portent deux motifs complets, chacun
+avec sa batterie, et `cycleBankSequence` bascule déjà de l'une à l'autre
+(les flèches ‹ › du bandeau). Ce que dit vraiment le §1.1, c'est que la
+batterie se répète toutes les mesures **à l'intérieur** d'un motif — ce qui
+n'a rien à voir avec la question et n'empêche rien.
 
-Tout le reste (une progression d'accords, une mélodie de 4 ou 8 mesures, un
-riff qui respire) est déjà faisable aujourd'hui sans rien ajouter.
+**Ce que le macro-séquenceur apporte réellement, c'est donc plus modeste, et
+ça tient quand même :** la bascule existe, mais elle est **manuelle et pas
+calée**. On appuie sur ‹ › quand on y pense, et le motif change au milieu de
+la mesure (§5.2 : deux pas déjà programmés). Le chantier ne rend pas quelque
+chose possible — il le rend **jouable** : déclenché tout seul, au compte, et
+sur le temps.
+
+Reste un seul point, beaucoup plus petit, où la mesure du §1.1 se voit
+vraiment : **dans un motif donné**, on ne peut pas écrire une batterie qui
+respire sur deux mesures (un break une mesure sur deux), alors que la nappe,
+elle, s'étale sur quatre. Ça se contourne avec deux cases dans la bande. C'est
+une commodité, pas une impossibilité.
+
+Et le plafond, lui, reste vrai : **au-delà de 16 mesures** (`cycleBars`), un
+AABA de 32 mesures ne rentre pas dans un seul motif ; un blues de 12, si.
 
 ---
 
