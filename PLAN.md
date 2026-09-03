@@ -44,6 +44,57 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les boutons RELIRE marchent vraiment (2026-09-03)
+
+> « les boutons relire ne fonctionnent pas » — Yann
+
+**Et cette fois le bouton n'était pas en cause.** La veille, le même écran avait
+un défaut inverse : relire un acte MARCHAIT, et rien ne le disait (ni titre, ni
+relief, ni verbe). On a donné le mot. Il manquait de vérifier le geste **depuis
+la fin du jeu** — et là, il ne se passait rien.
+
+**La cause.** `enEpilogue` se lit sur le curseur PERSISTÉ, qui ne recule jamais :
+une fois les huit actes derrière, il est vrai **pour toujours**. Or l'écran de
+l'épilogue passe avant tout le reste dans le rendu. Cliquer « RELIRE » changeait
+donc bien `acteActif`… et l'écran continuait d'afficher « SEPTEMBRE ·
+Épilogue 1/5 ». Mesuré avant correctif :
+
+| | avant le clic | après le clic |
+|---|---|---|
+| `acteActif` | 0 | **1** |
+| écran affiché | SEPTEMBRE | **SEPTEMBRE** |
+| position | Épilogue · 1/5 | **Épilogue · 1/5** |
+
+**Le correctif.** Un drapeau `enRelecture`, **volatil** comme `acteActif` /
+`etapeActive` — jamais persisté, il dit « le joueur regarde un acte, pas la
+fin ». `ecranEpilogue` rend `null` tant qu'il est levé ; `ouvrirActe` le lève,
+`reprendreCarriere` et `load` le baissent.
+
+⚠️ **Et le retour, sans quoi la correction était un piège.** Le bouton
+« ↺ Reprendre » est désactivé dès que la carrière est derrière
+(`carriereEnAttente`) : une fois entré en relecture, un joueur qui a fini
+n'aurait eu **aucun chemin de retour vers l'épilogue**. Il s'active donc pendant
+une relecture et s'appelle alors **« ↺ Revenir à la fin » **; `reprendreCarriere`
+traite le cas « fini » en rendant l'épilogue au lieu de recharger une étape de
+l'acte 7 sous un écran qui l'aurait masquée.
+
+⚠️ **Ce que le correctif a cassé dans la suite, et pourquoi c'est instructif :**
+deux tests sont tombés, dont un qui ne parlait pas de relecture. `enRelecture`
+est de l'état de VUE et le store est un singleton : un `ouvrirActe` d'un test
+précédent laissait le joueur en relecture. Corrigé aux deux bouts — le helper
+`carriereFinie()` part d'une vue neuve, et `load()` baisse le drapeau (changer
+de joueur sort de toute relecture).
+
+**Vérifié :** 546 tests (3 neufs, confrontés au bug : ils échouent bien quand on
+retire la ligne), 0 erreur de types, les deux builds. Et en navigateur, depuis
+une carrière **réellement jouée jusqu'au bout** : le clic affiche « BRIEF —
+CLIENT · Acte 1 · 1/11 », le bouton devient « Revenir à la fin » et rend
+l'épilogue, l'exercice de l'acte relu **charge son niveau** (67), et le curseur
+reste à `{acte: 8}`. Zéro erreur console.
+
+**Fichiers :** `src/stores/game.svelte.ts`, `src/ui/game/CarriereView.svelte`,
+`tests/carriere.test.ts`.
+
 ### ✅ Le concert se JOUE — l'acte 7 en Mode Live (2026-09-02)
 
 Seconde moitié de la tranche 6 : *« l'acte 7 en Mode Live jouable »*. Avec

@@ -235,6 +235,13 @@ jamais deux lectures empilées entre deux exercices. Le nom complet de Sol
 (**Solange**) n'existe pas dans `HISTOIRE.md` : c'est une proposition, à un seul
 endroit du code.
 
+⚠️ **Un curseur qui ne recule jamais ne doit pas décider de ce qu'on AFFICHE.**
+`enEpilogue` se lit sur le curseur persisté : une fois le jeu fini il est vrai
+pour toujours, et l'écran de l'épilogue passant avant tout le reste, relire un
+acte changeait `acteActif` sans rien montrer. D'où `enRelecture`, volatil comme
+`acteActif` — et son retour (« Revenir à la fin »), sans quoi la relecture est
+sans issue.
+
 ⚠️ **Une capacité qu'aucun mot ne nomme n'existe pas.** Relire un acte entier
 (récit ET exercices) marchait depuis toujours — `ouvrirActe`, testé — mais le
 carnet n'avait ni titre, ni relief, ni verbe : trois lignes vertes sur fond

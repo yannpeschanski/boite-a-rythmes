@@ -525,7 +525,23 @@ class GameStore {
     return this.progresCarriere.acte >= NB_ACTES;
   }
 
+  /* ⚠️ RELIRE UN ACTE QUAND LE JEU EST FINI — le bug rapporté par Yann
+   * (« les boutons relire ne fonctionnent pas »).
+   *
+   * `enEpilogue` se lit sur le curseur PERSISTÉ, qui ne recule jamais : une
+   * fois les huit actes derrière, il est vrai pour toujours. L'écran de
+   * l'épilogue passant avant tout le reste dans le rendu, cliquer « RELIRE »
+   * changeait bien `acteActif`… et n'affichait rien. Le bouton marchait, la
+   * vue l'ignorait — exactement le contraire du diagnostic précédent, où la
+   * capacité existait et où c'est le MOT qui manquait.
+   *
+   * D'où ce drapeau : VOLATIL comme `acteActif`/`etapeActive`, jamais persisté.
+   * Il dit « le joueur regarde un acte, pas la fin ». Le curseur, lui, ne bouge
+   * toujours pas — relire ne referme rien. */
+  enRelecture = $state(false);
+
   get ecranEpilogue(): EtapeRecit | null {
+    if (this.enRelecture) return null;
     return this.enEpilogue ? (EPILOGUE[this.etapeEpilogue] ?? null) : null;
   }
 
@@ -545,6 +561,14 @@ class GameStore {
 
   /** Reprendre là où on s'était arrêté. */
   reprendreCarriere(): void {
+    /* ⚠️ Pour un joueur qui a FINI, « reprendre » veut dire revenir à
+     * l'épilogue — il n'y a pas d'étape après. Sans ce cas, on rechargeait un
+     * niveau de l'acte 7 pour afficher quand même l'épilogue par-dessus. */
+    this.enRelecture = false;
+    if (this.enEpilogue) {
+      this.acteTermineAAnnoncer = null;
+      return;
+    }
     const p = this.progresCarriere;
     this.acteActif = Math.min(p.acte, NB_ACTES - 1);
     this.etapeActive = acteAVenir(this.acteCourant) ? 0 : p.etape;
@@ -763,6 +787,8 @@ class GameStore {
   /** Ouvrir (ou relire) un acte depuis son début. */
   ouvrirActe(id: number): void {
     if (!this.acteOuvert(id)) return;
+    // Le joueur regarde un acte : ce qu'il voit n'est plus la fin du jeu.
+    this.enRelecture = true;
     this.acteActif = id;
     this.etapeActive = 0;
     this.demarrerEtape();
@@ -862,6 +888,9 @@ class GameStore {
   }
 
   load(): void {
+    // Changer de joueur sort de toute relecture : c'est une vue, pas un état
+    // de partie.
+    this.enRelecture = false;
     this.progress = readJson<Record<string, PlayerProgress>>(KEY_PROGRESS, {});
     this.bags = readJson<Record<string, BagItem[]>>(KEY_BAG, {});
     this.disques = readJson<Record<string, Production[]>>(KEY_PROD, {});

@@ -275,8 +275,16 @@
     </button>
     {#if !enPrologue}
       <button class="xp-btn tiny tap44-y" onclick={onRepetition}>🗺️ Salle de répétition</button>
-      <button class="xp-btn tiny tap44-y" onclick={() => game.reprendreCarriere()} disabled={game.carriereEnAttente}>
-        ↺ Reprendre
+      <!-- ⚠️ Un joueur qui a FINI doit pouvoir revenir de sa relecture : le
+           bouton était désactivé dès que la carrière était derrière, donc
+           relire un acte était sans retour. Il rend l'épilogue. -->
+      <button
+        class="xp-btn tiny tap44-y"
+        onclick={() => game.reprendreCarriere()}
+        disabled={game.carriereEnAttente && !game.enRelecture}
+        title={game.enRelecture && game.enEpilogue ? 'Revenir à la fin' : 'Reprendre où tu en étais'}
+      >
+        ↺ {game.enRelecture && game.enEpilogue ? 'Revenir à la fin' : 'Reprendre'}
       </button>
       <!-- ⚠️ Rien de non atteint ne s'affiche : tant qu'aucun morceau n'a été
            livré, la discographie n'existe pas. Un bouton vers une liste vide
