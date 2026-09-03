@@ -149,3 +149,51 @@ la case passe de 11 à 18 px — le saut de lisibilité est là.
 Au pire cas (huit lignes, `carre-B8`), le carré reste à 17,7 px : c'est la
 largeur qui commande, donc ajouter des lignes ne rétrécit que la hauteur de
 ligne, jamais la case.
+
+
+---
+
+## Séquenceur compact, visualiseur rendu — 2026-09-02
+
+> « je l'aurais réduit un peu car en soi, le séquenceur est surtout un visuel
+> qui ne se joue pas […] je ne réduirais donc pas la taille du pad ni des
+> boutons. Il y aurait alors une place en dessous pour un visuel dynamique. »
+
+`sequenceur-compact-et-viz.html`, trois écrans. **La disposition est rendue à
+l'identique : boutons 260 · colonne centrale 300 · pad 260.** Le séquenceur ne
+prend que le haut de la colonne centrale, le visualiseur reprend sa place en
+dessous.
+
+### ⚠️ Ce que la mesure dit, et qui n'est pas intuitif
+
+Dans une colonne de 300 px, la piste utile fait **219 px**. À 16 colonnes, le
+carré est plafonné à **11,4 px PAR LA LARGEUR** — **réduire la hauteur du
+séquenceur n'y change rien**. Le seul levier qui fait grandir le carré est le
+nombre de colonnes affichées.
+
+| | Colonnes | Carré | Ligne | Séquenceur | Visualiseur |
+|---|---|---|---|---|---|
+| **P1** ✅ | 16 — résolution réelle | 11,4 px | 26 px | 174 px | **83 px** |
+| **P2** | 8 — résumé en croches | 18,0 px | 26 px | 174 px | 83 px |
+| **P3** | 16, au pire cas (8 lignes) | 11,4 px | 22 px | 198 px | 59 px |
+
+### Pourquoi je recommande P1 malgré ses carrés plus petits
+
+**Le résumé en croches ment sur la densité.** Sur P2, la MÉLODIE porte 7 notes
+sur 16 dans le motif réel ; repliée sur 8 cases, elle en allume 7 sur 8 et
+paraît saturée. Une ligne à moitié vide s'affiche presque pleine — et c'est
+justement ce qu'un visuel de scène doit dire d'un coup d'œil. On gagne 6,6 px
+de carré contre la seule chose que le séquenceur apporte vraiment.
+
+À 11,4 px, dans une ligne de 26 px, le carré reste net et le motif se lit — la
+comparaison des deux captures le montre mieux qu'un argument.
+
+### Le curseur qui reste réglable
+
+Le partage séquenceur / visualiseur est un simple réglage de hauteur de ligne :
+26 px donne 174 / 83, 22 px donne 148 / 109. Plus la ligne est basse, plus la
+cible du mute est fine — c'est le seul arbitrage de ce curseur.
+
+Et le pire cas reste le pire cas : à huit lignes, le visualiseur tombe à 59 px.
+Il tient, mais c'est là que la règle « on n'affiche que les lignes qui
+sonnent » paie sa place.
