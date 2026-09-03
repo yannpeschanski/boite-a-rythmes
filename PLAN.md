@@ -44,6 +44,69 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ La salle de répétition parle en ACTES — et huit niveaux ouvraient le voisin (2026-09-03)
+
+Premier morceau du chantier final : *« enterrer le réservoir, fusionner carte et
+salle de répétition, renuméroter par acte »*.
+
+**⚠️ Un bug trouvé en ouvrant le chantier, et il touchait les niveaux les plus
+récents.** La carte appelait `startLevel(l.id - 1)` : une POSITION déduite d'un
+identifiant. Or `LEVELS` n'est pas trié par id et rien ne l'impose — le 73 s'est
+retrouvé APRÈS les 74-78 le jour où le 78 a été inséré avant lui. Mesuré :
+**huit niveaux** ouvraient l'exercice du VOISIN, en silence — l'écran affiche le
+numéro cliqué, le contenu est celui d'à côté :
+
+| on clique | on jouait |
+|---|---|
+| 62 | 63 |
+| 63 | 62 |
+| 73 | 74 |
+| 74 | 75 |
+| 75 | 76 |
+| 76 | 77 |
+| 77 | 78 |
+| 78 | 73 |
+
+C'est la faute déjà payée par `demarrerEtape` (« on cherche par IDENTIFIANT, pas
+par position », CLAUDE.md) — elle avait juste un second domicile. `startLevelById`
+la rend impossible : la vue n'a plus d'index à manipuler. Le même correctif vaut
+pour `setPseudo`, qui chargeait `startLevel(prog.level - 1)`.
+
+**La fusion carte / salle : c'était UN écran avec DEUX noms.** Le bouton
+« 🗺️ Carte » du Mode jeu ouvrait exactement le panneau que le Mode carrière
+appelle « Salle de répétition ». Deux noms font deux endroits dans la tête du
+joueur — c'est ce qui l'avait déjà fait chercher le carnet au mauvais endroit.
+Un seul nom désormais : « Répétition » sur la barre (quatre boutons à 390 px), et
+le panneau porte son titre en clair.
+
+**La renumérotation par acte, faite à l'AFFICHAGE.** La salle montrait des ids
+bruts — « 39 », « 67 » — alors que son propre commentaire disait déjà qu'on refait
+« celui d'avant, pas le 39 ». Elle groupe maintenant par acte et numérote **dans**
+l'acte (`repereDeNiveau`) : « ACTE 3 — LA MÉLODIE · 1 2 3 4 5 6 7 ».
+
+⚠️ **Et c'est ce qui règle le troisième point sans le risque qu'il portait.**
+Changer `GameLevel.id` aurait touché `PlayerProgress.level`, les clés de `stars`
+(qui SONT des ids), `partirDu` et toutes les sauvegardes déjà écrites chez les
+joueurs — une migration à risque pour un bénéfice purement visuel. Les ids
+restent des identifiants ; l'écran, lui, parle en coordonnées que le joueur peut
+situer.
+
+**Enterrer le réservoir, concrètement :** un niveau qu'aucun acte ne cite n'a pas
+de repère, donc **pas de nom dans le jeu**, donc pas de place dans la salle. Le
+compte du pied a dû suivre : il annonçait « 78 exercices rencontrés » sous un
+écran qui en montrait 34 — la différence était exactement le réservoir.
+
+**Vérifié :** 553 tests (6 neufs dans `tests/salle.test.ts`, dont « chaque niveau
+s'ouvre sur LUI-MÊME » sur les 78), 0 erreur de types, les deux builds, le
+parcours complet. En navigateur (390 × 844, pointeur tactile) : six groupes
+d'actes, 34 cases, zone touchable de **45 px** (le dessin en fait 35 —
+`.tap44-y` ajouté), aucun débordement, et un clic sur « Acte 3, exercice 3 »
+ouvre bien le niveau 44 « Toute la gamme ».
+
+**Fichiers :** `src/stores/game.svelte.ts` (`startLevelById`),
+`src/ui/game/GameView.svelte`, `src/model/carriere.ts` (`repereDeNiveau`),
+`tests/salle.test.ts` (neuf).
+
 ### ✅ Les boutons RELIRE marchent vraiment (2026-09-03)
 
 > « les boutons relire ne fonctionnent pas » — Yann

@@ -235,6 +235,18 @@ jamais deux lectures empilées entre deux exercices. Le nom complet de Sol
 (**Solange**) n'existe pas dans `HISTOIRE.md` : c'est une proposition, à un seul
 endroit du code.
 
+⚠️ **`LEVELS` n'est PAS trié par id — chercher par IDENTIFIANT, jamais par
+position.** `startLevel` prend un index ; tout appelant qui part d'un id passe
+par `startLevelById`. La salle de répétition faisait `startLevel(id - 1)` et
+ouvrait le voisin pour huit niveaux, en silence.
+
+⚠️ **La salle de répétition parle en ACTES** (`repereDeNiveau`) : un exercice s'y
+nomme « acte 3 · 3 », pas « 44 ». Les ids restent des identifiants — les
+renuméroter toucherait `PlayerProgress.level`, les clés de `stars`, `partirDu` et
+les sauvegardes, pour un bénéfice visuel. Corollaire : un niveau qu'aucun acte ne
+cite n'a pas de repère, donc pas de nom dans le jeu — c'est ça, le réservoir — et
+tout compte affiché doit compter ce qui est AFFICHÉ.
+
 ⚠️ **Un curseur qui ne recule jamais ne doit pas décider de ce qu'on AFFICHE.**
 `enEpilogue` se lit sur le curseur persisté : une fois le jeu fini il est vrai
 pour toujours, et l'écran de l'épilogue passant avant tout le reste, relire un

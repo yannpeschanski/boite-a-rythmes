@@ -12,7 +12,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 511 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 553 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -77,7 +77,7 @@ quiz n'aurait rien réglé.
 | — | **la nappe** dans l'arrangement + le **son** d'un niveau (`model/sons.ts`) | ✅ livré |
 | — | **couper une ligne à l'écoute** + des **cycles** de durées différentes (niveau 78) | ✅ livré |
 | — | **relire un acte** rendu visible dans le carnet + le récit qui annonce le 78 | ✅ livré |
-| — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | **en dernier** |
+| — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | ✅ livré (renumérotation à l'AFFICHAGE) |
 
 **Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
 empile ses couches ») :
