@@ -26,6 +26,14 @@
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { sequenceBank } from '../../stores/bank.svelte';
+  import { architecture } from '../../stores/architecture.svelte';
+  import {
+    cycleDuMotif,
+    mesuresDeSection,
+    dureeSecondes,
+    formaterDuree,
+    MODELES,
+  } from '../../model/architecture';
   import { AudioEngine, type PadMode } from '../../engine/AudioEngine';
   import { barDuration, coupee } from '../../engine/groove';
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
@@ -146,6 +154,8 @@
         return petitHP;
       case 'solo-melody':
         return soloMelodyHeld;
+      case 'section-hold':
+        return tenirSection;
       case 'step-pad-mode':
         // Un bouton PAS n'a pas d'état « engagé », sauf celui-ci : NORMAL est
         // le repos, arpège et bourdon s'entendent et doivent se voir.
@@ -193,6 +203,12 @@
         break;
       case 'chaos':
         if (on) triggerChaos();
+        break;
+      case 'section-next':
+        if (on) sauterSection();
+        break;
+      case 'section-hold':
+        tenirSection = on;
         break;
 
       /* COUPURES DE GROUPE — le geste du drop. On lit l'état effectif du
@@ -510,7 +526,9 @@
     | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' }
     | { kind: 'slotFader'; index: number }
     | { kind: 'viz' }
-    | { kind: 'bank' };
+    | { kind: 'bank' }
+    | { kind: 'archi' }
+    | { kind: 'archiSection'; index: number };
   let picker = $state<Picker | null>(null);
   // Index dans sequenceBank.entries de la dernière séquence chargée depuis
   // CE bandeau (cycleBankSequence) — -1 tant qu'on n'a pas encore basculé.
@@ -574,6 +592,122 @@
     bankIndex = sequenceBank.entries.findIndex((e) => e.id === id);
   }
 
+  /* ---- LA BANDE D'ARCHITECTURE (macro-séquenceur) ----
+   *
+   * Une case = une section, comme un pas est un pas. La case courante se
+   * remplit au fil de ses tours ; SUIVANT saute à la prochaine mesure, TENIR
+   * boucle la section tant qu'on le maintient — un set n'obéit jamais au
+   * compte, et sans ces deux boutons la chaîne joue contre le musicien.
+   *
+   * ⚠️ On compte en TOURS DU MOTIF, pas en mesures : le cycle propre d'un
+   * motif vaut 4 mesures dès que la nappe s'étale sur 4 (30 presets sur 34).
+   * Compter en mesures autoriserait « 6 mesures » sur un cycle de 4, donc une
+   * nappe coupée en plein milieu une fois sur deux.
+   */
+  let sectionIndex = $state(0);
+  let tenirSection = $state(false);
+  // Une seule bascule peut être en attente : sans ce drapeau, chaque frame de
+  // la dernière mesure en programmerait une nouvelle.
+  let basculeEnAttente = false;
+
+  const archSections = $derived(architecture.sections);
+  const cycleMotif = $derived(cycleDuMotif(st));
+  const sectionCourante = $derived(archSections[sectionIndex] ?? null);
+  const mesuresCourantes = $derived(sectionCourante ? mesuresDeSection(sectionCourante, cycleMotif) : 0);
+  const dureeMorceau = $derived(
+    archSections.length ? formaterDuree(dureeSecondes(archSections, cycleMotif, st.tempo)) : '',
+  );
+
+  /* Applique une section : charge son motif (SANS son tempo) et pose son
+     calque de lignes. Appelée DANS la file du moteur, donc exactement au
+     début de la mesure. */
+  function appliquerSection(i: number) {
+    const s = architecture.sections[i];
+    sectionIndex = i;
+    basculeEnAttente = false;
+    if (!s) return;
+    if (s.sequenceId) sequenceBank.loadGardantTempo(s.sequenceId);
+    /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
+       sur une seule séquence.
+       ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
+       toucher ». Trouvé en jouant le modèle ARC, pas en relisant le code :
+       la MONTÉE coupait quatre lignes, et le CLIMAX — qui doit tout rouvrir —
+       les laissait coupées, parce qu'on sortait sans rien faire. Relâcher,
+       c'est repasser l'override à `null` (suivre le motif), et non forcer
+       ouvert : une ligne coupée dans l'Atelier reste coupée. */
+    const actives = s.lignes ? new Set<DrumRowName | SynthRowName>(s.lignes) : null;
+    for (const name of [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES]) {
+      const valeur = actives === null ? null : !actives.has(name);
+      if (valeur === null) delete liveMute[name];
+      else liveMute[name] = valeur;
+      if (name in st.rows) engine.liveSetMute(name as DrumRowName, valeur);
+      else engine.liveSetSynthMute(name as SynthRowName, valeur);
+    }
+  }
+
+  function sectionSuivante(): number {
+    return archSections.length ? (sectionIndex + 1) % archSections.length : 0;
+  }
+
+  /** Saute à la section suivante à la prochaine mesure (bouton SUIVANT). */
+  function sauterSection() {
+    if (!archSections.length) return;
+    hapticTick();
+    const cible = sectionSuivante();
+    basculeEnAttente = true;
+    engine.queueSwapAtNextBar(() => appliquerSection(cible));
+  }
+
+  /* Avance automatique — appelée à chaque frame. On programme la bascule
+     pendant la DERNIÈRE mesure de la section : `queueSwapAtNextBar` l'applique
+     au début de la suivante, qui est exactement la frontière. */
+  function suivreArchitecture() {
+    if (!playing || !archSections.length || tenirSection || basculeEnAttente) return;
+    if (mesuresCourantes <= 0) return;
+    if (engine.barDansSection >= mesuresCourantes - 1) {
+      const cible = sectionSuivante();
+      basculeEnAttente = true;
+      engine.queueSwapAtNextBar(() => appliquerSection(cible));
+    }
+  }
+
+  /** Avancement dans la section courante, 0..1 — le remplissage de la case. */
+  function avancementSection(): number {
+    if (!playing || mesuresCourantes <= 0) return 0;
+    const m = Math.min(engine.barDansSection, mesuresCourantes - 1);
+    return Math.max(0, Math.min(1, (m + engine.barProgress()) / mesuresCourantes));
+  }
+  let avancement = $state(0);
+  /* ⚠️ `engine.barDansSection` est un getter d'une classe ordinaire, pas du
+     `$state` : lu directement dans le balisage, il ne redéclenche aucun rendu
+     et l'afficheur reste figé sur la valeur qu'il avait au dernier changement
+     de section — c'est-à-dire 0, puisque le compteur venait d'être remis à
+     zéro. Trouvé en jouant une architecture, pas en relisant le code. On en
+     tient donc un miroir réactif, rafraîchi à chaque frame comme
+     `avancement`. Plancher à 0 : entre la bascule (60 ms avant la mesure) et
+     l'incrément du compteur, la valeur vaut brièvement −1. */
+  let mesureDansSection = $state(0);
+
+  function chargerModele(nom: string) {
+    architecture.chargerModele(nom);
+    basculeEnAttente = false;
+    engine.cancelQueuedSwap();
+    /* ⚠️ La PREMIÈRE section doit être appliquée, pas seulement pointée.
+       Trouvé en jouant : le modèle ARC démarrait sur une INTRO qui n'avait
+       coupé aucune ligne, parce que `appliquerSection` n'était appelée qu'au
+       moment d'une BASCULE — et la première n'en est pas une. */
+    appliquerSection(0);
+    picker = null;
+  }
+
+  function quitterArchitecture() {
+    architecture.effacer();
+    sectionIndex = 0;
+    basculeEnAttente = false;
+    engine.cancelQueuedSwap();
+    picker = null;
+  }
+
   // Bascule directe depuis le bandeau du haut (retour de Yann, 2026-08-14 :
   // « pouvoir basculer de séquence directement... sans passer par le menu de
   // réglage ») — remplace la seekbar décorative (voir plus bas) par un vrai
@@ -607,6 +741,9 @@
       playhead = { kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 };
       synthPlayhead = { bass: -1, pad: -1, melody: -1 };
     } else {
+      // Un morceau repart de sa première section, calque compris (même raison
+      // qu'au chargement : la première section n'est pas une bascule).
+      if (archSections.length) appliquerSection(0);
       await engine.start();
       playing = true;
     }
@@ -1388,6 +1525,9 @@
     }
     breakArmed = engine.breakPending;
     fillArmed = engine.fillPending;
+    suivreArchitecture();
+    avancement = avancementSection();
+    mesureDansSection = Math.max(0, engine.barDansSection);
     const taille = tailleCarre();
     for (const name of lignesVisibles) {
       const canvas = pisteCanvas[name];
@@ -1468,7 +1608,7 @@
               onpointerleave={tempoPointerUp}
               title="Tempo −1 (maintenir pour défiler)"
             >−</button>
-            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}</span>
+            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}{sectionCourante ? ` · ${sectionCourante.nom}` : ''}</span>
             <button
               class="tempo-btn tap44"
               onpointerdown={() => tempoPointerDown(1)}
@@ -1477,7 +1617,16 @@
               title="Tempo +1 (maintenir pour défiler)"
             >+</button>
           </div>
-          <span class="lcd-sub">TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD</span>
+          <!-- Le musicien pense en CYCLES, l'ingénieur lit des MESURES : les
+               deux sont affichés, et personne ne se trompe sur ce que « ×8 »
+               veut dire. -->
+          <span class="lcd-sub">
+            {#if sectionCourante}
+              MESURE {Math.min(mesureDansSection, mesuresCourantes - 1) + 1}/{mesuresCourantes} · CYCLE DU MOTIF {cycleMotif} MES. · MORCEAU {dureeMorceau}
+            {:else}
+              TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD
+            {/if}
+          </span>
         </div>
         <div
           class="vol-slider tap44"
@@ -1499,34 +1648,66 @@
         </button>
         <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
-      <!-- Remplace l'ex-seekbar décorative façon Winamp (retour de Yann,
-           2026-08-14 : « un curseur vert que je ne comprends pas entre le
-           bandeau du haut et les boutons » — elle ne pilotait rien, juste un
-           38% figé). Bascule directe dans la banque de séquences depuis le
-           bandeau, sans passer par ⚙ (même retour) : ‹/› avance/recule et
-           charge tout de suite. -->
-      <div class="seq-bar">
-        <button
-          class="seq-nav tap44"
-          onclick={() => cycleBankSequence(-1)}
-          disabled={sequenceBank.entries.length < 2}
-          title="Séquence précédente"
-        >‹</button>
-        <button
-          class="seq-current tap44"
-          onclick={() => cycleBankSequence(1)}
-          disabled={sequenceBank.entries.length === 0}
-          title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
-        >
-          🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Choisir une séquence…' : 'Aucune séquence')}
-        </button>
-        <button
-          class="seq-nav tap44"
-          onclick={() => cycleBankSequence(1)}
-          disabled={sequenceBank.entries.length < 2}
-          title="Séquence suivante"
-        >›</button>
-      </div>
+      <!-- LA BANDE D'ARCHITECTURE. Elle remplace le bandeau de banque, qui
+           prenait 44 px sur 390 (11 % de la hauteur) pour afficher « Aucune
+           séquence » tant que la banque était vide. Sans architecture chargée
+           elle redevient ce bandeau : mono-cycle par défaut, rien ne change. -->
+      {#if archSections.length}
+        <div class="strip">
+          <div class="cases">
+            {#each archSections as sec, i (sec.id)}
+              <button
+                class="case"
+                class:on={i === sectionIndex}
+                class:done={i < sectionIndex}
+                onclick={() => engine.queueSwapAtNextBar(() => appliquerSection(i))}
+                title="{sec.nom} — {mesuresDeSection(sec, cycleMotif)} mesures"
+              >
+                {#if i === sectionIndex}
+                  <span class="fill" style:width="{avancement * 100}%"></span>
+                {/if}
+                <span class="case-nom">{sec.nom}</span>
+                <span class="case-n">×{sec.cycles}</span>
+              </button>
+            {/each}
+          </div>
+          <div class="strip-tools">
+            <button class="amp-btn strip-btn next tap44" onclick={sauterSection}>SUIVANT ▸</button>
+            <button
+              class="amp-btn strip-btn tap44"
+              class:on={tenirSection}
+              onpointerdown={() => (tenirSection = true)}
+              onpointerup={() => (tenirSection = false)}
+              onpointerleave={() => (tenirSection = false)}
+            >TENIR</button>
+          </div>
+        </div>
+      {:else}
+        <!-- Bascule directe dans la banque, sans passer par ⚙ (retour de Yann,
+             2026-08-14 : « un curseur vert que je ne comprends pas »). -->
+        <div class="seq-bar">
+          <button
+            class="seq-nav tap44"
+            onclick={() => cycleBankSequence(-1)}
+            disabled={sequenceBank.entries.length < 2}
+            title="Séquence précédente"
+          >‹</button>
+          <button
+            class="seq-current tap44"
+            onclick={() => cycleBankSequence(1)}
+            disabled={sequenceBank.entries.length === 0}
+            title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
+          >
+            🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Choisir une séquence…' : 'Aucune séquence')}
+          </button>
+          <button
+            class="seq-nav tap44"
+            onclick={() => cycleBankSequence(1)}
+            disabled={sequenceBank.entries.length < 2}
+            title="Séquence suivante"
+          >›</button>
+        </div>
+      {/if}
       {#if tiltDenied}
         <!-- Hors du flux de la grille exprès : un enfant de grille conditionnel
              décale l'auto-placement des rangées suivantes (voir le commentaire
@@ -1732,6 +1913,24 @@
                 <span class="assign-row-label">VISUALISEUR</span>
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
+              <button class="assign-row" onclick={() => (picker = { kind: 'archi' })}>
+                <span class="assign-row-label">ARCHITECTURE</span>
+                <span class="assign-row-val"
+                  >{architecture.courante
+                    ? `${architecture.courante.nom} · ${archSections.length} section${archSections.length > 1 ? 's' : ''}`
+                    : 'Mono-cycle'}</span
+                >
+              </button>
+              {#each archSections as sec, i (sec.id)}
+                <button class="assign-row assign-sous" onclick={() => (picker = { kind: 'archiSection', index: i })}>
+                  <span class="assign-row-label">↳ {sec.nom} ×{sec.cycles}</span>
+                  <span class="assign-row-val"
+                    >{sec.sequenceId
+                      ? (sequenceBank.entries.find((e) => e.id === sec.sequenceId)?.name ?? 'séquence absente')
+                      : 'motif courant'}</span
+                  >
+                </button>
+              {/each}
               <button class="assign-row" onclick={() => (picker = { kind: 'bank' })}>
                 <span class="assign-row-label">BANQUE DE SÉQUENCES</span>
                 <span class="assign-row-val">{sequenceBank.entries.length} enregistrée{sequenceBank.entries.length === 1 ? '' : 's'}</span>
@@ -1770,8 +1969,14 @@
                       ? 'VISUALISEUR'
                       : picker.kind === 'bank'
                         ? 'BANQUE DE SÉQUENCES'
-                        : 'PARAMÈTRE'}
-                {#if picker.kind !== 'viz' && picker.kind !== 'bank'}<span class="picker-hint">— plusieurs possibles</span>{/if}
+                        : picker.kind === 'archi'
+                          ? 'ARCHITECTURE'
+                          : picker.kind === 'archiSection'
+                            ? `SECTION — ${archSections[picker.index]?.nom ?? ''}`
+                            : 'PARAMÈTRE'}
+                {#if picker.kind === 'slot' || picker.kind === 'slotFader' || picker.kind === 'axis'}<span
+                  class="picker-hint">— plusieurs possibles</span
+                >{/if}
               </h4>
               {#if picker.kind === 'bank'}
                 <p class="picker-caption">
@@ -1820,6 +2025,60 @@
                         <span class="picker-label">{ax.label}</span>
                       </button>
                     {/each}
+                  {/each}
+                {:else if picker.kind === 'archi'}
+                  <p class="picker-caption">
+                    Un modèle pose les sections et leurs longueurs ; il ne reste qu'à déposer une séquence
+                    de banque dans chacune. On compte en TOURS du motif — ici {cycleMotif} mesure{cycleMotif > 1 ? 's' : ''}
+                    par tour, calculé sur les lignes qui sonnent.
+                  </p>
+                  <button class="picker-row" class:current={!architecture.courante} onclick={quitterArchitecture}>
+                    <span class="picker-label">MONO-CYCLE</span>
+                    <span class="picker-desc">un seul motif qui tourne — le comportement d'avant</span>
+                  </button>
+                  {#each MODELES as m (m.nom)}
+                    {@const mes = m.sections.reduce((t, x) => t + mesuresDeSection(x, cycleMotif), 0)}
+                    <button
+                      class="picker-row"
+                      class:current={architecture.courante?.nom === m.nom}
+                      onclick={() => chargerModele(m.nom)}
+                    >
+                      <span class="picker-label">{m.nom}</span>
+                      <span class="picker-desc"
+                        >{m.sections.length} section{m.sections.length > 1 ? 's' : ''} · {mes} mesure{mes > 1
+                          ? 's'
+                          : ''} · {formaterDuree((mes * 240) / st.tempo)}</span
+                      >
+                    </button>
+                  {/each}
+                {:else if picker.kind === 'archiSection'}
+                  {@const idx = picker.index}
+                  <p class="picker-caption">
+                    Le motif joué par cette section, et sa longueur en tours. « Garder le motif courant »
+                    est ce qui permet à un arc d'intensité de tenir sur une seule séquence.
+                  </p>
+                  <div class="picker-cycles">
+                    <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles - 1)}>−</button>
+                    <span
+                      >×{archSections[idx]?.cycles ?? 1} · {mesuresDeSection(archSections[idx], cycleMotif)} mesures</span
+                    >
+                    <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles + 1)}>+</button>
+                  </div>
+                  <button
+                    class="picker-row"
+                    class:current={!archSections[idx]?.sequenceId}
+                    onclick={() => architecture.poserSequence(idx, null)}
+                  >
+                    <span class="picker-label">GARDER LE MOTIF COURANT</span>
+                  </button>
+                  {#each sequenceBank.entries as e (e.id)}
+                    <button
+                      class="picker-row"
+                      class:current={archSections[idx]?.sequenceId === e.id}
+                      onclick={() => architecture.poserSequence(idx, e.id)}
+                    >
+                      <span class="picker-label">{e.name}</span>
+                    </button>
                   {/each}
                 {:else if picker.kind === 'viz'}
                   {#each LIVE_VIZ as v (v.id)}
@@ -2236,6 +2495,115 @@
     50% {
       opacity: 0.35;
     }
+  }
+
+  /* ---- LA BANDE D'ARCHITECTURE ----
+     Cases à largeur ÉGALE, jamais proportionnelles à leur durée : mesuré, une
+     section d'un seul cycle tomberait à 22 px dans une bande proportionnelle,
+     et une case qu'on ne peut pas viser n'a pas sa place sur scène. La durée
+     se dit dans le ×N et dans le LCD. 18 cases tiennent à 46 px en pleine
+     largeur ; au-delà la bande défilerait. */
+  .strip {
+    display: flex;
+    align-items: stretch;
+    gap: 3px;
+    height: 44px;
+    padding: 3px;
+    box-sizing: border-box;
+    background: var(--amp-lcd-bg);
+    border: 1px solid var(--amp-line);
+    border-radius: 4px;
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+  }
+  .strip .cases {
+    flex: 1;
+    display: flex;
+    gap: 3px;
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .strip .case {
+    flex: 1 1 0;
+    min-width: 42px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border-radius: 3px;
+    border: 1px solid var(--amp-line);
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--amp-text);
+    background: linear-gradient(180deg, #3c3c48, var(--amp-bg-2) 55%, var(--amp-bg-3));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    touch-action: none;
+  }
+  .strip .case-nom {
+    position: relative;
+    z-index: 2;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .strip .case-n {
+    position: relative;
+    z-index: 2;
+    font-size: 8px;
+    color: #8e8ea3;
+  }
+  .strip .case.done {
+    opacity: 0.55;
+  }
+  .strip .case.on {
+    border-color: var(--amp-amber);
+  }
+  .strip .case.on .case-nom {
+    color: #fff3cf;
+  }
+  /* Le remplissage EST l'avancement dans la section, et son filet ambre est la
+     tête de lecture — la même mécanique que le séquenceur, un étage au-dessus. */
+  .strip .fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(255, 213, 74, 0.42), rgba(255, 213, 74, 0.16));
+    border-right: 2px solid var(--amp-amber);
+  }
+  .strip-tools {
+    display: flex;
+    gap: 3px;
+    flex: none;
+  }
+  .strip-btn {
+    display: flex;
+    align-items: center;
+    font-size: 8.5px;
+    padding: 0 8px;
+  }
+  .strip-btn.next {
+    color: #fff3cf;
+  }
+  .strip-btn.on {
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--amp-amber);
+  }
+  /* Les sections listées sous la ligne ARCHITECTURE de l'overlay. */
+  .assign-sous {
+    margin-left: 12px;
+  }
+  .picker-cycles {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 10px;
+    color: var(--amp-text);
   }
 
   .main {

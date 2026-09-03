@@ -29,13 +29,15 @@ import type { DrumRowName, SynthRowName } from '../../model/types';
  * ligne là où on la voit) ; les six pas de voix sont de la préparation ; les
  * neuf rafales ont fusionné avec les frappes (voir `kind: 'ligne'`).
  *
- * Mesuré : 31 entrées dont 19 variantes (61 %) -> 18 entrées dont 2 (11 %),
+ * Mesuré : 31 entrées dont 19 variantes (61 %) -> 20 entrées dont 2 (10 %),
  * et le nombre de gestes réellement distincts MONTE.
  */
 export type LiveActionId =
   | 'break'
   | 'fill'
   | 'chaos'
+  | 'section-next'
+  | 'section-hold'
   | 'ligne-kick'
   | 'ligne-snare'
   | 'ligne-hat'
@@ -81,6 +83,12 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   // chaque appui — pas de nouveau bouton dédié, juste une entrée du même
   // catalogue assignable comme les autres.
   { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger', category: 'SCÈNE' },
+  /* Les deux gestes de la bande d'architecture, sous le pouce plutôt qu'à
+     l'autre bout de l'écran. Sans architecture chargée ils ne font rien —
+     c'est le seul cas où une action est inerte, et il est visible : la bande
+     n'est pas là. */
+  { id: 'section-next', label: 'SUIVANT ▸', color: 'var(--cell-clap)', desc: 'Section suivante (à la mesure)', kind: 'trigger', category: 'SCÈNE' },
+  { id: 'section-hold', label: 'TENIR', color: 'var(--cell-clap)', desc: 'Boucler la section (maintenu)', kind: 'hold', category: 'SCÈNE' },
 
   /* FRAPPER une ligne — le manque le plus criant du mode, mis au jour en
    * triant le catalogue : un mode conçu pour jouer sur scène où aucun bouton

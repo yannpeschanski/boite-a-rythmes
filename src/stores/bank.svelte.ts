@@ -58,6 +58,20 @@ class SequenceBankStore {
     if (entry) pattern.loadJson(entry.json);
   }
 
+  /* Charge une séquence SANS emporter son tempo — pour la bande d'architecture
+     du Mode Live.
+     ⚠️ `loadJson` remplace tout l'état, tempo compris : une section rangée à
+     90 BPM ferait décrocher le set au refrain. Le tempo appartient au
+     TRANSPORT, la section apporte tout le reste — le feel compris (swing,
+     traîne, décalage), qui fait partie de l'identité d'une section. */
+  loadGardantTempo(id: string): void {
+    const entry = this.entries.find((e) => e.id === id);
+    if (!entry) return;
+    const tempo = pattern.state.tempo;
+    pattern.loadJson(entry.json);
+    pattern.state.tempo = tempo;
+  }
+
   rename(id: string, name: string): void {
     const trimmed = name.trim();
     if (!trimmed) return;
