@@ -27,7 +27,7 @@
   import { pattern } from '../../stores/pattern.svelte';
   import { sequenceBank } from '../../stores/bank.svelte';
   import { AudioEngine } from '../../engine/AudioEngine';
-  import { barDuration } from '../../engine/groove';
+  import { barDuration, coupee } from '../../engine/groove';
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
@@ -72,16 +72,18 @@
   // exclus de cette passe), présentes seulement pour satisfaire le type
   // Record<DrumRowName, …> désormais élargi.
   let rollHeld = $state<Record<DrumRowName, number | null>>({ kick: null, snare: null, hat: null, clap: null, shaker: null });
-  let muted = $state<Record<DrumRowName | SynthRowName, boolean>>({
-    kick: false,
-    snare: false,
-    hat: false,
-    clap: false,
-    shaker: false,
-    bass: false,
-    pad: false,
-    melody: false,
-  });
+  /* Mute du Mode Live — TERNAIRE : une clé absente veut dire « suivre le
+     motif », `true` couper, `false` forcer ouvert. C'est ce qui permet au
+     séquenceur ci-dessous de rouvrir une ligne coupée dans l'Atelier tout en
+     n'écrivant jamais dans le motif (engine.liveSetMute, groove.coupee). */
+  let liveMute = $state<Partial<Record<DrumRowName | SynthRowName, boolean>>>({});
+
+  /** L'état RÉEL d'une ligne : ce qu'on entend, donc ce qu'on affiche. */
+  function ligneCoupee(name: DrumRowName | SynthRowName): boolean {
+    const motif =
+      name in st.rows ? st.rows[name as DrumRowName].muted : st.synthRows[name as SynthRowName].muted;
+    return coupee(motif, liveMute[name]);
+  }
   // Bypass limiteurs (catalogue étendu, PLAN.md §7) : false = normal, comme
   // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
   // réel du pattern.
@@ -125,17 +127,17 @@
       case 'fill':
         return fillArmed;
       case 'mute-kick':
-        return muted.kick;
+        return ligneCoupee('kick');
       case 'mute-snare':
-        return muted.snare;
+        return ligneCoupee('snare');
       case 'mute-hat':
-        return muted.hat;
+        return ligneCoupee('hat');
       case 'mute-bass':
-        return muted.bass;
+        return ligneCoupee('bass');
       case 'mute-pad':
-        return muted.pad;
+        return ligneCoupee('pad');
       case 'mute-melody':
-        return muted.melody;
+        return ligneCoupee('melody');
       case 'roll-kick-x2':
         return rollHeld.kick === 2;
       case 'roll-kick-x3':
@@ -165,14 +167,24 @@
     }
   }
 
+  /* Bascule une ligne — appelée par le séquenceur (tap sur la ligne) comme
+     par une action du catalogue. Elle part de l'état RÉEL, pas d'un compteur
+     local : couper une ligne déjà coupée dans l'Atelier ne doit pas demander
+     deux appuis. */
+  function basculerLigne(name: DrumRowName | SynthRowName) {
+    const suivant = !ligneCoupee(name);
+    liveMute[name] = suivant;
+    if (name in st.rows) engine.liveSetMute(name as DrumRowName, suivant);
+    else engine.liveSetSynthMute(name as SynthRowName, suivant);
+    hapticTick();
+  }
+
   function toggleMute(name: DrumRowName) {
-    muted[name] = !muted[name];
-    engine.liveSetMute(name, muted[name]);
+    basculerLigne(name);
   }
 
   function toggleSynthMute(name: SynthRowName) {
-    muted[name] = !muted[name];
-    engine.liveSetSynthMute(name, muted[name]);
+    basculerLigne(name);
   }
 
   function toggleLimitersBypass() {
@@ -742,7 +754,6 @@
   // dans un panneau de Mode Live en paysage.
   const EQ_BAR_COUNT = 22;
 
-  let linCanvas: HTMLCanvasElement = $state()!;
   let vizCanvas: HTMLCanvasElement = $state()!;
   let raf = 0;
 
@@ -773,47 +784,122 @@
     }
   }
 
-  // Une bande par ligne (comme les anneaux de TransportRings, mais linéaires) :
-  // chacune à l'échelle de son propre nombre de pas, pas d'une grille commune
-  // — kick à 16 pas et basse à 8 ne s'alignent pas forcément, et c'est normal.
-  function drawLinSeq(ctx: CanvasRenderingContext2D) {
-    const r = linCanvas.getBoundingClientRect();
+  /* ---- Le séquenceur du Mode Live ----
+   *
+   * Trois décisions, chacune payée par une mesure ou par un défaut réel.
+   *
+   * 1. ON N'AFFICHE QUE LES LIGNES QUI SONNENT. Muter une ligne vide ne veut
+   *    rien dire, et c'est ce qui donne de la hauteur aux autres : mesuré, huit
+   *    lignes à 44 px demanderaient 366 px là où l'écran n'en offre que 252
+   *    sous le bandeau. Six lignes (le cas courant, clap et shaker vides dans
+   *    21 presets sur 34) tiennent à 26 px, huit à 22.
+   *
+   * 2. LA LIGNE ENTIÈRE EST LE BOUTON DE MUTE, et elle affiche l'état RÉEL
+   *    (`coupee`) — l'ancien séquenceur ne lisait jamais `row.muted`, donc une
+   *    ligne coupée dans l'Atelier s'y affichait allumée, tête de lecture
+   *    comprise. Une ligne coupée est CREUSÉE, son nom barré en ambre : c'est
+   *    le biseau qui dit l'état, comme partout ailleurs.
+   *
+   * 3. LES CASES SONT DES CARRÉS POSÉS SUR UNE PISTE DE TEMPS, pas des cases
+   *    collées. Des cases en `flex: 1` faisaient croire qu'une ligne à 4 pas
+   *    (la nappe) est plus courte qu'une ligne à 16 (le kick), alors qu'elles
+   *    couvrent la même mesure. Une seule taille de carré pour tout le
+   *    séquenceur, commandée par la ligne la plus dense ; les lignes moins
+   *    denses sont simplement plus espacées.
+   */
+  const LIGNES_ORDRE: (DrumRowName | SynthRowName)[] = [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES];
+
+  function nbPas(name: DrumRowName | SynthRowName): number {
+    return name in st.rows ? st.rows[name as DrumRowName].subdiv : st.synthRows[name as SynthRowName].subdivisions;
+  }
+
+  function pasActif(name: DrumRowName | SynthRowName, i: number): boolean {
+    if (name in st.rows) return (st.rows[name as DrumRowName].pattern[i] ?? 0) > 0;
+    const v = st.synthRows[name as SynthRowName].pattern[i];
+    return name === 'pad' ? typeof v === 'number' && v >= 0 : v != null;
+  }
+
+  const lignesQuiSonnent = $derived(
+    LIGNES_ORDRE.filter((name) => {
+      const n = nbPas(name);
+      for (let i = 0; i < n; i++) if (pasActif(name, i)) return true;
+      return false;
+    }),
+  );
+  /* Un motif entièrement vide n'a aucune ligne à montrer : on garde la
+     batterie plutôt qu'un cadre noir, pour que la géométrie reste stable
+     pendant qu'on charge une séquence. */
+  const lignesVisibles = $derived(lignesQuiSonnent.length ? lignesQuiSonnent : DRUM_ROW_NAMES);
+
+  const LIGNE_LIBELLE: Record<DrumRowName | SynthRowName, string> = {
+    kick: 'KICK',
+    snare: 'CAISSE',
+    hat: 'CHARLEY',
+    clap: 'CLAP',
+    shaker: 'SHAKER',
+    bass: 'BASSE',
+    pad: 'NAPPE',
+    melody: 'MÉLODIE',
+  };
+
+  // Un canvas par ligne : la géométrie vient du DOM (une seule source), et
+  // chaque ligne reste un vrai <button> — donc une vraie cible et un vrai
+  // libellé accessible, ce qu'un canvas unique avec test de collision aurait
+  // perdu.
+  let pisteCanvas = $state<Partial<Record<DrumRowName | SynthRowName, HTMLCanvasElement>>>({});
+
+  function teteDe(name: DrumRowName | SynthRowName): number {
+    return name in st.rows ? playhead[name as DrumRowName] : synthPlayhead[name as SynthRowName];
+  }
+
+  function drawPiste(name: DrumRowName | SynthRowName, ctx: CanvasRenderingContext2D, taille: number) {
+    const canvas = pisteCanvas[name]!;
+    const r = canvas.getBoundingClientRect();
     const w = r.width,
       h = r.height;
     ctx.clearRect(0, 0, w, h);
-    const top = 11; // sous le libellé "SÉQUENCEUR"
-    const gridH = h - top;
-    const rows = [
-      ...DRUM_ROW_NAMES.map((name) => {
-        const row = st.rows[name];
-        return {
-          color: DRUM_COLOR[name],
-          active: row.pattern.slice(0, row.subdiv).map((v) => v > 0),
-          current: playhead[name],
-        };
-      }),
-      ...SYNTH_ROW_NAMES.map((name) => {
-        const row = st.synthRows[name];
-        const active = row.pattern
-          .slice(0, row.subdivisions)
-          .map((v) => (name === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
-        return { color: SYNTH_COLOR[name], active, current: synthPlayhead[name] };
-      }),
-    ];
-    const rowH = gridH / rows.length;
-    rows.forEach((row, ri) => {
-      const n = row.active.length;
-      if (n === 0) return;
-      const colW = w / n;
-      const y = top + ri * rowH;
-      for (let i = 0; i < n; i++) {
-        const isCurrent = i === row.current;
-        const x = i * colW;
-        ctx.fillStyle = isCurrent ? '#eafff0' : row.active[i] ? row.color : 'rgba(255,255,255,.06)';
-        roundRectPath(ctx, x + 1, y + 1, colW - 2, rowH - 2, 1.5);
-        ctx.fill();
-      }
-    });
+    const n = nbPas(name);
+    if (n === 0 || w <= 0) return;
+    const muet = ligneCoupee(name);
+    const couleur = LINE_COLOR[name];
+    const tete = teteDe(name);
+
+    // Repères de temps : un filet par temps, pour lire la mesure sans compter.
+    const parTemps = Math.max(1, Math.round(n / 4));
+    ctx.fillStyle = 'rgba(255,255,255,.08)';
+    for (let i = parTemps; i < n; i += parTemps) ctx.fillRect(Math.round((i / n) * w), 1, 1, h - 2);
+
+    const y = (h - taille) / 2;
+    for (let i = 0; i < n; i++) {
+      const x = ((i + 0.5) / n) * w - taille / 2;
+      const actif = pasActif(name, i);
+      ctx.fillStyle = muet
+        ? actif
+          ? 'rgba(255,255,255,.11)'
+          : 'rgba(255,255,255,.05)'
+        : i === tete
+          ? '#eafff0'
+          : actif
+            ? couleur
+            : 'rgba(255,255,255,.10)';
+      roundRectPath(ctx, x, y, taille, taille, 2);
+      ctx.fill();
+    }
+  }
+
+  /* UNE taille de carré pour tout le séquenceur, commandée par la ligne la
+     plus dense affichée puis plafonnée par la hauteur de ligne. Mesuré : dans
+     la colonne centrale de 300 px, la piste utile fait 219 px, donc à 16 pas
+     le carré est plafonné à ~11 px PAR LA LARGEUR — réduire la hauteur du
+     séquenceur n'y changerait rien. */
+  function tailleCarre(): number {
+    const premier = lignesVisibles[0];
+    const canvas = premier ? pisteCanvas[premier] : undefined;
+    if (!canvas) return 8;
+    const r = canvas.getBoundingClientRect();
+    if (r.width <= 0) return 8;
+    const nMax = Math.max(1, ...lignesVisibles.map((n) => nbPas(n)));
+    return Math.max(4, Math.min(r.width / nMax - 2, r.height - 6));
   }
 
   /* Analyseur de spectre — le visualiseur de Winamp, et cette fois pour de bon.
@@ -1297,12 +1383,14 @@
     }
     breakArmed = engine.breakPending;
     fillArmed = engine.fillPending;
-    if (linCanvas) {
-      const linCtx = linCanvas.getContext('2d');
-      if (linCtx) {
-        ensureSize(linCanvas, linCtx);
-        drawLinSeq(linCtx);
-      }
+    const taille = tailleCarre();
+    for (const name of lignesVisibles) {
+      const canvas = pisteCanvas[name];
+      if (!canvas) continue;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) continue;
+      ensureSize(canvas, ctx);
+      drawPiste(name, ctx, taille);
     }
     if (vizCanvas) {
       const vizCtx = vizCanvas.getContext('2d');
@@ -1501,9 +1589,28 @@
           {/each}
         </div>
         <div class="mid-col">
-          <div class="lin-seq">
-            <span class="lin-label">SÉQUENCEUR</span>
-            <canvas bind:this={linCanvas}></canvas>
+          <!-- Le séquenceur EST le panneau de mutes : on coupe une ligne là où
+               on la voit. Chaque ligne est un vrai bouton — la piste dessinée
+               au canvas n'est que son contenu. -->
+          <!-- La hauteur de ligne suit le NOMBRE de lignes qui sonnent : au-delà
+               de six, elle descend à 22 px pour que le visualiseur garde une
+               place lisible (mesuré : 8 lignes à 26 px ne lui laisseraient que
+               17 px). Le séquenceur prend ce qu'il faut, le visualiseur le reste. -->
+          <div class="seq" style:--ligne-h="{lignesVisibles.length > 6 ? 22 : 26}px">
+            {#each lignesVisibles as name (name)}
+              {@const muet = ligneCoupee(name)}
+              <button
+                class="ligne"
+                class:muet
+                onpointerdown={() => basculerLigne(name)}
+                aria-pressed={muet}
+                title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
+              >
+                <span class="pastille" style:background={LINE_COLOR[name]}></span>
+                <span class="nom">{LIGNE_LIBELLE[name]}</span>
+                <canvas class="piste" bind:this={pisteCanvas[name]}></canvas>
+              </button>
+            {/each}
           </div>
           <div class="viz-wrap">
             <span class="viz-label">{vizById(assignments.viz).label}</span>
@@ -2250,33 +2357,87 @@
     gap: 5px;
     min-height: 0;
   }
-  .lin-seq {
+  /* ---- Le séquenceur : des lignes qu'on coupe au doigt ----
+     Hauteur NON figée : c'est le nombre de lignes qui sonnent qui la fait
+     (une ligne = 26 px, plafonnée par la place disponible), et le
+     visualiseur prend le reste. Six lignes laissent ~83 px au visualiseur,
+     huit ~59 — ça tient dans les deux cas. */
+  .seq {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    flex: none;
     background: var(--amp-lcd-bg);
     border: 1px solid var(--amp-line);
     border-radius: 5px;
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7);
-    position: relative;
-    flex: 0 0 30%;
     min-height: 0;
     overflow: hidden;
   }
-  .lin-seq canvas {
-    width: 100%;
+  /* Une ligne EST un bouton. En relief = elle sonne ; le biseau dit l'état,
+     comme partout ailleurs dans cette peau. 26 px de haut : sous les 44 px
+     de la règle tactile, mais 290 px de large — et huit lignes à 44 px
+     demanderaient 366 px là où l'écran n'en offre que 252. */
+  .seq .ligne {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: var(--ligne-h, 26px);
+    flex: none;
+    padding: 2px 4px 2px 2px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: linear-gradient(180deg, #33333e, #262630);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset -1px -1px 0 var(--amp-line);
+    touch-action: none;
+  }
+  .seq .ligne .pastille {
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+  .seq .ligne .nom {
+    flex: none;
+    width: 52px;
+    text-align: left;
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--amp-text);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .seq .ligne .piste {
+    flex: 1;
+    min-width: 0;
     height: 100%;
     display: block;
   }
-  .lin-label {
-    position: absolute;
-    top: 2px;
-    left: 3px;
-    font-size: 7px;
-    color: var(--amp-lcd-fg);
-    letter-spacing: 0.08em;
-    z-index: 1;
-    background: rgba(2, 3, 2, 0.72);
-    padding: 1px 4px;
-    border-radius: 2px;
+  /* Coupée : la ligne est CREUSÉE et son nom barré en ambre. C'est le seul
+     endroit où le Live dit « cette ligne ne sonne pas », et il doit le dire
+     aussi pour une ligne coupée dans l'Atelier — l'ancien séquenceur ne
+     lisait jamais `row.muted`. */
+  .seq .ligne.muet {
+    background: #16161c;
+    box-shadow: inset 1px 1px 0 var(--amp-line), inset -1px -1px 0 rgba(255, 255, 255, 0.1);
   }
+  .seq .ligne.muet .nom {
+    color: var(--amp-amber);
+    text-decoration: line-through;
+    opacity: 0.8;
+  }
+  .seq .ligne.muet .pastille {
+    background: #2a2a34 !important;
+    box-shadow: inset 0 0 0 1px #12121a;
+  }
+  .seq .ligne:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.55);
+  }
+
   .viz-wrap {
     background: var(--amp-lcd-bg);
     border: 1px solid var(--amp-line);

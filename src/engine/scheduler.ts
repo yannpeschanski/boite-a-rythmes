@@ -8,6 +8,7 @@ import type { DrumKit } from './voices/drums';
 import type { SynthKit } from './voices/synth';
 import { chordFreqs, degreeFreq, stepsForLine, stepDurForLine, chordsFor } from './harmony';
 import {
+  coupee,
   stepDurationFor,
   isFillBar,
   isLastSteps,
@@ -74,6 +75,12 @@ export interface ScheduleContext {
   // Déclencheurs Mode Live (phase 2, PLAN.md §7) : par-dessus le pattern,
   // jamais écrits dedans — un bouton MUTE en direct n'altère pas la ligne
   // sauvegardée. Optionnels : absents pour l'Atelier/l'export offline/le jeu.
+  /* Mute du Mode Live, TERNAIRE : absent = suivre le motif, `true` = couper,
+     `false` = forcer ouvert. Le troisième état est ce qui permet au séquenceur
+     du Live de rouvrir une ligne coupée dans l'Atelier — sans lui, une bande
+     qui affiche « coupé » et refuse de rouvrir n'est pas un garde-fou, c'est
+     une panne. Rien n'est écrit dans le motif : on repart de l'Atelier
+     exactement comme on y était. */
   liveMute?: Partial<Record<DrumRowName, boolean>>;
   forceFill?: boolean;
   forceHatRoll?: number | null;
@@ -98,7 +105,7 @@ function triggerKickSnareStep(
 ): boolean {
   const { state, kit, rng } = cx;
   const row = state.rows[name];
-  if (row.muted || cx.liveMute?.[name]) return false;
+  if (coupee(row.muted, cx.liveMute?.[name])) return false;
   const play = (t: number, g: number, rim: boolean) => {
     if (name === 'kick') kit.playKick(t, g, row);
     else if (name === 'clap') kit.playClap(t, g, row);
@@ -215,7 +222,7 @@ function triggerHatStep(
 ): void {
   const { state, kit, rng } = cx;
   const hat = state.rows.hat;
-  if (hat.muted || cx.liveMute?.hat) return;
+  if (coupee(hat.muted, cx.liveMute?.hat)) return;
   const fillHere = fillNow && isLastSteps(col, hat.subdiv);
   // ROLL×2 (Mode Live) : forcé exactement comme le ferait un fill — un pas
   // vide se met à sonner tant que le bouton est maintenu, même logique que
@@ -334,7 +341,7 @@ function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
 function triggerShakerStep(cx: SchedueCtxAlias, col: number, time: number, stepDur: number): void {
   const { state, kit, rng } = cx;
   const shaker = state.rows.shaker;
-  if (shaker.muted || cx.liveMute?.shaker) return;
+  if (coupee(shaker.muted, cx.liveMute?.shaker)) return;
   const stepState = shaker.pattern[col];
   if (!stepState) return;
   const roll = shaker.rolls[col];

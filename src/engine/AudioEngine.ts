@@ -453,26 +453,44 @@ export class AudioEngine {
     return this.fillRequested || this.forcedFillBar === this.currentBar;
   }
 
-  // Boutons MUTE K/S/H : superposés au `muted` du pattern, jamais écrits
-  // dedans — repartir de l'Atelier après le Mode Live retrouve la même
-  // ligne, mutée ou non, qu'avant.
-  liveSetMute(name: DrumRowName, muted: boolean): void {
-    this.liveMute = { ...this.liveMute, [name]: muted };
+  /* Mute d'une ligne de batterie depuis le Mode Live — TERNAIRE.
+   *
+   * `null` = suivre le motif, `true` = couper, `false` = forcer ouvert. Le
+   * troisième état est arrivé avec le séquenceur du Live, qui affiche l'état
+   * RÉEL de chaque ligne : il doit pouvoir rouvrir une ligne coupée dans
+   * l'Atelier. Ce que l'ancien garde-fou protégeait vraiment reste vrai —
+   * rien n'est écrit dans le motif, on repart de l'Atelier exactement comme
+   * on y était.
+   */
+  liveSetMute(name: DrumRowName, muted: boolean | null): void {
+    const suivant = { ...this.liveMute };
+    if (muted === null) delete suivant[name];
+    else suivant[name] = muted;
+    this.liveMute = suivant;
+  }
+
+  /** L'override live d'une ligne de batterie, pour l'affichage. */
+  liveMuteDe(name: DrumRowName): boolean | undefined {
+    return this.liveMute[name];
   }
 
   // Catalogue étendu (PLAN.md §7) — MUTE Basse/Nappe/Mélodie, même principe
   // que liveSetMute mais via l'override de ligne synthé déjà en place pour
   // cutoff/résonance/glide (withLiveOverrides) plutôt qu'un second mécanisme :
-  // `muted` n'est écrit dans l'override QUE quand on coupe (jamais `false`),
-  // pour ne jamais forcer un démutage d'une ligne coupée dans l'Atelier —
-  // même garde-fou que liveMute pour la batterie.
-  liveSetSynthMute(name: SynthRowName, muted: boolean): void {
-    if (muted) {
-      this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], muted: true } };
-    } else {
+  // Ternaire comme liveSetMute ci-dessus (`null` = suivre le motif) : le
+  // séquenceur du Live montre l'état réel, donc il rouvre aussi.
+  liveSetSynthMute(name: SynthRowName, muted: boolean | null): void {
+    if (muted === null) {
       const { muted: _drop, ...rest } = this.liveSynthOverride[name] ?? {};
       this.liveSynthOverride = { ...this.liveSynthOverride, [name]: rest };
+    } else {
+      this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], muted } };
     }
+  }
+
+  /** L'override live d'une ligne synthé, pour l'affichage. */
+  liveMuteSynthDe(name: SynthRowName): boolean | undefined {
+    return this.liveSynthOverride[name]?.muted;
   }
 
   // Bouton ROLL×2 (maintenu) : force le hat en rafale tant qu'il est

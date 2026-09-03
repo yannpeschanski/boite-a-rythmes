@@ -6,6 +6,21 @@ export function barDuration(tempo: number): number {
   return 240 / tempo;
 }
 
+/* Une ligne sonne-t-elle ? Définition UNIQUE, partagée par l'ordonnanceur et
+ * par le séquenceur du Mode Live qui la dessine.
+ *
+ * ⚠️ L'override du Live est TERNAIRE : `undefined` = suivre le motif, `true` =
+ * couper, `false` = forcer ouvert. Le troisième état existe parce que le
+ * séquenceur du Live affiche l'état RÉEL d'une ligne : il doit donc pouvoir
+ * rouvrir une ligne coupée dans l'Atelier, sans jamais écrire dans le motif.
+ * Deux définitions de « coupée » finiraient par ne plus être d'accord, et
+ * c'est l'affichage qui mentirait — le seul reproche qu'on ne puisse pas faire
+ * à un séquenceur.
+ */
+export function coupee(muteDuMotif: boolean, overrideLive: boolean | undefined): boolean {
+  return overrideLive ?? muteDuMotif;
+}
+
 export function stepDurationFor(state: PatternStateV2, rowName: DrumRowName): number {
   return barDuration(state.tempo) / state.rows[rowName].subdiv;
 }
