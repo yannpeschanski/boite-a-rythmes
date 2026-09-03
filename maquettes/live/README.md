@@ -104,3 +104,48 @@ entendu.
 séquenceur en deux onglets batterie/synthé — rendrait les lignes conformes
 (50 px) mais **cacherait la moitié de l'état pendant un set**. Je recommande
 d'accepter les 30 px et de le dire, plutôt que de cacher.
+
+
+---
+
+## Cases carrées — 2026-09-02
+
+> « on peut resserrer un peu le séquenceur pour que les cases soient de forme
+> carrée » — Yann.
+
+`sequenceur-cases-carrees.html`, quatre écrans (A, B, C, puis B au pire cas).
+
+### Le principe : le DESSIN rétrécit, la CIBLE reste
+
+C'est la règle `.tap44` de la maison, appliquée ici : la case devient un carré
+**centré dans sa tranche de temps**, la LIGNE garde toute sa hauteur — c'est
+elle le bouton de mute. On gagne la forme carrée sans rien perdre au doigt.
+
+⚠️ **Effet de bord qui corrige une inexactitude.** Des cases collées en
+`flex: 1` faisaient croire qu'une ligne à 4 pas (la nappe) est plus courte
+qu'une ligne à 16 (le kick) — alors qu'elles couvrent la même mesure. Avec des
+carrés POSITIONNÉS sur une piste de temps, tous les carrés font la même
+taille et les lignes peu denses sont simplement plus espacées. Le temps se lit
+enfin correctement, et un filet tous les quatre pas donne les temps.
+
+### Les trois largeurs, mesurées
+
+| | Colonnes (boutons / séq. / pad) | Case | Pad | Bouton |
+|---|---|---|---|---|
+| **A** | 260 / 300 / 260 *(inchangé)* | **11,4 px** | 260 | 127 |
+| **B** ✅ | 200 / 400 / 220 | **17,7 px** | 220 | 97 |
+| **C** | 150 / 500 / 170 | **23,9 px** | 170 | 72 |
+
+La hauteur de ligne ne change pas d'une variante à l'autre (40,8 px à six
+lignes, 30,1 à huit) : c'est la LARGEUR de colonne qui fait la taille du
+carré, puisque c'est la ligne à 16 pas qui commande.
+
+**Recommandation : B.** A donne des carrés de 11 px — on retombe sur des
+confettis, la forme carrée ne se voit plus. C se lit magnifiquement mais paie
+170 px de pad, et le pad est l'instrument : c'est la seule surface où l'on
+JOUE, pas celle où l'on lit. B garde un pad de 220 px et des boutons de 97, et
+la case passe de 11 à 18 px — le saut de lisibilité est là.
+
+Au pire cas (huit lignes, `carre-B8`), le carré reste à 17,7 px : c'est la
+largeur qui commande, donc ajouter des lignes ne rétrécit que la hauteur de
+ligne, jamais la case.
