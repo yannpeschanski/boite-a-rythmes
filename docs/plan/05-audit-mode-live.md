@@ -318,3 +318,126 @@ une passe ; c'est le défaut le plus visible et le moins cher.
 **Ce qui n'est pas dans cet audit** : le mode n'a **toujours jamais été essayé
 sur un vrai téléphone** — ni le capteur d'inclinaison, ni la tenue à deux mains
 en paysage. Aucune mesure de ce document ne remplace ça.
+
+
+---
+
+# Révision du catalogue de boutons — 2026-09-02
+
+> « par conséquent, il faut revoir en profondeur les paramètres implémentables
+> sur les boutons de gauche. » — Yann, après l'arbitrage sur les mutes et sur
+> la bande d'architecture.
+
+Il a raison, et pas seulement pour retirer ce qui a déménagé : **six mutes
+partent dans le séquenceur, la banque part dans la bande** — un cinquième du
+catalogue perd sa raison d'être le même jour. C'est l'occasion de le trier sur
+un principe plutôt que de le raboter.
+
+## Le principe qui manquait
+
+**Un bouton du Mode Live est un GESTE DE SCÈNE** : quelque chose qu'on fait
+*pendant* qu'on joue, d'un pouce, sans regarder. Ce qu'on fait *avant* de
+jouer — choisir une voix de synthé, régler une gamme — est de la
+**préparation**, et sa place est dans ⚙ ou dans l'Atelier.
+
+Le catalogue actuel mélange les deux, et c'est la vraie cause de ce que Yann
+appelait « des boutons pas très utiles » : six entrées sur trente et une font
+défiler des presets de voix, ce qu'on ne fait jamais en plein morceau.
+
+⚠️ **Ce principe ne s'applique QU'AUX BOUTONS, pas aux axes.** Un réglage de
+voix est de la préparation quand il saute d'un cran, et un geste de scène
+quand il balaie en continu : un balayage de cutoff sur la basse, c'est du jeu.
+C'est la raison pour laquelle les deux catalogues restent séparés, et le
+catalogue d'axes (55) n'est pas touché par cette passe.
+
+## Ce qui part, ce qui reste
+
+| Aujourd'hui | | Pourquoi |
+|---|---|---|
+| `mute-*` ×6 | **part** | va dans le séquenceur — une ligne se coupe où on la voit |
+| `roll-*-x2/x3/x4` ×9 | **fusionne en 3** | le multiplicateur devient une propriété du GESTE (×2, puis ×3, puis ×4 en tenant) |
+| `step-voice-*` ×6 | **part** | préparation : on choisit une voix avant, pas pendant |
+| `break`, `fill`, `chaos` | restent | déclencheurs de scène, les plus purs du lot |
+| `bypass-limiters` | reste | « ça pousse » est un geste de scène |
+| `solo-melody` | reste | jouer la mélodie au pad, c'est du jeu |
+| `step-transpose ±1`, `step-scale ±1` | restent | ça s'entend à la note suivante |
+| `toggle-pad-arp` | reste | ça s'entend tout de suite |
+
+## Ce qui entre — et le manque le plus criant
+
+⚠️ **On ne peut pas FRAPPER un son à la main dans le Mode Live.** C'est le
+défaut que cette passe met au jour : un mode conçu pour jouer sur scène, où
+aucun bouton ne joue une note de batterie. Le moteur sait pourtant déjà le
+faire — `AudioEngine.preview(name, stepState)` déclenche un coup isolé, au
+timbre et au volume de la ligne, et c'est ce que l'Atelier appelle quand on
+clique une case. **Cinq entrées, coût moteur nul.**
+
+| Entrant | Pourquoi maintenant | Le moteur sait déjà |
+|---|---|---|
+| **FRAPPER** kick / caisse / charley / clap / shaker | jouer à la main — le manque ci-dessus | `preview()` |
+| **COUPER LA BATTERIE**, **COUPER LE SYNTHÉ** | le geste du drop : pas faisable en un tap dans le séquenceur, qui coupe ligne par ligne | boucle sur `liveSetMute` / `liveSetSynthMute` |
+| **SECTION SUIVANTE**, **TENIR LA SECTION** | les deux gestes de la bande d'architecture, sous le pouce plutôt qu'à l'autre bout de l'écran | à écrire avec la bande |
+| **PETIT HP** (écoute) | vérifier ce que ça donne sur un petit haut-parleur | `setPetitHautParleur()` — existe, jamais exposé au Live |
+
+## Le catalogue proposé — 23 entrées
+
+| Famille | Entrées | Type |
+|---|---|---|
+| **SCÈNE** | BREAK · FILL · CHAOS · SECTION SUIVANTE · TENIR | déclencheur, sauf TENIR (maintenu) |
+| **FRAPPER** | KICK · CAISSE · CHARLEY · CLAP · SHAKER | déclencheur |
+| **RAFALES** | ROLL KICK · ROLL CAISSE · ROLL CHARLEY | maintenu (×2 → ×3 → ×4) |
+| **COUPURES** | COUPER LA BATTERIE · COUPER LE SYNTHÉ | bascule |
+| **HARMONIE** | TON +1 · TON −1 · GAMME → · GAMME ← | pas |
+| **TIMBRE & MIX** | ARPÈGE NAPPE · BYPASS LIM. · PETIT HP | bascule |
+| **PERFORMANCE** | SOLO MÉLO | maintenu |
+
+### Ce que ça change, mesuré
+
+| | Avant | Après |
+|---|---|---|
+| Entrées au catalogue | 31 | **23** |
+| Dont de simples variantes | **19 — 61 %** | **5 — 22 %** |
+| Gestes de scène distincts | 17 | **23** |
+| P(≥2 rafales sur un brassage 🎲) | 56 % | **21 %** |
+| P(≥2 rafales sur la MÊME ligne) | 31 % | **9 %** |
+
+Le catalogue rétrécit d'un quart et le nombre de gestes réellement différents
+AUGMENTE. C'est la mesure de ce que valait la redondance.
+
+Les deux entrées miroir (`TON −1`, `GAMME ←`) restent assignables à la main
+mais sortent du tirage 🎲 (drapeau `tirable: false`) : le réservoir de tirage
+tombe à 21.
+
+## L'assignation par défaut
+
+Aujourd'hui : `break · fill · mute-kick · mute-snare · mute-hat · roll-hat-x2`
+— **trois des six entrées n'existeront plus**.
+
+Proposée : **BREAK · FILL · ROLL CHARLEY · FRAPPER KICK · FRAPPER CAISSE ·
+SECTION SUIVANTE**. Deux déclencheurs, une rafale tenue, deux frappes à la
+main, une commande de section : les cinq familles vivantes en six boutons,
+et on découvre en tapant qu'on peut jouer.
+
+## ⚠️ La migration, qui ne doit pas être silencieuse
+
+`isValid()` (`liveActions.ts`) est **tout ou rien** : une assignation
+enregistrée qui cite `mute-kick` ou `roll-hat-x2` échouera la validation, et
+`loadLiveAssignments()` rendra **les défauts** — les six boutons ET les trois
+snapshots perdus d'un coup, sans un mot. Il faut donc une **table de
+correspondance appliquée AVANT la validation** :
+
+- `roll-{ligne}-x{2,3,4}` → `roll-{ligne}` ;
+- `mute-{ligne}` → retiré du slot (la fonction a déménagé dans le séquenceur) ;
+- `step-voice-*` → retiré du slot ;
+- un slot vidé par ces retraits reprend **le défaut de son rang**, jamais un
+  slot vide.
+
+## Ce que je ne propose PAS, et pourquoi
+
+- **SOLO par ligne** (8 entrées) — le séquenceur coupe déjà ligne par ligne ;
+  un solo n'y ajoute qu'un raccourci, contre huit entrées de catalogue.
+- **DEMI-TEMPS / DOUBLE-TEMPS** — geste très live, mais il touche le tempo du
+  transport, et l'architecture repose sur un tempo unique. À rouvrir à part.
+- **RETRIGGER / STUTTER / REVERSE** — les gestes qui manquent vraiment à un
+  mode live, et aucun n'existe dans le moteur. C'est un chantier de moteur,
+  pas une entrée de catalogue : à chiffrer séparément si l'envie est là.
