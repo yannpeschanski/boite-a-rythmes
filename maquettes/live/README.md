@@ -45,3 +45,62 @@ tape pas ; le masque s'édite dans la bande de mutes (`05-audit-mode-live.md`,
 - Elle n'a **pas tourné sur un vrai téléphone**, comme le reste du Mode Live.
 - Les huit cases sont un cas favorable ; le plafond sans défilement reste
   **18 cases à 46 px** (mesuré dans l'audit).
+
+
+---
+
+## Les mutes DANS le séquenceur — 2026-09-02
+
+> « je préférerais que les mutes soient gérés dans le séquenceur, quitte à
+> changer un peu la disposition dans le mode live » — Yann.
+
+`mutes-dans-le-sequenceur.html`, deux écrans.
+
+### La contrainte, mesurée d'abord
+
+Sous le bandeau et la bande d'architecture, il reste **252 px**. Huit lignes à
+44 px en demanderaient **366**. **Aucune disposition ne rend les huit lignes
+conformes au seuil tactile sur l'axe vertical** — l'écran ne fait que 390 px.
+Ce n'est donc pas un choix de mise en page, c'est une borne.
+
+D'où la règle qui donne de la hauteur : **on n'affiche que les lignes qui
+SONNENT**. Muter une ligne vide ne veut rien dire. Le clap et le shaker sont
+vides dans 21 presets sur 34 ; le cas courant est donc à six lignes.
+
+| Lignes qui sonnent | Hauteur d'une ligne | Cible réelle |
+|---|---|---|
+| 5 | 47,6 px | ✅ conforme |
+| **6 (cas courant)** | **40,8 px** | 290 × 41 |
+| 7 | 33,4 px | 290 × 33 |
+| **8 (pire cas)** | **30,1 px** | 290 × 30 |
+
+### Ce que la disposition change
+
+- le séquenceur prend **toute la colonne centrale** (252 px au lieu de 76) ;
+- le visualiseur perd son cadre et passe **en fond du pad**, qui était une
+  grande surface vide — il ne perd rien, il gagne de la place ;
+- chaque ligne porte **son nom à gauche** (61 px) et **la ligne entière est le
+  bouton de mute** ;
+- ⚠️ **les trois boutons MUTE K/S/H quittent la colonne des six boutons** :
+  trois emplacements assignables rendus, ce qui répond en passant à la
+  première remarque (« des boutons redondants »).
+
+### Comment se lit une ligne coupée
+
+Par le **biseau**, pas par une icône : la ligne qui sonne est en **relief**,
+la ligne coupée est **creusée**, son nom passe en ambre barré, ses cases
+perdent leur couleur. C'est la grammaire de la peau, appliquée telle quelle.
+
+⚠️ Et c'est ici que se répare le défaut relevé à l'audit
+([`05-audit-mode-live.md`](../../docs/plan/05-audit-mode-live.md), §3.2) : le
+séquenceur d'aujourd'hui ne lit jamais `row.muted`, donc une ligne coupée dans
+l'Atelier s'affiche allumée. Avec cette disposition, l'état affiché est l'état
+entendu.
+
+### L'arbitrage qui reste
+
+**30 px sur l'axe vertical au pire cas, contre 44 exigés.** La cible fait
+290 px de large, ce qui compense en pratique ; l'alternative — paginer le
+séquenceur en deux onglets batterie/synthé — rendrait les lignes conformes
+(50 px) mais **cacherait la moitié de l'état pendant un set**. Je recommande
+d'accepter les 30 px et de le dire, plutôt que de cacher.
