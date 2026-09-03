@@ -24,6 +24,7 @@ import {
 import { parametre } from '../src/model/parametres';
 import { PRESETS } from '../src/model/presets/songs';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
+import { game } from '../src/stores/game.svelte';
 
 describe('Mode carrière — la charpente en huit actes', () => {
   it('a les huit actes de HISTOIRE.md, dans l’ordre', () => {
@@ -1525,6 +1526,10 @@ describe('L’épilogue ferme le jeu sans être un neuvième acte', () => {
 describe('Le curseur de l’épilogue est séparé, et ne débloque rien', () => {
   async function carriereFinie() {
     const { game } = await import('../src/stores/game.svelte');
+    // ⚠️ `enRelecture` est de l'ÉTAT DE VUE (volatil) et le store est un
+    // singleton : un `ouvrirActe` d'un test précédent laisserait le joueur en
+    // relecture, ce qui masque l'épilogue à dessein. On part d'une vue neuve.
+    game.enRelecture = false;
     game.pseudo = 'epilogue-test';
     game.progress = {
       ...game.progress,
@@ -1702,5 +1707,54 @@ describe('la scène — le seul endroit où l’on joue', () => {
         expect(e.kind, `une étape « ${e.kind} » suit la scène de l’acte ${acte.id}`).toBe('recit');
       }
     }
+  });
+});
+
+/* ⚠️ RELIRE UN ACTE QUAND LE JEU EST FINI — bug rapporté en jouant : « les
+ * boutons relire ne fonctionnent pas ».
+ *
+ * `enEpilogue` se lit sur le curseur PERSISTÉ, qui ne recule jamais : une fois
+ * les huit actes derrière, il est vrai pour toujours. L'écran de l'épilogue
+ * passant avant tout le reste, cliquer « RELIRE » changeait bien `acteActif` et
+ * n'affichait rien. Le bouton marchait, la vue l'ignorait.
+ *
+ * ⚠️ Le pseudo « master » rend `{ acte: NB_ACTES }` : c'est le seul moyen
+ * d'obtenir un joueur qui a fini sans rejouer la carrière dans un test.
+ */
+describe('relire un acte une fois le jeu fini', () => {
+  it('⚠️ ouvrir un acte SORT de l’épilogue — sinon le clic ne montre rien', () => {
+    game.enRelecture = false;
+    game.pseudo = 'master';
+    expect(game.enEpilogue, 'le joueur devrait avoir fini').toBe(true);
+    expect(game.ecranEpilogue, 'l’épilogue devrait s’afficher au départ').toBeTruthy();
+
+    game.ouvrirActe(1);
+    expect(game.acteActif).toBe(1);
+    expect(game.etapeActive).toBe(0);
+    expect(game.ecranEpilogue, 'l’épilogue masque encore l’acte relu').toBe(null);
+    expect(game.enRelecture).toBe(true);
+  });
+
+  it('⚠️ et « reprendre » rend la fin — une relecture sans retour est un piège', () => {
+    game.enRelecture = false;
+    game.pseudo = 'master';
+    game.ouvrirActe(2);
+    expect(game.ecranEpilogue).toBe(null);
+
+    game.reprendreCarriere();
+    expect(game.enRelecture).toBe(false);
+    expect(game.ecranEpilogue, 'on ne revient pas à l’épilogue').toBeTruthy();
+  });
+
+  it('⚠️ relire ne fait pas reculer le curseur enregistré', () => {
+    // La règle de fond, redite ici : une porte déjà ouverte ne se referme
+    // jamais, et relire l'acte 1 ne referme pas l'Atelier.
+    game.enRelecture = false;
+    game.pseudo = 'master';
+    const avant = { ...game.progresCarriere };
+    game.ouvrirActe(0);
+    expect(game.progresCarriere).toEqual(avant);
+    game.reprendreCarriere();
+    expect(game.progresCarriere).toEqual(avant);
   });
 });
