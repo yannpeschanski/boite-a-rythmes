@@ -6,6 +6,7 @@
   import type { GameDrumRowName } from '../../model/presets/levels';
   import type { SynthRowName } from '../../model/types';
   import { parametre } from '../../model/parametres';
+  import { repereDeNiveau, acteParId } from '../../model/carriere';
   import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
   import {
@@ -371,14 +372,17 @@
 
   // Un seul point d'entrée vers un niveau : le drapeau d'échec est local à la
   // vue, il ne se remettrait pas à zéro tout seul en changeant de niveau.
-  function allerAuNiveau(index: number) {
+  function allerAuNiveau(id: number) {
     stopAll();
     echec = false;
     // Choisir un niveau dans la carte, c'est répéter, pas avancer dans le
     // récit : sans cette ligne, réussir un niveau choisi à la main ferait
     // progresser la carrière d'une étape qu'on n'a pas jouée.
     game.enCarriere = false;
-    game.startLevel(index);
+    // ⚠️ Par IDENTIFIANT. C'était `startLevel(id - 1)`, une position déduite
+    // d'un id — faux pour huit niveaux, dont les arrangements 75-78 : on
+    // cliquait « 77 » et on jouait le 78.
+    game.startLevelById(id);
   }
 
   /* Étape suivante du récit, après un exercice de carrière.
@@ -436,6 +440,28 @@
       .map((id) => LEVELS.find((l) => l.id === id))
       .filter((l): l is (typeof LEVELS)[number] => !!l),
   );
+  /* ⚠️ La salle parle en ACTES, pas en numéros de tableau. Elle affichait
+     l'`id` brut — « 39 », « 67 » — alors que son propre commentaire disait déjà
+     qu'on refait « celui d'avant, pas le 39 ». Un id est un identifiant : il ne
+     situe rien pour le joueur, et depuis que le tableau n'est plus trié il ne
+     dit même plus l'ordre. On regroupe donc par acte, et chaque exercice porte
+     son rang DANS l'acte (voir `repereDeNiveau`). */
+  const parActe = $derived.by(() => {
+    const groupes: { acte: number; titre: string; niveaux: { l: (typeof LEVELS)[number]; rang: number }[] }[] = [];
+    for (const l of niveauxOuverts) {
+      const r = repereDeNiveau(l.id);
+      if (!r) continue; // le réservoir n'a pas de nom dans le jeu
+      let g = groupes.find((x) => x.acte === r.acte);
+      if (!g) {
+        g = { acte: r.acte, titre: acteParId(r.acte).titre, niveaux: [] };
+        groupes.push(g);
+      }
+      g.niveaux.push({ l, rang: r.rang });
+    }
+    for (const g of groupes) g.niveaux.sort((a, b) => a.rang - b.rang);
+    return groupes.sort((a, b) => a.acte - b.acte);
+  });
+  const compteAffiche = $derived(parActe.reduce((n, g) => n + g.niveaux.length, 0));
   /* Dans la carrière, la consigne affichée est le BRIEF du client, pas la
      fiche pédagogique du niveau : « La deuxième. La snare entre. » plutôt que
      « La snare (caisse claire) entre en jeu à son tour ». Le préambule reste
@@ -606,7 +632,12 @@
         <button class="player tap44-y" onclick={() => game.clearPseudo()} title="Changer de joueur">
           👤 {game.pseudo}
         </button>
-        <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Carte</button>
+        <!-- ⚠️ UN SEUL NOM. Ce bouton s'appelait « Carte » et ouvrait EXACTEMENT
+             le panneau que le Mode carrière appelle « Salle de répétition » :
+             deux noms pour un seul endroit, donc deux endroits dans la tête du
+             joueur. « Répétition » plutôt que le nom complet parce que la barre
+             en porte quatre à 390 px. -->
+        <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Répétition</button>
         <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
       </div>
       {#if commande}<p class="commande">{commande}</p>{/if}
@@ -622,33 +653,41 @@
                exercice abandonné, qui n'avance pas `level` ;
              · « no spoil » — les 41 niveaux s'affichaient, cadenas compris,
                y compris ceux d'actes qui ne sont pas encore écrits. -->
-        <div class="map">
-          {#each niveauxOuverts as l (l.id)}
-            {@const stars = game.playerProgress.stars[String(l.id)] ?? 0}
-            <button
-              class="map-cell"
-              class:current={l.id === lvl.id && !game.enCarriere}
-              title={l.teach}
-              onclick={() => {
-                allerAuNiveau(l.id - 1);
-                showMap = false;
-              }}
-            >
-              <span class="num">{l.id}</span>
-              <span class="stars">{'★'.repeat(stars)}{'☆'.repeat(3 - stars)}</span>
-            </button>
-          {/each}
-        </div>
-        {#if niveauxOuverts.length === 0}
+        <p class="salle-titre">SALLE DE RÉPÉTITION — <b>REFAIRE UN EXERCICE</b></p>
+        {#each parActe as g (g.acte)}
+          <p class="salle-acte">ACTE {g.acte} — {g.titre}</p>
+          <div class="map">
+            {#each g.niveaux as { l, rang } (l.id)}
+              {@const stars = game.playerProgress.stars[String(l.id)] ?? 0}
+              <button
+                class="map-cell tap44-y"
+                class:current={l.id === lvl.id && !game.enCarriere}
+                title="{l.teach} (niveau {l.id})"
+                aria-label="Acte {g.acte}, exercice {rang} — {l.teach}"
+                onclick={() => {
+                  allerAuNiveau(l.id);
+                  showMap = false;
+                }}
+              >
+                <span class="num">{rang}</span>
+                <span class="stars">{'★'.repeat(stars)}{'☆'.repeat(3 - stars)}</span>
+              </button>
+            {/each}
+          </div>
+        {/each}
+        <!-- ⚠️ Le compte est celui de ce qui est AFFICHÉ, pas des niveaux
+             ouverts. Il disait « 78 exercices » sous un écran qui en montrait
+             34 : la différence, c'est le réservoir, qui n'a pas de repère et
+             donc pas de place ici. Un compte qui ne correspond pas à ce qu'on
+             voit se lit comme un écran incomplet. -->
+        {#if compteAffiche === 0}
           <p class="muted">
             Rien à répéter pour l’instant : les exercices arrivent avec l’histoire.
           </p>
         {:else}
           <p class="muted">
-            {niveauxOuverts.length} exercice{niveauxOuverts.length > 1 ? 's' : ''} rencontré{niveauxOuverts.length >
-            1
-              ? 's'
-              : ''} — tous rejouables, autant de fois que tu veux.
+            {compteAffiche} exercice{compteAffiche > 1 ? 's' : ''} rencontré{compteAffiche > 1 ? 's' : ''} —
+            tous rejouables, autant de fois que tu veux.
           </p>
         {/if}
       {/if}
@@ -1511,6 +1550,19 @@
     color: var(--xp-accent-amber, #d9a441);
     text-decoration: underline;
     cursor: pointer;
+  }
+
+  .salle-titre {
+    margin: 10px 0 2px;
+    font-size: var(--xp-size-tag);
+    letter-spacing: var(--xp-ls-tag);
+    color: var(--xp-muted);
+  }
+  .salle-acte {
+    margin: 10px 0 4px;
+    font-size: var(--xp-size-small);
+    letter-spacing: 0.12em;
+    color: var(--xp-accent-amber);
   }
 
   .cell.arr-note {

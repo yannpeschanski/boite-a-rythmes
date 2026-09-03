@@ -2119,6 +2119,43 @@ export function niveauxDeLActe(a: Acte): number[] {
  * `etape` est le curseur DANS l'acte courant : les actes précédents comptent en
  * entier, l'acte en cours ne compte que ce qui est derrière le curseur.
  */
+/* LE REPÈRE D'UN NIVEAU — son acte, et son rang DANS cet acte.
+ *
+ * ⚠️ C'est la « renumérotation par acte » du chantier final, faite à
+ * l'AFFICHAGE et non dans les données. Changer `GameLevel.id` aurait touché
+ * `PlayerProgress.level`, `PlayerProgress.stars` (dont les clés SONT des ids),
+ * `partirDu`, `niveauxRencontres` et toutes les sauvegardes déjà écrites chez
+ * les joueurs : une migration à risque pour un bénéfice purement visuel. Ici,
+ * les ids restent ce qu'ils sont — des identifiants — et l'écran, lui, parle en
+ * « acte 1 · 3 », ce qui est la seule chose que le joueur peut situer.
+ *
+ * Un niveau que le récit ne cite pas n'a PAS de repère : c'est le réservoir, et
+ * il n'a pas de nom dans le jeu. C'est aussi ça, l'enterrer. */
+export interface RepereNiveau {
+  acte: number;
+  /** 1, 2, 3… dans l'ordre où l'acte les cite. */
+  rang: number;
+}
+
+const REPERES: Map<number, RepereNiveau> = (() => {
+  const m = new Map<number, RepereNiveau>();
+  for (const a of ACTES) {
+    let rang = 0;
+    for (const e of a.etapes) {
+      if (e.kind !== 'exercice') continue;
+      rang += 1;
+      // Le PREMIER acte qui cite le niveau le nomme : un niveau cité deux fois
+      // garde le repère de sa découverte, qui est celui dont on se souvient.
+      if (!m.has(e.niveau)) m.set(e.niveau, { acte: a.id, rang });
+    }
+  }
+  return m;
+})();
+
+export function repereDeNiveau(id: number): RepereNiveau | null {
+  return REPERES.get(id) ?? null;
+}
+
 export function niveauxRencontres(acte: number, etape: number): number[] {
   const out: number[] = [];
   for (const a of ACTES) {

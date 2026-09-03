@@ -935,7 +935,10 @@ class GameStore {
     // Le niveau du réservoir reste chargé — la salle de répétition s'ouvre
     // dessus — mais l'écran d'entrée du Mode jeu est désormais la carrière :
     // c'est elle qui donne le pourquoi, les niveaux donnent le comment.
-    this.startLevel(Math.max(0, Math.min(LEVELS.length - 1, prog.level - 1)));
+    /* ⚠️ Par ID, pas par position — même raison que `startLevelById`. Le repli
+     * sur le premier niveau vaut pour une progression qui cite un id disparu. */
+    const iNiveau = LEVELS.findIndex((l) => l.id === prog.level);
+    this.startLevel(iNiveau >= 0 ? iNiveau : 0);
     const p = this.progresCarriere;
     this.acteActif = Math.min(p.acte, NB_ACTES - 1);
     this.etapeActive = acteAVenir(this.acteCourant) ? 0 : p.etape;
@@ -954,6 +957,23 @@ class GameStore {
     } catch {
       /* rien à retirer */
     }
+  }
+
+  /* Ouvrir un niveau par son IDENTIFIANT.
+   *
+   * ⚠️ Le tableau `LEVELS` n'est PAS trié par id, et rien ne l'impose : un
+   * niveau s'ajoute en fin de tableau, et l'un d'eux (73) s'est retrouvé APRÈS
+   * les 74-78 le jour où le 78 a été inséré avant lui. `id === index + 1` est
+   * donc faux pour huit niveaux — et la salle de répétition, qui appelait
+   * `startLevel(id - 1)`, ouvrait pour eux l'exercice du VOISIN. En silence :
+   * l'écran affiche le numéro cliqué, le préambule est celui d'à côté.
+   *
+   * C'est exactement la faute déjà payée par `demarrerEtape` (« on cherche par
+   * IDENTIFIANT, pas par position »). Elle est ici rendue impossible : la vue
+   * n'a plus d'index à manipuler. */
+  startLevelById(id: number): void {
+    const i = LEVELS.findIndex((l) => l.id === id);
+    if (i >= 0) this.startLevel(i);
   }
 
   startLevel(index: number): void {
