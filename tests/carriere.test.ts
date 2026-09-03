@@ -1746,6 +1746,26 @@ describe('relire un acte une fois le jeu fini', () => {
     expect(game.ecranEpilogue, 'on ne revient pas à l’épilogue').toBeTruthy();
   });
 
+  it('⚠️ avec « master », les HUIT actes s’ouvrent — c’est le compte de test', () => {
+    /* Rapporté en jouant : « avec le compte master, je n'arrive pas à refaire
+     * les actes ». `progresCarriere` rend `{ acte: NB_ACTES }` pour ce pseudo,
+     * donc TOUT est derrière lui : chaque acte doit s'ouvrir, et l'épilogue
+     * doit se laisser quitter puis retrouver. C'est le parcours d'un testeur,
+     * et rien d'autre ne le vérifie. */
+    game.enRelecture = false;
+    game.pseudo = 'master';
+    for (const a of ACTES) {
+      expect(game.acteOuvert(a.id), `l’acte ${a.id} est fermé pour master`).toBe(true);
+      game.ouvrirActe(a.id);
+      expect(game.acteActif, `l’acte ${a.id} ne s’ouvre pas`).toBe(a.id);
+      expect(game.etapeActive, `l’acte ${a.id} ne s’ouvre pas à son début`).toBe(0);
+      expect(game.ecranEpilogue, `l’épilogue masque l’acte ${a.id}`).toBe(null);
+      // …et on revient à la fin, comme le bouton le propose.
+      game.reprendreCarriere();
+      expect(game.ecranEpilogue, `pas de retour à la fin après l’acte ${a.id}`).toBeTruthy();
+    }
+  });
+
   it('⚠️ relire ne fait pas reculer le curseur enregistré', () => {
     // La règle de fond, redite ici : une porte déjà ouverte ne se referme
     // jamais, et relire l'acte 1 ne referme pas l'Atelier.
