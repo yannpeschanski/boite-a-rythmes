@@ -374,49 +374,97 @@ clique une case. **Cinq entrées, coût moteur nul.**
 
 | Entrant | Pourquoi maintenant | Le moteur sait déjà |
 |---|---|---|
-| **FRAPPER** kick / caisse / charley / clap / shaker | jouer à la main — le manque ci-dessus | `preview()` |
+| **FRAPPER** kick / caisse / charley / clap / shaker | jouer à la main — le manque ci-dessus ; fusionné avec la rafale, voir plus bas | `preview()` |
+| **BOURDON** de la nappe | il existe dans l'Atelier et le Mode Live ne l'atteint pas | `padDroneEnabled` — dans l'état et le scheduler, **absent de l'override live** |
 | **COUPER LA BATTERIE**, **COUPER LE SYNTHÉ** | le geste du drop : pas faisable en un tap dans le séquenceur, qui coupe ligne par ligne | boucle sur `liveSetMute` / `liveSetSynthMute` |
 | **SECTION SUIVANTE**, **TENIR LA SECTION** | les deux gestes de la bande d'architecture, sous le pouce plutôt qu'à l'autre bout de l'écran | à écrire avec la bande |
 | **PETIT HP** (écoute) | vérifier ce que ça donne sur un petit haut-parleur | `setPetitHautParleur()` — existe, jamais exposé au Live |
 
-## Le catalogue proposé — 23 entrées
+Seul le bourdon coûte du moteur (deux unions à élargir) ; les trois autres
+familles s'appuient sur ce qui existe déjà.
 
-| Famille | Entrées | Type |
+## Le catalogue proposé — 20 entrées
+
+*(Révisé après trois retours de Yann : l'harmonie reste globale, le bourdon
+entre, et les rafales devaient encore descendre.)*
+
+### La fusion qui fait le gros de la réduction : FRAPPER et ROLL sont le même bouton
+
+Une ligne de batterie n'a pas besoin de deux entrées. **Tap = un coup.
+Maintenu = la rafale**, qui monte ×2 → ×3 → ×4 en tenant. C'est le geste d'un
+pad de vraie machine, et **cinq entrées couvrent ce qui en demandait
+quatorze** (9 rafales + 5 frappes).
+
+⚠️ **Le coup part au `pointerdown`, pas au relâché.** Attendre pour savoir si
+c'est un tap ou un maintien ajouterait 200 ms à un déclencheur — exactement ce
+que `AVANCE_DECLENCHEMENT` passe sa vie à éviter. Donc : le coup sonne
+immédiatement, et si le doigt reste posé au-delà de ~200 ms la rafale prend le
+relais. On entend toujours ce qu'on a demandé.
+
+Les variantes de timbre (rim shot, charley ouvert) ne sont **pas** exposées :
+`preview(name, stepState)` sait les jouer, mais choisir un timbre est de la
+préparation, pas un geste de scène — et ce serait deux entrées de plus.
+
+### ⚠️ La nappe : UN bouton à trois états, pas deux bascules qui se battent
+
+Trouvé en vérifiant le moteur avant d'écrire : dans `scheduler.ts`, la branche
+du bourdon fait `continue` **avant** celle de l'arpège, et son commentaire le
+dit — *« ni roll ni arpège ici : une rafale ou un égrenage sur une note tenue
+romprait le principe »*. **Le bourdon gagne sur l'arpège, en silence.** Deux
+bascules indépendantes donneraient donc un bouton ARPÈGE qui ne fait rien
+quand le bourdon est actif, et on chercherait la panne.
+
+D'où **MODE NAPPE**, un bouton PAS qui cycle : `NORMAL → ARPÈGE → BOURDON`.
+Une entrée au lieu de deux, et aucun conflit possible.
+
+⚠️ Coût moteur, le seul de cette passe : `padDroneEnabled` n'est pas dans
+l'override live. `setLiveSynthGlobalBool` n'accepte que `'padArpEnabled'`, et
+`liveSynthGlobalOverride` est un `Pick<…, 'rootMidi' | 'scaleId' |
+'padArpEnabled'>`. Deux unions à élargir, rien de plus.
+
+### L'harmonie reste GLOBALE — et elle l'est déjà
+
+Vérifié : `liveStepTranspose` écrit `synthGlobal.rootMidi` et `liveStepScale`
+écrit `synthGlobal.scaleId` — les deux valent pour la basse, la nappe et la
+mélodie d'un coup. Rien à faire, et surtout **rien à décliner par ligne** :
+ce serait douze entrées au lieu de quatre pour une question que personne ne se
+pose en jouant.
+
+### Le catalogue
+
+| Famille | Entrées | Geste |
 |---|---|---|
 | **SCÈNE** | BREAK · FILL · CHAOS · SECTION SUIVANTE · TENIR | déclencheur, sauf TENIR (maintenu) |
-| **FRAPPER** | KICK · CAISSE · CHARLEY · CLAP · SHAKER | déclencheur |
-| **RAFALES** | ROLL KICK · ROLL CAISSE · ROLL CHARLEY | maintenu (×2 → ×3 → ×4) |
+| **LIGNES** | KICK · CAISSE · CHARLEY · CLAP · SHAKER | **tap = un coup, maintenu = rafale ×2→×3→×4** |
 | **COUPURES** | COUPER LA BATTERIE · COUPER LE SYNTHÉ | bascule |
-| **HARMONIE** | TON +1 · TON −1 · GAMME → · GAMME ← | pas |
-| **TIMBRE & MIX** | ARPÈGE NAPPE · BYPASS LIM. · PETIT HP | bascule |
+| **HARMONIE** | TON +1 · TON −1 · GAMME → · GAMME ← | pas — **globales, les 3 lignes** |
+| **NAPPE** | MODE NAPPE | pas — NORMAL → ARPÈGE → BOURDON |
+| **MIX** | BYPASS LIM. · PETIT HP | bascule |
 | **PERFORMANCE** | SOLO MÉLO | maintenu |
 
 ### Ce que ça change, mesuré
 
 | | Avant | Après |
 |---|---|---|
-| Entrées au catalogue | 31 | **23** |
-| Dont de simples variantes | **19 — 61 %** | **5 — 22 %** |
-| Gestes de scène distincts | 17 | **23** |
-| P(≥2 rafales sur un brassage 🎲) | 56 % | **21 %** |
-| P(≥2 rafales sur la MÊME ligne) | 31 % | **9 %** |
+| Entrées au catalogue | 31 | **20** |
+| Dont de simples variantes | **19 — 61 %** | **2 — 10 %** (les seuls miroirs `TON −1`, `GAMME ←`) |
+| Gestes de scène distincts | 17 | **20** |
+| Familles de variantes | 2 (rafales, voix) | **aucune** |
 
-Le catalogue rétrécit d'un quart et le nombre de gestes réellement différents
-AUGMENTE. C'est la mesure de ce que valait la redondance.
-
-Les deux entrées miroir (`TON −1`, `GAMME ←`) restent assignables à la main
-mais sortent du tirage 🎲 (drapeau `tirable: false`) : le réservoir de tirage
-tombe à 21.
+Le catalogue perd un tiers de ses entrées, toutes ses familles de variantes, et
+gagne trois gestes. Les deux miroirs restent assignables à la main mais sortent
+du tirage 🎲 (`tirable: false`) : réservoir de tirage **18**, et deux rafales
+qui tombent côte à côte deviennent impossibles — il n'y a plus qu'une entrée
+par ligne.
 
 ## L'assignation par défaut
 
 Aujourd'hui : `break · fill · mute-kick · mute-snare · mute-hat · roll-hat-x2`
-— **trois des six entrées n'existeront plus**.
+— **quatre des six entrées n'existeront plus**.
 
-Proposée : **BREAK · FILL · ROLL CHARLEY · FRAPPER KICK · FRAPPER CAISSE ·
-SECTION SUIVANTE**. Deux déclencheurs, une rafale tenue, deux frappes à la
-main, une commande de section : les cinq familles vivantes en six boutons,
-et on découvre en tapant qu'on peut jouer.
+Proposée : **BREAK · FILL · KICK · CAISSE · CHARLEY · SECTION SUIVANTE**.
+Deux déclencheurs, trois lignes qu'on frappe et qu'on peut tenir en rafale, une
+commande de section. On découvre en tapant qu'on peut jouer.
 
 ## ⚠️ La migration, qui ne doit pas être silencieuse
 
@@ -426,7 +474,7 @@ enregistrée qui cite `mute-kick` ou `roll-hat-x2` échouera la validation, et
 snapshots perdus d'un coup, sans un mot. Il faut donc une **table de
 correspondance appliquée AVANT la validation** :
 
-- `roll-{ligne}-x{2,3,4}` → `roll-{ligne}` ;
+- `roll-{ligne}-x{2,3,4}` → `ligne-{ligne}` (l'entrée fusionnée frappe/rafale) ;
 - `mute-{ligne}` → retiré du slot (la fonction a déménagé dans le séquenceur) ;
 - `step-voice-*` → retiré du slot ;
 - un slot vidé par ces retraits reprend **le défaut de son rang**, jamais un
