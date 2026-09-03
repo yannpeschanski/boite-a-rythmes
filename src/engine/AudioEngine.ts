@@ -91,6 +91,11 @@ const AVANCE_BASCULE = 0.06; // s
  */
 export const AVANCE_DECLENCHEMENT = 0.008; // s
 
+/* Les trois modes de la Nappe, dans l'ordre où le bouton PAS les fait
+ * défiler. Ils sont EXCLUSIFS parce que le moteur les traite ainsi : le
+ * bourdon court-circuite l'arpège dans le scheduler (voir liveStepPadMode). */
+export type PadMode = 'normal' | 'arpege' | 'bourdon';
+
 /* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
  *
  * LE SEUIL À TENIR. Pour jouer d'un instrument, la littérature (Wessel &
@@ -198,7 +203,9 @@ export class AudioEngine {
   // confirmé sur de nouveaux paramètres discrets). Même mécanisme d'override
   // relu à chaque fenêtre que le groove ci-dessus, jamais écrit dans le
   // pattern.
-  private liveSynthGlobalOverride: Partial<Pick<SynthGlobalState, 'rootMidi' | 'scaleId' | 'padArpEnabled'>> = {};
+  private liveSynthGlobalOverride: Partial<
+    Pick<SynthGlobalState, 'rootMidi' | 'scaleId' | 'padArpEnabled' | 'padDroneEnabled'>
+  > = {};
   // Index courant dans SYNTH_VOICE_PRESETS[name] pour le bouton PAS "voix" —
   // distinct de liveSynthOverride[name].voice (qui ne porte que les valeurs
   // résolues, pas quel preset les a produites) : sert à savoir où reprendre
@@ -643,8 +650,39 @@ export class AudioEngine {
 
   // Interrupteur générique pour un booléen de synthGlobal (arpège nappe pour
   // l'instant) — même familier que les autres setLive* ci-dessus.
-  setLiveSynthGlobalBool(key: 'padArpEnabled', value: boolean): void {
+  setLiveSynthGlobalBool(key: 'padArpEnabled' | 'padDroneEnabled', value: boolean): void {
     this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, [key]: value };
+  }
+
+  /* MODE NAPPE — un bouton PAS à trois états plutôt que deux interrupteurs.
+   *
+   * ⚠️ Ce n'est pas un raffinement d'interface. Dans `scheduler.ts`, la branche
+   * du bourdon fait `continue` AVANT celle de l'arpège, et son commentaire le
+   * dit : « ni roll ni arpège ici ». Le bourdon gagne donc sur l'arpège, en
+   * silence. Deux bascules indépendantes donneraient un bouton ARPÈGE inerte
+   * tant que le bourdon est actif — et on chercherait la panne. Un cycle rend
+   * l'état impossible à contredire.
+   */
+  liveStepPadMode(): PadMode {
+    const sg = this.getState().synthGlobal;
+    const arp = this.liveSynthGlobalOverride.padArpEnabled ?? sg.padArpEnabled;
+    const drone = this.liveSynthGlobalOverride.padDroneEnabled ?? sg.padDroneEnabled;
+    const courant: PadMode = drone ? 'bourdon' : arp ? 'arpege' : 'normal';
+    const suivant: PadMode = courant === 'normal' ? 'arpege' : courant === 'arpege' ? 'bourdon' : 'normal';
+    this.liveSynthGlobalOverride = {
+      ...this.liveSynthGlobalOverride,
+      padArpEnabled: suivant === 'arpege',
+      padDroneEnabled: suivant === 'bourdon',
+    };
+    return suivant;
+  }
+
+  /** Le mode de nappe EFFECTIF (override live par-dessus le motif). */
+  get padMode(): PadMode {
+    const sg = this.getState().synthGlobal;
+    if (this.liveSynthGlobalOverride.padDroneEnabled ?? sg.padDroneEnabled) return 'bourdon';
+    if (this.liveSynthGlobalOverride.padArpEnabled ?? sg.padArpEnabled) return 'arpege';
+    return 'normal';
   }
 
   // Boutons PAS (PLAN.md §7) : avancent des paramètres discrets par

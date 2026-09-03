@@ -26,7 +26,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { sequenceBank } from '../../stores/bank.svelte';
-  import { AudioEngine } from '../../engine/AudioEngine';
+  import { AudioEngine, type PadMode } from '../../engine/AudioEngine';
   import { barDuration, coupee } from '../../engine/groove';
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
@@ -42,7 +42,7 @@
     loadLiveSnapshots,
     saveLiveSnapshots,
     vizById,
-    LIVE_ACTIONS,
+    ACTIONS_TIRABLES,
     LIVE_AXES,
     AXIS_GROUPS,
     ACTION_GROUPS,
@@ -88,9 +88,13 @@
   // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
   // réel du pattern.
   let limitersBypassed = $state(false);
-  // ARPÈGE NAPPE (interrupteur, PLAN.md §7) : false = normal, même
-  // convention que les mutes/bypass ci-dessus (démarre éteint).
-  let arpOn = $state(false);
+  /* MODE NAPPE — trois états exclusifs, tenus par le moteur (padMode) parce
+     que le bourdon court-circuite l'arpège dans l'ordonnanceur. Le miroir
+     local sert seulement à l'affichage du bouton. */
+  let padMode = $state<PadMode>('normal');
+  // Écoute petit haut-parleur : false = sortie normale, comme les autres
+  // bascules du Live, qui démarrent toutes éteintes.
+  let petitHP = $state(false);
   // SOLO MÉLO (maintenu) : pendant que c'est tenu, le pad joue la mélodie au
   // doigt au lieu de ses axes habituels — voir padPointerDown/Move. Dernière
   // fréquence jouée gardée hors réactivité (juste pour le glide, pas pour
@@ -126,42 +130,26 @@
         return breakArmed;
       case 'fill':
         return fillArmed;
-      case 'mute-kick':
-        return ligneCoupee('kick');
-      case 'mute-snare':
-        return ligneCoupee('snare');
-      case 'mute-hat':
-        return ligneCoupee('hat');
-      case 'mute-bass':
-        return ligneCoupee('bass');
-      case 'mute-pad':
-        return ligneCoupee('pad');
-      case 'mute-melody':
-        return ligneCoupee('melody');
-      case 'roll-kick-x2':
-        return rollHeld.kick === 2;
-      case 'roll-kick-x3':
-        return rollHeld.kick === 3;
-      case 'roll-kick-x4':
-        return rollHeld.kick === 4;
-      case 'roll-snare-x2':
-        return rollHeld.snare === 2;
-      case 'roll-snare-x3':
-        return rollHeld.snare === 3;
-      case 'roll-snare-x4':
-        return rollHeld.snare === 4;
-      case 'roll-hat-x2':
-        return rollHeld.hat === 2;
-      case 'roll-hat-x3':
-        return rollHeld.hat === 3;
-      case 'roll-hat-x4':
-        return rollHeld.hat === 4;
+      case 'mute-drums':
+        return DRUM_ROW_NAMES.every((n) => ligneCoupee(n));
+      case 'mute-synth':
+        return SYNTH_ROW_NAMES.every((n) => ligneCoupee(n));
+      case 'ligne-kick':
+        return rollHeld.kick !== null;
+      case 'ligne-snare':
+        return rollHeld.snare !== null;
+      case 'ligne-hat':
+        return rollHeld.hat !== null;
       case 'bypass-limiters':
         return limitersBypassed;
+      case 'petit-hp':
+        return petitHP;
       case 'solo-melody':
         return soloMelodyHeld;
-      case 'toggle-pad-arp':
-        return arpOn;
+      case 'step-pad-mode':
+        // Un bouton PAS n'a pas d'état « engagé », sauf celui-ci : NORMAL est
+        // le repos, arpège et bourdon s'entendent et doivent se voir.
+        return padMode !== 'normal';
       default:
         return false;
     }
@@ -203,86 +191,100 @@
       case 'fill':
         if (on) engine.liveRequestFill();
         break;
-      case 'mute-kick':
-        if (on) toggleMute('kick');
-        break;
-      case 'mute-snare':
-        if (on) toggleMute('snare');
-        break;
-      case 'mute-hat':
-        if (on) toggleMute('hat');
-        break;
-      case 'mute-bass':
-        if (on) toggleSynthMute('bass');
-        break;
-      case 'mute-pad':
-        if (on) toggleSynthMute('pad');
-        break;
-      case 'mute-melody':
-        if (on) toggleSynthMute('melody');
-        break;
-      case 'roll-kick-x2':
-        engine.liveSetKickRoll(on ? 2 : null);
-        rollHeld.kick = on ? 2 : null;
-        break;
-      case 'roll-kick-x3':
-        engine.liveSetKickRoll(on ? 3 : null);
-        rollHeld.kick = on ? 3 : null;
-        break;
-      case 'roll-kick-x4':
-        engine.liveSetKickRoll(on ? 4 : null);
-        rollHeld.kick = on ? 4 : null;
-        break;
-      case 'roll-snare-x2':
-        engine.liveSetSnareRoll(on ? 2 : null);
-        rollHeld.snare = on ? 2 : null;
-        break;
-      case 'roll-snare-x3':
-        engine.liveSetSnareRoll(on ? 3 : null);
-        rollHeld.snare = on ? 3 : null;
-        break;
-      case 'roll-snare-x4':
-        engine.liveSetSnareRoll(on ? 4 : null);
-        rollHeld.snare = on ? 4 : null;
-        break;
-      case 'roll-hat-x2':
-        engine.liveSetHatRoll(on ? 2 : null);
-        rollHeld.hat = on ? 2 : null;
-        break;
-      case 'roll-hat-x3':
-        engine.liveSetHatRoll(on ? 3 : null);
-        rollHeld.hat = on ? 3 : null;
-        break;
-      case 'roll-hat-x4':
-        engine.liveSetHatRoll(on ? 4 : null);
-        rollHeld.hat = on ? 4 : null;
-        break;
-      case 'bypass-limiters':
-        if (on) toggleLimitersBypass();
-        break;
-      case 'solo-melody':
-        soloMelodyHeld = on;
-        engine.liveSetSynthMute('melody', on);
-        if (on) lastMelodyFreq = null;
-        break;
       case 'chaos':
         if (on) triggerChaos();
         break;
-      case 'toggle-pad-arp':
+
+      /* COUPURES DE GROUPE — le geste du drop. On lit l'état effectif du
+         groupe pour décider du sens : si tout est déjà coupé, on rouvre. */
+      case 'mute-drums':
+        if (on) basculerGroupe(DRUM_ROW_NAMES);
+        break;
+      case 'mute-synth':
+        if (on) basculerGroupe(SYNTH_ROW_NAMES);
+        break;
+
+      case 'bypass-limiters':
+        if (on) toggleLimitersBypass();
+        break;
+      case 'petit-hp':
         if (on) {
-          arpOn = !arpOn;
-          engine.setLiveSynthGlobalBool('padArpEnabled', arpOn);
+          petitHP = !petitHP;
+          engine.setPetitHautParleur(petitHP);
         }
         break;
-      default:
-        // Boutons PAS (PLAN.md §7) : chaque entrée porte directement son
-        // geste (def.step, comme apply() côté axes) plutôt qu'un cas par
-        // paramètre discret ici — un coup au pointerdown, rien au relâché.
-        if (on) {
-          const def = actionById(actionId);
-          if (def.kind === 'step') def.step?.(engine);
+      case 'solo-melody':
+        soloMelodyHeld = on;
+        engine.liveSetSynthMute('melody', on ? true : null);
+        if (on) lastMelodyFreq = null;
+        break;
+
+      default: {
+        const def = actionById(actionId);
+        /* LIGNES — tap = un coup, maintenu = la rafale. Le coup part au
+           pointerdown et non au relâché : attendre pour distinguer un tap d'un
+           maintien ajouterait 200 ms à un DÉCLENCHEUR, exactement ce
+           qu'AVANCE_DECLENCHEMENT passe sa vie à éviter. */
+        if (def.kind === 'ligne' && def.ligne) {
+          if (on) frapperLigne(def.ligne);
+          else relacherLigne(def.ligne);
+          break;
         }
+        // Boutons PAS : chaque entrée porte directement son geste.
+        if (on && def.kind === 'step') {
+          def.step?.(engine);
+          padMode = engine.padMode;
+        }
+      }
     }
+  }
+
+  /* Coupe tout un groupe, ou le rouvre s'il est déjà entièrement coupé. */
+  function basculerGroupe(noms: (DrumRowName | SynthRowName)[]) {
+    const toutCoupe = noms.every((n) => ligneCoupee(n));
+    for (const n of noms) {
+      liveMute[n] = !toutCoupe;
+      if (n in st.rows) engine.liveSetMute(n as DrumRowName, !toutCoupe);
+      else engine.liveSetSynthMute(n as SynthRowName, !toutCoupe);
+    }
+    hapticTick();
+  }
+
+  /* Frappe à la main : le coup sonne TOUT DE SUITE (engine.preview, le même
+     appel que le clic sur une case de l'Atelier), puis, si le doigt reste
+     posé, la rafale prend le relais et monte d'un cran par temps.
+     ⚠️ Clap et shaker n'ont pas de rafale dans l'ordonnanceur : leur maintien
+     ne fait rien de plus, et c'est dit dans le libellé du catalogue. */
+  const DELAI_RAFALE = 0.2; // s avant que le maintien devienne une rafale
+  const rafaleTimers: Partial<Record<DrumRowName, ReturnType<typeof setTimeout>[]>> = {};
+
+  function poserRafale(name: DrumRowName, mult: number) {
+    if (name === 'kick') engine.liveSetKickRoll(mult);
+    else if (name === 'snare') engine.liveSetSnareRoll(mult);
+    else if (name === 'hat') engine.liveSetHatRoll(mult);
+    else return;
+    rollHeld[name] = mult;
+  }
+
+  function frapperLigne(name: DrumRowName) {
+    engine.preview(name, 1);
+    if (name === 'clap' || name === 'shaker') return;
+    const temps = 60 / Math.max(1, st.tempo); // une noire
+    rafaleTimers[name] = [
+      setTimeout(() => poserRafale(name, 2), DELAI_RAFALE * 1000),
+      setTimeout(() => poserRafale(name, 3), (DELAI_RAFALE + temps) * 1000),
+      setTimeout(() => poserRafale(name, 4), (DELAI_RAFALE + 2 * temps) * 1000),
+    ];
+  }
+
+  function relacherLigne(name: DrumRowName) {
+    (rafaleTimers[name] ?? []).forEach(clearTimeout);
+    rafaleTimers[name] = [];
+    if (name === 'clap' || name === 'shaker') return;
+    if (name === 'kick') engine.liveSetKickRoll(null);
+    else if (name === 'snare') engine.liveSetSnareRoll(null);
+    else engine.liveSetHatRoll(null);
+    rollHeld[name] = null;
   }
 
   // Bouton CHAOS (assignable comme les autres, PLAN.md §7) : tire un
@@ -297,7 +299,10 @@
 
   // Tirage au hasard dans les catalogues — partagé par 🔀 (tout le monde) et
   // 🎲 (une seule ligne, voir randomizeSlot plus bas).
-  const pickAction = () => LIVE_ACTIONS[Math.floor(Math.random() * LIVE_ACTIONS.length)].id;
+  // ⚠️ Tire dans les entrées TIRABLES, pas dans tout le catalogue : les
+  // entrées miroir (TON −1, GAMME ←) restent assignables à la main mais les
+  // tirer revenait à poser deux fois le même bouton.
+  const pickAction = () => ACTIONS_TIRABLES[Math.floor(Math.random() * ACTIONS_TIRABLES.length)].id;
   const pickAxis = () => LIVE_AXES[Math.floor(Math.random() * LIVE_AXES.length)].id;
 
   /* Il n'y a plus de brassage total (🔀), ni de verrou — arbitrage de Yann,

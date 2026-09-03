@@ -7,132 +7,126 @@
 // catalogue reste des données pures, testable sans monter le composant ni
 // instancier de contexte audio.
 import type { AudioEngine } from '../../engine/AudioEngine';
-import type { SynthRowName } from '../../model/types';
+import type { DrumRowName, SynthRowName } from '../../model/types';
 
+/* Le catalogue d'ACTIONS — révisé le 2026-09-02 (docs/plan/05-audit-mode-live).
+ *
+ * LE PRINCIPE QUI MANQUAIT : un bouton du Mode Live est un GESTE DE SCÈNE,
+ * quelque chose qu'on fait PENDANT qu'on joue, d'un pouce, sans regarder. Ce
+ * qu'on fait AVANT de jouer — choisir un preset de voix de synthé — est de la
+ * préparation, et sa place est dans l'Atelier. L'ancien catalogue mélangeait
+ * les deux, et c'est ce qui faisait « des boutons pas très utiles » : six
+ * entrées faisaient défiler des presets de voix, ce qu'on ne fait jamais en
+ * plein morceau.
+ *
+ * ⚠️ Le principe ne vaut QUE pour les boutons, pas pour les axes. Un réglage
+ * de voix est de la préparation quand il saute d'un cran, et du jeu quand il
+ * balaie en continu — un balayage de cutoff sur la basse EST un geste de
+ * scène. C'est pour ça que les deux catalogues restent séparés et que
+ * `LIVE_AXES` n'a pas bougé.
+ *
+ * Ce qui est parti, et où : les six MUTE sont dans le séquenceur (on coupe une
+ * ligne là où on la voit) ; les six pas de voix sont de la préparation ; les
+ * neuf rafales ont fusionné avec les frappes (voir `kind: 'ligne'`).
+ *
+ * Mesuré : 31 entrées dont 19 variantes (61 %) -> 18 entrées dont 2 (11 %),
+ * et le nombre de gestes réellement distincts MONTE.
+ */
 export type LiveActionId =
   | 'break'
   | 'fill'
   | 'chaos'
-  | 'mute-kick'
-  | 'mute-snare'
-  | 'mute-hat'
-  | 'mute-bass'
-  | 'mute-pad'
-  | 'mute-melody'
-  | 'roll-kick-x2'
-  | 'roll-kick-x3'
-  | 'roll-kick-x4'
-  | 'roll-snare-x2'
-  | 'roll-snare-x3'
-  | 'roll-snare-x4'
-  | 'roll-hat-x2'
-  | 'roll-hat-x3'
-  | 'roll-hat-x4'
-  | 'bypass-limiters'
-  | 'solo-melody'
+  | 'ligne-kick'
+  | 'ligne-snare'
+  | 'ligne-hat'
+  | 'ligne-clap'
+  | 'ligne-shaker'
+  | 'mute-drums'
+  | 'mute-synth'
   | 'step-transpose-up'
   | 'step-transpose-down'
   | 'step-scale-next'
   | 'step-scale-prev'
-  | 'step-voice-bass-next'
-  | 'step-voice-bass-prev'
-  | 'step-voice-pad-next'
-  | 'step-voice-pad-prev'
-  | 'step-voice-melody-next'
-  | 'step-voice-melody-prev'
-  | 'toggle-pad-arp';
+  | 'step-pad-mode'
+  | 'bypass-limiters'
+  | 'petit-hp'
+  | 'solo-melody';
 
 export interface LiveActionDef {
   id: LiveActionId;
   label: string;
   color: string;
   desc: string;
-  // trigger : un coup au pointerdown (break/fill) ; toggle : bascule au
-  // pointerdown (mute) ; hold : actif tant que maintenu (roll) ; step : un
-  // coup au pointerdown, avance un paramètre discret d'un cran (PLAN.md §7,
-  // retour de Yann : « j'agence les boutons selon 3 types » — l'interrupteur
-  // = toggle, le bouton pas = step, le fader = LiveAssignments.slotFaders
-  // ci-dessous, qui réutilise directement le catalogue d'axes plutôt qu'un
-  // 4e kind ici).
-  kind: 'trigger' | 'toggle' | 'hold' | 'step';
-  // Regroupement dans le panneau de sélection (voir ACTION_GROUPS) — 19
-  // entrées ne se lisent plus comme une liste plate (PLAN.md §7, retour de
-  // Yann : catalogue de boutons trop court, même traitement que les axes).
+  /* trigger : un coup au pointerdown · toggle : bascule au pointerdown ·
+     hold : actif tant que maintenu · step : avance un paramètre discret d'un
+     cran · ligne : TAP = un coup à la main, MAINTENU = la rafale (voir
+     LIGNE_DE, et LiveView.onSlotDown pour l'escalade ×2 -> ×3 -> ×4). */
+  kind: 'trigger' | 'toggle' | 'hold' | 'step' | 'ligne';
   category: string;
-  // Uniquement pour kind:'step' — l'entrée porte directement son geste
-  // (comme apply() côté axes) plutôt que d'ajouter un cas par paramètre
-  // discret dans le switch de LiveView.runAction, qui grossirait sans fin.
+  /* Retiré du tirage 🎲 sans être retiré du catalogue : les entrées MIROIR
+     (TON −1, GAMME ←) servent quand on les assigne à la main, mais les tirer
+     au hasard revenait à poser deux fois le même bouton. Le tirage
+     uniforme d'avant posait deux rafales côte à côte 56 % du temps. */
+  tirable?: boolean;
+  // Uniquement pour kind:'step' — l'entrée porte directement son geste.
   step?: (engine: AudioEngine) => void;
+  // Uniquement pour kind:'ligne' — quelle ligne de batterie on frappe.
+  ligne?: DrumRowName;
 }
 
 export const LIVE_ACTIONS: LiveActionDef[] = [
-  { id: 'break', label: 'BREAK', color: 'var(--cell-kick)', desc: 'Break (déclencheur)', kind: 'trigger', category: 'TRANSPORT' },
-  { id: 'fill', label: 'FILL', color: 'var(--cell-snare)', desc: 'Fill forcé (déclencheur)', kind: 'trigger', category: 'TRANSPORT' },
+  { id: 'break', label: 'BREAK', color: 'var(--cell-kick)', desc: 'Break (déclencheur)', kind: 'trigger', category: 'SCÈNE' },
+  { id: 'fill', label: 'FILL', color: 'var(--cell-snare)', desc: 'Fill forcé (déclencheur)', kind: 'trigger', category: 'SCÈNE' },
   // Un paramètre du catalogue d'axes tiré au hasard, valeur aléatoire, à
   // chaque appui — pas de nouveau bouton dédié, juste une entrée du même
-  // catalogue assignable comme les autres (PLAN.md §7, piste "chaos" vs
-  // "brasser" : chaos ici, brasser est le bouton 🔀 séparé de LiveView).
-  { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger', category: 'TRANSPORT' },
+  // catalogue assignable comme les autres.
+  { id: 'chaos', label: 'CHAOS', color: '#ffb020', desc: 'Chaos — 1 paramètre au hasard', kind: 'trigger', category: 'SCÈNE' },
 
-  { id: 'mute-kick', label: 'MUTE K', color: 'var(--cell-kick)', desc: 'Muet — Kick', kind: 'toggle', category: 'MUTES BATTERIE' },
-  { id: 'mute-snare', label: 'MUTE S', color: 'var(--cell-snare)', desc: 'Muet — Snare', kind: 'toggle', category: 'MUTES BATTERIE' },
-  { id: 'mute-hat', label: 'MUTE H', color: 'var(--cell-hat)', desc: 'Muet — Hat', kind: 'toggle', category: 'MUTES BATTERIE' },
+  /* FRAPPER une ligne — le manque le plus criant du mode, mis au jour en
+   * triant le catalogue : un mode conçu pour jouer sur scène où aucun bouton
+   * ne jouait une note de batterie. `AudioEngine.preview()` savait pourtant
+   * déjà le faire (c'est ce que l'Atelier appelle au clic sur une case).
+   *
+   * Et la rafale n'est pas une entrée de plus : une ligne n'a pas besoin de
+   * deux boutons. Tap = un coup, maintenu = la rafale qui monte ×2 -> ×3 ->
+   * ×4. Cinq entrées couvrent ce qui en demandait quatorze. */
+  { id: 'ligne-kick', label: 'KICK', color: 'var(--cell-kick)', desc: 'Frappe · maintenu = rafale', kind: 'ligne', category: 'LIGNES', ligne: 'kick' },
+  { id: 'ligne-snare', label: 'CAISSE', color: 'var(--cell-snare)', desc: 'Frappe · maintenu = rafale', kind: 'ligne', category: 'LIGNES', ligne: 'snare' },
+  { id: 'ligne-hat', label: 'CHARLEY', color: 'var(--cell-hat)', desc: 'Frappe · maintenu = rafale', kind: 'ligne', category: 'LIGNES', ligne: 'hat' },
+  // Clap et shaker n'ont pas de rafale dans l'ordonnanceur : le tap frappe,
+  // le maintien ne fait rien de plus. Les exclure aurait été pire — ce sont
+  // deux lignes qui sonnent et qu'aucun bouton n'atteignait.
+  { id: 'ligne-clap', label: 'CLAP', color: 'var(--cell-clap)', desc: 'Frappe à la main', kind: 'ligne', category: 'LIGNES', ligne: 'clap' },
+  { id: 'ligne-shaker', label: 'SHAKER', color: 'var(--cell-shaker)', desc: 'Frappe à la main', kind: 'ligne', category: 'LIGNES', ligne: 'shaker' },
 
-  // Même garde-fou que les mutes batterie : le bouton ne fait qu'AJOUTER un
-  // mute par-dessus le pattern, jamais retirer un mute posé dans l'Atelier
-  // (AudioEngine.liveSetSynthMute).
-  { id: 'mute-bass', label: 'MUTE BASSE', color: 'var(--cell-bass)', desc: 'Muet — Basse', kind: 'toggle', category: 'MUTES SYNTHÉ' },
-  { id: 'mute-pad', label: 'MUTE NAPPE', color: 'var(--cell-pad)', desc: 'Muet — Nappe', kind: 'toggle', category: 'MUTES SYNTHÉ' },
-  { id: 'mute-melody', label: 'MUTE MÉLO', color: 'var(--cell-melody)', desc: 'Muet — Mélodie', kind: 'toggle', category: 'MUTES SYNTHÉ' },
+  /* Le geste du DROP. Le séquenceur coupe ligne par ligne ; couper tout un
+     groupe d'un coup n'y est pas faisable en un tap, et c'est le geste le
+     plus courant d'un set. */
+  { id: 'mute-drums', label: 'COUPER BATT.', color: 'var(--cell-kick)', desc: 'Couper toute la batterie (bascule)', kind: 'toggle', category: 'COUPURES' },
+  { id: 'mute-synth', label: 'COUPER SYNTHÉ', color: 'var(--cell-bass)', desc: 'Couper tout le synthé (bascule)', kind: 'toggle', category: 'COUPURES' },
 
-  { id: 'roll-kick-x2', label: 'ROLL K×2', color: 'var(--cell-kick)', desc: 'Rafale kick ×2 (maintenu)', kind: 'hold', category: 'ROLL KICK' },
-  { id: 'roll-kick-x3', label: 'ROLL K×3', color: 'var(--cell-kick)', desc: 'Rafale kick ×3 (maintenu)', kind: 'hold', category: 'ROLL KICK' },
-  { id: 'roll-kick-x4', label: 'ROLL K×4', color: 'var(--cell-kick)', desc: 'Rafale kick ×4 (maintenu)', kind: 'hold', category: 'ROLL KICK' },
+  /* HARMONIE — globale, les trois lignes de synthé à la fois. La décliner par
+     ligne ferait douze entrées pour une question que personne ne se pose en
+     jouant. ±1 demi-ton, borné à ±1 octave. */
+  { id: 'step-transpose-up', label: 'TON +1', color: '#ffb020', desc: 'Transpose +1 demi-ton (tout le synthé)', kind: 'step', category: 'HARMONIE', step: (e) => e.liveStepTranspose(1) },
+  { id: 'step-transpose-down', label: 'TON −1', color: '#ffb020', desc: 'Transpose −1 demi-ton (tout le synthé)', kind: 'step', category: 'HARMONIE', tirable: false, step: (e) => e.liveStepTranspose(-1) },
+  { id: 'step-scale-next', label: 'GAMME →', color: '#ffb020', desc: 'Mode suivant (tout le synthé)', kind: 'step', category: 'HARMONIE', step: (e) => e.liveStepScale(1) },
+  { id: 'step-scale-prev', label: 'GAMME ←', color: '#ffb020', desc: 'Mode précédent (tout le synthé)', kind: 'step', category: 'HARMONIE', tirable: false, step: (e) => e.liveStepScale(-1) },
 
-  { id: 'roll-snare-x2', label: 'ROLL S×2', color: 'var(--cell-snare)', desc: 'Rafale snare ×2 (maintenu)', kind: 'hold', category: 'ROLL SNARE' },
-  { id: 'roll-snare-x3', label: 'ROLL S×3', color: 'var(--cell-snare)', desc: 'Rafale snare ×3 (maintenu)', kind: 'hold', category: 'ROLL SNARE' },
-  { id: 'roll-snare-x4', label: 'ROLL S×4', color: 'var(--cell-snare)', desc: 'Rafale snare ×4 (maintenu)', kind: 'hold', category: 'ROLL SNARE' },
+  /* UN bouton, trois états — et ce n'est pas un raffinement : le bourdon
+     court-circuite l'arpège dans le scheduler, donc deux interrupteurs
+     donneraient un bouton ARPÈGE inerte tant que le bourdon est actif. */
+  { id: 'step-pad-mode', label: 'MODE NAPPE', color: 'var(--cell-pad)', desc: 'Normal → arpège → bourdon (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepPadMode() },
 
-  { id: 'roll-hat-x2', label: 'ROLL H×2', color: 'var(--cell-hat)', desc: 'Rafale hat ×2 (maintenu)', kind: 'hold', category: 'ROLL HAT' },
-  { id: 'roll-hat-x3', label: 'ROLL H×3', color: 'var(--cell-hat)', desc: 'Rafale hat ×3 (maintenu)', kind: 'hold', category: 'ROLL HAT' },
-  { id: 'roll-hat-x4', label: 'ROLL H×4', color: 'var(--cell-hat)', desc: 'Rafale hat ×4 (maintenu)', kind: 'hold', category: 'ROLL HAT' },
-
-  // Coupe le limiteur de sécurité final le temps d'un geste — même valeurs
-  // enabled/disabled que le réglage de l'Atelier (graph.ts, buildGraph).
   { id: 'bypass-limiters', label: 'BYPASS LIM.', color: '#ff5a5a', desc: 'Bypass limiteurs (bascule)', kind: 'toggle', category: 'MIX' },
+  // Le petit haut-parleur de l'acte 4 : il existait dans le moteur et n'avait
+  // jamais été exposé au Live, où il est un outil d'écoute évident.
+  { id: 'petit-hp', label: 'PETIT HP', color: '#8fa1b3', desc: 'Écoute petit haut-parleur (bascule)', kind: 'toggle', category: 'MIX' },
 
-  // Maintenu : le temps de l'appui, le pad joue la mélodie au doigt
-  // (glisser = degré de gamme + octave, tapoter = une note) au lieu de ses
-  // axes habituels, et la mélodie programmée est coupée en direct pour ne
-  // pas se télescoper avec ce qui est joué à la main (LiveView.svelte,
-  // AudioEngine.playLiveMelodyNote/liveSetSynthMute).
+  // Maintenu : le temps de l'appui, le pad joue la mélodie au doigt (glisser =
+  // degré de gamme + octave), et la mélodie programmée est coupée pour ne pas
+  // se télescoper avec ce qui est joué à la main.
   { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE' },
-
-  // Boutons PAS (PLAN.md §7, retour de Yann : « j'agence les boutons selon
-  // 3 types ») — avancent de nouveaux paramètres discrets, pas un sous-
-  // ensemble du catalogue d'axes continu : ils n'ont pas leur place dans un
-  // fader (tonalité/gamme changent TOUTES les lignes synthé à la fois, un
-  // preset de voix est une combinaison de champs, pas une valeur 0..1).
-  // ±1 demi-ton, borné à ±1 octave (AudioEngine.liveStepTranspose).
-  { id: 'step-transpose-up', label: 'TON +1', color: '#ffb020', desc: 'Transpose +1 demi-ton (pas)', kind: 'step', category: 'TON', step: (e) => e.liveStepTranspose(1) },
-  { id: 'step-transpose-down', label: 'TON −1', color: '#ffb020', desc: 'Transpose −1 demi-ton (pas)', kind: 'step', category: 'TON', step: (e) => e.liveStepTranspose(-1) },
-
-  // Cycle circulaire dans les 5 modes de SCALE_LIBRARY.
-  { id: 'step-scale-next', label: 'GAMME →', color: '#ffb020', desc: 'Mode suivant (pas)', kind: 'step', category: 'GAMME', step: (e) => e.liveStepScale(1) },
-  { id: 'step-scale-prev', label: 'GAMME ←', color: '#ffb020', desc: 'Mode précédent (pas)', kind: 'step', category: 'GAMME', step: (e) => e.liveStepScale(-1) },
-
-  // Cycle circulaire dans SYNTH_VOICE_PRESETS[name] (5 presets/ligne, mêmes
-  // que le sélecteur de preset de l'Atelier, SynthRowView.svelte).
-  { id: 'step-voice-bass-next', label: 'VOIX BASSE →', color: 'var(--cell-bass)', desc: 'Preset suivant (pas)', kind: 'step', category: 'BASSE', step: (e) => e.liveStepVoicePreset('bass', 1) },
-  { id: 'step-voice-bass-prev', label: 'VOIX BASSE ←', color: 'var(--cell-bass)', desc: 'Preset précédent (pas)', kind: 'step', category: 'BASSE', step: (e) => e.liveStepVoicePreset('bass', -1) },
-  { id: 'step-voice-pad-next', label: 'VOIX NAPPE →', color: 'var(--cell-pad)', desc: 'Preset suivant (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepVoicePreset('pad', 1) },
-  { id: 'step-voice-pad-prev', label: 'VOIX NAPPE ←', color: 'var(--cell-pad)', desc: 'Preset précédent (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepVoicePreset('pad', -1) },
-  { id: 'step-voice-melody-next', label: 'VOIX MÉLO →', color: 'var(--cell-melody)', desc: 'Preset suivant (pas)', kind: 'step', category: 'MÉLODIE', step: (e) => e.liveStepVoicePreset('melody', 1) },
-  { id: 'step-voice-melody-prev', label: 'VOIX MÉLO ←', color: 'var(--cell-melody)', desc: 'Preset précédent (pas)', kind: 'step', category: 'MÉLODIE', step: (e) => e.liveStepVoicePreset('melody', -1) },
-
-  // Interrupteur (bascule au pointerdown, comme les mutes) — arpège de la
-  // nappe, seul booléen de synthGlobal qui s'entend clairement en direct.
-  { id: 'toggle-pad-arp', label: 'ARPÈGE NAPPE', color: 'var(--cell-pad)', desc: 'Arpège nappe (bascule)', kind: 'toggle', category: 'NAPPE' },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
@@ -403,8 +397,19 @@ export interface LiveAssignments {
   viz: LiveVizId;
 }
 
+/* Le défaut par rang de bouton — exporté parce que la migration s'en sert pour
+   remplir un slot vidé par un déménagement, et que le test le vérifie. */
+export const DEFAUTS_SLOTS: LiveActionId[][] = [
+  ['break'],
+  ['fill'],
+  ['ligne-kick'],
+  ['ligne-snare'],
+  ['ligne-hat'],
+  ['chaos'],
+];
+
 const DEFAULT_ASSIGNMENTS: LiveAssignments = {
-  slots: [['break'], ['fill'], ['mute-kick'], ['mute-snare'], ['mute-hat'], ['roll-hat-x2']],
+  slots: DEFAUTS_SLOTS.map((s) => [...s]),
   slotModes: ['actions', 'actions', 'actions', 'actions', 'actions', 'actions'],
   slotFaders: [['filter'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
   faderOrientation: ['vertical', 'vertical', 'vertical', 'vertical', 'vertical', 'vertical'],
@@ -416,6 +421,73 @@ const DEFAULT_ASSIGNMENTS: LiveAssignments = {
 
 const KEY = 'boite-a-rythme:mode-live-assign';
 const ACTION_IDS = new Set(LIVE_ACTIONS.map((a) => a.id));
+
+/* Les entrées que le 🎲 a le droit de tirer — voir `tirable`. */
+export const ACTIONS_TIRABLES: LiveActionDef[] = LIVE_ACTIONS.filter((a) => a.tirable !== false);
+
+/* ⚠️ MIGRATION — à appliquer AVANT la validation, jamais après.
+ *
+ * `isValid` est TOUT OU RIEN : une assignation enregistrée qui cite un
+ * identifiant disparu la fait échouer en bloc, et `loadLiveAssignments` rend
+ * alors les défauts — les six boutons ET les trois snapshots perdus d'un coup,
+ * sans un mot. C'est le piège qu'on ne découvre qu'en production, sur la
+ * configuration de quelqu'un d'autre.
+ *
+ * Les rafales ×2/×3/×4 deviennent l'entrée fusionnée de leur ligne ; les mutes
+ * par ligne et les pas de preset de voix ont changé de domicile (séquenceur,
+ * Atelier) et sont simplement retirés du slot. Un slot vidé par ces retraits
+ * reprend le défaut de son rang plutôt que de rester vide.
+ */
+const CORRESPONDANCES: Record<string, LiveActionId | null> = {
+  'roll-kick-x2': 'ligne-kick',
+  'roll-kick-x3': 'ligne-kick',
+  'roll-kick-x4': 'ligne-kick',
+  'roll-snare-x2': 'ligne-snare',
+  'roll-snare-x3': 'ligne-snare',
+  'roll-snare-x4': 'ligne-snare',
+  'roll-hat-x2': 'ligne-hat',
+  'roll-hat-x3': 'ligne-hat',
+  'roll-hat-x4': 'ligne-hat',
+  // Déménagés dans le séquenceur : on coupe une ligne là où on la voit.
+  'mute-kick': null,
+  'mute-snare': null,
+  'mute-hat': null,
+  'mute-bass': null,
+  'mute-pad': null,
+  'mute-melody': null,
+  // De la préparation, pas un geste de scène.
+  'step-voice-bass-next': null,
+  'step-voice-bass-prev': null,
+  'step-voice-pad-next': null,
+  'step-voice-pad-prev': null,
+  'step-voice-melody-next': null,
+  'step-voice-melody-prev': null,
+  // L'arpège devient un état du bouton MODE NAPPE.
+  'toggle-pad-arp': 'step-pad-mode',
+};
+
+function migrerListeActions(v: unknown, defaut: LiveActionId[]): LiveActionId[] {
+  if (!Array.isArray(v)) return defaut;
+  const sortie: LiveActionId[] = [];
+  for (const brut of v) {
+    if (typeof brut !== 'string') continue;
+    const id = brut in CORRESPONDANCES ? CORRESPONDANCES[brut] : (brut as LiveActionId);
+    if (id && ACTION_IDS.has(id) && !sortie.includes(id)) sortie.push(id);
+  }
+  return sortie.length ? sortie : defaut;
+}
+
+/** Réécrit une assignation enregistrée dans le vocabulaire courant. */
+function migrer(v: unknown): unknown {
+  if (!v || typeof v !== 'object') return v;
+  const a = v as { slots?: unknown };
+  if (!Array.isArray(a.slots)) return v;
+  const defauts = DEFAUTS_SLOTS;
+  return {
+    ...a,
+    slots: a.slots.map((slot, i) => migrerListeActions(slot, defauts[i] ?? defauts[0])),
+  };
+}
 const AXIS_IDS = new Set(LIVE_AXES.map((a) => a.id));
 const VIZ_IDS = new Set(LIVE_VIZ.map((v) => v.id));
 const SLOT_MODES: SlotMode[] = ['actions', 'fader'];
@@ -460,7 +532,7 @@ export function loadLiveAssignments(): LiveAssignments {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return freshDefaults();
-    const parsed = JSON.parse(raw);
+    const parsed = migrer(JSON.parse(raw));
     return isValid(parsed) ? parsed : freshDefaults();
   } catch {
     return freshDefaults();
@@ -492,7 +564,10 @@ export function loadLiveSnapshots(): (LiveAssignments | null)[] {
     if (!raw) return Array(SNAPSHOT_COUNT).fill(null);
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length !== SNAPSHOT_COUNT) return Array(SNAPSHOT_COUNT).fill(null);
-    return parsed.map((p) => (isValid(p) ? p : null));
+    return parsed.map((p) => {
+      const m = migrer(p);
+      return isValid(m) ? m : null;
+    });
   } catch {
     return Array(SNAPSHOT_COUNT).fill(null);
   }
