@@ -353,6 +353,20 @@ Ce qu'il faut en retenir avant de coder quoi que ce soit sur le sujet :
 - la limite des 10 min ne concerne pas le morceau (quelques centaines
   d'octets) mais la **capture** : 10 min de ⏺ REC font 256 Mo de pic mémoire.
 
+**LES QUATRE TRANCHES SONT LIVRÉES** (2026-09-02, branche
+`claude/audit-mode-live-sr1ai3`) : les réparations (bascule quantisée à la
+mesure dans le moteur, fill recalé sur la section, sélection de texte), le
+séquenceur qui porte les mutes et dit l'état réel, le catalogue trié
+(31 → 20 entrées, 19 variantes → 2), et la bande d'architecture avec ses trois
+modèles. 521 tests.
+
+⚠️ **Ce qui reste sur le Mode Live** : l'éditeur d'architecture dans l'Atelier
+(on ne peut aujourd'hui que charger un modèle et déposer des séquences depuis
+l'overlay ⚙ du Live — ni ajouter, ni retirer, ni renommer une section), et
+l'automation d'axe par section, délibérément remplacée par un escalier de
+sections tant que personne n'a entendu que ça manque. Et **toujours aucun essai
+sur un vrai téléphone**.
+
 ## Les pièges qui ont coûté du temps
 
 - **Le squash-merge.** La branche de travail garde l'ancien historique (déjà
