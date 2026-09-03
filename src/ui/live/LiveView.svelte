@@ -1765,6 +1765,25 @@
     --amp-amber: var(--xp-playhead);
     --amp-text: var(--xp-text);
     font-family: ui-monospace, 'JetBrains Mono', monospace;
+
+    /* ⚠️ L'appui LONG est le geste normal de ce mode (une rafale se tient),
+       et le libellé d'un bouton est du texte ordinaire : sans ces trois
+       lignes, Chrome Android sélectionne le mot et ouvre son menu
+       « Sélectionner / Copier / Coller » par-dessus l'instrument.
+       `touch-action` ne dit rien de tout ça — ce sont trois propriétés
+       différentes, et seule la première était posée.
+
+       Le trio existait déjà dans le dépôt (`DrumRowView.svelte`) ; il n'avait
+       simplement jamais été appliqué ici. Posé sur la RACINE plutôt que
+       bouton par bouton : il n'y a pas une seule zone de texte à sélectionner
+       en Mode Live. ⚠️ Un futur champ de saisie (nommer une section, nommer
+       un snapshot) devra reprendre `user-select: text` pour lui-même. */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    /* Le rectangle gris qui clignote sous chaque appui sur Android — le
+       retour tactile est déjà porté par le biseau (.pressed) et la vibration. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   .rotate-screen {

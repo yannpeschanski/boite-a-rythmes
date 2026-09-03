@@ -59,7 +59,12 @@ export interface ScheduleContext {
   // réintroduirait silencieusement le décalage qu'on cherche à éviter. Mieux
   // vaut que le compilateur réclame le second flux à chaque appelant.
   fillRng: Rng;
-  currentBar: number;
+  /* Mesure comptée depuis le début de la SECTION courante (0 = première
+     mesure de la section), et non depuis ▶ : c'est elle qui pilote les fills,
+     et un fill doit tomber à la fin d'une section, pas à la mesure 3 de la
+     lecture. Hors bande d'architecture (export hors ligne, harnais de test),
+     il n'y a qu'une section : la mesure absolue et celle-ci coïncident. */
+  barDansSection: number;
   breakWindow: BreakWindow | null;
   ghostTargetRow: DrumRowName;
   // Sidechain : prévenu à chaque frappe RÉELLE de kick/snare (pas les ghost
@@ -251,7 +256,7 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
   // FILL (Mode Live) : force la mesure en cours à se comporter comme une
   // mesure de fill normale — même logique de montée/rafale, juste déclenchée
   // à la demande plutôt que par fillEvery.
-  const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
+  const fillNow = isFillBar(state, cx.barDansSection) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
 
   // Clap (PLAN.md §6) rejoint ce tableau plutôt qu'une boucle séparée — même
@@ -298,7 +303,7 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
 
 function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
   const { state, cursors } = cx;
-  const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
+  const fillNow = isFillBar(state, cx.barDansSection) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
   const hatCursor = cursors.hat;
   const hat = state.rows.hat;
