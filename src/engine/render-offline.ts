@@ -74,7 +74,7 @@ export async function renderPattern(
         cursors,
         rng,
         fillRng,
-        currentBar: bar,
+        barDansSection: bar,
         breakWindow: null,
         ghostTargetRow: state.ghostRow ?? 'snare',
         emitPlayhead: noop,

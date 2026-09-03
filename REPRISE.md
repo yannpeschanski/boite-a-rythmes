@@ -376,7 +376,45 @@ de poser l'objet attendu.
 
 **Pas encore vérifié :** un vrai parcours à la souris/au doigt de bout en bout
 (le script pilote le store, il ne clique pas). Et le Mode Live n'a pas été
-retouché de la session.
+retouché de la session — mais il a été **audité** le 2026-09-02 :
+[`docs/plan/05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md). Cinq
+tranches proposées, aucune engagée ; les quatre premières sont indépendantes.
+Le mode n'a **toujours jamais tourné sur un vrai téléphone**.
+
+Puis un second audit le même jour, sur le **macro-séquenceur** demandé par
+Yann (« 8 cycles de A puis 8 cycles de B ») :
+[`docs/plan/06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md).
+Ce qu'il faut en retenir avant de coder quoi que ce soit sur le sujet :
+
+- ⚠️ **ce que le chantier apporte est de rendre la bascule JOUABLE, pas
+  possible.** Deux entrées de banque portent déjà deux batteries différentes et
+  `cycleBankSequence` bascule de l'une à l'autre — la première version de
+  l'audit affirmait le contraire et se trompait (relevé par Yann). Ce qui
+  manque : la bascule est manuelle et tombe au milieu de la mesure ;
+- **le motif a déjà un cycle propre, et il vaut 4 mesures** (la nappe :
+  30 presets sur 34) — « mono-cycle par défaut » décrit ce qu'on croit voir,
+  pas ce que l'appli joue. Le macro-séquenceur doit donc **calculer** le cycle
+  (ppcm des lignes non muettes), jamais le supposer ;
+- **la nappe porte une progression d'accords** : un blues 12 mesures tient
+  dans un seul motif, sans macro-séquenceur ;
+- ⚠️ **`isFillBar` lit le compteur ABSOLU de mesures** : les fills tomberaient
+  au milieu des sections. Défaut à corriger, indépendant du chantier ;
+- la limite des 10 min ne concerne pas le morceau (quelques centaines
+  d'octets) mais la **capture** : 10 min de ⏺ REC font 256 Mo de pic mémoire.
+
+**LES QUATRE TRANCHES SONT LIVRÉES** (2026-09-02, branche
+`claude/audit-mode-live-sr1ai3`) : les réparations (bascule quantisée à la
+mesure dans le moteur, fill recalé sur la section, sélection de texte), le
+séquenceur qui porte les mutes et dit l'état réel, le catalogue trié
+(31 → 20 entrées, 19 variantes → 2), et la bande d'architecture avec ses trois
+modèles. 521 tests.
+
+⚠️ **Ce qui reste sur le Mode Live** : l'éditeur d'architecture dans l'Atelier
+(on ne peut aujourd'hui que charger un modèle et déposer des séquences depuis
+l'overlay ⚙ du Live — ni ajouter, ni retirer, ni renommer une section), et
+l'automation d'axe par section, délibérément remplacée par un escalier de
+sections tant que personne n'a entendu que ça manque. Et **toujours aucun essai
+sur un vrai téléphone**.
 
 ## Les pièges qui ont coûté du temps
 

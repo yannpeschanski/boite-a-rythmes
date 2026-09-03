@@ -8,6 +8,7 @@ import type { DrumKit } from './voices/drums';
 import type { SynthKit } from './voices/synth';
 import { chordFreqs, degreeFreq, stepsForLine, stepDurForLine, chordsFor } from './harmony';
 import {
+  coupee,
   stepDurationFor,
   isFillBar,
   isLastSteps,
@@ -59,7 +60,12 @@ export interface ScheduleContext {
   // réintroduirait silencieusement le décalage qu'on cherche à éviter. Mieux
   // vaut que le compilateur réclame le second flux à chaque appelant.
   fillRng: Rng;
-  currentBar: number;
+  /* Mesure comptée depuis le début de la SECTION courante (0 = première
+     mesure de la section), et non depuis ▶ : c'est elle qui pilote les fills,
+     et un fill doit tomber à la fin d'une section, pas à la mesure 3 de la
+     lecture. Hors bande d'architecture (export hors ligne, harnais de test),
+     il n'y a qu'une section : la mesure absolue et celle-ci coïncident. */
+  barDansSection: number;
   breakWindow: BreakWindow | null;
   ghostTargetRow: DrumRowName;
   // Sidechain : prévenu à chaque frappe RÉELLE de kick/snare (pas les ghost
@@ -69,6 +75,12 @@ export interface ScheduleContext {
   // Déclencheurs Mode Live (phase 2, PLAN.md §7) : par-dessus le pattern,
   // jamais écrits dedans — un bouton MUTE en direct n'altère pas la ligne
   // sauvegardée. Optionnels : absents pour l'Atelier/l'export offline/le jeu.
+  /* Mute du Mode Live, TERNAIRE : absent = suivre le motif, `true` = couper,
+     `false` = forcer ouvert. Le troisième état est ce qui permet au séquenceur
+     du Live de rouvrir une ligne coupée dans l'Atelier — sans lui, une bande
+     qui affiche « coupé » et refuse de rouvrir n'est pas un garde-fou, c'est
+     une panne. Rien n'est écrit dans le motif : on repart de l'Atelier
+     exactement comme on y était. */
   liveMute?: Partial<Record<DrumRowName, boolean>>;
   forceFill?: boolean;
   forceHatRoll?: number | null;
@@ -93,7 +105,7 @@ function triggerKickSnareStep(
 ): boolean {
   const { state, kit, rng } = cx;
   const row = state.rows[name];
-  if (row.muted || cx.liveMute?.[name]) return false;
+  if (coupee(row.muted, cx.liveMute?.[name])) return false;
   const play = (t: number, g: number, rim: boolean) => {
     if (name === 'kick') kit.playKick(t, g, row);
     else if (name === 'clap') kit.playClap(t, g, row);
@@ -210,7 +222,7 @@ function triggerHatStep(
 ): void {
   const { state, kit, rng } = cx;
   const hat = state.rows.hat;
-  if (hat.muted || cx.liveMute?.hat) return;
+  if (coupee(hat.muted, cx.liveMute?.hat)) return;
   const fillHere = fillNow && isLastSteps(col, hat.subdiv);
   // ROLL×2 (Mode Live) : forcé exactement comme le ferait un fill — un pas
   // vide se met à sonner tant que le bouton est maintenu, même logique que
@@ -251,7 +263,7 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
   // FILL (Mode Live) : force la mesure en cours à se comporter comme une
   // mesure de fill normale — même logique de montée/rafale, juste déclenchée
   // à la demande plutôt que par fillEvery.
-  const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
+  const fillNow = isFillBar(state, cx.barDansSection) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
 
   // Clap (PLAN.md §6) rejoint ce tableau plutôt qu'une boucle séparée — même
@@ -298,7 +310,7 @@ export function scheduleDrumWindow(cx: SchedulingContextInternal, horizon: numbe
 
 function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
   const { state, cursors } = cx;
-  const fillNow = isFillBar(state, cx.currentBar) || !!cx.forceFill;
+  const fillNow = isFillBar(state, cx.barDansSection) || !!cx.forceFill;
   const barDur = barDuration(state.tempo);
   const hatCursor = cursors.hat;
   const hat = state.rows.hat;
@@ -329,7 +341,7 @@ function scheduleHatRows(cx: SchedulingContextInternal, horizon: number): void {
 function triggerShakerStep(cx: SchedueCtxAlias, col: number, time: number, stepDur: number): void {
   const { state, kit, rng } = cx;
   const shaker = state.rows.shaker;
-  if (shaker.muted || cx.liveMute?.shaker) return;
+  if (coupee(shaker.muted, cx.liveMute?.shaker)) return;
   const stepState = shaker.pattern[col];
   if (!stepState) return;
   const roll = shaker.rolls[col];

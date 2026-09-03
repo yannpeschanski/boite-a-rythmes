@@ -27,6 +27,8 @@ une ligne réécrite ni réordonnée.
 | [`02-audits-et-arbitrages.md`](docs/plan/02-audits-et-arbitrages.md) | Audits de design et arbitrages de Yann |
 | [`03-journal-migration.md`](docs/plan/03-journal-migration.md) | Journal — la migration et la peau Winamp |
 | [`04-maquettes-et-moodboards.md`](docs/plan/04-maquettes-et-moodboards.md) | Maquettes — les sept séries de propositions |
+| [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) | **Audit du Mode Live (2026-09-02)** — pas une archive : un chantier OUVERT, mesuré et pas encore arbitré |
+| [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans

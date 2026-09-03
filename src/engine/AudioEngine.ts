@@ -29,6 +29,15 @@ import { tamponCourant, noterSortie } from './tampon';
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
 
+/* Avance à laquelle une bascule de motif est appliquée AVANT la mesure, en
+ * secondes. Deux ticks et demi : il faut basculer avant que l'ordonnanceur
+ * n'écrive dans la mesure suivante, sinon ses premiers pas sonneraient encore
+ * l'ancien motif ; et pas trop tôt non plus, puisque l'horizon reste écrêté à
+ * la mesure tant que la bascule est en attente — la nouvelle section
+ * retrouve sa pleine avance dès le tick suivant.
+ */
+const AVANCE_BASCULE = 0.06; // s
+
 /* Avance de déclenchement d'un son JOUÉ (pad, aperçu, note tenue), en secondes.
  *
  * Ce n'est pas du confort de programmation : c'est de la latence pure ajoutée
@@ -81,6 +90,11 @@ const SCHEDULE_AHEAD = 0.25; // s
  * (ui/latence.svelte.ts), pas cette constante.
  */
 export const AVANCE_DECLENCHEMENT = 0.008; // s
+
+/* Les trois modes de la Nappe, dans l'ordre où le bouton PAS les fait
+ * défiler. Ils sont EXCLUSIFS parce que le moteur les traite ainsi : le
+ * bourdon court-circuite l'arpège dans le scheduler (voir liveStepPadMode). */
+export type PadMode = 'normal' | 'arpege' | 'bourdon';
 
 /* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
  *
@@ -141,6 +155,18 @@ export class AudioEngine {
   private synthCursors: SynthCursors = AudioEngine.freshSynthCursors();
   private currentBar = 0;
   private nextBarTime: number | null = null;
+  /* Bande d'architecture (macro-séquenceur) — la mesure où la SECTION courante
+     a commencé. `isFillBar` compte depuis elle, pas depuis ▶ : sinon, avec
+     `fillEvery = 4`, les fills tombent sur les mesures 3, 7, 11 de la LECTURE
+     et donc n'importe où dans une section de 5 mesures, alors que le fill est
+     précisément le geste qui annonce un changement de section. */
+  private sectionStartBar = 0;
+  /* Bascule de motif QUANTISÉE (voir queueSwapAtNextBar). Tant qu'une bascule
+     est en attente, l'horizon de programmation est écrêté à la mesure : aucune
+     note de la section suivante n'est écrite avec l'ancien motif, donc remettre
+     les curseurs à zéro au basculement ne peut jamais doubler une note déjà
+     programmée. */
+  private pendingSwap: (() => void) | null = null;
   private breakRequested = false;
   private breakWindow: BreakWindow | null = null;
   // Curseur visuel découplé : file d'événements consommée contre l'horloge
@@ -177,7 +203,9 @@ export class AudioEngine {
   // confirmé sur de nouveaux paramètres discrets). Même mécanisme d'override
   // relu à chaque fenêtre que le groove ci-dessus, jamais écrit dans le
   // pattern.
-  private liveSynthGlobalOverride: Partial<Pick<SynthGlobalState, 'rootMidi' | 'scaleId' | 'padArpEnabled'>> = {};
+  private liveSynthGlobalOverride: Partial<
+    Pick<SynthGlobalState, 'rootMidi' | 'scaleId' | 'padArpEnabled' | 'padDroneEnabled'>
+  > = {};
   // Index courant dans SYNTH_VOICE_PRESETS[name] pour le bouton PAS "voix" —
   // distinct de liveSynthOverride[name].voice (qui ne porte que les valeurs
   // résolues, pas quel preset les a produites) : sert à savoir où reprendre
@@ -354,6 +382,8 @@ export class AudioEngine {
     const ctx = this.ctx!;
     this.isPlaying = true;
     this.currentBar = 0;
+    this.sectionStartBar = 0;
+    this.pendingSwap = null;
     this.playheadQueue = [];
     const startAt = ctx.currentTime + 0.06;
     this.nextBarTime = startAt + barDuration(this.getState().tempo);
@@ -377,6 +407,8 @@ export class AudioEngine {
     this.breakWindow = null;
     this.fillRequested = false;
     this.forcedFillBar = null;
+    this.pendingSwap = null;
+    this.sectionStartBar = 0;
     // Filet de sécurité : si un live take était en cours de capture sans
     // avoir été arrêté explicitement (STOP pressé pendant l'enregistrement),
     // on détache proprement le tap plutôt que de laisser des nœuds pendus
@@ -428,26 +460,44 @@ export class AudioEngine {
     return this.fillRequested || this.forcedFillBar === this.currentBar;
   }
 
-  // Boutons MUTE K/S/H : superposés au `muted` du pattern, jamais écrits
-  // dedans — repartir de l'Atelier après le Mode Live retrouve la même
-  // ligne, mutée ou non, qu'avant.
-  liveSetMute(name: DrumRowName, muted: boolean): void {
-    this.liveMute = { ...this.liveMute, [name]: muted };
+  /* Mute d'une ligne de batterie depuis le Mode Live — TERNAIRE.
+   *
+   * `null` = suivre le motif, `true` = couper, `false` = forcer ouvert. Le
+   * troisième état est arrivé avec le séquenceur du Live, qui affiche l'état
+   * RÉEL de chaque ligne : il doit pouvoir rouvrir une ligne coupée dans
+   * l'Atelier. Ce que l'ancien garde-fou protégeait vraiment reste vrai —
+   * rien n'est écrit dans le motif, on repart de l'Atelier exactement comme
+   * on y était.
+   */
+  liveSetMute(name: DrumRowName, muted: boolean | null): void {
+    const suivant = { ...this.liveMute };
+    if (muted === null) delete suivant[name];
+    else suivant[name] = muted;
+    this.liveMute = suivant;
+  }
+
+  /** L'override live d'une ligne de batterie, pour l'affichage. */
+  liveMuteDe(name: DrumRowName): boolean | undefined {
+    return this.liveMute[name];
   }
 
   // Catalogue étendu (PLAN.md §7) — MUTE Basse/Nappe/Mélodie, même principe
   // que liveSetMute mais via l'override de ligne synthé déjà en place pour
   // cutoff/résonance/glide (withLiveOverrides) plutôt qu'un second mécanisme :
-  // `muted` n'est écrit dans l'override QUE quand on coupe (jamais `false`),
-  // pour ne jamais forcer un démutage d'une ligne coupée dans l'Atelier —
-  // même garde-fou que liveMute pour la batterie.
-  liveSetSynthMute(name: SynthRowName, muted: boolean): void {
-    if (muted) {
-      this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], muted: true } };
-    } else {
+  // Ternaire comme liveSetMute ci-dessus (`null` = suivre le motif) : le
+  // séquenceur du Live montre l'état réel, donc il rouvre aussi.
+  liveSetSynthMute(name: SynthRowName, muted: boolean | null): void {
+    if (muted === null) {
       const { muted: _drop, ...rest } = this.liveSynthOverride[name] ?? {};
       this.liveSynthOverride = { ...this.liveSynthOverride, [name]: rest };
+    } else {
+      this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], muted } };
     }
+  }
+
+  /** L'override live d'une ligne synthé, pour l'affichage. */
+  liveMuteSynthDe(name: SynthRowName): boolean | undefined {
+    return this.liveSynthOverride[name]?.muted;
   }
 
   // Bouton ROLL×2 (maintenu) : force le hat en rafale tant qu'il est
@@ -600,8 +650,39 @@ export class AudioEngine {
 
   // Interrupteur générique pour un booléen de synthGlobal (arpège nappe pour
   // l'instant) — même familier que les autres setLive* ci-dessus.
-  setLiveSynthGlobalBool(key: 'padArpEnabled', value: boolean): void {
+  setLiveSynthGlobalBool(key: 'padArpEnabled' | 'padDroneEnabled', value: boolean): void {
     this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, [key]: value };
+  }
+
+  /* MODE NAPPE — un bouton PAS à trois états plutôt que deux interrupteurs.
+   *
+   * ⚠️ Ce n'est pas un raffinement d'interface. Dans `scheduler.ts`, la branche
+   * du bourdon fait `continue` AVANT celle de l'arpège, et son commentaire le
+   * dit : « ni roll ni arpège ici ». Le bourdon gagne donc sur l'arpège, en
+   * silence. Deux bascules indépendantes donneraient un bouton ARPÈGE inerte
+   * tant que le bourdon est actif — et on chercherait la panne. Un cycle rend
+   * l'état impossible à contredire.
+   */
+  liveStepPadMode(): PadMode {
+    const sg = this.getState().synthGlobal;
+    const arp = this.liveSynthGlobalOverride.padArpEnabled ?? sg.padArpEnabled;
+    const drone = this.liveSynthGlobalOverride.padDroneEnabled ?? sg.padDroneEnabled;
+    const courant: PadMode = drone ? 'bourdon' : arp ? 'arpege' : 'normal';
+    const suivant: PadMode = courant === 'normal' ? 'arpege' : courant === 'arpege' ? 'bourdon' : 'normal';
+    this.liveSynthGlobalOverride = {
+      ...this.liveSynthGlobalOverride,
+      padArpEnabled: suivant === 'arpege',
+      padDroneEnabled: suivant === 'bourdon',
+    };
+    return suivant;
+  }
+
+  /** Le mode de nappe EFFECTIF (override live par-dessus le motif). */
+  get padMode(): PadMode {
+    const sg = this.getState().synthGlobal;
+    if (this.liveSynthGlobalOverride.padDroneEnabled ?? sg.padDroneEnabled) return 'bourdon';
+    if (this.liveSynthGlobalOverride.padArpEnabled ?? sg.padArpEnabled) return 'arpege';
+    return 'normal';
   }
 
   // Boutons PAS (PLAN.md §7) : avancent des paramètres discrets par
@@ -691,14 +772,84 @@ export class AudioEngine {
     if (this.graph) applyMixSettings(this.graph, this.getState());
   }
 
+  /* Bande d'architecture — demande d'appliquer `apply` (typiquement un
+   * remplacement de motif) EXACTEMENT au début de la mesure suivante.
+   *
+   * ⚠️ Ce n'est pas un raffinement : `SCHEDULE_AHEAD` vaut 0,25 s, soit deux
+   * pas de doubles croches à 120 BPM. Une bascule faite depuis l'interface,
+   * même au bon instant perçu, laisse les deux premiers pas de la nouvelle
+   * section jouer l'ANCIEN motif. Ici, tant qu'une bascule est en attente
+   * l'horizon est écrêté à la mesure (voir tick) : rien n'est écrit au-delà,
+   * donc les curseurs peuvent repartir de zéro sans doubler une note.
+   *
+   * `apply` est une fonction pure du point de vue du moteur — c'est
+   * l'appelant qui sait remplacer son état (le moteur n'importe pas Svelte).
+   */
+  queueSwapAtNextBar(apply: () => void): void {
+    if (!this.isPlaying) {
+      // À l'arrêt il n'y a pas de mesure à attendre : on applique tout de suite.
+      apply();
+      this.sectionStartBar = this.currentBar;
+      return;
+    }
+    this.pendingSwap = apply;
+  }
+
+  cancelQueuedSwap(): void {
+    this.pendingSwap = null;
+  }
+
+  /** Mesure courante depuis ▶ — l'afficheur de la bande en a besoin. */
+  get bar(): number {
+    return this.currentBar;
+  }
+
+  /** Mesure courante DANS la section (0 au début de chaque section). */
+  get barDansSection(): number {
+    return this.currentBar - this.sectionStartBar;
+  }
+
+  /** Avancement dans la mesure courante, 0..1 — le remplissage d'une case. */
+  barProgress(): number {
+    if (!this.ctx || this.nextBarTime === null) return 0;
+    const barDur = barDuration(this.getState().tempo);
+    if (barDur <= 0) return 0;
+    return Math.max(0, Math.min(1, 1 - (this.nextBarTime - this.ctx.currentTime) / barDur));
+  }
+
+  /* Repose tous les curseurs sur `t` : une section commence sur SON premier
+     pas, jamais au milieu d'une phrase. Sans ça, un motif dont la nappe fait
+     quatre mesures reprendrait où le précédent s'était arrêté, et un motif
+     moins subdivisé démarrerait sur un index arbitraire. */
+  private resetCursorsAt(t: number): void {
+    (Object.keys(this.cursors) as DrumRowName[]).forEach((n) => {
+      this.cursors[n] = { stepIndex: 0, nextStepTime: t };
+    });
+    this.synthCursors = AudioEngine.freshSynthCursors();
+    (Object.keys(this.synthCursors) as SynthRowName[]).forEach((n) => {
+      this.synthCursors[n].nextStepTime = t;
+    });
+  }
+
   private tick(): void {
     const ctx = this.ctx;
     const graph = this.graph;
     const kit = this.kit;
     if (!ctx || !graph || !kit || !this.isPlaying) return;
-    const state = this.withLiveOverrides(this.getState());
     const now = ctx.currentTime;
-    const barDur = barDuration(state.tempo);
+    const barDur = barDuration(this.getState().tempo);
+
+    /* La bascule s'applique JUSTE AVANT la mesure, pas à son début audible :
+       c'est à cet instant que l'ordonnanceur commence à écrire dedans. */
+    if (this.pendingSwap !== null && this.nextBarTime !== null && this.nextBarTime - now <= AVANCE_BASCULE) {
+      const apply = this.pendingSwap;
+      this.pendingSwap = null;
+      apply();
+      this.resetCursorsAt(this.nextBarTime);
+      this.sectionStartBar = this.currentBar + 1; // la mesure qui commence
+    }
+    // Lu APRÈS la bascule : la fenêtre qui suit programme le nouveau motif.
+    const state = this.withLiveOverrides(this.getState());
     // La latence déclarée n'est fiable qu'une fois le flux ouvert : c'est ici
     // qu'on la voit vraiment. Une comparaison de nombre, 40 fois par seconde ;
     // ce qu'elle observe ne s'applique qu'au prochain ▶ (voir adapterTampon).
@@ -721,6 +872,15 @@ export class AudioEngine {
     // break ne doit pas rester actif au-delà de sa fenêtre.
     if (this.breakWindow && now >= this.breakWindow.endTime) this.breakWindow = null;
 
+    /* Horizon ÉCRÊTÉ à la mesure tant qu'une bascule est en attente : c'est ce
+       qui garantit qu'aucune note de la section suivante n'est programmée avec
+       l'ancien motif, donc que `resetCursorsAt` ne peut pas doubler une note.
+       L'écrêtage dure au plus le temps d'un tick avant la bascule. */
+    const horizon =
+      this.pendingSwap !== null && this.nextBarTime !== null
+        ? Math.min(now + SCHEDULE_AHEAD, this.nextBarTime)
+        : now + SCHEDULE_AHEAD;
+
     scheduleDrumWindow(
       {
         state,
@@ -732,7 +892,10 @@ export class AudioEngine {
         // devient distinct qu'à l'export (render-offline.ts), là où la
         // reproductibilité compte.
         fillRng: Math.random,
-        currentBar: this.currentBar,
+        // Mesure DANS la section, pas depuis ▶ : c'est ce qui fait tomber les
+        // fills à la fin de chaque section plutôt qu'au hasard (voir
+        // sectionStartBar).
+        barDansSection: this.currentBar - this.sectionStartBar,
         breakWindow: this.breakWindow,
         ghostTargetRow: state.ghostRow ?? this.ghostTargetRow,
         onSidechainTrigger: (name, time) => this.maybeTriggerSidechain(name, time),
@@ -743,7 +906,7 @@ export class AudioEngine {
         forceKickRoll: this.liveKickRoll,
         forceSnareRoll: this.liveSnareRoll,
       },
-      now + SCHEDULE_AHEAD,
+      horizon,
     );
     if (this.synth) {
       scheduleSynthWindow(
@@ -756,7 +919,7 @@ export class AudioEngine {
           emitPlayhead: (ev) => this.playheadQueue.push(ev),
           now,
         },
-        now + SCHEDULE_AHEAD,
+        horizon,
       );
     }
   }
