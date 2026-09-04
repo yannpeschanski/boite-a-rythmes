@@ -7,6 +7,7 @@
   import type { SynthRowName } from '../../model/types';
   import { parametre } from '../../model/parametres';
   import { repereDeNiveau, acteParId } from '../../model/carriere';
+  import { analyserLigne } from '../../model/locuteurs';
   import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
   import {
@@ -640,7 +641,15 @@
         <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Répétition</button>
         <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
       </div>
-      {#if commande}<p class="commande">{commande}</p>{/if}
+      <!-- La consigne d'un exercice de carrière est souvent une réplique de
+           Sol : elle porte son nom comme partout ailleurs dans le récit
+           (`model/locuteurs.ts`). -->
+      {#if commande}
+        {@const dite = analyserLigne(commande)}
+        <p class="commande">
+          {#if dite.qui}<span class="qui">{dite.qui.nom} —</span>{/if}{dite.texte}
+        </p>
+      {/if}
       {#if lvl.preamble}<p class="preamble">{lvl.preamble}</p>{/if}
 
       {#if showMap}
@@ -1644,6 +1653,15 @@
   /* Le brief du client passe AVANT la fiche du niveau, et se lit comme une
      phrase dite : c'est la seule chose de cet écran qui ne soit pas de la
      documentation. */
+  /* Le nom de qui parle, même grammaire que dans le Mode carrière : ambre,
+     interlettré, devant le tiret. */
+  .commande .qui {
+    color: var(--xp-accent-amber);
+    letter-spacing: var(--xp-ls-tag);
+    /* L'espace est ici et pas dans le texte : entre deux `<span>` collés, un
+       blanc de balisage serait avalé par la compilation. */
+    margin-right: 5px;
+  }
   .commande {
     margin: 0 0 6px;
     padding: 6px 8px;

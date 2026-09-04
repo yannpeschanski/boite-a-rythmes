@@ -25,10 +25,14 @@
     ETAPE_DU_COMPTE_A_REBOURS,
     ACTE_DU_DISQUE,
     ANNEE,
+    type SourceRecit,
     dateDeLActe,
     type Acte,
   } from '../../model/carriere';
   import XpWindow from '../xp/XpWindow.svelte';
+  import RecitLignes from './RecitLignes.svelte';
+  import { analyserLigne } from '../../model/locuteurs';
+  import { voixActives, setVoixActives } from './voix';
   import { AudioEngine } from '../../engine/AudioEngine';
   import { deserializeState } from '../../model/serialize';
   import { pattern } from '../../stores/pattern.svelte';
@@ -84,6 +88,25 @@
     fax: { icone: '📠', nom: 'FAX' },
     cassette: { icone: '🎞', nom: 'CASSETTE' },
   };
+
+  /* ⚠️ La CLÉ D'ÉCRAN : c'est elle qui dit au texte de repartir de zéro. Un
+   * écran de récit est identifié par son acte et son étape — deux étapes qui
+   * porteraient la même clé enchaîneraient sans se retaper. */
+  const cleEtape = $derived(`${acte.id}-${game.etapeActive}`);
+
+  /** La surface qui affiche le texte : l'afficheur est vert, le fax écrit en
+   *  capitales espacées, le reste est du texte de chrome. */
+  function tonDe(s: SourceRecit): 'normal' | 'lcd' | 'fax' {
+    return s === 'lcd' ? 'lcd' : s === 'fax' ? 'fax' : 'normal';
+  }
+
+  /* Le réglage des voix, lu une fois et gardé en rune : `voixActives()` lit le
+     stockage, ce qui n'est pas réactif. */
+  let voix = $state(voixActives());
+  function basculerVoix() {
+    voix = !voix;
+    setVoixActives(voix);
+  }
 
   function suite() {
     game.commandeAcceptee = null;
@@ -273,6 +296,18 @@
     <button class="player tap44-y" onclick={() => game.clearPseudo()} title="Changer de joueur">
       👤 {game.pseudo}
     </button>
+    <!-- ⚠️ Le seul bouton de la barre qui ne se cache PAS pendant le prologue.
+         Le premier écran ne montre qu'un appareil, un message et un bouton
+         (CLAUDE.md) — mais il fait aussi du bruit dès la première lettre, et un
+         son qu'on ne peut pas couper là où il commence n'est pas un réglage,
+         c'est une panne. -->
+    <button
+      class="xp-btn tiny tap44-y"
+      onclick={basculerVoix}
+      title={voix ? 'Couper les voix du récit' : 'Rendre leur voix aux personnages'}
+    >
+      {voix ? '🔊' : '🔇'} Voix
+    </button>
     {#if !enPrologue}
       <button class="xp-btn tiny tap44-y" onclick={onRepetition}>🗺️ Salle de répétition</button>
       <!-- ⚠️ Un joueur qui a FINI doit pouvoir revenir de sa relecture : le
@@ -335,6 +370,7 @@
        revient de l'Atelier avec un morceau : l'écran doit accuser réception,
        sinon on a travaillé pour un enchaînement qui passe à la suite. -->
   {#if game.commandeAcceptee}
+    {@const recue = analyserLigne(game.commandeAcceptee)}
     <!-- ⚠️ LA LIVRAISON EST UN MOMENT, pas une ligne de texte.
          Avant : une phrase écrite d'avance, la même quel que soit le morceau,
          et l'état partait à la poubelle. Le joueur venait de passer dix
@@ -343,7 +379,9 @@
          accepte, on RÉÉCOUTE ce qu'on vient de faire, et il ajoute une remarque
          calculée sur ce morceau-là (`model/reactions.ts`). -->
     <div class="livraison">
-      <p class="accepte">{game.commandeAcceptee}</p>
+      <p class="accepte">
+        {#if recue.qui}<span class="qui">{recue.qui.nom} —</span>{/if}{recue.texte}
+      </p>
       {#if livree}
         <div class="bandeau-piste">
           <button
@@ -375,9 +413,12 @@
         <span>{app.nom}</span>
         <span class="tag">{epilogue.entete}</span>
       </div>
-      {#each epilogue.lignes as l, i (i)}
-        <p class="ligne">{texte(l)}</p>
-      {/each}
+      <RecitLignes
+        lignes={epilogue.lignes}
+        cle={'epilogue-' + game.etapeEpilogue}
+        ton={tonDe(epilogue.source)}
+        transformer={texte}
+      />
     </div>
     <!-- ⚠️ Le disque se NOMME. Un morceau qui sort de l'appareil sans que rien
          ne dise ce qu'il est passe pour une musique d'ambiance ; celui-ci est
@@ -445,9 +486,7 @@
         <span>{app.nom}</span>
         <span class="tag">{etape.entete}</span>
       </div>
-      {#each etape.lignes as l, i (i)}
-        <p class="ligne">{texte(l)}</p>
-      {/each}
+      <RecitLignes lignes={etape.lignes} cle={cleEtape} ton={tonDe(etape.source)} transformer={texte} />
     </div>
     <div class="actions">
       <!-- ⚠️ « Il faut pouvoir revenir sur un texte précédent. » Le récit
@@ -475,9 +514,7 @@
         <span>COMMANDE</span>
         <span class="tag">{etape.entete}</span>
       </div>
-      {#each etape.lignes as l, i (i)}
-        <p class="ligne">{texte(l)}</p>
-      {/each}
+      <RecitLignes lignes={etape.lignes} cle={cleEtape} ton="fax" transformer={texte} />
       <ul class="cahier">
         {#each etape.cahier as c (c.id)}
           <li>☐ {c.libelle}</li>
@@ -500,9 +537,7 @@
         <span>CASSETTE</span>
         <span class="tag">{etape.entete}</span>
       </div>
-      {#each etape.lignes as l, i (i)}
-        <p class="ligne">{texte(l)}</p>
-      {/each}
+      <RecitLignes lignes={etape.lignes} cle={cleEtape} ton="normal" transformer={texte} />
     </div>
     <div class="actions">
       <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
@@ -519,9 +554,7 @@
     <div class="appareil">
       <div class="entete">ACTE {acte.id} — {acte.titre}</div>
       <p class="tag-scene">{etape.entete}</p>
-      {#each etape.lignes as l, i (i)}
-        <p class="ligne">{texte(l)}</p>
-      {/each}
+      <RecitLignes lignes={etape.lignes} cle={cleEtape} ton="normal" transformer={texte} />
     </div>
     <div class="actions">
       <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
@@ -540,11 +573,14 @@
       scène quand tu veux.
     </p>
   {:else if etape && etape.kind === 'exercice'}
+    {@const dite = analyserLigne(etape.commande ?? 'Au travail.')}
     <!-- Étape d'exercice atteinte sans être passée par `enchainer` (retour
          arrière du navigateur, relecture) : on ne saute pas dedans tout seul. -->
     <div class="appareil">
       <div class="entete">ACTE {acte.id} — {acte.titre}</div>
-      <p class="ligne">{etape.commande ?? 'Au travail.'}</p>
+      <p class="ligne" class:dite={!!dite.qui}>
+        {#if dite.qui}<span class="qui">{dite.qui.nom} —</span>{/if}{dite.texte}
+      </p>
     </div>
     <div class="actions">
       <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
@@ -691,13 +727,18 @@
     line-height: 1.5;
     color: var(--xp-text);
   }
-  /* Le fax parle en capitales parce que les fax parlaient en capitales : le
-     brief du client n'est pas de la narration, c'est un document. */
-  .source-fax .ligne {
-    letter-spacing: 0.05em;
+  /* Une réplique se voit avant d'être lue — même grammaire que dans
+     `RecitLignes.svelte` : un rail d'un pixel, et le nom en ambre. */
+  .ligne.dite {
+    border-left: 1px solid var(--xp-line);
+    padding-left: 7px;
   }
-  .source-lcd .ligne {
-    color: var(--xp-lcd);
+  .qui {
+    color: var(--xp-accent-amber);
+    letter-spacing: var(--xp-ls-tag);
+    /* L'espace est ici et pas dans le texte : entre deux `<span>` collés, un
+       blanc de balisage serait avalé par la compilation. */
+    margin-right: 5px;
   }
 
   .fin {

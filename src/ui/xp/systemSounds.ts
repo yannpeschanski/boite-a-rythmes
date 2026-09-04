@@ -43,16 +43,31 @@ function programmerSieste(): void {
   }, SIESTE_MS) as unknown as number;
 }
 
+/* Le contexte des sons d'interface, réveillé et rendormi — partagé.
+ *
+ * ⚠️ Exporté depuis que les VOIX DU RÉCIT (`ui/game/voix.ts`) en ont eu besoin.
+ * Un second contexte pour elles aurait rouvert exactement le flux de sortie que
+ * la sieste ci-dessus sert à refermer : deux réveils à servir sur la même route
+ * Bluetooth au lieu d'un. Un seul domicile pour cette mécanique, comme pour
+ * toute règle qui doit rester d'accord avec elle-même.
+ *
+ * AWAIT, pas `void` : tant que le contexte est suspendu (autoplay, ou la sieste)
+ * `currentTime` est gelé, et les instants calculés juste après seraient déjà
+ * passés à la reprise — l'attaque serait sautée, et le son claquerait. */
+export async function contexteReveille(): Promise<AudioContext | null> {
+  const c = ensureCtx();
+  if (!c) return null;
+  if (c.state !== 'running') await c.resume();
+  programmerSieste();
+  return c;
+}
+
 // Même forme d'enveloppe que playChime/playWinChime (attaque/chute
 // exponentielles courtes) — juste des durées/fréquences plus discrètes,
 // pensées pour un retour de chrome de fenêtre plutôt qu'une fanfare.
 async function chime(freqs: number[], dur: number, gain: number, type: OscillatorType): Promise<void> {
-  const c = ensureCtx();
+  const c = await contexteReveille();
   if (!c) return;
-  // AWAIT, pas `void` : tant que le contexte est suspendu (autoplay, ou la
-  // sieste ci-dessus) `currentTime` est gelé, et les instants calculés juste
-  // après seraient déjà passés à la reprise.
-  if (c.state !== 'running') await c.resume();
   freqs.forEach((f, i) => {
     const t = c.currentTime + i * dur;
     const osc = c.createOscillator();
@@ -67,7 +82,6 @@ async function chime(freqs: number[], dur: number, gain: number, type: Oscillato
     osc.start(t);
     osc.stop(t + dur);
   });
-  programmerSieste();
 }
 
 const KEY = 'boite-a-rythme:system-sounds-enabled';

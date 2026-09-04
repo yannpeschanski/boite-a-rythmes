@@ -3,8 +3,9 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-02, après la TRANCHE 6 close — l'épilogue
-> fait entendre le disque du joueur, et le concert se joue en Mode Live.
+> Dernière mise à jour : 2026-09-04 — le récit se tape signe à signe, chaque
+> réplique porte le nom de qui parle, et chaque personnage a sa voix
+> (`model/locuteurs.ts`, `engine/voixRecit.ts`, `ui/game/RecitLignes.svelte`).
 
 ## Où en est le projet
 
@@ -12,7 +13,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 553 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 561 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
