@@ -3,7 +3,10 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-04 — le récit se tape signe à signe, chaque
+> Dernière mise à jour : 2026-09-04 — une **fiche de relecture** annotable du
+> Mode jeu entier (`docs/relecture/mode-jeu.html`, 164 cartes, régénérée par
+> `npx vite-node scripts/relecture-mode-jeu.ts`) : c'est par elle que passe la
+> prochaine passe de priorités. Avant : le récit se tape signe à signe, chaque
 > réplique porte le nom de qui parle, et chaque personnage a sa voix
 > (`model/locuteurs.ts`, `engine/voixRecit.ts`, `ui/game/RecitLignes.svelte`).
 

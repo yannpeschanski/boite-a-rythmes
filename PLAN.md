@@ -44,6 +44,37 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une fiche de relecture du Mode jeu, à annoter (2026-09-04)
+
+> « Il faudra me refaire en fichier HTML pour que je puisse tout annoter sur le
+> mode jeu — j'aimerais pouvoir t'indiquer ce qui me semble prioritaire. »
+> — Yann
+
+`scripts/relecture-mode-jeu.ts` → `docs/relecture/mode-jeu.html`, 164 cartes
+annotables : les 8 actes, leurs 93 étapes, les 5 écrans de l'épilogue, les 13
+écrans qui n'appartiennent à aucune étape (splash, calibrage, carnet, salle de
+répétition, cahier vivant…) et les 44 niveaux du réservoir. Trois boutons
+(PRIORITAIRE / À REVOIR / OK) et un champ libre par carte ; tout est gardé en
+`localStorage`, rien n'est envoyé, et « Exporter mes notes » rend un Markdown
+groupé par priorité, à recoller tel quel.
+
+**Ce qui la distingue de la relecture du 2026-09-01** (75 cases, hors dépôt,
+donc périmée dès que le récit bougeait) : elle est **dérivée des données**. Un
+`npx vite-node scripts/relecture-mode-jeu.ts` la remet à jour — cahiers des
+charges ligne à ligne avec leurs sections et leurs interdictions, briefs d'acte,
+grilles écrites dessinées case par case.
+
+⚠️ **Une case n'a pas une largeur, elle a une DURÉE.** Dessinées toutes à
+15 px, la ligne en croches et la ligne en doubles-croches d'un même niveau se
+lisaient comme deux mesures de longueurs différentes — et la polyrythmie du
+niveau 74 (12 contre 16) devenait un mensonge. Toutes les lignes couvrent donc
+la même largeur et ce sont les cases qui se partagent la place.
+
+Ce n'est pas un écran du jeu : aucune règle de skin ne s'y applique, le corps de
+texte est lisible avant d'être Winamp. **Vérifié** au navigateur (Playwright) :
+164 cartes, aucune erreur console, priorité et note persistées au rechargement,
+export conforme, 0 px de débordement en 1100 px comme en 390 px.
+
 ### ✅ Le récit se tape, et on sait qui parle (2026-09-04)
 
 Demande de Yann : *« il faut faire défiler les textes et bien indiquer qui
