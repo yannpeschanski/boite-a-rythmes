@@ -1174,10 +1174,24 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     preamble: "Et la troisième : l'intensité. C'est la plus facile à entendre et la plus facile à mal juger — un son plus aigu paraît souvent plus fort qu'il ne l'est.",
     subdivOptions: [8], rowsActive: { kick: true, snare: false, hat: false },
     tempoOptions: [90], density: { kickMin: 0, kickMax: 0, snareMin: 0, snareMax: 0, hatMin: 0, hatMax: 0 } }),
+  /* ⚠️ SEIZE PAS depuis le 2026-09-04 — *« trouver un moyen pour que ce soit
+     plus complexe »* (Yann, en jouant l'acte 0). À huit, la pulsation est en
+     croches : sept trous possibles, chacun long d'une croche, et l'exercice se
+     résolvait en comptant. À seize, c'est la double-croche — quinze positions,
+     et un trou deux fois plus court, donc entendu au lieu d'être compté.
+
+     Ce n'est pas devenu un `intrus` (l'autre piste évoquée) : le verbe
+     n'exige aucun vocabulaire, et c'est précisément ce qui lui donne sa place
+     à l'acte 0, où le joueur n'a encore aucun mot. Le rendre plus dur ne
+     demandait donc pas d'en changer.
+
+     ⚠️ Le tempo NE monte pas avec la résolution : une double-croche à 96
+     dure déjà 156 ms, et ce qu'on veut faire entendre est un trou, pas une
+     course. */
   mkLevel(52, 'Le silence', {
     exercise: 'silence',
-    preamble: "Une pulsation régulière, et un coup qui manque. Lequel ? C'est la quatrième chose qu'on apprend à entendre, et la moins évidente : le silence fait partie du rythme, il ne l'interrompt pas.",
-    tempoOptions: [88, 96], silencePas: 8 }),
+    preamble: "Une pulsation régulière en doubles-croches, et un coup qui manque. Lequel ? C'est la quatrième chose qu'on apprend à entendre, et la moins évidente : le silence fait partie du rythme, il ne l'interrompt pas.",
+    tempoOptions: [88, 96], silencePas: 16 }),
 
   /* ---------- Acte 4, « La production » : ça sonne où ? ----------
    *

@@ -393,8 +393,14 @@ describe('la courbe ne redescend jamais', () => {
      * la relecture complète tranche l'autre sens : *« l'acte 1 fusionné
      * 12 → 6-7, le niveau 2 retiré, plus une polyrythmie »*. Deux lectures de
      * seize cases pour une seule idée neuve, c'est de la longueur, pas de la
-     * difficulté. */
-    expect(suite.length, 'les sept rythmes écrits').toBe(7);
+     * difficulté.
+     *
+     * ⚠️ SIX depuis le 2026-09-04 : le 67 est parti à son tour — *« supprimer :
+     * trop facile »* (Yann, en jouant). Il ouvrait l'acte sur le backbeat le
+     * plus simple du monde, deux lignes et huit cases, juste après un acte 0
+     * qui fait déjà TAPER trois rythmes. La borne basse de l'acte monte donc
+     * d'un cran, ce que la suite de poids ci-dessous vérifie toute seule. */
+    expect(suite.length, 'les six rythmes écrits').toBe(6);
     const poidss = suite.map(poids);
     poidss.forEach((p, i) => {
       if (i === 0) return;
@@ -403,8 +409,17 @@ describe('la courbe ne redescend jamais', () => {
         `niveau ${suite[i].id} (${p} cases) redescend sous le niveau ${suite[i - 1].id} (${poidss[i - 1]})`,
       ).toBeGreaterThanOrEqual(poidss[i - 1]);
     });
-    // Et elle monte VRAIMENT : le dernier a plus du double des cases du premier.
-    expect(poidss[poidss.length - 1]).toBeGreaterThanOrEqual(2 * poidss[0]);
+    /* Et elle monte VRAIMENT.
+     *
+     * ⚠️ Le seuil était « le double du premier », et il est passé à « la
+     * moitié en plus » le 2026-09-04 — non parce que la courbe s'est aplatie,
+     * mais parce que son PIED est monté : le 67 retiré, l'acte n'ouvre plus
+     * sur 24 cases mais sur 32. Un rapport calculé contre une première marche
+     * minuscule mesure la petitesse du départ autant que la montée. On garde
+     * donc les deux moitiés : une progression relative, ET un écart absolu que
+     * ni l'un ni l'autre bout ne peut satisfaire tout seul. */
+    expect(poidss[poidss.length - 1], 'la montée relative').toBeGreaterThanOrEqual(1.5 * poidss[0]);
+    expect(poidss[poidss.length - 1] - poidss[0], 'la montée absolue').toBeGreaterThanOrEqual(16);
   });
 
   it('⚠️ et chaque nouveauté de l’acte 1 est POSÉE sur la grille acquise', () => {
@@ -457,8 +472,12 @@ describe('la courbe ne redescend jamais', () => {
      * « on fusionne » qui garderait le premier de chaque paire ferait redescendre
      * l'acte, ce qui est le défaut que toute cette section combat. */
     const garde = suiteEcrite(1).map((l) => l.id);
+    /* ⚠️ « la base » a disparu de cette table le 2026-09-04, et pas en trichant :
+     * le sujet lui-même a quitté l'acte. Le backbeat de départ (67, qui avait
+     * gagné contre le 2) était devenu la marche la plus basse d'un acte qui
+     * doit monter — il est au réservoir avec son adversaire. Le premier sujet
+     * de l'acte est donc le charley, et c'est le 68 qui ouvre. */
     for (const [sujet, gardé, rendu] of [
-      ['la base', 67, 2],
       ['le charley', 68, 3],
       ['la syncope', 69, 7],
       ['les variantes', 60, 5],
@@ -518,7 +537,7 @@ describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
     // nouveautés d'un coup ou aucune.
     const acte1 = ACTES.find((a) => a.id === 1)!;
     const cites = acte1.etapes.filter((e) => e.kind === 'exercice').map((e) => (e as { niveau: number }).niveau);
-    expect(cites.length, 'la série fusionnée en compte sept').toBe(7);
+    expect(cites.length, 'la série fusionnée en compte six').toBe(6);
     for (const id of cites) expect(niveau(id).grille, `niveau ${id} : tiré au sort`).toBeTruthy();
   });
 

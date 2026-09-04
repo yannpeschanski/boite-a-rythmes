@@ -91,9 +91,8 @@ quiz n'aurait rien réglé.
 | 1 | l'outillage synthé (mixage + harmonie) + **l'acte 5** refait + **l'acte 4** | ✅ livré — les 9 prioritaires |
 | — | le **shuffle** nomme son bouton, le riddim dit ses deux coups, le preset `swing` à 33 | ✅ livré (retours en jouant) |
 | — | **refaire un cahier** depuis la salle, l'abandonner, 3★ / 0★ | ✅ livré |
-| 2 | les **roasts par verbe** (`composeRoast` ne parle que de reproduction) | à faire — le seul « à revoir » |
-| 3 | **l'acte 6 en 3 morceaux × 3 boucles** (couplet/refrain/pont), et l'acte 7 qui en découle | à faire — le gros morceau |
-| 4 | les petites : le `silence` de l'acte 0 à durcir, le niveau 67 retiré de l'acte 1, les niveaux 37/38 de l'acte 7 | à faire |
+| — | les **roasts par verbe**, le 67 retiré, le `silence` durci, l'acte 7 à un pilote | ✅ livré |
+| 2 | **l'acte 6 en 3 morceaux × 3 boucles** — le SEUL chantier encore ouvert | à faire — périmètre à cadrer |
 
 ⚠️ La polyrythmie (niveaux 29 et 24) a quitté l'acte 5 (« hors sujet ») et
 attend l'acte 6, où Yann propose de l'expliquer par le récit — « peut-être que

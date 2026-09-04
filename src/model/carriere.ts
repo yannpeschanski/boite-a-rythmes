@@ -721,8 +721,17 @@ export const ACTES: Acte[] = [
        * ne tombe plus là où on l'attend, puis une ligne qui ne compte même plus
        * comme les autres. Avant, parce que la résolution ne redescend jamais
        * (44 cases, entre les 32 du 69 et les 48 du 60). */
-      { kind: 'exercice', niveau: 67, commande: 'La première sonnerie. Le kick tient les quatre temps, la claire répond sur 2 et 4.' },
-      { kind: 'exercice', niveau: 68, commande: 'Le charley par-dessus, et tout de suite à la double-croche : seize cases pour lui seul.' },
+      /* ⚠️ Le niveau 67 a quitté l'acte le 2026-09-04 — *« supprimer : trop
+       * facile »* (Yann, en jouant). Il posait le backbeat le plus simple du
+       * monde sur deux lignes, juste après un acte 0 qui a déjà fait TAPER
+       * trois rythmes : la marche était vers le bas.
+       *
+       * L'acte ouvre donc sur le 68, qui pose les trois lignes d'un coup —
+       * exactement les trois mots que le brief vient d'écrire sur la table
+       * (« Kick. Snare. Hi-hat. »). Sa consigne est réécrite pour tenir seule :
+       * elle disait « par-dessus », ce qui ne veut plus rien dire quand il n'y
+       * a plus de « dessous ». Le 67 reste au réservoir. */
+      { kind: 'exercice', niveau: 68, commande: 'La première sonnerie, et les trois lignes à la fois : le kick sur les quatre temps, la claire sur 2 et 4, le charley à la double-croche.' },
       { kind: 'exercice', niveau: 69, commande: 'Maintenant le kick sort du temps — deux fois — et la claire s’y met aussi. Plus rien n’est où tu l’attends.' },
       { kind: 'exercice', niveau: 74, commande: 'Et si une ligne ne comptait plus comme les autres ? La claire boucle en douze, les deux autres en seize.' },
       /* ⚠️ Les variantes et les rafales atterrissent ICI, et c'est un
@@ -2058,10 +2067,27 @@ export const ACTES: Acte[] = [
           'SOL: Mais maintenant tu sais quoi faire après.',
         ],
       },
+      /* ⚠️ UN SEUL PILOTE depuis le 2026-09-04 — *« à revoir ou supprimer »*
+       * (Yann, sur les deux). Ils étaient DEUX à faire la même chose à trois
+       * écrans d'intervalle, et depuis que le rappel se joue pour de vrai en
+       * Mode Live, le second est une répétition de la répétition.
+       *
+       * C'est « revoir » et non « supprimer » : la mécanique reste le fond de
+       * l'acte — `justesseDesFrappes` retient la meilleure fenêtre consécutive
+       * et non la moyenne du tour, donc la notation pardonne un début raté et
+       * récompense la reprise, mot pour mot ce que Sol répond avant de
+       * brancher les enceintes. Vider l'acte de ses exercices retirerait la
+       * seule mécanique qui dit ce que le texte raconte.
+       *
+       * C'est le 38 qui reste (« à vue », le plus chargé des deux : quatre à
+       * cinq coups à lire et à poser, contre trois à quatre à retrouver), et
+       * il hérite du RATÉ que portait le 37 — l'écran suivant parle de
+       * reprendre, il lui faut quelque chose à reprendre. Le 37 reste au
+       * réservoir. */
       {
         kind: 'exercice',
-        niveau: 37,
-        commande: 'Le premier morceau. Tu rates presque ton entrée. Kelvin te regarde.',
+        niveau: 38,
+        commande: 'Le premier morceau. Tu rates presque ton entrée — et il ne s’arrête pas pour t’attendre.',
       },
       {
         kind: 'recit',
@@ -2073,11 +2099,6 @@ export const ACTES: Acte[] = [
           'C’est ça, la différence avec l’Atelier :',
           'ici on ne revient pas en arrière, on rattrape.',
         ],
-      },
-      {
-        kind: 'exercice',
-        niveau: 38,
-        commande: 'Le deuxième passe. Le troisième aussi. Cette fois tu vois venir.',
       },
       {
         kind: 'recit',

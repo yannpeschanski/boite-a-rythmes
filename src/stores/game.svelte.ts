@@ -69,9 +69,7 @@ import {
   BAG_ITEMS,
   CONSOLATION_ITEM,
   ABANDON_LINES,
-  ROAST_DIFFICULTY,
-  ROAST_GUESS,
-  ROAST_LOOP,
+  composerRoast,
   type BagItem,
 } from '../model/presets/gameData';
 import { ranger, productionDeLActe, type Production } from '../model/discographie';
@@ -242,6 +240,11 @@ class GameStore {
   attempts = $state(0);
   loopPlays = $state(0);
   guessPlays = $state(0);
+  /* ⚠️ Les écoutes des VERSIONS (verbes de paramètre, laverie). Elles
+   * n'étaient comptées nulle part : `ecouterVersion` ne touchait aucun
+   * compteur, et le roast affirmait quand même « une seule écoute de la
+   * boucle » à quelqu'un qui venait d'en comparer deux dix fois. */
+  paramEcoutes = $state(0);
   solved = $state(false);
   voice = $state<GameVoice | null>(null);
   tempo = $state(100);
@@ -1176,6 +1179,7 @@ class GameStore {
     this.attempts = 0;
     this.loopPlays = 0;
     this.guessPlays = 0;
+    this.paramEcoutes = 0;
     this.solved = false;
     this.lastResult = null;
     this.preparerExercice();
@@ -1925,14 +1929,19 @@ class GameStore {
 
   // Roasting : trois axes combinés — difficulté du palier, a-t-on réécouté sa
   // propre version, et combien de fois la boucle cible a tourné.
+  /* ⚠️ Le roast commente le VERBE joué, et ne cite que ce qui a été mesuré —
+   * voir `composerRoast`. L'ancien lisait `voiceTier` pour parler de
+   * difficulté (« avec de la polyrythmie ») sur douze verbes qui n'en ont
+   * pas, et parlait d'écoutes que les verbes de paramètre ne comptaient pas.
+   * Tout le calcul est PUR et vit dans les données ; le store ne fournit que
+   * ses compteurs. */
   private composeRoast(): string {
-    const tier = this.level.voiceTier;
-    const loopKey = this.loopPlays <= 1 ? '1' : this.loopPlays <= 2 ? '2' : '3';
-    return [
-      pick(ROAST_DIFFICULTY[tier] ?? ROAST_DIFFICULTY.easy),
-      pick(this.guessPlays > 0 ? ROAST_GUESS.yes : ROAST_GUESS.no),
-      pick(ROAST_LOOP[loopKey]),
-    ].join(' ');
+    return composerRoast(this.level.exercise, {
+      attempts: this.attempts,
+      loopPlays: this.loopPlays,
+      guessPlays: this.guessPlays,
+      paramEcoutes: this.paramEcoutes,
+    });
   }
 
   private grantItems(count: number, consolation = false): BagItem[] {

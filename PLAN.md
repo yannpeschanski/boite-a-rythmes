@@ -44,6 +44,68 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les roasts parlent du verbe joué, et trois marches se corrigent (2026-09-04)
+
+> « Il faut revoir les roasts pour que ça corresponde à l'exercice réalisé. Le
+> système avait été défini sur un de reproduction de rythme uniquement. »
+> — Yann
+
+**Deux des trois axes mentaient sur la moitié du jeu, et la mesure le dit :**
+
+- la DIFFICULTÉ était lue sur `voiceTier`, et `hard` couvre **51 niveaux de
+  douze verbes différents** — sa réplique annonce « DIFFICILE, avec de la
+  polyrythmie… le hat comptait en 3 pendant que tout le reste comptait en 4 »
+  sur un exercice de vocabulaire, de style ou de laverie. L'axe est **retiré** ;
+- les ÉCOUTES (`loopPlays`, `guessPlays`) ne sont comptées que par
+  `play('target'|'guess')`. Les verbes de paramètre écoutent par
+  `ecouterVersion`, **qui ne comptait rien** : le roast affirmait « une seule
+  écoute de la boucle » et « sans même réécouter ta propre version » à
+  quelqu'un qui venait de comparer deux versions dix fois et qui n'a pas de
+  « version ».
+
+Ce qui remplace : **un roast ne commente que ce qui a été mesuré.** Deux axes
+toujours vrais — le VERBE (une pique par verbe, vraie par construction puisqu'elle
+décrit le geste demandé) et les ESSAIS (comptés dans `verify()`, donc partout) —
+plus un troisième tiré de la mesure la plus SPÉCIFIQUE qui soit vraie :
+comparaisons de versions > réécoute de sa version > écoutes de la boucle, et
+**rien** si personne n'a rien compté. Le calcul est PUR (`composerRoast`), donc
+testable sans navigateur : c'est ce qui manquait pour que le défaut soit
+visible.
+
+**Et trois marches de la courbe**, toutes signalées en jouant :
+
+- **le niveau 67 quitte l'acte 1** (*« supprimer : trop facile »*) — deux
+  lignes, huit cases, juste après un acte 0 qui fait déjà TAPER trois rythmes.
+  L'acte ouvre sur le 68, dont la consigne est réécrite pour tenir seule (elle
+  disait « par-dessus », sans plus rien dessous) ;
+- **le `silence` passe à SEIZE pas** (*« plus complexe »*) : quinze positions au
+  lieu de sept, et un trou deux fois plus court — entendu au lieu d'être compté.
+  Pas transformé en `intrus` (l'autre piste) : le verbe n'exige aucun
+  vocabulaire, et c'est ce qui lui donne sa place à l'acte 0 ;
+- **l'acte 7 ne garde qu'un pilote** (*« à revoir ou supprimer »*) : depuis que
+  le rappel se joue en Mode Live, le second était une répétition de la
+  répétition. C'est « revoir » et non « supprimer » — `justesseDesFrappes` reste
+  la seule mécanique qui dise ce que le texte raconte. Le 38 reste (le plus
+  chargé) et hérite du raté que portait le 37, l'écran suivant parlant de
+  reprendre.
+
+⚠️ **Le seuil « la courbe monte vraiment » a dû être réancré, pas affaibli.** Il
+demandait le double du premier niveau ; le 67 retiré, le PIED de l'acte est
+monté (24 → 32 cases) et le rapport se resserre sans que la courbe s'aplatisse.
+Un rapport calculé contre une première marche minuscule mesure la petitesse du
+départ autant que la montée : le test garde désormais **les deux moitiés**, une
+montée relative (× 1,5) et un écart absolu (16 cases).
+
+⚠️ **Et le même piège tactile qu'hier, sur les cases du silence.** Passer de huit
+à seize pas fait quatre rangées de boutons de 30 px : mesuré au doigt, seule la
+dernière atteignait 44 px, les trois autres voyaient leur enveloppe recouverte
+par la rangée du dessous. Un bouton de choix n'est pas un dessin — il grandit.
+
+**Vérifié :** 595 tests (10 neufs, `tests/roasts.test.ts`), 0 erreur de types,
+les deux builds, `scripts/parcours-carriere.cjs` de bout en bout, et l'écran du
+silence mesuré en 390 × 844 (seize cases en 4 × 4, aucun débordement, zone
+touchable de 44 px sur les seize).
+
 ### ✅ Un cahier se refait, s'abandonne, et se note (2026-09-04)
 
 > « Les exercices en ateliers, on doit pouvoir y retourner dans la salle de
