@@ -49,6 +49,8 @@ import {
   acteParId,
   acteAVenir,
   niveauxRencontres,
+  commandesRencontrees,
+  ACTES as ACTES_POUR_MASTER,
   type Acte,
   type Etape,
   type EtapeCommande,
@@ -132,6 +134,16 @@ export interface PlayerProgress {
 }
 
 // 3★ du 1er coup, 2★ en 2-3 essais, 1★ au-delà, 0★ si abandon.
+/* La clé des étoiles d'un CAHIER dans `PlayerProgress.stars`.
+ *
+ * ⚠️ Les niveaux y rangent leur `id` en chaîne (« 67 ») : une commande n'a pas
+ * d'id, et lui en inventer un aurait tôt ou tard croisé celui d'un niveau. Le
+ * préfixe rend la collision impossible par construction, et une sauvegarde
+ * ancienne reste lisible — une clé inconnue est simplement une clé de plus. */
+export function cleCommande(acte: number, etape: number): string {
+  return `c${acte}.${etape}`;
+}
+
 export function starsForAttempts(attempts: number): number {
   if (attempts <= 1) return 3;
   if (attempts <= 3) return 2;
@@ -374,6 +386,11 @@ class GameStore {
    * livrer alors qu'on a relu un autre acte entre-temps ne doit pas valider la
    * mauvaise étape. */
   commandeEnCours = $state<{ acte: number; etape: number } | null>(null);
+  /* ⚠️ VOLATIL, comme `enRelecture` : refaire un cahier depuis la salle de
+   * répétition ne se persiste pas. Il dit une seule chose — cette livraison-ci
+   * ne fait pas avancer le récit. Rangé dans le curseur, il survivrait au
+   * rechargement et bloquerait la carrière sur place. */
+  repetitionCommande = $state(false);
   /* La SCÈNE en cours — même forme que la commande, et pour la même raison :
    * l'étape doit survivre à un changement de vue (on part dans le Mode Live,
    * qui n'est pas le Mode jeu). */
@@ -412,6 +429,14 @@ class GameStore {
     if (this.pseudo.toLowerCase() === 'master') {
       const stars: Record<string, number> = {};
       LEVELS.forEach((l) => (stars[String(l.id)] = 3));
+      // Les CAHIERS aussi : « master » sert à regarder des écrans, et une
+      // salle de répétition où les exercices sont à 3★ et les cahiers à 0
+      // donnerait à vérifier un affichage que personne ne verra jamais.
+      for (const a of ACTES_POUR_MASTER) {
+        a.etapes.forEach((e, i) => {
+          if (e.kind === 'commande') stars[cleCommande(a.id, i)] = 3;
+        });
+      }
       return { level: LEVELS.length, stars };
     }
     return this.progress[this.pseudo] ?? { level: 1, stars: {} };
@@ -706,13 +731,18 @@ class GameStore {
    * table rase plutôt que de partir d'un rythme tiré au sort — mais c'est un
    * défaut de données, et `tests/transformer.test.ts` le refuse. */
   departCommande(): PatternStateV2 {
-    const e = this.etapeCourante;
-    if (e?.kind !== 'commande') return etatVierge();
+    /* ⚠️ On lit la commande OUVERTE (`commandeEnCours`), pas le curseur de
+     * carrière. Les deux coïncident tant qu'on joue le récit dans l'ordre ;
+     * ils divergent dès qu'on refait un cahier depuis la salle de répétition,
+     * et le départ serait alors celui d'une tout autre étape. */
+    const e = this.commande;
+    const acteDeLaCommande = this.commandeEnCours?.acte ?? this.acteActif;
+    if (!e) return etatVierge();
     /* La chaîne d'envois d'un même acte : on reprend le morceau qu'on vient de
      * livrer, pas une table rase — « les livraisons intermédiaires doivent être
      * remplacées par les nouvelles jusqu'à la fin de l'acte » (Yann). */
     if (e.partirDeLaLivraison) {
-      const p = productionDeLActe(this.productions, this.acteActif);
+      const p = productionDeLActe(this.productions, acteDeLaCommande);
       return p ? deserializeState(p.etat) : etatVierge();
     }
     /* Reprendre le morceau d'un acte PRÉCÉDENT — « on reprend le travail déjà
@@ -726,6 +756,50 @@ class GameStore {
     const l = LEVELS.find((x) => x.id === e.partirDu);
     if (!l?.grille) return etatVierge();
     return etatDepuisGrille(l.grille, l.tempoOptions[0]);
+  }
+
+  /* REFAIRE un cahier déjà traversé, depuis la salle de répétition.
+   *
+   * ⚠️ Demande de Yann (2026-09-04) : *« les exercices en ateliers, on doit
+   * pouvoir y retourner dans la salle de répétition et abandonner en cours de
+   * route »*. Trois choses le distinguent d'une commande de carrière, et les
+   * trois tiennent dans `repetitionCommande` :
+   *
+   * - le curseur du récit ne bouge PAS (on ne rejoue pas l'acte pour autant) ;
+   * - la production livrée REMPLACE quand même celle de sa série : refaire
+   *   mieux, c'est garder le meilleur, et la discographie range par (acte,
+   *   série) exactement pour ça ;
+   * - les modules dont le cahier a besoin s'ouvrent le temps de la répétition,
+   *   par le même chemin que pendant la carrière (`modulesRequis` dérive de la
+   *   commande OUVERTE).
+   *
+   * Renvoie `false` si l'étape n'est pas une commande déjà rencontrée : on ne
+   * répète pas ce qu'on n'a pas encore joué. */
+  repeterCommande(acte: number, etape: number): boolean {
+    const e = acteParId(acte).etapes[etape];
+    if (!e || e.kind !== 'commande') return false;
+    if (!this.commandesDeRepetition.some((c) => c.acte === acte && c.etape === etape)) return false;
+    this.commandeEnCours = { acte, etape };
+    this.repetitionCommande = true;
+    history.push();
+    pattern.replace(this.departCommande());
+    this.commandeVerdict = null;
+    this.commandeAcceptee = null;
+    return true;
+  }
+
+  /* Rendre la main sans livrer.
+   *
+   * ⚠️ AUCUNE étoile : une commande abandonnée n'est pas une commande faite, et
+   * `saveEtoilesCommande` ne prend que le maximum — un abandon ne peut donc pas
+   * non plus effacer les étoiles d'une réussite précédente.
+   *
+   * L'Atelier garde ce qu'on y a fait : c'est un abandon de la LIVRAISON, pas
+   * du travail. Le curseur ne bouge pas, donc la carrière repropose l'étape. */
+  abandonnerCommande(): void {
+    this.commandeEnCours = null;
+    this.repetitionCommande = false;
+    this.commandeVerdict = null;
   }
 
   /* Livrer le morceau qu'on vient de faire.
@@ -744,21 +818,30 @@ class GameStore {
     // On se replace sur l'étape livrée avant d'avancer : le joueur a pu relire
     // un autre acte entre-temps, et c'est CETTE étape-là qu'il vient de finir.
     const cible = this.commandeEnCours!;
-    this.acteActif = cible.acte;
-    this.etapeActive = cible.etape;
+    const repetition = this.repetitionCommande;
     this.commandeEnCours = null;
+    this.repetitionCommande = false;
     this.commandeAcceptee = c.accepte;
-    /* ⚠️ On archive AVANT d'avancer, tant que `acteActif` désigne encore
-     * l'acte livré. Après `avancerCarriere`, le curseur est sur l'acte
-     * suivant : la production serait rangée sous le mauvais nom, et la
-     * relivrer après relecture n'écraserait plus la bonne entrée. */
+    /* ⚠️ L'acte est lu par son ID, jamais par le curseur. Le code se plaçait
+     * sur l'étape livrée AVANT d'archiver, pour que `acteCourant` désigne le
+     * bon acte — un ordre à respecter, donc un piège. En répétition ce détour
+     * serait carrément faux : le curseur ne doit pas bouger du tout. */
+    const acte = acteParId(cible.acte);
     this.archiverProduction(etat, {
       acte: cible.acte,
       serie: c.serie,
       titre: c.titre,
       client: c.client,
-      quand: this.acteCourant.quand,
+      quand: acte.quand,
     });
+    // Livré = 3★, comme n'importe quel exercice réussi. Il n'y a pas de
+    // gradation : le bouton reste verrouillé tant que le cahier n'est pas
+    // satisfait, donc une livraison est toujours complète (arbitrage de Yann).
+    this.saveEtoilesCommande(cible.acte, cible.etape, 3);
+    // Une répétition ne fait pas avancer le récit — elle le refait.
+    if (repetition) return v;
+    this.acteActif = cible.acte;
+    this.etapeActive = cible.etape;
     this.avancerCarriere();
     return v;
   }
@@ -1884,6 +1967,49 @@ class GameStore {
    * leur numérotation.
    *
    * « master » et le contournement voient tout : ce sont des outils de test. */
+  /* Les cahiers que la salle de répétition propose de refaire : ceux qu'on a
+   * traversés, dans l'ordre du récit. Voir `commandesRencontrees` — même règle
+   * que pour les niveaux, rencontré et non réussi, et l'étape en cours exclue.
+   *
+   * « master » voit tout : c'est un outil de test. */
+  get commandesDeRepetition(): Array<{ acte: number; etape: number; entete: string; client: string }> {
+    const refs =
+      this.pseudo.toLowerCase() === 'master'
+        ? commandesRencontrees(NB_ACTES, Number.MAX_SAFE_INTEGER)
+        : (() => {
+            const p = this.progresCarriere;
+            return commandesRencontrees(p.acte, p.etape);
+          })();
+    return refs.flatMap((r) => {
+      const e = acteParId(r.acte).etapes[r.etape];
+      return e && e.kind === 'commande'
+        ? [{ acte: r.acte, etape: r.etape, entete: e.entete, client: e.client }]
+        : [];
+    });
+  }
+
+  /** Les étoiles d'un cahier : 3 s'il a été livré, 0 sinon. */
+  etoilesDeCommande(acte: number, etape: number): number {
+    return this.playerProgress.stars[cleCommande(acte, etape)] ?? 0;
+  }
+
+  /* ⚠️ Une commande ne touche PAS `level`. Les étoiles d'un cahier vivent dans
+   * le même enregistrement que celles des niveaux — c'est la même question
+   * (« qu'est-ce qui est réussi ? ») — mais sous une clé qui ne peut pas
+   * collisionner avec un `id` de niveau, et sans faire avancer le réservoir :
+   * livrer un cahier n'est pas réussir le niveau suivant. */
+  private saveEtoilesCommande(acte: number, etape: number, stars: number): void {
+    if (this.pseudo.toLowerCase() === 'master') return;
+    const prev = this.progress[this.pseudo] ?? { level: 1, stars: {} };
+    const id = cleCommande(acte, etape);
+    const next: PlayerProgress = {
+      ...prev,
+      stars: { ...prev.stars, [id]: Math.max(prev.stars[id] ?? 0, stars) },
+    };
+    this.progress = { ...this.progress, [this.pseudo]: next };
+    this.ecrireProgression();
+  }
+
   get niveauxDeRepetition(): number[] {
     if (this.pseudo.toLowerCase() === 'master') return LEVELS.map((l) => l.id);
     const p = this.progresCarriere;

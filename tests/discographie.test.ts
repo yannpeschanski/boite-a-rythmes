@@ -135,6 +135,11 @@ describe('un envoi reprend le morceau livré à l’étape d’avant', () => {
     game.enCarriere = true;
     game.acteActif = 4;
     game.etapeActive = i;
+    /* ⚠️ On OUVRE la commande, comme le fait l'écran : `departCommande()` lit
+     * la commande EN COURS et non le curseur de carrière depuis le 2026-09-04,
+     * pour qu'un cahier refait depuis la salle de répétition parte de son
+     * propre départ et non de l'étape où le récit s'est arrêté. */
+    game.ouvrirCommande();
 
     // Rien de livré : on retombe sur la table rase plutôt que de bloquer.
     expect(game.productions.filter((p) => p.acte === 4)).toHaveLength(0);

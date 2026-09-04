@@ -808,6 +808,21 @@ as enlevé », parce que lui couper les aigus retirerait ce qui vient de le sauv
 `Contrainte.section` porte les titres d'étape : six lignes à plat ne disent pas
 qu'il y a deux gestes, ni dans quel ordre.
 
+⚠️ **Un cahier se REFAIT, s'abandonne, et vaut trois étoiles — ou zéro.** La
+salle de répétition liste les commandes traversées (`commandesRencontrees`) à
+côté des niveaux ; `repeterCommande` rouvre le cahier **sans bouger le curseur
+du récit** (`repetitionCommande`, volatil) et sa livraison remplace quand même
+la production de sa série. Les étoiles sont binaires — livré 3★, abandonné 0★ —
+parce que le bouton reste verrouillé tant que le cahier n'est pas satisfait :
+une livraison est toujours complète, il n'y a rien à graduer. Leur clé
+(`cleCommande`, `c<acte>.<étape>`) ne peut pas collisionner avec un id de
+niveau, et une commande ne fait jamais avancer `level`.
+
+⚠️ **`departCommande()` lit la commande OUVERTE, jamais le curseur de
+carrière.** Les deux coïncident tant qu'on joue dans l'ordre et divergent dès
+qu'on refait un cahier depuis la salle — le départ serait alors celui d'une
+autre étape.
+
 ⚠️ **Une seule commande par acte n'est PLUS la règle.** Elle l'était tant qu'un
 acte enseignait par des exercices et concluait par une livraison. Ce qui reste
 tenu : après la DERNIÈRE commande d'un acte il ne reste que du récit, et dans une

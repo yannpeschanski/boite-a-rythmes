@@ -89,6 +89,8 @@ quiz n'aurait rien réglé.
 | | tranche | état |
 |---|---|---|
 | 1 | l'outillage synthé (mixage + harmonie) + **l'acte 5** refait + **l'acte 4** | ✅ livré — les 9 prioritaires |
+| — | le **shuffle** nomme son bouton, le riddim dit ses deux coups, le preset `swing` à 33 | ✅ livré (retours en jouant) |
+| — | **refaire un cahier** depuis la salle, l'abandonner, 3★ / 0★ | ✅ livré |
 | 2 | les **roasts par verbe** (`composeRoast` ne parle que de reproduction) | à faire — le seul « à revoir » |
 | 3 | **l'acte 6 en 3 morceaux × 3 boucles** (couplet/refrain/pont), et l'acte 7 qui en découle | à faire — le gros morceau |
 | 4 | les petites : le `silence` de l'acte 0 à durcir, le niveau 67 retiré de l'acte 1, les niveaux 37/38 de l'acte 7 | à faire |

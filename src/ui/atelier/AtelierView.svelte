@@ -71,6 +71,18 @@
     if (game.livrerCommande(pattern.snapshot(), contexteLivraison())?.accepte) onSwitchView?.('game');
   }
 
+  /* Rendre la main sans livrer — *« abandonner en cours de route »* (Yann,
+     2026-09-04). Il n'y avait aucune sortie : le cahier restait ouvert tant
+     qu'il n'était pas satisfait, et le seul moyen de partir était la barre de
+     navigation, qui laissait la commande ouverte derrière elle.
+     ⚠️ L'Atelier GARDE le travail : on abandonne la livraison, pas le morceau.
+     Et aucune étoile n'est posée — un cahier abandonné n'est pas un cahier
+     fait, mais il ne retire pas non plus celles d'une réussite précédente. */
+  function abandonner() {
+    game.abandonnerCommande();
+    onSwitchView?.('game');
+  }
+
 
   const engine = new AudioEngine(() => pattern.snapshot());
 
@@ -470,9 +482,12 @@
            livrant l'acte 4 (« LIVRER À SOL » alors que le client est Le
            Tunnel) et corrigé ici, l'acte 3 en ayant fait le troisième cas :
            Sol n'est pas la destinataire, elle est la patronne. -->
-      <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
-        Livrer à {commande.client} ▸
-      </button>
+      <div class="commande-actions">
+        <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
+          Livrer à {commande.client} ▸
+        </button>
+        <button class="xp-btn tap44-y" onclick={abandonner}>Laisser tomber</button>
+      </div>
     </div>
   {/if}
 
@@ -771,6 +786,14 @@
   }
   .commande-tete .compte {
     color: var(--xp-lcd);
+  }
+  /* Livrer et laisser tomber côte à côte : la sortie doit être aussi visible
+     que l'entrée, sinon elle n'existe pas. Elles s'empilent sous 320 px. */
+  .commande-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
   }
   .commande ul {
     margin: 6px 0;

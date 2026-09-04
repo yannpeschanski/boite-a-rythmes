@@ -164,3 +164,66 @@ describe('la fiche se lit autant qu’elle juge', () => {
     }
   });
 });
+
+/* ---------------------------------------------------------------------------
+ * UN CRITÈRE DE PLACEMENT DOIT ÊTRE JOUABLE À LA LECTURE
+ *
+ * ⚠️ Trouvé par un joueur, pas par un test (Yann, 2026-09-04) : *« "La réponse
+ * juste après le temps 2" dans le riddim, je ne trouve pas la soluce »*. Deux
+ * défauts mécaniques derrière cette phrase — donc tenables ici plutôt qu'à la
+ * relecture, où ils ne se voient pas : un libellé se relit très bien en croyant
+ * qu'il décrit ce qu'il exige.
+ *
+ * ⚠️ Les deux tests RASSEMBLENT leurs infractions avant d'affirmer. Écrits avec
+ * un `expect` dans la boucle, ils s'arrêtaient à la première et cachaient les
+ * suivantes : c'est comme ça que le critère du skank est passé inaperçu au
+ * premier jet.
+ * ------------------------------------------------------------------------- */
+describe('un critère de placement dit tout ce qu’il exige', () => {
+  /* Un critère COMPAGNON reprend les temps de celui qui le précède — « Ce
+   * pop-là est sec — en rim shot » ne redécrit pas où tombe le pop, il ajoute
+   * une exigence sur les mêmes frappes. Sa description est la ligne du dessus,
+   * et l'exiger complet ferait écrire deux fois la même phrase à l'écran. */
+  const placements = FICHES.flatMap((f) =>
+    f.criteres.map((c, i) => {
+      const avant = f.criteres[i - 1];
+      const compagnon =
+        c.temps !== undefined &&
+        avant?.temps !== undefined &&
+        JSON.stringify(avant.temps) === JSON.stringify(c.temps);
+      return { fiche: f.id, c, compagnon };
+    }).filter((x) => x.c.temps !== undefined),
+  );
+
+  it('il y en a, et le compte n’est pas vide', () => {
+    // Le garde-fou qui empêche les deux suivants de devenir décoratifs le jour
+    // où les fiches changeraient de primitive.
+    expect(placements.length).toBeGreaterThan(8);
+    expect(placements.filter((p) => !p.compagnon).length).toBeGreaterThan(5);
+  });
+
+  /* ⚠️ La vérification est un `every` : un critère écrit `[1, 1.75]` exige DEUX
+   * frappes. Un libellé au singulier en annonce une — le joueur pose celle
+   * qu'il lit, et la case reste vide sans rien dire de plus. */
+  it('un critère qui demande plusieurs frappes ne les annonce pas au singulier', () => {
+    const fautifs = placements
+      .filter(({ c, compagnon }) => !compagnon && c.temps!.length >= 2)
+      .filter(({ c }) => !/\b(les|deux|trois|quatre|chaque|tous|toutes|et|puis)\b/i.test(c.libelle))
+      .map(({ fiche, c }) => `${fiche} — « ${c.libelle} » (${c.temps!.length} frappes)`);
+    expect(fautifs, 'un libellé au singulier pour plusieurs frappes').toEqual([]);
+  });
+
+  /* ⚠️ ET LE PIÈGE QUI A COÛTÉ LA PARTIE : `pasDuTemps` rend `null` quand
+   * `temps × subdiv / 4` n'est pas entier. Le temps 1,75 n'existe donc QUE sur
+   * une ligne en doubles-croches — à la subdivision par défaut, la case n'est
+   * pas à l'écran et le critère est IMPOSSIBLE, en silence. Un critère qui
+   * réclame une résolution doit la nommer. */
+  it('⚠️ un placement hors de la croche annonce sa résolution', () => {
+    const surLaCroche = (t: number) => Number.isInteger((t * 8) / 4);
+    const fautifs = placements
+      .filter(({ c, compagnon }) => !compagnon && !c.temps!.every(surLaCroche))
+      .filter(({ c }) => !/double|seizi|16/i.test(c.libelle))
+      .map(({ fiche, c }) => `${fiche} — « ${c.libelle} »`);
+    expect(fautifs, 'un placement entre les croches sans dire qu’il en faut').toEqual([]);
+  });
+});

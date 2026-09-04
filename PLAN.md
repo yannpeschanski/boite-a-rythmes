@@ -44,6 +44,128 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un cahier se refait, s'abandonne, et se note (2026-09-04)
+
+> « Les exercices en ateliers, on doit pouvoir y retourner dans la salle de
+> répétition et abandonner en cours de route et avoir des étoiles comme pour
+> les autres exercices. » — Yann
+
+**Trois manques, et le premier explique les deux autres :** la salle listait des
+NIVEAUX, or une commande n'est pas un niveau — elle n'a pas d'`id`, elle vit
+dans un acte. Il n'y avait donc ni chemin pour y revenir, ni sortie une fois
+dedans, ni clé sous laquelle noter quoi que ce soit.
+
+- **Y retourner** — `commandesRencontrees` (jumelle de `niveauxRencontres` :
+  rencontré et non réussi, l'étape en cours exclue) et `repeterCommande`. Le
+  curseur du récit ne bouge pas (`repetitionCommande`, volatil comme
+  `enRelecture`), les modules du cahier s'ouvrent par le chemin habituel, et la
+  livraison remplace la production de sa série — refaire mieux, c'est garder le
+  meilleur. ⚠️ Un acte peut n'avoir AUCUN exercice et des cahiers quand même
+  (l'acte 4) : le groupement de la salle se construit sur les deux sources.
+- **Abandonner** — un bouton « Laisser tomber » à côté de « Livrer ». Il n'y
+  avait aucune sortie : le cahier restait ouvert tant qu'il n'était pas
+  satisfait, et partir par la barre de navigation le laissait ouvert derrière
+  soi. L'Atelier garde le travail : on abandonne la livraison, pas le morceau.
+- **Les étoiles** — binaires, et c'est un arbitrage de Yann : le bouton étant
+  verrouillé tant que le cahier n'est pas satisfait, une livraison est toujours
+  complète, donc `starsForAttempts` aurait donné 3★ à tout le monde. Livré 3★,
+  abandonné 0★.
+
+⚠️ **`departCommande()` lisait le CURSEUR de carrière** et non la commande
+ouverte. Invisible tant que les deux coïncidaient ; faux dès la première
+répétition. Corrigé, et les deux tests qui s'appuyaient dessus passent
+maintenant par `ouvrirCommande()` — c'est-à-dire par le vrai câblage.
+
+⚠️ **La zone touchable, mesurée au doigt et non au rectangle.** Les quatorze
+cahiers portaient `.tap44-y` : `getBoundingClientRect` annonçait 26 px,
+`elementFromPoint` en contexte tactile disait 44 — mais pour deux d'entre eux
+seulement. Leurs enveloppes de 44 px, empilées à 4 px d'écart, se recouvraient
+de 14 px : un doigt posé en haut d'un cahier tombait sur celui du dessus. Une
+ligne de liste peut GRANDIR, contrairement à une case de séquenceur — elle
+prend donc `min-height: 44px` sous `coarse`, et les quatorze mesurent 44.
+
+**Vérifié :** 585 tests (9 neufs, `tests/repetition-cahiers.test.ts`), 0 erreur
+de types, les deux builds, `scripts/parcours-carriere.cjs` de bout en bout, et
+au navigateur en 390 × 844 : la salle affiche « 29 exercices et 14 cahiers des
+charges », un clic ouvre l'Atelier sur le bon cahier avec le Synthé déverrouillé,
+« Laisser tomber » rend la main sans que le curseur bouge d'un cran.
+
+### ✅ Le riddim dit où sont ses deux coups, et le preset Swing sonne swing (2026-09-04)
+
+> « "La réponse juste après le temps 2" dans le riddim, je ne trouve pas la
+> soluce. » — Yann, en jouant
+
+**Trois défauts dans une seule ligne de cahier**, et aucun ne se voit à la
+relecture du code — un libellé se relit très bien en croyant qu'il décrit ce
+qu'il exige :
+
+1. le critère est un `every` sur `[1, 1.75]`, donc **deux** frappes, et le
+   libellé n'en nommait qu'une ;
+2. « juste après le temps 2 » désigne 1,75, qui est trois doubles-croches plus
+   loin — c'est-à-dire **juste avant le 3**. Le mot pointait au mauvais endroit ;
+3. ⚠️ et surtout : `pasDuTemps` rend `null` quand `temps × subdiv / 4` n'est pas
+   entier. **Le temps 1,75 n'existe QUE sur une ligne en doubles-croches** — à
+   la subdivision par défaut la case n'est pas à l'écran, le critère est
+   impossible, et rien ne le dit.
+
+Le libellé situe donc la seconde frappe par rapport au **kick que le joueur
+vient de poser** (« sur le 2, puis juste après le kick — en doubles-croches »)
+plutôt que par une fraction de temps à calculer.
+
+**Deux garde-fous** (`tests/styles.test.ts`, `CritereStyle.temps` exposé pour
+ça) : un critère qui exige plusieurs frappes ne les annonce pas au singulier ;
+un placement hors de la croche nomme sa résolution. Vérifiés en remettant
+l'ancien libellé — les deux tombent. ⚠️ Écrits d'abord avec un `expect` dans la
+boucle, ils s'arrêtaient à la première infraction et en cachaient une autre ;
+ils rassemblent maintenant avant d'affirmer. C'est comme ça qu'a été trouvé le
+troisième cas : le rim shot du dancehall exige la CLAIRE quand le critère
+au-dessus accepte le clap — un joueur qui avait posé ses pops au clap n'avait
+aucun moyen de savoir pourquoi la case restait vide. Il nomme sa ligne.
+
+**Et le preset `swing` passe de 60 à 33.** Le scheduler retarde le pas impair de
+`swing %` d'un pas : la paire de croches vaut `(100+s) : (100−s)`, donc 60 fait
+**4:1** — la croche faible arrive à 80 % du chemin vers le temps suivant, on ne
+l'entend plus balancer mais collée au temps d'après. Le triolet du jazz, celui
+que la notice du preset décrit elle-même, c'est **2:1**, donc 33. La valeur
+venait de l'original et était la seule du catalogue à contredire sa propre
+notice : elle démontrait le CURSEUR (« poussé fort »), pas le genre qui donne
+son nom au preset.
+
+### ✅ Le shuffle nomme son bouton (2026-09-04)
+
+> « Dans un exercice, on parle d'un Shuffle énorme, c'est quoi ? » — Yann
+
+**Une question de joueur qui est un défaut de conception.** « Shuffle »
+n'existait nulle part ailleurs dans le jeu : le curseur s'appelle **Swing**, son
+aide parle de « balancement », et le catalogue contient même un preset
+« Shuffle » qui est à 15 quand la fiche en réclame 30. Le critère était en plus
+`essentiel`, donc **bloquant** : la livraison était refusée sur un mot qu'aucun
+écran ne reliait à un bouton. C'est le « une capacité qu'aucun mot ne nomme
+n'existe pas », vu depuis l'autre bout — un mot qui ne nomme aucune capacité.
+
+Le critère et le chapeau de `GARAGE` nomment donc le curseur. Mesuré à l'écran
+en 390 × 844 : « Un shuffle ÉNORME — le curseur Swing, poussé loin (sans ça,
+non) », aucun débordement.
+
+**Et un commentaire qui mentait.** Il justifiait le choix du garage par « un
+SHUFFLE de 45 % là où le catalogue plafonne à 10 » : le preset `swing` est à
+**60**. La conclusion tient — le garage reste isolé — mais pour une autre
+raison, désormais écrite et mesurée : le preset `swing` échoue la fiche sur
+**deux** critères (son kick tombe sur les temps, son charley joue les huit
+croches), soit exactement la marge que le calibrage exige. Un commentaire qui
+porte une mesure fausse est pire qu'un commentaire absent : il se cite.
+
+**Le barème du curseur, pour la suite** (le scheduler retarde le pas impair de
+`swing %` d'un pas, donc la paire de croches vaut `(100+s) : (100−s)`) :
+
+| swing | ratio | ce que c'est |
+|---|---|---|
+| 0 | 1:1 | droit |
+| 33 | 2:1 | le triolet — le vrai swing jazz |
+| 45 | 2,6:1 | le garage (2-step) |
+| 50 | 3:1 | pointé-double |
+| 60 | 4:1 | le preset `swing` — au-delà de tout usage courant |
+
 ### ✅ Le synthé entre dans les cahiers — actes 5 et 4 (2026-09-04)
 
 > Les neuf cases PRIORITAIRES de la relecture annotée : *« il manque les autres

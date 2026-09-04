@@ -51,6 +51,11 @@ export interface CritereStyle extends Contrainte {
    * une fiche de six, le seuil ne veut plus rien dire — c'est la limite, pas
    * un objectif. */
   essentiel?: boolean;
+  /* Les temps EXIGÉS par un critère de placement, exposés pour que les tests
+   * puissent les lire — c'est ce qui permet de vérifier qu'un libellé nomme
+   * autant de frappes qu'il en demande, et qu'il annonce la résolution quand
+   * il en faut une (voir `surLesTemps`). Absent sur les autres critères. */
+  temps?: number[];
 }
 
 export interface FicheStyle {
@@ -98,7 +103,22 @@ function frappeAu(
 
 // ---------- Les primitives d'écriture d'une fiche ----------
 
-/** Frappé sur TOUS les temps listés (0 = le premier temps de la mesure). */
+/* Frappé sur TOUS les temps listés (0 = le premier temps de la mesure).
+ *
+ * ⚠️ DEUX PIÈGES, et les deux ont été trouvés par un joueur qui ne trouvait pas
+ * la solution (Yann, 2026-09-04 : *« "La réponse juste après le temps 2" dans
+ * le riddim, je ne trouve pas la soluce »*).
+ *
+ * 1. **Le libellé doit nommer TOUS les placements** : la vérification est un
+ *    `every`, donc un critère écrit `[1, 1.75]` exige deux frappes. Une seule
+ *    nommée, et le joueur coche la case qu'il lit sans comprendre pourquoi
+ *    elle reste vide.
+ * 2. **Un placement qui n'est pas sur la grille n'existe pas.** `pasDuTemps`
+ *    rend `null` quand `temps × subdiv / 4` n'est pas entier : le temps 1,75
+ *    n'existe QUE si la ligne est en doubles-croches. À la subdivision par
+ *    défaut, la case n'est pas sur l'écran — le critère est alors impossible,
+ *    en silence. Un critère qui demande une résolution doit la DIRE dans son
+ *    libellé. */
 export function surLesTemps(
   id: string,
   lignes: DrumRowName[],
@@ -110,6 +130,7 @@ export function surLesTemps(
     id,
     libelle,
     essentiel: opts.essentiel,
+    temps,
     // Une seule des lignes proposées suffit : le « pop » de 2 et 4 se joue à
     // la caisse claire ou au clap selon les genres, et exiger la ligne exacte
     // ferait échouer un morceau qui sonne juste.
@@ -327,7 +348,13 @@ const DANCEHALL: FicheStyle = {
       essentiel: true,
     }),
     surLesTemps('pop-24', ['snare', 'clap'], [1, 3], 'Un « pop » sur les temps 2 et 4'),
-    surLesTemps('rimshot', ['snare'], [1, 3], 'Ce pop-là est sec — en rim shot', { variante: true }),
+    /* ⚠️ Il NOMME sa ligne, et ce n'est pas du bavardage : le critère du dessus
+     * accepte la claire OU le clap, celui-ci exige la claire (un clap n'a pas
+     * de rim shot). Un joueur qui a posé ses pops au clap lisait « ce pop-là
+     * est sec » sans aucun moyen de savoir pourquoi la case restait vide. */
+    surLesTemps('rimshot', ['snare'], [1, 3], 'Ce pop-là est sec — la claire en rim shot', {
+      variante: true,
+    }),
     surLesTemps('skank', ['hat'], CONTRETEMPS, 'Le skank : charley OUVERT sur les contretemps', {
       variante: true,
     }),
@@ -429,11 +456,19 @@ const DILLA: FicheStyle = {
  * ne décrit pas un genre. Même famille, même impasse que le boom bap et le
  * drunk beat.
  *
- * Le garage, lui, se nomme par une propriété que personne d'autre ne porte :
- * un SHUFFLE de 45 % là où le catalogue plafonne à 10. Relevé sur le preset
- * `garage` : tempo 130, swing 45, kick subdiv 8 sur [0, 3, 5], claire sur les
- * temps 2 et 4, charley en doubles-croches clairsemé (7 sur 16) — troué
- * exprès, « pour que le shuffle ait la place de s'entendre », dit sa notice.
+ * Le garage, lui, se nomme par son SHUFFLE : swing 45 quand 25 des 34 presets
+ * sont à 0 et que le reste plafonne à 20. Relevé sur le preset `garage` :
+ * tempo 130, swing 45, kick subdiv 8 sur [0, 3, 5], claire sur les temps 2 et
+ * 4, charley en doubles-croches clairsemé (7 sur 16) — troué exprès, « pour
+ * que le shuffle ait la place de s'entendre », dit sa notice.
+ *
+ * ⚠️ Corrigé le 2026-09-04 : ce commentaire disait « là où le catalogue
+ * plafonne à 10 », et c'était faux — le preset `swing` (Funk/soul/jazz) est à
+ * 60. Le garage n'est donc PAS seul à balancer fort, et la fiche ne tient pas
+ * sur ce seul critère : c'est leur conjonction qui isole le genre (le preset
+ * `swing` a le bon tempo, mais son kick tombe sur les temps et son charley
+ * joue les huit croches — il échoue sur deux critères, la marge que le
+ * calibrage exige).
  *
  * Il a en plus un mérite de récit : l'acte vient de le faire reproduire
  * (niveau 16, « Londres, 2001 »). On commande un genre qu'on vient d'entendre.
@@ -443,13 +478,21 @@ const GARAGE: FicheStyle = {
   label: 'UK Garage / 2-step',
   chapeau: [
     'Londres, fin des années 90. Le tempo du club, mais rien n’y',
-    'tombe droit : le shuffle est ÉNORME, les croches boitent, et',
-    'le charley laisse des trous pour qu’on l’entende boiter. Le',
-    'kick sort des temps, la claire tient bon sur 2 et 4.',
+    'tombe droit : le shuffle — le curseur Swing — est ÉNORME,',
+    'les croches boitent, et le charley laisse des trous pour',
+    'qu’on l’entende boiter. Le kick sort des temps,',
+    'la claire tient bon sur 2 et 4.',
   ],
   seuil: 0.8,
   criteres: [
-    avecSwing(30, 'Un shuffle ÉNORME — c’est lui qui nomme le genre', { essentiel: true }),
+    /* ⚠️ LE CRITÈRE NOMME SON BOUTON, et il a fallu qu'on le demande pour s'en
+     * apercevoir (Yann, 2026-09-04 : *« on parle d'un Shuffle énorme, c'est
+     * quoi ? »*). « Shuffle » n'existait nulle part ailleurs dans le jeu : le
+     * curseur s'appelle « Swing », son aide parle de « balancement », et le
+     * catalogue contient même un preset « Shuffle » qui, lui, est à 15. Un
+     * critère ESSENTIEL — donc bloquant — désignait ainsi un geste qu'aucun
+     * écran ne reliait à un bouton. */
+    avecSwing(30, 'Un shuffle ÉNORME — le curseur Swing, poussé loin', { essentiel: true }),
     surLesTemps('kick-garage', ['kick'], [0, 1.5], 'Le kick sur le 1, puis entre les temps'),
     surLesTemps('backbeat-24', ['snare', 'clap'], [1, 3], 'La claire tient les temps 2 et 4'),
     tempoEntre(124, 136, 'Entre 124 et 136 — le tempo du club'),
@@ -471,23 +514,38 @@ const GARAGE: FicheStyle = {
  * ⚠️ Le SHAKER est un critère à part entière, et c'est ce qui rend la fiche
  * discriminante : deux presets sur trente-quatre en ont un qui joue. Le
  * placement de la claire (temps 1,75) demande en plus une ligne en
- * doubles-croches — on ne peut pas le poser par accident. */
+ * doubles-croches — on ne peut pas le poser par accident.
+ *
+ * ⚠️ Et c'est exactement pour ça que ses libellés doivent être précis : ce qui
+ * ne se pose pas par accident ne se trouve pas non plus par tâtonnement. Deux
+ * frappes, une résolution, et la seconde frappe située par rapport au KICK que
+ * le joueur vient de poser plutôt que par une fraction de temps. */
 const DEMBOW: FicheStyle = {
   id: 'dembow',
   label: 'Dembow / reggaeton',
   chapeau: [
     'Panamá puis Porto Rico : le riddim qui a tout envahi.',
     'Le kick pose le 1 et le « et » du deux — la cellule 3+3+2,',
-    'celle du tresillo. La claire répond juste après le temps 2,',
-    'sèche, en rim shot. Et un shaker tient la croche, sans arrêt.',
+    'celle du tresillo. La claire tombe sur le 2, puis répond',
+    'juste après ce kick, sèche, en rim shot — il lui faut donc',
+    'les doubles-croches. Et un shaker tient la croche, sans arrêt.',
   ],
   seuil: 0.8,
   criteres: [
     surLesTemps('dembow-kick', ['kick'], [0, 1.5], 'Le kick sur le 1 et sur le « et » du 2', {
       essentiel: true,
     }),
-    surLesTemps('dembow-reponse', ['snare', 'clap'], [1, 1.75], 'La réponse juste après le temps 2'),
-    surLesTemps('dembow-rim', ['snare'], [1, 1.75], 'Cette réponse est sèche — en rim shot', {
+    /* ⚠️ DEUX frappes, et la seconde tombe sur la double-croche qui SUIT le
+     * kick du « et » (pas 6 → pas 7). La décrire par rapport au kick plutôt
+     * qu'au temps 2 est ce qui la rend trouvable : c'est le coup que le joueur
+     * vient de poser, pas une fraction à calculer. */
+    surLesTemps(
+      'dembow-reponse',
+      ['snare', 'clap'],
+      [1, 1.75],
+      'Deux réponses : sur le 2, puis juste après le kick — en doubles-croches',
+    ),
+    surLesTemps('dembow-rim', ['snare'], [1, 1.75], 'Ces deux réponses sont sèches — la claire en rim shot', {
       variante: true,
     }),
     densiteAuMoins('shaker-8', 'shaker', 0.9, 'Un shaker qui tient la croche sans s’arrêter'),
