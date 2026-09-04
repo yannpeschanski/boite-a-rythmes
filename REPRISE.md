@@ -3,10 +3,11 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-04 — une **fiche de relecture** annotable du
-> Mode jeu entier (`docs/relecture/mode-jeu.html`, 164 cartes, régénérée par
-> `npx vite-node scripts/relecture-mode-jeu.ts`) : c'est par elle que passe la
-> prochaine passe de priorités. Avant : le récit se tape signe à signe, chaque
+> Dernière mise à jour : 2026-09-04 — la relecture annotée est **rentrée** :
+> ses neuf cases prioritaires sont livrées (le synthé entre dans les cahiers,
+> actes 5 et 4). La fiche se régénère par
+> `npx vite-node scripts/relecture-mode-jeu.ts` (`docs/relecture/mode-jeu.html`,
+> 168 cartes). Avant : le récit se tape signe à signe, chaque
 > réplique porte le nom de qui parle, et chaque personnage a sa voix
 > (`model/locuteurs.ts`, `engine/voixRecit.ts`, `ui/game/RecitLignes.svelte`).
 
@@ -82,6 +83,19 @@ quiz n'aurait rien réglé.
 | — | **couper une ligne à l'écoute** + des **cycles** de durées différentes (niveau 78) | ✅ livré |
 | — | **relire un acte** rendu visible dans le carnet + le récit qui annonce le 78 | ✅ livré |
 | — | enterrer le réservoir, fusionner carte/salle, renuméroter par acte | ✅ livré (renumérotation à l'AFFICHAGE) |
+
+**Relecture annotée du 2026-09-04** (21 cases, `docs/relecture/mode-jeu.html`) :
+
+| | tranche | état |
+|---|---|---|
+| 1 | l'outillage synthé (mixage + harmonie) + **l'acte 5** refait + **l'acte 4** | ✅ livré — les 9 prioritaires |
+| 2 | les **roasts par verbe** (`composeRoast` ne parle que de reproduction) | à faire — le seul « à revoir » |
+| 3 | **l'acte 6 en 3 morceaux × 3 boucles** (couplet/refrain/pont), et l'acte 7 qui en découle | à faire — le gros morceau |
+| 4 | les petites : le `silence` de l'acte 0 à durcir, le niveau 67 retiré de l'acte 1, les niveaux 37/38 de l'acte 7 | à faire |
+
+⚠️ La polyrythmie (niveaux 29 et 24) a quitté l'acte 5 (« hors sujet ») et
+attend l'acte 6, où Yann propose de l'expliquer par le récit — « peut-être que
+c'est une piste pour développer son style ». Elle est au réservoir en attendant.
 
 **Ce que la tranche 2 a tranché en passant** (détail dans `PLAN.md`, « L'acte 3
 empile ses couches ») :

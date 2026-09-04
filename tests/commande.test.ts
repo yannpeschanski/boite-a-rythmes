@@ -30,6 +30,7 @@ import { defaultState } from '../src/model/defaults';
 import { PRESETS } from '../src/model/presets/songs';
 import { presetToState } from '../src/model/presetAdapter';
 import { resolveVoicePreset } from '../src/model/presets/voices';
+import { CHORD_PRIORITY_ORDER } from '../src/model/presets/scales';
 import { rankPresets } from '../src/engine/similarity';
 import type { PatternStateV2, SynthRowName } from '../src/model/types';
 
@@ -485,6 +486,19 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
   }
   if (demande('retouchees')) {
     for (const l of ['kick', 'snare', 'hat'] as const) st.rows[l].tone = 42;
+    /* ⚠️ « Chaque ligne a été regardée » compte les lignes de SYNTHÉ depuis le
+     * 2026-09-04, et on ne peut pas leur toucher les mêmes champs : ni `tone`,
+     * ni `pitch`, ni `filterCutoff` n'existent sur une ligne de synthé. Le
+     * volume, lui, existe des deux côtés. */
+    for (const l of ['bass', 'melody', 'pad'] as const) st.synthRows[l].volume = 0.8;
+  }
+  /* Le filtre du SYNTHÉ se mesure contre le départ (`aBaisseLeFiltre`), jamais
+     par un seuil absolu : sa voix d'usine coupe déjà bas. On le referme donc
+     plus bas que le départ, sur deux lignes. */
+  if (demande('filtre-geste')) {
+    for (const l of ['bass', 'melody'] as const) {
+      st.synthRows[l].voice = { ...st.synthRows[l].voice, cutoff: 300 };
+    }
   }
   if (demande('kick-syncope')) {
     st.rows.kick.subdiv = 8;
@@ -520,12 +534,29 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
     // Elle se repose sur la tonique — la dernière note jouée est le degré 1.
     m.pattern[6] = { degree: 1, octave: 0 };
   }
-  if (demande('nappe-respire') || demande('synth:pad')) {
+  /* L'HARMONIE (2026-09-04). ⚠️ Une case de nappe porte un INDEX d'accord, et
+     l'accord d'index `i` se construit sur le degré `CHORD_PRIORITY_ORDER[i]` —
+     l'ordre pop (I, IV, V, vi), pas l'ordre de la gamme. Poser `i + 1` comme
+     degré de basse aurait fait passer le test en jouant faux. */
+  const progression = cahier.find((c) => c.id.startsWith('progression-'));
+  const nAccords = progression ? Number(progression.id.slice('progression-'.length)) : 0;
+  if (demande('nappe-respire') || demande('synth:pad') || demande('basse-accord') || nAccords) {
     const pad = st.synthRows.pad;
     pad.muted = false;
     pad.subdivisions = 4;
-    pad.pattern = [0, -1, 3, -1];
+    const accords = [0, 1, 2, 3].slice(0, Math.max(2, nAccords));
+    pad.pattern = [0, 1, 2, 3].map((i) => (i < accords.length ? accords[i] : -1));
     st.synthGlobal.padArpEnabled = true;
+  }
+  if (demande('basse-accord')) {
+    const b = st.synthRows.bass;
+    b.muted = false;
+    b.subdivisions = 8;
+    b.pattern = new Array(8).fill(null);
+    const poses = [...new Set(st.synthRows.pad.pattern.filter((v): v is number => typeof v === 'number' && v >= 0))];
+    poses.forEach((i, k) => {
+      b.pattern[k * 2] = { degree: CHORD_PRIORITY_ORDER[i], octave: 0 };
+    });
   }
   if (demande('glide:bass')) st.synthRows.bass.glide = 0.2;
   // Une voix choisie par ligne citée — n'importe laquelle sauf « Défaut ».

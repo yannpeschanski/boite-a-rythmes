@@ -44,6 +44,78 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le synthé entre dans les cahiers — actes 5 et 4 (2026-09-04)
+
+> Les neuf cases PRIORITAIRES de la relecture annotée : *« il manque les autres
+> lignes de synthé »* (acte 4, deux fois), *« on reprend le travail déjà fait
+> avec Kelvin et on centre l'exercice sur le travail du synthé »*, *« une
+> reproduction du rythme puis un exercice en atelier »*, *« uniquement en
+> atelier avec un cahier des charges complet »*, *« à faire en atelier en
+> intégrant le synthé »* (×2), *« cahier à développer… pourquoi pas travailler
+> sur l'harmonie ? »*, *« à développer, comme pour les autres styles »*.
+
+**Le diagnostic, et il n'était pas dans l'écriture des cahiers.**
+`LIGNES_MIX` ne contenait que la batterie : les cinq contraintes de mixage
+étaient AVEUGLES à la mélodie, à la basse et à la nappe. Un cahier qui les
+aurait citées n'aurait rien vérifié, en silence. Elles prennent maintenant leurs
+lignes en paramètre, et les accesseurs vont chercher `volume` / `reverbSend` /
+`delaySend` du bon côté.
+
+**Trois pièges payés en écrivant.**
+
+1. **Le seuil absolu ne marche pas sur une voix de synthé** : elle coupe d'usine
+   à 600 Hz (basse) et 1 600 (mélodie), donc `filtreQuiCoupe(9000)` élargi au
+   synthé se cochait tout seul. D'où `aBaisseLeFiltre`, qui mesure la coupure
+   CONTRE le départ. Deux sémantiques dans une fonction, ce sont deux cahiers
+   qui croient demander la même chose.
+2. **`contrasteDeVolume` était du théâtre** — kick 1,0 / claire 0,9 /
+   charley 0,7 donnent déjà 0,3 d'écart : « range les plans » était vrai à
+   l'ouverture de tout morceau qui sonne. Trouvé en généralisant, pas par un
+   test : la garde des cases décochées mesure sur un Atelier VIDE, où aucune
+   ligne n'est vivante. Il exige désormais un curseur bougé.
+3. **`empreinteEtat` ne voit pas le son** (cases, tempo, swing seulement) : sur
+   un envoi qui ne demande que du mixage, « il faut y avoir touché » serait
+   resté décoché après une heure de travail. `avoirTouche` compare l'empreinte
+   ET les quatre valeurs de son de chaque ligne.
+
+**L'harmonie**, qui n'avait jamais servi : `presets/scales.ts` construit les
+triades de la gamme et l'Atelier les nomme en chiffres romains sur les cases de
+la nappe comme sur son clavier (qui allume même les degrés de l'accord sous le
+curseur). Deux contraintes : `uneProgression` (des accords DIFFÉRENTS — une
+pédale n'est pas une harmonie) et `laBasseDitLAccord`. ⚠️ **Une case de nappe
+porte un INDEX**, et `CHORD_PRIORITY_ORDER` range les accords dans l'ordre pop :
+l'accord `1` est le IV. Lire l'index comme un degré aurait demandé une basse en
+II sous un IV — c'est le test qui le grave.
+
+**L'acte 5 refait.** Quatre reconstructions de presets et deux polyrythmies en
+moins (22, 9, 25, 29, 24 au réservoir), quatre étapes d'Atelier en plus. Trois
+de ses quatre cases se jouent en deux envois — le squelette, jugé par la fiche
+du genre ; puis le SON, jugé par le cahier — et la même série, pour que la
+discographie garde le disque et pas le brouillon. Le hip-hop est la seule case
+qui ne juge AUCUN genre : son rythme est celui livré à Kelvin
+(`partirDuMorceauDeLActe: 2`), déjà accepté, et lui redemander une fiche ferait
+repasser un examen réussi. La difficulté du synthé monte de case en case : une
+phrase et une basse, puis une progression, puis une basse qui dit les accords,
+puis tout.
+
+**L'acte 4** : la mélodie (comme PHRASE) et la nappe entrent au premier envoi,
+le filtre et les volumes du synthé au deuxième, et « chaque ligne a été
+regardée » compte enfin les six lignes.
+
+**Vérifié :** 573 tests (11 neufs, `tests/cahier-synthe.test.ts`), 0 erreur de
+types, les deux builds ; `scripts/parcours-carriere.cjs` depuis un joueur neuf —
+les six commandes de l'acte 5 acceptées, discographie à neuf morceaux dont les
+quatre genres côte à côte ; le plus long cahier (le quinzième, 7 lignes et deux
+sections) mesuré à l'écran en 390 × 844, 0 px de débordement, aucune erreur
+console.
+
+**Réancrages de tests** (jamais de compte retiré) : « couvre plusieurs
+familles » tombait sur une population d'UN élément une fois les reproductions
+parties en Atelier — il tient maintenant les quatre cases du fax et l'unicité
+des genres ; s'ajoutent « la case hip-hop reprend le morceau de Kelvin » et
+« l'exigence de synthé ne redescend jamais », mesurée sur la case entière et non
+sur son dernier envoi.
+
 ### ✅ Une fiche de relecture du Mode jeu, à annoter (2026-09-04)
 
 > « Il faudra me refaire en fichier HTML pour que je puisse tout annoter sur le

@@ -43,6 +43,11 @@ import {
   dePlacePourLaVoix,
   auMoinsUneVariante,
   filtreQuiCoupe,
+  aBaisseLeFiltre,
+  avoirTouche,
+  uneProgression,
+  laBasseDitLAccord,
+  LIGNES_TOUTES,
   delayEngage,
   reverbDosee,
   contrasteDeVolume,
@@ -105,6 +110,12 @@ const FB_RYTHME = '1 · LE RYTHME — ce que tu sais faire depuis l’acte 1';
 const FB_GROOVE = '2 · LE GROOVE — pour que ça ne fasse pas réveil';
 const FB_COUCHES = '3 · LES COUCHES — la mélodie, la basse, la nappe';
 const FB_PRODUCTION = '4 · LA PRODUCTION — pour que ça tienne ailleurs qu’ici';
+
+/* Les deux sections du quinzième — le seul cahier de l'acte 5 qui en ait :
+ * un cahier à plat de six lignes ne dit pas qu'il y a un genre à trouver ET
+ * des couches à poser dessus. */
+const ZM_GENRE = '1 · LE GENRE — ce qu’il n’arrivait pas à dire';
+const ZM_COUCHES = '2 · LES COUCHES — ce que les trois autres t’ont appris';
 
 const LA_PHRASE = 'LA PHRASE — ce qu’il a entendu dans l’escalier';
 const LA_BASSE = 'LA BASSE — ce qu’il y a dessous';
@@ -296,6 +307,23 @@ export interface EtapeCommande {
    * sauvegarde ancienne, discographie vidée — on retombe sur la table rase
    * plutôt que de bloquer la carrière. */
   partirDeLaLivraison?: boolean;
+  /* ⚠️ Partir de la production livrée à un AUTRE acte.
+   *
+   * Retour de Yann (2026-09-04) sur la première case du fax de Zik'Mobile :
+   * *« on vient déjà de travailler le hip-hop avec Kelvin. Autant dire qu'on
+   * reprend le travail déjà fait avec Kelvin et on centre l'exercice sur le
+   * travail du synthé »*. `partirDeLaLivraison` ne sait pas le faire : il lit
+   * la discographie de l'acte COURANT, ce qui est juste pour une chaîne
+   * d'envois et faux pour une reprise d'un acte précédent.
+   *
+   * Même filet que lui : rien de livré à cet acte-là (sauvegarde ancienne,
+   * discographie vidée) → table rase, plutôt qu'une carrière bloquée.
+   * Corollaire d'écriture, et il n'est pas négociable : un cahier qui part
+   * d'une livraison n'exige QUE ce que cette livraison n'a pas — sinon des
+   * cases se cochent à l'ouverture, ce que la garde de
+   * `tests/transformer.test.ts` ne peut pas voir (elle mesure sur une
+   * discographie vide, donc sur une table rase). */
+  partirDuMorceauDeLActe?: ActeId;
   /** Ce que Sol dit quand elle accepte. */
   accepte: string;
   /** Le titre sous lequel la discographie range le morceau livré. */
@@ -1332,6 +1360,16 @@ export const ACTES: Acte[] = [
             dansLeStyleFiche(FICHE_TECHNO, 'Un morceau techno — c’est un club, pas un salon'),
             lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes qui tiennent le morceau'),
             ligneSynthPresente('bass', 'Une basse — sans elle il n’y a rien à faire danser'),
+            /* ⚠️ Relecture de Yann (2026-09-04) : *« il manque les autres
+             * lignes de synthé »*. Le premier envoi ne demandait qu'une basse,
+             * si bien que le morceau « destiné à durer plus de douze secondes »
+             * pouvait n'être qu'une boucle de batterie avec une note dessous —
+             * et les deux envois de mixage qui suivent n'avaient alors rien à
+             * mixer. La mélodie est exigée comme PHRASE (l'acte 3 l'enseigne),
+             * la nappe seulement comme présence : c'est la couche qu'on
+             * remarque quand elle part. */
+            unePhrase('melody', 4, 3, 'Une mélodie qui fait une phrase — pas une note répétée'),
+            ligneSynthPresente('pad', 'Et une nappe derrière — un club, ça remplit'),
           ]),
         ],
         accepte: 'LE TUNNEL: Reçu. On le passe samedi. On te rappelle.',
@@ -1383,9 +1421,27 @@ export const ACTES: Acte[] = [
          * déjà accepté. Il n'exige que des GESTES de mixage, et chacun est
          * borné pour ne pas se satisfaire d'un curseur poussé à fond. */
         partirDeLaLivraison: true,
+        /* ⚠️ *« Il manque le travail sur les autres lignes de synthé »* (Yann,
+         * 2026-09-04). Les cinq contraintes de mixage ne regardaient que la
+         * batterie — pas par choix d'écriture : `LIGNES_MIX` ne contenait
+         * qu'elle, donc un cahier qui aurait cité la nappe n'aurait rien
+         * vérifié. Elles prennent maintenant les lignes en paramètre.
+         *
+         * ⚠️ Et le filtre du synthé se mesure autrement : la voix d'usine d'une
+         * basse coupe déjà à 600 Hz, donc un seuil absolu serait coché sans
+         * rien toucher. `aBaisseLeFiltre` mesure le GESTE contre le départ. */
         cahier: [
           filtreQuiCoupe(9000, 2, 'Enlève en haut — au moins deux lignes filtrées'),
-          contrasteDeVolume(0.18, 'Range les plans : tout n’est pas au même volume'),
+          aBaisseLeFiltre(
+            ['bass', 'melody', 'pad'],
+            2,
+            'Le synthé aussi : deux lignes qui prennent moins de place',
+          ),
+          contrasteDeVolume(
+            0.18,
+            'Range les plans : tout n’est pas au même volume',
+            LIGNES_TOUTES,
+          ),
           kickQuiPorte(),
         ],
         accepte: 'SOL: Là ça tient. Il manque encore quelque chose, mais ça tient.',
@@ -1419,10 +1475,17 @@ export const ACTES: Acte[] = [
         modulesRequis: ['production'],
         partirDeLaLivraison: true,
         cahier: [
-          reverbDosee(0.18, 0.55, 'De l’espace — et pas une cathédrale'),
-          delayEngage(0.15, 'Un delay qui répond vraiment (il lui faut du retour)'),
+          reverbDosee(0.18, 0.55, 'De l’espace — et pas une cathédrale', LIGNES_TOUTES),
+          delayEngage(
+            0.15,
+            'Un delay qui répond vraiment (il lui faut du retour)',
+            LIGNES_TOUTES,
+          ),
+          /* Les SIX lignes, batterie et synthé — c'est la ligne qui donne son
+           * sens à l'envoi (« je veux que tu aies regardé chaque ligne ») et
+           * elle en excluait la moitié. */
           chaqueLigneRetouchee(
-            ['kick', 'snare', 'hat'],
+            ['kick', 'snare', 'hat', 'bass', 'melody', 'pad'],
             'Chaque ligne a été regardée — pas seulement la plus forte',
           ),
         ],
@@ -1524,15 +1587,50 @@ export const ACTES: Acte[] = [
           'SOL: Tu vas les écouter.',
           'TOI: Tous ?',
           'SOL: Les quinze qui nous intéressent. Vite.',
+          'SOL: Et tu ne les recopies pas. Tu les FAIS.',
           'Commence une période de travail absurde.',
-          'Tu écoutes. Tu reconstruis. Tu compares. Tu recommences.',
         ],
       },
-      /* ⚠️ HIP-HOP AUTHENTIQUE — la première case du fax, et la première
-       * commande. Aucun exercice ne la précède, et c'est délibéré : la FICHE
-       * est la leçon (elle décrit, elle juge et elle rend le détail en direct),
-       * et le drunk beat se décrit en deux propriétés qu'on entend tout de
-       * suite — ça balance, et ça traîne. */
+      /* ⚠️ L'ACTE REFAIT LE 2026-09-04 — quatre reconstructions de presets et
+       * deux polyrythmies en moins, quatre étapes d'Atelier en plus.
+       *
+       * Relecture de Yann, case par case : *« autant dire qu'on reprend le
+       * travail déjà fait avec Kelvin et on centre l'exercice sur le travail du
+       * synthé »* (hip-hop), *« un exercice de reproduction du rythme puis
+       * enchaîner sur un exercice en atelier pour travailler en priorité sur le
+       * synthé »* (le garage), *« travaillons uniquement en atelier sur celui-là
+       * avec un cahier des charges complet »* (la French touch), *« à faire en
+       * atelier en intégrant le synthé »* (le tresillo et la clave), *« pourquoi
+       * ici la polyrythmie, hors sujet »* (les niveaux 29 et 24).
+       *
+       * Ce que ça change, en une phrase : l'acte des STYLES ne recopiait le
+       * synthé de personne — il jugeait quatre grilles de batterie et laissait
+       * la mélodie, la basse et la nappe hors du cahier. Trois de ses quatre
+       * cases sont donc devenues des CHAÎNES à deux envois : le squelette
+       * (rythme, jugé par la fiche du genre), puis le SON (les couches, jugées
+       * par le cahier). Le même morceau, deux fois — la mécanique de l'acte 4,
+       * appliquée au genre plutôt qu'au mixage.
+       *
+       * ⚠️ La difficulté du cahier de synthé MONTE avec l'acte, et c'est le
+       * seul axe qui monte : une phrase et une basse (hip-hop), puis une
+       * progression d'accords (club), puis une basse qui dit ces accords
+       * (latino), puis tout à la fois (le quinzième).
+       *
+       * Les niveaux 22, 9, 25, 29 et 24 rejoignent 4, 12, 13, 27 et 32 au
+       * réservoir. Un niveau ne se supprime jamais : il cesse d'être cité. */
+      /* ⚠️ HIP-HOP AUTHENTIQUE — la seule case qui ne juge PAS un genre, et
+       * c'est ce qui la rend juste : son rythme est celui que le joueur a fait
+       * pour Kelvin à l'acte 2, pour un rappeur, et qui a déjà été accepté.
+       * Redemander une fiche de style ici, ce serait faire repasser un examen
+       * réussi ; pire, le morceau de Kelvin pourrait la satisfaire à
+       * l'ouverture, et le cahier serait du théâtre.
+       *
+       * ⚠️ Corollaire de `partirDuMorceauDeLActe` : le cahier n'exige QUE ce
+       * que la boucle de Kelvin n'a pas — l'acte 2 ne demande aucune ligne de
+       * synthé. Le filet du câblage (rien de livré → table rase) laisse un cas
+       * de bord théorique : une sauvegarde ancienne dont la discographie a été
+       * vidée pourrait livrer un morceau sans batterie. La commande de l'acte 2
+       * est obligatoire pour arriver ici, donc ça ne se produit pas en jouant. */
       {
         kind: 'commande',
         entete: 'ZIK’MOBILE — HIP-HOP AUTHENTIQUE',
@@ -1540,38 +1638,35 @@ export const ACTES: Acte[] = [
           'Première case du fax, et Sol a déjà le disque prêt.',
           'SOL: Detroit, fin des années 90. Écoute la batterie.',
           'SOL: Elle est en retard. Volontairement.',
-          'SOL: Le gars a débranché la quantification de sa machine.',
+          'SOL: Le rythme, tu l’as déjà fait — c’est celui de Kelvin.',
+          'SOL: Ce qui manque, c’est ce qu’il y a dessus.',
         ],
-        bouton: 'Ouvrir l’Atelier ▸',
-        chapeau: FICHE_DILLA.chapeau,
+        bouton: 'Reprendre la boucle de Kelvin ▸',
         serie: 'hip-hop',
+        partirDuMorceauDeLActe: 2,
         cahier: [
-          AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
-          dansLeStyleFiche(FICHE_DILLA, 'Ça doit sonner comme ça — le genre, pas la copie'),
+          avoirTouche('Il faut y avoir touché — elle repart au travail'),
+          unePhrase('melody', 4, 3, 'Une mélodie qui fait une phrase — quatre notes, trois hauteurs'),
+          seReposeSurLaTonique('melody', 'Qu’elle se repose : la dernière note est la tonique'),
+          basseQuiTient('Une basse dessous, qui tient — moins de notes que la mélodie'),
         ],
-        accepte: 'SOL: Voilà. C’est bancal, et c’est exactement ce qu’il faut.',
+        accepte: 'SOL: Voilà. Le rythme était déjà à toi. Le morceau aussi, maintenant.',
         titre: 'ZIK’MOBILE — HIP-HOP',
         client: 'ZIK’MOBILE',
       },
-      /* ⚠️ Quatre presets qui dormaient dans le réservoir depuis que la
-       * carrière a remplacé la campagne linéaire — l'acte des styles n'en
-       * faisait rejouer que cinq sur trente. Ils sont TOUS de l'époque : le
-       * garage culmine en 1997-2001, la French touch dans les années 90, le
-       * tresillo et la clave n'ont pas de date.
-       *
-       * Les deux autres orphelins (19 gqom, 34 trap moderne) restent dehors, et
-       * `tests/epoque.test.ts` le tient : leur titre NOMME un genre qui
-       * n'existe pas encore en 2005. */
+      /* ⚠️ CLUB ÉNERGIE — la seule case qui garde une reproduction, et c'est
+       * demandé : *« un exercice de reproduction du rythme puis enchaîner sur un
+       * exercice en atelier »*. Le garage ne se devine pas — sa claire glisse
+       * entre les temps — donc on le repose une fois avant de le produire. */
       { kind: 'exercice', niveau: 16, commande: 'Londres, 2001. Le garage : la caisse claire glisse, elle n’est jamais où on l’attend.' },
-      { kind: 'exercice', niveau: 22, commande: 'Paris, la French touch. Le même four-on-the-floor, filtré jusqu’à l’os.' },
       {
         kind: 'commande',
-        entete: 'ZIK’MOBILE — CLUB ÉNERGIE',
+        entete: 'CLUB ÉNERGIE — LE SQUELETTE',
         lignes: [
           'Deuxième case. Le Tunnel écoutera, et ne fera pas de cadeau.',
           'SOL: Reprends celui de Londres. Pas la grille : le SHUFFLE.',
           'SOL: C’est lui qui fait la différence entre un club et un réveil.',
+          'SOL: Et une basse. On verra le reste après.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
         chapeau: FICHE_GARAGE.chapeau,
@@ -1580,21 +1675,78 @@ export const ACTES: Acte[] = [
           AVOIR_PRODUIT,
           pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
           dansLeStyleFiche(FICHE_GARAGE, 'Ça doit boiter comme le garage — le genre, pas la copie'),
+          ligneSynthPresente('bass', 'Une basse — un club sans basse est une salle d’attente'),
         ],
         accepte: 'SOL: Ça boite juste. C’est le mot le plus gentil que je connaisse.',
         titre: 'ZIK’MOBILE — CLUB',
         client: 'ZIK’MOBILE',
       },
-      { kind: 'exercice', niveau: 9, commande: 'Et la cellule dont tout le reste descend : trois notes, 3+3+2.' },
-      { kind: 'exercice', niveau: 25, commande: 'Sa grande sœur, la clave. Sol : — Celle-là, tu la retrouveras partout.' },
+      /* ⚠️ L'écran qui MONTRE l'harmonie avant que le cahier l'exige. Les
+       * chiffres romains sont sur les cases de la nappe et sur son clavier
+       * depuis toujours (`SynthRowView`, `NotePad` — qui allume en plus les
+       * degrés de l'accord sous le curseur) : le vocabulaire est à l'écran, il
+       * n'avait simplement jamais de mot dans le récit. */
+      {
+        kind: 'recit',
+        source: 'cassette',
+        entete: 'PARIS — LA FRENCH TOUCH',
+        lignes: [
+          'Sol change de cassette. Même tempo, tout autre chose.',
+          'SOL: Écoute ce qui tourne dessous.',
+          'SOL: Ce n’est pas une note. C’est quatre accords qui reviennent.',
+          'Elle montre la nappe : I, IV, V, vi.',
+          'SOL: Et ils filtrent tout. Jusqu’à ce qu’il ne reste que le bas.',
+        ],
+      },
       {
         kind: 'commande',
-        entete: 'ZIK’MOBILE — AMBIANCE LATINO',
+        entete: 'CLUB ÉNERGIE — LE SON',
         lignes: [
-          'Troisième case. La cellule que tu viens de reposer deux fois',
-          'sert de fondation à un riddim entier.',
-          'SOL: Le 1, puis le « et » du deux. Le reste répond après le temps.',
+          'Le même morceau, repris là où tu l’as laissé.',
+          'SOL: Mets-lui des accords. Qu’ils tournent.',
+          'SOL: Et filtre. Un club, ça s’ouvre — donc ça se ferme d’abord.',
+        ],
+        bouton: 'Reprendre le morceau ▸',
+        serie: 'club',
+        partirDeLaLivraison: true,
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          uneProgression(2, 'Deux accords au moins — que ça TOURNE, pas que ça tienne'),
+          nappeQuiRespire('Que la nappe bouge : arpège, bourdon ou étalement'),
+          aBaisseLeFiltre(
+            ['bass', 'melody', 'pad'],
+            1,
+            'Ferme une ligne de synthé — c’est ce qu’ils font à Paris',
+          ),
+        ],
+        accepte: 'SOL: Là ça tourne. Trois cents personnes vont tourner avec.',
+        titre: 'ZIK’MOBILE — CLUB (V2)',
+        client: 'ZIK’MOBILE',
+      },
+      /* ⚠️ La cellule 3+3+2 était ENSEIGNÉE par deux reproductions (niveaux 9
+       * et 25) ; elle est maintenant MONTRÉE par cet écran, puis demandée par
+       * la fiche du dembow, qui juge des placements en temps. C'est la règle du
+       * fichier — une nouveauté n'est demandée qu'après avoir été montrée — et
+       * elle ne coûte plus deux exercices de recopie. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'TROIS, TROIS, DEUX',
+        lignes: [
+          'Troisième case. Sol tape sur la table, lentement.',
+          'Un. Et deux. Et trois — puis elle attend.',
+          'SOL: Trois, trois, deux. Toujours les mêmes huit temps.',
+          'SOL: Le tresillo. Tout le monde s’en sert, personne ne le nomme.',
           'SOL: Et un shaker, tout du long, qui ne s’arrête jamais.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'AMBIANCE LATINO — LE RIDDIM',
+        lignes: [
+          'La cellule que tu viens d’entendre sert de fondation',
+          'à un riddim entier.',
+          'SOL: Le 1, puis le « et » du deux. Le reste répond après le temps.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
         chapeau: FICHE_DEMBOW.chapeau,
@@ -1603,19 +1755,34 @@ export const ACTES: Acte[] = [
           AVOIR_PRODUIT,
           pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
           dansLeStyleFiche(FICHE_DEMBOW, 'Ça doit sonner dembow — le genre, pas la copie'),
+          ligneSynthPresente('bass', 'Une basse — c’est elle qui porte le riddim'),
         ],
         accepte: 'SOL: C’est ça. Quatorze pays vont danser dessus sans le savoir.',
         titre: 'ZIK’MOBILE — LATINO',
         client: 'ZIK’MOBILE',
       },
-      /* ⚠️ Les polyrythmies atterrissent ICI, et pas ailleurs, parce que
-       * l'acte vient de faire le tour de la famille latine et afro : le
-       * tresillo, la clave, le dembow. La polyrythmie EST l'idée dont ces
-       * trois-là descendent — la poser après eux, c'est nommer ce qu'on vient
-       * d'entendre trois fois. Posée à l'acte 1 elle serait arrivée après le
-       * rim shot, sans rien contre quoi se situer. */
-      { kind: 'exercice', niveau: 29, commande: 'Sol pousse plus loin : quatre coups d’un côté, trois de l’autre, sur la même durée.' },
-      { kind: 'exercice', niveau: 24, commande: 'Et trois cycles qui ne retombent ensemble qu’à la fin. — Voilà d’où vient tout ce que tu viens de refaire.' },
+      {
+        kind: 'commande',
+        entete: 'AMBIANCE LATINO — LE SON',
+        lignes: [
+          'Le même riddim, et Sol n’a plus qu’une remarque.',
+          'SOL: Ta basse joue à côté des accords.',
+          'SOL: Sous un IV, tu joues un IV. Sinon ça frotte, et on l’entend.',
+          'SOL: Et choisis-leur des voix. Une note n’est pas un son.',
+        ],
+        bouton: 'Reprendre le morceau ▸',
+        serie: 'latino',
+        partirDeLaLivraison: true,
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          uneProgression(3, 'Trois accords — un riddim tourne, il ne se répète pas'),
+          laBasseDitLAccord('Que la basse dise l’accord : sa fondamentale, sous chacun'),
+          voixChoisie(['bass', 'pad'], 'Une voix choisie, pas celle d’usine'),
+        ],
+        accepte: 'SOL: Voilà. Maintenant ça sonne comme un disque, pas comme un menu.',
+        titre: 'ZIK’MOBILE — LATINO (V2)',
+        client: 'ZIK’MOBILE',
+      },
       {
         kind: 'commande',
         entete: 'ZIK’MOBILE — LE QUINZIÈME',
@@ -1632,13 +1799,25 @@ export const ACTES: Acte[] = [
          * RANG dans `rankPresets` — et charger le preset `dancehall` depuis le
          * menu suffisait à le satisfaire, mesuré. Il demande maintenant une
          * fiche de style (`model/styles.ts`) : des critères nommés, qui se
-         * cochent en direct, une tolérance visible, et une basse — que
-         * `rankPresets` ne pouvait pas voir. Plus le verrou de provenance,
-         * sans lequel tout le reste est décoratif. */
+         * cochent en direct, une tolérance visible. Plus le verrou de
+         * provenance, sans lequel tout le reste est décoratif.
+         *
+         * ⚠️ Et c'est le cahier le plus exigeant de l'acte (2026-09-04) : il
+         * n'ajoute aucun geste neuf, il redemande TOUT ce que les trois cases
+         * précédentes ont posé une par une — c'est la seule case dont le récit
+         * dit qu'elle se fait sans consigne (« tu vois, maintenant »). */
         cahier: [
           AVOIR_PRODUIT,
           pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
-          dansLeStyleFiche(FICHE_DANCEHALL, 'Ça doit sonner dancehall — le genre, pas la copie'),
+          ...dansLaSection(ZM_GENRE, [
+            dansLeStyleFiche(FICHE_DANCEHALL, 'Ça doit sonner dancehall — le genre, pas la copie'),
+          ]),
+          ...dansLaSection(ZM_COUCHES, [
+            unePhrase('melody', 4, 3, 'Une mélodie qui fait une phrase — c’est elle qu’on fredonne'),
+            uneProgression(3, 'Trois accords sous elle'),
+            laBasseDitLAccord('Une basse qui dit l’accord'),
+            nappeQuiRespire('Une nappe qui bouge — arpège, bourdon ou étalement'),
+          ]),
         ],
         accepte: 'SOL: C’est ça. C’est exactement ça qu’il n’arrivait pas à dire.',
         titre: 'PACK ZIK’MOBILE',

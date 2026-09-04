@@ -769,6 +769,34 @@ théâtre que le cahier interdit. Corollaire : toute borne d'un cahier de mixage
 un **plafond** (`reverbDosee`, `filtreQuiCoupe`), sinon elle se satisfait en
 poussant un curseur à fond, ce que l'acte enseigne justement à ne pas faire.
 
+⚠️ **Le mixage ne s'arrête pas à la batterie.** `LIGNES_MIX` ne contenait qu'elle,
+donc un cahier qui citait la nappe ne vérifiait rien : les cinq contraintes
+prennent maintenant leurs lignes en paramètre (`LIGNES_TOUTES`). ⚠️ **Le filtre
+d'une ligne de synthé se mesure en GESTE** (`aBaisseLeFiltre`, contre
+`ctx.depart`), jamais par un seuil absolu — sa voix d'usine coupe déjà à 600 Hz,
+donc « au-dessous de 9 000 » serait coché sans rien toucher.
+
+⚠️ **Un critère satisfait par les valeurs d'USINE est du théâtre.** Les volumes
+par défaut diffèrent déjà (kick 1,0 / claire 0,9 / charley 0,7) : « range les
+plans » était vrai à l'ouverture de tout morceau qui sonne. `contrasteDeVolume`
+exige donc en plus un curseur bougé. La garde « aucune case cochée à
+l'ouverture » ne pouvait pas le voir — elle mesure sur un Atelier VIDE, où
+aucune ligne n'est vivante.
+
+⚠️ **Une case de nappe porte un INDEX d'accord, jamais un degré.** L'accord `1`
+est le IV : `CHORD_PRIORITY_ORDER` range les accords dans l'ordre pop
+(I, IV, V, vi). Lire l'index comme un degré (`laBasseDitLAccord`) demanderait une
+basse en II sous un accord de IV — une question fausse, et fausse en silence.
+
+⚠️ **Une case du fax de l'acte 5 se joue en DEUX temps** — le squelette (le
+rythme, jugé par la fiche de style) puis le SON (les couches, jugées par le
+cahier) — et l'exigence de synthé ne redescend jamais d'une case à l'autre
+(`tests/carriere.test.ts`, mesurée sur la case entière : lire le seul dernier
+envoi mesure la moitié du travail). Corollaire de `partirDuMorceauDeLActe` : un
+cahier qui repart d'une livraison n'exige QUE ce que cette livraison n'a pas —
+la garde des cases décochées ne peut pas le vérifier, elle mesure sur une
+discographie vide.
+
 ⚠️ **Une leçon de PRODUCTION se mesure sur l'ÉTAT, et chaque critère exige un
 GESTE.** (`kickQuiPorte`, `contrasteDeVolume`, `filtreQuiCoupe`, `reverbDosee`,
 `delayEngage`, `chaqueLigneRetouchee`.) Trois choses payées : rendre le morceau dans un
