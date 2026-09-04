@@ -833,7 +833,10 @@ pas satisfait). ⚠️ **« En plus » se CALCULE, il ne se déclare pas** :
 le cahier — s'il passe encore, le réglage était gratuit. Sans ça, un cahier de
 mixage (qui EXIGE six retouches) donnerait 3★ d'office et la note mesurerait le
 type de cahier, pas l'effort. On compte un RÉGLAGE, jamais une case ni le tempo,
-et une voix choisie compte pour un.
+et une voix choisie compte pour un. ⚠️ **La remarque affichée sous les étoiles
+se compose sur les mêmes deux mesures** (`composerRoastLivraison`) : une phrase
+écrite d'avance dit quoi faire, jamais ce qu'on vient de faire — et elle
+reproche alors à qui a tout fait.
 
 ⚠️ **`departCommande()` lit la commande OUVERTE, jamais le curseur de
 carrière.** Les deux coïncident tant qu'on joue dans l'ordre et divergent dès

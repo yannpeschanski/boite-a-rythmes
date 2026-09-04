@@ -44,6 +44,39 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ La remarque d'une livraison suit ses étoiles (2026-09-04)
+
+> « Du coup, tu peux aussi adapter les roasts en fonction. » — Yann
+
+Les étoiles d'un cahier se gagnent sur deux gestes mesurés ; la phrase affichée
+dessous, elle, était écrite d'avance et la même pour tout le monde
+(« cherche des réglages que le cahier ne demande pas… »). Elle disait **quoi
+faire**, jamais ce qu'on venait de faire — et elle reprochait donc à qui avait
+tout fait.
+
+`composerRoastLivraison(reglagesEnPlus, cycles)` compose sur les **mêmes deux
+mesures que la note** : trois paliers de réglages cherchés, trois d'écoute. La
+remarque explique l'étoile qui manque sans avoir à la nommer, et salue quand il
+n'en manque aucune. Elle est PURE, comme celle des exercices, et calculée UNE
+fois à la livraison — tirée au rendu, elle changerait de phrase à chaque frame.
+
+⚠️ **Ça ne double pas `model/reactions.ts`** : celui-là commente le MORCEAU (un
+fait de l'état livré), celui-ci la FAÇON DE TRAVAILLER. Même frontière que pour
+les exercices, et elle tient tant qu'on ne mélange pas les deux sources — les
+deux s'affichent d'ailleurs l'une sous l'autre sans se répéter (mesuré).
+
+⚠️ **Deux tests écrits à l'envers, corrigés :** l'un cherchait le mot
+« minimum » comme signe de reproche et tombait sur « le cahier était le minimum
+et tu l'as compris », qui est un compliment — un test qui lit des MOTS isolés se
+trompe de sens, il faut des phrases. L'autre cherchait `c’est toi` avec une
+apostrophe typographique là où tout `gameData.ts` en met une droite : il ne
+trouvait jamais rien, donc il passait pour de mauvaises raisons.
+
+**Vérifié :** 610 tests (5 neufs), 0 erreur de types, les deux builds, le
+parcours de carrière complet, et à l'écran en 390 × 844 : ★★★ suivi de « Tu as
+cherché des réglages que personne ne t'a demandés… Et tu l'as laissé tourner »,
+37 px de haut, aucun débordement, la réaction du client juste dessous.
+
 ### ✅ Une livraison se note sur l'effort en plus du cahier (2026-09-04)
 
 > « Si la personne n'a même pas écouté son travail : une seule étoile. Si elle

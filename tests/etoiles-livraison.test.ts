@@ -24,6 +24,11 @@ import {
   type Contrainte,
 } from '../src/model/commande';
 import { defaultState } from '../src/model/defaults';
+import {
+  composerRoastLivraison,
+  ROAST_LIVRAISON_REGLAGES,
+  ROAST_LIVRAISON_ECOUTE,
+} from '../src/model/presets/gameData';
 import type { PatternStateV2 } from '../src/model/types';
 
 /** Un morceau qui sonne — les trois lignes de batterie jouent. */
@@ -124,6 +129,67 @@ describe('la note, telle qu’elle a été posée', () => {
   it('⚠️ une livraison vaut toujours au moins une étoile', () => {
     for (let p = 0; p < 6; p++) {
       for (let c = 0; c < 6; c++) expect(etoilesDeLivraison(p, c)).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
+/* ---------------------------------------------------------------------------
+ * LA REMARQUE QUI VA AVEC — *« du coup, tu peux aussi adapter les roasts en
+ * fonction »* (Yann, 2026-09-04).
+ *
+ * Elle est composée sur les MÊMES deux mesures que les étoiles, donc elle
+ * explique celle qui manque sans avoir à la nommer. Ce qui se teste : qu'elle
+ * dise ce qui s'est passé, jamais l'inverse.
+ * ------------------------------------------------------------------------- */
+describe('la remarque d’une livraison suit ce qui a été mesuré', () => {
+  /** Toutes les phrases possibles pour un couple (réglages, cycles). */
+  const toutes = (r: number, c: number) =>
+    Array.from({ length: 6 }, (_, i) => composerRoastLivraison(r, c, (a) => a[i % a.length]));
+
+  it('les trois paliers existent des deux côtés', () => {
+    for (const k of ['0', '1', '2']) {
+      expect(ROAST_LIVRAISON_REGLAGES[k].length, k).toBeGreaterThanOrEqual(3);
+      expect(ROAST_LIVRAISON_ECOUTE[k].length, k).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  /* ⚠️ Le cas qui rendait la phrase précédente fausse : elle disait « cherche
+   * des réglages » à quelqu'un qui venait d'en chercher cinq. */
+  it('⚠️ elle ne reproche pas ce qui a été fait', () => {
+    for (const t of toutes(5, 3)) {
+      /* ⚠️ Le motif cherche des PHRASES de reproche, pas des mots : « le cahier
+       * était le minimum et tu l'as compris » est un compliment qui contient
+       * « minimum ». Un test qui lit des mots isolés se trompe de sens. */
+      expect(/pas un bouton|zéro réglage|rien touché au-delà|on appelle ça le minimum/i.test(t), t)
+        .toBe(false);
+      expect(/pas écouté|sans écouter|pas un tour/i.test(t), t).toBe(false);
+    }
+  });
+
+  it('et elle ne félicite pas ce qui n’a pas été fait', () => {
+    for (const t of toutes(0, 0)) {
+      // L'apostrophe est DROITE dans les roasts (comme tout `gameData.ts`) : un
+      // motif qui n'accepte que la typographique ne trouve jamais rien.
+      expect(/exactement ça, produire|le reste, c['’]est toi/i.test(t), t).toBe(false);
+      expect(/laissé tourner|plusieurs tours/i.test(t), t).toBe(false);
+    }
+  });
+
+  it('elle dit les deux moitiés de la note, toujours', () => {
+    for (const r of [0, 1, 3, 7]) {
+      for (const c of [0, 1, 5]) {
+        const t = composerRoastLivraison(r, c, (a) => a[0]);
+        expect(t.includes(ROAST_LIVRAISON_REGLAGES[r <= 0 ? '0' : r <= 2 ? '1' : '2'][0])).toBe(true);
+        expect(t.includes(ROAST_LIVRAISON_ECOUTE[c <= 0 ? '0' : c <= 1 ? '1' : '2'][0])).toBe(true);
+      }
+    }
+  });
+
+  /* Un joueur à trois étoiles doit lire une phrase qui le dit — sinon la
+   * remarque ressemble à un reproche permanent. */
+  it('à trois étoiles, les deux moitiés saluent', () => {
+    for (const t of toutes(3, 2)) {
+      expect(/produire|plaisir|c['’]est toi/i.test(t), t).toBe(true);
     }
   });
 });

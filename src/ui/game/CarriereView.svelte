@@ -393,20 +393,19 @@
           <span class="titre-piste">{livree.titre}</span>
         </div>
       {/if}
-      <!-- ⚠️ LA NOTE, et pourquoi elle est DITE et pas seulement affichée.
-           Une étoile manquante sans raison se lit comme une punition. Ce qui
-           la donne est un geste de studio, pas un jugement de goût : avoir
-           cherché des réglages que le client ne demandait pas, et avoir écouté
-           son morceau tourner. L'écran nomme donc les deux. -->
+      <!-- ⚠️ LA NOTE, et la remarque qui la rend lisible.
+           Une étoile manquante sans raison se lit comme une punition. Ce qui la
+           donne est un geste de studio, pas un jugement de goût : avoir cherché
+           des réglages que le client ne demandait pas, et avoir écouté son
+           morceau tourner.
+           ⚠️ La phrase est COMPOSÉE sur ces deux mesures (`composerRoastLivraison`)
+           et non écrite d'avance : celle d'avant disait quoi faire, jamais ce
+           qu'on venait de faire — la même pour tout le monde, y compris pour
+           qui avait tout fait. -->
       {#if game.etoilesLivraison > 0}
         <p class="note">
           <span class="etoiles">{'★'.repeat(game.etoilesLivraison)}{'☆'.repeat(3 - game.etoilesLivraison)}</span>
-          {#if game.etoilesLivraison < 3}
-            <span class="pourquoi">
-              Trois étoiles : cherche des réglages que le cahier ne demande pas,
-              et écoute ton morceau tourner deux fois.
-            </span>
-          {/if}
+          {#if game.roastLivraison}<span class="pourquoi">{game.roastLivraison}</span>{/if}
         </p>
       {/if}
       <!-- Rien de remarquable à dire → rien ne s'affiche. Une réplique de
