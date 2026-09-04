@@ -44,6 +44,41 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le shuffle nomme son bouton (2026-09-04)
+
+> « Dans un exercice, on parle d'un Shuffle énorme, c'est quoi ? » — Yann
+
+**Une question de joueur qui est un défaut de conception.** « Shuffle »
+n'existait nulle part ailleurs dans le jeu : le curseur s'appelle **Swing**, son
+aide parle de « balancement », et le catalogue contient même un preset
+« Shuffle » qui est à 15 quand la fiche en réclame 30. Le critère était en plus
+`essentiel`, donc **bloquant** : la livraison était refusée sur un mot qu'aucun
+écran ne reliait à un bouton. C'est le « une capacité qu'aucun mot ne nomme
+n'existe pas », vu depuis l'autre bout — un mot qui ne nomme aucune capacité.
+
+Le critère et le chapeau de `GARAGE` nomment donc le curseur. Mesuré à l'écran
+en 390 × 844 : « Un shuffle ÉNORME — le curseur Swing, poussé loin (sans ça,
+non) », aucun débordement.
+
+**Et un commentaire qui mentait.** Il justifiait le choix du garage par « un
+SHUFFLE de 45 % là où le catalogue plafonne à 10 » : le preset `swing` est à
+**60**. La conclusion tient — le garage reste isolé — mais pour une autre
+raison, désormais écrite et mesurée : le preset `swing` échoue la fiche sur
+**deux** critères (son kick tombe sur les temps, son charley joue les huit
+croches), soit exactement la marge que le calibrage exige. Un commentaire qui
+porte une mesure fausse est pire qu'un commentaire absent : il se cite.
+
+**Le barème du curseur, pour la suite** (le scheduler retarde le pas impair de
+`swing %` d'un pas, donc la paire de croches vaut `(100+s) : (100−s)`) :
+
+| swing | ratio | ce que c'est |
+|---|---|---|
+| 0 | 1:1 | droit |
+| 33 | 2:1 | le triolet — le vrai swing jazz |
+| 45 | 2,6:1 | le garage (2-step) |
+| 50 | 3:1 | pointé-double |
+| 60 | 4:1 | le preset `swing` — au-delà de tout usage courant |
+
 ### ✅ Le synthé entre dans les cahiers — actes 5 et 4 (2026-09-04)
 
 > Les neuf cases PRIORITAIRES de la relecture annotée : *« il manque les autres

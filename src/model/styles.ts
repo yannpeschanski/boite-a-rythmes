@@ -429,11 +429,19 @@ const DILLA: FicheStyle = {
  * ne décrit pas un genre. Même famille, même impasse que le boom bap et le
  * drunk beat.
  *
- * Le garage, lui, se nomme par une propriété que personne d'autre ne porte :
- * un SHUFFLE de 45 % là où le catalogue plafonne à 10. Relevé sur le preset
- * `garage` : tempo 130, swing 45, kick subdiv 8 sur [0, 3, 5], claire sur les
- * temps 2 et 4, charley en doubles-croches clairsemé (7 sur 16) — troué
- * exprès, « pour que le shuffle ait la place de s'entendre », dit sa notice.
+ * Le garage, lui, se nomme par son SHUFFLE : swing 45 quand 25 des 34 presets
+ * sont à 0 et que le reste plafonne à 20. Relevé sur le preset `garage` :
+ * tempo 130, swing 45, kick subdiv 8 sur [0, 3, 5], claire sur les temps 2 et
+ * 4, charley en doubles-croches clairsemé (7 sur 16) — troué exprès, « pour
+ * que le shuffle ait la place de s'entendre », dit sa notice.
+ *
+ * ⚠️ Corrigé le 2026-09-04 : ce commentaire disait « là où le catalogue
+ * plafonne à 10 », et c'était faux — le preset `swing` (Funk/soul/jazz) est à
+ * 60. Le garage n'est donc PAS seul à balancer fort, et la fiche ne tient pas
+ * sur ce seul critère : c'est leur conjonction qui isole le genre (le preset
+ * `swing` a le bon tempo, mais son kick tombe sur les temps et son charley
+ * joue les huit croches — il échoue sur deux critères, la marge que le
+ * calibrage exige).
  *
  * Il a en plus un mérite de récit : l'acte vient de le faire reproduire
  * (niveau 16, « Londres, 2001 »). On commande un genre qu'on vient d'entendre.
@@ -443,13 +451,21 @@ const GARAGE: FicheStyle = {
   label: 'UK Garage / 2-step',
   chapeau: [
     'Londres, fin des années 90. Le tempo du club, mais rien n’y',
-    'tombe droit : le shuffle est ÉNORME, les croches boitent, et',
-    'le charley laisse des trous pour qu’on l’entende boiter. Le',
-    'kick sort des temps, la claire tient bon sur 2 et 4.',
+    'tombe droit : le shuffle — le curseur Swing — est ÉNORME,',
+    'les croches boitent, et le charley laisse des trous pour',
+    'qu’on l’entende boiter. Le kick sort des temps,',
+    'la claire tient bon sur 2 et 4.',
   ],
   seuil: 0.8,
   criteres: [
-    avecSwing(30, 'Un shuffle ÉNORME — c’est lui qui nomme le genre', { essentiel: true }),
+    /* ⚠️ LE CRITÈRE NOMME SON BOUTON, et il a fallu qu'on le demande pour s'en
+     * apercevoir (Yann, 2026-09-04 : *« on parle d'un Shuffle énorme, c'est
+     * quoi ? »*). « Shuffle » n'existait nulle part ailleurs dans le jeu : le
+     * curseur s'appelle « Swing », son aide parle de « balancement », et le
+     * catalogue contient même un preset « Shuffle » qui, lui, est à 15. Un
+     * critère ESSENTIEL — donc bloquant — désignait ainsi un geste qu'aucun
+     * écran ne reliait à un bouton. */
+    avecSwing(30, 'Un shuffle ÉNORME — le curseur Swing, poussé loin', { essentiel: true }),
     surLesTemps('kick-garage', ['kick'], [0, 1.5], 'Le kick sur le 1, puis entre les temps'),
     surLesTemps('backbeat-24', ['snare', 'clap'], [1, 3], 'La claire tient les temps 2 et 4'),
     tempoEntre(124, 136, 'Entre 124 et 136 — le tempo du club'),
