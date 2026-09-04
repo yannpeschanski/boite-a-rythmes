@@ -31,6 +31,7 @@
 import type { PatternStateV2, DrumRowName, SynthRowName, SynthNote } from './types';
 import { evaluerStyle, type FicheStyle } from './styles';
 import { matchVoicePreset } from './presets/voices';
+import { CHORD_PRIORITY_ORDER, buildChordsForScale, currentScale } from './presets/scales';
 import { LAVERIE_DRIVES } from './exercises';
 
 /* Ce qu'une contrainte peut avoir besoin de savoir EN PLUS du morceau livré.
@@ -436,6 +437,78 @@ function ligneVivante(e: PatternStateV2, l: DrumRowName): boolean {
   return !r.muted && r.pattern.slice(0, r.subdiv).some((v) => v > 0);
 }
 
+/* ---------------------------------------------------------------------------
+ * LE MIXAGE NE S'ARRÊTE PAS À LA BATTERIE
+ *
+ * ⚠️ Relecture de Yann (2026-09-04), sur les deux premiers envois de l'acte 4 :
+ * *« il manque les autres lignes de synthé »*, *« il manque le travail sur les
+ * autres lignes de synthé »*. Ce n'était pas un oubli d'écriture du cahier :
+ * `LIGNES_MIX` ne contient que la batterie, donc les cinq contraintes de
+ * mixage étaient AVEUGLES à la mélodie, à la basse et à la nappe. Un cahier
+ * qui les citait n'aurait rien vérifié.
+ *
+ * Les trois champs qui comptent existent des deux côtés (volume, reverbSend,
+ * delaySend) ; le filtre, lui, ne se lit pas au même endroit — `filterCutoff`
+ * sur une ligne de batterie, `voice.cutoff` sur une ligne de synthé.
+ * ------------------------------------------------------------------------- */
+
+/** Une ligne de MIXAGE : batterie ou synthé. */
+export type LigneMix = DrumRowName | SynthRowName;
+
+const LIGNES_SYNTH: SynthRowName[] = ['bass', 'melody', 'pad'];
+/** Tout ce qui sort du haut-parleur, dans l'ordre où l'Atelier l'affiche. */
+export const LIGNES_TOUTES: LigneMix[] = [...LIGNES_MIX, ...LIGNES_SYNTH];
+
+function estSynth(l: LigneMix): l is SynthRowName {
+  return (LIGNES_SYNTH as string[]).includes(l);
+}
+
+/* Une ligne de SYNTHÉ qui sonne. La nappe porte des index d'accord (`-1` =
+ * silence), les deux autres des notes (`null` = silence) : le même test ne
+ * marche pas sur les deux. */
+function synthVivante(e: PatternStateV2, l: SynthRowName): boolean {
+  const r = e.synthRows[l];
+  if (r.muted) return false;
+  return r.pattern
+    .slice(0, r.subdivisions)
+    .some((v) => (l === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
+}
+
+function vivante(e: PatternStateV2, l: LigneMix): boolean {
+  return estSynth(l) ? synthVivante(e, l) : ligneVivante(e, l);
+}
+
+function volumeDe(e: PatternStateV2, l: LigneMix): number {
+  return estSynth(l) ? e.synthRows[l].volume : e.rows[l].volume;
+}
+function reverbDe(e: PatternStateV2, l: LigneMix): number {
+  return estSynth(l) ? e.synthRows[l].reverbSend : e.rows[l].reverbSend;
+}
+function delayDe(e: PatternStateV2, l: LigneMix): number {
+  return estSynth(l) ? e.synthRows[l].delaySend : e.rows[l].delaySend;
+}
+/* ⚠️ La coupure d'une ligne de synthé vit dans SA VOIX, et elle est basse
+ * d'usine : 600 Hz sur la basse, 1 600 sur la mélodie. Un seuil ABSOLU du
+ * genre « au moins deux lignes sous 9 000 Hz » serait donc satisfait par
+ * n'importe quel synthé sans toucher à rien — d'où `aBaisseLeFiltre`, qui
+ * mesure un GESTE, plutôt qu'un élargissement de `filtreQuiCoupe`. */
+function coupureDe(e: PatternStateV2, l: LigneMix): number {
+  if (!estSynth(l)) return e.rows[l].filterCutoff;
+  const c = e.synthRows[l].voice.cutoff;
+  return typeof c === 'number' ? c : 20000;
+}
+
+const NOM_MIX: Record<LigneMix, string> = {
+  kick: 'kick',
+  snare: 'claire',
+  hat: 'charley',
+  clap: 'clap',
+  shaker: 'shaker',
+  bass: 'basse',
+  melody: 'mélodie',
+  pad: 'nappe',
+};
+
 /* Le filtre passe-bas COUPE vraiment.
  *
  * `filterCutoff` va jusqu'à 20 000 Hz, c'est-à-dire au-dessus de l'audible :
@@ -454,19 +527,54 @@ export function filtreQuiCoupe(
   };
 }
 
+/* AVOIR FILTRÉ — le même geste, mesuré contre le départ.
+ *
+ * ⚠️ Pourquoi une seconde contrainte plutôt qu'un paramètre de plus sur
+ * `filtreQuiCoupe` : les deux ne mesurent pas la même chose. Un seuil ABSOLU
+ * dit « cette ligne ne monte pas au-dessus de 9 000 Hz », ce qui est vrai
+ * d'une ligne de batterie qu'on a filtrée — et vrai d'usine de toute ligne de
+ * synthé, dont la voix coupe déjà à 600 ou 1 600 Hz. Sur le synthé, la seule
+ * chose qui veuille dire quelque chose est le GESTE : la coupure est plus
+ * basse qu'au départ. Deux sémantiques dans une seule fonction, ce sont deux
+ * cahiers qui croient demander la même chose. */
+export function aBaisseLeFiltre(
+  lignes: LigneMix[],
+  combien: number,
+  libelle: string,
+): Contrainte {
+  const baissee = (e: PatternStateV2, d: PatternStateV2, l: LigneMix) =>
+    vivante(e, l) && coupureDe(e, l) < coupureDe(d, l);
+  return {
+    id: 'filtre-geste',
+    libelle,
+    verifie: (e, ctx) =>
+      !!ctx?.depart && lignes.filter((l) => baissee(e, ctx.depart!, l)).length >= combien,
+    details: (e, ctx) =>
+      lignes.map((l) => ({
+        id: `filtre-${l}`,
+        libelle: NOM_MIX[l],
+        ok: !!ctx?.depart && baissee(e, ctx.depart, l),
+      })),
+  };
+}
+
 /* Le delay est ENGAGÉ, et il se compte.
  *
  * ⚠️ Un envoi de delay sans retour audible ne s'entend pas : `delayFeedback`
  * doit être non nul, sinon la répétition ne revient qu'une fois et le joueur
  * a coché une case sans rien changer à ce qu'il entend. Ce champ est GLOBAL
  * (`synthGlobal`) et non par ligne, malgré son voisinage avec `delaySend`. */
-export function delayEngage(min: number, libelle: string): Contrainte {
+export function delayEngage(
+  min: number,
+  libelle: string,
+  lignes: LigneMix[] = LIGNES_MIX,
+): Contrainte {
   return {
     id: 'delay',
     libelle,
     verifie: (e) =>
       e.synthGlobal.delayFeedback > 0 &&
-      LIGNES_MIX.some((l) => ligneVivante(e, l) && e.rows[l].delaySend >= min),
+      lignes.some((l) => vivante(e, l) && delayDe(e, l) >= min),
   };
 }
 
@@ -475,12 +583,17 @@ export function delayEngage(min: number, libelle: string): Contrainte {
  * C'est la forme généralisée de `deLEspaceSansSoupe` : « de l'espace » seul se
  * satisfait en poussant tout à fond, ce qui est précisément le défaut que
  * l'acte enseigne à éviter. Une borne haute rend la ligne infalsifiable. */
-export function reverbDosee(min: number, max: number, libelle: string): Contrainte {
+export function reverbDosee(
+  min: number,
+  max: number,
+  libelle: string,
+  lignes: LigneMix[] = LIGNES_MIX,
+): Contrainte {
   return {
     id: 'reverb-dosee',
     libelle,
     verifie: (e) => {
-      const envois = LIGNES_MIX.filter((l) => ligneVivante(e, l)).map((l) => e.rows[l].reverbSend);
+      const envois = lignes.filter((l) => vivante(e, l)).map((l) => reverbDe(e, l));
       return envois.some((v) => v >= min) && envois.every((v) => v <= max);
     },
   };
@@ -491,13 +604,27 @@ export function reverbDosee(min: number, max: number, libelle: string): Contrain
  * Le geste de mixage le plus élémentaire, et le seul qui ne demande aucun
  * effet — c'est pour ça qu'il ouvre le cahier. L'écart se mesure entre la
  * ligne la plus forte et la plus faible de celles qui sonnent. */
-export function contrasteDeVolume(ecart: number, libelle: string): Contrainte {
+export function contrasteDeVolume(
+  ecart: number,
+  libelle: string,
+  lignes: LigneMix[] = LIGNES_MIX,
+): Contrainte {
   return {
     id: 'contraste',
     libelle,
-    verifie: (e) => {
-      const v = LIGNES_MIX.filter((l) => ligneVivante(e, l)).map((l) => e.rows[l].volume);
-      return v.length >= 2 && Math.max(...v) - Math.min(...v) >= ecart;
+    verifie: (e, ctx) => {
+      const vivantes = lignes.filter((l) => vivante(e, l));
+      const v = vivantes.map((l) => volumeDe(e, l));
+      if (v.length < 2 || Math.max(...v) - Math.min(...v) < ecart) return false;
+      /* ⚠️ ET IL FAUT AVOIR BOUGÉ UN CURSEUR. Les volumes d'usine ne sont pas
+       * égaux — kick 1,0 / claire 0,9 / charley 0,7 (`defaults.ts`) — donc
+       * l'écart de 0,18 était atteint sans toucher à rien : la case « range
+       * les plans » se cochait à l'ouverture de tout morceau qui sonne.
+       * Trouvé en généralisant la contrainte au synthé, pas par un test : la
+       * garde « aucune case cochée à l'ouverture » mesure sur un Atelier VIDE,
+       * où aucune ligne n'est vivante. Un critère satisfait sans rien toucher
+       * est du théâtre, quelle que soit la ligne qu'il regarde. */
+      return !!ctx?.depart && vivantes.some((l) => volumeDe(e, l) !== volumeDe(ctx.depart!, l));
     },
   };
 }
@@ -509,10 +636,20 @@ export function contrasteDeVolume(ecart: number, libelle: string): Contrainte {
  * regardé chaque ligne. Elle compare à l'état de DÉPART, donc elle ne peut pas
  * être vraie à l'ouverture — c'est la même mécanique que
  * `pasLeMotifDeDepart`, appliquée à la production plutôt qu'aux cases. */
-export function chaqueLigneRetouchee(lignes: DrumRowName[], libelle: string): Contrainte {
+export function chaqueLigneRetouchee(lignes: LigneMix[], libelle: string): Contrainte {
   const champs = ['volume', 'filterCutoff', 'reverbSend', 'delaySend', 'tone', 'pitch'] as const;
-  const bougee = (e: PatternStateV2, d: PatternStateV2, l: DrumRowName) =>
-    champs.some((c) => e.rows[l][c] !== d.rows[l][c]);
+  /* ⚠️ Une ligne de synthé n'a ni `tone` ni `pitch` ni `filterCutoff` : ce
+   * qu'on peut lui retoucher est son volume, ses deux envois, son glide et la
+   * coupure de sa VOIX. Comparer les mêmes six champs des deux côtés aurait
+   * rendu la ligne intouchable — donc le cahier impossible. */
+  const bougeeSynth = (e: PatternStateV2, d: PatternStateV2, l: SynthRowName) =>
+    e.synthRows[l].volume !== d.synthRows[l].volume ||
+    e.synthRows[l].reverbSend !== d.synthRows[l].reverbSend ||
+    e.synthRows[l].delaySend !== d.synthRows[l].delaySend ||
+    e.synthRows[l].glide !== d.synthRows[l].glide ||
+    coupureDe(e, l) !== coupureDe(d, l);
+  const bougee = (e: PatternStateV2, d: PatternStateV2, l: LigneMix) =>
+    estSynth(l) ? bougeeSynth(e, d, l) : champs.some((c) => e.rows[l][c] !== d.rows[l][c]);
   return {
     id: 'retouchees',
     libelle,
@@ -523,7 +660,7 @@ export function chaqueLigneRetouchee(lignes: DrumRowName[], libelle: string): Co
     details: (e, ctx) =>
       lignes.map((l) => ({
         id: `retouche-${l}`,
-        libelle: l,
+        libelle: NOM_MIX[l],
         ok: !!ctx?.depart && bougee(e, ctx.depart, l),
       })),
   };
@@ -539,6 +676,35 @@ export function pasLeMotifDeDepart(
       .join('|');
   const avant = empreinte(depart);
   return { id: 'produit', libelle, verifie: (e) => empreinte(e) !== avant };
+}
+
+/* « Il faut y avoir touché » — quand le DÉPART n'est pas connu d'avance.
+ *
+ * ⚠️ `pasLeMotifDeDepart` compare à un état FIGÉ dans le cahier, ce qui suppose
+ * de savoir en l'écrivant sur quoi l'Atelier va s'ouvrir. C'est vrai d'une
+ * commande qui part d'une table rase ou d'un niveau écrit ; ce n'est plus vrai
+ * d'une commande qui reprend une LIVRAISON — le départ est alors ce que le
+ * joueur a livré, et personne ne peut l'écrire à l'avance.
+ *
+ * Elle lit donc le départ dans le CONTEXTE, comme `chaqueLigneRetouchee`, et
+ * répond FAUX en son absence : une case cochée faute d'information est le
+ * théâtre que le cahier interdit.
+ *
+ * ⚠️ Et elle regarde le SON en plus des grilles. `empreinteEtat` ne hache que
+ * les cases, le tempo et le swing — ce qui suffit à `pasLeMotifDeDepart`, dont
+ * les commandes partent d'un rythme à transformer. Un envoi qui ne demande que
+ * du mixage ne change AUCUNE case : sur la seule empreinte des grilles, « il
+ * faut y avoir touché » serait resté décoché après une heure de travail. */
+export function avoirTouche(libelle = 'Il faut y avoir touché'): Contrainte {
+  const signature = (e: PatternStateV2) =>
+    `${empreinteEtat(e)}/${LIGNES_TOUTES.map(
+      (l) => `${volumeDe(e, l)}:${reverbDe(e, l)}:${delayDe(e, l)}:${coupureDe(e, l)}`,
+    ).join('|')}`;
+  return {
+    id: 'touche',
+    libelle,
+    verifie: (e, ctx) => !!ctx?.depart && signature(e) !== signature(ctx.depart),
+  };
 }
 
 /* ---------------------------------------------------------------------------
@@ -657,6 +823,106 @@ export function basseQuiTient(libelle: string): Contrainte {
  * longue) et l'étalement (les notes de l'accord arrivent l'une après l'autre).
  * On en demande une, pas une en particulier — un cahier qui nommerait le
  * bouton serait `nommer` déguisé en commande. */
+/* ---------------------------------------------------------------------------
+ * L'HARMONIE — le vocabulaire que l'Atelier affiche et que le jeu n'exigeait
+ * nulle part.
+ *
+ * ⚠️ Relecture de Yann (2026-09-04) sur la commande « CLUB ÉNERGIE » : *« il
+ * faut intégrer un cahier des charges pour le synthé adapté à la difficulté du
+ * niveau dans l'acte. Pourquoi pas travailler sur l'harmonie ? »*
+ *
+ * Tout était déjà là et n'avait jamais servi : `presets/scales.ts` construit
+ * les triades diatoniques de la gamme choisie, et l'Atelier les nomme en
+ * chiffres romains sur les cases de la nappe comme sur son clavier
+ * (`SynthRowView`, `NotePad`). Le mot est donc à l'écran avant d'être exigé —
+ * la règle du fichier.
+ *
+ * ⚠️ Une case de nappe porte un INDEX d'accord, jamais un degré : l'accord `0`
+ * est le I, le `1` est le IV, le `2` le V, le `3` le vi (`CHORD_PRIORITY_ORDER`
+ * — l'ordre pop, pas l'ordre de la gamme). Lire l'index comme un degré
+ * demanderait au joueur une basse en II sous un accord de IV : la question
+ * serait fausse, et elle serait fausse en silence.
+ * ------------------------------------------------------------------------- */
+
+/** Les index d'accords réellement posés par la nappe, dans l'ordre. */
+function accordsDe(e: PatternStateV2): number[] {
+  const r = e.synthRows.pad;
+  if (r.muted) return [];
+  return r.pattern
+    .slice(0, r.subdivisions)
+    .filter((v): v is number => typeof v === 'number' && v >= 0);
+}
+
+/** Le degré de la gamme sur lequel se construit l'accord d'index `i`. */
+function degreDeLAccord(i: number): number {
+  return CHORD_PRIORITY_ORDER[i] ?? 1;
+}
+
+function romanDeLAccord(e: PatternStateV2, i: number): string {
+  const chords = buildChordsForScale(
+    currentScale(e.synthGlobal.scaleId),
+    e.synthGlobal.rootMidi,
+    e.synthGlobal.chordCount,
+  );
+  return chords[i]?.roman ?? '?';
+}
+
+/* Une PROGRESSION, pas un accord tenu.
+ *
+ * `nappeQuiRespire` demande que la nappe BOUGE (arpège, bourdon, étalement) —
+ * c'est une texture. Ici on demande qu'elle CHANGE d'accord : deux choses
+ * différentes, et c'est la seconde qui fait une harmonie. Un seul accord
+ * répété est une pédale ; le jeu n'a rien contre, mais ce n'est pas ce que le
+ * client demande. */
+export function uneProgression(combien: number, libelle: string): Contrainte {
+  return {
+    id: `progression-${combien}`,
+    libelle,
+    verifie: (e) => new Set(accordsDe(e)).size >= combien,
+  };
+}
+
+/* La basse DIT l'accord.
+ *
+ * ⚠️ Relationnelle, comme toute l'écriture de l'acte 3 : elle exige que la
+ * nappe soit encore là (sinon « la basse suit les accords » se satisfait de
+ * zéro accord) et que la basse joue la FONDAMENTALE de chacun d'eux quelque
+ * part dans la boucle. C'est la leçon d'harmonie la plus courte qui existe, et
+ * la seule qu'on puisse vérifier sans juger un goût : sous un IV, une basse en
+ * I n'est pas une couleur, c'est un accroc.
+ *
+ * On ne demande PAS qu'elle tombe en même temps que l'accord : la nappe et la
+ * basse n'ont pas la même subdivision ni le même nombre de mesures, et exiger
+ * une coïncidence de pas ferait échouer une basse juste pour une raison de
+ * grille. */
+export function laBasseDitLAccord(libelle: string): Contrainte {
+  const manquants = (e: PatternStateV2): number[] => {
+    const accords = [...new Set(accordsDe(e))];
+    if (accords.length === 0) return [];
+    const degres = new Set(notesDe(e, 'bass').map((n) => n.degree));
+    return accords.filter((i) => !degres.has(degreDeLAccord(i)));
+  };
+  return {
+    id: 'basse-accord',
+    libelle,
+    verifie: (e) => {
+      const accords = new Set(accordsDe(e));
+      return accords.size > 0 && notesDe(e, 'bass').length > 0 && manquants(e).length === 0;
+    },
+    /* Le détail nomme les accords que la basse ne dit pas — « ta basse ne suit
+     * pas » sans dire lequel n'est pas un retour, c'est un refus. */
+    details: (e) => {
+      const accords = [...new Set(accordsDe(e))];
+      const absents = manquants(e);
+      return accords.map((i) => ({
+        id: `accord-${i}`,
+        libelle: romanDeLAccord(e, i),
+        ok: !absents.includes(i),
+      }));
+    },
+  };
+}
+
 export function nappeQuiRespire(libelle: string): Contrainte {
   return {
     id: 'nappe-respire',
@@ -680,12 +946,6 @@ export function nappeQuiRespire(libelle: string): Contrainte {
  * (les curseurs ont écarté la voix, donc touchée aussi), ou `default`, le seul
  * qui ne compte pas. Le détail nomme les lignes restées d'usine : un refus qui
  * ne dit pas laquelle n'est pas un retour. */
-const NOM_LIGNE: Record<SynthRowName, string> = {
-  bass: 'basse',
-  pad: 'nappe',
-  melody: 'mélodie',
-};
-
 export function voixChoisie(lignes: SynthRowName[], libelle: string): Contrainte {
   const choisie = (e: PatternStateV2, l: SynthRowName) =>
     matchVoicePreset(l, e.synthRows[l].voice as Record<string, unknown>) !== 'default';
@@ -699,7 +959,7 @@ export function voixChoisie(lignes: SynthRowName[], libelle: string): Contrainte
      * rien de plus que la ligne au-dessus est du bruit. */
     details:
       lignes.length > 1
-        ? (e) => lignes.map((l) => ({ id: `voix-${l}`, libelle: NOM_LIGNE[l], ok: choisie(e, l) }))
+        ? (e) => lignes.map((l) => ({ id: `voix-${l}`, libelle: NOM_MIX[l], ok: choisie(e, l) }))
         : undefined,
   };
 }

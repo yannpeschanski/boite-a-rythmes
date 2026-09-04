@@ -192,11 +192,18 @@ describe('un acte qui livre plusieurs genres les garde tous', () => {
     expect(liste.map((x) => x.titre)).toEqual(['LE TUNNEL (V3)']);
   });
 
-  it('et l’acte 5 déclare bien quatre séries distinctes', async () => {
+  /* ⚠️ QUATRE SÉRIES, SIX COMMANDES depuis le 2026-09-04 : trois des quatre
+   * cases du fax se jouent en deux envois (le squelette, puis le son), et les
+   * deux envois d'une même case portent la MÊME série — sinon la discographie
+   * garderait la version sans synthé à côté de la version finie, c'est-à-dire
+   * le brouillon à côté du disque. C'est la même règle que la chaîne du
+   * Tunnel, appliquée à un acte qui livre plusieurs genres. */
+  it('et l’acte 5 déclare quatre séries pour ses six commandes', async () => {
     const cmds = ACTES.find((a) => a.id === 5)!.etapes.filter((e) => e.kind === 'commande');
     const series = cmds.map((c) => (c as { serie?: string }).serie);
-    expect(series).toHaveLength(4);
+    expect(series).toHaveLength(6);
     expect(new Set(series).size).toBe(4);
+    for (const s of series) expect(s, 'une série vide se ferait écraser').toBeTruthy();
   });
 });
 
@@ -209,13 +216,13 @@ describe('chaque production du récit a un nom et un destinataire', () => {
         .filter((e) => e.kind === 'commande' || e.kind === 'livraison')
         .map((e) => ({ acte: a.id, e: e as { titre: string; client: string } })),
     );
-    /* Treize : les actes 3 et 4 enchaînent trois envois du même morceau, et
-     * l'acte 5 livre quatre GENRES depuis le 2026-09-01.
+    /* Quinze : les actes 3 et 4 enchaînent trois envois du même morceau, et
+     * l'acte 5 livre quatre GENRES dont trois en deux temps (2026-09-04).
      * ⚠️ Les trois du Tunnel portent des titres DIFFÉRENTS (LE TUNNEL, V2, V3)
      * alors qu'ils se remplacent l'un l'autre : c'est voulu, c'est le titre qui
      * dit au joueur laquelle des trois il réécoute. Les quatre de l'acte 5, à
      * l'inverse, coexistent — elles ont chacune leur SÉRIE. */
-    expect(prod).toHaveLength(13);
+    expect(prod).toHaveLength(15);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();

@@ -1130,7 +1130,14 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
     }>;
     expect(cmds).toHaveLength(3);
     // Le premier : rien de mixage, il ne demande QUE d'avoir fait le morceau.
-    const mix = ['filtre-9000', 'contraste', 'kick-porte', 'reverb-dosee', 'delay', 'retouchees'];
+    /* ⚠️ `filtre-geste` depuis le 2026-09-04 : le filtre du SYNTHÉ se mesure
+     * contre le départ et non par un seuil absolu (voir `aBaisseLeFiltre`).
+     * Sans lui dans cette liste, le deuxième envoi « ne serait plus que du
+     * mixage » aux yeux du test alors qu'il l'est resté. */
+    const mix = [
+      'filtre-9000', 'filtre-geste', 'contraste', 'kick-porte',
+      'reverb-dosee', 'delay', 'retouchees',
+    ];
     expect(cmds[0].cahier.filter((c) => mix.includes(c.id))).toEqual([]);
     // Les deux suivants : que du mixage, et ils reprennent la livraison.
     for (const c of cmds.slice(1)) {
@@ -1176,6 +1183,23 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
  * ailleurs — le commercial qui n'arrive pas à dire ce qu'il veut et finit par
  * le fredonner.
  */
+/* Les contraintes qui portent sur une ligne de SYNTHÉ — présence, phrase,
+ * harmonie, texture. Une seule définition : deux listes qui doivent rester
+ * d'accord finissent par ne plus l'être. */
+function estContrainteDeSynthe(id: string): boolean {
+  return (
+    id.startsWith('synth:') ||
+    id.startsWith('phrase:') ||
+    id.startsWith('tonique:') ||
+    id.startsWith('voix:') ||
+    id.startsWith('glide:') ||
+    id.startsWith('progression-') ||
+    id === 'basse-tient' ||
+    id === 'basse-accord' ||
+    id === 'nappe-respire'
+  );
+}
+
 describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
   it('est jouable, et n’ouvre aucun module', () => {
     expect(acteAVenir(ACTES[5])).toBe(false);
@@ -1213,38 +1237,82 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
     }
   });
 
-  // Une par catégorie du fax : le brief du récit et le classement des données
-  // disent la même chose.
-  it('couvre plusieurs familles, pas cinq fois la même', () => {
-    const cats = niveauxDeLActe(ACTES[5])
-      .slice(1)
-      .map((n) => LEVELS.find((x) => x.id === n)!.presetId)
-      .filter((id): id is string => Boolean(id))
-      .map((id) => PRESETS.find((p) => p.id === id)!.cat);
-    /* ⚠️ Deux depuis le 2026-09-01 : les cinq reconstructions de presets sont
-     * rendues au réservoir, et c'est aux COMMANDES que l'acte couvre ses
-     * familles — une par catégorie du fax. Ce que ce test protégeait (« pas
-     * cinq fois la même famille ») est donc mesuré plus bas, sur les fiches. */
-    expect(new Set(cats).size).toBeGreaterThanOrEqual(2);
+  /* ⚠️ RÉANCRÉ le 2026-09-04. Le test comptait les FAMILLES de presets
+   * reproduits dans l'acte — il en exigeait deux. Depuis que les
+   * reconstructions sont passées en Atelier (*« à faire en atelier en
+   * intégrant le synthé »*, Yann), il n'en reste qu'une, et le test tombait
+   * sur une population d'un seul élément : exactement le garde-fou vide déjà
+   * payé quand `lequel` a quitté la carrière.
+   *
+   * Ce qu'il tient maintenant est ce que l'acte promet vraiment : QUATRE cases
+   * de fax, quatre séries, et jamais deux fois le même genre. */
+  it('couvre les quatre cases du fax, et jamais deux fois le même genre', () => {
+    const cmds = ACTES[5].etapes.filter((e) => e.kind === 'commande') as Array<{
+      serie?: string;
+      cahier: Array<{ id: string }>;
+    }>;
+    const series = [...new Set(cmds.map((c) => c.serie))];
+    expect(series, 'une case du fax = une série').toHaveLength(4);
+    for (const s of series) expect(s, 'une série vide se ferait écraser').toBeTruthy();
+    const fiches = cmds.flatMap((c) =>
+      c.cahier.flatMap((l) => (l.id.startsWith('fiche:') ? [l.id.slice(6)] : [])),
+    );
+    expect(new Set(fiches).size, 'deux commandes sur le même genre').toBe(fiches.length);
+    expect(fiches.length, 'plus aucun genre jugé').toBeGreaterThanOrEqual(3);
   });
 
-  it('⚠️ et ses COMMANDES couvrent les quatre cases du fax, une famille chacune', () => {
-    /* Le vrai « pas cinq fois la même chose » depuis que l'acte produit au lieu
-     * de recopier : quatre livraisons, quatre genres, quatre fiches
-     * différentes. Deux commandes sur la même fiche seraient le même travail
-     * deux fois. */
-    const fiches = ACTES[5].etapes.flatMap((e) =>
-      e.kind === 'commande'
-        ? e.cahier.flatMap((c) => (c.id.startsWith('fiche:') ? [c.id.slice(6)] : []))
-        : [],
-    );
-    expect(fiches).toHaveLength(4);
-    expect(new Set(fiches).size, 'deux commandes sur le même genre').toBe(4);
-    // Et chacune range sa livraison dans SA série, sinon la discographie n'en
-    // garderait qu'une sur quatre (voir `discographie.ts`).
-    const series = ACTES[5].etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
-    expect(new Set(series).size, 'deux livraisons dans la même série').toBe(4);
-    for (const s of series) expect(s, 'une série vide se ferait écraser').toBeTruthy();
+  /* ⚠️ LA CASE QUI NE JUGE PAS DE GENRE, et pourquoi c'en est une bonne.
+   *
+   * *« On vient déjà de travailler le hip-hop avec Kelvin. Autant dire qu'on
+   * reprend le travail déjà fait avec Kelvin et on centre l'exercice sur le
+   * travail du synthé »* (Yann). Son rythme a donc DÉJÀ été accepté à l'acte 2 :
+   * lui redemander une fiche de style ferait repasser un examen réussi, et le
+   * morceau de Kelvin pourrait même la cocher à l'ouverture. Ce qui la tient
+   * honnête à la place : elle repart de cette livraison-là, et n'exige que ce
+   * que l'acte 2 ne demande pas. */
+  it('⚠️ la case hip-hop reprend le morceau de Kelvin au lieu de rejuger le genre', () => {
+    const hh = ACTES[5].etapes.find(
+      (e) => e.kind === 'commande' && e.serie === 'hip-hop',
+    ) as unknown as { partirDuMorceauDeLActe?: number; cahier: Array<{ id: string }> };
+    expect(hh.partirDuMorceauDeLActe, 'elle doit repartir de l’acte de Kelvin').toBe(2);
+    expect(hh.cahier.some((c) => c.id.startsWith('fiche:'))).toBe(false);
+    // L'acte 2 n'exige aucune ligne de synthé : c'est donc là qu'est le travail.
+    expect(hh.cahier.some((c) => estContrainteDeSynthe(c.id))).toBe(true);
+  });
+
+  /* ⚠️ LE SYNTHÉ EST LE SUJET DE L'ACTE, et son exigence MONTE.
+   *
+   * C'est le cœur de la relecture du 2026-09-04 : l'acte des styles jugeait
+   * quatre grilles de batterie et laissait la mélodie, la basse et la nappe
+   * hors du cahier — *« il faut intégrer un cahier des charges pour le synthé
+   * adapté à la difficulté du niveau dans l'acte »*. Chaque case en demande
+   * donc, et chaque case en demande au moins autant que la précédente.
+   *
+   * ⚠️ Le compte se fait sur la CASE ENTIÈRE (la série), pas sur son dernier
+   * envoi : trois des quatre cases se jouent en deux temps — le squelette,
+   * puis le son — et lire le seul dernier envoi dirait que le club exige moins
+   * que le hip-hop alors qu'il exige la basse en plus, un envoi plus tôt.
+   * Mesurer une chaîne sur son dernier maillon, c'est mesurer la moitié du
+   * travail. Un test qui ne regarderait que la présence, lui, laisserait
+   * l'acte redescendre à une ligne de basse partout. */
+  it('⚠️ chaque case du fax exige le synthé, et l’exigence ne redescend jamais', () => {
+    const cmds = ACTES[5].etapes.filter((e) => e.kind === 'commande') as Array<{
+      serie?: string;
+      cahier: Array<{ id: string }>;
+    }>;
+    const parCase = new Map<string, number>();
+    for (const c of cmds) {
+      const n = c.cahier.filter((l) => estContrainteDeSynthe(l.id)).length;
+      parCase.set(c.serie!, (parCase.get(c.serie!) ?? 0) + n);
+    }
+    let precedent = 0;
+    for (const [serie, n] of parCase) {
+      expect(n, `la case « ${serie} » n’exige rien du synthé`).toBeGreaterThan(0);
+      expect(n, `la case « ${serie} » en demande moins que la précédente`).toBeGreaterThanOrEqual(
+        precedent,
+      );
+      precedent = n;
+    }
   });
 
   // Le mot du récit et le verbe de l'écran sont le même : si le texte fait

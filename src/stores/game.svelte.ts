@@ -715,6 +715,13 @@ class GameStore {
       const p = productionDeLActe(this.productions, this.acteActif);
       return p ? deserializeState(p.etat) : etatVierge();
     }
+    /* Reprendre le morceau d'un acte PRÉCÉDENT — « on reprend le travail déjà
+     * fait avec Kelvin » (Yann, 2026-09-04). Même filet : rien de livré
+     * là-bas, on repart de la table rase plutôt que de bloquer. */
+    if (e.partirDuMorceauDeLActe !== undefined) {
+      const p = productionDeLActe(this.productions, e.partirDuMorceauDeLActe);
+      return p ? deserializeState(p.etat) : etatVierge();
+    }
     if (e.partirDu === undefined) return etatVierge();
     const l = LEVELS.find((x) => x.id === e.partirDu);
     if (!l?.grille) return etatVierge();

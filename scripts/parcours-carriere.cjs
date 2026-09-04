@@ -54,6 +54,7 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     const { unlocks } = await import('/src/stores/unlocks.svelte.ts');
     const { PRESETS } = await import('/src/model/presets/songs.ts');
     const { resolveVoicePreset } = await import('/src/model/presets/voices.ts');
+    const { CHORD_PRIORITY_ORDER: ORDRE_DES_ACCORDS } = await import('/src/model/presets/scales.ts');
     const log = [];
     const modules = () => ['atelier', 'synth', 'production', 'live'].filter((m) => unlocks.has(m)).join(',') || '—';
 
@@ -199,6 +200,16 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         }
         if (exige('retouchees')) {
           for (const n of ['kick', 'snare', 'hat']) st.rows[n].tone = 42;
+          // Une ligne de synthé n'a ni `tone` ni `pitch` : son volume, si.
+          for (const n of ['bass', 'melody', 'pad']) st.synthRows[n].volume = 0.8;
+        }
+        /* Le filtre du SYNTHÉ se mesure contre le DÉPART (`aBaisseLeFiltre`) :
+           sa voix d'usine coupe déjà à 600 Hz, donc un seuil absolu serait
+           coché sans rien toucher. */
+        if (exige('filtre-geste')) {
+          for (const n of ['bass', 'melody']) {
+            st.synthRows[n].voice = { ...st.synthRows[n].voice, cutoff: 300 };
+          }
         }
         /* Le GROOVE exigé par le cahier de Kelvin (acte 2, 2026-09-01) : un
            décalage sur UNE ligne — les autres restent en place, c'est contre
@@ -226,12 +237,29 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
           // Elle se repose sur la tonique : c'est la dernière note entendue.
           m.pattern[6] = { degree: 1, octave: 0 };
         }
-        if (exige('nappe-respire') || exige('synth:pad')) {
+        /* L'HARMONIE de l'acte 5 (2026-09-04). ⚠️ Une case de nappe porte un
+           INDEX d'accord : celui d'index `i` se construit sur le degré
+           `CHORD_PRIORITY_ORDER[i]` — l'ordre pop (I, IV, V, vi) et non
+           l'ordre de la gamme. Poser `i + 1` jouerait faux. */
+        const prog = e.cahier.find((c) => c.id.startsWith('progression-'));
+        const nAccords = prog ? Number(prog.id.slice('progression-'.length)) : 0;
+        if (exige('nappe-respire') || exige('synth:pad') || exige('basse-accord') || nAccords) {
           const pad = st.synthRows.pad;
           pad.muted = false;
           pad.subdivisions = 4;
-          pad.pattern = [0, -1, 3, -1];
+          const combien = Math.max(2, nAccords);
+          pad.pattern = [0, 1, 2, 3].map((i) => (i < combien ? i : -1));
           st.synthGlobal.padArpEnabled = true;
+        }
+        if (exige('basse-accord')) {
+          const b = st.synthRows.bass;
+          b.muted = false;
+          b.subdivisions = 8;
+          b.pattern = new Array(8).fill(null);
+          const poses = [...new Set(st.synthRows.pad.pattern.filter((v) => typeof v === 'number' && v >= 0))];
+          poses.forEach((i, k) => {
+            b.pattern[k * 2] = { degree: ORDRE_DES_ACCORDS[i], octave: 0 };
+          });
         }
         if (exige('glide:bass')) st.synthRows.bass.glide = 0.2;
         // « Une note n'est pas un son » : une voix choisie sur chaque ligne
