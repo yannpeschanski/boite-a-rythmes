@@ -44,6 +44,47 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le riddim dit où sont ses deux coups, et le preset Swing sonne swing (2026-09-04)
+
+> « "La réponse juste après le temps 2" dans le riddim, je ne trouve pas la
+> soluce. » — Yann, en jouant
+
+**Trois défauts dans une seule ligne de cahier**, et aucun ne se voit à la
+relecture du code — un libellé se relit très bien en croyant qu'il décrit ce
+qu'il exige :
+
+1. le critère est un `every` sur `[1, 1.75]`, donc **deux** frappes, et le
+   libellé n'en nommait qu'une ;
+2. « juste après le temps 2 » désigne 1,75, qui est trois doubles-croches plus
+   loin — c'est-à-dire **juste avant le 3**. Le mot pointait au mauvais endroit ;
+3. ⚠️ et surtout : `pasDuTemps` rend `null` quand `temps × subdiv / 4` n'est pas
+   entier. **Le temps 1,75 n'existe QUE sur une ligne en doubles-croches** — à
+   la subdivision par défaut la case n'est pas à l'écran, le critère est
+   impossible, et rien ne le dit.
+
+Le libellé situe donc la seconde frappe par rapport au **kick que le joueur
+vient de poser** (« sur le 2, puis juste après le kick — en doubles-croches »)
+plutôt que par une fraction de temps à calculer.
+
+**Deux garde-fous** (`tests/styles.test.ts`, `CritereStyle.temps` exposé pour
+ça) : un critère qui exige plusieurs frappes ne les annonce pas au singulier ;
+un placement hors de la croche nomme sa résolution. Vérifiés en remettant
+l'ancien libellé — les deux tombent. ⚠️ Écrits d'abord avec un `expect` dans la
+boucle, ils s'arrêtaient à la première infraction et en cachaient une autre ;
+ils rassemblent maintenant avant d'affirmer. C'est comme ça qu'a été trouvé le
+troisième cas : le rim shot du dancehall exige la CLAIRE quand le critère
+au-dessus accepte le clap — un joueur qui avait posé ses pops au clap n'avait
+aucun moyen de savoir pourquoi la case restait vide. Il nomme sa ligne.
+
+**Et le preset `swing` passe de 60 à 33.** Le scheduler retarde le pas impair de
+`swing %` d'un pas : la paire de croches vaut `(100+s) : (100−s)`, donc 60 fait
+**4:1** — la croche faible arrive à 80 % du chemin vers le temps suivant, on ne
+l'entend plus balancer mais collée au temps d'après. Le triolet du jazz, celui
+que la notice du preset décrit elle-même, c'est **2:1**, donc 33. La valeur
+venait de l'original et était la seule du catalogue à contredire sa propre
+notice : elle démontrait le CURSEUR (« poussé fort »), pas le genre qui donne
+son nom au preset.
+
 ### ✅ Le shuffle nomme son bouton (2026-09-04)
 
 > « Dans un exercice, on parle d'un Shuffle énorme, c'est quoi ? » — Yann

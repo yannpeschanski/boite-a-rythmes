@@ -1004,9 +1004,23 @@ export const PRESETS: SongPresetData[] = [
     },
     sidechain: { trigger: 'none', target: 'all', depth: 60, release: 180 }
     },
-  { id:'swing', cat:'Funk / soul / jazz', label:'Swing', tempo:130, swing:60, drag:0,
+  /* ⚠️ SWING 33 ET NON 60 — corrigé le 2026-09-04, sur l'oreille de Yann :
+     « le swing à 60, je n'arrive pas à voir à quel style ça se réfère, mais ça
+     ressemble pas à grand-chose ».
+
+     Le scheduler retarde le pas impair de `swing %` d'un pas : la paire de
+     croches vaut donc (100+s) : (100−s). À 60 ça fait 4:1 — la croche faible
+     arrive à 80 % du chemin vers le temps suivant, l'oreille ne l'entend plus
+     balancer, elle l'entend collée au temps d'après. Le triolet du jazz, celui
+     que la notice de ce preset décrit elle-même, c'est 2:1, donc 33.
+
+     La valeur 60 vient de l'original (l. 6007), et c'est la seule de ce fichier
+     qui contredise sa propre notice : elle démontrait le CURSEUR (« poussé
+     fort »), pas le genre qui donne son nom au preset. Le catalogue garde
+     l'extrême ailleurs — le garage est à 45, soit 2,6:1. */
+  { id:'swing', cat:'Funk / soul / jazz', label:'Swing', tempo:130, swing:33, drag:0,
     globalSaturation:0, globalCompression:0, globalBitcrush:0,
-    demo:'Backbeat kick/snare simple pour laisser entendre le curseur Swing poussé fort (60%)',
+    demo:'Backbeat kick/snare simple pour laisser entendre le swing triolet (33%, deux croches pour une)',
     history:"Le retard caractéristique des croches paires, base du jazz swing des années 30-40 et de tout ce qui s'en inspire.",
     kick:{subdiv:4, pattern:b([0,2],4), shift:0, volume:85, pitch:0, attack:8, decay:-10, tone:0},
     snare:{subdiv:4, pattern:b([1,3],4), shift:0, volume:80, pitch:-2, attack:10, decay:-10, tone:-10},
