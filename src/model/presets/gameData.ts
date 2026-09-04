@@ -264,3 +264,76 @@ export function composerRoast(
   }
   return bouts.join(' ');
 }
+
+/* ---------------------------------------------------------------------------
+ * LE ROAST D'UNE LIVRAISON — le pendant de celui des exercices.
+ *
+ * ⚠️ Demande de Yann (2026-09-04), dans la foulée des étoiles : *« du coup, tu
+ * peux aussi adapter les roasts en fonction »*. Les étoiles d'un cahier se
+ * gagnent sur deux gestes — avoir cherché des réglages que personne ne
+ * demandait, et avoir écouté son morceau tourner. L'écran affichait ces étoiles
+ * avec une phrase d'aide écrite d'avance, la même pour tout le monde : elle
+ * disait quoi faire, jamais ce qu'on venait de faire.
+ *
+ * Même règle que pour les exercices, et pour la même raison : **on ne commente
+ * que ce qui a été mesuré**. Les deux axes sont ici les deux moitiés de la
+ * note, donc la remarque explique l'étoile qui manque sans jamais avoir à la
+ * nommer — et elle salue quand il n'en manque aucune.
+ *
+ * ⚠️ Ça ne double PAS `model/reactions.ts` : celui-là commente le MORCEAU (un
+ * fait de l'état livré), celui-ci commente la FAÇON DE TRAVAILLER. C'est la
+ * même frontière que pour les exercices, et elle tient tant qu'on ne mélange
+ * pas les deux sources.
+ * ------------------------------------------------------------------------- */
+
+/** Les réglages cherchés en plus du cahier : aucun, un ou deux, trois et plus. */
+export const ROAST_LIVRAISON_REGLAGES: Record<string, string[]> = {
+  0: [
+    "Tu as coché le cahier et tu es parti. Pas un bouton de plus : le client ne verra pas la différence, toi si.",
+    "Zéro réglage cherché. Le morceau fait ce qu'on demande et rien d'autre — c'est une livraison, pas une production.",
+    "Rien touché au-delà de la commande. On appelle ça le minimum, et le pire c'est que ça marche.",
+  ],
+  1: [
+    "Un ou deux réglages cherchés au passage. C'est un début de goût.",
+    "Tu as touché à deux choses que personne ne demandait. Continue : c'est là que ça devient un son.",
+    "Quelques boutons poussés en plus du cahier. Le morceau commence à être le tien.",
+  ],
+  2: [
+    "Tu as cherché des réglages que personne ne t'a demandés. C'est exactement ça, produire.",
+    "Trois boutons au moins, pour ton seul plaisir. Sol ne dira rien, mais elle a entendu.",
+    "Le cahier était le minimum et tu l'as compris. Le reste, c'est toi.",
+  ],
+};
+
+/** L'écoute, en cycles du motif : jamais, une fois, plusieurs. */
+export const ROAST_LIVRAISON_ECOUTE: Record<string, string[]> = {
+  0: [
+    "Et tu ne l'as pas écouté tourner une seule fois avant d'envoyer.",
+    "Livré sans écouter. Le client, lui, va l'écouter.",
+    "Pas un tour de boucle avant de cliquer. Courageux.",
+  ],
+  1: [
+    "Tu l'as écouté tourner une fois avant d'envoyer. Ça compte.",
+    "Un tour de boucle, et c'est parti.",
+    "Écouté une fois — la moitié du métier tient là-dedans.",
+  ],
+  2: [
+    "Et tu l'as laissé tourner : c'est là qu'on entend ce qu'on n'avait pas voulu voir.",
+    "Plusieurs tours de boucle avant d'envoyer. Tu as fini par l'entendre pour de vrai.",
+    "Tu l'as écouté tourner, et retourner. C'est comme ça qu'on trouve ce qui cloche.",
+  ],
+};
+
+/* La remarque affichée sous les étoiles d'une livraison. PURE, comme celle des
+ * exercices : la vue ne fait que l'afficher. */
+export function composerRoastLivraison(
+  reglagesEnPlus: number,
+  cycles: number,
+  choisir: <T>(a: T[]) => T = (a) => pick(a),
+): string {
+  const palier = (n: number) => (n <= 0 ? '0' : n <= 2 ? '1' : '2');
+  return [
+    choisir(ROAST_LIVRAISON_REGLAGES[palier(reglagesEnPlus)]),
+    choisir(ROAST_LIVRAISON_ECOUTE[cycles <= 0 ? '0' : cycles <= 1 ? '1' : '2']),
+  ].join(' ');
+}

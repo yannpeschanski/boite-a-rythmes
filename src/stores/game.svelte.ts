@@ -76,6 +76,7 @@ import {
   CONSOLATION_ITEM,
   ABANDON_LINES,
   composerRoast,
+  composerRoastLivraison,
   type BagItem,
 } from '../model/presets/gameData';
 import { ranger, productionDeLActe, type Production } from '../model/discographie';
@@ -411,6 +412,11 @@ class GameStore {
   cyclesEcoutes = $state(0);
   /** Les étoiles de la dernière livraison — l'écran d'acceptation les montre. */
   etoilesLivraison = $state(0);
+  /* La remarque qui va avec, composée sur les MÊMES deux mesures que les
+   * étoiles : elle explique celle qui manque sans avoir à la nommer. Écrite
+   * ici plutôt que dans la vue — c'est le store qui tient les compteurs, et une
+   * remarque tirée à chaque rendu changerait de phrase à chaque frame. */
+  roastLivraison = $state('');
   /* La SCÈNE en cours — même forme que la commande, et pour la même raison :
    * l'étape doit survivre à un changement de vue (on part dans le Mode Live,
    * qui n'est pas le Mode jeu). */
@@ -862,6 +868,7 @@ class GameStore {
      * Idée de Yann : « on salue l'effort de rechercher un produit ». */
     const enPlus = reglagesEnPlus(etat, c.cahier, ctx);
     this.etoilesLivraison = etoilesDeLivraison(enPlus.length, this.cyclesEcoutes);
+    this.roastLivraison = composerRoastLivraison(enPlus.length, this.cyclesEcoutes);
     this.saveEtoilesCommande(cible.acte, cible.etape, this.etoilesLivraison);
     // Une répétition ne fait pas avancer le récit — elle le refait.
     if (repetition) return v;
