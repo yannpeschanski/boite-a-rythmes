@@ -485,6 +485,14 @@ catalogue ne doit pas retomber en silence sur le défaut.
 et testés : le trou n'est jamais sur le premier pas, et le kick ne tient que ce
 premier temps — sans quoi il boucherait ce qu'on demande d'entendre.
 
+⚠️ **Un roast ne commente que ce qui a été MESURÉ.** `composerRoast`
+(`presets/gameData.ts`, pur et testé) tire deux axes toujours vrais — le VERBE
+joué et les ESSAIS, comptés dans `verify()` pour tous les verbes — plus un
+troisième seulement si un compteur l'a vu passer, et rien sinon. L'ancien lisait
+`voiceTier` pour annoncer « avec de la polyrythmie » sur les 51 niveaux `hard`
+de douze verbes, et parlait d'écoutes que les verbes de paramètre ne comptaient
+pas (`ecouterVersion` alimente maintenant `paramEcoutes`).
+
 ⚠️ **« Jouer » note la MEILLEURE fenêtre consécutive, pas la moyenne du tour.** La
 boucle tourne en rond : moyenner rend les tâtonnements définitifs. La fenêtre doit
 rester *consécutive* — « les meilleures où qu'elles soient » récompenserait le

@@ -791,11 +791,18 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
    *   et deux de claire — la grille la plus légère de toute la carrière, en
    *   ouverture de l'acte qui doit monter.
    *
-   * Les deux restent au réservoir : un niveau ne se supprime jamais. */
-  it('ne cite plus les niveaux 1 et 2 — il ouvre sur les quatre temps', () => {
-    expect(niveauxDeLActe(ACTES[1])).not.toContain(1);
-    expect(niveauxDeLActe(ACTES[1])).not.toContain(2);
-    expect(niveauxDeLActe(ACTES[1])[0]).toBe(67);
+   * — ⚠️ « Supprimer : trop facile » (2026-09-04, en jouant) : le 67 à son
+   *   tour. Deux lignes, huit cases, le backbeat le plus répandu du monde —
+   *   après un acte 0 où l'on a déjà TAPÉ trois rythmes à la main, la première
+   *   marche de l'acte descendait au lieu de monter.
+   *
+   * Les trois restent au réservoir : un niveau ne se supprime jamais. */
+  it('ne cite plus les niveaux 1, 2 ni 67 — il ouvre sur les trois lignes', () => {
+    for (const retire of [1, 2, 67]) {
+      expect(niveauxDeLActe(ACTES[1]), `niveau ${retire}`).not.toContain(retire);
+    }
+    // Le 68 pose les trois lignes d'un coup — les trois mots du brief.
+    expect(niveauxDeLActe(ACTES[1])[0]).toBe(68);
   });
 
   /* ⚠️ Les variantes (rim shot, charley ouvert) et les rafales ont déménagé de

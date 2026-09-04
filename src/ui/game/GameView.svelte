@@ -230,6 +230,9 @@
     engine.stop();
     resetPlayhead();
     game.paramVersionJouee = i;
+    // Compté : c'est la seule écoute qu'un verbe de paramètre produise, et le
+    // roast de fin s'en sert (voir `composerRoast`).
+    game.paramEcoutes++;
     versionEnCours = i;
     playingWhat = 'param';
     await engine.start();
@@ -2255,6 +2258,16 @@
     .footer-btns {
       gap: 16px;
       margin-top: 18px;
+    }
+    /* ⚠️ LES CASES DU SILENCE grandissent aussi, et pour la même raison.
+       Mesuré au doigt après le passage du niveau 52 à SEIZE pas (2026-09-04) :
+       quatre rangées de boutons de 30 px, et seule la dernière atteignait
+       44 px — les trois autres voyaient leur enveloppe recouverte par la
+       rangée du dessous, si bien qu'un doigt posé en haut d'un numéro tombait
+       sur celui d'au-dessus. Un bouton de choix n'est pas un dessin : il peut
+       grandir. */
+    .choix-pas .choix-btn {
+      min-height: 44px;
     }
     /* ⚠️ LE CAHIER GRANDIT POUR DE VRAI, il ne prend pas d'enveloppe.
        Mesuré au doigt (`elementFromPoint` après `scrollIntoView`, en contexte
