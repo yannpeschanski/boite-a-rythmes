@@ -820,11 +820,20 @@ qu'il y a deux gestes, ni dans quel ordre.
 salle de répétition liste les commandes traversées (`commandesRencontrees`) à
 côté des niveaux ; `repeterCommande` rouvre le cahier **sans bouger le curseur
 du récit** (`repetitionCommande`, volatil) et sa livraison remplace quand même
-la production de sa série. Les étoiles sont binaires — livré 3★, abandonné 0★ —
-parce que le bouton reste verrouillé tant que le cahier n'est pas satisfait :
-une livraison est toujours complète, il n'y a rien à graduer. Leur clé
+la production de sa série. Leur clé
 (`cleCommande`, `c<acte>.<étape>`) ne peut pas collisionner avec un id de
 niveau, et une commande ne fait jamais avancer `level`.
+
+⚠️ **La note d'une livraison mesure ce qu'on a fait EN PLUS du cahier** —
+`etoilesDeLivraison(enPlus, cycles)` : 3★ pour trois réglages cherchés et deux
+cycles écoutés, 2★ pour deux et un, 1★ sinon, 0★ à l'abandon. Une livraison
+acceptée ne vaut jamais zéro (le bouton est verrouillé tant que le cahier n'est
+pas satisfait). ⚠️ **« En plus » se CALCULE, il ne se déclare pas** :
+`reglagesEnPlus` remet chaque réglage changé à sa valeur de départ et réévalue
+le cahier — s'il passe encore, le réglage était gratuit. Sans ça, un cahier de
+mixage (qui EXIGE six retouches) donnerait 3★ d'office et la note mesurerait le
+type de cahier, pas l'effort. On compte un RÉGLAGE, jamais une case ni le tempo,
+et une voix choisie compte pour un.
 
 ⚠️ **`departCommande()` lit la commande OUVERTE, jamais le curseur de
 carrière.** Les deux coïncident tant qu'on joue dans l'ordre et divergent dès
