@@ -44,6 +44,102 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le récit se tape, et on sait qui parle (2026-09-04)
+
+Demande de Yann : *« il faut faire défiler les textes et bien indiquer qui
+parle. On pourrait d'ailleurs donner des voix aux personnages, exemple : Sol
+fait un bruit de charley. Le texte off fait un bruit de machine à écrire. »*
+
+**Fichiers touchés :** `src/model/locuteurs.ts` (neuf),
+`src/engine/voixRecit.ts` (neuf), `src/ui/game/voix.ts` (neuf),
+`src/ui/game/RecitLignes.svelte` (neuf), `src/model/carriere.ts`,
+`src/ui/game/CarriereView.svelte`, `src/ui/game/GameView.svelte`,
+`src/ui/xp/systemSounds.ts`, `tests/locuteurs.test.ts` (neuf),
+`tests/carriere.test.ts`.
+
+#### Qui parle vit dans la DONNÉE, pas dans une heuristique
+
+Le récit marquait ses répliques d'un tiret cadratin et de rien d'autre :
+
+```
+'— Je vais vendre.',
+'— Alors pourquoi on travaille encore ?',
+```
+
+Deux personnes, un signe, et le lecteur qui déduit l'alternance — fausse dès
+qu'une réplique tient sur deux lignes (il y en a trente) ou qu'un troisième
+personnage entre (l'acte 4 en a trois sur un écran). Les 163 répliques du jeu
+portent maintenant leur nom : `'SOL: Je vais vendre.'`. Le catalogue est FERMÉ
+(`model/locuteurs.ts`, six locuteurs) : un préfixe qui n'y est pas reste du
+texte, sinon « FACE B — FB-015 » deviendrait la réplique d'un personnage nommé
+« FACE ».
+
+Deux heuristiques ont été écartées avant d'écrire une ligne : *alterner* (faux
+dès le troisième personnage) et *« une ligne qui commence en minuscule continue
+la précédente »* (juste 9 fois sur 10, donc faux sans jamais le dire).
+
+Cinq lignes portaient la narration et la réplique ensemble
+(« Sol rappelle. — Le morceau est bien. ») : elles ont été coupées en deux. Une
+consigne d'exercice en portait trois d'un coup — elle est passée à une seule
+voix : une consigne est UNE ligne, le dialogue a ses écrans.
+
+#### Le nom est sur SA ligne, et c'est une mesure qui l'a décidé
+
+Première version : le nom devant la réplique, en ambre. Mesuré sur les 68
+écrans de récit du jeu en 390 px — **sept lignes se repliaient** qui ne se repliaient
+pas avant, et une ligne qui se replie se lit comme du texte courant
+(`CLAUDE.md`). Le nom est donc passé au-dessus, en étiquette : il ne coûte plus
+que de la hauteur. Le rail d'un pixel qui relie ses lignes de suite, lui, est
+posé dans la bordure intérieure du panneau — coût horizontal nul.
+
+Mesure finale : **17 replis, exactement le compte d'avant**. (Ces 17-là sont
+antérieurs et non traités : ce sont des lignes du récit écrites trop longues,
+c'est de l'écriture, pas du code.)
+
+Le rail a coûté deux corrections que seule la capture a montrées : en
+`--xp-line` il existait sans se voir, et posé en marge négative sur la ligne il
+était **rogné** — `overflow-y: auto` rend `overflow-x` défilant aussi.
+
+#### Les voix sont des PERCUSSIONS
+
+Six timbres synthétisés (`engine/voixRecit.ts`, pur) : charley pour Sol
+(l'exemple de Yann, et le son le plus sec du kit), rim shot pour Kelvin — qui
+tape du doigt sur la table dès sa première scène —, bois chaud pour Rachid,
+tom grave pour le joueur, deux fréquences en bande étroite pour Le Tunnel, qui
+ne parle qu'au téléphone, et la machine à écrire pour le texte off. Le nouveau
+stagiaire de l'épilogue a la voix du joueur, exprès : c'est ce qui fait la
+boucle.
+
+Un personnage sonne **une fois par mot** (le rythme d'une parole), le texte off
+une fois sur deux signes (celui d'une machine). Le contexte audio est celui des
+sons système : un second contexte aurait rouvert le flux de sortie que sa
+sieste sert à refermer.
+
+#### Ce qui a été payé au passage
+
+- **le texte est toujours entier dans le DOM**, la partie non tapée en fantôme
+  invisible : sans elle, chaque ligne qui apparaît pousse les boutons vers le
+  bas. Vérifié — la position de « Suite » ne bouge pas d'un pixel pendant la
+  frappe ;
+- **le rail et le nom attendent leur ligne** : sinon une colonne de traits
+  ambre annonçait sous le curseur combien de répliques restaient, et de qui ;
+- **le pseudo est interpolé APRÈS la lecture du nom** — un pseudo commençant par
+  « SOL: » ne peut pas se faire passer pour Sol ;
+- **le bouton 🔊 Voix ne se cache pas pendant le prologue**, seul de la barre :
+  le premier écran fait du bruit dès la première lettre, et un son qu'on ne peut
+  pas couper là où il commence n'est pas un réglage.
+
+**Limite assumée :** les consignes d'exercice (`EtapeExercice.commande`) sont
+attribuées quand elles sont d'une seule voix ; celles qui mêlent narration et
+réplique sur une ligne restent en texte off.
+
+**Vérification :** `npm run check` 0 erreur, 0 avertissement · **561 tests**
+(8 neufs) · les deux builds · `scripts/parcours-carriere.cjs` de bout en bout
+depuis un joueur neuf (les quatre modules s'ouvrent un par un, épilogue atteint,
+aucune erreur console) · mesure Playwright en 390 × 844 des 68 écrans de récit :
+aucun repli ajouté, aucun débordement, aucun défilement forcé, les boutons
+immobiles pendant la frappe.
+
 ### ✅ La salle de répétition parle en ACTES — et huit niveaux ouvraient le voisin (2026-09-03)
 
 Premier morceau du chantier final : *« enterrer le réservoir, fusionner carte et

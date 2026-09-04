@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { analyserLigne } from '../src/model/locuteurs';
 import {
   ACTES,
   NB_ACTES,
@@ -254,9 +255,12 @@ describe('Le prologue situe l’histoire avant de la commencer', () => {
     const presentation = entetes.indexOf('SOL');
     expect(presentation).toBeGreaterThanOrEqual(0);
     expect(presentation).toBeLessThan(LONGUEUR_PROLOGUE);
-    // La première réplique de Sol vient après, dans l'acte proprement dit.
+    /* La première réplique de Sol vient après, dans l'acte proprement dit.
+     * ⚠️ Cherchée par son NOM depuis que les répliques sont attribuées
+     * (`model/locuteurs.ts`) : le tiret cadratin ne disait pas qui parlait,
+     * donc ce test acceptait la première réplique de n'importe qui. */
     const premiereReplique = ACTES[0].etapes.findIndex(
-      (e) => e.kind === 'recit' && e.lignes.some((l) => l.startsWith('—')),
+      (e) => e.kind === 'recit' && e.lignes.some((l) => analyserLigne(l).qui?.nom === 'SOL'),
     );
     expect(premiereReplique).toBeGreaterThan(presentation);
   });

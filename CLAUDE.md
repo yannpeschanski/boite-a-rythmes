@@ -291,6 +291,24 @@ le plus grave ? » à un nouveau stagiaire — ne pas la réécrire, c'est elle 
 la boucle. Le décompte disparaît aux DEUX bouts, parce qu'il ne s'affiche que tant
 qu'il veut dire quelque chose.
 
+⚠️ **Une réplique porte SON NOM, et le nom vit dans la donnée** —
+`'SOL: Je vais vendre.'`, lu par `model/locuteurs.ts` dont le catalogue est
+**fermé** (un préfixe inconnu reste du texte, sinon « FACE B — FB-015 » devient
+une réplique). Le tiret cadratin seul ne dit pas qui parle : il était faux dès
+qu'une réplique tenait sur deux lignes ou qu'un troisième personnage entrait.
+Corollaire mesuré : le nom s'affiche **au-dessus** de la réplique, jamais devant
+— devant, il mangeait jusqu'à douze signes et repliait sept lignes écrites pour
+tenir sur une seule.
+
+⚠️ **Le récit se TAPE, et chaque personnage a une voix** (`RecitLignes.svelte`,
+`engine/voixRecit.ts`) : six percussions synthétisées — charley pour Sol,
+machine à écrire pour le texte off. Trois choses à ne pas défaire : le texte non
+encore tapé reste dans le DOM en **fantôme invisible** (sinon les boutons
+descendent à chaque ligne qui arrive), le pseudo est interpolé **après** la
+lecture du nom (sinon un pseudo peut se faire passer pour Sol), et le réglage
+🔊 s'affiche **dès le premier écran** — un son qu'on ne peut pas couper là où il
+commence n'est pas un réglage.
+
 ⚠️ **Les huit actes sont écrits** : `acteAVenir` ne renvoie plus jamais vrai.
 L'acte 7 ne cite que des niveaux `jouer`, et c'est délibéré — `justesseDesFrappes`
 retient la meilleure fenêtre consécutive, donc la notation pardonne un début raté
