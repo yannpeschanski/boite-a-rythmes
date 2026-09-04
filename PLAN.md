@@ -44,6 +44,55 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une livraison se note sur l'effort en plus du cahier (2026-09-04)
+
+> « Si la personne n'a même pas écouté son travail : une seule étoile. Si elle
+> n'a fait que le cahier des charges, ou qu'elle n'a pas changé au moins deux
+> AUTRES paramètres : 1 étoile. Au moins 2 paramètres et une écoute : 2 étoiles.
+> Au moins 3 et deux cycles : 3 étoiles. On salue l'effort de rechercher un
+> produit. » — Yann
+
+Ça révoque le « livré ou pas » de la veille, et c'est mieux : la note dit
+maintenant quelque chose.
+
+⚠️ **Le point qui ne tenait pas tel quel, et ce qui le règle.** « N'a fait que
+le cahier » et « a changé deux paramètres » se contredisent sur un cahier de
+MIXAGE : le troisième envoi du Tunnel EXIGE d'avoir retouché six lignes, donc le
+satisfaire donne six réglages changés — trois étoiles d'office, là où la
+première phrase en veut une. Noter l'effort demande de savoir ce que le cahier
+RÉCLAMAIT, et aucune contrainte ne le déclare.
+
+La sortie n'est pas d'annoter les trente contraintes (long, et faux au premier
+oubli) : **on remet chaque réglage changé à sa valeur de départ et on réévalue
+le cahier.** S'il passe encore, le réglage était gratuit ; s'il tombe, il était
+exigé. Exact pour tous les cahiers, y compris ceux qui n'existent pas encore, et
+personne n'a rien à déclarer. Coût : une réévaluation par réglage changé, une
+seule fois, à la livraison.
+
+**Ce qu'on compte.** Un RÉGLAGE — les neuf champs de son de chaque ligne de
+batterie, les cinq du synthé, les globaux (feel, aléa, saturation, volume final,
+réverbe, delay, sidechain, tonalité). Jamais une case (c'est le travail que le
+cahier juge déjà), jamais le tempo (plusieurs fiches de style l'exigent), et une
+VOIX choisie compte pour **un** : la remplacer change son type et sa coupure
+d'un coup, compter chaque champ ferait de trois clics une note maximale.
+
+**L'écoute** se mesure en CYCLES du motif (`cycleDuMotif`, qui tient compte
+d'une nappe qui boucle sur quatre mesures — « écouter son morceau » veut dire
+l'entendre revenir, pas entendre son premier quart), au MAXIMUM atteint et non
+au cumul : deux cycles veut dire deux tours de suite.
+
+⚠️ **Et l'écran DIT ce qui donne les étoiles** (« cherche des réglages que le
+cahier ne demande pas, et écoute ton morceau tourner deux fois »). Une étoile
+manquante sans raison se lit comme une punition ; ici ce sont deux gestes de
+studio qu'on ne peut pas faire par accident.
+
+**Vérifié :** 605 tests (10 neufs, `tests/etoiles-livraison.test.ts` — dont
+« un cahier de mixage complet ne donne aucun réglage en plus »), 0 erreur de
+types, les deux builds, `scripts/parcours-carriere.cjs` de bout en bout ; et au
+navigateur : livraison sans effort → ★☆☆ avec sa phrase, la même avec trois
+réglages cherchés et deux cycles → ★★★, et la lecture réelle compte bien
+(9 s de boucle à 120 BPM = 3 cycles).
+
 ### ✅ Les roasts parlent du verbe joué, et trois marches se corrigent (2026-09-04)
 
 > « Il faut revoir les roasts pour que ça corresponde à l'exercice réalisé. Le

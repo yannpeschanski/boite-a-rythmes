@@ -509,6 +509,151 @@ const NOM_MIX: Record<LigneMix, string> = {
   pad: 'nappe',
 };
 
+/* ---------------------------------------------------------------------------
+ * LES ÉTOILES D'UNE LIVRAISON — ce qu'on a fait EN PLUS du cahier
+ *
+ * ⚠️ Idée de Yann (2026-09-04), qui révoque le « livré ou pas » de la veille :
+ * *« si la personne n'a même pas écouté son travail, une seule étoile ; si elle
+ * n'a fait que le cahier des charges, ou qu'elle n'a pas changé au moins deux
+ * autres paramètres : 1 étoile ; au moins 2 paramètres et une écoute : 2
+ * étoiles ; au moins 3 paramètres et deux cycles : 3 étoiles. On salue l'effort
+ * de rechercher un produit. »*
+ *
+ * ⚠️ ET LE POINT QUI NE TENAIT PAS TEL QUEL. « N'a fait que le cahier » et
+ * « a changé deux paramètres » se contredisent sur un cahier de MIXAGE :
+ * le troisième envoi du Tunnel EXIGE d'avoir retouché six lignes, donc le
+ * satisfaire donne six paramètres changés — trois étoiles d'office, là où la
+ * première phrase en veut une. Noter l'effort demande donc de savoir ce que le
+ * cahier RÉCLAMAIT, et aucune contrainte ne le déclare.
+ *
+ * La sortie n'est pas d'annoter les trente contraintes à la main (long, et faux
+ * au premier oubli) : **on remet chaque réglage changé à sa valeur de départ et
+ * on réévalue le cahier.** S'il passe encore, le réglage était GRATUIT — fait
+ * en plus. S'il tombe, il était exigé. C'est exact pour tous les cahiers, y
+ * compris ceux qui n'existent pas encore, et ça ne demande rien à personne.
+ *
+ * ⚠️ Ce qu'on compte est un RÉGLAGE, jamais une case : la grille est le travail
+ * que le cahier juge déjà. Le tempo non plus — c'est une propriété du morceau,
+ * et plusieurs fiches de style l'exigent.
+ * ------------------------------------------------------------------------- */
+
+/** Un bouton du studio : de quoi le lire, et de quoi le remettre où il était. */
+interface Reglage {
+  id: string;
+  lire: (e: PatternStateV2) => number | boolean | string;
+  poser: (e: PatternStateV2, v: number | boolean | string) => void;
+}
+
+const CHAMPS_BATTERIE = [
+  'volume', 'filterCutoff', 'reverbSend', 'delaySend', 'tone', 'pitch', 'attack', 'decay', 'shiftPct',
+] as const;
+const CHAMPS_SYNTH = ['volume', 'reverbSend', 'delaySend', 'glide', 'shiftPct'] as const;
+/* Les boutons GLOBAUX qui changent le son. `tempo` en est absent (voir plus
+ * haut), `fillEvery` et `fillIntensity` y sont : ce sont des gestes de studio. */
+const CHAMPS_GLOBAUX = [
+  'swing', 'drag', 'synthSwing', 'synthDrag', 'randomVelocity', 'spontRoll',
+  'fillEvery', 'fillIntensity', 'ghostDensity', 'globalSaturation',
+  'globalCompression', 'globalBitcrush', 'finalVolume',
+] as const;
+const CHAMPS_SYNTH_GLOBAL = [
+  'reverbSize', 'delayDivision', 'delayFeedback', 'sidechainDepth', 'rootMidi', 'scaleId',
+] as const;
+
+const REGLAGES: Reglage[] = [
+  ...LIGNES_MIX.flatMap((l) =>
+    CHAMPS_BATTERIE.map((c) => ({
+      id: `${l}.${c}`,
+      lire: (e: PatternStateV2) => e.rows[l][c],
+      poser: (e: PatternStateV2, v: number | boolean | string) => {
+        (e.rows[l] as unknown as Record<string, unknown>)[c] = v;
+      },
+    })),
+  ),
+  ...LIGNES_SYNTH.flatMap((l) => [
+    ...CHAMPS_SYNTH.map((c) => ({
+      id: `${l}.${c}`,
+      lire: (e: PatternStateV2) => e.synthRows[l][c] ?? 0,
+      poser: (e: PatternStateV2, v: number | boolean | string) => {
+        (e.synthRows[l] as unknown as Record<string, unknown>)[c] = v;
+      },
+    })),
+    /* La VOIX compte pour un seul réglage : choisir « Rhodes » est un geste,
+     * pas six. On la compare par sa coupure et son type, les deux champs que
+     * tout preset de voix pose. */
+    {
+      id: `${l}.voix`,
+      lire: (e: PatternStateV2) => `${e.synthRows[l].voice.type ?? ''}/${coupureDe(e, l)}`,
+      poser: (e: PatternStateV2, v: number | boolean | string) => {
+        const [type, cut] = String(v).split('/');
+        e.synthRows[l].voice = { ...e.synthRows[l].voice, type: (type || undefined) as never, cutoff: Number(cut) };
+      },
+    },
+  ]),
+  ...CHAMPS_GLOBAUX.map((c) => ({
+    id: c,
+    lire: (e: PatternStateV2) => e[c],
+    poser: (e: PatternStateV2, v: number | boolean | string) => {
+      (e as unknown as Record<string, unknown>)[c] = v;
+    },
+  })),
+  ...CHAMPS_SYNTH_GLOBAL.map((c) => ({
+    id: `synth.${c}`,
+    lire: (e: PatternStateV2) => e.synthGlobal[c],
+    poser: (e: PatternStateV2, v: number | boolean | string) => {
+      (e.synthGlobal as unknown as Record<string, unknown>)[c] = v;
+    },
+  })),
+  ...(['padArpEnabled', 'padDroneEnabled'] as const).map((c) => ({
+    id: `synth.${c}`,
+    lire: (e: PatternStateV2) => e.synthGlobal[c] ?? false,
+    poser: (e: PatternStateV2, v: number | boolean | string) => {
+      (e.synthGlobal as unknown as Record<string, unknown>)[c] = v;
+    },
+  })),
+];
+
+/* ⚠️ Copie profonde par JSON et NON `structuredClone` : l'état livré vient d'un
+ * `$state.snapshot()`, mais rien n'interdit à un appelant de passer un proxy —
+ * et `structuredClone` casse dessus (piège maison, voir CLAUDE.md). Le
+ * round-trip de sérialisation ne convient pas non plus ici : il CLAMPE, donc il
+ * pourrait effacer tout seul l'écart qu'on cherche à mesurer. */
+const copie = (e: PatternStateV2): PatternStateV2 => JSON.parse(JSON.stringify(e)) as PatternStateV2;
+
+/**
+ * Les réglages changés depuis le départ que le cahier n'exigeait PAS.
+ *
+ * Renvoie leurs identifiants — le compte suffit à noter, la liste sert au test
+ * et rend le refus explicable si on décide un jour de l'afficher.
+ */
+export function reglagesEnPlus(
+  livre: PatternStateV2,
+  cahier: Contrainte[],
+  ctx: ContexteLivraison,
+): string[] {
+  const depart = ctx.depart;
+  if (!depart) return [];
+  return REGLAGES.filter((r) => r.lire(livre) !== r.lire(depart)).filter((r) => {
+    const sans = copie(livre);
+    r.poser(sans, r.lire(depart));
+    // Le cahier tient encore sans ce réglage : il n'était donc pas exigé.
+    return evaluerCommande(sans, cahier, ctx).accepte;
+  }).map((r) => r.id);
+}
+
+/* La note d'une livraison, telle que Yann l'a posée.
+ *
+ * ⚠️ Aucune de ces bornes n'est un jugement de goût : ce sont deux gestes de
+ * studio qu'on ne peut pas faire par accident — chercher un son, et écouter ce
+ * qu'on a fait. Une livraison complète vaut toujours au moins une étoile : le
+ * bouton reste verrouillé tant que le cahier n'est pas satisfait, donc arriver
+ * là veut déjà dire qu'on a tout fait. */
+export function etoilesDeLivraison(enPlus: number, cycles: number): 1 | 2 | 3 {
+  if (enPlus >= 3 && cycles >= 2) return 3;
+  if (enPlus >= 2 && cycles >= 1) return 2;
+  return 1;
+}
+
+
 /* Le filtre passe-bas COUPE vraiment.
  *
  * `filterCutoff` va jusqu'à 20 000 Hz, c'est-à-dire au-dessus de l'audible :

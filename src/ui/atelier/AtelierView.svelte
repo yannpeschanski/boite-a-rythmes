@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { game } from '../../stores/game.svelte';
+  import { cycleDuMotif } from '../../model/architecture';
   import { evaluerCommande } from '../../model/commande';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { DrumRowName, DrumStep, SynthRowName } from '../../model/types';
@@ -148,6 +149,16 @@
       }
     }
     breakArmed = engine.breakPending;
+    /* ⚠️ L'un des deux axes de la note d'une livraison : a-t-on ÉCOUTÉ son
+       travail ? Le moteur compte les mesures depuis ▶ ; on les convertit en
+       CYCLES du motif (`cycleDuMotif` — une nappe de quatre mesures ne fait
+       pas quatre tours) et on garde le maximum atteint. Le maximum, pas le
+       cumul : « deux cycles » veut dire deux tours de suite, pas deux
+       fragments. */
+    if (game.commande && playing) {
+      const cycle = Math.max(1, cycleDuMotif(pattern.state));
+      game.cyclesEcoutes = Math.max(game.cyclesEcoutes, Math.floor(engine.bar / cycle));
+    }
     raf = requestAnimationFrame(loop);
   }
   // Indicateur « le plus proche de ce que tu joues » — throttlé (le calcul

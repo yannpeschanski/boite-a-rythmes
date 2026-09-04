@@ -59,7 +59,13 @@ import {
   EPILOGUE,
   LONGUEUR_EPILOGUE,
 } from '../model/carriere';
-import { evaluerCommande, type Verdict, type ContexteLivraison } from '../model/commande';
+import {
+  evaluerCommande,
+  reglagesEnPlus,
+  etoilesDeLivraison,
+  type Verdict,
+  type ContexteLivraison,
+} from '../model/commande';
 import { etatVierge, etatDepuisGrille } from '../model/defaults';
 import { appliquerSons } from '../model/sons';
 import type { LockedModule } from '../model/unlocks';
@@ -394,6 +400,17 @@ class GameStore {
    * ne fait pas avancer le récit. Rangé dans le curseur, il survivrait au
    * rechargement et bloquerait la carrière sur place. */
   repetitionCommande = $state(false);
+  /* ⚠️ Combien de fois la boucle a tourné EN ENTIER pendant qu'on travaillait —
+   * l'un des deux axes de la note (voir `etoilesDeLivraison`). Compté par
+   * l'Atelier, qui est le seul à savoir qu'on écoute, et remis à zéro à
+   * l'ouverture du cahier : c'est l'écoute de CE travail qu'on mesure.
+   *
+   * Un CYCLE, pas une mesure : `cycleDuMotif` tient compte d'une nappe qui
+   * boucle sur quatre mesures. « Écouter son morceau » veut dire l'entendre
+   * revenir, pas entendre son premier quart. */
+  cyclesEcoutes = $state(0);
+  /** Les étoiles de la dernière livraison — l'écran d'acceptation les montre. */
+  etoilesLivraison = $state(0);
   /* La SCÈNE en cours — même forme que la commande, et pour la même raison :
    * l'étape doit survivre à un changement de vue (on part dans le Mode Live,
    * qui n'est pas le Mode jeu). */
@@ -709,6 +726,7 @@ class GameStore {
   ouvrirCommande(): void {
     if (this.etapeCourante?.kind !== 'commande') return;
     this.commandeEnCours = { acte: this.acteActif, etape: this.etapeActive };
+    this.cyclesEcoutes = 0;
     /* ⚠️ D'où part l'Atelier, et pourquoi il y a DEUX réponses.
      *
      * Par défaut : de RIEN. `defaultState()` est le motif d'accueil, et ce
@@ -784,6 +802,7 @@ class GameStore {
     if (!this.commandesDeRepetition.some((c) => c.acte === acte && c.etape === etape)) return false;
     this.commandeEnCours = { acte, etape };
     this.repetitionCommande = true;
+    this.cyclesEcoutes = 0;
     history.push();
     pattern.replace(this.departCommande());
     this.commandeVerdict = null;
@@ -837,10 +856,13 @@ class GameStore {
       client: c.client,
       quand: acte.quand,
     });
-    // Livré = 3★, comme n'importe quel exercice réussi. Il n'y a pas de
-    // gradation : le bouton reste verrouillé tant que le cahier n'est pas
-    // satisfait, donc une livraison est toujours complète (arbitrage de Yann).
-    this.saveEtoilesCommande(cible.acte, cible.etape, 3);
+    /* ⚠️ La note, et elle a changé le 2026-09-04 : elle était binaire (livré
+     * 3★), elle mesure maintenant l'effort FAIT EN PLUS du cahier — les
+     * réglages qu'on a cherchés, et le fait d'avoir écouté son travail.
+     * Idée de Yann : « on salue l'effort de rechercher un produit ». */
+    const enPlus = reglagesEnPlus(etat, c.cahier, ctx);
+    this.etoilesLivraison = etoilesDeLivraison(enPlus.length, this.cyclesEcoutes);
+    this.saveEtoilesCommande(cible.acte, cible.etape, this.etoilesLivraison);
     // Une répétition ne fait pas avancer le récit — elle le refait.
     if (repetition) return v;
     this.acteActif = cible.acte;
