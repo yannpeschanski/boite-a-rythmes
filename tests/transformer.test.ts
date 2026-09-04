@@ -162,7 +162,14 @@ describe('l’appli ouvre bien l’Atelier sur ce départ-là', () => {
         if (e.kind !== 'commande') continue;
         game.acteActif = a.id;
         game.etapeActive = i;
+        /* ⚠️ On OUVRE la commande avant de lire son départ, comme le fait
+         * l'écran. `departCommande()` lit `commandeEnCours` et non le curseur
+         * de carrière depuis le 2026-09-04 : les deux coïncident quand on joue
+         * le récit dans l'ordre, et divergent dès qu'on refait un cahier
+         * depuis la salle de répétition — où le curseur est resté ailleurs. */
+        game.ouvrirCommande();
         expect(game.departCommande(), `acte ${a.id}`).toEqual(departDe(e));
+        game.abandonnerCommande();
       }
     }
   });

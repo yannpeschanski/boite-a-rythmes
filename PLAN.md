@@ -44,6 +44,52 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un cahier se refait, s'abandonne, et se note (2026-09-04)
+
+> « Les exercices en ateliers, on doit pouvoir y retourner dans la salle de
+> répétition et abandonner en cours de route et avoir des étoiles comme pour
+> les autres exercices. » — Yann
+
+**Trois manques, et le premier explique les deux autres :** la salle listait des
+NIVEAUX, or une commande n'est pas un niveau — elle n'a pas d'`id`, elle vit
+dans un acte. Il n'y avait donc ni chemin pour y revenir, ni sortie une fois
+dedans, ni clé sous laquelle noter quoi que ce soit.
+
+- **Y retourner** — `commandesRencontrees` (jumelle de `niveauxRencontres` :
+  rencontré et non réussi, l'étape en cours exclue) et `repeterCommande`. Le
+  curseur du récit ne bouge pas (`repetitionCommande`, volatil comme
+  `enRelecture`), les modules du cahier s'ouvrent par le chemin habituel, et la
+  livraison remplace la production de sa série — refaire mieux, c'est garder le
+  meilleur. ⚠️ Un acte peut n'avoir AUCUN exercice et des cahiers quand même
+  (l'acte 4) : le groupement de la salle se construit sur les deux sources.
+- **Abandonner** — un bouton « Laisser tomber » à côté de « Livrer ». Il n'y
+  avait aucune sortie : le cahier restait ouvert tant qu'il n'était pas
+  satisfait, et partir par la barre de navigation le laissait ouvert derrière
+  soi. L'Atelier garde le travail : on abandonne la livraison, pas le morceau.
+- **Les étoiles** — binaires, et c'est un arbitrage de Yann : le bouton étant
+  verrouillé tant que le cahier n'est pas satisfait, une livraison est toujours
+  complète, donc `starsForAttempts` aurait donné 3★ à tout le monde. Livré 3★,
+  abandonné 0★.
+
+⚠️ **`departCommande()` lisait le CURSEUR de carrière** et non la commande
+ouverte. Invisible tant que les deux coïncidaient ; faux dès la première
+répétition. Corrigé, et les deux tests qui s'appuyaient dessus passent
+maintenant par `ouvrirCommande()` — c'est-à-dire par le vrai câblage.
+
+⚠️ **La zone touchable, mesurée au doigt et non au rectangle.** Les quatorze
+cahiers portaient `.tap44-y` : `getBoundingClientRect` annonçait 26 px,
+`elementFromPoint` en contexte tactile disait 44 — mais pour deux d'entre eux
+seulement. Leurs enveloppes de 44 px, empilées à 4 px d'écart, se recouvraient
+de 14 px : un doigt posé en haut d'un cahier tombait sur celui du dessus. Une
+ligne de liste peut GRANDIR, contrairement à une case de séquenceur — elle
+prend donc `min-height: 44px` sous `coarse`, et les quatorze mesurent 44.
+
+**Vérifié :** 585 tests (9 neufs, `tests/repetition-cahiers.test.ts`), 0 erreur
+de types, les deux builds, `scripts/parcours-carriere.cjs` de bout en bout, et
+au navigateur en 390 × 844 : la salle affiche « 29 exercices et 14 cahiers des
+charges », un clic ouvre l'Atelier sur le bon cahier avec le Synthé déverrouillé,
+« Laisser tomber » rend la main sans que le curseur bouge d'un cran.
+
 ### ✅ Le riddim dit où sont ses deux coups, et le preset Swing sonne swing (2026-09-04)
 
 > « "La réponse juste après le temps 2" dans le riddim, je ne trouve pas la

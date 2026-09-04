@@ -447,22 +447,50 @@
      situe rien pour le joueur, et depuis que le tableau n'est plus trié il ne
      dit même plus l'ordre. On regroupe donc par acte, et chaque exercice porte
      son rang DANS l'acte (voir `repereDeNiveau`). */
+  /* ⚠️ Les CAHIERS aussi (2026-09-04) : *« les exercices en ateliers, on doit
+     pouvoir y retourner dans la salle de répétition »*. Ils n'y étaient pas
+     parce que la salle listait des NIVEAUX — or une commande n'est pas un
+     niveau, elle n'a pas d'`id`. Conséquence à ne pas rater : un acte peut
+     n'avoir AUCUN exercice et quand même des cahiers (l'acte 4 se joue
+     entièrement à l'Atelier), donc le groupement se construit sur les deux
+     sources, pas sur les niveaux avec les cahiers en supplément. */
+  type GroupeSalle = {
+    acte: number;
+    titre: string;
+    niveaux: { l: (typeof LEVELS)[number]; rang: number }[];
+    cahiers: { acte: number; etape: number; entete: string; client: string }[];
+  };
   const parActe = $derived.by(() => {
-    const groupes: { acte: number; titre: string; niveaux: { l: (typeof LEVELS)[number]; rang: number }[] }[] = [];
+    const groupes: GroupeSalle[] = [];
+    const groupe = (acte: number): GroupeSalle => {
+      let g = groupes.find((x) => x.acte === acte);
+      if (!g) {
+        g = { acte, titre: acteParId(acte).titre, niveaux: [], cahiers: [] };
+        groupes.push(g);
+      }
+      return g;
+    };
     for (const l of niveauxOuverts) {
       const r = repereDeNiveau(l.id);
       if (!r) continue; // le réservoir n'a pas de nom dans le jeu
-      let g = groupes.find((x) => x.acte === r.acte);
-      if (!g) {
-        g = { acte: r.acte, titre: acteParId(r.acte).titre, niveaux: [] };
-        groupes.push(g);
-      }
-      g.niveaux.push({ l, rang: r.rang });
+      groupe(r.acte).niveaux.push({ l, rang: r.rang });
     }
+    for (const c of game.commandesDeRepetition) groupe(c.acte).cahiers.push(c);
     for (const g of groupes) g.niveaux.sort((a, b) => a.rang - b.rang);
     return groupes.sort((a, b) => a.acte - b.acte);
   });
   const compteAffiche = $derived(parActe.reduce((n, g) => n + g.niveaux.length, 0));
+  const compteCahiers = $derived(parActe.reduce((n, g) => n + g.cahiers.length, 0));
+
+  /* Refaire un cahier : le store retient l'étape et ouvre l'Atelier sur elle,
+     sans toucher au curseur du récit. La vue ne fait que naviguer — et coupe
+     ce qu'elle faisait sonner, comme pour la scène. */
+  function repeterCahier(acte: number, etape: number) {
+    if (!game.repeterCommande(acte, etape)) return;
+    stopAll();
+    showMap = false;
+    onGoAtelier?.();
+  }
   /* Dans la carrière, la consigne affichée est le BRIEF du client, pas la
      fiche pédagogique du niveau : « La deuxième. La snare entre. » plutôt que
      « La snare (caisse claire) entre en jeu à son tour ». Le préambule reste
@@ -683,20 +711,36 @@
               </button>
             {/each}
           </div>
+          <!-- Les cahiers de l'acte. Ils portent un NOM, pas un rang : un
+               cahier ne se numérote pas dans son acte, il s'appelle « LE
+               TUNNEL — DEUXIÈME ENVOI ». -->
+          {#each g.cahiers as c (c.acte + '.' + c.etape)}
+            {@const etoiles = game.etoilesDeCommande(c.acte, c.etape)}
+            <button
+              class="cahier"
+              title="Refaire ce cahier des charges — {c.client}"
+              onclick={() => repeterCahier(c.acte, c.etape)}
+            >
+              <span class="cahier-nom">📠 {c.entete}</span>
+              <span class="stars">{'★'.repeat(etoiles)}{'☆'.repeat(3 - etoiles)}</span>
+            </button>
+          {/each}
         {/each}
         <!-- ⚠️ Le compte est celui de ce qui est AFFICHÉ, pas des niveaux
              ouverts. Il disait « 78 exercices » sous un écran qui en montrait
              34 : la différence, c'est le réservoir, qui n'a pas de repère et
              donc pas de place ici. Un compte qui ne correspond pas à ce qu'on
              voit se lit comme un écran incomplet. -->
-        {#if compteAffiche === 0}
+        {#if compteAffiche + compteCahiers === 0}
           <p class="muted">
             Rien à répéter pour l’instant : les exercices arrivent avec l’histoire.
           </p>
         {:else}
           <p class="muted">
-            {compteAffiche} exercice{compteAffiche > 1 ? 's' : ''} rencontré{compteAffiche > 1 ? 's' : ''} —
-            tous rejouables, autant de fois que tu veux.
+            {compteAffiche} exercice{compteAffiche > 1 ? 's' : ''}{compteCahiers
+              ? ` et ${compteCahiers} cahier${compteCahiers > 1 ? 's' : ''} des charges`
+              : ''} —
+            tout est rejouable, autant de fois que tu veux.
           </p>
         {/if}
       {/if}
@@ -1567,6 +1611,38 @@
     letter-spacing: var(--xp-ls-tag);
     color: var(--xp-muted);
   }
+  /* Un cahier prend toute la largeur : son nom est une phrase, pas un numéro,
+     et le tronquer sur une grille de cases le rendrait illisible. */
+  .cahier {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    margin: 0 0 4px;
+    padding: 7px 9px;
+    text-align: left;
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
+    border: 0;
+    box-shadow: var(--xp-bevel-out);
+    cursor: pointer;
+    font-family: var(--xp-font);
+    font-size: var(--xp-size-btn);
+    letter-spacing: var(--xp-ls-btn);
+  }
+  .cahier:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .cahier .cahier-nom {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cahier .stars {
+    color: var(--xp-lcd);
+    flex: 0 0 auto;
+  }
   .salle-acte {
     margin: 10px 0 4px;
     font-size: var(--xp-size-small);
@@ -2179,6 +2255,19 @@
     .footer-btns {
       gap: 16px;
       margin-top: 18px;
+    }
+    /* ⚠️ LE CAHIER GRANDIT POUR DE VRAI, il ne prend pas d'enveloppe.
+       Mesuré au doigt (`elementFromPoint` après `scrollIntoView`, en contexte
+       tactile — `getBoundingClientRect` ne voit pas le pseudo-élément) : avec
+       `.tap44-y`, quatorze lignes de 26 px empilées à 4 px d'écart voyaient
+       leurs zones de 44 px se recouvrir de 14 px, si bien qu'un doigt posé en
+       haut d'un cahier tombait sur celui du dessus. C'est le piège documenté
+       dans CLAUDE.md — les enveloppes débordent et se marchent dessus — et ici
+       il n'y a rien à protéger : une ligne de liste peut grandir, contrairement
+       à une case de séquenceur. */
+    .cahier {
+      min-height: 44px;
+      margin-bottom: 8px;
     }
   }
 </style>

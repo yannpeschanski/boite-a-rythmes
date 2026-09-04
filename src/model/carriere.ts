@@ -2346,6 +2346,34 @@ export function repereDeNiveau(id: number): RepereNiveau | null {
   return REPERES.get(id) ?? null;
 }
 
+/** Une étape citée par son acte et son rang — de quoi la retrouver. */
+export interface RefEtape {
+  acte: number;
+  etape: number;
+}
+
+/* Les COMMANDES déjà traversées, pour la salle de répétition.
+ *
+ * ⚠️ Demande de Yann (2026-09-04) : *« les exercices en ateliers, on doit
+ * pouvoir y retourner dans la salle de répétition »*. Ils n'y étaient pas, et
+ * pas par oubli : la salle listait des NIVEAUX (`niveauxRencontres`), et une
+ * commande n'est pas un niveau — elle n'a pas d'`id`, elle vit dans un acte.
+ *
+ * Même règle que pour les niveaux, et pour la même raison : rencontré, pas
+ * réussi. L'étape À LAQUELLE le curseur est posé n'en fait pas partie — on ne
+ * « refait » pas celle qu'on est en train de jouer, on la joue. */
+export function commandesRencontrees(acte: number, etape: number): RefEtape[] {
+  const out: RefEtape[] = [];
+  for (const a of ACTES) {
+    if (a.id > acte) break;
+    const jusqua = a.id < acte ? a.etapes.length : etape;
+    for (let i = 0; i < Math.min(jusqua, a.etapes.length); i++) {
+      if (a.etapes[i].kind === 'commande') out.push({ acte: a.id, etape: i });
+    }
+  }
+  return out;
+}
+
 export function niveauxRencontres(acte: number, etape: number): number[] {
   const out: number[] = [];
   for (const a of ACTES) {
