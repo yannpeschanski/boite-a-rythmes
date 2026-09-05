@@ -32,7 +32,7 @@ import { presetToState } from '../src/model/presetAdapter';
 import { resolveVoicePreset } from '../src/model/presets/voices';
 import { CHORD_PRIORITY_ORDER } from '../src/model/presets/scales';
 import { rankPresets } from '../src/engine/similarity';
-import type { PatternStateV2, SynthRowName } from '../src/model/types';
+import type { PatternStateV2, SynthRowName, DrumRowName } from '../src/model/types';
 
 /** Un état qui reprend les trois lignes d'un preset — le morceau « livré ». */
 function etatDuPreset(id: string): PatternStateV2 {
@@ -586,14 +586,110 @@ async function etatQuiSatisfait(
       for (const l of ['hat', 'clap', 'shaker'] as const) {
         vide.rows[l].pattern = new Array(vide.rows[l].pattern.length).fill(0) as never;
       }
-      for (const l of ['melody', 'pad'] as const) {
-        vide.synthRows[l].pattern = vide.synthRows[l].pattern.map(() =>
-          l === 'pad' ? -1 : null,
-        ) as never;
+      /* ⚠️ LA MÉLODIE RESTE — elle s'éclaircit et change, elle ne disparaît pas.
+         Ce test la coupait entièrement, ce qui passait tant que le pont ne
+         comptait que des coups ; `unePhraseQuiSEclaircit` exige qu'elle joue
+         ENCORE (un pont sans mélodie est un break, pas une section) et
+         `uneAutrePhrase` qu'elle soit écrite autrement. Une note au lieu de
+         quatre satisfait les deux. */
+      const m = vide.synthRows.melody;
+      m.muted = false;
+      m.pattern = m.pattern.map(() => null) as never;
+      m.pattern[0] = { degree: 2, octave: -1 } as never;
+      /* ⚠️ Et la nappe reste elle aussi, sur d'AUTRES accords : `uneAutreHarmonie`
+         demande que la nappe sonne des deux côtés, sinon il n'y a pas
+         d'harmonie à quitter. On renverse la suite posée par le couplet. */
+      const pad = vide.synthRows.pad;
+      const poses = pad.pattern
+        .slice(0, pad.subdivisions)
+        .map((v) => (typeof v === 'number' && v >= 0 ? v : -1));
+      if (poses.some((v) => v >= 0)) {
+        pad.muted = false;
+        const inverse = [...poses].reverse();
+        for (let i = 0; i < pad.subdivisions; i++) (pad.pattern as number[])[i] = inverse[i];
+        /* Renverser une suite palindrome ne la change pas — on décale alors
+           d'un accord, sinon la case ne se coche jamais et le test accuse à
+           tort le cahier. */
+        if (inverse.join(',') === poses.join(',')) {
+          for (let i = 0; i < pad.subdivisions; i++) {
+            const v = (pad.pattern as number[])[i];
+            if (v >= 0) (pad.pattern as number[])[i] = (v + 1) % 4;
+          }
+        }
+      }
+      /* ⚠️ ET SI RIEN N'A DISPARU, on coupe. Vider le charley, le clap et le
+         shaker suffit tant que le couplet est fourni ; le deuxième morceau de
+         l'acte 6 en interdit justement l'abondance (« pas plein : quatre lignes
+         au plus »), donc son couplet n'a aucune de ces trois lignes et
+         `uneLigneQuiSeTait` restait faux. On coupe alors la première voix qui
+         sonne encore — jamais la mélodie (le pont la garde), jamais la nappe
+         quand le cahier demande d'en changer les accords. */
+      const sonne = (e: PatternStateV2, l: DrumRowName | SynthRowName) =>
+        l in e.rows
+          ? !e.rows[l as DrumRowName].muted &&
+            e.rows[l as DrumRowName].pattern
+              .slice(0, e.rows[l as DrumRowName].subdiv)
+              .some((v) => (v as number) > 0)
+          : !e.synthRows[l as SynthRowName].muted &&
+            e.synthRows[l as SynthRowName].pattern
+              .slice(0, e.synthRows[l as SynthRowName].subdivisions)
+              .some((v) => (l === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
+      const TOUTES = [
+        'clap', 'shaker', 'hat', 'snare', 'kick', 'bass', 'pad', 'melody',
+      ] as const;
+      const intouchables = new Set<string>(['melody', ...(demande('autre-harmonie') ? ['pad'] : [])]);
+      if (!TOUTES.some((l) => sonne(depart, l) && !sonne(vide, l))) {
+        const cible = TOUTES.find((l) => !intouchables.has(l) && sonne(vide, l));
+        if (cible && cible in vide.rows) {
+          vide.rows[cible as DrumRowName].pattern = new Array(
+            vide.rows[cible as DrumRowName].pattern.length,
+          ).fill(0) as never;
+        } else if (cible) {
+          vide.synthRows[cible as SynthRowName].muted = true;
+        }
       }
       return vide;
     }
+    /* LE REFRAIN : la phrase change et MONTE. `unePhraseQuiMonte` compare des
+       hauteurs moyennes en degrés, l'octave comptant pour sept — on réécrit
+       donc la mélodie une octave au-dessus, ce qui est le geste réel. */
+    if (demande('autre-phrase:melody') || demande('phrase-monte:melody')) {
+      const m = st.synthRows.melody;
+      m.muted = false;
+      m.subdivisions = 8;
+      m.pattern = new Array(8).fill(null);
+      m.pattern[0] = { degree: 5, octave: 1 };
+      m.pattern[2] = { degree: 6, octave: 1 };
+      m.pattern[4] = { degree: 3, octave: 1 };
+      m.pattern[6] = { degree: 1, octave: 1 };
+    }
   }
+  /* UN TEMPO DANS UNE FOURCHETTE. L'identifiant porte les bornes depuis le
+     2026-09-05 (`tempo:60-92`) : sans elles, ce test devrait lire le libellé,
+     c'est-à-dire du français. On se pose au milieu. */
+  const tempo = cahier.find((c) => c.id.startsWith('tempo:'));
+  if (tempo) {
+    const [min, max] = tempo.id.slice(6).split('-').map(Number);
+    st.tempo = Math.round((min + max) / 2);
+  }
+  /* PAS PLEIN — au plus tant de voix. Le seul plafond absolu du jeu, et le seul
+     endroit où ce harnais doit RETIRER : il pose les trois lignes de synthé et
+     part d'un preset complet, donc six voix sonnent avant qu'on ait rien
+     demandé. On coupe celles que le cahier ne cite pas, dans l'ordre du moins
+     essentiel, jusqu'à tenir sous le plafond. */
+  const plafond = cahier.find((c) => c.id === 'au-plus-lignes');
+  if (plafond) {
+    const cite = (id: string) => cahier.some((c) => c.id === id || c.id.endsWith(`:${id}`));
+    for (const l of ['clap', 'shaker', 'hat', 'snare'] as const) {
+      if (!cite(l)) st.rows[l].pattern = new Array(st.rows[l].pattern.length).fill(0) as never;
+    }
+    for (const l of ['bass', 'pad', 'melody'] as const) {
+      if (!cite(l) && !cahier.some((c) => c.id === `synth:${l}`)) st.synthRows[l].muted = true;
+    }
+  }
+  /* UN GESTE QUE LES AUTRES N'ONT PAS — on en pose UN, le seul des cinq qui ne
+     demande aucune ligne vivante : le balancement franc. */
+  if (demande('geste-rare')) st.swing = 25;
   // Une voix choisie par ligne citée — n'importe laquelle sauf « Défaut ».
   const VOIX: Record<SynthRowName, string> = { bass: 'round', pad: 'rhodes', melody: 'soft' };
   for (const c of cahier) {

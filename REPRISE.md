@@ -4,12 +4,15 @@
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
 > Dernière mise à jour : 2026-09-05 — la relecture annotée est **entièrement
-> rentrée** : les neuf cases prioritaires (le synthé dans les cahiers, actes 5
-> et 4), les étoiles et les remarques des travaux en atelier, et le dernier
-> chantier — **l'acte 6 en trois boucles** (couplet / refrain / pont) qui se
-> montent en set dans le Mode Live. La fiche se régénère par
-> `npx vite-node scripts/relecture-mode-jeu.ts` (`docs/relecture/mode-jeu.html`,
-> 173 cartes).
+> rentrée**, retours de jeu compris : les neuf cases prioritaires (le synthé dans
+> les cahiers, actes 5 et 4), les étoiles et les remarques des travaux en
+> atelier, et **l'acte 6 en trois MORCEAUX de trois boucles** (neuf cahiers,
+> mélodie comprise) dont le single se monte en set dans le Mode Live. La fiche
+> se régénère par `npx vite-node scripts/relecture-mode-jeu.ts`
+> (`docs/relecture/mode-jeu.html`).
+>
+> ⚠️ **La décision en attente est le MODE LIVE** — voir « Le chantier ouvert »
+> plus bas.
 
 ## Où en est le projet
 
@@ -17,7 +20,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 620 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 623 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -29,8 +32,8 @@ attente dans `HISTOIRE.md`.
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 12 (`ExerciseKind`) |
 | Niveaux | 78 (38 de campagne + le reste du réservoir) |
-| Commandes (production à livrer) | 16, aux actes 2 à 6 (les actes 3, 4 et 6 en enchaînent trois, l'acte 5 en compte six pour quatre genres) |
-| Productions rangées en fin de carrière | 11 (une par acte-et-série) |
+| Commandes (production à livrer) | 22, aux actes 2 à 6 (l'acte 6 en compte neuf : trois morceaux de trois boucles, l'acte 5 six pour quatre genres) |
+| Productions rangées en fin de carrière | 17 (une par acte-et-série) |
 
 ## Le déverrouillage — tranché le 2026-08-26
 
@@ -59,6 +62,28 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 (il faudrait un code de reprise, `share.ts` saurait le porter), et la
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
+
+## ⚠️ Le chantier OUVERT — le Mode Live et l'architecture de morceau
+
+**C'est la décision en attente**, posée par Yann le 2026-09-05 :
+
+> « Par ailleurs, il faudra retravailler le mode live… en l'état, le système
+> d'architecture de morceau ne fonctionne pas super bien à mon goût… à
+> réfléchir. »
+
+Arbitrage pris pour l'acte 6 : **le laisser de côté**. Les neuf boucles y ont été
+livrées, et la scène n'en monte qu'une en set — bâtir trois sets sur une
+mécanique qui ne convient pas serait construire sur du sable.
+
+Ce qu'il y a déjà, et qu'il faut relire avant de repartir :
+[`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) et
+[`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md),
+tous deux ouverts. Trois façons d'attaquer avaient été proposées : le laisser de
+côté (choisi), l'auditer en le JOUANT avec mesures à l'appui, ou générer une
+**fiche HTML annotable** comme celle du Mode jeu — c'est ce dernier format qui a
+le mieux marché la fois précédente (21 cases annotées, toutes rentrées).
+
+---
 
 ## Le chantier en cours — le jeu devient une suite de CAHIERS DES CHARGES
 
@@ -94,14 +119,15 @@ quiz n'aurait rien réglé.
 | — | **refaire un cahier** depuis la salle, l'abandonner, 3★ / 0★ | ✅ livré |
 | — | les **roasts par verbe**, le 67 retiré, le `silence` durci, l'acte 7 à un pilote | ✅ livré |
 | 2 | **l'acte 6 en trois boucles** — FB-015 en couplet / refrain / pont, montés en set | ✅ livré |
-| 3 | **trois MORCEAUX** (« un hit, un doux, un original ») sur la même mécanique | à faire — périmètre à cadrer |
+| 3 | **trois MORCEAUX** + la MÉLODIE dans les cahiers du refrain et du pont | ✅ livré |
 
-⚠️ La tranche 2 a livré **un** morceau en trois boucles, pas trois. La demande
-d'origine en cite trois ; la mécanique est désormais entièrement là
-(`bouclesDeLActe`, `partirDeLaSerie`, les quatre contraintes relationnelles), il
-reste à décider **ce qui distingue** un hit d'un doux et d'un original — un
-cahier par caractère, ou une fiche de style, ou les deux. C'est cette question,
-pas la machinerie, qui reste ouverte.
+⚠️ **Ce qui distingue les trois morceaux est une INTENTION, pas un brief**
+(arbitré avec Yann le 2026-09-05) : « celui qui passe », « celui qu'on écoute
+seul », « celui que personne n'attend » sont trois répliques de Sol. Une
+intention pèse sur ce que la boucle doit FAIRE — un tempo, un plafond de voix, un
+geste rare — jamais sur ce qu'elle doit RESSEMBLER. La phrase de l'acte (« aucun
+brief, aucun client, aucun style imposé ») tient donc, et aucun des neuf cahiers
+ne convoque une fiche de style.
 
 ⚠️ La polyrythmie (niveaux 29 et 24) a quitté l'acte 5 (« hors sujet ») et
 attend l'acte 6, où Yann propose de l'expliquer par le récit — « peut-être que

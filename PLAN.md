@@ -44,6 +44,91 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ FB-015 en trois morceaux, et la mélodie entre dans les cahiers (2026-09-05)
+
+> « Il n'y a qu'un seul morceau de travaillé. Le travail n'est pas suffisant
+> pour le refrain et le pont, il faut un cahier des charges plus complet avec un
+> travail sur la mélodie. J'imaginais 3 morceaux, il n'y en a qu'un seul. » — Yann
+
+Deux défauts distincts dans la livraison de la veille, tous deux réels.
+
+**1 · Refrain et pont ne comptaient que des COUPS.** Les quatre contraintes
+relationnelles portaient toutes sur la densité (`plus-fourni`, `moins-fourni`,
+`ligne-entre`, `ligne-sort`) : un refrain qui s'ouvre en ajoutant un shaker
+satisfaisait le cahier. Or ce n'est pas un refrain — c'est le couplet avec un
+shaker. Quatre contraintes MÉLODIQUES, relationnelles elles aussi :
+
+| | ce qu'elle mesure |
+|---|---|
+| `uneAutrePhrase` | la ligne est écrite autrement — **positions comprises**, sinon déplacer une phrase ne compterait pas |
+| `unePhraseQuiMonte` | la hauteur moyenne monte, **l'octave valant sept degrés** — sans quoi la même phrase montée d'une octave ne « monte » pas, au moment exact où c'est vrai |
+| `unePhraseQuiSEclaircit` | moins de notes par mesure, **mais il en reste** — un pont sans mélodie est un break |
+| `uneAutreHarmonie` | la suite d'accords de la nappe change (des **index**, jamais des degrés) |
+
+Les cahiers passent de trois lignes à cinq ou six, et le couplet du single de
+onze à douze.
+
+**2 · Un morceau au lieu de trois.** L'acte 6 livre désormais **neuf boucles** :
+trois morceaux de trois. Ce qui les distingue — arbitré avec Yann — est une
+**intention que Sol nomme**, jamais un client ni un genre : la phrase de l'acte
+(« aucun brief, aucun client, aucun style imposé ») tient, et aucun des neuf
+cahiers ne convoque une fiche de style ni un verrou de provenance.
+
+- **Celui qui passe** — le single. Son couplet garde le cahier récapitulatif
+  (une section par acte traversé) ; son refrain s'ouvre franchement (1,2).
+- **Celui qu'on écoute seul** — l'intention pèse sur le TEMPO (60-92) et sur le
+  NOMBRE DE VOIX (`auPlusDeLignes(4)`, le seul plafond absolu du jeu, et il
+  compte des voix et non des coups : un plafond de coups dépend de la
+  subdivision, donc le même chiffre voudrait dire deux choses). Son refrain
+  s'ouvre d'un cran (1,15), son pont descend plus bas (0,6).
+- **Celui que personne n'attend** — `unGesteRare` demande de l'originalité sans
+  la dicter : **cinq** gestes déjà enseignés, **un** exigé, tous les cinq
+  affichés (même forme que `deLAlea` — nommer le geste serait choisir à la place
+  du joueur).
+
+**La scène monte UN morceau sur neuf boucles.** `section` devient facultatif :
+toutes les boucles vont dans la BANQUE, seules celles qui en portent une entrent
+dans l'ARCHITECTURE. Une architecture décrit un morceau ; le disque entier reste
+à un clic dans le sélecteur.
+
+**Quatre défauts trouvés par les tests, pas par la relecture.**
+
+1. *Un cul-de-sac dans le premier morceau.* Son couplet n'exigeait qu'une
+   `ligneSynthPresente('melody')` — donc une seule note suffisait, et « elle joue
+   moins mais elle joue encore » devenait impossible : moins que une et plus que
+   zéro n'existe pas. **Une contrainte relationnelle se paie dans la boucle
+   d'avant** ; le couplet exige maintenant une phrase de quatre notes.
+2. *Le même piège sur l'harmonie* : le troisième couplet n'avait pas de nappe,
+   donc son pont n'avait aucun accord à quitter. La nappe y est entrée.
+3. *`unGesteRare` était coché sur un Atelier vide.* La nappe tourne sur **quatre
+   mesures** par défaut, donc « une ligne de synthé sur deux mesures » était vrai
+   avant que le joueur ait touché à quoi que ce soit. Trouvé par la garde
+   « aucune tâche cochée à l'ouverture ». Les cinq gestes exigent désormais que
+   leur ligne SONNE, et « deux mesures » ne regarde plus que mélodie et basse.
+4. *`tempoEntre` avait un identifiant muet.* `id: 'tempo'` ne portait pas ses
+   bornes : le test de satisfiabilité aurait dû lire le libellé, c'est-à-dire du
+   français. C'est devenu `tempo:60-92`, comme `phrase:melody`.
+
+**Et un défaut dans le harnais de parcours**, qui aurait masqué un vrai bug : il
+réécrivait les trois lignes de synthé inconditionnellement, y compris sur une
+boucle qui se juge CONTRE son départ — il effaçait donc ce à quoi on se compare.
+Ça se voyait sur la nappe, dont une case porte un **index d'accord** et non un
+degré : le bloc y écrivait `{degree, octave}` par-dessus la progression du
+couplet.
+
+**Mesuré.** `scripts/parcours-carriere.cjs` joue la carrière entière depuis un
+joueur neuf : neuf commandes acceptées, la scène ouvre le Mode Live avec **9/9
+boucles en banque et 8/8 sections assignées**, 17 productions rangées, aucune
+erreur console. Les 21 écrans de l'acte mesurés en 390 × 844, pointeur grossier :
+**zéro ligne repliée** (deux briefs ont été coupés, pas réécrits), zéro
+débordement. Le Mode Live en 844 × 390, set monté : cinq commandes sous 44 px —
+exactement les exceptions revendiquées. 623 tests, 0 erreur de types.
+
+**Reste ouvert :** le Mode Live et son système d'architecture de morceau
+(« en l'état, ça ne fonctionne pas super bien à mon goût… à réfléchir »).
+Délibérément non traité ici : bâtir sur une mécanique qui ne convient pas serait
+construire sur du sable.
+
 ### ✅ FB-015 en trois boucles, et un set qui se monte (2026-09-05)
 
 > « Pour chacun de ces morceaux, on travaille 3 boucles qui permettront de faire

@@ -277,6 +277,11 @@ récit avance. Elle emporte **soit** un morceau entier d'un acte précédent
 propre acte, montées en set (`bouclesDeLActe`, l'acte 6) — jamais les deux, on ne
 monte pas sur scène avec deux morceaux. Corollaire : une scène peut suivre la
 dernière commande d'un acte, parce qu'elle ne PRODUIT rien.
+⚠️ `section` est **facultatif** sur une boucle, et c'est la distinction entre le
+MATÉRIEL et le MORCEAU : toutes les boucles vont dans la banque de séquences,
+seules celles qui portent une section entrent dans l'architecture. Une
+architecture décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois,
+les six autres restant à un clic.
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
 l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
 monté : cinq commandes sous 44 px (les exceptions revendiquées), aucun
@@ -284,17 +289,40 @@ débordement. ⚠️ La bande d'architecture est le piège : **sans architecture
 chargée elle n'existe pas**, donc ses huit cases (36 px) n'avaient jamais été
 mesurées — c'est la scène de l'acte 6 qui les met devant tout le monde.
 
-⚠️ **Un MORCEAU, c'est trois boucles qui se répondent.** L'acte 6 en livre trois
-(couplet, refrain, pont), et les deux dernières ne se jugent pas dans l'absolu —
-un refrain n'a pas de définition, il s'OUVRE par rapport au couplet. D'où
+⚠️ **Un MORCEAU, c'est trois boucles qui se répondent, et un DISQUE en compte
+trois.** L'acte 6 livre neuf boucles (trois morceaux × couplet / refrain / pont).
+Les deux boucles qui suivent un couplet ne se jugent pas dans l'absolu — un
+refrain n'a pas de définition, il s'OUVRE par rapport au couplet. D'où
 `partirDeLaSerie` (repartir d'une série NOMMÉE, pas de « la dernière livrée ») et
-les quatre contraintes relationnelles `plusFourniQue` / `moinsFourniQue` /
-`uneLigneQuiEntre` / `uneLigneQuiSeTait`, qui lisent `ctx.depart` et répondent
-**faux** sans lui. ⚠️ Le pont repart du COUPLET, pas du refrain : contre le
-refrain il ne serait que « le refrain en moins plein », un arrangement et pas une
-section. Et `SERIE_DU_DISQUE` se déduit (série de la PREMIÈRE commande de
-`ACTE_DU_DISQUE`) — sur `productionDeLActe`, l'épilogue ferait entendre le pont,
-c'est-à-dire la boucle qu'on vient de demander de vider.
+huit contraintes relationnelles qui lisent `ctx.depart` et répondent **faux**
+sans lui : quatre de DENSITÉ (`plusFourniQue`, `moinsFourniQue`,
+`uneLigneQuiEntre`, `uneLigneQuiSeTait`) et quatre de MÉLODIE (`uneAutrePhrase`,
+`unePhraseQuiMonte`, `unePhraseQuiSEclaircit`, `uneAutreHarmonie`).
+⚠️ **Compter des COUPS ne suffit pas** : un refrain qui s'ouvre en ajoutant un
+shaker n'est pas un refrain, c'est le couplet avec un shaker. Un refrain change
+de phrase et MONTE, un pont change de phrase et S'ÉCLAIRCIT — et l'octave compte
+pour sept degrés, sinon la même phrase montée d'une octave ne « monte » pas.
+⚠️ Le pont repart du COUPLET, pas du refrain : contre le refrain il ne serait
+que « le refrain en moins plein », un arrangement et pas une section. Et
+`SERIE_DU_DISQUE` se déduit (série de la PREMIÈRE commande de `ACTE_DU_DISQUE`) —
+sur `productionDeLActe`, l'épilogue ferait entendre le pont, c'est-à-dire la
+boucle qu'on vient de demander de vider.
+
+⚠️ **Une contrainte relationnelle se paie dans la boucle d'AVANT.** « Elle joue
+moins mais elle joue encore » est impossible sur une mélodie d'une seule note, et
+« change d'accords » est impossible sans nappe au départ : chaque couplet doit
+donc exiger la matière que son refrain et son pont transformeront.
+`tests/commande.test.ts` le trouve — c'est un cul-de-sac, pas une maladresse.
+
+⚠️ **Les trois morceaux se distinguent par une INTENTION, jamais par un brief.**
+« Aucun brief, aucun client, aucun style imposé » tient : celui qui passe, celui
+qu'on écoute seul, celui que personne n'attend sont trois répliques de Sol, et
+elles pèsent sur ce que la boucle doit FAIRE (un tempo, un plafond de voix, un
+geste rare), jamais sur ce qu'elle doit RESSEMBLER — aucune fiche de style,
+aucun verrou de provenance dans les neuf cahiers. Et l'originalité se demande
+sans se dicter : `unGesteRare` en propose **cinq** et en exige **un**, tous déjà
+enseignés (même forme que `deLAlea`, pour la même raison — nommer le geste
+serait choisir à la place du joueur).
 
 ⚠️ **L'épilogue FAIT ENTENDRE le disque du joueur** — la production de
 `ACTE_DU_DISQUE` (déduit : l'acte de la dernière commande, jamais écrit en dur,

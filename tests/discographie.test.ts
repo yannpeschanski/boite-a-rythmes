@@ -231,7 +231,7 @@ describe('chaque production du récit a un nom et un destinataire', () => {
      * morceau — couplet, refrain, pont — au lieu d'un seul FB-015. Elles ont
      * chacune leur série et coexistent, comme les quatre genres de l'acte 5 :
      * un morceau dont il manquerait le refrain ne se joue pas. */
-    expect(prod).toHaveLength(17);
+    expect(prod).toHaveLength(23);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();

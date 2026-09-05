@@ -117,9 +117,11 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
            motif générique par-dessus (ce que fait le bloc suivant) effacerait
            justement ce à quoi on se compare, et les deux cahiers deviendraient
            insatisfiables pour une raison invisible. */
-        const estUneBoucle = ['plus-fourni', 'moins-fourni', 'ligne-entre', 'ligne-sort'].some(
-          (id) => e.cahier.some((c) => c.id === id),
-        );
+        const estUneBoucle = [
+          'plus-fourni', 'moins-fourni', 'ligne-entre', 'ligne-sort',
+          'autre-phrase:melody', 'phrase-monte:melody', 'phrase-eclaircit:melody',
+          'autre-harmonie',
+        ].some((id) => e.cahier.some((c) => c.id === id));
         if (!estUneBoucle) {
         st.swing = 30;
         /* ⚠️ Une commande de STYLE ne se satisfait pas avec un motif générique :
@@ -164,8 +166,16 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         st.rows.kick.rolls = new Array(32).fill(1); st.rows.kick.rolls[0] = 3;
         }
         /* Les TROIS lignes de synthé, et une texture sur chacune : l'acte 3
-           les demande toutes depuis le 2026-09-01 (« les additionner »). */
-        for (const l of ['bass', 'melody', 'pad']) {
+           les demande toutes depuis le 2026-09-01 (« les additionner »).
+           ⚠️ JAMAIS sur une boucle d'un même morceau : elles se jugent CONTRE
+           le départ, et réécrire les trois lignes efface justement ce à quoi on
+           se compare. Ça se voyait sur la nappe — une case de nappe porte un
+           INDEX d'accord, pas un degré, donc ce bloc y écrivait `{degree, octave}`
+           par-dessus la progression du couplet et « la nappe ne pose plus les
+           mêmes accords » devenait vrai pour la mauvaise raison, puis faux.
+           ⚠️ Le bloc est aussi la raison pour laquelle il ne peut pas rester
+           inconditionnel : `subdivisions = 8` sur la nappe change sa longueur. */
+        for (const l of estUneBoucle ? [] : ['bass', 'melody', 'pad']) {
           st.synthRows[l].muted = false;
           st.synthRows[l].subdivisions = 8;
           st.synthRows[l].pattern = new Array(8).fill(null);
@@ -296,15 +306,93 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
           for (let i = 0; i < 8; i++) st.rows.clap.pattern[i] = 1;
           st.rows.clap.muted = false;
         }
+        /* LE REFRAIN : la phrase change et MONTE. `unePhraseQuiMonte` compare
+           des hauteurs moyennes où l'octave vaut sept degrés — on réécrit donc
+           la mélodie une octave au-dessus, ce qui est le geste réel. */
+        if (exige('autre-phrase:melody') && exige('phrase-monte:melody')) {
+          const m = st.synthRows.melody;
+          m.muted = false;
+          m.subdivisions = 8;
+          m.pattern = new Array(8).fill(null);
+          m.pattern[0] = { degree: 5, octave: 1 };
+          m.pattern[2] = { degree: 6, octave: 1 };
+          m.pattern[4] = { degree: 3, octave: 1 };
+          m.pattern[6] = { degree: 1, octave: 1 };
+        }
         if (exige('moins-fourni') || exige('ligne-sort')) {
           // Le pont, c'est le couplet qu'on VIDE : on coupe, on ne redessine pas.
           for (const n of ['hat', 'clap', 'shaker']) {
             st.rows[n].pattern = new Array(st.rows[n].pattern.length).fill(0);
           }
-          for (const n of ['melody', 'pad']) {
-            st.synthRows[n].pattern = st.synthRows[n].pattern.map(() => (n === 'pad' ? -1 : null));
+          /* ⚠️ La mélodie RESTE, plus claire et autrement écrite : un pont sans
+             mélodie est un break. `unePhraseQuiSEclaircit` exige qu'elle joue
+             ENCORE, `uneAutrePhrase` qu'elle soit écrite autrement. */
+          const m = st.synthRows.melody;
+          m.muted = false;
+          m.pattern = m.pattern.map(() => null);
+          m.pattern[0] = { degree: 2, octave: -1 };
+          /* Et la nappe reste, sur d'AUTRES accords : `uneAutreHarmonie` demande
+             qu'elle sonne des deux côtés, sinon il n'y a pas d'harmonie à
+             quitter. On renverse la suite posée par le couplet. */
+          const pad = st.synthRows.pad;
+          const poses = pad.pattern
+            .slice(0, pad.subdivisions)
+            .map((v) => (typeof v === 'number' && v >= 0 ? v : -1));
+          if (poses.some((v) => v >= 0)) {
+            pad.muted = false;
+            const inverse = [...poses].reverse();
+            for (let i = 0; i < pad.subdivisions; i++) pad.pattern[i] = inverse[i];
+            if (inverse.join(',') === poses.join(',')) {
+              for (let i = 0; i < pad.subdivisions; i++) {
+                if (pad.pattern[i] >= 0) pad.pattern[i] = (pad.pattern[i] + 1) % 4;
+              }
+            }
+          }
+          /* ⚠️ Et si rien n'a disparu, on coupe une voix : le deuxième morceau
+             de l'acte 6 interdit l'abondance (« quatre lignes au plus »), donc
+             son couplet n'a ni charley ni clap ni shaker à retirer. */
+          const sonneDrum = (e2, n) =>
+            !e2.rows[n].muted && e2.rows[n].pattern.slice(0, e2.rows[n].subdiv).some((v) => v > 0);
+          const sonneSynth = (e2, n) =>
+            !e2.synthRows[n].muted &&
+            e2.synthRows[n].pattern
+              .slice(0, e2.synthRows[n].subdivisions)
+              .some((v) => (n === 'pad' ? typeof v === 'number' && v >= 0 : v != null));
+          const avant = game.departCommande();
+          const aPerdu =
+            !!avant &&
+            ['clap', 'shaker', 'hat', 'snare', 'kick'].some(
+              (n) => sonneDrum(avant, n) && !sonneDrum(st, n),
+            );
+          if (!aPerdu) {
+            const garde = new Set(['melody', ...(exige('autre-harmonie') ? ['pad'] : [])]);
+            const cible = ['clap', 'shaker', 'hat', 'snare', 'kick'].find((n) => sonneDrum(st, n));
+            if (cible) st.rows[cible].pattern = new Array(st.rows[cible].pattern.length).fill(0);
+            else {
+              const s2 = ['bass', 'pad', 'melody'].find((n) => !garde.has(n) && sonneSynth(st, n));
+              if (s2) st.synthRows[s2].muted = true;
+            }
           }
         }
+        /* UN TEMPO DANS UNE FOURCHETTE — l'identifiant porte ses bornes. */
+        const bornesTempo = e.cahier.find((c) => c.id.startsWith('tempo:'));
+        if (bornesTempo) {
+          const [mn, mx] = bornesTempo.id.slice(6).split('-').map(Number);
+          st.tempo = Math.round((mn + mx) / 2);
+        }
+        /* PAS PLEIN — on coupe ce que le cahier ne cite pas jusqu'à tenir. */
+        if (exige('au-plus-lignes')) {
+          const cite = (n) => e.cahier.some((c) => c.id === `synth:${n}` || c.id.endsWith(`:${n}`) || c.id === n);
+          for (const n of ['clap', 'shaker', 'hat', 'snare']) {
+            if (!cite(n)) st.rows[n].pattern = new Array(st.rows[n].pattern.length).fill(0);
+          }
+          for (const n of ['bass', 'pad', 'melody']) {
+            if (!cite(n)) st.synthRows[n].muted = true;
+          }
+        }
+        // UN GESTE QUE LES AUTRES N'ONT PAS : le seul des cinq qui n'exige
+        // aucune ligne vivante — un balancement franc.
+        if (exige('geste-rare')) st.swing = 25;
         // « Une note n'est pas un son » : une voix choisie sur chaque ligne
         // citée, n'importe laquelle sauf celle d'usine.
         const VOIX = { bass: 'round', pad: 'rhodes', melody: 'soft' };
@@ -371,7 +459,9 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
      * qu'un morceau livré à l'acte 1 est encore là en septembre, et que ce qui
      * a chacun sa série ne s'écrase pas. */
     log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
-    if (game.productions.length !== 11) log.push('   ⚠️ ONZE productions attendues');
+    if (game.productions.length !== 17) log.push('   ⚠️ DIX-SEPT productions attendues');
+    if (game.productions.filter((p) => p.acte === 6).length !== 9)
+      log.push('   ⚠️ l’acte 6 doit ranger NEUF boucles — trois morceaux de trois');
     if (game.productions.filter((p) => p.acte === 5).length !== 4)
       log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
     return log;
