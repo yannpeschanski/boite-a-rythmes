@@ -3,13 +3,13 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-04 — la relecture annotée est **rentrée** :
-> ses neuf cases prioritaires sont livrées (le synthé entre dans les cahiers,
-> actes 5 et 4). La fiche se régénère par
+> Dernière mise à jour : 2026-09-05 — la relecture annotée est **entièrement
+> rentrée** : les neuf cases prioritaires (le synthé dans les cahiers, actes 5
+> et 4), les étoiles et les remarques des travaux en atelier, et le dernier
+> chantier — **l'acte 6 en trois boucles** (couplet / refrain / pont) qui se
+> montent en set dans le Mode Live. La fiche se régénère par
 > `npx vite-node scripts/relecture-mode-jeu.ts` (`docs/relecture/mode-jeu.html`,
-> 168 cartes). Avant : le récit se tape signe à signe, chaque
-> réplique porte le nom de qui parle, et chaque personnage a sa voix
-> (`model/locuteurs.ts`, `engine/voixRecit.ts`, `ui/game/RecitLignes.svelte`).
+> 173 cartes).
 
 ## Où en est le projet
 
@@ -17,7 +17,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 561 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 620 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -29,7 +29,8 @@ attente dans `HISTOIRE.md`.
 | Actes jouables | 8 sur 8, plus l'épilogue |
 | Verbes d'exercice | 12 (`ExerciseKind`) |
 | Niveaux | 78 (38 de campagne + le reste du réservoir) |
-| Commandes (production à livrer) | 12, aux actes 2 à 6 (les actes 3 et 4 en enchaînent trois, l'acte 5 en livre quatre) |
+| Commandes (production à livrer) | 16, aux actes 2 à 6 (les actes 3, 4 et 6 en enchaînent trois, l'acte 5 en compte six pour quatre genres) |
+| Productions rangées en fin de carrière | 11 (une par acte-et-série) |
 
 ## Le déverrouillage — tranché le 2026-08-26
 
@@ -92,7 +93,15 @@ quiz n'aurait rien réglé.
 | — | le **shuffle** nomme son bouton, le riddim dit ses deux coups, le preset `swing` à 33 | ✅ livré (retours en jouant) |
 | — | **refaire un cahier** depuis la salle, l'abandonner, 3★ / 0★ | ✅ livré |
 | — | les **roasts par verbe**, le 67 retiré, le `silence` durci, l'acte 7 à un pilote | ✅ livré |
-| 2 | **l'acte 6 en 3 morceaux × 3 boucles** — le SEUL chantier encore ouvert | à faire — périmètre à cadrer |
+| 2 | **l'acte 6 en trois boucles** — FB-015 en couplet / refrain / pont, montés en set | ✅ livré |
+| 3 | **trois MORCEAUX** (« un hit, un doux, un original ») sur la même mécanique | à faire — périmètre à cadrer |
+
+⚠️ La tranche 2 a livré **un** morceau en trois boucles, pas trois. La demande
+d'origine en cite trois ; la mécanique est désormais entièrement là
+(`bouclesDeLActe`, `partirDeLaSerie`, les quatre contraintes relationnelles), il
+reste à décider **ce qui distingue** un hit d'un doux et d'un original — un
+cahier par caractère, ou une fiche de style, ou les deux. C'est cette question,
+pas la machinerie, qui reste ouverte.
 
 ⚠️ La polyrythmie (niveaux 29 et 24) a quitté l'acte 5 (« hors sujet ») et
 attend l'acte 6, où Yann propose de l'expliquer par le récit — « peut-être que

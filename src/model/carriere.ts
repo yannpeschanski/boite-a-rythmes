@@ -45,6 +45,10 @@ import {
   filtreQuiCoupe,
   aBaisseLeFiltre,
   avoirTouche,
+  plusFourniQue,
+  moinsFourniQue,
+  uneLigneQuiEntre,
+  uneLigneQuiSeTait,
   uneProgression,
   laBasseDitLAccord,
   LIGNES_TOUTES,
@@ -242,11 +246,33 @@ export interface EtapeScene {
   lignes: string[];
   /** Le libellé du bouton qui monte sur scène. */
   bouton: string;
-  /** L'acte dont on emporte la production. Elle existe : cet acte a une
-   *  commande, et `tests/carriere.test.ts` le vérifie. */
-  morceauDeLActe: number;
+  /* L'acte dont on emporte la production. Elle existe : cet acte a une
+   * commande, et `tests/carriere.test.ts` le vérifie.
+   *
+   * ⚠️ FACULTATIF depuis le 2026-09-04, et l'un des deux est obligatoire : une
+   * scène emporte SOIT un morceau entier d'un acte précédent (le rappel de
+   * l'acte 7), SOIT les boucles livrées dans son propre acte, montées en set
+   * (`bouclesDeLActe`). Les deux ensemble n'auraient pas de sens — on ne monte
+   * pas sur scène avec deux morceaux — et aucun des deux laisserait le Mode
+   * Live s'ouvrir sur ce que l'Atelier avait sous la main. */
+  morceauDeLActe?: number;
   /** Ouverts le temps de la scène — voir `EtapeCommande.modulesRequis`. */
   modulesRequis?: LockedModule[];
+  /* ⚠️ LES BOUCLES QU'ON MONTE EN SET, au lieu d'un seul morceau.
+   *
+   * Demande de Yann (2026-09-04) : *« pour chacun de ces morceaux, on travaille
+   * 3 boucles qui permettront de faire ensuite couplet/refrain/pont pour le
+   * mode live »*. Le Mode Live sait déjà enchaîner des sections au tour près
+   * (`model/architecture.ts`) et le modèle POP porte déjà ces trois noms : ce
+   * qui manquait n'était pas la mécanique, c'était de quoi la nourrir.
+   *
+   * Chaque entrée range la production d'une SÉRIE de l'acte dans la banque de
+   * séquences, sous son nom, et l'assigne aux sections du modèle qui portent
+   * `section`. Les sections non citées (intro, outro) retombent sur le couplet.
+   *
+   * `morceauDeLActe` reste : une scène qui ne cite pas de boucles emporte un
+   * morceau entier, comme le rappel de l'acte 7. */
+  bouclesDeLActe?: Array<{ serie: string; nom: string; section: string }>;
 }
 
 export interface EtapeCommande {
@@ -324,6 +350,14 @@ export interface EtapeCommande {
    * `tests/transformer.test.ts` ne peut pas voir (elle mesure sur une
    * discographie vide, donc sur une table rase). */
   partirDuMorceauDeLActe?: ActeId;
+  /* ⚠️ Partir d'une SÉRIE précise de l'acte courant.
+   *
+   * `partirDeLaLivraison` reprend « la dernière » production de l'acte, ce qui
+   * suffit à une chaîne d'envois — ses versions partagent une série, donc il
+   * n'y en a qu'une. L'acte 6 livre TROIS boucles séparées : le refrain doit
+   * repartir du COUPLET, nommément, et pas de ce qui a été livré en dernier.
+   * Même filet : rien sous cette série → table rase plutôt qu'un blocage. */
+  partirDeLaSerie?: string;
   /** Ce que Sol dit quand elle accepte. */
   accepte: string;
   /** Le titre sous lequel la discographie range le morceau livré. */
@@ -1946,7 +1980,7 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'commande',
-        entete: 'FB-015 — À TOI',
+        entete: 'FB-015 — LE COUPLET',
         lignes: [
           'Pour savoir ce que tu peux faire',
           'quand personne ne te dit quoi faire.',
@@ -1991,8 +2025,119 @@ export const ACTES: Acte[] = [
           ]),
         ],
         accepte: 'SOL: Je ne sais pas si c’est bon. […] C’est nouveau.',
-        titre: 'FB-015',
+        titre: 'FB-015 — COUPLET',
+        serie: 'couplet',
         client: 'FACE B',
+      },
+      /* ⚠️ TROIS BOUCLES, UN MORCEAU — l'acte 6 refait le 2026-09-04.
+       *
+       * Demande de Yann : *« pour chacun de ces morceaux, on travaille 3
+       * boucles qui permettront de faire ensuite couplet/refrain/pont pour le
+       * mode live ! Chacune des boucles doit faire l'objet de 1, 2 ou 3 étapes
+       * d'atelier pour avoir des cahiers des charges assez complexes. »*
+       *
+       * Ce que ça change, et c'est le fond : jusqu'ici tout le jeu faisait
+       * produire des BOUCLES de douze secondes. Un morceau, c'est trois boucles
+       * qui se répondent — et le Mode Live sait déjà les enchaîner au tour près
+       * depuis la bande d'architecture. Il ne manquait que de quoi la nourrir.
+       *
+       * ⚠️ Les deux boucles qui suivent ne sont pas jugées dans l'absolu : un
+       * refrain n'a pas de définition, il s'ouvre PAR RAPPORT au couplet. Elles
+       * repartent donc de lui (`partirDeLaSerie`) et se mesurent contre lui
+       * (`plusFourniQue`, `uneLigneQuiEntre`, et leurs inverses). C'est la seule
+       * façon de demander « fais un refrain » sans dicter lequel.
+       *
+       * ⚠️ Et le PONT repart du COUPLET, pas du refrain : un pont s'écrit
+       * contre le morceau, pas contre son moment le plus plein. Repartir du
+       * refrain aurait fait du pont « le refrain avec des choses en moins »,
+       * ce qui est un arrangement, pas une section. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          'SOL: Une boucle, c’est douze secondes.',
+          'SOL: Un morceau, c’est trois boucles qui se répondent.',
+          'Elle pose trois cartons sur la table, l’un après l’autre.',
+          'SOL: Le couplet, tu l’as.',
+          'SOL: Un refrain, ça s’OUVRE. Il en met plus.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'FB-015 — LE REFRAIN',
+        lignes: [
+          'Le même morceau, repris à partir du couplet.',
+          'SOL: Ne recommence pas de zéro. Ajoute.',
+          'SOL: Et fais entrer quelque chose qui n’était pas là.',
+        ],
+        bouton: 'Reprendre le couplet ▸',
+        serie: 'refrain',
+        partirDeLaSerie: 'couplet',
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          plusFourniQue(1.2, 'Ça s’ouvre : nettement plus de coups que le couplet'),
+          uneLigneQuiEntre('Une ligne qui ne jouait pas entre — le clap, le shaker, une voix…'),
+        ],
+        accepte: 'SOL: Voilà. Là, on a envie que ça revienne.',
+        titre: 'FB-015 — REFRAIN',
+        client: 'FACE B',
+      },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          'SOL: Maintenant le pont.',
+          'SOL: C’est l’endroit où on ENLÈVE.',
+          'SOL: Trois minutes de refrain, personne ne tient.',
+          'Elle repose le carton du couplet devant toi.',
+          'SOL: Repars de celui-là. Et vide-le.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'FB-015 — LE PONT',
+        lignes: [
+          'Le couplet, encore — mais dans l’autre sens.',
+          'SOL: Coupe. Laisse de la place.',
+          'SOL: On doit avoir hâte que le refrain revienne.',
+        ],
+        bouton: 'Reprendre le couplet ▸',
+        serie: 'pont',
+        partirDeLaSerie: 'couplet',
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          moinsFourniQue(0.8, 'Ça retombe : nettement moins de coups que le couplet'),
+          uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
+        ],
+        accepte: 'SOL: C’est ça. C’est le vide qui fait le reste.',
+        titre: 'FB-015 — PONT',
+        client: 'FACE B',
+      },
+      /* ⚠️ LA SCÈNE QUI MONTE LE SET. Les trois boucles partent dans la banque
+       * de séquences et le modèle POP les enchaîne — couplet, refrain, couplet,
+       * refrain, pont, refrain. Le joueur conduit.
+       *
+       * Elle n'ouvre PAS le Mode Live pour de bon : `modulesRequis` le prête le
+       * temps de la scène, comme l'acte 3 prête le Synthé à sa commande. C'est
+       * l'épilogue qui l'ouvre, et cet ordre-là ne bouge pas. */
+      {
+        kind: 'scene',
+        entete: 'TROIS BOUCLES, UN MORCEAU',
+        lignes: [
+          'Sol range les trois boucles dans la machine.',
+          'SOL: Couplet, refrain, pont. C’est un morceau, maintenant.',
+          'SOL: Moi je ne le conduis pas. C’est le tien.',
+          'Tourne ton téléphone : la scène est à l’horizontale.',
+        ],
+        bouton: 'Monter le set ▸',
+        modulesRequis: ['live'],
+        bouclesDeLActe: [
+          { serie: 'couplet', nom: 'FB-015 — COUPLET', section: 'COUPLET' },
+          { serie: 'refrain', nom: 'FB-015 — REFRAIN', section: 'REFRAIN' },
+          { serie: 'pont', nom: 'FB-015 — PONT', section: 'PONT' },
+        ],
       },
       {
         kind: 'recit',
@@ -2280,6 +2425,23 @@ export const ACTE_DU_DISQUE: number = (() => {
     if (ACTES[i].etapes.some((e) => e.kind === 'commande')) return ACTES[i].id;
   }
   return 0;
+})();
+
+/* ⚠️ ET LA SÉRIE, depuis que l'acte du disque en livre TROIS.
+ *
+ * `productionDeLActe` rend la DERNIÈRE production de l'acte : depuis que
+ * l'acte 6 livre couplet, refrain puis pont, ce serait le pont — c'est-à-dire
+ * la boucle qu'on a demandé de vider. L'épilogue ferait entendre le moment le
+ * plus creux du morceau en annonçant « FB-015 est sorti ».
+ *
+ * Elle se DÉDUIT comme l'acte : c'est la série de la PREMIÈRE commande de
+ * l'acte du disque — celle qui porte le morceau, les autres le complètent. Un
+ * nom écrit en dur (`'couplet'`) serait faux le jour où l'acte se réécrit, et
+ * faux en silence. */
+export const SERIE_DU_DISQUE: string = (() => {
+  const acte = ACTES.find((a) => a.id === ACTE_DU_DISQUE);
+  const premiere = acte?.etapes.find((e) => e.kind === 'commande');
+  return premiere?.kind === 'commande' ? (premiere.serie ?? '') : '';
 })();
 
 export const LONGUEUR_EPILOGUE = EPILOGUE.length;

@@ -268,14 +268,33 @@ reculer est gratuit parce que le curseur enregistré ne bouge pas. Corollaire : 
 (`etapeDejaFranchie`).
 
 ⚠️ **La SCÈNE est le cinquième type d'étape — on n'y retrouve rien, on JOUE.**
-`EtapeScene` (acte 7, le rappel) emmène dans le Mode Live avec la production que
-le joueur a livrée à l'acte cité, jamais un motif de démonstration ; elle OUVRE
-le module (`modulesRequis`, fusionné avec celui de la commande dans
-`game.modulesRequis` — lu sur la seule commande, la scène restait dehors) ; et
-elle ne se NOTE pas : on redescend quand on veut, le récit avance.
+`EtapeScene` emmène dans le Mode Live avec ce que le joueur a livré, jamais un
+motif de démonstration ; elle OUVRE le module (`modulesRequis`, fusionné avec
+celui de la commande dans `game.modulesRequis` — lu sur la seule commande, la
+scène restait dehors) ; et elle ne se NOTE pas : on redescend quand on veut, le
+récit avance. Elle emporte **soit** un morceau entier d'un acte précédent
+(`morceauDeLActe`, le rappel de l'acte 7), **soit** les boucles livrées dans son
+propre acte, montées en set (`bouclesDeLActe`, l'acte 6) — jamais les deux, on ne
+monte pas sur scène avec deux morceaux. Corollaire : une scène peut suivre la
+dernière commande d'un acte, parce qu'elle ne PRODUIT rien.
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
-l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier : une
-seule commande sous 44 px de zone touchable, aucun débordement.
+l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
+monté : cinq commandes sous 44 px (les exceptions revendiquées), aucun
+débordement. ⚠️ La bande d'architecture est le piège : **sans architecture
+chargée elle n'existe pas**, donc ses huit cases (36 px) n'avaient jamais été
+mesurées — c'est la scène de l'acte 6 qui les met devant tout le monde.
+
+⚠️ **Un MORCEAU, c'est trois boucles qui se répondent.** L'acte 6 en livre trois
+(couplet, refrain, pont), et les deux dernières ne se jugent pas dans l'absolu —
+un refrain n'a pas de définition, il s'OUVRE par rapport au couplet. D'où
+`partirDeLaSerie` (repartir d'une série NOMMÉE, pas de « la dernière livrée ») et
+les quatre contraintes relationnelles `plusFourniQue` / `moinsFourniQue` /
+`uneLigneQuiEntre` / `uneLigneQuiSeTait`, qui lisent `ctx.depart` et répondent
+**faux** sans lui. ⚠️ Le pont repart du COUPLET, pas du refrain : contre le
+refrain il ne serait que « le refrain en moins plein », un arrangement et pas une
+section. Et `SERIE_DU_DISQUE` se déduit (série de la PREMIÈRE commande de
+`ACTE_DU_DISQUE`) — sur `productionDeLActe`, l'épilogue ferait entendre le pont,
+c'est-à-dire la boucle qu'on vient de demander de vider.
 
 ⚠️ **L'épilogue FAIT ENTENDRE le disque du joueur** — la production de
 `ACTE_DU_DISQUE` (déduit : l'acte de la dernière commande, jamais écrit en dur,

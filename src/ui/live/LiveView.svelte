@@ -3193,5 +3193,13 @@
     .vol-slider {
       height: 44px;
     }
+    /* Les cases de la bande d'architecture. Mesurées à 36 px : personne ne les
+       avait vues, parce que sans architecture chargée la bande n'existe pas —
+       et jusqu'à la scène de l'acte 6, aucun écran n'en chargeait une. Deux
+       lignes de texte dans 44 px tiennent (85 px de large), et la bande est la
+       seule de sa rangée : les huit cases montent ensemble sans rien pousser. */
+    .strip .case {
+      min-height: 44px;
+    }
   }
 </style>

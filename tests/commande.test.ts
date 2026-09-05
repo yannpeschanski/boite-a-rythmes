@@ -412,7 +412,10 @@ describe('la commande survit au voyage jusqu’à l’Atelier', () => {
  * preset ferait échouer toutes les autres. On rejoue donc la grille du genre
  * demandé — ce qu'un joueur fait à la main, et ce que le verrou de provenance
  * autorise (il refuse un preset CHARGÉ, pas une grille ressemblante). */
-async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV2> {
+async function etatQuiSatisfait(
+  cahier: { id: string }[],
+  depart?: PatternStateV2,
+): Promise<PatternStateV2> {
   const fiche = cahier.find((c) => c.id.startsWith('fiche:'))?.id.slice(6);
   /* ⚠️ Une commande de STYLE part du preset COMPLET, pas de ses trois grilles.
    *
@@ -559,6 +562,38 @@ async function etatQuiSatisfait(cahier: { id: string }[]): Promise<PatternStateV
     });
   }
   if (demande('glide:bass')) st.synthRows.bass.glide = 0.2;
+  /* ⚠️ LES BOUCLES D'UN MÊME MORCEAU (acte 6) : elles se jugent CONTRE le
+     départ, pas dans l'absolu. Un refrain ajoute, un pont enlève — et sans le
+     départ sous la main, aucun des deux ne se fabrique. */
+  if (depart) {
+    if (demande('plus-fourni')) {
+      // On ajoute une ligne entière : plus de coups ET une voix qui entre.
+      st.rows.clap.subdiv = 8;
+      st.rows.clap.pattern = new Array(32).fill(0) as never;
+      for (let i = 0; i < 8; i++) (st.rows.clap.pattern as number[])[i] = 1;
+      st.rows.clap.muted = false;
+    }
+    if (demande('ligne-entre') && !demande('plus-fourni')) {
+      st.rows.shaker.subdiv = 8;
+      st.rows.shaker.pattern = new Array(32).fill(0) as never;
+      (st.rows.shaker.pattern as number[])[0] = 1;
+      st.rows.shaker.muted = false;
+    }
+    if (demande('moins-fourni') || demande('ligne-sort')) {
+      /* On repart du DÉPART et on le vide : le pont est le couplet auquel on
+         enlève, donc le fabriquer autrement ne prouverait rien. */
+      const vide = JSON.parse(JSON.stringify(depart)) as PatternStateV2;
+      for (const l of ['hat', 'clap', 'shaker'] as const) {
+        vide.rows[l].pattern = new Array(vide.rows[l].pattern.length).fill(0) as never;
+      }
+      for (const l of ['melody', 'pad'] as const) {
+        vide.synthRows[l].pattern = vide.synthRows[l].pattern.map(() =>
+          l === 'pad' ? -1 : null,
+        ) as never;
+      }
+      return vide;
+    }
+  }
   // Une voix choisie par ligne citée — n'importe laquelle sauf « Défaut ».
   const VOIX: Record<SynthRowName, string> = { bass: 'round', pad: 'rhodes', melody: 'soft' };
   for (const c of cahier) {
@@ -582,16 +617,32 @@ describe('aucune commande du récit n’est un cul-de-sac', () => {
       a.etapes.flatMap((e) => (e.kind === 'commande' ? [{ acte: a.id, e }] : [])),
     );
     expect(commandes.length).toBeGreaterThan(0);
+    const { etatVierge } = await import('../src/model/defaults');
+    /* ⚠️ LE DÉPART S'ENCHAÎNE, il n'est pas toujours la table rase.
+     *
+     * Ce test posait `etatVierge()` pour tout le monde. Ça tenait tant qu'un
+     * cahier ne demandait que d'AJOUTER : « au moins deux lignes filtrées » est
+     * satisfiable en partant de rien. L'acte 6 demande à son pont d'ENLEVER par
+     * rapport au couplet — depuis une table rase, c'est impossible, et le test
+     * annonçait un cul-de-sac là où le jeu n'en a pas.
+     *
+     * On rejoue donc la chaîne : la livraison précédente de l'acte sert de
+     * départ à la commande qui la reprend, exactement comme en jouant. */
+    const livrePar = new Map<string, PatternStateV2>();
     for (const { acte, e } of commandes) {
-      /* Le départ voyage par le contexte depuis que l'acte 4 enchaîne des
-       * envois : sans lui, « chaque ligne a été regardée » ne peut rien
-       * conclure et répond FAUX — ce qui est le bon défaut, mais rendrait ce
-       * test-ci ininterprétable. */
-      const v = evaluerCommande(await etatQuiSatisfait(e.cahier), e.cahier, {
-        depart: (await import('../src/model/defaults')).etatVierge(),
-      });
+      const cle = (serie?: string) => `${acte}:${serie ?? ''}`;
+      const depart =
+        e.partirDeLaSerie !== undefined
+          ? (livrePar.get(cle(e.partirDeLaSerie)) ?? etatVierge())
+          : e.partirDeLaLivraison
+            ? (livrePar.get(`${acte}:dernier`) ?? etatVierge())
+            : etatVierge();
+      const etat = await etatQuiSatisfait(e.cahier, depart);
+      const v = evaluerCommande(etat, e.cahier, { depart });
       const manquantes = v.lignes.filter((l) => !l.ok).map((l) => l.contrainte.libelle);
       expect(manquantes, `acte ${acte} — « ${e.entete} »`).toEqual([]);
+      livrePar.set(cle(e.serie), etat);
+      livrePar.set(`${acte}:dernier`, etat);
     }
   });
 
