@@ -70,6 +70,8 @@ import { etatVierge, etatDepuisGrille } from '../model/defaults';
 import { appliquerSons } from '../model/sons';
 import type { LockedModule } from '../model/unlocks';
 import { pattern } from './pattern.svelte';
+import { sequenceBank } from './bank.svelte';
+import { architecture } from './architecture.svelte';
 import { history } from './history.svelte';
 import {
   BAG_ITEMS,
@@ -79,7 +81,12 @@ import {
   composerRoastLivraison,
   type BagItem,
 } from '../model/presets/gameData';
-import { ranger, productionDeLActe, type Production } from '../model/discographie';
+import {
+  ranger,
+  productionDeLActe,
+  productionDeLaSerie,
+  type Production,
+} from '../model/discographie';
 import { reactionA, type Reaction } from '../model/reactions';
 import { serializeState, deserializeState } from '../model/serialize';
 
@@ -709,10 +716,51 @@ class GameStore {
    * n'aurait pas livré cet acte-là), on part avec ce qu'il y a : une scène ne
    * doit jamais bloquer. */
   ouvrirScene(): void {
-    if (this.etapeCourante?.kind !== 'scene') return;
+    const e = this.etapeCourante;
+    if (e?.kind !== 'scene') return;
     this.sceneEnCours = { acte: this.acteActif, etape: this.etapeActive };
-    const p = productionDeLActe(this.productions, this.etapeCourante.morceauDeLActe);
+    if (e.bouclesDeLActe?.length) {
+      this.monterLeSet(this.acteActif, e.bouclesDeLActe);
+      return;
+    }
+    if (e.morceauDeLActe === undefined) return;
+    const p = productionDeLActe(this.productions, e.morceauDeLActe);
     if (p) pattern.replace(deserializeState(p.etat));
+  }
+
+  /* MONTER LE SET — les boucles livrées deviennent des séquences, et le modèle
+   * POP les enchaîne en couplet / refrain / pont.
+   *
+   * ⚠️ Le Mode Live faisait déjà tout ça À LA MAIN : ranger une séquence,
+   * charger un modèle, assigner une séquence à chaque section. Ce qui manquait
+   * était le pont entre ce que le joueur a LIVRÉ et ce que la bande joue — et
+   * sans lui, un acte qui fait produire trois boucles se termine sur trois
+   * fichiers que personne n'enchaîne.
+   *
+   * Les sections non citées par le récit (intro, outro) retombent sur la
+   * PREMIÈRE boucle : une section sans séquence garderait le motif courant,
+   * c'est-à-dire n'importe lequel, et le set commencerait au hasard.
+   *
+   * Rien de livré → on ne monte rien et on ne casse rien : la scène s'ouvre sur
+   * ce qu'il y a, comme le rappel de l'acte 7. */
+  private monterLeSet(
+    acte: number,
+    boucles: Array<{ serie: string; nom: string; section: string }>,
+  ): void {
+    const parSection = new Map<string, string>();
+    for (const b of boucles) {
+      const p = productionDeLaSerie(this.productions, acte, b.serie);
+      if (p) parSection.set(b.section, sequenceBank.poser(b.nom, p.etat));
+    }
+    if (parSection.size === 0) return;
+    const defaut = parSection.get(boucles[0].section) ?? null;
+    architecture.chargerModele('POP');
+    architecture.sections.forEach((s, i) => {
+      architecture.poserSequence(i, parSection.get(s.nom) ?? defaut);
+    });
+    // On entre sur la première section, sinon la bande démarre sur le motif
+    // que l'Atelier avait sous la main.
+    if (defaut) sequenceBank.load(defaut);
   }
 
   /* Redescendre. ⚠️ On AVANCE : le rappel a eu lieu, l'écran suivant le
@@ -775,6 +823,12 @@ class GameStore {
     /* Reprendre le morceau d'un acte PRÉCÉDENT — « on reprend le travail déjà
      * fait avec Kelvin » (Yann, 2026-09-04). Même filet : rien de livré
      * là-bas, on repart de la table rase plutôt que de bloquer. */
+    /* Une BOUCLE précise de l'acte courant — l'acte 6 en fait trois, et le
+     * refrain repart du couplet, jamais « du dernier livré ». */
+    if (e.partirDeLaSerie !== undefined) {
+      const p = productionDeLaSerie(this.productions, acteDeLaCommande, e.partirDeLaSerie);
+      return p ? deserializeState(p.etat) : etatVierge();
+    }
     if (e.partirDuMorceauDeLActe !== undefined) {
       const p = productionDeLActe(this.productions, e.partirDuMorceauDeLActe);
       return p ? deserializeState(p.etat) : etatVierge();

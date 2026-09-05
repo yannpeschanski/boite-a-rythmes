@@ -24,6 +24,7 @@
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
     ACTE_DU_DISQUE,
+    SERIE_DU_DISQUE,
     ANNEE,
     type SourceRecit,
     dateDeLActe,
@@ -36,7 +37,7 @@
   import { AudioEngine } from '../../engine/AudioEngine';
   import { deserializeState } from '../../model/serialize';
   import { pattern } from '../../stores/pattern.svelte';
-  import { productionDeLActe, type Production } from '../../model/discographie';
+  import { productionDeLActe, productionDeLaSerie, type Production } from '../../model/discographie';
   import type { PatternStateV2 } from '../../model/types';
 
   let {
@@ -259,7 +260,15 @@
    * devance. Il tourne ensuite sous tous les écrans suivants, jusqu'à FIN. */
   const DISQUE = 'epilogue-fb015';
   const ECRAN_DU_DISQUE = 1;
-  const disque = $derived(productionDeLActe(game.productions, ACTE_DU_DISQUE));
+  /* ⚠️ La série est NOMMÉE, pas déduite du rangement : l'acte du disque en
+     livre trois (couplet, refrain, pont) et `productionDeLActe` rendrait la
+     dernière, c'est-à-dire le pont — la boucle qu'on vient de vider. On fait
+     entendre celle qui porte le morceau, avec le filet de l'ancienne lecture
+     si la série a disparu. */
+  const disque = $derived(
+    productionDeLaSerie(game.productions, ACTE_DU_DISQUE, SERIE_DU_DISQUE) ??
+      productionDeLActe(game.productions, ACTE_DU_DISQUE),
+  );
 
   let discoOuverte = $state(false);
 

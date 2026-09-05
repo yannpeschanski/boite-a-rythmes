@@ -78,3 +78,18 @@ export function productionDeLActe(liste: Production[], acte: number): Production
   const dans = liste.filter((p) => p.acte === acte);
   return dans[dans.length - 1];
 }
+
+/* La production d'une SÉRIE précise d'un acte.
+ *
+ * ⚠️ `productionDeLActe` rend la dernière de l'acte, ce qui suffit à une chaîne
+ * d'envois (une seule série) mais pas à un acte qui livre plusieurs morceaux
+ * SÉPARÉS et veut en reprendre un nommément — l'acte 6 depuis qu'il se fait en
+ * trois boucles. Lire « la dernière » y donnerait le pont là où on demande le
+ * couplet, et le cahier jugerait la mauvaise boucle sans que rien ne le dise. */
+export function productionDeLaSerie(
+  liste: Production[],
+  acte: number,
+  serie: string,
+): Production | undefined {
+  return liste.find((p) => p.acte === acte && (p.serie ?? '') === serie);
+}

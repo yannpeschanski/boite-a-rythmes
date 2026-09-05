@@ -227,7 +227,11 @@ describe('chaque production du récit a un nom et un destinataire', () => {
      * alors qu'ils se remplacent l'un l'autre : c'est voulu, c'est le titre qui
      * dit au joueur laquelle des trois il réécoute. Les quatre de l'acte 5, à
      * l'inverse, coexistent — elles ont chacune leur SÉRIE. */
-    expect(prod).toHaveLength(15);
+    /* ⚠️ DIX-SEPT depuis le 2026-09-04 : l'acte 6 livre TROIS boucles du même
+     * morceau — couplet, refrain, pont — au lieu d'un seul FB-015. Elles ont
+     * chacune leur série et coexistent, comme les quatre genres de l'acte 5 :
+     * un morceau dont il manquerait le refrain ne se joue pas. */
+    expect(prod).toHaveLength(17);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();

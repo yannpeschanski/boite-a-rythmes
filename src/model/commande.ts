@@ -510,6 +510,99 @@ const NOM_MIX: Record<LigneMix, string> = {
 };
 
 /* ---------------------------------------------------------------------------
+ * TROIS BOUCLES D'UN MÊME MORCEAU — couplet, refrain, pont
+ *
+ * ⚠️ Demande de Yann (2026-09-04) : *« on peut aller plus loin dans l'atelier
+ * […] pour chacun de ces morceaux, on travaille 3 boucles qui permettront de
+ * faire ensuite couplet/refrain/pont pour le mode live »*.
+ *
+ * Ce que ces contraintes ont de particulier : elles sont RELATIONNELLES au sens
+ * fort — elles ne jugent pas la boucle livrée, elles jugent l'ÉCART entre elle
+ * et celle d'avant. « Un refrain » n'a pas de définition absolue ; ce qui en
+ * fait un refrain, c'est qu'il s'ouvre par rapport au couplet. Et un pont
+ * retombe. Le point de comparaison est `ctx.depart`, c'est-à-dire la boucle sur
+ * laquelle l'Atelier s'est ouvert (voir `partirDeLaSerie`).
+ *
+ * ⚠️ Sans départ, elles répondent FAUX — comme toutes les contraintes de geste.
+ * Une case cochée faute d'information est le théâtre que le cahier interdit.
+ * ------------------------------------------------------------------------- */
+
+/** Combien de coups sonnent, toutes lignes confondues — la « densité » d'une
+ *  boucle. Les cases de nappe comptent comme les autres : un accord est un
+ *  événement, et c'est ce qu'on entend. */
+function coupsDe(e: PatternStateV2): number {
+  const drums = LIGNES_MIX.reduce(
+    (n, l) => n + (e.rows[l].muted ? 0 : e.rows[l].pattern.slice(0, e.rows[l].subdiv).filter((v) => v > 0).length),
+    0,
+  );
+  const synth = LIGNES_SYNTH.reduce((n, l) => {
+    const r = e.synthRows[l];
+    if (r.muted) return n;
+    return (
+      n +
+      r.pattern
+        .slice(0, r.subdivisions)
+        .filter((v) => (l === 'pad' ? typeof v === 'number' && v >= 0 : v != null)).length
+    );
+  }, 0);
+  return drums + synth;
+}
+
+/** Les lignes qui SONNENT dans un état — batterie et synthé mêlées. */
+function lignesQuiSonnent(e: PatternStateV2): Set<LigneMix> {
+  return new Set(LIGNES_TOUTES.filter((l) => vivante(e, l)));
+}
+
+/* Le REFRAIN s'ouvre : il en met plus que le couplet. */
+export function plusFourniQue(part: number, libelle: string): Contrainte {
+  return {
+    id: 'plus-fourni',
+    libelle,
+    verifie: (e, ctx) => !!ctx?.depart && coupsDe(e) >= Math.ceil(coupsDe(ctx.depart) * part),
+  };
+}
+
+/* Le PONT retombe : il en met moins. */
+export function moinsFourniQue(part: number, libelle: string): Contrainte {
+  return {
+    id: 'moins-fourni',
+    libelle,
+    verifie: (e, ctx) => !!ctx?.depart && coupsDe(e) <= Math.floor(coupsDe(ctx.depart) * part),
+  };
+}
+
+/* Une ligne ENTRE — elle sonne ici et se taisait avant.
+ *
+ * ⚠️ C'est ce qui distingue un refrain d'un couplet joué plus fort : ajouter
+ * des coups sur les mêmes lignes fait une variation, faire entrer une voix fait
+ * un refrain. Le détail nomme ce qui est déjà là, sinon « fais entrer quelque
+ * chose » ne dit pas quoi. */
+export function uneLigneQuiEntre(libelle: string): Contrainte {
+  return {
+    id: 'ligne-entre',
+    libelle,
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const avant = lignesQuiSonnent(ctx.depart);
+      return [...lignesQuiSonnent(e)].some((l) => !avant.has(l));
+    },
+  };
+}
+
+/* Une ligne SE TAIT — elle sonnait avant et plus maintenant. */
+export function uneLigneQuiSeTait(libelle: string): Contrainte {
+  return {
+    id: 'ligne-sort',
+    libelle,
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const maintenant = lignesQuiSonnent(e);
+      return [...lignesQuiSonnent(ctx.depart)].some((l) => !maintenant.has(l));
+    },
+  };
+}
+
+/* ---------------------------------------------------------------------------
  * LES ÉTOILES D'UNE LIVRAISON — ce qu'on a fait EN PLUS du cahier
  *
  * ⚠️ Idée de Yann (2026-09-04), qui révoque le « livré ou pas » de la veille :

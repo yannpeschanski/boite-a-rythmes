@@ -55,6 +55,8 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     const { PRESETS } = await import('/src/model/presets/songs.ts');
     const { resolveVoicePreset } = await import('/src/model/presets/voices.ts');
     const { CHORD_PRIORITY_ORDER: ORDRE_DES_ACCORDS } = await import('/src/model/presets/scales.ts');
+    const { sequenceBank } = await import('/src/stores/bank.svelte.ts');
+    const { architecture } = await import('/src/stores/architecture.svelte.ts');
     const log = [];
     const modules = () => ['atelier', 'synth', 'production', 'live'].filter((m) => unlocks.has(m)).join(',') || '—';
 
@@ -77,8 +79,20 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
       if (e.kind === 'scene') {
         game.ouvrirScene();
         const ouvert = unlocks.has('live');
+        /* ⚠️ Une scène qui monte un SET : on vérifie que les trois boucles sont
+           bien arrivées dans la banque et assignées aux sections. Sans ça,
+           l'acte 6 finirait sur trois fichiers que personne n'enchaîne. */
+        const set = e.bouclesDeLActe
+          ? (() => {
+              const noms = e.bouclesDeLActe.map((b) => b.nom);
+              const enBanque = noms.filter((n) => sequenceBank.entries.some((x) => x.name === n));
+              const sections = architecture.sections;
+              const assignees = sections.filter((x) => x.sequenceId).length;
+              return ` — set : ${enBanque.length}/${noms.length} boucles en banque, ${assignees}/${sections.length} sections assignées`;
+            })()
+          : '';
         game.terminerScene();
-        log.push(`   scène « ${e.entete} » → Mode Live ${ouvert ? 'ouvert' : '⚠️ CADENASSÉ'}`);
+        log.push(`   scène « ${e.entete} » → Mode Live ${ouvert ? 'ouvert' : '⚠️ CADENASSÉ'}${set}`);
         continue;
       }
       if (e.kind === 'livraison') {
@@ -97,6 +111,16 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         game.ouvrirCommande();
         if (!unlocks.has('atelier')) log.push(`   ⚠️ COMMANDE dans un Atelier VERROUILLÉ (acte ${a.id})`);
         const st = pattern.state;
+        /* ⚠️ UNE BOUCLE D'UN MÊME MORCEAU (acte 6) ne se fabrique pas : elle se
+           TRANSFORME. Le refrain doit en mettre plus que le couplet et le pont
+           moins — mesuré contre le départ, qui EST le couplet. Reconstruire un
+           motif générique par-dessus (ce que fait le bloc suivant) effacerait
+           justement ce à quoi on se compare, et les deux cahiers deviendraient
+           insatisfiables pour une raison invisible. */
+        const estUneBoucle = ['plus-fourni', 'moins-fourni', 'ligne-entre', 'ligne-sort'].some(
+          (id) => e.cahier.some((c) => c.id === id),
+        );
+        if (!estUneBoucle) {
         st.swing = 30;
         /* ⚠️ Une commande de STYLE ne se satisfait pas avec un motif générique :
            la fiche (`model/styles.ts`) exige des placements précis. On REJOUE
@@ -138,6 +162,7 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         }
         st.rows.snare.pattern[4] = 2;
         st.rows.kick.rolls = new Array(32).fill(1); st.rows.kick.rolls[0] = 3;
+        }
         /* Les TROIS lignes de synthé, et une texture sur chacune : l'acte 3
            les demande toutes depuis le 2026-09-01 (« les additionner »). */
         for (const l of ['bass', 'melody', 'pad']) {
@@ -262,6 +287,24 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
           });
         }
         if (exige('glide:bass')) st.synthRows.bass.glide = 0.2;
+        /* LES TROIS BOUCLES DE L'ACTE 6 : le refrain s'ouvre, le pont retombe.
+           Elles se mesurent CONTRE le départ, donc on part de lui — fabriquer
+           une boucle autrement ne prouverait rien. */
+        if (exige('plus-fourni') || exige('ligne-entre')) {
+          st.rows.clap.subdiv = 8;
+          st.rows.clap.pattern = new Array(32).fill(0);
+          for (let i = 0; i < 8; i++) st.rows.clap.pattern[i] = 1;
+          st.rows.clap.muted = false;
+        }
+        if (exige('moins-fourni') || exige('ligne-sort')) {
+          // Le pont, c'est le couplet qu'on VIDE : on coupe, on ne redessine pas.
+          for (const n of ['hat', 'clap', 'shaker']) {
+            st.rows[n].pattern = new Array(st.rows[n].pattern.length).fill(0);
+          }
+          for (const n of ['melody', 'pad']) {
+            st.synthRows[n].pattern = st.synthRows[n].pattern.map(() => (n === 'pad' ? -1 : null));
+          }
+        }
         // « Une note n'est pas un son » : une voix choisie sur chaque ligne
         // citée, n'importe laquelle sauf celle d'usine.
         const VOIX = { bass: 'round', pad: 'rhodes', melody: 'soft' };
@@ -320,13 +363,15 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     log.push(`état final : acte enregistré ${game.progresCarriere.acte}, modules ${modules()}`);
     /* La DISCOGRAPHIE au bout du parcours. Elle doit contenir les NEUF
      * productions du récit : la sonnerie de l'acte 1, une par acte pour les
-     * actes 2, 3, 4 et 6 — les chaînes d'envois se remplacent, on ne garde que
-     * la dernière version — et QUATRE pour l'acte 5, un genre par catégorie du
-     * fax, qui coexistent parce qu'elles ont chacune leur série. C'est la seule
-     * preuve qu'un morceau livré à l'acte 1 est encore là en septembre, et que
-     * quatre genres produits ne s'écrasent pas l'un l'autre. */
+     * actes 2, 3 et 4 — les chaînes d'envois se remplacent, on ne garde que la
+     * dernière version — QUATRE pour l'acte 5, un genre par catégorie du fax,
+     * et TROIS pour l'acte 6 depuis le 2026-09-04 : couplet, refrain et pont
+     * sont les trois moitiés d'un même morceau, elles coexistent parce qu'un
+     * morceau dont il manque le refrain ne se joue pas. C'est la seule preuve
+     * qu'un morceau livré à l'acte 1 est encore là en septembre, et que ce qui
+     * a chacun sa série ne s'écrase pas. */
     log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
-    if (game.productions.length !== 9) log.push('   ⚠️ NEUF productions attendues');
+    if (game.productions.length !== 11) log.push('   ⚠️ ONZE productions attendues');
     if (game.productions.filter((p) => p.acte === 5).length !== 4)
       log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
     return log;

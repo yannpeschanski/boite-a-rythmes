@@ -53,6 +53,28 @@ class SequenceBankStore {
     writeBank(this.entries);
   }
 
+  /* Ranger une séquence sous un NOM, en remplaçant celle qui le porte déjà.
+   *
+   * ⚠️ `save` ajoute toujours une entrée — c'est le bon défaut quand un humain
+   * clique « enregistrer ». Ici c'est le JEU qui range les boucles livrées à
+   * un acte : refaire l'acte doit remplacer les siennes, pas en empiler un
+   * troisième jeu sous le même nom. Même raison que la clé (acte, série) de la
+   * discographie. Rend l'identifiant, dont l'architecture a besoin. */
+  poser(nom: string, json: string): string {
+    const existante = this.entries.find((e) => e.name === nom);
+    const entry: BankEntry = {
+      id: existante?.id ?? crypto.randomUUID(),
+      name: nom,
+      json,
+      savedAt: Date.now(),
+    };
+    this.entries = existante
+      ? this.entries.map((e) => (e.id === entry.id ? entry : e))
+      : [...this.entries, entry];
+    writeBank(this.entries);
+    return entry.id;
+  }
+
   load(id: string): void {
     const entry = this.entries.find((e) => e.id === id);
     if (entry) pattern.loadJson(entry.json);

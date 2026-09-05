@@ -1343,10 +1343,55 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
 describe('L’acte 6 ne commande rien, il demande de faire', () => {
   const acte6 = () => ACTES[6];
 
-  it('est jouable, et sa seule étape de travail est une commande', () => {
+  /* ⚠️ TROIS commandes depuis le 2026-09-04, et c'est une seule idée : *« pour
+   * chacun de ces morceaux, on travaille 3 boucles qui permettront de faire
+   * ensuite couplet/refrain/pont pour le mode live »* (Yann). Ce qui ne change
+   * pas — et c'est le fond de l'acte — c'est qu'aucune d'elles n'exige un
+   * GOÛT : elles demandent un couplet, puis qu'il s'ouvre, puis qu'il retombe. */
+  it('est jouable, et ne travaille qu’à l’Atelier — trois boucles', () => {
     expect(acteAVenir(acte6())).toBe(false);
     expect(acte6().etapes.some((e) => e.kind === 'exercice')).toBe(false);
-    expect(acte6().etapes.filter((e) => e.kind === 'commande')).toHaveLength(1);
+    const cmds = acte6().etapes.filter((e) => e.kind === 'commande');
+    expect(cmds).toHaveLength(3);
+    // Une série par boucle, sinon la discographie n'en garderait qu'une.
+    const series = cmds.map((c) => (c as { serie?: string }).serie);
+    expect(new Set(series).size, 'deux boucles sous la même série').toBe(3);
+    for (const se of series) expect(se, 'une boucle sans série').toBeTruthy();
+  });
+
+  /* ⚠️ Les deux boucles qui suivent le couplet se jugent CONTRE lui, jamais
+   * dans l'absolu : un refrain n'a pas de définition, il s'ouvre par rapport au
+   * couplet. Elles repartent donc de sa série — et pas « de la dernière
+   * livrée », qui ferait écrire le pont contre le refrain. */
+  it('⚠️ le refrain et le pont repartent du COUPLET, nommément', () => {
+    const cmds = acte6().etapes.filter((e) => e.kind === 'commande') as Array<{
+      serie?: string;
+      partirDeLaSerie?: string;
+      cahier: Array<{ id: string }>;
+    }>;
+    expect(cmds[0].partirDeLaSerie, 'le couplet part de rien').toBeUndefined();
+    for (const c of cmds.slice(1)) {
+      expect(c.partirDeLaSerie, `« ${c.serie} »`).toBe(cmds[0].serie);
+      // Et son cahier mesure bien un ÉCART, sinon « repartir de » ne sert à rien.
+      expect(
+        c.cahier.some((l) => ['plus-fourni', 'moins-fourni', 'ligne-entre', 'ligne-sort'].includes(l.id)),
+        `« ${c.serie} » ne se compare à rien`,
+      ).toBe(true);
+    }
+  });
+
+  /* La scène qui monte le set : les trois boucles deviennent un morceau que le
+   * Mode Live enchaîne. Sans elle, l'acte finirait sur trois fichiers que
+   * personne ne joue — « ce qui n'a pas été porté n'existe pas ». */
+  it('⚠️ et les trois boucles finissent en SET, pas en trois fichiers', () => {
+    const scene = acte6().etapes.find((e) => e.kind === 'scene');
+    expect(scene, 'aucune scène ne monte le set').toBeTruthy();
+    if (scene?.kind !== 'scene') return;
+    const series = acte6().etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
+    expect(scene.bouclesDeLActe?.map((b) => b.serie)).toEqual(series);
+    // Elle emprunte le Mode Live le temps de la scène — l'épilogue l'ouvre.
+    expect(scene.modulesRequis).toContain('live');
+    expect(acte6().module, 'l’acte 6 n’ouvre aucun module pour de bon').toBeNull();
   });
 
   /* ⚠️ Le cahier de FB-015 ne demande AUCUN style et aucun client : il constate
@@ -1437,14 +1482,22 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
    * et c'est le contenu de l'acte, pas sa conclusion.
    *
    * Ce qui reste vrai et qu'on continue de tenir : après la DERNIÈRE commande
-   * d'un acte, il ne reste rien à FAIRE — ce qui suit est du récit. Sinon la
-   * livraison cesse d'être une fin et devient une étape parmi d'autres. */
-  it('la dernière d’un acte n’est suivie que de récit', () => {
+   * d'un acte, il ne reste plus rien à PRODUIRE. Sinon la livraison cesse
+   * d'être une fin et devient une étape parmi d'autres.
+   *
+   * ⚠️ Le test disait « que du récit », et il a fallu le préciser le
+   * 2026-09-04 : l'acte 6 finit par une SCÈNE, qui monte ses trois boucles en
+   * set et les fait jouer. Une scène ne produit rien — elle ne se note pas, ne
+   * range rien dans la discographie et n'a pas de cahier. Ce que la règle
+   * interdit après la dernière livraison, ce sont les COMMANDES et les
+   * LIVRAISONS ; interdire aussi de jouer ce qu'on vient de faire était un
+   * effet de bord de la formulation, pas la règle. */
+  it('la dernière d’un acte n’est suivie de rien à PRODUIRE', () => {
     for (const a of ACTES) {
       const idx = a.etapes.flatMap((e, i) => (e.kind === 'commande' ? [i] : []));
       if (!idx.length) continue;
       for (const e of a.etapes.slice(idx[idx.length - 1] + 1)) {
-        expect(e.kind, `acte ${a.id}`).toBe('recit');
+        expect(['recit', 'scene'], `acte ${a.id} : une étape « ${e.kind} »`).toContain(e.kind);
       }
     }
   });
@@ -1720,14 +1773,20 @@ describe('l’épilogue a un disque à faire entendre', () => {
     }
   });
 
-  it('⚠️ après la dernière commande, il ne reste que du récit', () => {
-    // Règle déjà tenue ailleurs, redite ici parce que l'épilogue en dépend :
-    // le disque qu'il joue est le dernier livré, donc rien ne doit se produire
-    // après lui.
+  it('⚠️ après la dernière commande, plus rien ne se PRODUIT', () => {
+    /* Règle déjà tenue ailleurs, redite ici parce que l'épilogue en dépend : le
+     * disque qu'il joue est le dernier livré, donc rien ne doit se produire
+     * après lui.
+     *
+     * ⚠️ Une SCÈNE le peut, elle : elle ne range rien dans la discographie —
+     * l'acte 6 finit en montant ses trois boucles en set, ce qui fait ENTENDRE
+     * le disque au lieu d'en fabriquer un autre. */
     const acte = ACTES.find((a) => a.id === ACTE_DU_DISQUE)!;
     const derniere = acte.etapes.map((e) => e.kind).lastIndexOf('commande');
     for (const e of acte.etapes.slice(derniere + 1)) {
-      expect(e.kind, `une étape « ${e.kind} » suit la dernière commande`).toBe('recit');
+      expect(['recit', 'scene'], `une étape « ${e.kind} » suit la dernière commande`).toContain(
+        e.kind,
+      );
     }
   });
 });
@@ -1756,24 +1815,44 @@ describe('la scène — le seul endroit où l’on joue', () => {
     }
   });
 
-  it('⚠️ le morceau qu’elle emporte EXISTE — l’acte cité a une commande', () => {
-    /* La scène joue la production du joueur. Si l'acte cité n'en produisait
-     * aucune, on monterait sur scène avec le motif d'accueil : une démo à la
-     * place de son propre morceau, et rien à l'écran pour le dire. */
-    for (const { etape } of scenes) {
-      const source = ACTES.find((a) => a.id === etape.morceauDeLActe);
-      expect(source, `l’acte ${etape.morceauDeLActe} n’existe pas`).toBeTruthy();
+  /* ⚠️ UNE SCÈNE EMPORTE L'UN OU L'AUTRE, jamais rien.
+   *
+   * Deux formes depuis le 2026-09-04 : un MORCEAU entier d'un acte précédent
+   * (le rappel de l'acte 7), ou les BOUCLES livrées dans son propre acte,
+   * montées en set (l'acte 6). Aucune des deux, et le Mode Live s'ouvrirait sur
+   * ce que l'Atelier avait sous la main — une démo à la place de son propre
+   * morceau, sans rien à l'écran pour le dire. */
+  it('⚠️ ce qu’elle emporte EXISTE — un morceau produit, ou ses propres boucles', () => {
+    for (const { acte, etape } of scenes) {
+      const boucles = etape.bouclesDeLActe ?? [];
       expect(
-        source!.etapes.some((e) => e.kind === 'commande' || e.kind === 'livraison'),
-        `l’acte ${etape.morceauDeLActe} ne produit rien — la scène n’aurait aucun morceau`,
+        etape.morceauDeLActe !== undefined || boucles.length > 0,
+        `scène « ${etape.entete} » : ni morceau ni boucles`,
       ).toBe(true);
+      if (etape.morceauDeLActe !== undefined) {
+        const source = ACTES.find((a) => a.id === etape.morceauDeLActe);
+        expect(source, `l’acte ${etape.morceauDeLActe} n’existe pas`).toBeTruthy();
+        expect(
+          source!.etapes.some((e) => e.kind === 'commande' || e.kind === 'livraison'),
+          `l’acte ${etape.morceauDeLActe} ne produit rien — la scène n’aurait aucun morceau`,
+        ).toBe(true);
+      }
+      // Les boucles citées sont livrées PAR CET ACTE, et avant la scène.
+      const avant = acte.etapes.slice(0, acte.etapes.indexOf(etape));
+      for (const b of boucles) {
+        expect(
+          avant.some((e) => e.kind === 'commande' && e.serie === b.serie),
+          `la boucle « ${b.serie} » n’est livrée nulle part avant la scène`,
+        ).toBe(true);
+      }
     }
   });
 
-  it('⚠️ elle se joue APRÈS l’acte qui produit son morceau', () => {
+  it('⚠️ elle se joue APRÈS ce qu’elle fait entendre', () => {
     // Jouer à l'acte 7 un jingle qu'on n'a pas encore fait donnerait un morceau
     // vide — et le récit dit « celui que tu as fait ».
     for (const { acte, etape } of scenes) {
+      if (etape.morceauDeLActe === undefined) continue;
       expect(etape.morceauDeLActe, `scène de l’acte ${acte.id}`).toBeLessThan(acte.id);
     }
   });

@@ -44,6 +44,69 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ FB-015 en trois boucles, et un set qui se monte (2026-09-05)
+
+> « Pour chacun de ces morceaux, on travaille 3 boucles qui permettront de faire
+> ensuite couplet/refrain/pont pour le mode live ! » — Yann
+
+Dernier chantier de la relecture annotée. Tout le jeu faisait produire des
+boucles de douze secondes ; un morceau, c'est trois boucles qui se répondent.
+La mécanique existait déjà — la bande d'architecture du Mode Live enchaîne des
+sections au tour près (`model/architecture.ts`, modèle `POP` qui porte déjà
+INTRO / COUPLET / REFRAIN / PONT / OUTRO). Ce qui manquait, c'était de quoi la
+nourrir.
+
+**L'acte 6 passe d'une commande à trois**, une par boucle, plus une scène.
+
+- **Le couplet** garde le cahier de l'ancienne commande FB-015 (le
+  récapitulatif en onze lignes, un geste par leçon traversée). `serie: 'couplet'`.
+- **Le refrain** et **le pont** ne se jugent PAS dans l'absolu. Un refrain n'a
+  pas de définition : il s'ouvre *par rapport* au couplet. D'où quatre
+  contraintes relationnelles dans `commande.ts` — `plusFourniQue(1.2)`,
+  `moinsFourniQue(0.8)`, `uneLigneQuiEntre()`, `uneLigneQuiSeTait()` — bâties sur
+  `coupsDe` et `lignesQuiSonnent`, qui lisent `ctx.depart` et répondent **faux**
+  sans lui (une case cochée faute d'information est le théâtre que le cahier
+  interdit).
+- Les deux repartent du couplet par `partirDeLaSerie`, nouveau à côté de
+  `partirDeLaLivraison` : celui-ci reprend « la dernière » production de l'acte,
+  ce qui suffit à une chaîne d'envois (une seule série) mais donnerait ici le
+  refrain au pont.
+- **Le pont repart du COUPLET, pas du refrain.** Contre le refrain il ne serait
+  que « le refrain en moins plein » — un arrangement, pas une section.
+
+**La scène monte le set.** `EtapeScene.bouclesDeLActe` range les trois
+productions dans la banque de séquences sous leur nom, charge le modèle POP et
+assigne chaque section (`game.monterLeSet`). Les sections non citées (intro,
+outro) retombent sur le couplet. `morceauDeLActe` devient facultatif : une scène
+emporte soit un morceau entier d'un acte précédent (le rappel de l'acte 7), soit
+les boucles de son propre acte — jamais les deux.
+
+⚠️ **`SERIE_DU_DISQUE`.** L'épilogue fait entendre `productionDeLActe(6)`, qui
+rend la DERNIÈRE — donc le pont, la boucle qu'on vient de demander de vider. Il
+lit maintenant `productionDeLaSerie(…, SERIE_DU_DISQUE)`, déduite comme
+`ACTE_DU_DISQUE` l'est : la série de la PREMIÈRE commande de l'acte du disque.
+Écrite en dur, elle serait fausse en silence le jour où l'acte se réécrit.
+
+**Deux pièges payés.**
+
+1. *Le harnais de cul-de-sac ne pouvait pas satisfaire le pont.* Il passait
+   `etatVierge()` en départ à chaque commande — or un cahier qui demande
+   d'ENLEVER est insatisfiable depuis une table rase. Les départs s'enchaînent
+   désormais (`livrePar`, clé `acte:serie`), et `etatQuiSatisfait` sait produire
+   les quatre gestes relationnels.
+2. *La bande d'architecture n'avait jamais été mesurée* — sans architecture
+   chargée elle n'existe pas, et aucun écran n'en chargeait une. Mesuré en
+   844 × 390, pointeur grossier, set monté : ses huit cases tombaient à 36 px.
+   `min-height: 44px` sous `@media (pointer: coarse)`, en fin de `<style>`.
+   On passe de 13 commandes trop petites à 5 — exactement les exceptions
+   revendiquées du Mode Live. Aucun débordement, aucune erreur console.
+
+**Vérifié en jouant.** `scripts/parcours-carriere.cjs` joue la carrière entière
+depuis un joueur neuf : les trois commandes acceptées, la scène ouvre le Mode
+Live avec 3/3 boucles en banque et 8/8 sections assignées, 11 productions
+rangées. `tests/trois-boucles.test.ts` tient les contraintes relationnelles, la
+série du disque et l'exclusivité `morceauDeLActe` / `bouclesDeLActe`.
+
 ### ✅ La remarque d'une livraison suit ses étoiles (2026-09-04)
 
 > « Du coup, tu peux aussi adapter les roasts en fonction. » — Yann
