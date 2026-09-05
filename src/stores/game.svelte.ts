@@ -745,15 +745,27 @@ class GameStore {
    * ce qu'il y a, comme le rappel de l'acte 7. */
   private monterLeSet(
     acte: number,
-    boucles: Array<{ serie: string; nom: string; section: string }>,
+    boucles: Array<{ serie: string; nom: string; section?: string }>,
   ): void {
+    /* ⚠️ Toutes les boucles livrées vont dans la BANQUE, celles qui portent une
+     * section vont en plus dans l'ARCHITECTURE. Les deux ne se confondent pas :
+     * la banque est le matériel du disque (l'acte 6 en livre neuf, trois par
+     * morceau), l'architecture est le morceau qu'on monte sur scène — et on
+     * n'en monte qu'un. Sans cette distinction, les six autres boucles
+     * n'existaient nulle part dans le Mode Live. */
     const parSection = new Map<string, string>();
+    let premiere: string | null = null;
     for (const b of boucles) {
       const p = productionDeLaSerie(this.productions, acte, b.serie);
-      if (p) parSection.set(b.section, sequenceBank.poser(b.nom, p.etat));
+      if (!p) continue;
+      const id = sequenceBank.poser(b.nom, p.etat);
+      if (b.section) {
+        if (!parSection.has(b.section)) premiere ??= id;
+        parSection.set(b.section, id);
+      }
     }
     if (parSection.size === 0) return;
-    const defaut = parSection.get(boucles[0].section) ?? null;
+    const defaut = premiere;
     architecture.chargerModele('POP');
     architecture.sections.forEach((s, i) => {
       architecture.poserSequence(i, parSection.get(s.nom) ?? defaut);

@@ -49,6 +49,13 @@ import {
   moinsFourniQue,
   uneLigneQuiEntre,
   uneLigneQuiSeTait,
+  tempoEntre,
+  uneAutrePhrase,
+  unePhraseQuiMonte,
+  unePhraseQuiSEclaircit,
+  uneAutreHarmonie,
+  auPlusDeLignes,
+  unGesteRare,
   uneProgression,
   laBasseDitLAccord,
   LIGNES_TOUTES,
@@ -114,6 +121,16 @@ const FB_RYTHME = '1 · LE RYTHME — ce que tu sais faire depuis l’acte 1';
 const FB_GROOVE = '2 · LE GROOVE — pour que ça ne fasse pas réveil';
 const FB_COUCHES = '3 · LES COUCHES — la mélodie, la basse, la nappe';
 const FB_PRODUCTION = '4 · LA PRODUCTION — pour que ça tienne ailleurs qu’ici';
+/* Les sections des huit autres boucles du disque. ⚠️ Elles nomment un GESTE
+ * (ce qui s'ouvre, ce qui retombe, la phrase, ailleurs) et non un acte : ces
+ * cahiers-là ne récapitulent rien, ils demandent une transformation. */
+const FB_OUVRE = '1 · CE QUI S’OUVRE — le refrain en met plus';
+const FB_RETOMBE = '1 · CE QUI RETOMBE — le pont en met moins';
+const FB_PHRASE = '2 · LA PHRASE — ce qu’on fredonne';
+const FB_AILLEURS = '3 · AILLEURS — le pont ne reste pas sur les mêmes accords';
+const FB_LENT = '1 · LE TEMPO ET LA PLACE';
+const FB_AUTREMENT = '1 · AUTREMENT — ce que les deux autres n’ont pas';
+const FB_RYTHME_LIBRE = '3 · LE RYTHME — même de travers';
 
 /* Les deux sections du quinzième — le seul cahier de l'acte 5 qui en ait :
  * un cahier à plat de six lignes ne dit pas qu'il y a un genre à trouver ET
@@ -270,9 +287,16 @@ export interface EtapeScene {
    * séquences, sous son nom, et l'assigne aux sections du modèle qui portent
    * `section`. Les sections non citées (intro, outro) retombent sur le couplet.
    *
+   * ⚠️ `section` est FACULTATIF, et c'est la distinction entre le matériel et
+   * le morceau : toutes les boucles vont dans la BANQUE, seules celles qui
+   * portent une section entrent dans l'ARCHITECTURE. L'acte 6 livre neuf
+   * boucles pour trois morceaux ; une architecture décrit UN morceau, donc on
+   * en monte un et les six autres restent à un clic dans le sélecteur. Sans
+   * ça, elles n'existaient nulle part dans le Mode Live.
+   *
    * `morceauDeLActe` reste : une scène qui ne cite pas de boucles emporte un
    * morceau entier, comme le rappel de l'acte 7. */
-  bouclesDeLActe?: Array<{ serie: string; nom: string; section: string }>;
+  bouclesDeLActe?: Array<{ serie: string; nom: string; section?: string }>;
 }
 
 export interface EtapeCommande {
@@ -1978,9 +2002,72 @@ export const ACTES: Acte[] = [
           'Aucun brief. Aucun client. Aucun style imposé.',
         ],
       },
+      /* ⚠️ TROIS MORCEAUX, NEUF BOUCLES — l'acte 6 refait le 2026-09-05.
+       *
+       * Retour de Yann sur la première version : *« il n'y a qu'un seul morceau
+       * de travaillé. Le travail n'est pas suffisant pour le refrain et le pont,
+       * il faut un cahier des charges plus complet avec un travail sur la
+       * mélodie. J'imaginais 3 morceaux, il n'y en a qu'un seul. »*
+       *
+       * Les deux défauts étaient réels et distincts :
+       *
+       * 1. **Un morceau au lieu de trois.** Un disque n'est pas un titre.
+       * 2. **Refrain et pont ne comptaient que des COUPS** (`plus-fourni`,
+       *    `ligne-entre`…). Un refrain qui s'ouvre en ajoutant un shaker
+       *    satisfaisait le cahier — or ce n'est pas un refrain, c'est le couplet
+       *    avec un shaker. D'où les quatre contraintes mélodiques relationnelles
+       *    (`uneAutrePhrase`, `unePhraseQuiMonte`, `unePhraseQuiSEclaircit`,
+       *    `uneAutreHarmonie`), et des cahiers de six à huit lignes là où il y en
+       *    avait trois.
+       *
+       * ⚠️ CE QUI DISTINGUE LES TROIS, et pourquoi ça ne casse pas la règle de
+       * l'acte. « Aucun brief, aucun client, aucun style imposé » tient : les
+       * trois morceaux ne sont séparés ni par un commanditaire ni par un genre,
+       * mais par une INTENTION que Sol nomme en une réplique — celui qui passe,
+       * celui qu'on écoute seul, celui que personne n'attend. Une intention pèse
+       * sur ce que la boucle doit FAIRE (un refrain qui s'ouvre franchement, un
+       * morceau qui reste bas, un geste que les deux autres n'ont pas) et jamais
+       * sur ce qu'elle doit RESSEMBLER. Aucune fiche de style, aucun verrou de
+       * provenance, aucun chapeau de genre dans les neuf cahiers.
+       *
+       * ⚠️ Les trois REFRAINS et les trois PONTS repartent du couplet de LEUR
+       * morceau (`partirDeLaSerie`), jamais de la dernière boucle livrée — et le
+       * pont repart du couplet, pas du refrain : contre le refrain il ne serait
+       * que « le refrain en moins plein », un arrangement et pas une section. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'TROIS CARTONS',
+        lignes: [
+          'SOL: Un disque, ce n’est pas un morceau.',
+          'Elle pose trois cartons sur la table.',
+          'SOL: Celui qui passe.',
+          'SOL: Celui qu’on écoute seul.',
+          'SOL: Et celui que personne n’attend.',
+          'SOL: Trois boucles chacun. Couplet, refrain, pont.',
+        ],
+      },
+
+      /* ===================================================================
+       * MORCEAU 1 — CELUI QUI PASSE. Le single, et le seul des trois dont le
+       * couplet porte le cahier RÉCAPITULATIF : c'est ici qu'on vérifie que les
+       * cinq mois ont servi, une section par acte traversé. Les deux autres
+       * morceaux n'ont pas à le refaire — ce serait la même liste trois fois.
+       * =================================================================== */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'CELUI QUI PASSE',
+        lignes: [
+          'SOL: Le premier, il faut qu’il passe.',
+          'SOL: Quelqu’un doit pouvoir le fredonner en sortant.',
+          'SOL: Ça veut dire un refrain. Un vrai.',
+          'Tout ce que tu as appris en cinq mois tient dedans.',
+        ],
+      },
       {
         kind: 'commande',
-        entete: 'FB-015 — LE COUPLET',
+        entete: 'CELUI QUI PASSE — LE COUPLET',
         lignes: [
           'Pour savoir ce que tu peux faire',
           'quand personne ne te dit quoi faire.',
@@ -1988,6 +2075,7 @@ export const ACTES: Acte[] = [
           'Mais cette fois, personne ne te dira si c’est bon.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
+        serie: 'passe-couplet',
         /* ⚠️ LE CAHIER LE PLUS COMPLET DU JEU — onze lignes, quand les autres
          * en comptent trois à six. Demande de Yann : *« l'acte 6, le plus complet
          * du jeu »*.
@@ -2015,7 +2103,12 @@ export const ACTES: Acte[] = [
             deLAlea('Que la machine ne joue pas deux fois pareil'),
           ]),
           ...dansLaSection(FB_COUCHES, [
-            ligneSynthPresente('melody', 'Une mélodie — c’est elle qu’on fredonne'),
+            /* ⚠️ Une PHRASE, pas une ligne présente. Le pont de ce morceau
+             * demande qu'elle « joue moins mais joue encore » : sur une mélodie
+             * d'une seule note, c'est impossible — moins que une et plus que
+             * zéro n'existe pas. Le cul-de-sac se paie donc ici, dans la boucle
+             * d'avant, et c'est le test de satisfiabilité qui l'a trouvé. */
+            unePhrase('melody', 4, 3, 'Une mélodie — c’est elle qu’on fredonne, donc une vraie phrase'),
             ligneSynthPresente('bass', 'Une basse dessous, qui la porte'),
             ligneSynthPresente('pad', 'Et une nappe derrière — on ne l’écoute jamais, on la remarque quand elle part'),
           ]),
@@ -2025,32 +2118,9 @@ export const ACTES: Acte[] = [
           ]),
         ],
         accepte: 'SOL: Je ne sais pas si c’est bon. […] C’est nouveau.',
-        titre: 'FB-015 — COUPLET',
-        serie: 'couplet',
+        titre: 'CELUI QUI PASSE — COUPLET',
         client: 'FACE B',
       },
-      /* ⚠️ TROIS BOUCLES, UN MORCEAU — l'acte 6 refait le 2026-09-04.
-       *
-       * Demande de Yann : *« pour chacun de ces morceaux, on travaille 3
-       * boucles qui permettront de faire ensuite couplet/refrain/pont pour le
-       * mode live ! Chacune des boucles doit faire l'objet de 1, 2 ou 3 étapes
-       * d'atelier pour avoir des cahiers des charges assez complexes. »*
-       *
-       * Ce que ça change, et c'est le fond : jusqu'ici tout le jeu faisait
-       * produire des BOUCLES de douze secondes. Un morceau, c'est trois boucles
-       * qui se répondent — et le Mode Live sait déjà les enchaîner au tour près
-       * depuis la bande d'architecture. Il ne manquait que de quoi la nourrir.
-       *
-       * ⚠️ Les deux boucles qui suivent ne sont pas jugées dans l'absolu : un
-       * refrain n'a pas de définition, il s'ouvre PAR RAPPORT au couplet. Elles
-       * repartent donc de lui (`partirDeLaSerie`) et se mesurent contre lui
-       * (`plusFourniQue`, `uneLigneQuiEntre`, et leurs inverses). C'est la seule
-       * façon de demander « fais un refrain » sans dicter lequel.
-       *
-       * ⚠️ Et le PONT repart du COUPLET, pas du refrain : un pont s'écrit
-       * contre le morceau, pas contre son moment le plus plein. Repartir du
-       * refrain aurait fait du pont « le refrain avec des choses en moins »,
-       * ce qui est un arrangement, pas une section. */
       {
         kind: 'recit',
         source: 'lcd',
@@ -2058,29 +2128,36 @@ export const ACTES: Acte[] = [
         lignes: [
           'SOL: Une boucle, c’est douze secondes.',
           'SOL: Un morceau, c’est trois boucles qui se répondent.',
-          'Elle pose trois cartons sur la table, l’un après l’autre.',
-          'SOL: Le couplet, tu l’as.',
-          'SOL: Un refrain, ça s’OUVRE. Il en met plus.',
+          'SOL: Le couplet, tu l’as. Un refrain, ça s’OUVRE.',
+          'SOL: Et surtout : la phrase change. Elle va chercher plus haut.',
+          'SOL: Un refrain qui rejoue le couplet, ce n’est pas un refrain.',
         ],
       },
       {
         kind: 'commande',
-        entete: 'FB-015 — LE REFRAIN',
+        entete: 'CELUI QUI PASSE — LE REFRAIN',
         lignes: [
           'Le même morceau, repris à partir du couplet.',
           'SOL: Ne recommence pas de zéro. Ajoute.',
-          'SOL: Et fais entrer quelque chose qui n’était pas là.',
+          'SOL: Et écris-moi une autre phrase, plus haut.',
         ],
         bouton: 'Reprendre le couplet ▸',
-        serie: 'refrain',
-        partirDeLaSerie: 'couplet',
+        serie: 'passe-refrain',
+        partirDeLaSerie: 'passe-couplet',
         cahier: [
           avoirTouche('Il faut y avoir touché'),
-          plusFourniQue(1.2, 'Ça s’ouvre : nettement plus de coups que le couplet'),
-          uneLigneQuiEntre('Une ligne qui ne jouait pas entre — le clap, le shaker, une voix…'),
+          ...dansLaSection(FB_OUVRE, [
+            plusFourniQue(1.2, 'Ça s’ouvre : nettement plus de coups que le couplet'),
+            uneLigneQuiEntre('Une ligne qui ne jouait pas entre — le clap, le shaker, une voix…'),
+          ]),
+          ...dansLaSection(FB_PHRASE, [
+            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
+            unePhraseQuiMonte('melody', 1, 'Elle va chercher plus haut — c’est ça qu’on fredonne'),
+            unePhrase('melody', 4, 3, 'Et elle reste une phrase : au moins quatre notes, trois hauteurs'),
+          ]),
         ],
         accepte: 'SOL: Voilà. Là, on a envie que ça revienne.',
-        titre: 'FB-015 — REFRAIN',
+        titre: 'CELUI QUI PASSE — REFRAIN',
         client: 'FACE B',
       },
       {
@@ -2092,41 +2169,267 @@ export const ACTES: Acte[] = [
           'SOL: C’est l’endroit où on ENLÈVE.',
           'SOL: Trois minutes de refrain, personne ne tient.',
           'Elle repose le carton du couplet devant toi.',
-          'SOL: Repars de celui-là. Et vide-le.',
+          'SOL: Repars de celui-là. Vide-le, et change d’accords.',
         ],
       },
       {
         kind: 'commande',
-        entete: 'FB-015 — LE PONT',
+        entete: 'CELUI QUI PASSE — LE PONT',
         lignes: [
           'Le couplet, encore — mais dans l’autre sens.',
           'SOL: Coupe. Laisse de la place.',
-          'SOL: On doit avoir hâte que le refrain revienne.',
+          'SOL: Et pars ailleurs :',
+          'SOL: ce ne sont plus les mêmes accords.',
         ],
         bouton: 'Reprendre le couplet ▸',
-        serie: 'pont',
-        partirDeLaSerie: 'couplet',
+        serie: 'passe-pont',
+        partirDeLaSerie: 'passe-couplet',
         cahier: [
           avoirTouche('Il faut y avoir touché'),
-          moinsFourniQue(0.8, 'Ça retombe : nettement moins de coups que le couplet'),
-          uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
+          ...dansLaSection(FB_RETOMBE, [
+            moinsFourniQue(0.8, 'Ça retombe : nettement moins de coups que le couplet'),
+            uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
+          ]),
+          ...dansLaSection(FB_PHRASE, [
+            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
+            unePhraseQuiSEclaircit('melody', 0.7, 'Elle joue moins — mais elle joue encore'),
+          ]),
+          ...dansLaSection(FB_AILLEURS, [
+            uneAutreHarmonie('La nappe ne pose plus les mêmes accords'),
+          ]),
         ],
         accepte: 'SOL: C’est ça. C’est le vide qui fait le reste.',
-        titre: 'FB-015 — PONT',
+        titre: 'CELUI QUI PASSE — PONT',
         client: 'FACE B',
       },
-      /* ⚠️ LA SCÈNE QUI MONTE LE SET. Les trois boucles partent dans la banque
-       * de séquences et le modèle POP les enchaîne — couplet, refrain, couplet,
-       * refrain, pont, refrain. Le joueur conduit.
+
+      /* ===================================================================
+       * MORCEAU 2 — CELUI QU'ON ÉCOUTE SEUL. L'intention pèse sur le TEMPO et
+       * sur le NOMBRE DE VOIX, jamais sur un genre : « lent » et « pas plein »
+       * sont des faits, pas des goûts. Son refrain s'ouvre plus doucement que
+       * celui du single (1,15 contre 1,2) et son pont descend plus bas (0,6
+       * contre 0,8) — c'est la même mécanique réglée autrement, et c'est ce que
+       * l'intention veut dire.
+       * =================================================================== */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'CELUI QU’ON ÉCOUTE SEUL',
+        lignes: [
+          'SOL: Le deuxième, personne ne le met en soirée.',
+          'SOL: On le met à deux heures du matin, tout seul.',
+          'SOL: Lent. Et pas plein — trois ou quatre choses, pas huit.',
+          'SOL: Le silence fait partie du morceau.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'CELUI QU’ON ÉCOUTE SEUL — LE COUPLET',
+        lignes: [
+          'Un deuxième morceau, depuis rien.',
+          'SOL: Lent. Peu de choses. De la place.',
+          'SOL: Et une mélodie qui tienne toute seule.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        serie: 'seul-couplet',
+        cahier: [
+          AVOIR_PRODUIT,
+          ...dansLaSection(FB_LENT, [
+            tempoEntre(60, 92, 'Lent — entre 60 et 92'),
+            auPlusDeLignes(4, 'Pas plein : quatre lignes qui sonnent, pas davantage'),
+          ]),
+          ...dansLaSection(FB_COUCHES, [
+            ligneSynthPresente('melody', 'Une mélodie — c’est elle qui porte le morceau'),
+            unePhrase('melody', 3, 3, 'Une vraie phrase : trois notes, trois hauteurs'),
+            ligneSynthPresente('pad', 'Une nappe dessous, pour l’espace'),
+          ]),
+          ...dansLaSection(FB_PRODUCTION, [
+            reverbDosee(0.2, 0.6, 'De la réverbe — plus qu’ailleurs, sans noyer'),
+          ]),
+        ],
+        accepte: 'SOL: Ne le monte pas. Il est bien comme ça.',
+        titre: 'CELUI QU’ON ÉCOUTE SEUL — COUPLET',
+        client: 'FACE B',
+      },
+      {
+        kind: 'commande',
+        entete: 'CELUI QU’ON ÉCOUTE SEUL — LE REFRAIN',
+        lignes: [
+          'Repris à partir du couplet.',
+          'SOL: Celui-là ne s’ouvre pas en criant.',
+          'SOL: Il s’ouvre d’un cran.',
+          'SOL: Mais la phrase monte quand même.',
+        ],
+        bouton: 'Reprendre le couplet ▸',
+        serie: 'seul-refrain',
+        partirDeLaSerie: 'seul-couplet',
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          ...dansLaSection(FB_OUVRE, [
+            plusFourniQue(1.15, 'Ça s’ouvre d’un cran — un peu plus de coups que le couplet'),
+            uneLigneQuiEntre('Une seule chose en plus, mais qui n’était pas là'),
+          ]),
+          ...dansLaSection(FB_PHRASE, [
+            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
+            unePhraseQuiMonte('melody', 1, 'Et elle monte — même à deux heures du matin'),
+          ]),
+        ],
+        accepte: 'SOL: Oui. Ça suffit. N’en rajoute pas.',
+        titre: 'CELUI QU’ON ÉCOUTE SEUL — REFRAIN',
+        client: 'FACE B',
+      },
+      {
+        kind: 'commande',
+        entete: 'CELUI QU’ON ÉCOUTE SEUL — LE PONT',
+        lignes: [
+          'Le couplet, encore — et presque plus rien.',
+          'SOL: Là, tu peux vraiment vider.',
+          'SOL: Garde la mélodie. Enlève le reste.',
+        ],
+        bouton: 'Reprendre le couplet ▸',
+        serie: 'seul-pont',
+        partirDeLaSerie: 'seul-couplet',
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          ...dansLaSection(FB_RETOMBE, [
+            moinsFourniQue(0.6, 'Presque plus rien — moins des deux tiers du couplet'),
+            uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
+          ]),
+          ...dansLaSection(FB_PHRASE, [
+            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
+            unePhraseQuiSEclaircit('melody', 0.6, 'Elle s’éclaircit — mais elle reste, c’est tout ce qu’il reste'),
+          ]),
+        ],
+        accepte: 'SOL: On dirait qu’il manque quelque chose. C’est fait exprès.',
+        titre: 'CELUI QU’ON ÉCOUTE SEUL — PONT',
+        client: 'FACE B',
+      },
+
+      /* ===================================================================
+       * MORCEAU 3 — CELUI QUE PERSONNE N'ATTEND. Son cahier est le seul qui
+       * demande de l'ORIGINALITÉ, et la seule façon de le faire sans la dicter
+       * est `unGesteRare` : un geste parmi cinq, tous déjà enseignés et qu'aucun
+       * autre cahier n'exige. Nommer le geste transformerait la commande en
+       * brief — précisément ce que l'acte s'interdit.
+       * =================================================================== */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'CELUI QUE PERSONNE N’ATTEND',
+        lignes: [
+          'SOL: Le troisième, il ne ressemble à rien.',
+          'SOL: Prends ce que tu n’as jamais osé mettre.',
+          'Elle hausse les épaules.',
+          'SOL: Je ne te dirai pas quoi. C’est le principe.',
+          'SOL: C’est celui-là que je veux.',
+        ],
+      },
+      {
+        kind: 'commande',
+        entete: 'CELUI QUE PERSONNE N’ATTEND — LE COUPLET',
+        lignes: [
+          'Le dernier morceau du disque, depuis rien.',
+          'SOL: Un geste que les deux autres n’ont pas.',
+          'SOL: Lequel, c’est toi qui vois.',
+        ],
+        bouton: 'Ouvrir l’Atelier ▸',
+        serie: 'attend-couplet',
+        cahier: [
+          AVOIR_PRODUIT,
+          ...dansLaSection(FB_AUTREMENT, [
+            unGesteRare('Au moins un geste que les deux autres morceaux n’ont pas'),
+          ]),
+          ...dansLaSection(FB_COUCHES, [
+            ligneSynthPresente('melody', 'Une mélodie — même tordue, il en faut une'),
+            unePhrase('melody', 4, 3, 'Une phrase : quatre notes, trois hauteurs'),
+            ligneSynthPresente('bass', 'Une basse dessous'),
+            /* ⚠️ La nappe est ici parce que le PONT de ce morceau demande de
+             * changer d'accords : sans nappe au couplet, `uneAutreHarmonie` n'a
+             * rien à quitter et la boucle devient un cul-de-sac. Une contrainte
+             * relationnelle se paie toujours dans la boucle d'AVANT. */
+            ligneSynthPresente('pad', 'Et une nappe — c’est elle qui pose les accords'),
+          ]),
+          ...dansLaSection(FB_RYTHME_LIBRE, [
+            lignesPresentes(['kick', 'snare'], 'Un kick et une claire — même s’ils ne tombent pas où on les attend'),
+          ]),
+        ],
+        accepte: 'SOL: Je ne sais pas ce que c’est. Garde-le.',
+        titre: 'CELUI QUE PERSONNE N’ATTEND — COUPLET',
+        client: 'FACE B',
+      },
+      {
+        kind: 'commande',
+        entete: 'CELUI QUE PERSONNE N’ATTEND — LE REFRAIN',
+        lignes: [
+          'Repris à partir du couplet.',
+          'SOL: Même un morceau bizarre a un moment où ça revient.',
+          'SOL: Ouvre, et monte.',
+        ],
+        bouton: 'Reprendre le couplet ▸',
+        serie: 'attend-refrain',
+        partirDeLaSerie: 'attend-couplet',
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          ...dansLaSection(FB_OUVRE, [
+            plusFourniQue(1.2, 'Ça s’ouvre : nettement plus de coups que le couplet'),
+            uneLigneQuiEntre('Une ligne qui ne jouait pas entre'),
+          ]),
+          ...dansLaSection(FB_PHRASE, [
+            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
+            unePhraseQuiMonte('melody', 1, 'Elle va chercher plus haut'),
+          ]),
+        ],
+        accepte: 'SOL: Bon. Même moi je l’attends, maintenant.',
+        titre: 'CELUI QUE PERSONNE N’ATTEND — REFRAIN',
+        client: 'FACE B',
+      },
+      {
+        kind: 'commande',
+        entete: 'CELUI QUE PERSONNE N’ATTEND — LE PONT',
+        lignes: [
+          'Le couplet, une dernière fois.',
+          'SOL: Enlève, et change d’accords.',
+          'SOL: C’est la dernière boucle du disque.',
+        ],
+        bouton: 'Reprendre le couplet ▸',
+        serie: 'attend-pont',
+        partirDeLaSerie: 'attend-couplet',
+        cahier: [
+          avoirTouche('Il faut y avoir touché'),
+          ...dansLaSection(FB_RETOMBE, [
+            moinsFourniQue(0.8, 'Ça retombe : nettement moins de coups que le couplet'),
+            uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
+          ]),
+          ...dansLaSection(FB_PHRASE, [
+            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
+            unePhraseQuiSEclaircit('melody', 0.7, 'Elle joue moins — mais elle joue encore'),
+          ]),
+          ...dansLaSection(FB_AILLEURS, [
+            uneAutreHarmonie('La nappe ne pose plus les mêmes accords'),
+          ]),
+        ],
+        accepte: 'SOL: Fini. Neuf boucles. Trois morceaux. Un disque.',
+        titre: 'CELUI QUE PERSONNE N’ATTEND — PONT',
+        client: 'FACE B',
+      },
+
+      /* ⚠️ LA SCÈNE QUI MONTE LE SET. Les NEUF boucles partent dans la banque de
+       * séquences ; seules les trois du single portent une `section`, et c'est
+       * elles que le modèle POP enchaîne — couplet, refrain, couplet, refrain,
+       * pont, refrain. Les six autres sont là, à un clic dans le sélecteur : le
+       * disque entier est sur la machine, le morceau qu'on joue ce soir en est
+       * un. Monter les trois d'un coup n'aurait aucun sens — une architecture
+       * décrit UN morceau.
        *
        * Elle n'ouvre PAS le Mode Live pour de bon : `modulesRequis` le prête le
        * temps de la scène, comme l'acte 3 prête le Synthé à sa commande. C'est
        * l'épilogue qui l'ouvre, et cet ordre-là ne bouge pas. */
       {
         kind: 'scene',
-        entete: 'TROIS BOUCLES, UN MORCEAU',
+        entete: 'NEUF BOUCLES, UN DISQUE',
         lignes: [
-          'Sol range les trois boucles dans la machine.',
+          'Sol range les neuf boucles dans la machine.',
+          'SOL: Ce soir on joue le premier. Les autres sont là.',
           'SOL: Couplet, refrain, pont. C’est un morceau, maintenant.',
           'SOL: Moi je ne le conduis pas. C’est le tien.',
           'Tourne ton téléphone : la scène est à l’horizontale.',
@@ -2134,9 +2437,15 @@ export const ACTES: Acte[] = [
         bouton: 'Monter le set ▸',
         modulesRequis: ['live'],
         bouclesDeLActe: [
-          { serie: 'couplet', nom: 'FB-015 — COUPLET', section: 'COUPLET' },
-          { serie: 'refrain', nom: 'FB-015 — REFRAIN', section: 'REFRAIN' },
-          { serie: 'pont', nom: 'FB-015 — PONT', section: 'PONT' },
+          { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', section: 'COUPLET' },
+          { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN', section: 'REFRAIN' },
+          { serie: 'passe-pont', nom: 'QUI PASSE — PONT', section: 'PONT' },
+          { serie: 'seul-couplet', nom: 'ÉCOUTE SEUL — COUPLET' },
+          { serie: 'seul-refrain', nom: 'ÉCOUTE SEUL — REFRAIN' },
+          { serie: 'seul-pont', nom: 'ÉCOUTE SEUL — PONT' },
+          { serie: 'attend-couplet', nom: 'PERSONNE N’ATTEND — COUPLET' },
+          { serie: 'attend-refrain', nom: 'PERSONNE N’ATTEND — REFRAIN' },
+          { serie: 'attend-pont', nom: 'PERSONNE N’ATTEND — PONT' },
         ],
       },
       {

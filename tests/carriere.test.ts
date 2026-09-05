@@ -1343,52 +1343,140 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
 describe('L’acte 6 ne commande rien, il demande de faire', () => {
   const acte6 = () => ACTES[6];
 
-  /* ⚠️ TROIS commandes depuis le 2026-09-04, et c'est une seule idée : *« pour
-   * chacun de ces morceaux, on travaille 3 boucles qui permettront de faire
-   * ensuite couplet/refrain/pont pour le mode live »* (Yann). Ce qui ne change
-   * pas — et c'est le fond de l'acte — c'est qu'aucune d'elles n'exige un
-   * GOÛT : elles demandent un couplet, puis qu'il s'ouvre, puis qu'il retombe. */
-  it('est jouable, et ne travaille qu’à l’Atelier — trois boucles', () => {
-    expect(acteAVenir(acte6())).toBe(false);
-    expect(acte6().etapes.some((e) => e.kind === 'exercice')).toBe(false);
-    const cmds = acte6().etapes.filter((e) => e.kind === 'commande');
-    expect(cmds).toHaveLength(3);
-    // Une série par boucle, sinon la discographie n'en garderait qu'une.
-    const series = cmds.map((c) => (c as { serie?: string }).serie);
-    expect(new Set(series).size, 'deux boucles sous la même série').toBe(3);
-    for (const se of series) expect(se, 'une boucle sans série').toBeTruthy();
-  });
-
-  /* ⚠️ Les deux boucles qui suivent le couplet se jugent CONTRE lui, jamais
-   * dans l'absolu : un refrain n'a pas de définition, il s'ouvre par rapport au
-   * couplet. Elles repartent donc de sa série — et pas « de la dernière
-   * livrée », qui ferait écrire le pont contre le refrain. */
-  it('⚠️ le refrain et le pont repartent du COUPLET, nommément', () => {
-    const cmds = acte6().etapes.filter((e) => e.kind === 'commande') as Array<{
+  /* ⚠️ NEUF commandes depuis le 2026-09-05 : trois morceaux de trois boucles.
+   * *« J'imaginais 3 morceaux, il n'y en a qu'un seul »* (Yann, sur la première
+   * version). Ce qui ne change pas — et c'est le fond de l'acte — c'est
+   * qu'aucune d'elles n'exige un GOÛT : elles demandent un couplet, puis qu'il
+   * s'ouvre, puis qu'il retombe. */
+  const boucles6 = () =>
+    acte6().etapes.filter((e) => e.kind === 'commande') as Array<{
+      entete: string;
       serie?: string;
       partirDeLaSerie?: string;
       cahier: Array<{ id: string }>;
     }>;
-    expect(cmds[0].partirDeLaSerie, 'le couplet part de rien').toBeUndefined();
-    for (const c of cmds.slice(1)) {
-      expect(c.partirDeLaSerie, `« ${c.serie} »`).toBe(cmds[0].serie);
-      // Et son cahier mesure bien un ÉCART, sinon « repartir de » ne sert à rien.
-      expect(
-        c.cahier.some((l) => ['plus-fourni', 'moins-fourni', 'ligne-entre', 'ligne-sort'].includes(l.id)),
-        `« ${c.serie} » ne se compare à rien`,
-      ).toBe(true);
+
+  /** Les trois boucles groupées par morceau, dans l'ordre du récit. Le morceau
+   *  est le préfixe de la série (« passe », « seul », « attend »). */
+  const parMorceau6 = () => {
+    const m = new Map<string, ReturnType<typeof boucles6>>();
+    for (const c of boucles6()) {
+      const cle = (c.serie ?? '').split('-')[0];
+      m.set(cle, [...(m.get(cle) ?? []), c]);
+    }
+    return m;
+  };
+
+  it('est jouable, et ne travaille qu’à l’Atelier — trois morceaux de trois boucles', () => {
+    expect(acteAVenir(acte6())).toBe(false);
+    expect(acte6().etapes.some((e) => e.kind === 'exercice')).toBe(false);
+    const cmds = boucles6();
+    expect(cmds).toHaveLength(9);
+    // Une série par boucle, sinon la discographie n'en garderait qu'une.
+    const series = cmds.map((c) => c.serie);
+    expect(new Set(series).size, 'deux boucles sous la même série').toBe(9);
+    for (const se of series) expect(se, 'une boucle sans série').toBeTruthy();
+    // Trois morceaux, trois boucles chacun.
+    const morceaux = parMorceau6();
+    expect(morceaux.size, 'il ne reste pas trois morceaux').toBe(3);
+    for (const [nom, b] of morceaux)
+      expect(b.length, `le morceau « ${nom} » n’a pas trois boucles`).toBe(3);
+  });
+
+  /* ⚠️ Les deux boucles qui suivent le couplet se jugent CONTRE lui, jamais
+   * dans l'absolu : un refrain n'a pas de définition, il s'ouvre par rapport au
+   * couplet. Elles repartent donc de sa série — celle de LEUR morceau, et pas
+   * « de la dernière livrée », qui ferait écrire le pont contre le refrain et,
+   * depuis qu'il y a trois morceaux, contre la boucle d'un autre morceau. */
+  it('⚠️ le refrain et le pont repartent du COUPLET de LEUR morceau', () => {
+    for (const [nom, b] of parMorceau6()) {
+      expect(b[0].partirDeLaSerie, `« ${nom} » : le couplet part de rien`).toBeUndefined();
+      for (const c of b.slice(1)) {
+        expect(c.partirDeLaSerie, `« ${c.serie} »`).toBe(b[0].serie);
+        // Et son cahier mesure bien un ÉCART, sinon « repartir de » ne sert à rien.
+        expect(
+          c.cahier.some((l) =>
+            ['plus-fourni', 'moins-fourni', 'ligne-entre', 'ligne-sort'].includes(l.id),
+          ),
+          `« ${c.serie} » ne se compare à rien`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  /* ⚠️ CE QUI MANQUAIT, et le retour qui l'a trouvé : *« le travail n'est pas
+   * suffisant pour le refrain et le pont, il faut un cahier des charges plus
+   * complet avec un travail sur la mélodie »* (Yann, 2026-09-05). Les quatre
+   * contraintes de la première version ne comptaient que des COUPS — un refrain
+   * qui s'ouvre en ajoutant un shaker passait. Chaque refrain et chaque pont
+   * doit donc demander une AUTRE PHRASE, et dire dans quel sens elle bouge. */
+  it('⚠️ chaque refrain et chaque pont travaille la MÉLODIE, pas que les coups', () => {
+    const manquent: string[] = [];
+    for (const [, b] of parMorceau6()) {
+      for (const c of b.slice(1)) {
+        const ids = c.cahier.map((l) => l.id);
+        if (!ids.includes('autre-phrase:melody')) manquent.push(`${c.serie} : pas d’autre phrase`);
+        const sens = ids.some(
+          (i) => i === 'phrase-monte:melody' || i === 'phrase-eclaircit:melody',
+        );
+        if (!sens) manquent.push(`${c.serie} : la phrase ne bouge dans aucun sens`);
+      }
+    }
+    expect(manquent, manquent.join(' · ')).toEqual([]);
+  });
+
+  /* ⚠️ Un refrain MONTE, un pont S'ÉCLAIRCIT — et jamais l'inverse. C'est ce
+   * qui distingue les deux sections ; les intervertir donnerait deux ponts. */
+  it('⚠️ le refrain monte, le pont s’éclaircit', () => {
+    for (const [nom, b] of parMorceau6()) {
+      const [, refrain, pont] = b;
+      const ids = (c: (typeof b)[number]) => c.cahier.map((l) => l.id);
+      expect(ids(refrain), `« ${nom} » refrain`).toContain('phrase-monte:melody');
+      expect(ids(refrain), `« ${nom} » refrain`).toContain('plus-fourni');
+      expect(ids(pont), `« ${nom} » pont`).toContain('phrase-eclaircit:melody');
+      expect(ids(pont), `« ${nom} » pont`).toContain('moins-fourni');
+    }
+  });
+
+  /* ⚠️ Les trois morceaux ne se distinguent NI par un client NI par un genre —
+   * la phrase de l'acte est « aucun brief, aucun client, aucun style imposé ».
+   * Ils se distinguent par une INTENTION, et une intention se lit dans ce que le
+   * cahier demande de FAIRE : deux morceaux dont les neuf cahiers seraient
+   * identiques ne seraient qu'un morceau écrit trois fois. */
+  it('⚠️ les trois morceaux ont des cahiers DIFFÉRENTS, sans client ni genre', () => {
+    const empreintes = [...parMorceau6().values()].map((b) =>
+      b.map((c) => c.cahier.map((l) => l.id).join('+')).join('|'),
+    );
+    expect(new Set(empreintes).size, 'deux morceaux demandent exactement la même chose').toBe(3);
+    // Et aucun ne convoque un style ni un verrou de provenance.
+    for (const c of boucles6()) {
+      const ids = c.cahier.map((l) => l.id);
+      expect(ids.some((i) => i.startsWith('style')), `« ${c.serie} »`).toBe(false);
+      expect(ids, `« ${c.serie} »`).not.toContain('pas-un-preset');
     }
   });
 
   /* La scène qui monte le set : les trois boucles deviennent un morceau que le
    * Mode Live enchaîne. Sans elle, l'acte finirait sur trois fichiers que
    * personne ne joue — « ce qui n'a pas été porté n'existe pas ». */
-  it('⚠️ et les trois boucles finissent en SET, pas en trois fichiers', () => {
+  it('⚠️ et les neuf boucles finissent en SET, pas en neuf fichiers', () => {
     const scene = acte6().etapes.find((e) => e.kind === 'scene');
     expect(scene, 'aucune scène ne monte le set').toBeTruthy();
     if (scene?.kind !== 'scene') return;
     const series = acte6().etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
+    // ⚠️ TOUTES les boucles vont dans la banque — sinon six d'entre elles
+    // n'existeraient nulle part dans le Mode Live.
     expect(scene.bouclesDeLActe?.map((b) => b.serie)).toEqual(series);
+    /* ⚠️ …mais une seule est MONTÉE : une architecture décrit UN morceau. Trois
+     * sections exactement portent une séquence, et ce sont les trois boucles
+     * d'un même morceau — monter le couplet d'un morceau sous le refrain d'un
+     * autre ferait un set qui n'a jamais été écrit. */
+    const montees = (scene.bouclesDeLActe ?? []).filter((b) => b.section);
+    expect(montees, 'ce n’est pas UN morceau qu’on monte').toHaveLength(3);
+    expect(new Set(montees.map((b) => (b.serie ?? '').split('-')[0])).size).toBe(1);
+    expect(new Set(montees.map((b) => b.section))).toEqual(
+      new Set(['COUPLET', 'REFRAIN', 'PONT']),
+    );
     // Elle emprunte le Mode Live le temps de la scène — l'épilogue l'ouvre.
     expect(scene.modulesRequis).toContain('live');
     expect(acte6().module, 'l’acte 6 n’ouvre aucun module pour de bon').toBeNull();

@@ -169,8 +169,12 @@ export function ligneSynthPresente(ligne: SynthRowName, libelle: string): Contra
   };
 }
 
+/* ⚠️ L'identifiant PORTE les bornes (`tempo:60-92`). Elles n'y étaient pas, et
+ * c'est la seule contrainte du jeu dont le test de satisfiabilité ne pouvait
+ * pas fabriquer la réponse : un `id` qui ne dit que « tempo » oblige à lire le
+ * libellé, c'est-à-dire du français. Même forme que `phrase:melody`. */
 export function tempoEntre(min: number, max: number, libelle: string): Contrainte {
-  return { id: 'tempo', libelle, verifie: (e) => e.tempo >= min && e.tempo <= max };
+  return { id: `tempo:${min}-${max}`, libelle, verifie: (e) => e.tempo >= min && e.tempo <= max };
 }
 
 /* ⚠️ « Dans le style de » — par FICHE de style, et c'est la contrainte qui a
@@ -598,6 +602,219 @@ export function uneLigneQuiSeTait(libelle: string): Contrainte {
       if (!ctx?.depart) return false;
       const maintenant = lignesQuiSonnent(e);
       return [...lignesQuiSonnent(ctx.depart)].some((l) => !maintenant.has(l));
+    },
+  };
+}
+
+/* PAS PLEIN — au plus tant de lignes qui sonnent.
+ *
+ * ⚠️ Le seul plafond ABSOLU du jeu, et il ne compte pas des coups mais des
+ * VOIX : un plafond de coups dépend de la subdivision (seize pas sur trois
+ * lignes en autorisent quarante-huit, huit pas n'en autorisent que vingt-quatre),
+ * donc le même chiffre veut dire deux choses. « Pas plein » se mesure au nombre
+ * de choses qui parlent en même temps, et ça, c'est stable. */
+export function auPlusDeLignes(max: number, libelle: string): Contrainte {
+  return {
+    id: 'au-plus-lignes',
+    libelle,
+    verifie: (e) => {
+      const n = lignesQuiSonnent(e).size;
+      return n > 0 && n <= max;
+    },
+  };
+}
+
+/* UN GESTE QUE LES AUTRES N'ONT PAS.
+ *
+ * ⚠️ La seule façon de demander de l'ORIGINALITÉ sans la dicter. Le troisième
+ * morceau de l'acte 6 doit « ne ressembler à rien » ; une contrainte qui
+ * nommerait le geste transformerait ça en consigne, c'est-à-dire exactement le
+ * brief que l'acte s'interdit. On en exige donc UN parmi cinq, et le détail les
+ * liste tous — même forme que `deLAlea`, pour la même raison : on en demande un,
+ * et dire lequel serait choisir à la place du joueur.
+ *
+ * Les cinq sont des gestes DÉJÀ ENSEIGNÉS et qu'aucun autre cahier n'exige : le
+ * décalage (acte 2), le glissando et la nappe qui bouge (acte 3), un balancement
+ * franc (acte 2), une ligne de synthé qui tourne sur deux mesures (acte 5). Une
+ * commande n'enseigne rien de neuf. */
+export function unGesteRare(libelle: string): Contrainte {
+  /* ⚠️ Chaque geste exige que sa ligne SONNE, pas seulement qu'elle ne soit pas
+   * coupée : un réglage posé sur une ligne muette ne s'entend pas, et une case
+   * cochée pour un son inaudible est le théâtre que le cahier interdit.
+   *
+   * ⚠️ Et « deux mesures » ne regarde QUE la mélodie et la basse : la nappe
+   * tourne sur quatre mesures par défaut (`etatVierge`), donc l'y inclure
+   * cochait la case sur un Atelier vide — trouvé par la garde « aucune tâche
+   * cochée à l'ouverture », pas en relisant le code. */
+  const gestes = (e: PatternStateV2) => ({
+    decalage: LIGNES_MIX.some((l) => ligneVivante(e, l) && Math.abs(e.rows[l].shiftPct) >= 6),
+    glide: (['melody', 'bass'] as const).some(
+      (l) => synthVivante(e, l) && e.synthRows[l].glide >= 0.05,
+    ),
+    nappe:
+      synthVivante(e, 'pad') && (e.synthGlobal.padArpEnabled || e.synthGlobal.padDroneEnabled),
+    balancement: e.swing >= 25,
+    deuxMesures: (['melody', 'bass'] as const).some(
+      (l) => synthVivante(e, l) && e.synthRows[l].cycleBars >= 2,
+    ),
+  });
+  const NOMS: Record<keyof ReturnType<typeof gestes>, string> = {
+    decalage: 'une ligne décalée contre les autres',
+    glide: 'un glissando sur la mélodie ou la basse',
+    nappe: 'la nappe en arpège ou en bourdon',
+    balancement: 'un balancement franc (swing 25 ou plus)',
+    deuxMesures: 'une ligne de synthé qui tourne sur deux mesures',
+  };
+  return {
+    id: 'geste-rare',
+    libelle,
+    verifie: (e) => Object.values(gestes(e)).some(Boolean),
+    details: (e) => {
+      const etat = gestes(e);
+      return (Object.keys(NOMS) as Array<keyof typeof NOMS>).map((k) => ({
+        id: `rare-${k}`,
+        libelle: NOMS[k],
+        ok: etat[k],
+      }));
+    },
+  };
+}
+
+/* ---------------------------------------------------------------------------
+ * ET CE QUI MANQUAIT : LA MÉLODIE
+ *
+ * ⚠️ Retour de Yann (2026-09-05), sur la première version de l'acte 6 :
+ * *« le travail n'est pas suffisant pour le refrain et le pont, il faut un
+ * cahier des charges plus complet avec un travail sur la mélodie. »*
+ *
+ * Il a raison, et le défaut se voit dans les identifiants : `plus-fourni`,
+ * `moins-fourni`, `ligne-entre`, `ligne-sort` comptent tous des COUPS. Un
+ * refrain qui s'ouvre en ajoutant un shaker satisfaisait le cahier — or ce
+ * n'est pas un refrain, c'est le couplet avec un shaker. Ce qui fait qu'on
+ * reconnaît un refrain à la seconde où il arrive, c'est que **la phrase
+ * change**, et le plus souvent qu'elle MONTE.
+ *
+ * Les quatre contraintes qui suivent sont donc relationnelles comme les
+ * précédentes, mais sur la ligne mélodique et sur l'harmonie. Même règle
+ * qu'elles : sans `ctx.depart`, elles répondent FAUX.
+ * ------------------------------------------------------------------------- */
+
+/* La phrase telle qu'elle est ÉCRITE — positions comprises.
+ *
+ * ⚠️ `notesDe` jette les silences, donc deux phrases faites des mêmes notes
+ * placées ailleurs lui paraissent identiques. Or déplacer une phrase, c'est
+ * précisément en écrire une autre. On sérialise donc le motif tranché à sa
+ * subdivision, silences inclus. */
+function phraseDe(e: PatternStateV2, ligne: 'bass' | 'melody'): string {
+  const r = e.synthRows[ligne];
+  if (r.muted) return '';
+  return r.pattern
+    .slice(0, r.subdivisions)
+    .map((v) => (v && typeof v === 'object' ? `${v.degree}.${v.octave}` : '-'))
+    .join(',');
+}
+
+/* La hauteur MOYENNE de la ligne, en degrés d'échelle.
+ *
+ * ⚠️ L'octave compte pour sept degrés : sans elle, la même phrase montée d'une
+ * octave — le geste le plus courant pour ouvrir un refrain — donnerait la même
+ * moyenne, et « ça monte » serait faux au moment exact où c'est vrai. Rend
+ * `null` quand rien ne joue : une ligne muette n'a pas de hauteur, et c'est à
+ * l'appelant de décider ce que ça veut dire. */
+function hauteurMoyenne(e: PatternStateV2, ligne: 'bass' | 'melody'): number | null {
+  const n = notesDe(e, ligne);
+  if (!n.length) return null;
+  return n.reduce((t, x) => t + x.degree + 7 * x.octave, 0) / n.length;
+}
+
+/* Les accords de la nappe, dans l'ordre où ils tombent. Une case de nappe
+ * porte un INDEX d'accord (voir `laBasseDitLAccord`) — on compare donc des
+ * index, jamais des degrés. */
+function suiteDAccords(e: PatternStateV2): string {
+  const r = e.synthRows.pad;
+  if (r.muted) return '';
+  return r.pattern
+    .slice(0, r.subdivisions)
+    .map((v) => (typeof v === 'number' && v >= 0 ? String(v) : '-'))
+    .join(',');
+}
+
+/* UNE AUTRE PHRASE — pas celle d'avant.
+ *
+ * La contrainte la plus élémentaire des trois boucles, et celle qui manquait :
+ * un refrain qui rejoue la mélodie du couplet n'est pas un refrain. Elle exige
+ * en plus que la ligne SONNE : « je l'ai coupée » est une autre phrase au sens
+ * strict, et ce n'est pas ce qu'on demande. */
+export function uneAutrePhrase(ligne: 'bass' | 'melody', libelle: string): Contrainte {
+  return {
+    id: `autre-phrase:${ligne}`,
+    libelle,
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const ici = phraseDe(e, ligne);
+      return ici !== '' && notesDe(e, ligne).length > 0 && ici !== phraseDe(ctx.depart, ligne);
+    },
+  };
+}
+
+/* ÇA MONTE — la phrase va chercher plus haut que celle d'avant.
+ *
+ * ⚠️ `ecart` est en DEGRÉS d'échelle, pas en demi-tons : c'est l'unité dans
+ * laquelle la case de l'Atelier est écrite, donc la seule que le joueur puisse
+ * viser à l'œil. Un degré de moyenne, c'est peu — mais c'est ce qui sépare
+ * « la même phrase » de « la même phrase montée » ; exiger davantage
+ * pousserait à sauter d'une octave, ce qui est un effet et pas une écriture. */
+export function unePhraseQuiMonte(ligne: 'bass' | 'melody', ecart: number, libelle: string): Contrainte {
+  return {
+    id: `phrase-monte:${ligne}`,
+    libelle,
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const ici = hauteurMoyenne(e, ligne);
+      const avant = hauteurMoyenne(ctx.depart, ligne);
+      return ici !== null && avant !== null && ici >= avant + ecart;
+    },
+  };
+}
+
+/* ÇA S'ÉCLAIRCIT — la phrase joue moins de notes par mesure qu'avant.
+ *
+ * Le geste du pont, et son piège : la couper entièrement satisferait « moins
+ * de notes » à zéro. On exige donc qu'elle joue encore — un pont sans mélodie
+ * est un break, et le break est un geste du Mode Live, pas de l'Atelier. */
+export function unePhraseQuiSEclaircit(
+  ligne: 'bass' | 'melody',
+  part: number,
+  libelle: string,
+): Contrainte {
+  return {
+    id: `phrase-eclaircit:${ligne}`,
+    libelle,
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const ici = parMesure(e, ligne);
+      const avant = parMesure(ctx.depart, ligne);
+      return ici > 0 && avant > 0 && ici <= avant * part;
+    },
+  };
+}
+
+/* L'HARMONIE BOUGE — la suite d'accords n'est pas celle d'avant.
+ *
+ * ⚠️ C'est le geste du PONT, et la raison pour laquelle un pont n'est pas
+ * « le couplet en moins plein » : on y change d'accords. Elle exige que la
+ * nappe sonne des deux côtés — sans accords avant, il n'y a pas d'harmonie à
+ * quitter, et la case se cocherait pour la mauvaise raison. */
+export function uneAutreHarmonie(libelle: string): Contrainte {
+  return {
+    id: 'autre-harmonie',
+    libelle,
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const ici = suiteDAccords(e);
+      const avant = suiteDAccords(ctx.depart);
+      const joue = (s: string) => s !== '' && s.split(',').some((x) => x !== '-');
+      return joue(ici) && joue(avant) && ici !== avant;
     },
   };
 }
