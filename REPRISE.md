@@ -11,8 +11,9 @@
 > se régénère par `npx vite-node scripts/relecture-mode-jeu.ts`
 > (`docs/relecture/mode-jeu.html`).
 >
-> ⚠️ **La décision en attente est le MODE LIVE** — voir « Le chantier ouvert »
-> plus bas.
+> ⚠️ **Le MODE LIVE est le chantier ouvert** : l'audit est rendu
+> (`docs/plan/07-audit-mode-live-variantes.md`), la décision d'attaquer
+> appartient à Yann — voir « Le chantier ouvert » plus bas.
 
 ## Où en est le projet
 
@@ -75,13 +76,37 @@ Arbitrage pris pour l'acte 6 : **le laisser de côté**. Les neuf boucles y ont 
 livrées, et la scène n'en monte qu'une en set — bâtir trois sets sur une
 mécanique qui ne convient pas serait construire sur du sable.
 
-Ce qu'il y a déjà, et qu'il faut relire avant de repartir :
+**L'audit est fait — [`07-audit-mode-live-variantes.md`](docs/plan/07-audit-mode-live-variantes.md)**
+(2026-09-05), à lire avant de coder ; il prolonge
 [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) et
-[`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md),
-tous deux ouverts. Trois façons d'attaquer avaient été proposées : le laisser de
-côté (choisi), l'auditer en le JOUANT avec mesures à l'appui, ou générer une
-**fiche HTML annotable** comme celle du Mode jeu — c'est ce dernier format qui a
-le mieux marché la fois précédente (21 cases annotées, toutes rentrées).
+[`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md).
+
+Ce qu'il mesure, et qui décide de tout : **chargé à froid, le modèle POP joue
+trente fois le même motif** — ses huit sections disent toutes « motif courant »,
+et sans banque préparée le sélecteur d'une section n'offre qu'une seule ligne.
+Les trois modèles ne sont pas trois formes mais trois **mécanismes** (POP n'utilise
+que `sequenceId`, ARC que `lignes`, aucun les deux). Et POP demande **huit
+assignations pour cinq rôles**, parce que `Section` met la place dans la forme
+et le matériau joué dans le même objet — le « les couplets sont à peu près les
+mêmes » de Yann est un défaut de modèle de données, pas d'interface. S'y ajoute
+une incohérence interne : la bascule automatique tombe sur un cycle, la bascule
+**manuelle** sur la mesure suivante — juste **27,9 %** du temps sur une
+frontière de cycle, mesuré sur les 34 presets.
+
+**Ce que l'audit recommande** : séparer la VARIANTE (le matériau : un calque de
+lignes sur la boucle, ou une séquence de banque) de l'ARCHITECTURE (la forme :
+une suite de `{lettre, cycles}`), et **dériver trois variantes de la boucle
+courante** — règle calibrée sur les 34 presets + le motif d'accueil, 0 collision
+et 0 variante vide. Le Mode Live par défaut devient alors un **instrument à
+trois variantes** qui bascule à la fin du cycle, et l'architecture n'est plus
+qu'un enchaînement automatique de gestes qu'on sait déjà faire à la main —
+**plus rien à préparer**. Découpage en cinq tranches au §6 de l'audit ; A (les
+variantes dérivées) et B (la bascule au cycle) sont indépendantes et valent
+d'être livrées seules.
+
+⚠️ Deux pièges relevés : les lettres **A–F sont déjà prises** par les snapshots
+d'assignation du ⚙, et la durée affichée du morceau est **fausse dès qu'une
+section porte une séquence** (un seul cycle appliqué à toutes).
 
 ---
 
