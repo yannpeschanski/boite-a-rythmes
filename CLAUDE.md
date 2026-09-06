@@ -195,6 +195,34 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ---
 
+## Le Mode Live
+
+⚠️ **Par défaut, le Mode Live est un instrument à TROIS VARIANTES** dérivées de
+la boucle courante (`model/variantes.ts`) : PLEIN, RETENUE, RUPTURE. Avant, un
+modèle d'architecture chargé à froid jouait trente fois le même motif — ses
+cases attendaient une séquence de banque que personne n'avait préparée.
+⚠️ La dérivation retire **par RANG**, jamais une liste fixe de lignes : une
+liste fixe donnait RETENUE = PLEIN sur le motif d'accueil, deux boutons
+identiques sur le seul motif proposé à froid. Et **une variante vide ou
+identique à une autre n'est pas rendue** — un bouton qui ne change rien à ce
+qu'on entend est du théâtre. PLEIN **relâche** le calque (`null`), il ne force
+pas : le Live ne rouvre pas une ligne coupée dans l'Atelier.
+
+⚠️ **Une bascule demandée à la main tombe à la fin du CYCLE**
+(`queueSwapAtEndOfCycle`), pas de la mesure : à la mesure, elle tombait juste
+27,9 % du temps sur les 34 presets et coupait la progression d'accords.
+Corollaire d'écran : la case en attente doit le DIRE (« DANS n »), sinon un
+bouton qui a pris la demande paraît cassé pendant 10,7 s.
+⚠️ **Un seul endroit écrit les mutes** (`poserCalque`, `LiveView`), partagé par
+la bande d'architecture et les variantes — et quitter une architecture relâche
+son calque.
+
+Le reste (le modèle à lettres `A B A B C B`, qui remplacera les huit cases pour
+cinq rôles de la bande) est audité mais pas livré :
+`docs/plan/07-audit-mode-live-variantes.md`, tranches C à E.
+
+---
+
 ## Le récit
 
 ⚠️ **Le jeu s'appelle FACE B** — le nom du label, pas celui de l'outil. Il vit

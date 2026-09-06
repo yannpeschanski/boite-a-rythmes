@@ -312,8 +312,8 @@ automatique de gestes qu'on sait déjà faire à la main.
 
 | | tranche | ce qu'elle livre | dépend de |
 |---|---|---|---|
-| **A** | **Les trois variantes dérivées** | `variantesDe(state)` pur et testé (calibré §3.2), trois boutons dans le Live, bascule à la main | rien |
-| **B** | **La bascule à la fin du CYCLE** | `queueSwapAtEndOfCycle` dans le moteur + l'attente VISIBLE sur la case (§1.6) | rien — corrige un défaut actuel (§1.5) |
+| **A** ✅ | **Les trois variantes dérivées** | `variantesDe(state)` pur et testé (calibré §3.2), trois boutons dans le Live, bascule à la main | rien |
+| **B** ✅ | **La bascule à la fin du CYCLE** | `queueSwapAtEndOfCycle` dans le moteur + l'attente VISIBLE sur la case (§1.6) | rien — corrige un défaut actuel (§1.5) |
 | **C** | **Le modèle lettres** | `Variante` / `Architecture{pas}`, les cinq modèles du §3.3, la bande qui les joue, la durée par pas (§1.6) | A, B |
 | **D** | **Le raccord du jeu** | `monterLeSet` (acte 6) en trois variantes, et l'acte 7 qui envoie sur scène | C |
 | **E** | *(si besoin)* | l'édition d'une variante : couper une ligne de plus, y déposer une séquence de banque | C |
@@ -321,3 +321,10 @@ automatique de gestes qu'on sait déjà faire à la main.
 **A et B sont indépendantes du modèle** et valent d'être livrées seules : à
 elles deux elles répondent déjà à *« ce que le Mode Live fait par défaut »*, et
 B corrige une incohérence qui existe aujourd'hui.
+
+**A et B sont livrées** (2026-09-06, journal dans `PLAN.md`). Mesuré après :
+rangée 832 × 44, trois boutons de 212 × 44, aucun débordement, aucune commande
+nouvelle sous 44 px ; sur « Boom bap 90s » les trois variantes font 5 / 7 / 4
+lignes et un appui annonce « DANS 4 », le cycle du motif. Restent C, D et E —
+la bande d'architecture garde donc pour l'instant ses huit cases pour cinq
+rôles (§1.3), et les variantes ne s'affichent qu'en son absence.

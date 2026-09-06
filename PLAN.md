@@ -29,6 +29,7 @@ une ligne réécrite ni réordonnée.
 | [`04-maquettes-et-moodboards.md`](docs/plan/04-maquettes-et-moodboards.md) | Maquettes — les sept séries de propositions |
 | [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) | **Audit du Mode Live (2026-09-02)** — pas une archive : un chantier OUVERT, mesuré et pas encore arbitré |
 | [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
+| [`07-audit-mode-live-variantes.md`](docs/plan/07-audit-mode-live-variantes.md) | **Audit du Mode Live par défaut (2026-09-06)** — pourquoi POP ne joue rien à froid ; tranches A et B livrées |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans
@@ -43,6 +44,104 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ---
 
 ## Journal des livraisons — Mode jeu et Mode carrière
+
+### ✅ Le Mode Live propose trois variantes, et bascule au cycle (2026-09-06)
+
+> « les différents types d'architecture ne sont pas pertinents en l'état. on
+> doit en plus affecter des presets à chaque partie alors que pour couplet
+> refrain couplet refrain pont, les couplets sont à peu près les mêmes […] il
+> faut définir ce que fait le mode live par défaut. » — Yann
+
+Audit complet dans [`07-audit-mode-live-variantes.md`](docs/plan/07-audit-mode-live-variantes.md).
+Livré ici : ses tranches **A** (les variantes dérivées) et **B** (la bascule au
+cycle), les deux qui ne dépendent pas du modèle à lettres.
+
+**Ce qui était cassé, mesuré à l'écran** (844 × 390, `#boss`, banque vide).
+Chargé à froid, le modèle POP jouait **trente fois le même motif** : ses huit
+cases affichaient toutes « motif courant », parce que `section()` pose
+`sequenceId: null` et que POP ne pose aucun calque de lignes. Sur le motif
+d'accueil (cycle propre 1 mesure), ça fait 1 min 00 à 120 BPM du même motif
+d'une mesure, avec un nom qui change sur l'afficheur. Et le seul chemin pour
+lui donner du contenu passait par l'Atelier : avec une banque vide, le
+sélecteur d'une section n'offrait qu'**une** ligne, « GARDER LE MOTIF
+COURANT », sans un mot pour dire pourquoi.
+
+**1 · Trois variantes DÉRIVÉES de la boucle — `src/model/variantes.ts`.**
+PLEIN = ce qui sonne ; RETENUE = moins les deux premières lignes présentes dans
+l'ordre `melody → clap → shaker → pad → hat → snare → bass → kick` ; RUPTURE =
+moins le socle (`kick`, `snare`, `clap`). Rien à préparer, donc rien à oublier
+de préparer.
+
+⚠️ **La règle par RANG n'est pas un raffinement, c'est la correction d'une
+règle fausse.** Une première version retirait une liste FIXE (`clap`, `shaker`,
+`melody`) : zéro collision sur les 34 presets, et **RETENUE = PLEIN sur le
+motif d'accueil**, qui n'a aucune des trois — deux boutons identiques sur le
+seul motif que le Mode Live propose à froid. Calibrage de la version livrée,
+sur les 34 presets **plus** le motif d'accueil : lignes qui sonnent 6,69 sur 8
+en moyenne (min 3), tailles moyennes 4,71 / 6,69 / 4,31, **0 collision, 0
+variante vide**. `tests/variantes.test.ts` rejoue l'ancienne règle pour que le
+jour où quelqu'un la restaure, ce soit lui qui le dise.
+
+⚠️ Et ce qu'elle ne fait pas est écrit : sur les 35 motifs, RETENUE ne prend
+que **quatre formes distinctes** — la dérivation lit l'INVENTAIRE des lignes,
+pas la musique. C'est un point de départ jouable en zéro geste, pas une
+composition ; le séquenceur reste le moyen d'en couper une de plus.
+
+⚠️ **Un bouton qui ne change rien n'est pas rendu.** Une variante vide ou
+identique à une autre disparaît — sur une boucle d'une seule ligne il ne reste
+que PLEIN, et c'est la bonne réponse. En cas de doublon on garde **PLEIN**,
+jamais l'autre : c'est la boucle telle qu'elle a été composée, donc la
+référence.
+
+⚠️ **PLEIN relâche, il ne force pas** (`calqueDe` rend `null`). Son masque
+contient les lignes qui sonnent : s'en servir comme calque rouvrirait une ligne
+coupée dans l'Atelier, dans le dos de qui l'a coupée. Même règle que
+`Section.lignes` à `null`.
+
+**2 · La bascule tombe à la fin du CYCLE — `queueSwapAtEndOfCycle`.** L'avance
+automatique de la bande tombait déjà sur une frontière de cycle (une section se
+compte en tours) ; la bascule demandée **à la main** tombait à la mesure
+suivante. Mesuré sur les 34 presets, dont 30 ont un cycle de 4 mesures : elle
+tombait juste **27,9 % du temps**. Sept appuis sur dix coupaient la progression
+d'accords en plein milieu — et `resetCursorsAt` la faisait recommencer, donc on
+l'entendait deux fois. Le repère est `sectionStartBar`, pas le début de la
+lecture : c'est là que les curseurs ont été remis à zéro.
+
+⚠️ **L'horizon n'est plus écrêté pendant toute l'attente**, seulement à
+l'approche (`basculeImminente`) : l'écrêtage protège la frontière, le maintenir
+quatre mesures programmerait court pour rien.
+
+⚠️ **Le compte à rebours n'est pas décoratif.** Attendre la fin d'un cycle de
+4 mesures fait **10,7 s à 90 BPM** : sans « DANS n » ni clignotement, un bouton
+qui a bien pris la demande se lit comme un bouton cassé.
+
+**3 · Un seul endroit qui écrit des mutes — `poserCalque`.** La bande
+d'architecture et les variantes partagent la fonction : deux écritures de mutes
+qui doivent rester d'accord finissent par ne plus l'être, et ça s'entend un jour
+sans qu'on sache d'où ça vient. Corollaire livré au passage : **quitter une
+architecture relâche le calque** — sortir d'ARC en pleine MONTÉE laissait quatre
+lignes coupées sans plus rien à l'écran pour le dire.
+
+**4 · Quand la BOUCLE change, on revient au PLEIN.** Un calque calculé sur
+l'ancienne boucle ne veut plus rien dire sur la nouvelle : il couperait des
+lignes au hasard. Posé sur les deux chemins de chargement de banque.
+
+**Mesuré après**, 844 × 390, pointeur grossier : rangée 832 × 44, trois boutons
+de **212 × 44**, aucun débordement (page ni conteneurs), aucune commande
+nouvelle sous 44 px. Sur le motif d'accueil : A 2 lignes / B 3 / C 1. Sur
+« Boom bap 90s » chargé depuis la banque : A 5 / B 7 / C 4, et un appui sur A
+annonce « DANS 4 » — le cycle du motif. La bande d'architecture, elle, est
+inchangée (ARC : quatre cases de 173 × 44).
+
+**Ce qui n'est PAS fait** : les tranches C (le modèle à lettres `A B A B C B`),
+D (le raccord de l'acte 6) et E. La bande d'architecture garde donc ses huit
+cases et ses cinq rôles, et les variantes ne s'affichent qu'en son absence —
+une section porte déjà son propre calque, deux mains sur les mêmes mutes se
+battraient.
+
+**Fichiers** : `src/model/variantes.ts` (neuf), `src/model/architecture.ts`
+(`ligneSonne` exportée), `src/engine/AudioEngine.ts`, `src/ui/live/LiveView.svelte`,
+`tests/variantes.test.ts` (neuf), `tests/bascule-mesure.test.ts`.
 
 ### ✅ FB-015 en trois morceaux, et la mélodie entre dans les cahiers (2026-09-05)
 

@@ -54,7 +54,15 @@ function ppcm(a: number, b: number): number {
   return Math.abs(a * b) / (pgcd(a, b) || 1);
 }
 
-function ligneSonne(state: PatternStateV2, name: LineName): boolean {
+/**
+ * Une ligne SONNE-t-elle ? Non muette, et au moins un pas posé.
+ *
+ * ⚠️ Exportée parce que `model/variantes.ts` en dépend, et qu'il ne doit pas
+ * en écrire une seconde : deux définitions de « sonne » qui doivent rester
+ * d'accord finissent par ne plus l'être — le cycle propre compterait une
+ * ligne que les variantes ignorent, ou l'inverse.
+ */
+export function ligneSonne(state: PatternStateV2, name: LineName): boolean {
   if ((DRUM_ROW_NAMES as string[]).includes(name)) {
     const row = state.rows[name as DrumRowName];
     if (row.muted) return false;

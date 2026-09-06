@@ -34,6 +34,7 @@
     formaterDuree,
     MODELES,
   } from '../../model/architecture';
+  import { variantesDe, calqueDe, type Variante, type VarianteId } from '../../model/variantes';
   import { AudioEngine, type PadMode } from '../../engine/AudioEngine';
   import { barDuration, coupee } from '../../engine/groove';
   import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
@@ -590,6 +591,7 @@
     sequenceBank.load(id);
     picker = null;
     bankIndex = sequenceBank.entries.findIndex((e) => e.id === id);
+    revenirAuPlein();
   }
 
   /* ---- LA BANDE D'ARCHITECTURE (macro-séquenceur) ----
@@ -621,21 +623,19 @@
   /* Applique une section : charge son motif (SANS son tempo) et pose son
      calque de lignes. Appelée DANS la file du moteur, donc exactement au
      début de la mesure. */
-  function appliquerSection(i: number) {
-    const s = architecture.sections[i];
-    sectionIndex = i;
-    basculeEnAttente = false;
-    if (!s) return;
-    if (s.sequenceId) sequenceBank.loadGardantTempo(s.sequenceId);
-    /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
-       sur une seule séquence.
-       ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
-       toucher ». Trouvé en jouant le modèle ARC, pas en relisant le code :
-       la MONTÉE coupait quatre lignes, et le CLIMAX — qui doit tout rouvrir —
-       les laissait coupées, parce qu'on sortait sans rien faire. Relâcher,
-       c'est repasser l'override à `null` (suivre le motif), et non forcer
-       ouvert : une ligne coupée dans l'Atelier reste coupée. */
-    const actives = s.lignes ? new Set<DrumRowName | SynthRowName>(s.lignes) : null;
+  /* Pose un CALQUE de lignes — la seule écriture de mutes partagée par la
+     bande d'architecture et par les variantes.
+     ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
+     toucher ». Trouvé en jouant le modèle ARC, pas en relisant le code :
+     la MONTÉE coupait quatre lignes, et le CLIMAX — qui doit tout rouvrir —
+     les laissait coupées, parce qu'on sortait sans rien faire. Relâcher,
+     c'est repasser l'override à `null` (suivre le motif), et non forcer
+     ouvert : une ligne coupée dans l'Atelier reste coupée.
+     ⚠️ Une seule définition : deux endroits qui écrivent des mutes finissent
+     par ne plus être d'accord, et c'est inaudible jusqu'à ce que ça ne le
+     soit plus. */
+  function poserCalque(lignes: (DrumRowName | SynthRowName)[] | null) {
+    const actives = lignes ? new Set<DrumRowName | SynthRowName>(lignes) : null;
     for (const name of [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES]) {
       const valeur = actives === null ? null : !actives.has(name);
       if (valeur === null) delete liveMute[name];
@@ -645,17 +645,28 @@
     }
   }
 
+  function appliquerSection(i: number) {
+    const s = architecture.sections[i];
+    sectionIndex = i;
+    basculeEnAttente = false;
+    if (!s) return;
+    if (s.sequenceId) sequenceBank.loadGardantTempo(s.sequenceId);
+    // Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
+    // sur une seule séquence.
+    poserCalque(s.lignes);
+  }
+
   function sectionSuivante(): number {
     return archSections.length ? (sectionIndex + 1) % archSections.length : 0;
   }
 
-  /** Saute à la section suivante à la prochaine mesure (bouton SUIVANT). */
+  /** Saute à la section suivante à la fin du cycle (bouton SUIVANT). */
   function sauterSection() {
     if (!archSections.length) return;
     hapticTick();
     const cible = sectionSuivante();
     basculeEnAttente = true;
-    engine.queueSwapAtNextBar(() => appliquerSection(cible));
+    engine.queueSwapAtEndOfCycle(cycleMotif, () => appliquerSection(cible));
   }
 
   /* Avance automatique — appelée à chaque frame. On programme la bascule
@@ -667,7 +678,7 @@
     if (engine.barDansSection >= mesuresCourantes - 1) {
       const cible = sectionSuivante();
       basculeEnAttente = true;
-      engine.queueSwapAtNextBar(() => appliquerSection(cible));
+      engine.queueSwapAtEndOfCycle(cycleMotif, () => appliquerSection(cible));
     }
   }
 
@@ -697,6 +708,8 @@
        coupé aucune ligne, parce que `appliquerSection` n'était appelée qu'au
        moment d'une BASCULE — et la première n'en est pas une. */
     appliquerSection(0);
+    varianteEnAttente = null;
+    varianteActive = 'plein';
     picker = null;
   }
 
@@ -705,7 +718,60 @@
     sectionIndex = 0;
     basculeEnAttente = false;
     engine.cancelQueuedSwap();
+    /* ⚠️ On RELÂCHE le calque en sortant. Sans ça, quitter le modèle ARC au
+       milieu de sa MONTÉE laissait quatre lignes coupées sans plus rien à
+       l'écran pour dire pourquoi — et le séquenceur, lui, les montrait
+       coupées, donc le motif avait l'air d'avoir changé tout seul. */
+    revenirAuPlein();
     picker = null;
+  }
+
+  /* ---- LES TROIS VARIANTES (ce que le Mode Live fait PAR DÉFAUT) ----
+   *
+   * ⚠️ CE QUE ÇA RÉPARE. Chargé à froid, le modèle POP jouait trente fois le
+   * même motif : ses huit cases attendaient une séquence de banque, et sans
+   * banque il n'y avait rien à y mettre — le seul chemin passait par
+   * l'Atelier. Ici les trois boutons sont DÉRIVÉS de la boucle qu'on a sous
+   * la main (voir model/variantes.ts) : rien à préparer, donc rien à oublier
+   * de préparer.
+   *
+   * Ils ne s'affichent qu'en l'ABSENCE d'architecture : une section porte
+   * déjà son propre calque, et deux mains sur les mêmes mutes se battraient.
+   */
+  const variantes = $derived(variantesDe(st));
+  const varianteCourante = $derived(variantes.find((v) => v.id === varianteActive) ?? null);
+  let varianteActive = $state<VarianteId>('plein');
+  let varianteEnAttente = $state<VarianteId | null>(null);
+  /* Miroir réactif du compte à rebours du moteur — même raison que
+     `mesureDansSection` : `mesuresAvantBascule` est un getter de classe
+     ordinaire, lu dans le balisage il ne redéclenche aucun rendu. */
+  let mesuresAvantBascule = $state<number | null>(null);
+
+  function appliquerVariante(v: Variante) {
+    poserCalque(calqueDe(v));
+    varianteActive = v.id;
+    varianteEnAttente = null;
+  }
+
+  /* ⚠️ La bascule tombe à la fin du CYCLE, pas de la mesure — c'est tout
+     l'intérêt du bouton. À l'arrêt, `queueSwapAtEndOfCycle` applique tout de
+     suite : on entend ce qu'on choisit avant même d'appuyer sur PLAY. */
+  function choisirVariante(v: Variante) {
+    if (varianteActive === v.id && varianteEnAttente === null) return;
+    hapticTick();
+    varianteEnAttente = playing ? v.id : null;
+    engine.queueSwapAtEndOfCycle(cycleMotif, () => appliquerVariante(v));
+  }
+
+  /* Retour au PLEIN sans passer par la file : appelé quand la BOUCLE change
+     (banque, architecture quittée). Un calque calculé sur l'ancienne boucle
+     ne veut plus rien dire sur la nouvelle — il couperait des lignes au
+     hasard. */
+  function revenirAuPlein() {
+    engine.cancelQueuedSwap();
+    varianteEnAttente = null;
+    varianteActive = 'plein';
+    poserCalque(null);
   }
 
   // Bascule directe depuis le bandeau du haut (retour de Yann, 2026-08-14 :
@@ -720,6 +786,8 @@
     if (!entries.length) return;
     bankIndex = bankIndex < 0 ? 0 : (bankIndex + dir + entries.length) % entries.length;
     sequenceBank.load(entries[bankIndex].id);
+    // La boucle change : le calque de l'ancienne ne veut plus rien dire.
+    revenirAuPlein();
   }
 
   function downloadCapture(buffer: AudioBuffer) {
@@ -1528,6 +1596,7 @@
     suivreArchitecture();
     avancement = avancementSection();
     mesureDansSection = Math.max(0, engine.barDansSection);
+    mesuresAvantBascule = engine.mesuresAvantBascule;
     const taille = tailleCarre();
     for (const name of lignesVisibles) {
       const canvas = pisteCanvas[name];
@@ -1608,7 +1677,7 @@
               onpointerleave={tempoPointerUp}
               title="Tempo −1 (maintenir pour défiler)"
             >−</button>
-            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}{sectionCourante ? ` · ${sectionCourante.nom}` : ''}</span>
+            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}{sectionCourante ? ` · ${sectionCourante.nom}` : ` · ${varianteCourante?.nom ?? 'PLEIN'}`}</span>
             <button
               class="tempo-btn tap44"
               onpointerdown={() => tempoPointerDown(1)}
@@ -1648,10 +1717,13 @@
         </button>
         <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
       </div>
-      <!-- LA BANDE D'ARCHITECTURE. Elle remplace le bandeau de banque, qui
-           prenait 44 px sur 390 (11 % de la hauteur) pour afficher « Aucune
-           séquence » tant que la banque était vide. Sans architecture chargée
-           elle redevient ce bandeau : mono-cycle par défaut, rien ne change. -->
+      <!-- LA BANDE D'ARCHITECTURE, ou LES TROIS VARIANTES.
+           ⚠️ Sans architecture chargée, cette rangée ne montrait que la banque
+           — c'est-à-dire « Aucune séquence » tant qu'on n'était pas passé par
+           l'Atelier, donc rien à jouer. Elle porte maintenant les trois
+           variantes dérivées de la boucle courante : c'est ce que le Mode Live
+           fait PAR DÉFAUT, et ça ne demande aucune préparation. La banque
+           garde ses flèches à droite, en plus petit. -->
       {#if archSections.length}
         <div class="strip">
           <div class="cases">
@@ -1660,7 +1732,7 @@
                 class="case"
                 class:on={i === sectionIndex}
                 class:done={i < sectionIndex}
-                onclick={() => engine.queueSwapAtNextBar(() => appliquerSection(i))}
+                onclick={() => engine.queueSwapAtEndOfCycle(cycleMotif, () => appliquerSection(i))}
                 title="{sec.nom} — {mesuresDeSection(sec, cycleMotif)} mesures"
               >
                 {#if i === sectionIndex}
@@ -1683,29 +1755,51 @@
           </div>
         </div>
       {:else}
-        <!-- Bascule directe dans la banque, sans passer par ⚙ (retour de Yann,
-             2026-08-14 : « un curseur vert que je ne comprends pas »). -->
         <div class="seq-bar">
-          <button
-            class="seq-nav tap44"
-            onclick={() => cycleBankSequence(-1)}
-            disabled={sequenceBank.entries.length < 2}
-            title="Séquence précédente"
-          >‹</button>
-          <button
-            class="seq-current tap44"
-            onclick={() => cycleBankSequence(1)}
-            disabled={sequenceBank.entries.length === 0}
-            title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
-          >
-            🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Choisir une séquence…' : 'Aucune séquence')}
-          </button>
-          <button
-            class="seq-nav tap44"
-            onclick={() => cycleBankSequence(1)}
-            disabled={sequenceBank.entries.length < 2}
-            title="Séquence suivante"
-          >›</button>
+          {#each variantes as v (v.id)}
+            <button
+              class="vbtn tap44"
+              class:on={varianteActive === v.id && varianteEnAttente === null}
+              class:attente={varianteEnAttente === v.id}
+              onclick={() => choisirVariante(v)}
+              title="{v.nom} — {v.lignes.length} ligne{v.lignes.length > 1 ? 's' : ''} : {v.lignes.join(', ')}"
+            >
+              <span class="vlettre">{v.lettre}</span>
+              <span class="vnom">{v.nom}</span>
+              <!-- ⚠️ Le compte à rebours n'est pas décoratif : attendre la fin
+                   d'un cycle de 4 mesures fait 10,7 s à 90 BPM, et un bouton
+                   qui a bien pris la demande se lit alors comme cassé. -->
+              <span class="vn"
+                >{varianteEnAttente === v.id && mesuresAvantBascule !== null
+                  ? `DANS ${mesuresAvantBascule}`
+                  : `${v.lignes.length} LIGNE${v.lignes.length > 1 ? 'S' : ''}`}</span
+              >
+            </button>
+          {/each}
+          <!-- Bascule directe dans la banque, sans passer par ⚙ (retour de Yann,
+               2026-08-14 : « un curseur vert que je ne comprends pas »). -->
+          <div class="seq-mini">
+            <button
+              class="seq-nav tap44"
+              onclick={() => cycleBankSequence(-1)}
+              disabled={sequenceBank.entries.length < 2}
+              title="Séquence précédente"
+            >‹</button>
+            <button
+              class="seq-current tap44"
+              onclick={() => cycleBankSequence(1)}
+              disabled={sequenceBank.entries.length === 0}
+              title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
+            >
+              🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Séquence…' : 'Banque vide')}
+            </button>
+            <button
+              class="seq-nav tap44"
+              onclick={() => cycleBankSequence(1)}
+              disabled={sequenceBank.entries.length < 2}
+              title="Séquence suivante"
+            >›</button>
+          </div>
         </div>
       {/if}
       {#if tiltDenied}
@@ -2436,6 +2530,81 @@
     color: var(--amp-lcd-dim);
     text-shadow: none;
     cursor: default;
+  }
+  /* Le groupe de banque garde ses trois pièces mais cède la rangée aux trois
+     variantes : c'est elles qu'on joue, la banque est de la préparation. */
+  .seq-mini {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+  }
+  /* LES TROIS VARIANTES (voir model/variantes.ts). Même grammaire que les cases
+     de la bande d'architecture, un étage en dessous : biseau en relief au
+     repos, bord ambre quand la variante est celle qui sonne. */
+  .vbtn {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    border: 1px solid var(--amp-line);
+    background: linear-gradient(180deg, #3c3c48, var(--amp-bg-2) 55%, var(--amp-bg-3));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    font-family: inherit;
+    color: var(--amp-text);
+    cursor: pointer;
+    touch-action: none;
+  }
+  .vlettre {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8e8ea3;
+  }
+  .vnom {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .vn {
+    font-size: 8px;
+    color: #8e8ea3;
+    white-space: nowrap;
+  }
+  .vbtn.on {
+    border-color: var(--amp-amber);
+  }
+  .vbtn.on .vlettre,
+  .vbtn.on .vnom {
+    color: #fff3cf;
+  }
+  /* ⚠️ EN ATTENTE, pas encore active : la demande est prise, elle tombera à la
+     fin du cycle. Sans ce dessin, le bouton reste éteint jusqu'à 10,7 s (un
+     cycle de 4 mesures à 90 BPM) et se lit comme un bouton cassé. */
+  .vbtn.attente {
+    border-color: var(--amp-lcd-fg);
+    animation: vbtn-attente 0.6s steps(2, jump-none) infinite;
+  }
+  .vbtn.attente .vlettre,
+  .vbtn.attente .vn {
+    color: var(--amp-lcd-fg);
+  }
+  @keyframes vbtn-attente {
+    from {
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+    to {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 0 6px var(--amp-lcd-fg);
+    }
   }
   .amp-btn {
     font-family: inherit;
@@ -3200,6 +3369,14 @@
        seule de sa rangée : les huit cases montent ensemble sans rien pousser. */
     .strip .case {
       min-height: 44px;
+    }
+  }
+
+  /* ⚠️ En FIN de <style> comme tous les blocs `@media` du fichier : posé plus
+     haut, il serait écrasé par les règles écrites en dessous. */
+  @media (prefers-reduced-motion: reduce) {
+    .vbtn.attente {
+      animation: none;
     }
   }
 </style>

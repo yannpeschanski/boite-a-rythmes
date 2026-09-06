@@ -167,6 +167,12 @@ export class AudioEngine {
      les curseurs à zéro au basculement ne peut jamais doubler une note déjà
      programmée. */
   private pendingSwap: (() => void) | null = null;
+  /* La mesure ABSOLUE à laquelle la bascule en attente doit tomber, ou `null`
+     pour « la prochaine ». Voir queueSwapAtEndOfCycle : une bascule qui tombe
+     à la mesure suivante coupe la progression d'accords en plein milieu trois
+     fois sur quatre, puisque le cycle propre vaut 4 mesures dans 30 presets
+     sur 34. */
+  private pendingSwapBar: number | null = null;
   private breakRequested = false;
   private breakWindow: BreakWindow | null = null;
   // Curseur visuel découplé : file d'événements consommée contre l'horloge
@@ -384,6 +390,7 @@ export class AudioEngine {
     this.currentBar = 0;
     this.sectionStartBar = 0;
     this.pendingSwap = null;
+    this.pendingSwapBar = null;
     this.playheadQueue = [];
     const startAt = ctx.currentTime + 0.06;
     this.nextBarTime = startAt + barDuration(this.getState().tempo);
@@ -793,10 +800,49 @@ export class AudioEngine {
       return;
     }
     this.pendingSwap = apply;
+    this.pendingSwapBar = null;
+  }
+
+  /* La même bascule, mais à la fin du CYCLE en cours et non de la mesure.
+   *
+   * ⚠️ POURQUOI LES DEUX EXISTENT. L'avance automatique de la bande tombe déjà
+   * sur une frontière de cycle, puisqu'une section se compte en tours. La
+   * bascule DEMANDÉE À LA MAIN, elle, tombait à la mesure suivante : mesurée
+   * sur les 34 presets (cycle de 4 mesures pour 30 d'entre eux), elle tombait
+   * juste **27,9 % du temps**. Sept appuis sur dix coupaient la progression
+   * d'accords en plein milieu — et `resetCursorsAt` la faisait recommencer,
+   * donc on l'entendait deux fois.
+   *
+   * Le repère est `sectionStartBar`, pas le début de la lecture : c'est là que
+   * les curseurs ont été remis à zéro, donc là où le cycle du motif courant a
+   * réellement commencé.
+   */
+  queueSwapAtEndOfCycle(cycleBars: number, apply: () => void): void {
+    if (!this.isPlaying) {
+      apply();
+      this.sectionStartBar = this.currentBar;
+      return;
+    }
+    const cycle = Math.max(1, Math.round(cycleBars));
+    const dans = Math.max(0, this.currentBar - this.sectionStartBar);
+    this.pendingSwap = apply;
+    this.pendingSwapBar = this.sectionStartBar + (Math.floor(dans / cycle) + 1) * cycle;
   }
 
   cancelQueuedSwap(): void {
     this.pendingSwap = null;
+    this.pendingSwapBar = null;
+  }
+
+  /** Mesures restantes avant la bascule en attente — `null` s'il n'y en a pas.
+   *
+   * ⚠️ L'écran en a besoin. Attendre la fin d'un cycle de 4 mesures fait
+   * 10,7 s à 90 BPM : sans compte à rebours affiché, un bouton qui a bien pris
+   * la demande se lit comme un bouton cassé. */
+  get mesuresAvantBascule(): number | null {
+    if (this.pendingSwap === null) return null;
+    if (this.pendingSwapBar === null) return 1;
+    return Math.max(1, this.pendingSwapBar - this.currentBar);
   }
 
   /** Mesure courante depuis ▶ — l'afficheur de la bande en a besoin. */
@@ -815,6 +861,17 @@ export class AudioEngine {
     const barDur = barDuration(this.getState().tempo);
     if (barDur <= 0) return 0;
     return Math.max(0, Math.min(1, 1 - (this.nextBarTime - this.ctx.currentTime) / barDur));
+  }
+
+  /* La bascule en attente tombe-t-elle sur la mesure qui commence ?
+   *
+   * ⚠️ Sans cette question, une bascule demandée à la fin du cycle tomberait à
+   * la mesure suivante quand même — et l'horizon resterait écrêté pendant
+   * toute l'attente, ce qui n'est pas faux mais programme inutilement court
+   * pendant quatre mesures. */
+  private basculeImminente(): boolean {
+    if (this.pendingSwapBar === null) return true;
+    return this.currentBar + 1 >= this.pendingSwapBar;
   }
 
   /* Repose tous les curseurs sur `t` : une section commence sur SON premier
@@ -841,9 +898,15 @@ export class AudioEngine {
 
     /* La bascule s'applique JUSTE AVANT la mesure, pas à son début audible :
        c'est à cet instant que l'ordonnanceur commence à écrire dedans. */
-    if (this.pendingSwap !== null && this.nextBarTime !== null && this.nextBarTime - now <= AVANCE_BASCULE) {
+    if (
+      this.pendingSwap !== null &&
+      this.basculeImminente() &&
+      this.nextBarTime !== null &&
+      this.nextBarTime - now <= AVANCE_BASCULE
+    ) {
       const apply = this.pendingSwap;
       this.pendingSwap = null;
+      this.pendingSwapBar = null;
       apply();
       this.resetCursorsAt(this.nextBarTime);
       this.sectionStartBar = this.currentBar + 1; // la mesure qui commence
@@ -877,7 +940,7 @@ export class AudioEngine {
        l'ancien motif, donc que `resetCursorsAt` ne peut pas doubler une note.
        L'écrêtage dure au plus le temps d'un tick avant la bascule. */
     const horizon =
-      this.pendingSwap !== null && this.nextBarTime !== null
+      this.pendingSwap !== null && this.basculeImminente() && this.nextBarTime !== null
         ? Math.min(now + SCHEDULE_AHEAD, this.nextBarTime)
         : now + SCHEDULE_AHEAD;
 
