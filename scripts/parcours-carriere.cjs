@@ -57,6 +57,7 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     const { CHORD_PRIORITY_ORDER: ORDRE_DES_ACCORDS } = await import('/src/model/presets/scales.ts');
     const { sequenceBank } = await import('/src/stores/bank.svelte.ts');
     const { architecture } = await import('/src/stores/architecture.svelte.ts');
+    const { parties } = await import('/src/stores/parties.svelte.ts');
     const log = [];
     const modules = () => ['atelier', 'synth', 'production', 'live'].filter((m) => unlocks.has(m)).join(',') || '—';
 
@@ -86,9 +87,14 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
           ? (() => {
               const noms = e.bouclesDeLActe.map((b) => b.nom);
               const enBanque = noms.filter((n) => sequenceBank.entries.some((x) => x.name === n));
-              const sections = architecture.sections;
-              const assignees = sections.filter((x) => x.sequenceId).length;
-              return ` — set : ${enBanque.length}/${noms.length} boucles en banque, ${assignees}/${sections.length} sections assignées`;
+              /* ⚠️ Depuis le chantier des PARTIES, une section cite une LETTRE
+                 et le set se monte en remplissant A/B/C. Ce qu'on vérifie n'est
+                 donc plus « combien de sections ont reçu une séquence » (elles
+                 en ont toutes une par construction) mais « combien de LETTRES
+                 sont réellement rangées » — une chaîne dont les lettres sont
+                 vides se replie sur A et joue huit fois la même chose. */
+              const lettres = ['A', 'B', 'C', 'D'].filter((l) => parties.remplie(l));
+              return ` — set : ${enBanque.length}/${noms.length} boucles en banque, parties ${lettres.join('') || '—'}, ${architecture.sections.length} sections`;
             })()
           : '';
         game.terminerScene();

@@ -20,6 +20,7 @@
   import SequenceBank from './SequenceBank.svelte';
   import { presetToState } from '../../model/presetAdapter';
   import { sequenceBank } from '../../stores/bank.svelte';
+  import PartiesStrip from './PartiesStrip.svelte';
   import type { SongPresetData } from '../../model/presets/songs';
   import ExportBar from './ExportBar.svelte';
   import ToolBar from './ToolBar.svelte';
@@ -592,6 +593,13 @@
          après une partie complète). L'onglet Rythme reste seul tant que le
          récit n'a rien ouvert d'autre : moins d'écran, et rien qui présente le
          jeu par ce qu'on ne peut pas faire. -->
+    <!-- LES PARTIES A/B/C/D — dans la barre sticky parce que c'est PENDANT
+         qu'on compose qu'on range une partie, pas après. Affichées seulement
+         une fois le Mode Live ouvert : c'est lui qui les enchaîne, et un
+         élément n'apparaît qu'à l'écran qui l'explique. -->
+    {#if unlocks.has('live')}
+      <PartiesStrip />
+    {/if}
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },

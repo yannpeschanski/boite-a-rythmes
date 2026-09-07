@@ -72,6 +72,8 @@ import type { LockedModule } from '../model/unlocks';
 import { pattern } from './pattern.svelte';
 import { sequenceBank } from './bank.svelte';
 import { architecture } from './architecture.svelte';
+import { parties } from './parties.svelte';
+import type { PartieId } from '../model/parties';
 import { history } from './history.svelte';
 import {
   BAG_ITEMS,
@@ -728,8 +730,8 @@ class GameStore {
     if (p) pattern.replace(deserializeState(p.etat));
   }
 
-  /* MONTER LE SET — les boucles livrées deviennent des séquences, et le modèle
-   * POP les enchaîne en couplet / refrain / pont.
+  /* MONTER LE SET — les boucles livrées deviennent les PARTIES A, B et C, et le
+   * montage « COUPLET / REFRAIN » les enchaîne.
    *
    * ⚠️ Le Mode Live faisait déjà tout ça À LA MAIN : ranger une séquence,
    * charger un modèle, assigner une séquence à chaque section. Ce qui manquait
@@ -737,9 +739,8 @@ class GameStore {
    * sans lui, un acte qui fait produire trois boucles se termine sur trois
    * fichiers que personne n'enchaîne.
    *
-   * Les sections non citées par le récit (intro, outro) retombent sur la
-   * PREMIÈRE boucle : une section sans séquence garderait le motif courant,
-   * c'est-à-dire n'importe lequel, et le set commencerait au hasard.
+   * Les sections non citées par le récit (intro, outro) sont des CALQUES sur A
+   * et B, plus des motifs à trouver : le montage les porte déjà.
    *
    * Rien de livré → on ne monte rien et on ne casse rien : la scène s'ouvre sur
    * ce qu'il y a, comme le rappel de l'acte 7. */
@@ -748,31 +749,40 @@ class GameStore {
     boucles: Array<{ serie: string; nom: string; section?: string }>,
   ): void {
     /* ⚠️ Toutes les boucles livrées vont dans la BANQUE, celles qui portent une
-     * section vont en plus dans l'ARCHITECTURE. Les deux ne se confondent pas :
-     * la banque est le matériel du disque (l'acte 6 en livre neuf, trois par
-     * morceau), l'architecture est le morceau qu'on monte sur scène — et on
-     * n'en monte qu'un. Sans cette distinction, les six autres boucles
-     * n'existaient nulle part dans le Mode Live. */
-    const parSection = new Map<string, string>();
-    let premiere: string | null = null;
+     * section vont en plus dans les PARTIES : la banque est le matériel du
+     * disque (l'acte 6 en livre neuf, trois par morceau), les parties sont le
+     * morceau qu'on monte sur scène — et on n'en monte qu'un. Sans cette
+     * distinction, les six autres boucles n'existaient nulle part.
+     *
+     * ⚠️ La correspondance section -> LETTRE est ce qui remplace les huit
+     * allers-retours dans un sélecteur : couplet = A, refrain = B, pont = C,
+     * c'est-à-dire exactement les lettres que le montage « COUPLET / REFRAIN »
+     * cite déjà. Le set est monté sans qu'un seul choix soit demandé. */
+    const LETTRE_DE_SECTION: Record<string, PartieId> = {
+      COUPLET: 'A',
+      REFRAIN: 'B',
+      PONT: 'C',
+    };
+    let monteQuelqueChose = false;
     for (const b of boucles) {
       const p = productionDeLaSerie(this.productions, acte, b.serie);
       if (!p) continue;
-      const id = sequenceBank.poser(b.nom, p.etat);
-      if (b.section) {
-        if (!parSection.has(b.section)) premiere ??= id;
-        parSection.set(b.section, id);
+      sequenceBank.poser(b.nom, p.etat);
+      const lettre = b.section ? LETTRE_DE_SECTION[b.section] : undefined;
+      if (lettre) {
+        parties.poser(lettre, p.etat, b.nom);
+        monteQuelqueChose = true;
       }
     }
-    if (parSection.size === 0) return;
-    const defaut = premiere;
-    architecture.chargerModele('POP');
-    architecture.sections.forEach((s, i) => {
-      architecture.poserSequence(i, parSection.get(s.nom) ?? defaut);
-    });
-    // On entre sur la première section, sinon la bande démarre sur le motif
-    // que l'Atelier avait sous la main.
-    if (defaut) sequenceBank.load(defaut);
+    if (!monteQuelqueChose) return;
+    architecture.chargerMontage('COUPLET / REFRAIN');
+    /* On entre sur la première partie, sinon la bande démarre sur le motif que
+       l'Atelier avait sous la main. */
+    if (parties.remplie('A')) parties.charger('A');
+    else {
+      const premiere = parties.premiereRemplie;
+      if (premiere) parties.charger(premiere);
+    }
   }
 
   /* Redescendre. ⚠️ On AVANCE : le rappel a eu lieu, l'écran suivant le

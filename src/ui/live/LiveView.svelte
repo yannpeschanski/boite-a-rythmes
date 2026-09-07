@@ -23,16 +23,19 @@
   //    moteur qu'en phase 2 (AudioEngine.requestBreak/liveRequestFill/
   //    liveSetMute/liveSetHatRoll/setLiveFilterCutoff/setLiveReverbWet),
   //    juste indirectés par l'assignation courante.
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { sequenceBank } from '../../stores/bank.svelte';
   import { architecture } from '../../stores/architecture.svelte';
+  import { parties } from '../../stores/parties.svelte';
+  import { PARTIES, type PartieId } from '../../model/parties';
   import {
     cycleDuMotif,
     mesuresDeSection,
     dureeSecondes,
     formaterDuree,
-    MODELES,
+    libelleDePartie,
+    MONTAGES,
   } from '../../model/architecture';
   import { AudioEngine, type PadMode } from '../../engine/AudioEngine';
   import { barDuration, coupee } from '../../engine/groove';
@@ -51,6 +54,7 @@
     saveLiveSnapshots,
     vizById,
     ACTIONS_TIRABLES,
+    LIVE_ACTIONS,
     LIVE_AXES,
     AXIS_GROUPS,
     ACTION_GROUPS,
@@ -351,16 +355,102 @@
     navigator.vibrate?.(ms);
   }
 
+  /* ---- LE LOQUET D'ASSIGNATION ----
+   *
+   * ⚠️ « Il faut éviter à tout le monde d'aller dans les réglages » (Yann,
+   * 2026-09-07). Réassigner un bouton demandait d'ouvrir ⚙, donc de quitter la
+   * surface de jeu — pour un geste qu'on fait justement en jouant.
+   *
+   * Et ça ne peut PAS être un geste posé sur le bouton lui-même : l'appui long
+   * y est déjà pris, c'est la rafale (`kind: 'ligne'`, escalade ×2 -> ×3 -> ×4)
+   * et le maintien de TENIR / SOLO MÉLO. Un loquet règle les deux problèmes
+   * d'un coup — allumé, toute la surface (les six boutons, le pad, l'inclinaison)
+   * se réassigne au lieu de jouer : tap = un tirage au hasard, appui long = la
+   * liste complète, sur place. Éteint, rien n'a changé.
+   */
+  let modeAssign = $state(false);
+  let slotTimer: ReturnType<typeof setTimeout> | null = null;
+  let slotLongue = false;
+
   function onSlotDown(i: number) {
+    if (modeAssign) {
+      slotLongue = false;
+      slotTimer = setTimeout(() => {
+        slotLongue = true;
+        hapticTick(25);
+        picker =
+          assignments.slotModes[i] === 'fader'
+            ? { kind: 'slotFader', index: i }
+            : { kind: 'slot', index: i };
+      }, LONG_PRESS_MS);
+      return;
+    }
     if (assignments.slotModes[i] === 'fader') return; // le fader se pilote au glisser (faderPointerDown), pas au tap
     hapticTick();
     pressed = { ...pressed, [i]: true };
     assignments.slots[i].forEach((id) => runAction(id, true));
   }
   function onSlotUp(i: number) {
+    if (modeAssign) {
+      if (slotTimer) {
+        clearTimeout(slotTimer);
+        slotTimer = null;
+      }
+      if (!slotLongue) {
+        randomizeSlot(i);
+        hapticTick();
+      }
+      return;
+    }
     if (assignments.slotModes[i] === 'fader') return;
     pressed = { ...pressed, [i]: false };
     assignments.slots[i].forEach((id) => runAction(id, false));
+  }
+  function onSlotLeave(i: number) {
+    if (modeAssign) {
+      if (slotTimer) {
+        clearTimeout(slotTimer);
+        slotTimer = null;
+      }
+      return;
+    }
+    onSlotUp(i);
+  }
+
+  /* Le pad et l'inclinaison suivent la même règle, avec la même paire de
+     gestes — sinon le loquet ne vaudrait que pour les boutons, et Yann demande
+     explicitement que « ce point s'applique au pad et à l'inclinaison ». */
+  let axeTimer: ReturnType<typeof setTimeout> | null = null;
+  let axeLongue = false;
+  function onAxeDown(which: 'axisX' | 'axisY' | 'axisTilt', e?: PointerEvent) {
+    /* ⚠️ Les deux moitiés vivent DANS le pad : sans ça, l'appui descend au
+       gestionnaire du pad, qui capture le pointeur et déplace la valeur de
+       l'axe qu'on est en train de réassigner. */
+    e?.stopPropagation();
+    axeLongue = false;
+    axeTimer = setTimeout(() => {
+      axeLongue = true;
+      hapticTick(25);
+      picker = { kind: 'axis', which };
+    }, LONG_PRESS_MS);
+  }
+  function onAxeUp(which: 'axisX' | 'axisY' | 'axisTilt', e?: PointerEvent) {
+    e?.stopPropagation();
+    if (axeTimer) {
+      clearTimeout(axeTimer);
+      axeTimer = null;
+    }
+    if (axeLongue) return;
+    assignments = { ...assignments, [which]: [pickAxis()] };
+    saveLiveAssignments(assignments);
+    hapticTick();
+  }
+  function onAxeLeave(e?: PointerEvent) {
+    e?.stopPropagation();
+    if (axeTimer) {
+      clearTimeout(axeTimer);
+      axeTimer = null;
+    }
   }
 
   // Bouton en mode FADER (PLAN.md §7) : glisser sur le bouton lui-même
@@ -527,15 +617,9 @@
     | { kind: 'slotFader'; index: number }
     | { kind: 'viz' }
     | { kind: 'bank' }
-    | { kind: 'archi' }
-    | { kind: 'archiSection'; index: number };
+    | { kind: 'montage' }
+    | { kind: 'section'; index: number };
   let picker = $state<Picker | null>(null);
-  // Index dans sequenceBank.entries de la dernière séquence chargée depuis
-  // CE bandeau (cycleBankSequence) — -1 tant qu'on n'a pas encore basculé.
-  let bankIndex = $state(-1);
-  const bankCurrent = $derived(
-    bankIndex >= 0 && bankIndex < sequenceBank.entries.length ? sequenceBank.entries[bankIndex] : null,
-  );
 
   function toggleActionInSlot(id: LiveActionId) {
     if (picker?.kind !== 'slot') return;
@@ -589,7 +673,6 @@
   function commitBankLoad(id: string) {
     sequenceBank.load(id);
     picker = null;
-    bankIndex = sequenceBank.entries.findIndex((e) => e.id === id);
   }
 
   /* ---- LA BANDE D'ARCHITECTURE (macro-séquenceur) ----
@@ -626,7 +709,15 @@
     sectionIndex = i;
     basculeEnAttente = false;
     if (!s) return;
-    if (s.sequenceId) sequenceBank.loadGardantTempo(s.sequenceId);
+    /* ⚠️ REPLI SUR A, jamais sur « le motif courant ». Une lettre encore vide
+       est le cas normal quand on vient de charger un montage et qu'on n'a rangé
+       que A : garder le motif courant ferait jouer ce que la bascule
+       précédente avait laissé, c'est-à-dire n'importe quoi. Se replier sur A
+       rend la chaîne audible dès la PREMIÈRE partie rangée, et remplir B
+       l'améliore au lieu de la faire exister. */
+    if (!parties.chargerGardantTempo(s.partie)) {
+      if (s.partie !== 'A') parties.chargerGardantTempo('A');
+    }
     /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
        sur une seule séquence.
        ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
@@ -688,8 +779,39 @@
      l'incrément du compteur, la valeur vaut brièvement −1. */
   let mesureDansSection = $state(0);
 
-  function chargerModele(nom: string) {
-    architecture.chargerModele(nom);
+  /* ⚠️ LES BOUTONS D'UN MONTAGE SE CONSOMMENT DANS UN EFFET, pas dans la
+     fonction de chargement. Le montage n'est pas toujours chargé d'ici : le
+     JEU en monte un tout seul à la scène de l'acte 6 (`game.monterLeSet`), et
+     un montage chargé là-bas serait arrivé sans ses commandes de section —
+     c'est-à-dire une chaîne sans SUIVANT ni TENIR, qui joue contre le
+     musicien. Une règle à deux domiciles n'est appliquée qu'à un seul.
+
+     Ce que le catalogue ne reconnaît pas est ignoré, jamais refusé en bloc :
+     même leçon que la migration des assignations, où le tout-ou-rien perdait
+     les six boutons ET les trois snapshots, en silence. */
+  $effect(() => {
+    const voulus = architecture.boutonsDemandes;
+    if (!voulus) return;
+    /* `untrack` : l'effet écrit dans `assignments`, qu'il lit pour garder le
+       défaut d'un rang non cité. Sans ça il se redéclencherait sur sa propre
+       écriture. */
+    const courants = untrack(() => assignments);
+    const slots = courants.slots.map((defaut, i) => {
+      const ids = (voulus[i] ?? []).filter((id): id is LiveActionId =>
+        LIVE_ACTIONS.some((a) => a.id === id),
+      );
+      return ids.length ? ids : defaut;
+    });
+    assignments = { ...courants, slots, slotModes: slots.map(() => 'actions' as SlotMode) };
+    saveLiveAssignments(assignments);
+    architecture.boutonsConsommes();
+  });
+
+  /* Charger un MONTAGE : la chaîne, les calques de lignes ET les six boutons
+     d'un coup — c'est ce que « des presets d'architecture / affectation de
+     bouton / lignes mutées » veut dire, et les trois vont ensemble. */
+  function chargerMontage(nom: string) {
+    architecture.chargerMontage(nom);
     basculeEnAttente = false;
     engine.cancelQueuedSwap();
     /* ⚠️ La PREMIÈRE section doit être appliquée, pas seulement pointée.
@@ -708,19 +830,108 @@
     picker = null;
   }
 
-  // Bascule directe depuis le bandeau du haut (retour de Yann, 2026-08-14 :
-  // « pouvoir basculer de séquence directement... sans passer par le menu de
-  // réglage ») — remplace la seekbar décorative (voir plus bas) par un vrai
-  // contrôle : ‹/› avance/recule dans la banque et charge tout de suite,
-  // zéro overlay à ouvrir. `bankIndex` ne suit que CE bandeau (pas un état
-  // de la banque elle-même) — un chargement depuis l'overlay ⚙ ou
-  // l'Atelier reste possible en parallèle, sans lien avec ce curseur.
-  function cycleBankSequence(dir: number) {
-    const entries = sequenceBank.entries;
-    if (!entries.length) return;
-    bankIndex = bankIndex < 0 ? 0 : (bankIndex + dir + entries.length) % entries.length;
-    sequenceBank.load(entries[bankIndex].id);
+  /* ---- LES PARTIES A / B / C / D ----
+   *
+   * ⚠️ C'EST LA RÉPONSE À « TROP COMPLIQUÉ ET PAS DU TOUT AUDIBLE ». Avant :
+   * composer dans l'Atelier, taper un nom dans un `prompt()`, ouvrir ⚙, puis
+   * un aller-retour dans un sélecteur PAR SECTION — huit pour le modèle POP —
+   * et tant que ces huit voyages n'étaient pas faits, les huit sections
+   * jouaient le même motif. Ici : quatre pastilles sous le pouce, un tap pour
+   * JOUER une lettre, un appui long pour y RANGER ce qu'on entend.
+   *
+   * « De A on développe B » n'a pas besoin d'un verbe à lui : c'est ce même
+   * appui long sur B après avoir modifié A.
+   */
+  function jouerPartie(id: PartieId) {
+    hapticTick();
+    /* Avec une chaîne chargée, taper une lettre SAUTE À SA SECTION plutôt que
+       de charger le motif dans le vide : sinon la chaîne reprendrait la main à
+       la mesure suivante et le geste n'aurait servi à rien. */
+    const cible = archSections.findIndex((sec) => sec.partie === id);
+    if (cible >= 0) {
+      basculeEnAttente = true;
+      engine.queueSwapAtNextBar(() => appliquerSection(cible));
+      return;
+    }
+    if (!parties.remplie(id)) return;
+    engine.queueSwapAtNextBar(() => {
+      parties.chargerGardantTempo(id);
+      partieHorsChaine = id;
+    });
   }
+
+  /** La lettre jouée hors chaîne — pour allumer la bonne pastille. */
+  let partieHorsChaine = $state<PartieId | null>(null);
+
+  function rangerPartie(id: PartieId) {
+    parties.ranger(id, parties.get(id)?.nom ?? '');
+    hapticTick(25);
+  }
+
+  /* Appui long sur une pastille = ranger. Même geste et même durée que les
+     snapshots d'assignation : un geste destructeur (il écrase la lettre) se
+     tient, il ne se tape pas. */
+  let partieTimer: ReturnType<typeof setTimeout> | null = null;
+  let partieLongue = false;
+  function onPartieDown(id: PartieId) {
+    partieLongue = false;
+    partieTimer = setTimeout(() => {
+      partieLongue = true;
+      rangerPartie(id);
+    }, LONG_PRESS_MS);
+  }
+  function onPartieUp(id: PartieId) {
+    if (partieTimer) {
+      clearTimeout(partieTimer);
+      partieTimer = null;
+    }
+    if (partieLongue) return;
+    // Une lettre vide n'a rien à jouer : le tap y range, c'est le seul geste
+    // qu'elle porte — et son libellé le dit.
+    if (parties.remplie(id)) jouerPartie(id);
+    else rangerPartie(id);
+  }
+  function onPartieLeave() {
+    if (partieTimer) {
+      clearTimeout(partieTimer);
+      partieTimer = null;
+    }
+  }
+
+  /* Appui long sur une CASE de la chaîne = l'éditer sur place (sa lettre, ses
+     tours). C'est la moitié « séquences » de la demande de Yann : plus rien de
+     la chaîne n'oblige à ouvrir ⚙. */
+  let caseTimer: ReturnType<typeof setTimeout> | null = null;
+  let caseLongue = false;
+  function onCaseDown(i: number) {
+    caseLongue = false;
+    caseTimer = setTimeout(() => {
+      caseLongue = true;
+      hapticTick(25);
+      picker = { kind: 'section', index: i };
+    }, LONG_PRESS_MS);
+  }
+  function onCaseUp(i: number) {
+    if (caseTimer) {
+      clearTimeout(caseTimer);
+      caseTimer = null;
+    }
+    if (caseLongue) return;
+    basculeEnAttente = true;
+    engine.queueSwapAtNextBar(() => appliquerSection(i));
+  }
+  function onCaseLeave() {
+    if (caseTimer) {
+      clearTimeout(caseTimer);
+      caseTimer = null;
+    }
+  }
+
+  /* La bascule directe ‹ › dans la banque a quitté le bandeau : les quatre
+     PARTIES font le même geste en mieux — nommées, sous le pouce, et calées sur
+     la mesure. La banque reste atteignable depuis ⚙ (kind: 'bank'), comme
+     matériel : c'est là que vivent les neuf boucles de l'acte 6, dont trois
+     seulement montent dans les lettres. */
 
   function downloadCapture(buffer: AudioBuffer) {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
@@ -1624,7 +1835,7 @@
             {#if sectionCourante}
               MESURE {Math.min(mesureDansSection, mesuresCourantes - 1) + 1}/{mesuresCourantes} · CYCLE DU MOTIF {cycleMotif} MES. · MORCEAU {dureeMorceau}
             {:else}
-              TOUT RÉEL · ⚙ POUR RÉASSIGNER BOUTONS ET PAD
+              TOUT RÉEL · 🎲 POUR RÉASSIGNER SUR PLACE
             {/if}
           </span>
         </div>
@@ -1643,71 +1854,108 @@
           <div class="vol-fill" style:width="{axisValues['volume'] * 100}%"></div>
           <span class="vol-val">{Math.round(axisValues['volume'] * 100)}%</span>
         </div>
-        <button class="tilt-btn tap44" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
-          <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
-        </button>
-        <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Assignation">⚙</button>
+        {#if modeAssign}
+          <!-- Sous le loquet, l'inclinaison se RÉASSIGNE au lieu de s'activer :
+               tap = un tirage, appui long = la liste. -->
+          <button
+            class="tilt-btn assignable tap44"
+            onpointerdown={() => onAxeDown('axisTilt')}
+            onpointerup={() => onAxeUp('axisTilt')}
+            onpointerleave={onAxeLeave}
+            title="Inclinaison — tap : au hasard · appui long : choisir"
+          >
+            <span class="led"></span>{axesFor(assignments.axisTilt).map((a) => a.label).join(' + ')}
+          </button>
+        {:else}
+          <button class="tilt-btn tap44" class:on={tiltEnabled} onclick={toggleTilt} title="Inclinaison (optionnelle)">
+            <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
+          </button>
+        {/if}
+        <!-- LE LOQUET. Il vient AVANT ⚙ parce qu'il le remplace dans neuf cas
+             sur dix : ⚙ ne garde que ce qui n'est pas un geste de scène (mode
+             fader, visualiseur, snapshots, banque). -->
+        <button
+          class="amp-btn gear tap44"
+          class:on={modeAssign}
+          onclick={() => (modeAssign = !modeAssign)}
+          title="Réassigner sur place — tap : au hasard · appui long : choisir"
+        >🎲</button>
+        <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Réglages">⚙</button>
       </div>
-      <!-- LA BANDE D'ARCHITECTURE. Elle remplace le bandeau de banque, qui
-           prenait 44 px sur 390 (11 % de la hauteur) pour afficher « Aucune
-           séquence » tant que la banque était vide. Sans architecture chargée
-           elle redevient ce bandeau : mono-cycle par défaut, rien ne change. -->
-      {#if archSections.length}
-        <div class="strip">
+      <!-- LA BANDE — quatre PARTIES, la chaîne, et les deux commandes de jeu,
+           sur une seule rangée de 44 px.
+           ⚠️ Elle remplace le bandeau de banque, qui prenait 44 px sur 390
+           (11 % de la hauteur) pour afficher « Aucune séquence » tant que la
+           banque était vide, et la bande d'architecture, qui n'existait qu'une
+           fois un modèle chargé depuis ⚙. Une seule rangée porte les deux :
+           ce qu'on JOUE (les lettres) et ce qui les ENCHAÎNE (la chaîne). -->
+      <div class="strip">
+        <div class="parties">
+          {#each PARTIES as id (id)}
+            {@const remplie = parties.remplie(id)}
+            {@const jouee = sectionCourante ? sectionCourante.partie === id : partieHorsChaine === id}
+            <button
+              class="partie"
+              class:remplie
+              class:on={remplie && jouee}
+              onpointerdown={() => onPartieDown(id)}
+              onpointerup={() => onPartieUp(id)}
+              onpointerleave={onPartieLeave}
+              title={remplie
+                ? `${id}${parties.get(id)?.nom ? ` — ${parties.get(id)?.nom}` : ''} · tap : jouer · appui long : y ranger ce qu'on entend`
+                : `${id} est vide · tap : y ranger ce qu'on entend`}
+            >
+              <span class="partie-lettre">{id}</span>
+              <span class="partie-etat">{remplie ? (parties.get(id)?.nom || 'RANGÉE') : '＋'}</span>
+            </button>
+          {/each}
+        </div>
+        {#if archSections.length}
           <div class="cases">
             {#each archSections as sec, i (sec.id)}
               <button
                 class="case"
                 class:on={i === sectionIndex}
                 class:done={i < sectionIndex}
-                onclick={() => engine.queueSwapAtNextBar(() => appliquerSection(i))}
-                title="{sec.nom} — {mesuresDeSection(sec, cycleMotif)} mesures"
+                class:vide={!parties.remplie(sec.partie)}
+                onpointerdown={() => onCaseDown(i)}
+                onpointerup={() => onCaseUp(i)}
+                onpointerleave={onCaseLeave}
+                title="{sec.nom} — {libelleDePartie(sec)} · {mesuresDeSection(sec, cycleMotif)} mesures · appui long : changer la lettre ou la longueur"
               >
                 {#if i === sectionIndex}
                   <span class="fill" style:width="{avancement * 100}%"></span>
                 {/if}
                 <span class="case-nom">{sec.nom}</span>
-                <span class="case-n">×{sec.cycles}</span>
+                <span class="case-n">{libelleDePartie(sec)} ×{sec.cycles}</span>
               </button>
             {/each}
           </div>
           <div class="strip-tools">
-            <button class="amp-btn strip-btn next tap44" onclick={sauterSection}>SUIVANT ▸</button>
+            <button class="amp-btn strip-btn next tap44" onclick={sauterSection} title="Section suivante, à la mesure">▸</button>
             <button
               class="amp-btn strip-btn tap44"
               class:on={tenirSection}
               onpointerdown={() => (tenirSection = true)}
               onpointerup={() => (tenirSection = false)}
               onpointerleave={() => (tenirSection = false)}
+              title="Boucler la section courante tant qu'on tient"
             >TENIR</button>
+            <button
+              class="amp-btn strip-btn tap44"
+              onclick={() => (picker = { kind: 'montage' })}
+              title="Changer de montage"
+            >≡</button>
           </div>
-        </div>
-      {:else}
-        <!-- Bascule directe dans la banque, sans passer par ⚙ (retour de Yann,
-             2026-08-14 : « un curseur vert que je ne comprends pas »). -->
-        <div class="seq-bar">
-          <button
-            class="seq-nav tap44"
-            onclick={() => cycleBankSequence(-1)}
-            disabled={sequenceBank.entries.length < 2}
-            title="Séquence précédente"
-          >‹</button>
-          <button
-            class="seq-current tap44"
-            onclick={() => cycleBankSequence(1)}
-            disabled={sequenceBank.entries.length === 0}
-            title={sequenceBank.entries.length ? 'Séquence suivante' : 'Aucune séquence enregistrée — dans l’Atelier, ➕ pour en sauvegarder une'}
-          >
-            🗄 {bankCurrent?.name ?? (sequenceBank.entries.length ? 'Choisir une séquence…' : 'Aucune séquence')}
+        {:else}
+          <!-- Sans chaîne : le montage se choisit ICI, pas dans ⚙. C'est le
+               bouton le plus large de la rangée parce que c'est le geste par
+               lequel on commence un morceau. -->
+          <button class="montage-vide tap44" onclick={() => (picker = { kind: 'montage' })}>
+            ≡ MONTER UN MORCEAU — INTRO · COUPLET · REFRAIN…
           </button>
-          <button
-            class="seq-nav tap44"
-            onclick={() => cycleBankSequence(1)}
-            disabled={sequenceBank.entries.length < 2}
-            title="Séquence suivante"
-          >›</button>
-        </div>
-      {/if}
+        {/if}
+      </div>
       {#if tiltDenied}
         <!-- Hors du flux de la grille exprès : un enfant de grille conditionnel
              décale l'auto-placement des rangées suivantes (voir le commentaire
@@ -1728,7 +1976,25 @@
           {#each assignments.slots as actionIds, i (i)}
             {@const mode = assignments.slotModes[i]}
             <div class="abtn-wrap">
-              {#if mode === 'fader'}
+              {#if modeAssign}
+                <!-- Sous le loquet, un bouton n'agit plus : il montre ce qu'il
+                     porte et se réassigne. Tap = un tirage, appui long = la
+                     liste complète — sur place, sans overlay. -->
+                {@const label =
+                  assignments.slotModes[i] === 'fader'
+                    ? axesFor(assignments.slotFaders[i]).map((a) => a.label).join(' + ')
+                    : actionsFor(actionIds).map((d) => d.label).join(' + ')}
+                <button
+                  class="abtn assignable"
+                  onpointerdown={() => onSlotDown(i)}
+                  onpointerup={() => onSlotUp(i)}
+                  onpointerleave={() => onSlotLeave(i)}
+                >
+                  <span class="assign-mark">🎲</span>
+                  <span>{label}</span>
+                  <span class="assign-label">tap : au hasard · long : choisir</span>
+                </button>
+              {:else if mode === 'fader'}
                 {@const faderIds = assignments.slotFaders[i]}
                 {@const val = axisValues[faderIds[0]] ?? 0.5}
                 {@const horizontal = assignments.faderOrientation[i] === 'horizontal'}
@@ -1762,7 +2028,7 @@
                   class:active={actionIds.some((id) => isActionActive(id))}
                   onpointerdown={() => onSlotDown(i)}
                   onpointerup={() => onSlotUp(i)}
-                  onpointerleave={() => onSlotUp(i)}
+                  onpointerleave={() => onSlotLeave(i)}
                 >
                   <span class="dot-row">
                     {#each defs as d (d.id)}<span class="dot" style:background={d.color}></span>{/each}
@@ -1815,6 +2081,32 @@
             onpointerup={() => (dragging = false)}
           >
             <div class="pad-thumb" style:left="{padX * 100}%" style:top="{padY * 100}%"></div>
+            {#if modeAssign}
+              <!-- Deux moitiés plutôt qu'un pad qui change de sens : X à
+                   gauche, Y à droite, chacune avec la même paire de gestes que
+                   les boutons. Le pad garde ses deux axes distincts, ce qu'un
+                   seul bouton d'assignation ne saurait pas faire. -->
+              <div class="pad-assign">
+                <button
+                  class="pad-half"
+                  onpointerdown={(e) => onAxeDown('axisX', e)}
+                  onpointerup={(e) => onAxeUp('axisX', e)}
+                  onpointerleave={(e) => onAxeLeave(e)}
+                >
+                  <span class="pad-half-axe">X</span>
+                  <span class="pad-half-val">{axesFor(assignments.axisX).map((a) => a.label).join(' + ')}</span>
+                </button>
+                <button
+                  class="pad-half"
+                  onpointerdown={(e) => onAxeDown('axisY', e)}
+                  onpointerup={(e) => onAxeUp('axisY', e)}
+                  onpointerleave={(e) => onAxeLeave(e)}
+                >
+                  <span class="pad-half-axe">Y</span>
+                  <span class="pad-half-val">{axesFor(assignments.axisY).map((a) => a.label).join(' + ')}</span>
+                </button>
+              </div>
+            {/if}
           </div>
           <div class="eq-readout">
             <div class="eq-band">
@@ -1913,22 +2205,18 @@
                 <span class="assign-row-label">VISUALISEUR</span>
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
-              <button class="assign-row" onclick={() => (picker = { kind: 'archi' })}>
-                <span class="assign-row-label">ARCHITECTURE</span>
+              <button class="assign-row" onclick={() => (picker = { kind: 'montage' })}>
+                <span class="assign-row-label">MONTAGE</span>
                 <span class="assign-row-val"
                   >{architecture.courante
                     ? `${architecture.courante.nom} · ${archSections.length} section${archSections.length > 1 ? 's' : ''}`
-                    : 'Mono-cycle'}</span
+                    : 'Aucun — un seul motif qui tourne'}</span
                 >
               </button>
               {#each archSections as sec, i (sec.id)}
-                <button class="assign-row assign-sous" onclick={() => (picker = { kind: 'archiSection', index: i })}>
-                  <span class="assign-row-label">↳ {sec.nom} ×{sec.cycles}</span>
-                  <span class="assign-row-val"
-                    >{sec.sequenceId
-                      ? (sequenceBank.entries.find((e) => e.id === sec.sequenceId)?.name ?? 'séquence absente')
-                      : 'motif courant'}</span
-                  >
+                <button class="assign-row assign-sous" onclick={() => (picker = { kind: 'section', index: i })}>
+                  <span class="assign-row-label">↳ {sec.nom}</span>
+                  <span class="assign-row-val">{libelleDePartie(sec)} ×{sec.cycles}</span>
                 </button>
               {/each}
               <button class="assign-row" onclick={() => (picker = { kind: 'bank' })}>
@@ -1955,10 +2243,17 @@
 
             <button class="amp-btn assign-close tap44" onclick={() => (assignOpen = false)}>FERMÉ · RETOUR AU LIVE</button>
           </div>
-
-          {#if picker}
-            {@const currentActionIds = picker.kind === 'slot' ? assignments.slots[picker.index] : []}
-            {@const currentAxisIds = picker.kind === 'axis' ? assignments[picker.which] : picker.kind === 'slotFader' ? assignments.slotFaders[picker.index] : []}
+        </div>
+      {/if}
+      <!-- ⚠️ LE SÉLECTEUR VIT HORS DE L'OVERLAY ⚙. Il y était imbriqué, donc il
+           ne s'affichait QUE si ⚙ était ouvert — ce qui annulait exactement ce
+           que le chantier cherche : choisir un montage, une lettre ou une
+           action SANS quitter la surface de jeu. Trouvé en jouant le chemin
+           réel (cliquer la bande), pas en relisant le code. -->
+      {#if picker}
+        {@const currentActionIds = picker.kind === 'slot' ? assignments.slots[picker.index] : []}
+        {@const currentAxisIds = picker.kind === 'axis' ? assignments[picker.which] : picker.kind === 'slotFader' ? assignments.slotFaders[picker.index] : []}
+        <div class="assign-overlay show">
             <div class="picker-card">
               <h4>
                 {picker.kind === 'slot'
@@ -1969,11 +2264,17 @@
                       ? 'VISUALISEUR'
                       : picker.kind === 'bank'
                         ? 'BANQUE DE SÉQUENCES'
-                        : picker.kind === 'archi'
-                          ? 'ARCHITECTURE'
-                          : picker.kind === 'archiSection'
+                        : picker.kind === 'montage'
+                          ? 'MONTER UN MORCEAU'
+                          : picker.kind === 'section'
                             ? `SECTION — ${archSections[picker.index]?.nom ?? ''}`
-                            : 'PARAMÈTRE'}
+                            : picker.kind === 'axis'
+                              ? picker.which === 'axisX'
+                                ? 'PAD — AXE X'
+                                : picker.which === 'axisY'
+                                  ? 'PAD — AXE Y'
+                                  : 'INCLINAISON'
+                              : 'PARAMÈTRE'}
                 {#if picker.kind === 'slot' || picker.kind === 'slotFader' || picker.kind === 'axis'}<span
                   class="picker-hint">— plusieurs possibles</span
                 >{/if}
@@ -2026,36 +2327,39 @@
                       </button>
                     {/each}
                   {/each}
-                {:else if picker.kind === 'archi'}
+                {:else if picker.kind === 'montage'}
                   <p class="picker-caption">
-                    Un modèle pose les sections et leurs longueurs ; il ne reste qu'à déposer une séquence
-                    de banque dans chacune. On compte en TOURS du motif — ici {cycleMotif} mesure{cycleMotif > 1 ? 's' : ''}
-                    par tour, calculé sur les lignes qui sonnent.
+                    Un montage pose la CHAÎNE (intro, couplet, refrain…), les LIGNES que chaque
+                    section laisse sonner, et les six BOUTONS qui la pilotent. Il ne reste qu'à
+                    ranger un motif sous A — et un second sous B si la forme en demande deux.
+                    On compte en TOURS du motif : ici {cycleMotif} mesure{cycleMotif > 1 ? 's' : ''} par tour,
+                    calculé sur les lignes qui sonnent.
                   </p>
                   <button class="picker-row" class:current={!architecture.courante} onclick={quitterArchitecture}>
-                    <span class="picker-label">MONO-CYCLE</span>
+                    <span class="picker-label">AUCUN</span>
                     <span class="picker-desc">un seul motif qui tourne — le comportement d'avant</span>
                   </button>
-                  {#each MODELES as m (m.nom)}
+                  {#each MONTAGES as m (m.nom)}
                     {@const mes = m.sections.reduce((t, x) => t + mesuresDeSection(x, cycleMotif), 0)}
+                    {@const lettres = new Set(m.sections.map((x) => x.partie))}
                     <button
                       class="picker-row"
                       class:current={architecture.courante?.nom === m.nom}
-                      onclick={() => chargerModele(m.nom)}
+                      onclick={() => chargerMontage(m.nom)}
                     >
                       <span class="picker-label">{m.nom}</span>
                       <span class="picker-desc"
-                        >{m.sections.length} section{m.sections.length > 1 ? 's' : ''} · {mes} mesure{mes > 1
+                        >{m.desc} · {lettres.size} partie{lettres.size > 1 ? 's' : ''} · {mes} mesure{mes > 1
                           ? 's'
                           : ''} · {formaterDuree((mes * 240) / st.tempo)}</span
                       >
                     </button>
                   {/each}
-                {:else if picker.kind === 'archiSection'}
+                {:else if picker.kind === 'section'}
                   {@const idx = picker.index}
                   <p class="picker-caption">
-                    Le motif joué par cette section, et sa longueur en tours. « Garder le motif courant »
-                    est ce qui permet à un arc d'intensité de tenir sur une seule séquence.
+                    La LETTRE que joue cette section, et sa longueur en tours. Une lettre encore vide
+                    joue A — une chaîne dit toujours ce qu'elle joue.
                   </p>
                   <div class="picker-cycles">
                     <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles - 1)}>−</button>
@@ -2064,20 +2368,16 @@
                     >
                     <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles + 1)}>+</button>
                   </div>
-                  <button
-                    class="picker-row"
-                    class:current={!archSections[idx]?.sequenceId}
-                    onclick={() => architecture.poserSequence(idx, null)}
-                  >
-                    <span class="picker-label">GARDER LE MOTIF COURANT</span>
-                  </button>
-                  {#each sequenceBank.entries as e (e.id)}
+                  {#each PARTIES as id (id)}
                     <button
                       class="picker-row"
-                      class:current={archSections[idx]?.sequenceId === e.id}
-                      onclick={() => architecture.poserSequence(idx, e.id)}
+                      class:current={archSections[idx]?.partie === id}
+                      onclick={() => architecture.poserPartie(idx, id)}
                     >
-                      <span class="picker-label">{e.name}</span>
+                      <span class="picker-label">{id}</span>
+                      <span class="picker-desc"
+                        >{parties.remplie(id) ? (parties.get(id)?.nom || 'rangée') : 'vide — jouera A'}</span
+                      >
                     </button>
                   {/each}
                 {:else if picker.kind === 'viz'}
@@ -2099,8 +2399,7 @@
                 {/if}
               </div>
               <button class="amp-btn picker-close tap44" onclick={() => (picker = null)}>FERMÉ</button>
-            </div>
-          {/if}
+          </div>
         </div>
       {/if}
     </div>
@@ -2393,34 +2692,66 @@
     background: var(--amp-lcd-fg);
     box-shadow: 0 0 4px var(--amp-lcd-fg);
   }
-  .seq-bar {
+  /* ---- LES PARTIES ----
+     Quatre pastilles à gauche de la bande. 56 px chacune en 844 × 390 (mesuré),
+     donc au-dessus du seuil tactile sur les deux axes sans que la chaîne y
+     perde sa place. Le bandeau de banque qu'elles remplacent occupait la même
+     rangée pour afficher « Aucune séquence ». */
+  .parties {
     display: flex;
-    align-items: stretch;
-    gap: 4px;
-    height: 22px;
-  }
-  .seq-nav {
+    gap: 3px;
     flex: none;
-    width: 26px;
+  }
+  .partie {
+    width: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border-radius: 3px;
+    border: 1px dashed #5a5a6b;
+    background: transparent;
+    color: var(--amp-lcd-dim);
+    font-family: inherit;
+    cursor: pointer;
+    touch-action: none;
+  }
+  /* Une lettre RANGÉE est en relief ; une lettre vide reste un contour en
+     pointillé — le biseau dit ce qui existe, comme partout ailleurs. */
+  .partie.remplie {
+    border-style: solid;
+    border-color: var(--amp-line);
+    background: linear-gradient(180deg, #3c3c48, var(--amp-bg-2) 55%, var(--amp-bg-3));
+    color: var(--amp-text);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  .partie.on {
+    border-color: var(--amp-amber);
+    color: #fff3cf;
+  }
+  .partie-lettre {
     font-size: 13px;
     font-weight: 700;
-    border-radius: 3px;
-    border: 1px solid var(--amp-line);
-    background: linear-gradient(180deg, var(--amp-hi), var(--amp-bg-2) 55%, var(--amp-bg-3));
-    color: var(--amp-text);
-    cursor: pointer;
+    line-height: 1;
   }
-  .seq-nav:disabled {
-    color: var(--amp-lcd-dim);
-    cursor: default;
-    opacity: 0.5;
+  .partie-etat {
+    font-size: 7px;
+    letter-spacing: 0.04em;
+    max-width: 52px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .seq-current {
+  /* Sans chaîne, le montage se choisit ICI : c'est le geste par lequel on
+     commence un morceau, il ne peut pas vivre derrière ⚙. */
+  .montage-vide {
     flex: 1;
     min-width: 0;
-    font-size: 9.5px;
+    font-family: inherit;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
     padding: 0 8px;
     border-radius: 3px;
     border: 1px solid var(--amp-line);
@@ -2432,10 +2763,63 @@
     white-space: nowrap;
     cursor: pointer;
   }
-  .seq-current:disabled {
-    color: var(--amp-lcd-dim);
-    text-shadow: none;
-    cursor: default;
+  /* Une case dont la lettre n'est pas encore rangée : elle jouera A, et elle le
+     DIT — l'ancienne bande se contentait de ne rien faire entendre. */
+  .strip .case.vide .case-n {
+    color: var(--amp-amber);
+  }
+  /* ---- LE LOQUET D'ASSIGNATION ----
+     Une surface sous loquet ne joue plus : elle le montre par le pointillé
+     ambre, le même vocabulaire que la pastille de partie vide. */
+  .abtn.assignable,
+  .tilt-btn.assignable {
+    border-style: dashed;
+    border-color: var(--amp-amber);
+    color: #fff3cf;
+  }
+  .assign-mark {
+    font-size: 13px;
+    line-height: 1;
+  }
+  .gear.on {
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--amp-amber);
+    color: #fff3cf;
+  }
+  /* Le pad garde ses DEUX axes sous le loquet : une seule cible ne saurait pas
+     dire lequel on réassigne. */
+  .pad-assign {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    box-sizing: border-box;
+  }
+  .pad-half {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 3px;
+    border: 1px dashed var(--amp-amber);
+    background: rgba(20, 20, 26, 0.82);
+    color: #fff3cf;
+    font-family: inherit;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .pad-half-axe {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .pad-half-val {
+    font-size: 8px;
+    letter-spacing: 0.03em;
+    text-align: center;
+    padding: 0 4px;
   }
   .amp-btn {
     font-family: inherit;
@@ -3167,10 +3551,6 @@
     .topbar {
       gap: 14px;
     }
-    .seq-bar {
-      gap: 12px;
-      height: 44px;
-    }
     .amp-btn {
       min-height: 44px;
       min-width: 44px;
@@ -3181,11 +3561,6 @@
     }
     .tilt-btn {
       min-height: 44px;
-    }
-    /* 26px de large : les deux flèches de séquence encadrent un libellé qui
-       prend tout le reste, elles peuvent s'élargir sans rien coûter. */
-    .seq-nav {
-      width: 44px;
     }
     /* Le curseur de volume est un `<div>` en `overflow: hidden` : il recadre
        le pseudo-élément de `.tap44`, comme les éléments remplacés. C'est donc
@@ -3198,7 +3573,9 @@
        et jusqu'à la scène de l'acte 6, aucun écran n'en chargeait une. Deux
        lignes de texte dans 44 px tiennent (85 px de large), et la bande est la
        seule de sa rangée : les huit cases montent ensemble sans rien pousser. */
-    .strip .case {
+    .strip .case,
+    .partie,
+    .montage-vide {
       min-height: 44px;
     }
   }

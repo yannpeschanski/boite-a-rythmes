@@ -195,6 +195,53 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ---
 
+## Le Mode Live — les PARTIES et les MONTAGES
+
+⚠️ **Une architecture se pense en LETTRES, et une section en cite une —
+jamais « rien ».** `Section.sequenceId: string | null` pointait une entrée de
+banque au nom libre : remplir le modèle POP demandait huit allers-retours dans un
+sélecteur de ⚙, et tant qu'ils n'étaient pas faits les huit sections portaient
+`null`, donc jouaient toutes le motif courant. L'état PAR DÉFAUT de la
+fonctionnalité était l'inaudible. `Section.partie` (`model/parties.ts`, A à D)
+est obligatoire, et une lettre encore vide se replie sur **A** — jamais sur « le
+motif courant », qui vaut n'importe lequel. `tests/architecture.test.ts` interdit
+qu'un montage soit inaudible : deux sections qui se suivent doivent différer.
+
+⚠️ **Le PRIME est le calque, il n'a pas de champ à lui.** A′ est « A avec des
+lignes en moins » — c'est `Section.lignes`, et c'est ce qui fait tenir avec un
+seul mécanisme l'intro qui entre, le pont et l'outro qui s'efface. Les calques
+sont NOMMÉS (`CALQUE_ENTREE`, `CALQUE_PONT`, `CALQUE_SORTIE`…) pour qu'une intro
+soit la même d'un montage à l'autre.
+
+⚠️ **Quatre lettres, pas plus** — mesure, pas avis : la bande du Live fait 832 px
+en 844 × 390 et porte AUSSI la chaîne et les deux commandes de jeu ; quatre
+pastilles y tiennent à 56 px.
+
+⚠️ **Un MONTAGE porte les trois à la fois — chaîne, calques, boutons.** Une
+chaîne sans SUIVANT ni TENIR sous le pouce se joue contre le musicien. Ses
+`boutons` sont consommés par un **`$effect`**, jamais par la fonction qui charge :
+le JEU monte un montage tout seul à la scène de l'acte 6, et une règle à deux
+domiciles n'est appliquée qu'à un seul. Un identifiant non reconnu est ignoré,
+jamais refusé en bloc.
+
+⚠️ **Les PARTIES et la BANQUE ne se confondent pas.** La banque est le matériel
+(l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
+sous A ne touche pas la banque.
+
+⚠️ **Rien de ce qui se fait EN JOUANT ne vit derrière ⚙.** Réassigner passe par
+un LOQUET (🎲) : allumé, boutons, pad et inclinaison se réassignent sur place —
+tap = un tirage, appui long = la liste. Ça ne peut pas être un geste posé sur le
+bouton lui-même, l'appui long y est déjà pris (la rafale de `kind: 'ligne'`, le
+maintien de TENIR). ⚠️ Corollaire de câblage : le sélecteur doit vivre **hors** de
+l'overlay ⚙ — il y était imbriqué, donc il ne s'ouvrait que depuis ⚙.
+
+⚠️ **Une lettre se range du même geste des deux côtés** : appui long, dans
+l'Atelier comme dans le Live. Le petit bouton ↓ de l'Atelier tombait à 20,3 px en
+pointeur grossier, et l'élargir poussait la bande sur deux rangées de la barre
+sticky ; il reste pour les pointeurs FINS.
+
+---
+
 ## Le récit
 
 ⚠️ **Le jeu s'appelle FACE B** — le nom du label, pas celui de l'outil. Il vit
@@ -279,15 +326,14 @@ monte pas sur scène avec deux morceaux. Corollaire : une scène peut suivre la
 dernière commande d'un acte, parce qu'elle ne PRODUIT rien.
 ⚠️ `section` est **facultatif** sur une boucle, et c'est la distinction entre le
 MATÉRIEL et le MORCEAU : toutes les boucles vont dans la banque de séquences,
-seules celles qui portent une section entrent dans l'architecture. Une
-architecture décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois,
-les six autres restant à un clic.
+seules celles qui portent une section entrent dans les PARTIES. Une architecture
+décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois, les six
+autres restant à un clic.
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
 l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
-monté : cinq commandes sous 44 px (les exceptions revendiquées), aucun
-débordement. ⚠️ La bande d'architecture est le piège : **sans architecture
-chargée elle n'existe pas**, donc ses huit cases (36 px) n'avaient jamais été
-mesurées — c'est la scène de l'acte 6 qui les met devant tout le monde.
+monté : six commandes sous 44 px (les exceptions revendiquées), aucun
+débordement ; la bande fait 44 px, ses quatre pastilles 56 px et ses huit cases
+52,7 px.
 
 ⚠️ **Un MORCEAU, c'est trois boucles qui se répondent, et un DISQUE en compte
 trois.** L'acte 6 livre neuf boucles (trois morceaux × couplet / refrain / pont).

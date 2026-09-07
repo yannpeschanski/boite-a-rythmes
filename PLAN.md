@@ -44,6 +44,93 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le Mode Live pense en PARTIES A/B/C, et plus rien ne passe par ⚙ (2026-09-07)
+
+> Yann : *« l'histoire des séquences, architectures, etc. J'ai l'impression
+> qu'on fait fausse route […] trop compliqué et pas du tout audible »*, plus
+> *« il faut éviter à tout le monde d'aller dans les réglages »* — et la forme
+> qu'il décrit : `intro · A · B · A · B · A′ · B qui s'efface`, ou `ABB′ABB′A′`.
+
+**Ce que « pas du tout audible » désignait, mesuré.** L'ancienne bande citait des
+entrées de banque : composer, cliquer ➕, taper un nom dans un `prompt()`, passer
+en Live, ouvrir ⚙, ouvrir un sélecteur, y retrouver le nom — **et recommencer par
+SECTION**, huit fois pour le modèle POP. Tant que ces huit voyages n'étaient pas
+faits, les huit sections portaient `sequenceId: null`, c'est-à-dire jouaient
+toutes le motif courant. **L'état par défaut de la fonctionnalité était
+l'inaudible**, et aucun test ne le regardait.
+
+**Ce qui remplace.** Quatre PARTIES (`model/parties.ts`, A à D), une par lettre.
+`Section.partie` est **obligatoire** — une lettre encore vide se replie sur A,
+jamais sur « le motif courant », qui vaut n'importe lequel. Le **prime est le
+calque** : A′ est `Section.lignes`, donc l'intro qui entre, le pont et l'outro
+qui s'efface tiennent avec un seul mécanisme et zéro motif de plus à composer.
+
+**Cinq MONTAGES**, et un montage porte la chaîne, les calques ET les six boutons :
+`BOUCLE`, `COUPLET / REFRAIN` (l'exemple 1 de Yann, ligne pour ligne),
+`A B B′` (l'exemple 2), `CLUB` (l'arc d'intensité — **une seule partie**, ce sont
+les lignes qui entrent et sortent), `SONNERIE`.
+
+**Les gestes, sur la surface de jeu.** La bande fait une seule rangée de 44 px :
+quatre pastilles (tap = jouer la lettre, ou sauter à sa section ; appui long =
+y ranger ce qu'on entend), la chaîne (tap = y sauter ; appui long = changer sa
+lettre ou sa longueur), `▸ TENIR ≡`. Sans chaîne, la rangée devient le bouton
+qui monte un morceau. Et un **loquet 🎲** : allumé, les six boutons, le pad
+(en deux moitiés X/Y) et l'inclinaison se réassignent sur place — tap = un
+tirage, appui long = la liste complète.
+
+**Fichiers.** `model/parties.ts` (neuf), `stores/parties.svelte.ts` (neuf),
+`ui/atelier/PartiesStrip.svelte` (neuf), `model/architecture.ts` (réécrit),
+`stores/architecture.svelte.ts` (réécrit + migration), `ui/live/LiveView.svelte`,
+`ui/atelier/AtelierView.svelte`, `stores/game.svelte.ts`,
+`tests/architecture.test.ts`, `scripts/parcours-carriere.cjs`.
+
+**Ce qui a été payé en chemin, et qui vaut règle :**
+
+- ⚠️ **Le sélecteur était imbriqué DANS l'overlay ⚙** : ouvert depuis la bande,
+  il ne s'affichait pas — le chantier entier annulé par une accolade. Trouvé en
+  jouant le chemin réel (cliquer la bande), pas en relisant le code.
+- ⚠️ **Les boutons d'un montage se consomment dans un `$effect`**, pas dans la
+  fonction de chargement : le JEU monte un montage tout seul à la scène de
+  l'acte 6, et il serait arrivé sans SUIVANT ni TENIR.
+- ⚠️ **Les deux moitiés du pad vivent DANS le pad** : sans `stopPropagation`,
+  l'appui descendait au gestionnaire du pad, qui capturait le pointeur et
+  déplaçait la valeur de l'axe qu'on réassignait.
+- ⚠️ **La migration traduit, elle n'abandonne pas** : les `sequenceId`
+  enregistrés deviennent A, B, C, D dans leur ordre d'apparition et leur contenu
+  est recopié dans les parties. Valider d'abord aurait rendu le mono-cycle, sans
+  un mot — le piège déjà payé sur les assignations de boutons. Elle est **pure**
+  (`migrerArchitecture`, dans `model/`) parce qu'une migration se joue sur la
+  sauvegarde de quelqu'un d'autre : six tests, plus un rejeu dans le navigateur
+  sur un `localStorage` à l'ancien format.
+- ⚠️ **Une migration se joue UNE FOIS** : la forme migrée est réécrite tout de
+  suite. Sans ça l'ancienne reste sur le disque, la migration se rejoue à chaque
+  chargement, et une lettre qu'on vient de vider se remplit toute seule au
+  rechargement suivant. Vu en mesurant, pas en relisant.
+- ⚠️ **`page.goto` vers le MÊME fragment ne recharge pas** — les stores restent
+  initialisés, la migration ne se joue jamais et on croit qu'elle est cassée.
+  C'est le cousin du piège HMR déjà noté pour `parcours-carriere.cjs`.
+- ⚠️ **Le petit ↓ de l'Atelier tombait à 20,3 px** en pointeur grossier, et
+  l'élargir à 44 poussait la bande sur deux rangées de la barre sticky. D'où le
+  même geste qu'en Live (appui long), le ↓ restant pour les pointeurs fins.
+- ⚠️ **`⛓` et `⤓` ne se rendent pas** dans la chasse fixe du mode (tofu à la
+  capture) — `≡` et `↓`.
+
+**Vérifié.** 650 tests (dont 14 neufs — montages et migration, y compris *« ne peuvent
+pas être INAUDIBLES : deux sections qui se suivent diffèrent »*), 0 erreur de
+types, les deux builds. Mesuré en 844 × 390 pointeur grossier, set monté :
+bande 832 × 44, pastilles 56 × 44, huit cases 52,7 × 44, `.main` inchangé à
+252 px, zéro erreur console, six commandes sous 44 px (les exceptions
+revendiquées). En 390 × 844, la bande de l'Atelier tient sur une rangée (61 px),
+cibles à 44 × 46. `scripts/parcours-carriere.cjs` rejoué depuis un joueur neuf :
+l'acte 6 monte *« 9/9 boucles en banque, parties ABC, 8 sections »*, l'épilogue
+est atteint.
+
+**Ce qui n'est PAS fait, et qui reste à trancher :** le NOM. Yann : *« le
+dénominatif "mode live" est peut-être abusif »*. Il vit dans le splash, la barre
+de navigation, le titre de fenêtre et le récit (les scènes des actes 6 et 7) —
+un renommage touche donc le texte du jeu, pas seulement une étiquette.
+
+
 ### ✅ FB-015 en trois morceaux, et la mélodie entre dans les cahiers (2026-09-05)
 
 > « Il n'y a qu'un seul morceau de travaillé. Le travail n'est pas suffisant

@@ -3,16 +3,14 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-05 — la relecture annotée est **entièrement
-> rentrée**, retours de jeu compris : les neuf cases prioritaires (le synthé dans
-> les cahiers, actes 5 et 4), les étoiles et les remarques des travaux en
-> atelier, et **l'acte 6 en trois MORCEAUX de trois boucles** (neuf cahiers,
-> mélodie comprise) dont le single se monte en set dans le Mode Live. La fiche
-> se régénère par `npx vite-node scripts/relecture-mode-jeu.ts`
-> (`docs/relecture/mode-jeu.html`).
+> Dernière mise à jour : 2026-09-07 — **le chantier du Mode Live est ouvert et
+> sa première tranche est livrée** : le mode pense désormais en PARTIES A/B/C/D
+> et en MONTAGES (chaîne + calques de lignes + boutons, d'un seul geste), et
+> plus rien de ce qui se fait en jouant ne passe par l'overlay ⚙ — un loquet 🎲
+> réassigne boutons, pad et inclinaison sur place. Voir `PLAN.md`, entrée du
+> 2026-09-07.
 >
-> ⚠️ **La décision en attente est le MODE LIVE** — voir « Le chantier ouvert »
-> plus bas.
+> ⚠️ **La décision en attente est le NOM du mode** — voir « Le chantier ouvert ».
 
 ## Où en est le projet
 
@@ -20,7 +18,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 623 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 650 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -63,25 +61,51 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
 
-## ⚠️ Le chantier OUVERT — le Mode Live et l'architecture de morceau
+## ⚠️ Le chantier du MODE LIVE — tranche 1 livrée, le NOM en attente
 
-**C'est la décision en attente**, posée par Yann le 2026-09-05 :
+Posé par Yann le 2026-09-05 (*« le système d'architecture de morceau ne
+fonctionne pas super bien à mon goût »*), précisé le 2026-09-07 :
 
-> « Par ailleurs, il faudra retravailler le mode live… en l'état, le système
-> d'architecture de morceau ne fonctionne pas super bien à mon goût… à
-> réfléchir. »
+> « L'histoire des séquences, architectures, etc. J'ai l'impression qu'on fait
+> fausse route. […] ça me semble trop compliqué et pas du tout audible. […]
+> Il faudrait qu'on puisse affecter plus facilement des parties A, B ou C, et
+> qu'il y ait des presets d'architecture / affectation de bouton / lignes
+> mutées. […] Le dénominatif "mode live" est peut-être abusif : l'idée, c'est
+> de constituer un morceau très facilement et de faire des variations comme
+> dans un morceau électronique. »
 
-Arbitrage pris pour l'acte 6 : **le laisser de côté**. Les neuf boucles y ont été
-livrées, et la scène n'en monte qu'une en set — bâtir trois sets sur une
-mécanique qui ne convient pas serait construire sur du sable.
+**Ce qui est livré** (détail et mesures dans `PLAN.md`, entrée du 2026-09-07) :
 
-Ce qu'il y a déjà, et qu'il faut relire avant de repartir :
+| | |
+|---|---|
+| Les PARTIES | A, B, C, D — `model/parties.ts`. Une section cite une LETTRE, jamais « rien » |
+| Le PRIME | A′ = le calque de lignes, pas un champ de plus |
+| Les MONTAGES | 5, et chacun porte chaîne + calques + les six boutons |
+| La bande | une rangée de 44 px : pastilles, chaîne, `▸ TENIR ≡` |
+| Le loquet 🎲 | boutons, pad (moitiés X/Y) et inclinaison se réassignent sur place |
+| L'Atelier | une bande PARTIES dans la barre sticky (appui long = ranger) |
+
+**La décision en attente : le NOM.** « Mode Live » vit dans le splash, la barre
+de navigation, le titre de fenêtre du mode ET le récit — les scènes des actes 6
+et 7 y envoient. Le renommer touche donc du texte de jeu, pas une étiquette.
+Trois pistes : le garder ; « MODE MORCEAU » (ce que Yann décrit : constituer un
+morceau, faire des variations) ; « MODE SET ». À trancher avec lui.
+
+**Ce qui reste ouvert sur ce chantier**, par ordre de valeur :
+
+1. **Rien n'a jamais été essayé sur un vrai téléphone** — ni le capteur
+   d'inclinaison, ni la tenue à deux mains en paysage. Aucune mesure headless ne
+   remplace ça, et c'est écrit dans les deux audits.
+2. **Le fill ne se recale pas encore sur la section** — `isFillBar` compte
+   depuis ▶, donc les fills tombent n'importe où dans une section ; c'est
+   `docs/plan/06`, tranche C, et c'est un défaut qui existe déjà.
+3. **L'automation (« la montée »)** reste hors périmètre : l'escalier de
+   sections d'abord, on écoute, et on tranche après.
+
+Les deux audits qui ont cadré le chantier restent la référence — mais ils
+décrivent l'ancienne bande sur les points 4 et 5 :
 [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) et
-[`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md),
-tous deux ouverts. Trois façons d'attaquer avaient été proposées : le laisser de
-côté (choisi), l'auditer en le JOUANT avec mesures à l'appui, ou générer une
-**fiche HTML annotable** comme celle du Mode jeu — c'est ce dernier format qui a
-le mieux marché la fois précédente (21 cases annotées, toutes rentrées).
+[`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md).
 
 ---
 
