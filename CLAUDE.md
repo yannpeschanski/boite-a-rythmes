@@ -197,13 +197,23 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ## Le Mode Live — les PARTIES et les MONTAGES
 
-⚠️ **SECTION SOUS ARBITRAGE.** Ce qui suit décrit la branche
-`claude/mode-livre-params-sequences-oiwtul`, non mergée. Les règles marquées
-« mesuré » tiennent ; six autres choix (le loquet 🎲, quatre lettres, les cinq
-montages, un montage qui écrase les boutons, la place de la bande dans
-l'Atelier, l'appui long destructeur) sont des **propositions** en attente de la
-fiche `docs/relecture/assemblage.html`. Voir
-`docs/plan/07-audit-assemblage-de-morceau.md`, §6.
+⚠️ **SECTION SOUS ARBITRAGE — deuxième tour en cours.** Ce qui suit décrit la
+branche `claude/mode-livre-params-sequences-oiwtul`, non mergée.
+**Déjà tranché par Yann** : trois lettres et non quatre, SONNERIE retiré, une
+option « conserver mes boutons », la durée affichée à corriger, et **l'export
+hors ligne d'un morceau ANNULÉ**. **Encore ouvert** : le loquet 🎲 (« il faut
+tester pour juger »), la place de la bande dans l'Atelier, l'appui long
+destructeur, les modèles. Fiches `docs/relecture/assemblage.html` puis
+`assemblage-2.html` ; audits `docs/plan/07` et `08`.
+
+⚠️ **Le cadrage est tranché, et il est le mainstream de la catégorie** : on
+PRÉPARE de la matière, on JOUE la structure. Beaucoup de grooveboxes n'ont pas
+de mode morceau du tout, par choix — le Song Mode d'Elektron est arrivé par mise
+à jour, des années après. Corollaire : **le mot juste est SCÈNE**, pas
+« section », parce que la chaîne est un ordre suggéré et non une timeline. Et
+un morceau ne se rend PAS hors ligne : sans automation — exclue — un rendu
+produirait une version morte. La sortie audio est le ⏺ REC, donc l'enregistreur
+n'est plus une commodité (256 Mo de pic à dix minutes, à traiter).
 
 ⚠️ **Une architecture se pense en LETTRES, et une section en cite une —
 jamais « rien ».** `Section.sequenceId: string | null` pointait une entrée de

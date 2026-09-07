@@ -3,15 +3,16 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-07 — **le chantier du MODE LIVE est rouvert par
-> un audit**, [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md),
-> avec une fiche de décision annotable (`docs/relecture/assemblage.html`,
-> 25 cartes). Une branche existe (`claude/mode-livre-params-sequences-oiwtul`,
-> non mergée) : elle couvre deux tranches sur sept et porte **six choix tranchés
-> sans arbitrage**. Elle ne se merge pas avant la fiche.
+> Dernière mise à jour : 2026-09-07 — **chantier du MODE LIVE, deuxième tour
+> d'arbitrage en cours.** Deux audits ([07](docs/plan/07-audit-assemblage-de-morceau.md),
+> [08](docs/plan/08-etat-de-lart-structures.md)) et deux fiches annotables
+> (`docs/relecture/assemblage.html`, puis `assemblage-2.html`). Yann a répondu
+> au premier tour : **le cadrage est tranché**, l'export hors ligne est
+> **annulé**, on passe à **trois lettres**.
 >
-> ⚠️ **La décision en attente est le CADRAGE** — mode de scène, ou établi de
-> morceau ? Tout le reste en découle, le nom compris.
+> ⚠️ **Un préalable bloque la moitié des décisions restantes** : les pull
+> requests ne sont jamais déployées, donc rien n'est testable au téléphone.
+> Voir la dernière carte du deuxième tour.
 
 ## Où en est le projet
 
@@ -62,56 +63,69 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
 
-## ⚠️ Le chantier du MODE LIVE — audité, pas tranché
+## ⚠️ Le chantier du MODE LIVE — cadrage tranché, reste à arbitrer
 
-Posé par Yann le 2026-09-05, précisé le 2026-09-07 (« on fait fausse route […]
-trop compliqué et pas du tout audible », « éviter à tout le monde d'aller dans
-les réglages », « le dénominatif mode live est peut-être abusif »).
+⚠️ **Leçon de méthode, à ne pas répéter.** Une première passe a répondu au
+diagnostic de Yann par une **implémentation directe**, donc en tranchant sans
+arbitrage des questions qui n'étaient pas posées. Sa réponse : *« je me serais
+attendu à un vrai travail d'audit avec la proposition d'un plan sérieux sur la
+base de mes constats. Trop focalisé dans l'exécution directe. »* Un constat sur
+ce que le produit EST s'audite avant de se coder. La règle est dans `CLAUDE.md`.
 
-⚠️ **Leçon de méthode, à ne pas répéter.** Une première passe a répondu à ce
-diagnostic par une **implémentation directe**, donc en tranchant sans arbitrage
-des questions qui n'étaient pas posées. Yann : *« je me serais attendu à un vrai
-travail d'audit avec la proposition d'un plan sérieux sur la base de mes
-constats. Trop focalisé dans l'exécution directe. »* Un constat n'est pas une
-commande : quand il porte sur la CONCEPTION, il appelle un audit.
+### Le cadrage — tranché par Yann, et c'est la norme de la catégorie
 
-**Tout est dans [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md)**,
-et les décisions sont dans la fiche annotable `docs/relecture/assemblage.html`
-(25 cartes, même mécanique que la fiche du Mode jeu — la seule qui ait bien
-marché : 21 cases annotées, toutes rentrées).
+> *« L'intérêt, c'est aussi de pouvoir faire bouger les paramètres en direct et
+> créer un morceau vivant. Sinon les paramètres doivent être réglés à l'avance,
+> ce qui rend l'exercice trop fastidieux. On n'a pas le choix de mélanger les
+> aspects live / établi de morceau. »*
 
-**La question de cadrage, qui commande tout le reste :** mode de SCÈNE (on joue
-une set list, ⏺ REC suffit) ou établi de MORCEAU (parties + chaîne = un objet
-qu'on garde, exporte, partage) ? Recommandation : l'établi — parce que les
-quatre mesures ci-dessous tombent toutes de ce côté.
+Il refuse le choix binaire scène / établi que l'audit 07 posait — **et il a
+raison** : c'est la façon dont fonctionne la catégorie entière. *« Many
+grooveboxes don't have traditional song modes because they are often created to
+be performed in real time, with users performing the patterns to define the song
+structure. »* Le Song Mode d'Elektron est arrivé **par mise à jour**, des années
+après les machines. **On prépare de la matière, on joue la structure.**
 
-**Ce que la mesure a trouvé, et qu'aucun constat ne disait :**
+Corollaire de vocabulaire : le mot juste est **SCÈNE** (au sens groovebox et
+Session View d'Ableton), pas « section » — ça dit que la chaîne est un ordre
+*suggéré*, pas une timeline.
+
+### Ce qui est acté
 
 | | |
 |---|---|
-| On ne peut PAS sortir un morceau monté | `renderPattern` rend UN état ; seul ⏺ REC en temps réel existe. Rendu hors ligne **prototypé** : 8 sections, 31 mesures, 64,5 s en 27,6 s |
-| Le MIX ne suit pas une bascule de section | `refreshMixSettings` n'a qu'un site d'appel, dans l'Atelier. Mesuré sur les nœuds : envoi réverbe 0 au lieu de 0,8 |
-| La durée affichée ment d'un facteur 4 | même chaîne : « 1 min 44 » ou « 26 s » selon la partie chargée, la vraie durée est 1 min 02 |
-| Un morceau n'est ni partageable ni restauré | `buildShareUrl` ne porte que le motif courant |
-| Deux domiciles pour le matériel | la banque (noms libres) et les parties (lettres) — dette à nommer ou à supprimer |
+| **Trois lettres** (A, B, C), pas quatre | « partons sur 3 déjà » |
+| La durée affichée est **fausse** (facteur 4) | à corriger |
+| Deux motifs + des calques suffisent aux formes courantes | et une section cite toujours quelque chose de défini |
+| Le loquet 🎲 reste | « il faut tester pour juger » |
+| **SONNERIE retiré** ; option « conserver mes boutons » | |
+| ❌ **L'export hors ligne d'un morceau : ANNULÉ** | « peu d'intérêt […] sinon ça signifie des automations, trop fastidieux pour l'ambition de l'app ». Le prototype reste dans l'audit comme preuve, il n'est pas poursuivi |
 
-**Le plan, en sept tranches** (détail dans l'audit) : 0 le cadrage · 1 le modèle
-· 2 la durée juste · 3 les gestes sur la surface · 4 le mix qui suit · 5 l'export
-d'une chaîne · 6 le morceau comme objet · 7 (après écoute) le fill et
-l'automation. ⚠️ **La 4 avant la 5** : écrire l'export d'abord grave la
-divergence direct/export dans un fichier qu'on distribue.
+### Ce qui en découle, et qui n'est pas encore arbitré
 
-**La branche** `claude/mode-livre-params-sequences-oiwtul` couvre **1 et 3**,
-rien de 2, 4, 5, 6, et porte six paris non discutés (le loquet 🎲, quatre
-lettres, cinq montages, un montage qui écrase les six boutons, la place de la
-bande dans l'Atelier, l'appui long destructeur sans confirmation). Elle passe
-650 tests et les deux builds — ce n'est pas la question. **Elle ne se merge pas
-avant la fiche**, et l'audit prévoit explicitement qu'elle soit jetée.
+1. **⏺ REC devient LA sortie audio** — donc il n'est plus une commodité :
+   256 Mo de pic à dix minutes, WAV et pas MP3. Deux sorties connues (tampon
+   pré-alloué, encodage au fil de l'eau).
+2. **Sauvegarder un morceau monté en JSON** (« avant le wav ») — demandé.
+   Question ouverte : les boutons font-ils partie du morceau ?
+3. **Ranger la banque et les lettres** — deux vocabulaires qui s'ignorent.
+4. **Le mix ne suit pas une bascule** — la vraie question, reformulée : une
+   lettre porte-t-elle un SON ou seulement des NOTES ? *(Le cadrage penche pour
+   « des notes » : un mix qui saute tout seul se bat contre la main.)*
+5. **Les quatre modèles** (BOUCLE, COUPLET/REFRAIN, A B B′, AABA, CLUB) — et la
+   lettre C que **aucun n'utilise**.
 
-⚠️ Toujours vrai, et écrit dans les trois audits : **rien n'a jamais été essayé
-sur un vrai téléphone** — ni le capteur d'inclinaison, ni la tenue à deux mains
-en paysage. Plusieurs décisions de la fiche attendent en réalité cette
-épreuve-là.
+⚠️ **LE PRÉALABLE.** *« Il faut tester pour juger »* est vrai de la moitié des
+cartes, et **c'est impossible aujourd'hui** : les pull requests sont testées mais
+jamais déployées (`ci.yml`, `if: github.event_name == 'push'`), et le fichier
+autonome ouvert en `file://` n'est pas un contexte sécurisé — donc le capteur
+d'inclinaison n'y marche pas. **C'est la raison, jamais nommée en trois audits,
+pour laquelle « rien n'a jamais été essayé sur un vrai téléphone ».** Sortie :
+un déploiement de prévisualisation par PR. Non fait — ça touche le pipeline.
+
+**La branche** `claude/mode-livre-params-sequences-oiwtul` couvre deux tranches
+sur sept, porte six paris (dont trois maintenant arbitrés) et un affichage faux.
+Elle ne se merge pas avant la fin du deuxième tour.
 
 ---
 

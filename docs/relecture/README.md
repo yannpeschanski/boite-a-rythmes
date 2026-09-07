@@ -38,3 +38,13 @@ plan tranche par tranche, et les questions ouvertes. Mêmes gestes que ci-dessus
 [`docs/plan/07-audit-assemblage-de-morceau.md`](../plan/07-audit-assemblage-de-morceau.md),
 pas l'état du jeu. Elle n'a donc pas de script de régénération : elle se modifie
 à la main, comme le document qu'elle accompagne.
+
+## `assemblage-2.html` — deuxième tour
+
+Onze cartes, après les quatorze réponses du premier tour. Trois choses : les
+trois points que je n'avais pas su expliquer (deux répondent **en image**, les
+captures sont embarquées dans le fichier), l'état de l'art demandé, et le plan
+révisé — la réponse de Yann sur l'export **annule** la recommandation
+principale de l'audit 07.
+
+Écrite à la main comme la précédente, pas dérivée des données.
