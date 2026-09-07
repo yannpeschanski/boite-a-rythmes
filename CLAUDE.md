@@ -197,14 +197,11 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ## Le Mode Live — les PARTIES et les MONTAGES
 
-⚠️ **SECTION SOUS ARBITRAGE — deuxième tour en cours.** Ce qui suit décrit la
-branche `claude/mode-livre-params-sequences-oiwtul`, non mergée.
-**Déjà tranché par Yann** : trois lettres et non quatre, SONNERIE retiré, une
-option « conserver mes boutons », la durée affichée à corriger, et **l'export
-hors ligne d'un morceau ANNULÉ**. **Encore ouvert** : le loquet 🎲 (« il faut
-tester pour juger »), la place de la bande dans l'Atelier, l'appui long
-destructeur, les modèles. Fiches `docs/relecture/assemblage.html` puis
-`assemblage-2.html` ; audits `docs/plan/07` et `08`.
+⚠️ **SECTION SOUS ARBITRAGE — 25 cartes tranchées, la branche non mergée.**
+Ce qui suit décrit `claude/mode-livre-params-sequences-oiwtul`. Reste ouvert :
+le loquet 🎲, que Yann veut **essayer avant de juger** — d'où la préversion par
+PR. Fiches `docs/relecture/assemblage.html` et `assemblage-2.html` ; audits
+`docs/plan/07` et `08`.
 
 ⚠️ **Le cadrage est tranché, et il est le mainstream de la catégorie** : on
 PRÉPARE de la matière, on JOUE la structure. Beaucoup de grooveboxes n'ont pas
@@ -253,10 +250,34 @@ bouton lui-même, l'appui long y est déjà pris (la rafale de `kind: 'ligne'`, 
 maintien de TENIR). ⚠️ Corollaire de câblage : le sélecteur doit vivre **hors** de
 l'overlay ⚙ — il y était imbriqué, donc il ne s'ouvrait que depuis ⚙.
 
-⚠️ **Une lettre se range du même geste des deux côtés** : appui long, dans
-l'Atelier comme dans le Live. Le petit bouton ↓ de l'Atelier tombait à 20,3 px en
-pointeur grossier, et l'élargir poussait la bande sur deux rangées de la barre
-sticky ; il reste pour les pointeurs FINS.
+⚠️ **RANGER une lettre est un geste de PRÉPARATION : ça vit dans l'Atelier,
+onglet Production.** L'appui long qui rangeait depuis la bande du Live écrasait
+un motif sans confirmation, et il a été expliqué DEUX FOIS sans être compris —
+après deux tentatives, ce n'est plus la rédaction qui est en cause, c'est le
+geste. Un geste qu'on ne comprend pas en le LISANT ne se trouve pas en JOUANT.
+Sur la surface de scène, une pastille ne fait plus qu'une chose : jouer.
+
+⚠️ **Le MIX suit la bascule de section ; le TEMPO, jamais.** Une lettre porte un
+SON complet — « on passe du temps à chercher un son, il ne faut pas l'écraser ».
+`appliquerSection` appelle donc `refreshMixSettings()`. Ce qui rend ça
+compatible avec « bouger les paramètres en direct » : `liveFilter` et
+`liveReverbSend` sont des nœuds SÉPARÉS qu'`applyMixSettings` n'écrit jamais, le
+pad et l'inclinaison gardent la main. Et la reconstruction de l'impulsion de
+réverbe est **gardée** (`derniereTailleReverbe`) — c'est la seule opération
+coûteuse de la fonction, et elle tomberait à chaque frontière de mesure.
+
+⚠️ **Le CYCLE PROPRE est une propriété du MOTIF, pas de la chaîne.** Compter
+toutes les sections avec le cycle du motif COURANT donnait, pour la même chaîne,
+« 1 min 44 » ou « 26 s » selon la lettre chargée — la vraie durée valant
+1 min 02. `dureeSecondes`/`mesuresTotales` prennent donc `cycleDe(partie)`, et
+`parties.cycle()` le mémoïse sur `rangeeLe`.
+
+⚠️ **Un garde-fou inventé se reconnaît à ce qu'il rejette.** J'avais posé « un
+montage fait entendre au moins TROIS choses, sinon c'est un aller-retour » : il
+a rejeté **AABA**, la forme de morceau la plus documentée qui soit, qui n'a que
+deux matières. Ce qui reste et suffit est « jamais uniforme » — c'est exactement
+ce que « pas du tout audible » désignait. Corollaire : la répétition consécutive
+(A A B A) est un PROCÉDÉ, pas un défaut.
 
 ---
 
@@ -1073,6 +1094,13 @@ dépasse presque toujours l'estimation.
   démonstrations et les mesures que ce fichier-ci résume. **Le tenir à jour**, et
   y garder les entrées courtes.
 - **`HISTOIRE.md`** — le récit source, entièrement porté.
+
+⚠️ **Une sonde pressée fait « corriger » du code qui marche.**
+`setValueAtTime(v, ctx.currentTime)` ne se relit pas dans `.value` tant que
+l'horloge audio n'a pas vraiment démarré : lue 250 ms après `start()`, elle
+disait que le mix ne suivait pas une bascule ; lue à 1 s, elle donne la bonne
+valeur. Avant de conclure qu'un réglage audio ne s'applique pas, vérifier
+d'abord que l'horloge tourne.
 
 ⚠️ **Un CONSTAT de conception appelle un audit, pas une implémentation.**
 « On fait fausse route », « c'est pas audible », « le nom est peut-être abusif »

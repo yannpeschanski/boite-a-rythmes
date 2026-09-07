@@ -1,11 +1,21 @@
 <script lang="ts">
-  /* LES PARTIES A / B / C / D, dans l'Atelier — l'endroit où on les FABRIQUE.
+  /* LES PARTIES A / B / C — l'endroit où on les FABRIQUE.
    *
-   * ⚠️ C'est le geste que le chantier du 2026-09-07 supprime, pas un geste
-   * qu'il ajoute. Avant : composer, cliquer ➕, taper un nom dans un `prompt()`,
-   * passer en Mode Live, ouvrir ⚙, ouvrir un sélecteur, y retrouver le nom
-   * qu'on vient de taper — et recommencer par SECTION. Ici : un appui long sur A.
+   * ⚠️ ELLE A DÉMÉNAGÉ DANS L'ONGLET PRODUCTION — arbitrage de Yann : « je le
+   * mettrais dans le volet production pour pas prendre une place dans la
+   * sticky ». La barre collante porte le transport, le tempo, un conseil et
+   * trois onglets ; une rangée de plus y coûtait 61 px sur les trois onglets,
+   * en permanence, pour un geste qu'on fait quelques fois par morceau.
    *
+   * ⚠️ ET L'APPUI LONG A DISPARU. Il rangeait une lettre — donc écrasait un
+   * motif — sans confirmation. Expliqué deux fois à Yann, pas compris deux
+   * fois : après deux tentatives ce n'est plus un problème de rédaction, c'est
+   * le geste qui est mauvais. Ici il y a la place pour des boutons NOMMÉS, donc
+   * plus rien n'est caché dans un maintien.
+   *
+   * Ce que le chantier supprime, en gestes : avant, composer -> ➕ -> taper un
+   * nom dans un `prompt()` -> Mode Live -> ⚙ -> un sélecteur PAR SECTION (huit
+   * pour le modèle POP). Maintenant : un clic sur « ranger sous A ».
    * « De A on développe B » n'a pas de verbe à lui, et c'est voulu : on charge
    * A, on le modifie, on le range sous B.
    */
@@ -14,8 +24,13 @@
 
   let derniere = $state<PartieId | null>(null);
 
+  /* ⚠️ Ranger sur une lettre PLEINE demande confirmation. Ailleurs non : sur
+     une lettre vide il n'y a rien à perdre, et une confirmation à chaque geste
+     anodin s'apprend à cliquer sans lire. */
   function ranger(id: PartieId) {
-    parties.ranger(id, parties.get(id)?.nom ?? '');
+    const p = parties.get(id);
+    if (p && !confirm(`Remplacer la partie ${id}${p.nom ? ` (${p.nom})` : ''} par le rythme affiché ?`)) return;
+    parties.ranger(id, p?.nom ?? '');
     derniere = id;
   }
 
@@ -24,40 +39,12 @@
     derniere = id;
   }
 
-  /* ⚠️ LE MÊME GESTE QU'EN MODE LIVE : tap = charger, appui long = ranger.
-   *
-   * Ce n'est pas une commodité, c'est une MESURE. Le petit ↓ tombait à 20,3 px
-   * de large en pointeur grossier — sous le seuil tactile —, et l'élargir à 44
-   * faisait passer la bande sur deux rangées dans la barre sticky. Le geste
-   * long, lui, ne coûte pas un pixel, et il est déjà celui des pastilles du
-   * Mode Live : une lettre se range de la même façon des deux côtés. Le ↓
-   * reste pour les pointeurs FINS, où un appui long serait bizarre. */
-  const APPUI_LONG_MS = 550;
-  let minuteur: ReturnType<typeof setTimeout> | null = null;
-  let longue = false;
-
-  function surLettreDown(id: PartieId) {
-    longue = false;
-    minuteur = setTimeout(() => {
-      longue = true;
-      ranger(id);
-    }, APPUI_LONG_MS);
-  }
-  function surLettreUp(id: PartieId) {
-    if (minuteur) {
-      clearTimeout(minuteur);
-      minuteur = null;
-    }
-    if (longue) return;
-    // Une lettre vide n'a rien à charger : le tap y range, comme en Mode Live.
-    if (parties.remplie(id)) charger(id);
-    else ranger(id);
-  }
-  function surLettreLeave() {
-    if (minuteur) {
-      clearTimeout(minuteur);
-      minuteur = null;
-    }
+  function vider(id: PartieId) {
+    const p = parties.get(id);
+    if (!p) return;
+    if (!confirm(`Vider la partie ${id}${p.nom ? ` (${p.nom})` : ''} ?`)) return;
+    parties.vider(id);
+    if (derniere === id) derniere = null;
   }
 
   function renommer(id: PartieId) {
@@ -67,132 +54,149 @@
   }
 </script>
 
-<div class="parties-strip">
-  <span class="titre">PARTIES</span>
+<p class="hint">
+  Une <strong>partie</strong> est une des matières du morceau — A, B, C. Le Mode Live les enchaîne
+  selon un montage (couplet / refrain, AABA, club…) et tu joues les variations par-dessus.
+  Range ici le rythme affiché ; recharge-le pour le retravailler.
+</p>
+
+<div class="parties">
   {#each PARTIES as id (id)}
     {@const p = parties.get(id)}
     <div class="partie" class:remplie={!!p} class:courante={derniere === id}>
-      <button
-        class="lettre"
-        onpointerdown={() => surLettreDown(id)}
-        onpointerup={() => surLettreUp(id)}
-        onpointerleave={surLettreLeave}
-        ondblclick={() => p && renommer(id)}
-        title={p
-          ? `${id}${p.nom ? ` — ${p.nom}` : ''} · tap : charger dans l’Atelier · appui long : y ranger le rythme affiché (double-clic : renommer)`
-          : `${id} est vide · tap : y ranger le rythme affiché`}
-      >
-        <span class="l">{id}</span>
-        <span class="nom">{p ? p.nom || 'rangée' : 'vide'}</span>
-      </button>
-      <button class="ranger" onclick={() => ranger(id)} title="Ranger le rythme affiché sous {id}">↓</button>
+      <div class="tete">
+        <span class="lettre">{id}</span>
+        {#if p}
+          <button class="nom" onclick={() => renommer(id)} title="Renommer la partie {id}">
+            {p.nom || 'sans nom'}
+          </button>
+        {:else}
+          <span class="nom vide">vide</span>
+        {/if}
+      </div>
+      <div class="actions">
+        <button class="xp-btn" onclick={() => ranger(id)} title="Ranger le rythme affiché sous {id}">
+          {p ? 'Remplacer' : 'Ranger ici'}
+        </button>
+        <button class="xp-btn" disabled={!p} onclick={() => charger(id)} title="Charger {id} dans l’Atelier">
+          Charger
+        </button>
+        <button class="xp-btn" disabled={!p} onclick={() => vider(id)} title="Vider la partie {id}">🗑</button>
+      </div>
     </div>
   {/each}
-  {#if parties.persistanceRefusee}
-    <!-- ⚠️ Un refus du stockage ne doit jamais être silencieux : `localStorage`
-         EXISTE en navigation privée stricte, il lève à l'écriture. Une partie
-         rangée qui disparaîtrait au rechargement sans un mot, c'est le morceau
-         qu'on croyait tenir. -->
-    <span class="refus">⚠ non conservées après fermeture (stockage refusé)</span>
-  {:else}
-    <span class="aide">la lettre recharge · appui long pour y ranger le rythme affiché</span>
-  {/if}
 </div>
 
+{#if parties.persistanceRefusee}
+  <!-- ⚠️ Un refus du stockage ne doit jamais être silencieux : `localStorage`
+       EXISTE en navigation privée stricte, il lève à l'écriture. Une partie
+       rangée qui disparaîtrait au rechargement sans un mot, c'est le morceau
+       qu'on croyait tenir. -->
+  <p class="refus">⚠ Les parties ne seront pas conservées après fermeture — le stockage est refusé par le navigateur.</p>
+{/if}
+
 <style>
-  .parties-strip {
-    display: flex;
-    align-items: stretch;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 4px;
-  }
-  .titre {
-    align-self: center;
-    font-size: 8px;
-    letter-spacing: var(--xp-ls-wide, 0.08em);
+  .hint {
+    font-size: 9px;
     color: var(--xp-muted);
-    padding-right: 2px;
+    line-height: 1.5;
+    margin: 0 0 8px;
+    max-width: 70ch;
   }
-  .partie {
+  .parties {
     display: flex;
-    border: 1px solid var(--xp-line);
-    box-shadow: var(--xp-bevel-out);
-    background: var(--xp-face);
+    flex-wrap: wrap;
+    gap: 6px;
   }
-  /* Une lettre VIDE reste en creux : le biseau dit ce qui existe. */
-  .partie:not(.remplie) {
+  /* ⚠️ 210 px et non 150 : à 150, deux parties tiennent sur une rangée en
+     390 px de large, chaque bouton retombe à ~54 px et « CHARGER » — un seul
+     mot, donc insécable — DÉBORDE de sa boîte. Mesuré à la capture, pas
+     supposé. Une partie par rangée sur mobile, deux dès qu'il y a la place. */
+  .partie {
+    flex: 1 1 210px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px;
+    border: 1px solid var(--xp-line);
+    background: var(--xp-face);
+    /* Une lettre VIDE reste en creux : le biseau dit ce qui existe. */
     box-shadow: var(--xp-bevel-in);
+  }
+  .partie.remplie {
+    box-shadow: var(--xp-bevel-out);
   }
   .partie.courante {
     outline: 1px solid var(--xp-accent-amber);
   }
-  .lettre {
+  .tete {
     display: flex;
     align-items: baseline;
-    gap: 4px;
-    padding: 3px 6px;
-    min-height: 28px;
-    border: 0;
-    background: transparent;
-    color: var(--xp-text);
-    font-family: var(--xp-font);
-    cursor: pointer;
+    gap: 6px;
+    min-width: 0;
   }
-  /* Une lettre vide reste lisible mais en retrait : elle n'est pas désactivée,
-     un tap y RANGE. */
-  .partie:not(.remplie) .lettre {
-    color: var(--xp-muted);
-  }
-  .l {
-    font-size: 12px;
+  .lettre {
+    font-size: 14px;
     font-weight: 700;
+    color: var(--xp-text);
+    flex: none;
   }
   .nom {
-    font-size: 8px;
+    flex: 1;
+    min-width: 0;
+    font-family: var(--xp-font);
+    font-size: 9px;
+    text-align: left;
     color: var(--xp-muted);
-    max-width: 9ch;
+    background: none;
+    border: 0;
+    padding: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .ranger {
-    border: 0;
-    border-left: 1px solid var(--xp-line);
-    background: transparent;
-    color: var(--xp-accent-amber);
-    font-size: 12px;
-    padding: 0 7px;
+  button.nom {
     cursor: pointer;
-    font-family: var(--xp-font);
+    text-decoration: underline dotted;
   }
-  .ranger:active {
+  .actions {
+    display: flex;
+    gap: 4px;
+  }
+  /* Apparence dans styles/global.css ; ici, la taille seule. */
+  .xp-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 28px;
+    font-size: 9px;
+  }
+  .xp-btn:last-child {
+    flex: 0 0 34px;
+  }
+  .xp-btn:active {
     box-shadow: var(--xp-bevel-in);
   }
-  .aide,
-  .refus {
-    align-self: center;
-    font-size: 8px;
+  .xp-btn:disabled {
     color: var(--xp-muted);
+    cursor: default;
   }
   .refus {
+    font-size: 9px;
     color: var(--xp-accent-amber);
+    margin: 8px 0 0;
   }
   /* ⚠️ En fin de <style> : un bloc @media posé au milieu est écrasé par les
      règles écrites plus bas. */
   @media (pointer: coarse) {
-    .lettre {
+    .xp-btn {
       min-height: 44px;
-      /* Mesuré à 42,4 px de large avec le contenu le plus court (« A vide ») :
-         1,6 px sous le seuil, donc posé plutôt que supposé. */
-      min-width: 44px;
-      justify-content: center;
     }
-    /* ⚠️ Mesuré à 20,3 px de large : sous le seuil, et l'élargir à 44 poussait
-       la bande sur deux rangées de la barre sticky. En tactile c'est l'appui
-       long qui range — le même geste qu'en Mode Live. */
-    .ranger {
-      display: none;
+    .xp-btn:last-child {
+      flex: 0 0 44px;
     }
   }
 </style>

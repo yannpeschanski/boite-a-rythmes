@@ -102,10 +102,29 @@ export function mesuresDeSection(section: Section, cycle: number): number {
   return Math.max(1, Math.round(section.cycles)) * Math.max(1, Math.round(cycle));
 }
 
-/** La durée totale d'une architecture, en secondes, au tempo donné. */
-export function dureeSecondes(sections: Section[], cycle: number, tempo: number): number {
+/**
+ * La durée totale d'une architecture, en secondes, au tempo donné.
+ *
+ * ⚠️ `cycleDe` REND LE CYCLE DE CHAQUE LETTRE, il n'y a pas un cycle unique.
+ * Le cycle propre est une propriété du MOTIF : une partie dont la nappe s'étale
+ * sur quatre mesures a un cycle de 4, une autre en batterie seule a un cycle
+ * de 1. Compter toute la chaîne avec le cycle du motif COURANT — ce que faisait
+ * la première version — donne, pour la MÊME chaîne, « 1 min 44 » ou « 26 s »
+ * selon la partie chargée au moment où on regarde, alors que la vraie durée
+ * vaut 1 min 02. Mesuré, pas déduit.
+ */
+export function dureeSecondes(
+  sections: Section[],
+  cycleDe: (partie: PartieId) => number,
+  tempo: number,
+): number {
   const mesure = 240 / Math.max(1, tempo);
-  return sections.reduce((t, s) => t + mesuresDeSection(s, cycle) * mesure, 0);
+  return sections.reduce((t, s) => t + mesuresDeSection(s, cycleDe(s.partie)) * mesure, 0);
+}
+
+/** Le nombre total de MESURES d'une chaîne — même règle que ci-dessus. */
+export function mesuresTotales(sections: Section[], cycleDe: (partie: PartieId) => number): number {
+  return sections.reduce((t, s) => t + mesuresDeSection(s, cycleDe(s.partie)), 0);
 }
 
 /** « 1 min 44 » — la seule information que l'utilisateur lit vraiment. */
@@ -184,7 +203,7 @@ const BOUTONS_CLUB: string[][] = [
 export const MONTAGES: Montage[] = [
   {
     nom: 'BOUCLE',
-    desc: 'A en boucle — le mono-cycle',
+    desc: 'A en boucle — les mains font tout',
     sections: [sec('BOUCLE', 'A', 4)],
     boutons: null,
   },
@@ -223,28 +242,69 @@ export const MONTAGES: Montage[] = [
     boutons: BOUTONS_CHAINE,
   },
   {
+    /* ⚠️ La forme de 32 mesures — la plus documentée qui soit, et la seule où
+       UNE SEULE section contraste. Sur un cycle de 4, « ×2 » vaut 8 mesures :
+       ce modèle tombe donc EXACTEMENT sur A(8) A(8) B(8) A(8), la forme
+       historique. Ce n'est pas un réglage, c'est une conséquence du choix de
+       compter en tours (audit 06 §4). */
+    nom: 'AABA',
+    desc: 'La forme de 32 mesures — seul le B contraste',
+    sections: [
+      sec('A', 'A', 2),
+      sec('A', 'A', 2),
+      sec('B', 'B', 2),
+      sec('A', 'A', 2),
+    ],
+    boutons: BOUTONS_CHAINE,
+  },
+  {
+    /* Arbitré par Yann : le seul modèle qui demande TROIS motifs, et donc la
+       seule raison d'être de la lettre C. Forme classique. */
+    nom: 'RONDO',
+    desc: 'A B A C A — le refrain revient entre deux contrastes',
+    sections: [
+      sec('A', 'A', 2),
+      sec('B', 'B', 2),
+      sec('A', 'A', 2),
+      sec('C', 'C', 2),
+      sec('A', 'A', 2),
+    ],
+    boutons: BOUTONS_CHAINE,
+  },
+  {
+    /* Arbitré par Yann (« ajouter également un abc ab′c′ ») : trois matières,
+       puis la même suite ALLÉGÉE. C'est la forme où le second passage ne
+       change pas de motifs mais de densité — les calques font le contraste,
+       les lettres font la matière. */
+    nom: 'A B C · A B′ C′',
+    desc: 'Trois matières, puis les mêmes en retrait',
+    sections: [
+      sec('A', 'A', 2),
+      sec('B', 'B', 2),
+      sec('C', 'C', 2),
+      sec('A', 'A', 2),
+      sec('B PRIME', 'B', 2, CALQUE_PONT),
+      sec('C PRIME', 'C', 1, CALQUE_SORTIE),
+    ],
+    boutons: BOUTONS_CHAINE,
+  },
+  {
     /* L'arc d'INTENSITÉ — une seule lettre, ce sont les LIGNES qui entrent et
        sortent. C'est ce que le calque sert à faire, et c'est pour ça qu'il
-       n'est pas décoratif : ce montage ne demande QU'UNE partie remplie. */
+       n'est pas décoratif : ce montage ne demande QU'UNE partie remplie.
+       Longueurs conformes à la convention (intro 16, montée 16, drop 32
+       mesures sur un cycle de 4) — voir docs/plan/08 §2. */
     nom: 'CLUB',
     desc: 'Une seule partie — intro, montée, climax, break',
     sections: [
-      sec('INTRO', 'A', 1, CALQUE_ENTREE),
+      sec('INTRO', 'A', 2, CALQUE_ENTREE),
       sec('MONTÉE', 'A', 2, CALQUE_MONTEE),
       sec('CLIMAX', 'A', 4),
       sec('BREAK', 'A', 1, CALQUE_BREAK),
       sec('CLIMAX', 'A', 4),
-      sec('SORTIE', 'A', 1, CALQUE_SORTIE),
+      sec('SORTIE', 'A', 2, CALQUE_SORTIE),
     ],
     boutons: BOUTONS_CLUB,
-  },
-  {
-    /* Pas une blague : c'est le format que le jeu vend en 2005, et le seul
-       montage dont la DURÉE est l'argument. */
-    nom: 'SONNERIE',
-    desc: 'Un hook, deux tours',
-    sections: [sec('HOOK', 'A', 2)],
-    boutons: null,
   },
 ];
 

@@ -46,6 +46,56 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les 25 arbitrages appliqués, et la préversion par PR (2026-09-07)
+
+> Troisième tour. Yann a répondu aux deux fiches (25 cartes) ; cette entrée
+> n'exécute que ce qui est tranché. Détail dans
+> [`07`](docs/plan/07-audit-assemblage-de-morceau.md) et
+> [`08`](docs/plan/08-etat-de-lart-structures.md).
+
+**La préversion par PR — le préalable, et il en était un.** Les pull requests
+étaient testées mais **jamais déployées** ; le seul artefact récupérable était
+le fichier autonome, qui en `file://` n'est pas un contexte sécurisé, donc
+`DeviceOrientationEvent` refuse et le capteur d'inclinaison ne marche pas.
+**C'est la raison, restée non nommée pendant trois audits, pour laquelle « le
+Mode Live n'a jamais été essayé sur un vrai téléphone » : un empêchement, pas un
+oubli.** Un job `preview` déploie désormais chaque PR sur une URL à elle et la
+commente sur la PR (commentaire mis à jour, jamais empilé).
+
+**Ce qui a été appliqué :** trois lettres (A, B, C) ; le mix suit la bascule,
+le tempo jamais ; la durée juste ; les pastilles du Live ne rangent plus ; le
+panneau PARTIES déménage dans l'onglet Production ; l'option « conserver mes
+boutons » ; SONNERIE retiré, AABA, RONDO et « A B C · A B′ C′ » ajoutés.
+
+**Ce qui a été payé, et qui vaut règle :**
+
+- ⚠️ **Un garde-fou inventé se reconnaît à ce qu'il rejette.** « Un montage fait
+  entendre au moins TROIS choses » a rejeté **AABA** — la forme la plus
+  documentée qui soit, et elle n'a que deux matières. La règle sortait de mon
+  avis, pas d'une mesure. Reste « jamais uniforme », qui suffit.
+- ⚠️ **Un geste expliqué deux fois sans être compris est un geste à supprimer.**
+  L'appui long qui rangeait une lettre est parti ; ranger est de la préparation,
+  donc de l'Atelier, où il y a la place pour des boutons nommés.
+- ⚠️ **Une sonde pressée fait « corriger » du code qui marche.**
+  `setValueAtTime(v, currentTime)` ne se relit pas dans `.value` tant que
+  l'horloge audio n'a pas démarré : à 250 ms la sonde disait que le mix ne
+  suivait pas, à 1 s elle donne 0,8 comme demandé.
+- ⚠️ **« CHARGER » débordait de son bouton** en 390 px — un seul mot, donc
+  insécable, dans une boîte de 54 px. Vu à la capture, corrigé en passant à une
+  partie par rangée sous 210 px.
+
+**Vérifié.** 654 tests, 0 erreur de types, les deux builds,
+`parcours-carriere.cjs` depuis un joueur neuf (épilogue atteint, set monté).
+Mesuré : mix qui suit (réverbe 0 → 0,8 ; volume 1 → 1,3 ; tempo conservé) ;
+durée identique quelle que soit la lettre chargée (1 min 02, 31 mesures, contre
+« 1 min 44 » ou « 26 s » avant) ; bande du Live 3 pastilles à 56 × 44 et 8 cases
+à 60 × 44 sans débordement ; panneau Production sans débordement de texte,
+aucune cible sous 44 px en tactile.
+
+**Reste ouvert :** le loquet 🎲 — « il faut tester pour juger », et c'est
+maintenant possible.
+
+
 ### ✅ Le Mode Live pense en PARTIES A/B/C, et plus rien ne passe par ⚙ (2026-09-07)
 
 > ⚠️ **CORRECTION DU MÊME JOUR — cette livraison n'aurait pas dû être une

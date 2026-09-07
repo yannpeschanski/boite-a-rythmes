@@ -18,14 +18,15 @@
  * l'architecture cite une lettre. Ranger le motif courant sous A est un clic ;
  * « de A on développe B » est le même clic sur B après avoir modifié A.
  *
- * ⚠️ Quatre, pas plus. C'est une mesure, pas un avis : la bande du Mode Live
- * fait 832 px en 844 × 390, et elle porte AUSSI la chaîne de sections et les
- * deux commandes de jeu. Quatre pastilles y tiennent à 56 px, six les
- * ramèneraient sous le seuil tactile. Et une forme de morceau au-delà de trois
- * lettres n'existe pratiquement pas.
+ * ⚠️ TROIS, arbitré par Yann (« partons sur 3 déjà »), et l'état de l'art lui
+ * donne raison : sur les six formes de morceau courantes, CINQ tiennent avec
+ * deux lettres et deux n'en demandent qu'une (voir docs/plan/08). La quatrième
+ * ne servait à aucun des modèles livrés. La mesure ne s'y oppose pas non plus —
+ * la bande du Mode Live fait 832 px en 844 × 390 et porte aussi la chaîne et
+ * les deux commandes de jeu ; trois pastilles y sont plus à l'aise que quatre.
  */
 
-export const PARTIES = ['A', 'B', 'C', 'D'] as const;
+export const PARTIES = ['A', 'B', 'C'] as const;
 export type PartieId = (typeof PARTIES)[number];
 
 export interface Partie {

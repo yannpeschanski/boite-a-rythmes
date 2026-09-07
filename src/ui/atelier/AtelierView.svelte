@@ -593,13 +593,6 @@
          après une partie complète). L'onglet Rythme reste seul tant que le
          récit n'a rien ouvert d'autre : moins d'écran, et rien qui présente le
          jeu par ce qu'on ne peut pas faire. -->
-    <!-- LES PARTIES A/B/C/D — dans la barre sticky parce que c'est PENDANT
-         qu'on compose qu'on range une partie, pas après. Affichées seulement
-         une fois le Mode Live ouvert : c'est lui qui les enchaîne, et un
-         élément n'apparaît qu'à l'écran qui l'explique. -->
-    {#if unlocks.has('live')}
-      <PartiesStrip />
-    {/if}
     <XpTabs
       tabs={[
         { id: 'rythme', label: '🥁 Rythme' },
@@ -761,6 +754,13 @@
            pas porter. La gestion de la banque (enregistrer, renommer,
            supprimer) est un petit CRUD — en pleine largeur ici, ses quatre
            boutons ne débordent plus comme dans l'ancien bloc étroit. -->
+      <!-- LES PARTIES A/B/C, à côté de la banque — arbitrage de Yann : « je le
+           mettrais dans le volet production pour pas prendre une place dans la
+           sticky ». Voisines exprès : la banque est le MATÉRIEL (tout ce qu'on
+           a composé), les parties sont ce qui est MONTÉ maintenant. -->
+      <XpWindow title="Parties du morceau — A / B / C" icon="🅰" accent="amber">
+        <PartiesStrip />
+      </XpWindow>
       <XpWindow title="Banque de séquences" icon="🗄" accent="teal">
         <SequenceBank />
       </XpWindow>

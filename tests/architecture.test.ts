@@ -18,6 +18,7 @@ import {
   mesuresDeSection,
   dureeSecondes,
   formaterDuree,
+  mesuresTotales,
   libelleDePartie,
   MONTAGES,
   montageFrais,
@@ -100,11 +101,33 @@ describe('une section se compte en tours, et s’affiche en mesures', () => {
   it('donne une durée qui suit le tempo', () => {
     const sections = MONTAGES[1].sections;
     const tours = sections.reduce((t, s) => t + s.cycles, 0);
+    const partout1 = () => 1;
     // Sur un motif d'une mesure, un tour vaut une mesure, soit deux secondes à 120.
-    expect(dureeSecondes(sections, 1, 120)).toBeCloseTo(tours * 2, 5);
+    expect(dureeSecondes(sections, partout1, 120)).toBeCloseTo(tours * 2, 5);
     // Le même morceau dure DEUX FOIS plus long à 60 BPM : une limite en
     // mesures ne veut rien dire pour l'utilisateur, seule la durée compte.
-    expect(dureeSecondes(sections, 1, 60)).toBeCloseTo(dureeSecondes(sections, 1, 120) * 2, 5);
+    expect(dureeSecondes(sections, partout1, 60)).toBeCloseTo(
+      dureeSecondes(sections, partout1, 120) * 2,
+      5,
+    );
+  });
+
+  /* ⚠️ LE DÉFAUT QUE CE TEST EXISTE POUR EMPÊCHER, et il a été MESURÉ, pas
+     déduit : le cycle propre est une propriété du MOTIF, pas de la chaîne. Une
+     lettre dont la nappe s'étale sur quatre mesures vaut 4, une lettre en
+     batterie seule vaut 1. Compter toute la chaîne avec le cycle du motif
+     COURANT donnait, pour la MÊME chaîne, « 1 min 44 » ou « 26 s » selon la
+     partie chargée au moment où on regardait — la vraie durée valant 1 min 02. */
+  it('compte CHAQUE section avec le cycle de SA lettre', () => {
+    const sections = MONTAGES[1].sections; // COUPLET / REFRAIN : A et B
+    const cycleDe = (p: 'A' | 'B' | 'C') => (p === 'A' ? 4 : 1);
+    const attendu = sections.reduce((t, s) => t + s.cycles * (s.partie === 'A' ? 4 : 1), 0);
+    expect(mesuresTotales(sections, cycleDe)).toBe(attendu);
+    // Et surtout : le total DIFFÈRE des deux lectures « un seul cycle ».
+    const toutA = mesuresTotales(sections, () => 4);
+    const toutB = mesuresTotales(sections, () => 1);
+    expect(mesuresTotales(sections, cycleDe)).toBeGreaterThan(toutB);
+    expect(mesuresTotales(sections, cycleDe)).toBeLessThan(toutA);
   });
 
   it('formate une durée lisible', () => {
@@ -138,24 +161,41 @@ describe('les montages livrés d’usine', () => {
     }
   });
 
-  it('ne peuvent pas être INAUDIBLES : deux sections qui se suivent diffèrent', () => {
+  it('ne peuvent pas être INAUDIBLES : une chaîne fait entendre au moins trois choses', () => {
     /* Le garde-fou du chantier. Une chaîne dont toutes les cases font entendre
-       la même chose est une chaîne décorative — exactement ce que l'ancienne
-       bande produisait par défaut. Le compte est là exprès : si la population
-       devenait vide, le test passerait sans rien vérifier. */
+       la même chose est décorative — exactement ce que l'ancienne bande
+       produisait par défaut, avec ses huit sections à `sequenceId: null`.
+
+       ⚠️ LE GARDE-FOU PORTE SUR L'ENSEMBLE, PAS SUR L'ADJACENCE, et c'est une
+       correction : la première version interdisait deux sections identiques qui
+       se suivent, et elle a rejeté AABA. Or AABA a raison — la forme de 32
+       mesures EST A(8) A(8) B(8) A(8), la répétition consécutive y est le
+       procédé, pas un défaut. Écrire deux cases « A » plutôt qu'une case « A×4 »
+       change d'ailleurs quelque chose en Mode Live : ça donne deux points où
+       sauter. Ce qu'il faut interdire est l'uniformité, pas la répétition.
+
+       Le compte est là exprès : si la population devenait vide, le test
+       passerait sans rien vérifier. */
     const chaines = MONTAGES.filter((m) => m.sections.length > 1);
     expect(chaines.length).toBeGreaterThan(0);
     for (const m of chaines) {
-      for (let i = 1; i < m.sections.length; i++) {
-        expect(empreinte(m.sections[i])).not.toBe(empreinte(m.sections[i - 1]));
-      }
-      // Et sur l'ensemble : au moins trois façons de sonner, sinon c'est un
-      // aller-retour, pas une forme.
-      expect(new Set(m.sections.map(empreinte)).size).toBeGreaterThanOrEqual(3);
+      expect(new Set(m.sections.map(empreinte)).size).toBeGreaterThan(1);
     }
   });
 
-  it('demandent au plus les quatre lettres, et A d’abord', () => {
+  /* ⚠️ ET LA RÈGLE QU'ON N'ÉCRIT PAS. J'avais ajouté « au moins TROIS façons de
+     sonner, sinon c'est un aller-retour, pas une forme ». Elle a rejeté AABA,
+     qui n'a que deux matières — et AABA est la forme de morceau la plus
+     documentée qui soit. Le tell est net : la règle sortait de mon avis, pas
+     d'une mesure. Ce qui reste, et qui suffit, est « jamais uniforme » : c'est
+     exactement ce que « pas du tout audible » désignait. */
+  it('deux matières suffisent — AABA en est la preuve', () => {
+    const aaba = montageParNom('AABA')!;
+    expect(new Set(aaba.sections.map((s) => s.partie)).size).toBe(2);
+    expect(new Set(aaba.sections.map(empreinte)).size).toBe(2);
+  });
+
+  it('demandent au plus les TROIS lettres, et A toujours', () => {
     for (const m of MONTAGES) {
       const lettres = [...new Set(m.sections.map((s) => s.partie))];
       expect(lettres.length).toBeLessThanOrEqual(PARTIES.length);
@@ -226,6 +266,25 @@ describe('les montages livrés d’usine', () => {
     expect(libelleDePartie(intro)).toBe('A′');
   });
 
+  it('la lettre C est CITÉE — sinon elle n’aurait pas lieu d’exister', () => {
+    /* ⚠️ Arbitré par Yann après le constat que AUCUN des quatre premiers
+       modèles n'utilisait C : « ajouter un rondo et ajouter également un
+       abc ab′c′ ». Sans un montage qui la cite, la troisième lettre serait un
+       emplacement déclaré et lu par personne — la famille de défaut de
+       `forceVariantCount`. */
+    const citee = MONTAGES.filter((m) => m.sections.some((s) => s.partie === 'C'));
+    expect(citee.length).toBeGreaterThanOrEqual(2);
+    expect(citee.map((m) => m.nom)).toContain('RONDO');
+  });
+
+  it('CLUB reste le seul à ne demander QU’UNE lettre', () => {
+    // C'est lui qui justifie que le calque existe : intro, montée, climax et
+    // break se jouent sur un seul motif.
+    const parLettres = MONTAGES.filter((m) => m.sections.length > 1)
+      .map((m) => ({ nom: m.nom, n: new Set(m.sections.map((s) => s.partie)).size }));
+    expect(parLettres.filter((x) => x.n === 1).map((x) => x.nom)).toEqual(['CLUB']);
+  });
+
   it('donne une copie fraîche, jamais le montage lui-même', () => {
     const a = montageFrais('COUPLET / REFRAIN')!;
     const b = montageFrais('COUPLET / REFRAIN')!;
@@ -252,7 +311,7 @@ describe('les montages livrés d’usine', () => {
 describe('migrerArchitecture — traduire, jamais abandonner', () => {
   const ancienne = (sections: Array<Record<string, unknown>>) => ({ nom: 'POP', sections });
 
-  it('traduit les séquences citées en A, B, C, D dans l’ordre d’apparition', () => {
+  it('traduit les séquences citées en A, B, C dans l’ordre d’apparition', () => {
     const m = migrerArchitecture(
       ancienne([
         { id: 's1', nom: 'INTRO', sequenceId: 'zzz', cycles: 2, lignes: null },
@@ -288,7 +347,7 @@ describe('migrerArchitecture — traduire, jamais abandonner', () => {
     expect(s.lignes).toEqual(['kick', 'hat']);
   });
 
-  it('replie sur A au-delà de quatre séquences citées', () => {
+  it('replie sur A au-delà des trois lettres', () => {
     const m = migrerArchitecture(
       ancienne(
         ['a', 'b', 'c', 'd', 'e', 'f'].map((x, i) => ({
@@ -301,7 +360,7 @@ describe('migrerArchitecture — traduire, jamais abandonner', () => {
       ),
     )!;
     // Mieux vaut une chaîne qui joue A que des cases muettes.
-    expect(m.architecture.sections.map((s) => s.partie)).toEqual(['A', 'B', 'C', 'D', 'A', 'A']);
+    expect(m.architecture.sections.map((s) => s.partie)).toEqual(['A', 'B', 'C', 'A', 'A', 'A']);
   });
 
   it('ne touche PAS une architecture déjà au nouveau format', () => {

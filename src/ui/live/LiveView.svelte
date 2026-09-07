@@ -33,6 +33,7 @@
     cycleDuMotif,
     mesuresDeSection,
     dureeSecondes,
+    mesuresTotales,
     formaterDuree,
     libelleDePartie,
     MONTAGES,
@@ -52,6 +53,8 @@
     saveLiveAssignments,
     loadLiveSnapshots,
     saveLiveSnapshots,
+    chargerConserverBoutons,
+    saveConserverBoutons,
     vizById,
     ACTIONS_TIRABLES,
     LIVE_ACTIONS,
@@ -696,9 +699,12 @@
   const archSections = $derived(architecture.sections);
   const cycleMotif = $derived(cycleDuMotif(st));
   const sectionCourante = $derived(archSections[sectionIndex] ?? null);
+  /* La longueur de la section EN COURS se lit sur le motif chargé — c'est lui
+     qui joue. Les longueurs AFFICHÉES, elles, se lisent lettre par lettre. */
   const mesuresCourantes = $derived(sectionCourante ? mesuresDeSection(sectionCourante, cycleMotif) : 0);
+  const cycleDe = $derived((id: PartieId) => parties.cycle(id));
   const dureeMorceau = $derived(
-    archSections.length ? formaterDuree(dureeSecondes(archSections, cycleMotif, st.tempo)) : '',
+    archSections.length ? formaterDuree(dureeSecondes(archSections, cycleDe, st.tempo)) : '',
   );
 
   /* Applique une section : charge son motif (SANS son tempo) et pose son
@@ -718,6 +724,20 @@
     if (!parties.chargerGardantTempo(s.partie)) {
       if (s.partie !== 'A') parties.chargerGardantTempo('A');
     }
+    /* ⚠️ LE MIX SUIT LA BASCULE — arbitré par Yann : « on passe du temps à
+       chercher un son, il ne faut pas l'écraser ». Une lettre porte donc un SON
+       complet, pas seulement des notes. Sans cet appel, le graphe garde le mix
+       de la lettre chargée au démarrage et le refrain jouait ses notes avec le
+       son du couplet (mesuré : envoi réverbe à 0 au lieu de 0,8).
+
+       ⚠️ Deux choses que ça ne touche PAS, et c'est ce qui le rend compatible
+       avec « bouger les paramètres en direct » :
+        - le TEMPO, qui appartient au transport (`chargerGardantTempo`) — le
+          seul point que Yann a explicitement exclu ;
+        - `liveFilter` et `liveReverbSend`, qui sont des nœuds SÉPARÉS que
+          `applyMixSettings` n'écrit jamais. Le pad, l'inclinaison et les faders
+          gardent donc la main pendant qu'une section passe. */
+    engine.refreshMixSettings();
     /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
        sur une seule séquence.
        ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
@@ -789,9 +809,19 @@
      Ce que le catalogue ne reconnaît pas est ignoré, jamais refusé en bloc :
      même leçon que la migration des assignations, où le tout-ou-rien perdait
      les six boutons ET les trois snapshots, en silence. */
+  /* ⚠️ « Ou une option "conserver mes boutons ?" » — Yann. Un montage qui écrase
+     six assignations sans prévenir est destructeur et silencieux ; le loquet
+     reste donc à la main de qui joue. Persisté avec le reste : c'est une
+     habitude de jeu, pas un réglage de morceau. */
+  let conserverBoutons = $state(chargerConserverBoutons());
+
   $effect(() => {
     const voulus = architecture.boutonsDemandes;
     if (!voulus) return;
+    if (untrack(() => conserverBoutons)) {
+      architecture.boutonsConsommes();
+      return;
+    }
     /* `untrack` : l'effet écrit dans `assignments`, qu'il lit pour garder le
        défaut d'un rang non cité. Sans ça il se redéclencherait sur sa propre
        écriture. */
@@ -863,41 +893,19 @@
   /** La lettre jouée hors chaîne — pour allumer la bonne pastille. */
   let partieHorsChaine = $state<PartieId | null>(null);
 
-  function rangerPartie(id: PartieId) {
-    parties.ranger(id, parties.get(id)?.nom ?? '');
-    hapticTick(25);
-  }
-
-  /* Appui long sur une pastille = ranger. Même geste et même durée que les
-     snapshots d'assignation : un geste destructeur (il écrase la lettre) se
-     tient, il ne se tape pas. */
-  let partieTimer: ReturnType<typeof setTimeout> | null = null;
-  let partieLongue = false;
-  function onPartieDown(id: PartieId) {
-    partieLongue = false;
-    partieTimer = setTimeout(() => {
-      partieLongue = true;
-      rangerPartie(id);
-    }, LONG_PRESS_MS);
-  }
-  function onPartieUp(id: PartieId) {
-    if (partieTimer) {
-      clearTimeout(partieTimer);
-      partieTimer = null;
-    }
-    if (partieLongue) return;
-    // Une lettre vide n'a rien à jouer : le tap y range, c'est le seul geste
-    // qu'elle porte — et son libellé le dit.
-    if (parties.remplie(id)) jouerPartie(id);
-    else rangerPartie(id);
-  }
-  function onPartieLeave() {
-    if (partieTimer) {
-      clearTimeout(partieTimer);
-      partieTimer = null;
-    }
-  }
-
+  /* ⚠️ RANGER A QUITTÉ LE MODE LIVE, et ce n'est pas un renoncement.
+   *
+   * L'appui long sur une pastille y rangeait le motif courant — donc écrasait
+   * une lettre, sans confirmation, par un simple doigt qui traîne. Expliqué
+   * deux fois à Yann, pas compris deux fois : après deux tentatives, ce n'est
+   * plus un problème de rédaction, c'est le geste qui est mauvais. Un geste
+   * qu'on ne comprend pas en le LISANT, on ne le trouvera pas en JOUANT.
+   *
+   * La règle qui tranche est déjà dans la maison : ce qu'on fait AVANT de jouer
+   * est de la préparation, et sa place est dans l'Atelier. Ranger une lettre en
+   * est. Ici les pastilles ne font plus qu'une chose — jouer — et il n'y a plus
+   * rien de destructeur sur la surface de scène.
+   */
   /* Appui long sur une CASE de la chaîne = l'éditer sur place (sa lettre, ses
      tours). C'est la moitié « séquences » de la demande de Yann : plus rien de
      la chaîne n'oblige à ouvrir ⚙. */
@@ -1898,15 +1906,14 @@
               class="partie"
               class:remplie
               class:on={remplie && jouee}
-              onpointerdown={() => onPartieDown(id)}
-              onpointerup={() => onPartieUp(id)}
-              onpointerleave={onPartieLeave}
+              disabled={!remplie}
+              onclick={() => jouerPartie(id)}
               title={remplie
-                ? `${id}${parties.get(id)?.nom ? ` — ${parties.get(id)?.nom}` : ''} · tap : jouer · appui long : y ranger ce qu'on entend`
-                : `${id} est vide · tap : y ranger ce qu'on entend`}
+                ? `Jouer ${id}${parties.get(id)?.nom ? ` — ${parties.get(id)?.nom}` : ''}`
+                : `${id} est vide — on range une lettre dans l’Atelier, onglet Production`}
             >
               <span class="partie-lettre">{id}</span>
-              <span class="partie-etat">{remplie ? (parties.get(id)?.nom || 'RANGÉE') : '＋'}</span>
+              <span class="partie-etat">{remplie ? (parties.get(id)?.nom || 'RANGÉE') : 'vide'}</span>
             </button>
           {/each}
         </div>
@@ -1921,7 +1928,7 @@
                 onpointerdown={() => onCaseDown(i)}
                 onpointerup={() => onCaseUp(i)}
                 onpointerleave={onCaseLeave}
-                title="{sec.nom} — {libelleDePartie(sec)} · {mesuresDeSection(sec, cycleMotif)} mesures · appui long : changer la lettre ou la longueur"
+                title="{sec.nom} — {libelleDePartie(sec)} · {mesuresDeSection(sec, cycleDe(sec.partie))} mesures · appui long : changer la lettre ou la longueur"
               >
                 {#if i === sectionIndex}
                   <span class="fill" style:width="{avancement * 100}%"></span>
@@ -2205,6 +2212,16 @@
                 <span class="assign-row-label">VISUALISEUR</span>
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
+              <button
+                class="assign-row"
+                onclick={() => {
+                  conserverBoutons = !conserverBoutons;
+                  saveConserverBoutons(conserverBoutons);
+                }}
+              >
+                <span class="assign-row-label">CONSERVER MES BOUTONS</span>
+                <span class="assign-row-val">{conserverBoutons ? '☑ un montage n’y touche pas' : '☐ un montage les remplace'}</span>
+              </button>
               <button class="assign-row" onclick={() => (picker = { kind: 'montage' })}>
                 <span class="assign-row-label">MONTAGE</span>
                 <span class="assign-row-val"
@@ -2340,7 +2357,7 @@
                     <span class="picker-desc">un seul motif qui tourne — le comportement d'avant</span>
                   </button>
                   {#each MONTAGES as m (m.nom)}
-                    {@const mes = m.sections.reduce((t, x) => t + mesuresDeSection(x, cycleMotif), 0)}
+                    {@const mes = mesuresTotales(m.sections, cycleDe)}
                     {@const lettres = new Set(m.sections.map((x) => x.partie))}
                     <button
                       class="picker-row"
@@ -2364,7 +2381,7 @@
                   <div class="picker-cycles">
                     <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles - 1)}>−</button>
                     <span
-                      >×{archSections[idx]?.cycles ?? 1} · {mesuresDeSection(archSections[idx], cycleMotif)} mesures</span
+                      >×{archSections[idx]?.cycles ?? 1} · {mesuresDeSection(archSections[idx], cycleDe(archSections[idx].partie))} mesures</span
                     >
                     <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles + 1)}>+</button>
                   </div>

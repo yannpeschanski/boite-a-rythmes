@@ -3,16 +3,15 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-07 — **chantier du MODE LIVE, deuxième tour
-> d'arbitrage en cours.** Deux audits ([07](docs/plan/07-audit-assemblage-de-morceau.md),
-> [08](docs/plan/08-etat-de-lart-structures.md)) et deux fiches annotables
-> (`docs/relecture/assemblage.html`, puis `assemblage-2.html`). Yann a répondu
-> au premier tour : **le cadrage est tranché**, l'export hors ligne est
-> **annulé**, on passe à **trois lettres**.
+> Dernière mise à jour : 2026-09-07 — **chantier du MODE LIVE : 25 cartes
+> arbitrées, tout ce qui est tranché est appliqué.** Deux audits
+> ([07](docs/plan/07-audit-assemblage-de-morceau.md),
+> [08](docs/plan/08-etat-de-lart-structures.md)) et deux fiches
+> (`docs/relecture/assemblage.html`, `assemblage-2.html`).
 >
-> ⚠️ **Un préalable bloque la moitié des décisions restantes** : les pull
-> requests ne sont jamais déployées, donc rien n'est testable au téléphone.
-> Voir la dernière carte du deuxième tour.
+> ⚠️ **Il ne reste qu'une chose à décider, et elle se décide en JOUANT** : le
+> loquet 🎲 (« il faut tester pour juger »). La préversion par PR existe
+> maintenant pour ça — chaque pull request a son URL, testable au téléphone.
 
 ## Où en est le projet
 
@@ -20,7 +19,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 650 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 654 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -63,69 +62,49 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
 
-## ⚠️ Le chantier du MODE LIVE — cadrage tranché, reste à arbitrer
+## ⚠️ Le chantier du MODE LIVE — arbitré et appliqué, une carte restante
 
 ⚠️ **Leçon de méthode, à ne pas répéter.** Une première passe a répondu au
-diagnostic de Yann par une **implémentation directe**, donc en tranchant sans
-arbitrage des questions qui n'étaient pas posées. Sa réponse : *« je me serais
-attendu à un vrai travail d'audit avec la proposition d'un plan sérieux sur la
-base de mes constats. Trop focalisé dans l'exécution directe. »* Un constat sur
-ce que le produit EST s'audite avant de se coder. La règle est dans `CLAUDE.md`.
+diagnostic de Yann par une implémentation directe — *« trop focalisé dans
+l'exécution directe »*. Un constat sur ce que le produit EST s'audite avant de
+se coder. La règle est dans `CLAUDE.md`, le format qui marche est la fiche
+annotable (25 cartes, 25 réponses).
 
-### Le cadrage — tranché par Yann, et c'est la norme de la catégorie
+### Le cadrage — tranché, et c'est la norme de la catégorie
 
-> *« L'intérêt, c'est aussi de pouvoir faire bouger les paramètres en direct et
-> créer un morceau vivant. Sinon les paramètres doivent être réglés à l'avance,
-> ce qui rend l'exercice trop fastidieux. On n'a pas le choix de mélanger les
-> aspects live / établi de morceau. »*
+Yann refusait le choix binaire scène / établi, **et il avait raison** : beaucoup
+de grooveboxes n'ont pas de mode morceau, par choix, parce qu'elles sont faites
+pour être JOUÉES en temps réel. Le Song Mode d'Elektron est arrivé par mise à
+jour, des années après. **On prépare de la matière, on joue la structure.** Le
+mot juste est **SCÈNE**, pas « section ».
 
-Il refuse le choix binaire scène / établi que l'audit 07 posait — **et il a
-raison** : c'est la façon dont fonctionne la catégorie entière. *« Many
-grooveboxes don't have traditional song modes because they are often created to
-be performed in real time, with users performing the patterns to define the song
-structure. »* Le Song Mode d'Elektron est arrivé **par mise à jour**, des années
-après les machines. **On prépare de la matière, on joue la structure.**
-
-Corollaire de vocabulaire : le mot juste est **SCÈNE** (au sens groovebox et
-Session View d'Ableton), pas « section » — ça dit que la chaîne est un ordre
-*suggéré*, pas une timeline.
-
-### Ce qui est acté
+### Appliqué
 
 | | |
 |---|---|
-| **Trois lettres** (A, B, C), pas quatre | « partons sur 3 déjà » |
-| La durée affichée est **fausse** (facteur 4) | à corriger |
-| Deux motifs + des calques suffisent aux formes courantes | et une section cite toujours quelque chose de défini |
-| Le loquet 🎲 reste | « il faut tester pour juger » |
-| **SONNERIE retiré** ; option « conserver mes boutons » | |
-| ❌ **L'export hors ligne d'un morceau : ANNULÉ** | « peu d'intérêt […] sinon ça signifie des automations, trop fastidieux pour l'ambition de l'app ». Le prototype reste dans l'audit comme preuve, il n'est pas poursuivi |
+| Trois lettres A, B, C | et les modèles RONDO / « A B C · A B′ C′ » les citent |
+| Le mix SUIT la bascule, le tempo JAMAIS | « on passe du temps à chercher un son » |
+| La durée juste | chaque section avec le cycle de SA lettre |
+| Les pastilles du Live ne rangent plus | ranger est de la préparation → onglet Production |
+| Option « conserver mes boutons » | un montage n'écrase plus en silence |
+| SONNERIE retiré, AABA ajouté | la forme de 32 mesures tombe pile sur nos tours |
+| ❌ Export hors ligne d'un morceau | **annulé** — sans automation il serait mort |
+| ✅ **Préversion Vercel par pull request** | le préalable à tout test réel |
 
-### Ce qui en découle, et qui n'est pas encore arbitré
+### La seule carte restante
 
-1. **⏺ REC devient LA sortie audio** — donc il n'est plus une commodité :
-   256 Mo de pic à dix minutes, WAV et pas MP3. Deux sorties connues (tampon
-   pré-alloué, encodage au fil de l'eau).
-2. **Sauvegarder un morceau monté en JSON** (« avant le wav ») — demandé.
-   Question ouverte : les boutons font-ils partie du morceau ?
+**Le loquet 🎲** — « il faut tester pour juger ». Il n'y a plus rien à écrire
+dessus : il faut l'essayer, en paysage, à deux mains. La préversion rend ça
+possible pour la première fois.
+
+### Ce qui suit, une fois le loquet jugé
+
+1. **⏺ REC** est devenu LA sortie audio : 256 Mo de pic à dix minutes, WAV et
+   pas MP3. Deux sorties connues (tampon pré-alloué, encodage au fil de l'eau).
+2. **Sauvegarder un morceau en JSON** — demandé, pas fait. Question ouverte :
+   les boutons font-ils partie du morceau ?
 3. **Ranger la banque et les lettres** — deux vocabulaires qui s'ignorent.
-4. **Le mix ne suit pas une bascule** — la vraie question, reformulée : une
-   lettre porte-t-elle un SON ou seulement des NOTES ? *(Le cadrage penche pour
-   « des notes » : un mix qui saute tout seul se bat contre la main.)*
-5. **Les quatre modèles** (BOUCLE, COUPLET/REFRAIN, A B B′, AABA, CLUB) — et la
-   lettre C que **aucun n'utilise**.
-
-⚠️ **LE PRÉALABLE.** *« Il faut tester pour juger »* est vrai de la moitié des
-cartes, et **c'est impossible aujourd'hui** : les pull requests sont testées mais
-jamais déployées (`ci.yml`, `if: github.event_name == 'push'`), et le fichier
-autonome ouvert en `file://` n'est pas un contexte sécurisé — donc le capteur
-d'inclinaison n'y marche pas. **C'est la raison, jamais nommée en trois audits,
-pour laquelle « rien n'a jamais été essayé sur un vrai téléphone ».** Sortie :
-un déploiement de prévisualisation par PR. Non fait — ça touche le pipeline.
-
-**La branche** `claude/mode-livre-params-sequences-oiwtul` couvre deux tranches
-sur sept, porte six paris (dont trois maintenant arbitrés) et un affichage faux.
-Elle ne se merge pas avant la fin du deuxième tour.
+4. Après écoute seulement : le fill recalé sur la section, l'automation.
 
 ---
 

@@ -13,6 +13,8 @@
  * n'y ajoute rien.
  */
 import { pattern } from './pattern.svelte';
+import { deserializeState } from '../model/serialize';
+import { cycleDuMotif } from '../model/architecture';
 import { PARTIES, estPartieId, type Partie, type PartieId } from '../model/parties';
 
 const KEY = 'boite-a-rythme:parties';
@@ -20,7 +22,7 @@ const KEY = 'boite-a-rythme:parties';
 type Table = Record<PartieId, Partie | null>;
 
 function vide(): Table {
-  return { A: null, B: null, C: null, D: null };
+  return { A: null, B: null, C: null };
 }
 
 function valide(v: unknown): v is Table {
@@ -82,6 +84,39 @@ class PartiesStore {
 
   get nombreRemplies(): number {
     return PARTIES.filter((id) => this.table[id] !== null).length;
+  }
+
+  /* ---- LE CYCLE PROPRE DE CHAQUE LETTRE ----
+   *
+   * ⚠️ Il n'y a PAS un cycle unique pour toute une chaîne : c'est une propriété
+   * du motif. Une lettre dont la nappe s'étale sur quatre mesures vaut 4, une
+   * autre en batterie seule vaut 1. Compter toute la chaîne avec le cycle du
+   * motif COURANT donnait, pour la même chaîne, « 1 min 44 » ou « 26 s » selon
+   * la partie chargée au moment où on regarde — la vraie durée étant 1 min 02.
+   *
+   * Mémoïsé sur `rangeeLe` : désérialiser trois motifs à chaque rendu du Mode
+   * Live (60 fois par seconde) serait absurde. Une lettre rangée change son
+   * horodatage, donc le cache se périme tout seul. */
+  #cycles = new Map<PartieId, { le: number; cycle: number }>();
+
+  cycle(id: PartieId): number {
+    const p = this.table[id];
+    if (!p) return 1;
+    const cache = this.#cycles.get(id);
+    if (cache && cache.le === p.rangeeLe) return cache.cycle;
+    let cycle = 1;
+    try {
+      cycle = cycleDuMotif(deserializeState(p.json));
+    } catch {
+      /* une entrée illisible ne doit pas casser l'affichage d'une durée */
+    }
+    this.#cycles.set(id, { le: p.rangeeLe, cycle });
+    return cycle;
+  }
+
+  /** À passer tel quel à `dureeSecondes` / `mesuresTotales`. */
+  get cycleDe(): (id: PartieId) => number {
+    return (id) => this.cycle(id);
   }
 
   /* RANGER le motif courant sous une lettre. C'est LE geste du chantier : un
