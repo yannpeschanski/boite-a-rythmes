@@ -29,6 +29,7 @@ une ligne réécrite ni réordonnée.
 | [`04-maquettes-et-moodboards.md`](docs/plan/04-maquettes-et-moodboards.md) | Maquettes — les sept séries de propositions |
 | [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) | **Audit du Mode Live (2026-09-02)** — pas une archive : un chantier OUVERT, mesuré et pas encore arbitré |
 | [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
+| [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode, ce que la mesure trouve, et les décisions qui restent. Fiche annotable : `docs/relecture/assemblage.html` |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans
@@ -45,6 +46,16 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ## Journal des livraisons — Mode jeu et Mode carrière
 
 ### ✅ Le Mode Live pense en PARTIES A/B/C, et plus rien ne passe par ⚙ (2026-09-07)
+
+> ⚠️ **CORRECTION DU MÊME JOUR — cette livraison n'aurait pas dû être une
+> livraison.** Yann : *« je me serais attendu à un vrai travail d'audit avec la
+> proposition d'un plan sérieux sur la base de mes constats. Trop focalisé dans
+> l'exécution directe. »* Il a raison : son message posait un DIAGNOSTIC, pas
+> une commande. Ce qui suit reste exact sur ce qui a été fait et mesuré, mais
+> **six de ses choix ont été tranchés sans arbitrage** et l'affichage de la
+> durée y est faux. L'audit qui rouvre tout est
+> [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) ;
+> la branche ne se merge pas avant la fiche `docs/relecture/assemblage.html`.
 
 > Yann : *« l'histoire des séquences, architectures, etc. J'ai l'impression
 > qu'on fait fausse route […] trop compliqué et pas du tout audible »*, plus

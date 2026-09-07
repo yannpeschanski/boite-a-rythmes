@@ -197,6 +197,14 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ## Le Mode Live — les PARTIES et les MONTAGES
 
+⚠️ **SECTION SOUS ARBITRAGE.** Ce qui suit décrit la branche
+`claude/mode-livre-params-sequences-oiwtul`, non mergée. Les règles marquées
+« mesuré » tiennent ; six autres choix (le loquet 🎲, quatre lettres, les cinq
+montages, un montage qui écrase les boutons, la place de la bande dans
+l'Atelier, l'appui long destructeur) sont des **propositions** en attente de la
+fiche `docs/relecture/assemblage.html`. Voir
+`docs/plan/07-audit-assemblage-de-morceau.md`, §6.
+
 ⚠️ **Une architecture se pense en LETTRES, et une section en cite une —
 jamais « rien ».** `Section.sequenceId: string | null` pointait une entrée de
 banque au nom libre : remplir le modèle POP demandait huit allers-retours dans un
@@ -1055,6 +1063,16 @@ dépasse presque toujours l'estimation.
   démonstrations et les mesures que ce fichier-ci résume. **Le tenir à jour**, et
   y garder les entrées courtes.
 - **`HISTOIRE.md`** — le récit source, entièrement porté.
+
+⚠️ **Un CONSTAT de conception appelle un audit, pas une implémentation.**
+« On fait fausse route », « c'est pas audible », « le nom est peut-être abusif »
+ne sont pas des commandes : y répondre par du code, c'est trancher sans
+arbitrage des questions qui n'ont pas été posées — et c'est le reproche du
+2026-09-07 (*« trop focalisé dans l'exécution directe »*). Le format qui marche
+est la **fiche annotable** (`docs/relecture/`) : une carte par décision, la
+recommandation en premier, et les choix qu'on a pris seul listés pour être
+renversés. Un constat d'ERGONOMIE ou de bug se code ; un constat sur ce que le
+produit EST s'audite d'abord.
 
 **Style de travail avec Yann :** instructions courtes (« go », « pars sur… »), il
 attend qu'on avance sans reposer trop de questions. Exceptions : demande explicite
