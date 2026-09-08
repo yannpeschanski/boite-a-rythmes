@@ -46,6 +46,51 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ « Restaurer / Ignorer » restaure vraiment (2026-09-08)
+
+> Yann : *« pas sûr que la fonction "restaurer/ignorer" fonctionne »*.
+
+**Il ne fonctionnait pas, et la mesure donne la seconde exacte.** Le bandeau
+« Une session précédente a été retrouvée » lisait bien `localStorage` au montage
+pour s'afficher, mais « Restaurer » le relisait **au moment du clic** — or
+l'autosave de la visite en cours écrit dans la même clé. Son `$effect` part au
+MONTAGE (il lit `pattern.state`), donc **une seconde** après l'entrée dans
+l'Atelier la session précédente était remplacée par l'état d'accueil. Mesuré au
+navigateur (`.cell` → classe `state-N`, grille composée `11100201121001…`) :
+
+| clic sur « Restaurer » | composition retrouvée |
+| --- | --- |
+| 200 ms après l'entrée | oui |
+| 2 s après l'entrée | **non** — l'écran se recharge sur lui-même, en silence |
+
+**Deux corrections, deux domiciles.**
+
+- `stores/share.ts` : `hasAutosave`/`restoreAutosave` cèdent la place à
+  `lireAutosave` (le JSON lu **une fois**, gardé en mémoire par l'appelant),
+  `appliquerAutosave` (l'applique) et `autosaveDiffere` (comparaison par
+  aller-retour de sérialisation).
+- `AtelierView.svelte` : l'`$effect` d'autosave **saute son premier passage** —
+  on n'enregistre que des MODIFICATIONS, jamais l'état sur lequel l'Atelier
+  s'ouvre. C'est ce qui empêche l'écrasement plutôt que de seulement le
+  contourner.
+
+**Deux effets de bord voulus.** Le bandeau ne s'affiche plus que si la session
+enregistrée **diffère** de ce qui est à l'écran (avant : il revenait à chaque
+visite, y compris pour proposer l'état d'accueil qu'on avait déjà). Et
+« Ignorer » reste **non destructif** : il masque, la session retrouvée reste
+récupérable jusqu'à la première modification — un clic de trop ne doit pas
+coûter une composition ; c'est écrit dans le `title` du bouton.
+
+**Mesuré après correction** (mêmes scénarios, Chromium) : Restaurer rend la
+composition à 200 ms, 3 s et 10 s ; entrer dans l'Atelier sans rien toucher
+n'écrit rien ; « Ignorer » laisse la session en place et le rechargement la
+propose à nouveau ; une session identique à l'écran n'affiche aucun bandeau.
+
+**Ce que le test peut et ne peut pas tenir.** `tests/autosave.test.ts` (6 cas)
+verrouille le contrat de `share.ts` — dont « restaurer marche encore APRÈS que
+l'autosave a écrasé la clé ». Le premier passage de l'`$effect`, lui, vit dans
+un `.svelte` : il se mesure au navigateur, pas en Vitest.
+
 ### ✅ Un morceau se sauvegarde, la banque se range, la prise tient dix minutes (2026-09-08)
 
 > Yann : *« il faudrait pouvoir sauvegarder des morceaux montés en JSON avant le

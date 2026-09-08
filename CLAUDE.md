@@ -184,6 +184,14 @@ ne l'explique. D'où `game.persistanceRefusee` (`stores/game.svelte.ts`), posé 
 écriture-sonde —
 `localStorage` EXISTE en navigation privée stricte, il lève à l'écriture.
 
+⚠️ **L'autosave de l'Atelier n'enregistre que des MODIFICATIONS, jamais l'état
+d'ouverture.** Son `$effect` part au MONTAGE : il écrasait la session précédente
+une seconde après l'entrée, si bien que « Restaurer » rechargeait l'écran sur
+lui-même, en silence. D'où le premier passage sauté, et la session retrouvée lue
+**une seule fois** en mémoire (`lireAutosave`) — au moment du clic,
+`localStorage` porte déjà la visite en cours. « Ignorer » masque sans détruire :
+un clic de trop ne coûte pas une composition.
+
 ⚠️ **Le seuil de niveau se lit sur le PLANCHER, jamais sur `level`.**
 `PlayerProgress.plancher` est le `level` d'AVANT la carrière, gelé une fois pour
 toutes dans `load()` — le seul point garanti d'être avant le premier exercice.

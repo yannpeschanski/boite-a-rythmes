@@ -26,7 +26,12 @@
   import ExportBar from './ExportBar.svelte';
   import ToolBar from './ToolBar.svelte';
   import { history } from '../../stores/history.svelte';
-  import { scheduleAutosave, hasAutosave, restoreAutosave } from '../../stores/share';
+  import {
+    scheduleAutosave,
+    lireAutosave,
+    autosaveDiffere,
+    appliquerAutosave,
+  } from '../../stores/share';
   import { rankPresets, type ClosestMatch } from '../../engine/similarity';
   import { unlocks } from '../../stores/unlocks.svelte';
   import { playSystemSound } from '../xp/systemSounds';
@@ -189,19 +194,41 @@
 
   // Sauvegarde automatique du pattern — l'original ne persistait que la
   // progression du jeu : un rechargement perdait toute la composition.
+  let autosaveArme = false;
   $effect(() => {
     void JSON.stringify(pattern.state);
+    // ⚠️ Le premier passage a lieu au MONTAGE, avant le moindre geste : y
+    // écrire écraserait la session précédente pendant que le bandeau
+    // « Restaurer » est encore à l'écran. On n'enregistre que des
+    // MODIFICATIONS, jamais l'état sur lequel l'Atelier s'ouvre.
+    if (!autosaveArme) {
+      autosaveArme = true;
+      return;
+    }
     scheduleAutosave();
   });
 
+  // La session précédente, lue une seule fois et gardée en mémoire — voir
+  // `lireAutosave` : au moment du clic, `localStorage` peut déjà porter la
+  // session courante.
+  let sessionPrecedente: string | null = null;
   let canRestore = $state(false);
+
+  function restaurerSession(): void {
+    if (!sessionPrecedente) return;
+    history.push();
+    appliquerAutosave(sessionPrecedente);
+    refreshFx();
+    canRestore = false;
+  }
 
   onMount(() => {
     raf = requestAnimationFrame(loop);
     window.addEventListener('keydown', onKey);
     window.addEventListener('input', markProductionTouched);
     window.addEventListener('change', markProductionTouched);
-    canRestore = hasAutosave();
+    sessionPrecedente = lireAutosave();
+    canRestore = !!sessionPrecedente && autosaveDiffere(sessionPrecedente);
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
@@ -520,8 +547,17 @@
   {#if canRestore}
     <p class="restore">
       Une session précédente a été retrouvée.
-      <button onclick={() => { history.push(); restoreAutosave(); refreshFx(); canRestore = false; }}>Restaurer</button>
-      <button onclick={() => (canRestore = false)}>Ignorer</button>
+      <button onclick={restaurerSession} title="Recharger la composition de la dernière visite"
+        >Restaurer</button
+      >
+      <!-- Ignorer ne SUPPRIME rien : la session retrouvée reste récupérable
+           jusqu'à la première modification (un clic de trop ne doit pas coûter
+           une composition). -->
+      <button
+        onclick={() => (canRestore = false)}
+        title="Garder ce qui est à l'écran — la session retrouvée reste là jusqu'à la première modification"
+        >Ignorer</button
+      >
     </p>
   {/if}
   <!-- Bloc sticky unique : transport ET onglets restent joignables SANS
