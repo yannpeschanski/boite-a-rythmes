@@ -46,6 +46,41 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Deux loquets, et un montage qu'on peut enfin lire (2026-09-07)
+
+> Après le premier essai de Yann sur la préversion : *« le random marche très
+> bien […] il faut donc un bouton similaire pour pouvoir assigner un bouton sans
+> aller dans les réglages »*, et *« pour les assemblages, il faudrait qu'on
+> puisse comprendre ce qui est fait quelque part »*.
+
+**Deux loquets, un geste chacun, écrit sur le bouton.** 🎲 tire au hasard,
+**ASSIGNER** ouvre le catalogue — sur les six boutons, les deux moitiés du pad et
+l'inclinaison. ⚠️ Le diagnostic derrière : le loquet unique offrait déjà la liste
+**par appui long**, et personne ne l'a trouvée. C'est la troisième fois qu'un
+appui long coûte cher dans ce mode. Règle acquise : *sur cette surface, ce qui
+n'est pas écrit n'existe pas*. Plus aucun geste caché sur les boutons ni le pad.
+
+**`MontagePanel`** (Atelier, onglet Production, sous les parties) : la chaîne en
+toutes lettres — chaque scène, sa lettre, **ce qu'on entend**, sa longueur, à
+quelle mesure elle commence, le total, et les six boutons que le montage demande.
+Plus un avertissement quand la chaîne cite une lettre encore vide.
+
+**⚠️ Un défaut trouvé en écrivant ce panneau, et c'est le meilleur argument pour
+lui :** une lettre vide affichait « 2 mesures » là où on en entend 8. Le repli
+sur A vivait dans `appliquerSection` (ce qui JOUE) et pas dans le calcul de durée
+(ce qui AFFICHE) — les deux domiciles, sur une règle écrite le matin même.
+`parties.cycle()` applique désormais le repli, et un test tient l'arithmétique.
+
+**Vérifié.** 655 tests, 0 erreur de types, les deux builds, `parcours-carriere`.
+Mesuré en 844 × 390 : bandeau sans débordement (ASSIGNER 67 × 44), 🎲 + tap =
+tirage sans sélecteur, ASSIGNER + tap = 20 options, ASSIGNER sur le pad = « PAD —
+AXE Y » **sans que la valeur du pad bouge**. Panneau lisible en 390 px, sans
+débordement de page.
+
+⚠️ Piège de mesure reconfirmé : le HMR de Vite fait croire à une régression du
+panneau (`.chaine` absent). Redémarrer `npm run dev` avant de conclure.
+
+
 ### ✅ Les 25 arbitrages appliqués, et la préversion par PR (2026-09-07)
 
 > Troisième tour. Yann a répondu aux deux fiches (25 cartes) ; cette entrée

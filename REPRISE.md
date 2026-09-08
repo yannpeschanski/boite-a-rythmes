@@ -19,7 +19,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 654 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 655 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -91,11 +91,13 @@ mot juste est **SCÈNE**, pas « section ».
 | ❌ Export hors ligne d'un morceau | **annulé** — sans automation il serait mort |
 | ✅ **Préversion Vercel par pull request** | le préalable à tout test réel |
 
-### La seule carte restante
+### Jugé sur la préversion (2026-09-07)
 
-**Le loquet 🎲** — « il faut tester pour juger ». Il n'y a plus rien à écrire
-dessus : il faut l'essayer, en paysage, à deux mains. La préversion rend ça
-possible pour la première fois.
+Yann a essayé : *« le random marche très bien »*. Deux suites immédiates,
+livrées : un second loquet **ASSIGNER** (le tirage plaisait, mais la liste
+n'était accessible que par appui long — donc trouvée par personne), et un
+panneau **Montage** dans l'Atelier qui écrit ce qu'un montage fait
+(*« il faudrait qu'on puisse comprendre ce qui est fait quelque part »*).
 
 ### Ce qui suit, une fois le loquet jugé
 

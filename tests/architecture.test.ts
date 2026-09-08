@@ -386,3 +386,26 @@ describe('migrerArchitecture — traduire, jamais abandonner', () => {
     }
   });
 });
+
+/* ⚠️ LE REPLI SUR A DOIT VALOIR AUSSI POUR CE QUI DÉCRIT LA CHAÎNE.
+ *
+ * `appliquerSection` fait jouer A quand la lettre citée est vide. Si le calcul
+ * de durée, lui, comptait un cycle de 1 pour cette lettre, l'écran annoncerait
+ * « 2 mesures » là où on en entendra 8 — le piège des deux domiciles, sur une
+ * règle qu'on venait justement d'écrire. Le store applique donc le même repli
+ * (`parties.cycle`) ; ce test tient l'arithmétique correspondante.
+ */
+describe('une lettre vide se compte comme A, puisqu’elle joue A', () => {
+  it('donne la même longueur qu’une section qui cite A', () => {
+    const chaine = montageParNom('A B C · A B′ C′')!.sections;
+    // A vaut 4 (une nappe de quatre mesures), B vaut 1, C est VIDE -> donc 4.
+    const cycleDe = (p: 'A' | 'B' | 'C') => (p === 'A' ? 4 : p === 'B' ? 1 : 4);
+    const naif = (p: 'A' | 'B' | 'C') => (p === 'A' ? 4 : 1);
+    const juste = mesuresTotales(chaine, cycleDe);
+    // Le compte naïf sous-estime : c'est exactement ce que l'écran affichait.
+    expect(mesuresTotales(chaine, naif)).toBeLessThan(juste);
+    for (const s of chaine.filter((x) => x.partie === 'C')) {
+      expect(mesuresDeSection(s, cycleDe('C'))).toBe(mesuresDeSection(s, cycleDe('A')));
+    }
+  });
+});

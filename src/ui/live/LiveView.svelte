@@ -371,23 +371,31 @@
    * se réassigne au lieu de jouer : tap = un tirage au hasard, appui long = la
    * liste complète, sur place. Éteint, rien n'a changé.
    */
-  let modeAssign = $state(false);
-  let slotTimer: ReturnType<typeof setTimeout> | null = null;
-  let slotLongue = false;
+  /* ⚠️ DEUX LOQUETS, ET PLUS AUCUN GESTE CACHÉ. La première version n'en avait
+   * qu'un : tap = tirage au hasard, APPUI LONG = la liste complète. Le tirage a
+   * plu (« le random marche très bien ») ; la liste, personne ne l'a trouvée —
+   * parce qu'un appui long ne s'annonce nulle part. Yann : « il faut donc un
+   * bouton similaire pour pouvoir assigner un bouton sans aller dans les
+   * réglages ».
+   *
+   * D'où deux loquets de même forme, un geste chacun, et le geste est écrit sur
+   * le bouton : 🎲 tire au hasard, ASSIGNER ouvre la liste. C'est la troisième
+   * fois qu'un appui long coûte cher dans ce mode (les pastilles, la bande, ici)
+   * — la règle est acquise : sur cette surface, ce qui n'est pas écrit n'existe
+   * pas. */
+  type ModeAssign = 'hasard' | 'choisir' | null;
+  let modeAssign = $state<ModeAssign>(null);
+
+  /** Le sélecteur du slot `i`, dans le catalogue de son mode courant. */
+  function ouvrirListeSlot(i: number) {
+    picker =
+      assignments.slotModes[i] === 'fader'
+        ? { kind: 'slotFader', index: i }
+        : { kind: 'slot', index: i };
+  }
 
   function onSlotDown(i: number) {
-    if (modeAssign) {
-      slotLongue = false;
-      slotTimer = setTimeout(() => {
-        slotLongue = true;
-        hapticTick(25);
-        picker =
-          assignments.slotModes[i] === 'fader'
-            ? { kind: 'slotFader', index: i }
-            : { kind: 'slot', index: i };
-      }, LONG_PRESS_MS);
-      return;
-    }
+    if (modeAssign) return; // sous loquet, tout se joue au relâché
     if (assignments.slotModes[i] === 'fader') return; // le fader se pilote au glisser (faderPointerDown), pas au tap
     hapticTick();
     pressed = { ...pressed, [i]: true };
@@ -395,14 +403,9 @@
   }
   function onSlotUp(i: number) {
     if (modeAssign) {
-      if (slotTimer) {
-        clearTimeout(slotTimer);
-        slotTimer = null;
-      }
-      if (!slotLongue) {
-        randomizeSlot(i);
-        hapticTick();
-      }
+      hapticTick(modeAssign === 'choisir' ? 25 : 12);
+      if (modeAssign === 'hasard') randomizeSlot(i);
+      else ouvrirListeSlot(i);
       return;
     }
     if (assignments.slotModes[i] === 'fader') return;
@@ -410,50 +413,32 @@
     assignments.slots[i].forEach((id) => runAction(id, false));
   }
   function onSlotLeave(i: number) {
-    if (modeAssign) {
-      if (slotTimer) {
-        clearTimeout(slotTimer);
-        slotTimer = null;
-      }
-      return;
-    }
+    if (modeAssign) return;
     onSlotUp(i);
   }
 
   /* Le pad et l'inclinaison suivent la même règle, avec la même paire de
      gestes — sinon le loquet ne vaudrait que pour les boutons, et Yann demande
      explicitement que « ce point s'applique au pad et à l'inclinaison ». */
-  let axeTimer: ReturnType<typeof setTimeout> | null = null;
-  let axeLongue = false;
-  function onAxeDown(which: 'axisX' | 'axisY' | 'axisTilt', e?: PointerEvent) {
+  function onAxeDown(_which: 'axisX' | 'axisY' | 'axisTilt', e?: PointerEvent) {
     /* ⚠️ Les deux moitiés vivent DANS le pad : sans ça, l'appui descend au
        gestionnaire du pad, qui capture le pointeur et déplace la valeur de
        l'axe qu'on est en train de réassigner. */
     e?.stopPropagation();
-    axeLongue = false;
-    axeTimer = setTimeout(() => {
-      axeLongue = true;
-      hapticTick(25);
-      picker = { kind: 'axis', which };
-    }, LONG_PRESS_MS);
   }
   function onAxeUp(which: 'axisX' | 'axisY' | 'axisTilt', e?: PointerEvent) {
     e?.stopPropagation();
-    if (axeTimer) {
-      clearTimeout(axeTimer);
-      axeTimer = null;
+    if (modeAssign === 'choisir') {
+      hapticTick(25);
+      picker = { kind: 'axis', which };
+      return;
     }
-    if (axeLongue) return;
     assignments = { ...assignments, [which]: [pickAxis()] };
     saveLiveAssignments(assignments);
     hapticTick();
   }
   function onAxeLeave(e?: PointerEvent) {
     e?.stopPropagation();
-    if (axeTimer) {
-      clearTimeout(axeTimer);
-      axeTimer = null;
-    }
   }
 
   // Bouton en mode FADER (PLAN.md §7) : glisser sur le bouton lui-même
@@ -1843,7 +1828,7 @@
             {#if sectionCourante}
               MESURE {Math.min(mesureDansSection, mesuresCourantes - 1) + 1}/{mesuresCourantes} · CYCLE DU MOTIF {cycleMotif} MES. · MORCEAU {dureeMorceau}
             {:else}
-              TOUT RÉEL · 🎲 POUR RÉASSIGNER SUR PLACE
+              TOUT RÉEL · 🎲 AU HASARD · ASSIGNER POUR CHOISIR
             {/if}
           </span>
         </div>
@@ -1879,15 +1864,23 @@
             <span class="led"></span>{tiltEnabled ? `${Math.round(tiltGamma)}°` : 'TILT'}
           </button>
         {/if}
-        <!-- LE LOQUET. Il vient AVANT ⚙ parce qu'il le remplace dans neuf cas
-             sur dix : ⚙ ne garde que ce qui n'est pas un geste de scène (mode
-             fader, visualiseur, snapshots, banque). -->
+        <!-- LES DEUX LOQUETS. Ils viennent AVANT ⚙ parce qu'ils le remplacent
+             dans neuf cas sur dix : ⚙ ne garde que ce qui n'est pas un geste de
+             scène (mode fader, visualiseur, snapshots, banque).
+             ⚠️ Le geste est ÉCRIT sur le bouton. Un seul loquet où l'appui long
+             ouvrait la liste, personne ne l'a trouvée. -->
         <button
           class="amp-btn gear tap44"
-          class:on={modeAssign}
-          onclick={() => (modeAssign = !modeAssign)}
-          title="Réassigner sur place — tap : au hasard · appui long : choisir"
+          class:on={modeAssign === 'hasard'}
+          onclick={() => (modeAssign = modeAssign === 'hasard' ? null : 'hasard')}
+          title="Tirer au hasard — puis taper un bouton, le pad ou l’inclinaison"
         >🎲</button>
+        <button
+          class="amp-btn assigner tap44"
+          class:on={modeAssign === 'choisir'}
+          onclick={() => (modeAssign = modeAssign === 'choisir' ? null : 'choisir')}
+          title="Assigner — puis taper le bouton, le pad ou l’inclinaison à régler"
+        >ASSIGNER</button>
         <button class="amp-btn gear tap44" onclick={() => (assignOpen = true)} title="Réglages">⚙</button>
       </div>
       <!-- LA BANDE — quatre PARTIES, la chaîne, et les deux commandes de jeu,
@@ -1997,9 +1990,11 @@
                   onpointerup={() => onSlotUp(i)}
                   onpointerleave={() => onSlotLeave(i)}
                 >
-                  <span class="assign-mark">🎲</span>
+                  <span class="assign-mark">{modeAssign === 'hasard' ? '🎲' : '✎'}</span>
                   <span>{label}</span>
-                  <span class="assign-label">tap : au hasard · long : choisir</span>
+                  <span class="assign-label"
+                    >{modeAssign === 'hasard' ? 'taper : au hasard' : 'taper : choisir dans la liste'}</span
+                  >
                 </button>
               {:else if mode === 'fader'}
                 {@const faderIds = assignments.slotFaders[i]}
@@ -2798,9 +2793,17 @@
     font-size: 13px;
     line-height: 1;
   }
-  .gear.on {
+  .gear.on,
+  .assigner.on {
     box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--amp-amber);
     color: #fff3cf;
+  }
+  /* Le seul bouton du bandeau qui porte un MOT : « assigner » est le verbe de
+     Yann, et un pictogramme de plus n'aurait rien annoncé. */
+  .assigner {
+    font-size: 8px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
   }
   /* Le pad garde ses DEUX axes sous le loquet : une seule cible ne saurait pas
      dire lequel on réassigne. */

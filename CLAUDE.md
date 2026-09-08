@@ -244,11 +244,16 @@ jamais refusé en bloc.
 sous A ne touche pas la banque.
 
 ⚠️ **Rien de ce qui se fait EN JOUANT ne vit derrière ⚙.** Réassigner passe par
-un LOQUET (🎲) : allumé, boutons, pad et inclinaison se réassignent sur place —
-tap = un tirage, appui long = la liste. Ça ne peut pas être un geste posé sur le
-bouton lui-même, l'appui long y est déjà pris (la rafale de `kind: 'ligne'`, le
-maintien de TENIR). ⚠️ Corollaire de câblage : le sélecteur doit vivre **hors** de
-l'overlay ⚙ — il y était imbriqué, donc il ne s'ouvrait que depuis ⚙.
+**deux loquets, un geste chacun** : 🎲 tire au hasard, ASSIGNER ouvre la liste ;
+allumés, boutons, pad et inclinaison se réassignent sur place d'un simple tap.
+Ça ne peut pas être un geste posé sur le bouton lui-même : l'appui long y est
+déjà pris (la rafale de `kind: 'ligne'`, le maintien de TENIR).
+⚠️ **Sur cette surface, ce qui n'est pas ÉCRIT n'existe pas** — troisième fois
+qu'un appui long coûte cher (les pastilles, la bande, la liste). Un seul loquet
+où l'appui long ouvrait le catalogue : le tirage a plu, la liste n'a été trouvée
+par personne. D'où le mot « ASSIGNER » sur le bouton, et plus aucun geste caché.
+⚠️ Corollaire de câblage : le sélecteur doit vivre **hors** de l'overlay ⚙ — il y
+était imbriqué, donc il ne s'ouvrait que depuis ⚙.
 
 ⚠️ **RANGER une lettre est un geste de PRÉPARATION : ça vit dans l'Atelier,
 onglet Production.** L'appui long qui rangeait depuis la bande du Live écrasait
@@ -265,6 +270,19 @@ compatible avec « bouger les paramètres en direct » : `liveFilter` et
 pad et l'inclinaison gardent la main. Et la reconstruction de l'impulsion de
 réverbe est **gardée** (`derniereTailleReverbe`) — c'est la seule opération
 coûteuse de la fonction, et elle tomberait à chaque frontière de mesure.
+
+⚠️ **Un montage doit être LISIBLE quelque part** — il pose trois choses d'un
+tap (chaîne, lignes coupées, six boutons) et la bande du Live n'en montre que le
+résultat, dans des cases de 60 px. `MontagePanel` (Atelier, onglet Production)
+l'écrit : chaque scène, sa lettre, **ce qu'on entend** (le calque en clair, pas
+un compte de lignes), sa longueur, son départ, et les boutons demandés. Le
+calque se dit par ce qui SONNE, jamais par ce qui est coupé — même règle que les
+fiches de style.
+
+⚠️ **Une lettre VIDE rend le cycle de A, parce qu'elle JOUERA A.** Le repli de
+`appliquerSection` doit valoir aussi pour ce qui DÉCRIT la chaîne : sans ça
+l'écran annonçait « 2 mesures » là où on en entend 8. Une règle à deux domiciles
+n'est appliquée qu'à un seul — ici les deux domiciles sont *jouer* et *afficher*.
 
 ⚠️ **Le CYCLE PROPRE est une propriété du MOTIF, pas de la chaîne.** Compter
 toutes les sections avec le cycle du motif COURANT donnait, pour la même chaîne,

@@ -101,7 +101,12 @@ class PartiesStore {
 
   cycle(id: PartieId): number {
     const p = this.table[id];
-    if (!p) return 1;
+    /* ⚠️ UNE LETTRE VIDE REND LE CYCLE DE A, parce qu'elle JOUERA A.
+       `appliquerSection` se replie sur A quand la lettre est vide ; si la durée
+       comptait 1 pour elle, l'écran annoncerait 2 mesures là où on en entendra
+       8. C'est le piège des deux domiciles : la règle du repli doit valoir aussi
+       pour ce qui la DÉCRIT, pas seulement pour ce qui la joue. */
+    if (!p) return id === 'A' ? 1 : this.cycle('A');
     const cache = this.#cycles.get(id);
     if (cache && cache.le === p.rangeeLe) return cache.cycle;
     let cycle = 1;

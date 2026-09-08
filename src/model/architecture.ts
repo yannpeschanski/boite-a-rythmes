@@ -58,6 +58,38 @@ export function libelleDePartie(s: Section): string {
   return s.lignes === null ? s.partie : `${s.partie}′`;
 }
 
+/** Le nom français de chaque ligne — partagé par tout ce qui EXPLIQUE un montage. */
+export const LIGNE_LIBELLE: Record<LineName, string> = {
+  kick: 'kick',
+  snare: 'caisse',
+  hat: 'charley',
+  clap: 'clap',
+  shaker: 'shaker',
+  bass: 'basse',
+  pad: 'nappe',
+  melody: 'mélodie',
+};
+
+/**
+ * Ce qu'un calque fait entendre, en toutes lettres.
+ *
+ * ⚠️ Il DIT CE QUI SONNE, pas ce qui est coupé. Une fiche de style décrit ce
+ * qu'il FAUT entendre, jamais l'absence d'un instrument — même raison ici : « A
+ * moins la caisse, moins la basse, moins la nappe » se compte, « kick et
+ * charley » s'entend.
+ */
+export function libelleCalque(lignes: LineName[] | null): string {
+  if (lignes === null) return 'toutes les lignes';
+  if (lignes.length === 0) return 'rien';
+  return lignes.map((l) => LIGNE_LIBELLE[l]).join(' · ');
+}
+
+/** Ce qu'une section fait, en une phrase — « COUPLET · A · 2 tours · 8 mesures ». */
+export function resumeDeSection(s: Section, cycle: number): string {
+  const m = mesuresDeSection(s, cycle);
+  return `${s.nom} · ${libelleDePartie(s)} · ${s.cycles} tour${s.cycles > 1 ? 's' : ''} · ${m} mesure${m > 1 ? 's' : ''}`;
+}
+
 /** Plus petit commun multiple — la seule arithmétique de ce fichier. */
 function ppcm(a: number, b: number): number {
   const pgcd = (x: number, y: number): number => (y === 0 ? x : pgcd(y, x % y));
