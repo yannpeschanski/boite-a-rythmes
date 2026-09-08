@@ -387,6 +387,12 @@ appareil, un message, un bouton.
 ⚠️ **Ce qui est VERROUILLÉ ne s'affiche pas.** Un accueil où deux entrées sur
 trois sont barrées présente le jeu par ce qu'on ne peut PAS faire. Splash, barre
 de navigation et onglets de l'Atelier masquent ce qui n'est pas ouvert.
+⚠️ **Un module fermé ne se NOMME pas non plus** — ni dans une entrée de menu, ni
+dans un conseil (« passe au Synthé »), ni dans une section vide (« depuis
+l'onglet Production »), ni dans un TOTAL (« 78 niveaux » comptait un réservoir
+que la carrière ne cite pas). Ça se mesure en JOUANT, jamais sur un joueur neuf,
+qui n'a pas encore les écrans où ça fuit : `scripts/verrous-masques.cjs` joue la
+carrière et relit neuf écrans à chaque frontière d'acte.
 
 ⚠️ **Un PERSONNAGE se présente comme un décor : avant de parler.** Sol porte
 presque toutes les répliques ; son écran passe donc avant celui des sonneries, et

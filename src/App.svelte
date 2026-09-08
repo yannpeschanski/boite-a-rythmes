@@ -7,7 +7,7 @@
   import AtelierView from './ui/atelier/AtelierView.svelte';
   import GameView from './ui/game/GameView.svelte';
   import LiveView from './ui/live/LiveView.svelte';
-  import { game, LEVELS } from './stores/game.svelte';
+  import { game } from './stores/game.svelte';
   import { latence } from './ui/latence.svelte';
   import { sortie } from './ui/sortie.svelte';
   import { pattern } from './stores/pattern.svelte';
@@ -102,8 +102,14 @@
           🥁 Atelier<small>Composer librement</small></button
         >
       {/if}
+      <!-- ⚠️ Pas de COMPTE ici. « 78 niveaux » comptait le réservoir tout
+           entier — la carrière n'en cite que 38, et le reste n'a même pas de
+           nom dans le jeu — et « huit actes » annonçait la longueur du récit à
+           qui n'en a pas encore vu un seul. C'est la règle qui a déjà retiré le
+           « / 41 » du titre de fenêtre et les actes non atteints du carnet :
+           rien de non atteint ne s'affiche, et surtout pas un total. -->
       <button class="big" onclick={() => enter('game')}>
-        🎮 Jouer<small>Une carrière en huit actes · {LEVELS.length} niveaux</small></button
+        🎮 Jouer<small>Une carrière, acte par acte</small></button
       >
       {#if unlocks.has('live')}
         <button class="big" onclick={() => enter('live', 'live')}>

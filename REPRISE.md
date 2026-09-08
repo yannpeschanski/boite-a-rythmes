@@ -15,6 +15,15 @@
 > loquet 🎲 (« il faut tester pour juger »). La préversion par PR existe
 > maintenant pour ça — chaque pull request a son URL, testable au téléphone.
 >
+> ⚠️ **Tour d'horizon des verrous (2026-09-08)** — « masquer ce qui est
+> verrouillé » : quatre écrans nommaient encore un module fermé (le dernier 🔒
+> du jeu dans le menu Mode, le conseil « passe au Synthé », la banque de
+> séquences, et « huit actes · 78 niveaux » sur l'accueil). Corrigés et
+> **mesurés** par `scripts/verrous-masques.cjs`, qui joue la carrière et relit
+> neuf écrans par acte. Trois questions restent à trancher dans
+> `docs/relecture/masquer-le-verrouille.html` — dont **le Mode Live qui s'ouvre
+> pour la scène de l'acte 6 puis se referme jusqu'à l'épilogue**.
+>
 > ⚠️ **Ce qui reste ouvert du Mode Live** : le nom (« mode live » jugé
 > peut-être abusif — laissé tel quel sur recommandation, *« on pourra changer
 > plus tard »*), et l'essai sur un vrai téléphone en paysage.
