@@ -624,6 +624,20 @@ export class AudioEngine {
     this.liveGrooveOverride = { ...this.liveGrooveOverride, [key]: value };
   }
 
+  /* La valeur EFFECTIVE d'un paramètre de groove — l'override s'il existe,
+     sinon celle du morceau. Nécessaire aux boutons PAS cycliques : un bouton
+     qui fait tourner le swing doit savoir d'où il part, sinon il repart de zéro
+     à chaque appui. Même principe que `padMode` pour MODE NAPPE. */
+  liveGrooveValeur(key: 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity'): number {
+    return this.liveGrooveOverride[key] ?? this.getState()[key];
+  }
+
+  /* Le SIDECHAIN en direct, même lecture — `liveSidechainDepth` est un 0..1,
+     là où le groove est en 0..100 (unités des curseurs de l'Atelier). */
+  liveSidechainValeur(): number {
+    return this.liveSidechainDepth ?? this.getState().synthGlobal.sidechainDepth / 100;
+  }
+
   // Réglages de voix synthé par ligne — posés PAR NOTE (chaque voix crée son
   // propre BiquadFilterNode/gain au déclenchement, voices/synth.ts), donc pas
   // de nœud permanent à moduler ici : l'override est relu à la prochaine
@@ -1028,7 +1042,16 @@ export class AudioEngine {
   // durée connue d'avance — start/stop au bouton, sur le graphe qui tourne
   // déjà. Même principe de tap sur finalGain (post-limiteur/soft-clip).
   async startCapture(): Promise<void> {
-    if (!this.ctx || !this.graph || this.liveRecorder) return;
+    /* ⚠️ ON OUVRE L'AUDIO SI BESOIN, au lieu de sortir en silence. La garde
+     * `if (!this.ctx || !this.graph) return` supposait que la lecture était
+     * déjà en cours ; depuis que ⏺ peut LANCER le morceau depuis son début,
+     * l'appelant branche le magnétophone AVANT `start()` — et sur une page
+     * fraîche il n'y a alors ni contexte ni graphe. Le résultat était une
+     * capture qui ne démarrait pas, sans un mot, sur le seul bouton qui sorte
+     * un morceau de l'appli. */
+    if (this.liveRecorder) return;
+    this.ensureAudio();
+    if (!this.ctx || !this.graph) return;
     const recorder = new LiveRecorder();
     await recorder.start(this.ctx, this.graph.finalGain);
     this.liveRecorder = recorder;

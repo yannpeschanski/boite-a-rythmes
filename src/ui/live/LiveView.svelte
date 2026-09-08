@@ -258,6 +258,10 @@
           def.step?.(engine);
           padMode = engine.padMode;
         }
+        /* MAINTENUS : l'entrée est appelée à l'appui ET au relâché, et c'est
+           elle qui sait revenir au repos. On lui passe le morceau courant —
+           rouvrir un filtre « à 20 kHz » serait faux si le morceau le ferme. */
+        if (def.kind === 'hold' && def.hold) def.hold(engine, on, st);
       }
     }
   }
@@ -957,15 +961,32 @@
   // mesures comme l'enregistrement de l'Atelier) — capture tout ce qui est
   // réellement joué (triggers/pad/inclinaison compris), voir PLAN.md §7.
   async function toggleRecord() {
-    if (!playing) return;
     if (recording) {
       const buffer = engine.stopCapture();
       recording = false;
       if (buffer) downloadCapture(buffer);
-    } else {
+      return;
+    }
+    /* ⚠️ À L'ARRÊT, ⏺ LANCE LE MORCEAU DEPUIS SON DÉBUT. Le bouton était
+     * `disabled` tant qu'on ne jouait pas : pour enregistrer un morceau entier
+     * il fallait lancer la lecture puis courir appuyer sur REC, et la prise
+     * commençait donc quelque part au milieu de la première scène. Or depuis
+     * que l'export hors ligne d'un morceau est écarté, ⏺ EST la sortie audio —
+     * il ne peut pas rater le début de ce qu'il est seul à pouvoir livrer.
+     *
+     * ⚠️ Le magnétophone se branche AVANT `start()`, jamais après : c'est la
+     * même règle que la bascule de tampon de sortie (`engine/tampon.ts`), et
+     * c'est ce qui garantit que la première mesure est dans la prise. */
+    if (!playing) {
+      if (archSections.length) appliquerSection(0);
       await engine.startCapture();
       recording = true;
+      await engine.start();
+      playing = true;
+      return;
     }
+    await engine.startCapture();
+    recording = true;
   }
 
   function checkOrientation() {
@@ -1797,9 +1818,12 @@
         <button
           class="amp-btn rec tap44"
           class:on={recording}
-          disabled={!playing}
           onclick={toggleRecord}
-          title={playing ? "Enregistrer le live take en WAV" : 'Lance PLAY pour pouvoir enregistrer'}
+          title={recording
+            ? 'Arrêter et récupérer le WAV'
+            : playing
+              ? 'Enregistrer à partir de maintenant'
+              : 'Lancer le morceau depuis le début ET enregistrer'}
         >
           <span class="rec-dot"></span>{recording ? 'REC…' : 'REC'}
         </button>
@@ -1932,14 +1956,14 @@
             {/each}
           </div>
           <div class="strip-tools">
-            <button class="amp-btn strip-btn next tap44" onclick={sauterSection} title="Section suivante, à la mesure">▸</button>
+            <button class="amp-btn strip-btn next tap44" onclick={sauterSection} title="Scène suivante, à la mesure">▸</button>
             <button
               class="amp-btn strip-btn tap44"
               class:on={tenirSection}
               onpointerdown={() => (tenirSection = true)}
               onpointerup={() => (tenirSection = false)}
               onpointerleave={() => (tenirSection = false)}
-              title="Boucler la section courante tant qu'on tient"
+              title="Boucler la scène courante tant qu'on tient"
             >TENIR</button>
             <button
               class="amp-btn strip-btn tap44"
@@ -2221,7 +2245,7 @@
                 <span class="assign-row-label">MONTAGE</span>
                 <span class="assign-row-val"
                   >{architecture.courante
-                    ? `${architecture.courante.nom} · ${archSections.length} section${archSections.length > 1 ? 's' : ''}`
+                    ? `${architecture.courante.nom} · ${archSections.length} scène${archSections.length > 1 ? 's' : ''}`
                     : 'Aucun — un seul motif qui tourne'}</span
                 >
               </button>
@@ -2279,7 +2303,7 @@
                         : picker.kind === 'montage'
                           ? 'MONTER UN MORCEAU'
                           : picker.kind === 'section'
-                            ? `SECTION — ${archSections[picker.index]?.nom ?? ''}`
+                            ? `SCÈNE — ${archSections[picker.index]?.nom ?? ''}`
                             : picker.kind === 'axis'
                               ? picker.which === 'axisX'
                                 ? 'PAD — AXE X'
@@ -2342,7 +2366,7 @@
                 {:else if picker.kind === 'montage'}
                   <p class="picker-caption">
                     Un montage pose la CHAÎNE (intro, couplet, refrain…), les LIGNES que chaque
-                    section laisse sonner, et les six BOUTONS qui la pilotent. Il ne reste qu'à
+                    scène laisse sonner, et les six BOUTONS qui la pilotent. Il ne reste qu'à
                     ranger un motif sous A — et un second sous B si la forme en demande deux.
                     On compte en TOURS du motif : ici {cycleMotif} mesure{cycleMotif > 1 ? 's' : ''} par tour,
                     calculé sur les lignes qui sonnent.
@@ -2370,7 +2394,7 @@
                 {:else if picker.kind === 'section'}
                   {@const idx = picker.index}
                   <p class="picker-caption">
-                    La LETTRE que joue cette section, et sa longueur en tours. Une lettre encore vide
+                    La LETTRE que joue cette scène, et sa longueur en tours. Une lettre encore vide
                     joue A — une chaîne dit toujours ce qu'elle joue.
                   </p>
                   <div class="picker-cycles">

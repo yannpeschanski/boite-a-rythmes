@@ -7,7 +7,8 @@
 // catalogue reste des données pures, testable sans monter le composant ni
 // instancier de contexte audio.
 import type { AudioEngine } from '../../engine/AudioEngine';
-import type { DrumRowName, SynthRowName } from '../../model/types';
+import type { DrumRowName, SynthRowName, PatternStateV2 } from '../../model/types';
+import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
 /* Le catalogue d'ACTIONS — révisé le 2026-09-02 (docs/plan/05-audit-mode-live).
  *
@@ -52,7 +53,32 @@ export type LiveActionId =
   | 'step-pad-mode'
   | 'bypass-limiters'
   | 'petit-hp'
-  | 'solo-melody';
+  | 'solo-melody'
+  /* ---- L'EXTENSION DU 2026-09-08 ----
+   * Yann, après avoir joué : « pas convaincu des paramètres retenus pour les
+   * boutons, il faut en ajouter bien d'autres ».
+   *
+   * ⚠️ CE N'EST PAS UN RETOUR EN ARRIÈRE SUR LA CURE DE 2026-09-02, et il ne
+   * faut pas le lire ainsi. Cette cure a retiré des VARIANTES d'un même geste
+   * (neuf rafales pour trois lignes, six pas de preset de voix) ; on ajoute ici
+   * des gestes DISTINCTS, et aucune famille de variantes ne revient.
+   *
+   * Ce que la mesure disait du catalogue à 20 entrées : 4 déclencheurs,
+   * 4 bascules, 5 pas, 5 lignes — et **2 MAINTENUS**. Or un pupitre de scène
+   * est fait de gestes momentanés : on ferme un filtre le temps d'un break, on
+   * noie dans la réverbe deux mesures, on coupe le kick quatre temps. Le trou
+   * était là, il se comptait, et il ne coûte rien au moteur : tout ce qui suit
+   * s'appuie sur des méthodes qui existent déjà. */
+  | 'hold-filtre'
+  | 'hold-reverb'
+  | 'hold-sature'
+  | 'hold-crush'
+  | 'hold-sans-kick'
+  | 'hold-batterie-seule'
+  | 'step-swing'
+  | 'step-ghosts'
+  | 'step-fills'
+  | 'step-sidechain';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -74,6 +100,23 @@ export interface LiveActionDef {
   step?: (engine: AudioEngine) => void;
   // Uniquement pour kind:'ligne' — quelle ligne de batterie on frappe.
   ligne?: DrumRowName;
+  /* Uniquement pour kind:'hold' — appelé à l'appui (on = true) ET au relâché
+     (on = false). L'entrée porte donc son geste ET son retour au repos : c'est
+     ce qui rend un maintien sûr, un doigt qui glisse hors du bouton relâche. */
+  hold?: (engine: AudioEngine, on: boolean, base: PatternStateV2) => void;
+}
+
+/* Le prochain palier au-dessus de `v`, en bouclant sur le premier.
+ *
+ * ⚠️ La première version faisait `paliers[(findIndex(x => x > v - 1) + 1) % n]`,
+ * et elle ne marchait que si `v` tombait PILE sur un palier — ce qui était le
+ * cas du swing, des ghosts et des fills par défaut, donc trois tests verts sur
+ * quatre. Le sidechain part à 0,6 : le bouton renvoyait 0 au lieu de 1, soit un
+ * cran EN ARRIÈRE au premier appui. Mesuré, pas relu. */
+export function palierSuivant(paliers: number[], v: number): number {
+  const eps = (paliers[paliers.length - 1] - paliers[0]) / 1000;
+  const i = paliers.findIndex((x) => x > v + eps);
+  return i === -1 ? paliers[0] : paliers[i];
 }
 
 export const LIVE_ACTIONS: LiveActionDef[] = [
@@ -87,8 +130,8 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
      l'autre bout de l'écran. Sans architecture chargée ils ne font rien —
      c'est le seul cas où une action est inerte, et il est visible : la bande
      n'est pas là. */
-  { id: 'section-next', label: 'SUIVANT ▸', color: 'var(--cell-clap)', desc: 'Section suivante (à la mesure)', kind: 'trigger', category: 'SCÈNE' },
-  { id: 'section-hold', label: 'TENIR', color: 'var(--cell-clap)', desc: 'Boucler la section (maintenu)', kind: 'hold', category: 'SCÈNE' },
+  { id: 'section-next', label: 'SUIVANT ▸', color: 'var(--cell-clap)', desc: 'Scène suivante (à la mesure)', kind: 'trigger', category: 'SCÈNE' },
+  { id: 'section-hold', label: 'TENIR', color: 'var(--cell-clap)', desc: 'Boucler la scène (maintenu)', kind: 'hold', category: 'SCÈNE' },
 
   /* FRAPPER une ligne — le manque le plus criant du mode, mis au jour en
    * triant le catalogue : un mode conçu pour jouer sur scène où aucun bouton
@@ -135,6 +178,88 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   // degré de gamme + octave), et la mélodie programmée est coupée pour ne pas
   // se télescoper avec ce qui est joué à la main.
   { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE' },
+
+  /* ---- LES MAINTENUS ----
+   *
+   * ⚠️ Chaque entrée porte son ALLER *et* son RETOUR. Un maintien qui ne sait
+   * pas revenir au repos laisse le morceau dans l'état où le doigt l'a lâché —
+   * et un doigt glisse. Le retour relit `base` (le morceau), jamais une valeur
+   * gravée : rouvrir le filtre à 20 kHz serait faux si le morceau le ferme.
+   *
+   * ⚠️ Filtre et réverbe écrivent les MÊMES nœuds que le pad et l'inclinaison
+   * (`liveFilter`, `liveReverbSend`). C'est voulu et c'est la convention du
+   * mode depuis toujours : la dernière source qui écrit fait foi. */
+  {
+    id: 'hold-filtre', label: 'FILTRE', color: '#7fd4ff',
+    desc: 'Ferme le passe-bas tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on) => e.setLiveFilterCutoff(on ? 320 : 20000),
+  },
+  {
+    id: 'hold-reverb', label: 'RÉVERBE', color: '#7fd4ff',
+    desc: 'Noie dans la réverbe tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on) => e.setLiveReverbWet(on ? 0.85 : 0),
+  },
+  {
+    id: 'hold-sature', label: 'SATURE', color: '#ffb020',
+    desc: 'Pousse la saturation tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on, base) => e.setLiveSaturation(on ? 0.9 : base.globalSaturation / 100),
+  },
+  {
+    id: 'hold-crush', label: 'BITCRUSH', color: '#ffb020',
+    desc: 'Écrase le son tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on, base) => e.setLiveBitcrush(on ? 0.7 : base.globalBitcrush / 100),
+  },
+  /* Le drop INVERSE : le séquenceur coupe une ligne d'un tap, mais il la laisse
+     coupée. Retirer le kick quatre temps est un geste, pas un réglage. */
+  {
+    id: 'hold-sans-kick', label: 'SANS KICK', color: 'var(--cell-kick)',
+    desc: 'Retire le kick tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on) => e.liveSetMute('kick', on ? true : null),
+  },
+  {
+    id: 'hold-batterie-seule', label: 'BATT. SEULE', color: 'var(--cell-kick)',
+    desc: 'Coupe le synthé tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on) => SYNTH_ROW_NAMES.forEach((n) => e.liveSetSynthMute(n, on ? true : null)),
+  },
+
+  /* ---- LES PAS CYCLIQUES ----
+   *
+   * ⚠️ UN bouton par réglage, pas deux. Une paire ＋/− serait exactement la
+   * famille de variantes que la cure de 2026-09-02 a retirée ; un cycle qui
+   * boucle dit la même chose avec une entrée, et c'est déjà le motif de MODE
+   * NAPPE. Les paliers sont ceux qu'on entend, pas une rampe fine : un bouton
+   * qu'on tape en jouant doit changer quelque chose au premier appui. */
+  {
+    id: 'step-swing', label: 'SWING', color: '#c9a227',
+    desc: 'Swing : 0 → 25 → 50 → 66 %', kind: 'step', category: 'GROOVE',
+    step: (e) => {
+      const paliers = [0, 25, 50, 66];
+      e.setLiveGrooveParam('swing', palierSuivant(paliers, e.liveGrooveValeur('swing')));
+    },
+  },
+  {
+    id: 'step-ghosts', label: 'GHOSTS', color: '#c9a227',
+    desc: 'Ghost notes : 0 → 15 → 30 %', kind: 'step', category: 'GROOVE',
+    step: (e) => {
+      const paliers = [0, 15, 30];
+      e.setLiveGrooveParam('ghostDensity', palierSuivant(paliers, e.liveGrooveValeur('ghostDensity')));
+    },
+  },
+  {
+    id: 'step-fills', label: 'FILLS', color: '#c9a227',
+    desc: 'Intensité des fills : 0 → 50 → 100 %', kind: 'step', category: 'GROOVE',
+    step: (e) => {
+      const paliers = [0, 50, 100];
+      e.setLiveGrooveParam('fillIntensity', palierSuivant(paliers, e.liveGrooveValeur('fillIntensity')));
+    },
+  },
+  {
+    id: 'step-sidechain', label: 'SIDECHAIN', color: 'var(--cell-bass)',
+    desc: 'Pompe : 0 → 50 → 100 %', kind: 'step', category: 'GROOVE',
+    step: (e) => {
+      e.setLiveSidechainDepth(palierSuivant([0, 0.5, 1], e.liveSidechainValeur()));
+    },
+  },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
