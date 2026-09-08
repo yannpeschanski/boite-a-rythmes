@@ -46,6 +46,51 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le tour d'horizon des verrous — quatre fuites, et une mesure qui les tient (2026-09-08)
+
+> Yann : *« il faut masquer ce qui est verrouillé. les joueurs ne doivent pas
+> voir et découvrir au moment venu. faire un tour d'horizon de l'App dans cette
+> idée »*
+
+**Fichiers touchés :** `src/App.svelte`, `src/ui/atelier/ToolBar.svelte`,
+`src/ui/atelier/AtelierView.svelte`, `scripts/verrous-masques.cjs` (neuf),
+`docs/relecture/masquer-le-verrouille.html` (neuf), `CLAUDE.md`.
+
+**Pourquoi la règle s'était recassée.** Elle est arbitrée depuis le 2026-08-27,
+et elle avait été mesurée — « plus aucun 🔒 dans le DOM d'un **joueur neuf** ».
+Le trou est dans l'énoncé : un joueur neuf n'a pas l'Atelier, donc jamais sa
+barre de menus. `scripts/verrous-masques.cjs` joue donc la carrière entière
+depuis zéro (même pilotage que `parcours-carriere.cjs`), garde un instantané de
+`localStorage` à chaque frontière d'acte, rouvre l'application sur chacun et
+relit neuf écrans — accueil, Atelier, ses cinq menus, le conseil 💡, le Mode
+jeu, la salle de répétition. Vérifié qu'il détecte : en remettant le cadenas
+de V1, il rend sept lignes ⚠️.
+
+**Ce qu'il a trouvé — quatre fuites, toutes dans l'Atelier et sur l'accueil ;
+le Mode jeu est propre du premier au dernier acte.**
+
+| | Où | De quand à quand |
+|---|---|---|
+| V1 | menu **Mode** : `🔒 Mode Live`, grisé — le dernier cadenas du jeu | actes 2 → 7 |
+| V2 | conseil 💡 *« Passe au Synthé »*, puis l'énumération *« Gamme & harmonie · Sidechain · Effets de bus »* | actes 2 → 3 |
+| V3 | menu **Fichier** : *« Garder **le synthé** et le tempo »*, et une section **Banque de séquences** vide dont la phrase nomme *« l'onglet Production »* | actes 2 → 4 |
+| V4 | accueil : *« Une carrière en **huit actes** · **78 niveaux** »* | dès le premier écran |
+
+V4 est la plus vieille : c'est le total qu'on avait retiré du titre de fenêtre
+le 2026-08-24 pour la même raison — la carrière ne cite que **38** des 78
+niveaux, le reste n'a pas de nom dans le jeu. Devenu « Une carrière, acte par
+acte » : la forme, pas la taille.
+
+**Ce qui n'a PAS été touché**, et qui est dans la fiche
+`docs/relecture/masquer-le-verrouille.html` (8 cartes) : le Mode Live s'ouvre
+pour la scène de l'acte 6, sert deux scènes entières, **puis se referme**
+jusqu'à l'épilogue — une porte déjà ouverte qui se referme, mesuré ; les 34
+morceaux chargent des lignes de synthé audibles mais invisibles avant l'acte 4
+(recommandation : laisser — c'est le module qui est fermé, pas le son) ; et la
+barre à un seul onglet, gardée comme seul indice de suite qui ne nomme rien.
+
+Mesuré après : `✅ aucune fuite` sur les neuf états.
+
 ### ✅ « Restaurer / Ignorer » restaure vraiment (2026-09-08)
 
 > Yann : *« pas sûr que la fonction "restaurer/ignorer" fonctionne »*.

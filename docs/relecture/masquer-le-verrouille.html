@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Masquer ce qui est verrouillé — tour d’horizon</title>
+<style>
+:root{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+--bg:#0e0e13;--carte:#17171f;--carte2:#1e1e28;--bord:#2c2c3a;--text:#e6e6ef;--doux:#9a9ab0;
+--violet:#7c6cf0;--vert:#39c26a;--ambre:#e8a33d;--rouge:#e2585f;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);}
+header.top{position:sticky;top:0;z-index:5;background:#12121a;border-bottom:1px solid var(--bord);
+padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:16px;margin:0;font-weight:650}
+header.top .sous{color:var(--doux);font-size:12.5px;flex:1 1 240px;min-width:0}
+header.top select,header.top button{font:13px var(--sans);background:var(--carte2);color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:6px 10px;cursor:pointer}
+#compteur{font:12px var(--mono);color:var(--doux)}
+main{max-width:900px;margin:0 auto;padding:22px 18px 80px}
+.intro{background:var(--carte);border:1px solid var(--bord);border-left:3px solid var(--violet);
+border-radius:10px;padding:14px 16px;margin:0 0 26px;font-size:14px}
+.intro p{margin:0 0 8px}.intro p:last-child{margin:0}
+.acquis{background:#12241a;border:1px solid #2b5a3c;border-radius:10px;padding:12px 16px;margin:0 0 26px;font-size:13.5px}
+.acquis b{color:#8ee0a8}
+.acquis ul{margin:6px 0 0;padding-left:20px}.acquis li{margin:0 0 4px}
+section.grp{margin:0 0 34px}
+section.grp>h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--doux);
+margin:0 0 6px;border-bottom:1px solid var(--bord);padding-bottom:6px}
+section.grp>.chapo{color:var(--doux);font-size:13.5px;margin:0 0 14px}
+.fiche{background:var(--carte);border:1px solid var(--bord);border-radius:10px;margin:0 0 14px;overflow:hidden}
+.fiche.hide{display:none}
+.fiche>header{display:flex;gap:10px;align-items:baseline;padding:11px 14px 0}
+.fiche .ref{font:11px var(--mono);color:var(--doux);flex:none}
+.fiche h3{margin:0;font-size:15.5px;font-weight:650}
+.fiche-b{padding:8px 14px 12px;font-size:14px}
+.fiche-b p{margin:0 0 9px}.fiche-b p:last-child{margin:0}
+.fiche-b table{border-collapse:collapse;margin:4px 0 10px;font-size:13px;width:100%}
+.fiche-b th,.fiche-b td{border:1px solid var(--bord);padding:5px 8px;text-align:left}
+.fiche-b th{color:var(--doux);font-weight:600}
+.fiche-b code{font:12.5px var(--mono);background:#101018;padding:1px 4px;border-radius:3px}
+.fiche-b ul{margin:4px 0 10px;padding-left:20px}.fiche-b li{margin:0 0 5px}
+.fiche-b ul.opts{list-style:none;padding:0}
+.fiche-b ul.opts li{border-left:2px solid var(--bord);padding:2px 0 2px 11px;margin:0 0 8px}
+.fiche-b blockquote{margin:6px 0 10px;padding:8px 12px;border-left:3px solid var(--violet);
+background:#12121a;color:var(--doux);font-size:13.5px;font-style:italic}
+figure{margin:8px 0 12px}
+figure img{width:100%;height:auto;display:block;border:1px solid var(--bord);border-radius:6px;background:#000}
+figcaption{font-size:11.5px;color:var(--doux);margin-top:5px}
+.reco{background:var(--vert);color:#06210f;font-size:11px;padding:1px 6px;border-radius:4px;font-weight:700}
+.alerte{color:var(--ambre)}.pour{color:var(--vert)}
+.regle{color:var(--doux);font-style:italic;font-size:13px}
+.annot{display:flex;gap:9px;align-items:flex-start;flex-wrap:wrap;
+padding:9px 14px 11px;border-top:1px solid var(--bord);background:var(--carte2)}
+.prios{display:flex;gap:5px;flex:none}
+.p{font:11px var(--sans);letter-spacing:.04em;font-weight:700;border:1px solid var(--bord);
+background:#101018;color:var(--doux);border-radius:5px;padding:6px 9px;cursor:pointer}
+.fiche.p1 .p1{background:var(--vert);color:#06210f;border-color:var(--vert)}
+.fiche.p2 .p2{background:var(--ambre);color:#2a1a02;border-color:var(--ambre)}
+.fiche.p3 .p3{background:var(--rouge);color:#2a0508;border-color:var(--rouge)}
+.fiche.p1{border-color:var(--vert)}.fiche.p2{border-color:var(--ambre)}.fiche.p3{border-color:var(--rouge)}
+.annot textarea{flex:1 1 240px;min-height:36px;font:14px/1.45 var(--sans);color:var(--text);
+background:#101018;border:1px solid var(--bord);border-radius:6px;padding:7px 9px;resize:vertical}
+.annot textarea:focus{outline:1px solid var(--violet)}
+dialog{background:var(--carte);color:var(--text);border:1px solid var(--bord);border-radius:10px;
+max-width:820px;width:92vw;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog textarea{width:100%;height:52vh;font:12px/1.5 var(--mono);background:#101018;color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:9px}
+dialog .titre{font-weight:650;margin:0 0 8px}
+dialog .actions{display:flex;gap:8px;margin-top:10px}
+dialog button{font:13px var(--sans);background:var(--carte2);color:var(--text);border:1px solid var(--bord);
+border-radius:6px;padding:7px 12px;cursor:pointer}
+</style></head><body>
+<header class="top">
+  <h1>Masquer ce qui est verrouillé</h1>
+  <span class="sous">Tour d’horizon de l’application. Annote, puis « Exporter mes notes ».</span>
+  <span id="compteur"></span>
+  <select id="filtre" aria-label="filtrer">
+    <option value="tout">tout</option><option value="annote">annoté</option><option value="0">pas encore</option>
+    <option value="1">d'accord</option><option value="2">à discuter</option><option value="3">non</option>
+  </select>
+  <button type="button" id="btn-export">Exporter mes notes</button>
+</header>
+<main>
+<div class="intro">
+<p><b>Ta demande.</b> « Il faut masquer ce qui est verrouillé, les joueurs ne
+doivent pas voir et découvrir au moment venu. » La règle existait déjà — tu
+l’avais tranchée le 27 août — mais elle n’avait été mesurée que sur un joueur
+<b>neuf</b>. Or un joueur neuf n’a pas l’Atelier : il ne voit jamais sa barre de
+menus. Le trou était dans la mesure, pas dans la règle.</p>
+<p><b>Ce que j’ai fait.</b> Un script joue la carrière entière depuis zéro,
+garde un instantané à chaque frontière d’acte, puis rouvre l’application sur
+chacun des neuf états et lit ce qui s’affiche : accueil, Atelier, ses cinq
+menus, le conseil 💡, le Mode jeu, la salle de répétition. Toute mention d’un
+module fermé est signalée. Il reste dans le dépôt :
+<code>scripts/verrous-masques.cjs</code>.</p>
+<p><b>Résultat : quatre fuites, toutes dans l’Atelier et sur l’accueil.</b> Le
+Mode jeu, lui, est propre du premier au dernier acte. Les quatre sont corrigées
+— ce sont des manquements à une règle déjà prise, pas des questions. Elles sont
+quand même en fiches (section 1) pour que tu puisses en renverser une. La
+section 2 porte ce qui reste à décider, et que je n’ai pas touché.</p>
+</div>
+
+<div class="acquis">
+<b>Ce qui était déjà conforme — vérifié, rien à faire :</b>
+<ul>
+<li>l’<b>accueil</b> ne montre que les entrées ouvertes ; le <b>bandeau de navigation</b> du Mode jeu aussi ;</li>
+<li>les <b>onglets de l’Atelier</b> : seul « Rythme » existe jusqu’à l’acte 4 ;</li>
+<li>le <b>carnet</b> ne liste que les actes atteints — pas même le titre du suivant ;</li>
+<li>la <b>salle de répétition</b> ne liste que les exercices et les cahiers rencontrés, et son compte compte ce qu’elle affiche ;</li>
+<li>la <b>discographie</b> n’a pas de bouton tant qu’aucun morceau n’est livré ;</li>
+<li>le lien direct <code>#mode-live</code> est refusé si le module est fermé.</li>
+</ul>
+</div>
+
+<section class="grp"><h2>1 · Ce qui fuyait — corrigé</h2>
+<p class="chapo">Quatre écrans nommaient un module fermé. Chaque fiche donne la mesure, puis ce que j’ai fait. Dis-moi si l’un des quatre te gêne.</p>
+
+<article class="fiche" data-id="v1">
+  <header><span class="ref">V1</span><h3>Le dernier cadenas du jeu — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+<p><b>Mesuré.</b> Dans l’Atelier, menu <b>Mode</b> : <code>🔒 Mode Live</code>,
+grisé, <b>de l’acte 2 à l’acte 7</b> — c’est-à-dire presque toute la partie. La
+passe du 27 août avait bien mesuré « plus aucun 🔒 dans le DOM », mais sur un
+joueur neuf, qui n’a pas encore l’Atelier et ne voit donc jamais cette barre.</p>
+<p><b>Fait.</b> L’entrée disparaît tant que le Mode Live est fermé, exactement
+comme sur l’accueil. Le menu Mode n’a alors que deux lignes.</p>
+<p class="regle">Corollaire à retenir : une mesure faite sur un joueur neuf ne
+couvre que les écrans d’un joueur neuf.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="v2">
+  <header><span class="ref">V2</span><h3>Le conseil 💡 envoyait dans un onglet qui n’existe pas — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+<p><b>Mesuré.</b> Aux actes 2 et 3, le bandeau de conseil affichait :
+<i>« Passe au Synthé : le 🎲 sur la Nappe pose vite un fond harmonique »</i> —
+sur un écran qui n’a qu’un seul onglet. Et le conseil suivant énumérait les
+modules à explorer : <i>« Gamme &amp; harmonie · Oscillateur · Sidechain ·
+Effets de bus »</i>, soit le contenu de deux modules fermés.</p>
+<p><b>Fait.</b> Chaque groupe de réglages porte le module où il vit ; le conseil
+ne cite que ce qui est ouvert. Le conseil générique nomme désormais les trois
+sections qui sont sûrement à l’écran (Séquence, Timbre, Filtre &amp; espace).</p>
+<p class="regle">Un conseil qui nomme une porte fermée n’est pas un conseil,
+c’est une annonce.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="v3">
+  <header><span class="ref">V3</span><h3>Le menu Fichier nommait le Synthé et l’onglet Production — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+<p><b>Mesuré.</b> Deux endroits, dès l’acte 2 :</p>
+<ul>
+<li>l’option de chargement <i>« ☐ Garder <b>le synthé</b> et le tempo actuels »</i> ;</li>
+<li>en bas de la liste des morceaux, une section <b>Banque de séquences</b>
+vide, dont la seule phrase était <i>« enregistre une séquence depuis
+<b>l’onglet Production</b> »</i> — un onglet qui n’existe pas avant l’acte 5.</li>
+</ul>
+<p><b>Fait.</b> L’option se lit « Garder le tempo actuel » tant que le Synthé
+est fermé (le comportement ne change pas). La section Banque n’apparaît qu’avec
+l’onglet Production — ou plus tôt si le récit y a déposé des boucles, ce que
+fait la scène de l’acte 6.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="v4">
+  <header><span class="ref">V4</span><h3>L’accueil annonçait « huit actes · 78 niveaux » — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+<p><b>Mesuré.</b> Sous le bouton <b>🎮 Jouer</b>, dès le premier écran :
+<i>« Une carrière en huit actes · 78 niveaux »</i>. Deux problèmes dans une
+ligne de six mots. Le compte est <b>faux du point de vue du joueur</b> — la
+carrière ne cite que 38 des 78 niveaux, les autres n’ont même pas de nom dans le
+jeu — et c’est exactement le total qu’on avait retiré du titre de fenêtre le
+24 août, pour cette raison. Et « huit actes » annonce la longueur du récit à
+quelqu’un qui n’en a pas vu un seul, alors que le carnet, lui, cache jusqu’au
+titre de l’acte suivant.</p>
+<p><b>Fait.</b> <i>« Une carrière, acte par acte »</i> — ça dit la forme, pas la
+taille. <b>La formulation est à toi</b> : c’est la seule des quatre corrections
+où j’ai dû écrire du texte plutôt que retirer quelque chose.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>2 · Ce que je n’ai pas tranché</h2>
+<p class="chapo">Trois questions que le masquage soulève et qui ne sont pas des bugs. Recommandation en premier, comme d’habitude.</p>
+
+<article class="fiche" data-id="q1">
+  <header><span class="ref">Q1</span><h3>Le Mode Live s’ouvre à l’acte 6… et se referme</h3></header>
+  <div class="fiche-b">
+<p><b>Recommandation : l’ouvrir pour de bon dès la scène de l’acte 6.</b></p>
+<p><b>Mesuré, en jouant.</b> La scène de l’acte 6 (« neuf boucles, un disque »)
+emmène dans le Mode Live et l’ouvre <i>le temps de l’étape</i>. On y monte un
+set entier. On redescend : l’entrée <b>disparaît</b> de l’accueil et du menu
+Mode. La scène de l’acte 7 fait pareil. Le module ne s’ouvre vraiment qu’à
+l’épilogue.</p>
+<table><tr><th>acte</th><th>modules ouverts</th></tr>
+<tr><td>6 (dont la scène en Mode Live)</td><td>atelier, synthé, production</td></tr>
+<tr><td>7 (dont le concert en Mode Live)</td><td>atelier, synthé, production</td></tr>
+<tr><td>épilogue</td><td>atelier, synthé, production, <b>live</b></td></tr></table>
+<p><b>Pourquoi ça compte ici.</b> Masquer sert à faire découvrir au bon moment.
+Une entrée qui apparaît, sert deux fois, puis disparaît fait exactement
+l’inverse : elle se lit comme une panne — et c’est le reproche qui avait fait
+masquer les cadenas. La règle du projet dit déjà <i>« une porte déjà ouverte ne
+se referme jamais »</i> ; ici elle n’est pas tenue.</p>
+<ul class="opts">
+<li><b>A (recommandé)</b> — l’acte qui ouvre le Live devient le 6 : après la
+scène, le module reste. Le concert de l’acte 7 se joue alors dans un module
+déjà à soi, ce qui est plutôt juste : on ne découvre pas sa console sur scène.</li>
+<li><b>B</b> — garder l’ouverture à l’épilogue, mais alors ne pas laisser
+l’entrée apparaître pendant la scène : on y entre par le récit et par lui seul.</li>
+<li><b>C</b> — laisser tel quel.</li>
+</ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="q2">
+  <header><span class="ref">Q2</span><h3>Les morceaux chargent des lignes de synthé qu’on ne peut pas voir</h3></header>
+  <div class="fiche-b">
+<p><b>Recommandation : ne rien changer.</b></p>
+<p><b>Le fait.</b> Dès l’acte 2, le menu Fichier propose les 34 morceaux. Charger
+« Boom bap 90s » pose une basse, une mélodie et une nappe : elles <b>sonnent</b>,
+mais l’onglet qui les montre n’existe pas encore. Le joueur entend une chose
+qu’il ne peut ni voir ni modifier.</p>
+<p><b>Pourquoi je ne toucherais pas.</b> Ce qui est verrouillé, c’est le
+<i>module</i> — les boutons — pas le <i>son</i>. Entendre avant de pouvoir
+toucher, c’est précisément « découvrir au moment venu » : l’acte 3 arrive et le
+joueur sait déjà ce qu’il vient chercher. Les couper reviendrait à appauvrir 34
+morceaux pour deux actes.</p>
+<p class="alerte">À l’inverse si tu veux la rigueur complète : il faudrait
+couper les trois lignes de synthé au chargement tant que le module est fermé —
+et alors le même morceau ne sonnerait pas pareil selon l’acte.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="q3">
+  <header><span class="ref">Q3</span><h3>Un seul onglet, et l’export qui reste visible</h3></header>
+  <div class="fiche-b">
+<p><b>Recommandation : ne rien changer, mais tu es le juge — c’est de
+l’ergonomie, pas une règle.</b></p>
+<p>Deux effets de bord du masquage, mesurés à l’acte 2 :</p>
+<ul>
+<li>la barre d’onglets ne porte plus qu’<b>une</b> case, « 🥁 Rythme ». Un onglet
+seul se lit comme un onglet, donc comme la promesse qu’il y en aura d’autres :
+c’est le seul indice de suite qui subsiste, et il ne nomme rien. Je le garde.</li>
+<li>le bloc <b>Export audio</b> (MP3, WAV, enregistrer le direct) est là dès le
+premier passage, parce qu’il vit hors des onglets — décision prise, et juste :
+la livraison de l’acte 1 dit « exporte-le en MP3, c’est ta sonnerie ». Il n’est
+pas verrouillé, donc il n’est pas concerné.</li>
+</ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>3 · La mesure, pour qu’elle ne se reperde pas</h2>
+<p class="chapo">Une règle qui n’a pas de mesure se casse en silence — celle-ci s’est cassée deux fois de la même façon.</p>
+
+<article class="fiche" data-id="q4">
+  <header><span class="ref">Q4</span><h3><code>scripts/verrous-masques.cjs</code></h3></header>
+  <div class="fiche-b">
+<p><b>Recommandation : le garder, et le relancer comme
+<code>parcours-carriere.cjs</code></b> — après toute modification du
+déverrouillage, des menus de l’Atelier ou des textes d’aide.</p>
+<p>Il joue la carrière depuis un joueur neuf, s’arrête à chaque frontière
+d’acte, rouvre l’application sur cet état et lit neuf écrans. Sortie attendue :
+<code>✅ aucune fuite</code>. Vérifié qu’il détecte : en remettant le cadenas de
+V1, il rend sept lignes ⚠️.</p>
+<p class="regle">Les deux fois où la règle s’est cassée, c’est parce que la
+mesure regardait un écran que le joueur concerné n’a pas encore.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+</main>
+<dialog id="dlg">
+  <p class="titre">Mes notes — à copier</p>
+  <textarea id="sortie" readonly></textarea>
+  <div class="actions">
+    <button type="button" id="btn-copier">Copier</button>
+    <button type="button" id="btn-fichier">Télécharger</button>
+    <button type="button" id="btn-reset">Tout effacer</button>
+    <button type="button" id="btn-fermer">Fermer</button>
+  </div>
+</dialog>
+<script>
+(function () {
+  var CLE = 'faceb-fiche-verrous';
+  var etat = {};
+  try { etat = JSON.parse(localStorage.getItem(CLE) || '{}') || {}; } catch (e) { etat = {}; }
+  function garder() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {} }
+  var fiches = Array.prototype.slice.call(document.querySelectorAll('.fiche'));
+  var compteur = document.getElementById('compteur');
+  function peindre(f) {
+    var e = etat[f.dataset.id] || {};
+    f.classList.remove('p1', 'p2', 'p3');
+    if (e.p) f.classList.add('p' + e.p);
+    var ta = f.querySelector('textarea');
+    if (ta.value !== (e.note || '')) ta.value = e.note || '';
+    auto(ta);
+  }
+  function auto(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(36, ta.scrollHeight) + 'px'; }
+  function annote(id) { var e = etat[id]; return !!(e && (e.p || (e.note || '').trim())); }
+  function compter() {
+    var n = 0;
+    for (var i = 0; i < fiches.length; i++) if (annote(fiches[i].dataset.id)) n++;
+    compteur.textContent = n + ' / ' + fiches.length;
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('.p') : null;
+    if (!b) return;
+    var f = b.closest('.fiche'), id = f.dataset.id, p = b.dataset.p;
+    var e = etat[id] || (etat[id] = {});
+    if (p === '0') { delete e.p; delete e.note; f.querySelector('textarea').value = ''; }
+    else e.p = e.p === p ? undefined : p;
+    if (!e.p && !(e.note || '').trim()) delete etat[id];
+    garder(); peindre(f); compter(); filtrer();
+  });
+  document.addEventListener('input', function (ev) {
+    var ta = ev.target;
+    if (ta.tagName !== 'TEXTAREA' || !ta.closest('.fiche')) return;
+    var f = ta.closest('.fiche'), id = f.dataset.id;
+    var e = etat[id] || (etat[id] = {});
+    e.note = ta.value;
+    if (!e.p && !e.note.trim()) delete etat[id];
+    auto(ta); garder(); compter();
+  });
+  var filtre = document.getElementById('filtre');
+  function filtrer() {
+    var v = filtre.value;
+    fiches.forEach(function (f) {
+      var e = etat[f.dataset.id] || {};
+      var ok = v === 'tout' || (v === 'annote' && annote(f.dataset.id))
+        || (v === '0' && !annote(f.dataset.id)) || (v === e.p);
+      f.classList.toggle('hide', !ok);
+    });
+    document.querySelectorAll('section.grp').forEach(function (s) {
+      var reste = s.querySelectorAll('.fiche:not(.hide)').length;
+      s.style.display = (reste === 0 && v !== 'tout') ? 'none' : '';
+    });
+  }
+  filtre.addEventListener('change', filtrer);
+  var TITRES = { '1': "D'ACCORD", '2': 'À DISCUTER', '3': 'NON' };
+  function entree(f) {
+    var e = etat[f.dataset.id] || {};
+    var titre = (f.querySelector('h3') || {}).textContent || '';
+    var l = '- [' + f.dataset.id + '] ' + titre;
+    if ((e.note || '').trim()) l += '\n      > ' + e.note.trim().replace(/\n/g, '\n      > ');
+    return l;
+  }
+  function texte() {
+    var lignes = ['# Masquer ce qui est verrouillé — ' + new Date().toLocaleDateString('fr-FR'), ''];
+    ['1', '2', '3'].forEach(function (p) {
+      var d = fiches.filter(function (f) { return (etat[f.dataset.id] || {}).p === p; });
+      if (!d.length) return;
+      lignes.push('## ' + TITRES[p] + ' (' + d.length + ')', '');
+      d.forEach(function (f) { lignes.push(entree(f)); });
+      lignes.push('');
+    });
+    var sansP = fiches.filter(function (f) {
+      var e = etat[f.dataset.id] || {};
+      return !e.p && (e.note || '').trim();
+    });
+    if (sansP.length) {
+      lignes.push('## Notes sans réponse (' + sansP.length + ')', '');
+      sansP.forEach(function (f) { lignes.push(entree(f)); });
+    }
+    if (lignes.length <= 2) lignes.push('(rien d’annoté)');
+    return lignes.join('\n');
+  }
+  var dlg = document.getElementById('dlg'), sortie = document.getElementById('sortie');
+  document.getElementById('btn-export').addEventListener('click', function () {
+    sortie.value = texte();
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    sortie.focus(); sortie.select();
+  });
+  document.getElementById('btn-fermer').addEventListener('click', function () {
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+  });
+  document.getElementById('btn-copier').addEventListener('click', function () {
+    sortie.select();
+    if (navigator.clipboard) navigator.clipboard.writeText(sortie.value).catch(function () {});
+    else document.execCommand('copy');
+  });
+  document.getElementById('btn-fichier').addEventListener('click', function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([sortie.value], { type: 'text/markdown' }));
+    a.download = 'verrous-masques.md'; a.click();
+  });
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    if (!confirm('Effacer toutes les annotations ?')) return;
+    etat = {}; garder(); fiches.forEach(peindre); compter(); filtrer();
+  });
+  fiches.forEach(peindre); compter(); filtrer();
+})();
+</script></body></html>

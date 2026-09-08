@@ -48,3 +48,14 @@ révisé — la réponse de Yann sur l'export **annule** la recommandation
 principale de l'audit 07.
 
 Écrite à la main comme la précédente, pas dérivée des données.
+
+## `masquer-le-verrouille.html` — le tour d'horizon des verrous
+
+Huit cartes (2026-09-08). Ce que la mesure a trouvé — quatre écrans qui
+nommaient un module fermé, **corrigés**, un par carte pour pouvoir en renverser
+un — puis ce que je n'ai pas tranché : le Mode Live qui s'ouvre pour une scène
+et se referme, les lignes de synthé audibles avant le module, et la barre à un
+seul onglet.
+
+La mesure qui l'accompagne se relance : `node scripts/verrous-masques.cjs`
+(serveur de dev démarré). Écrite à la main, pas dérivée des données.

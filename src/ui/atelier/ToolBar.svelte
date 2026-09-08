@@ -110,11 +110,17 @@
       <div class="dropdown">
         <button onclick={() => choose(() => onSwitchView?.('atelier'))}>✓ 🥁 Atelier</button>
         <button onclick={() => choose(() => onSwitchView?.('game'))}>&nbsp;&nbsp; 🎮 Mode jeu</button>
-        <button
-          disabled={!unlocks.has('live')}
-          onclick={() => choose(() => onSwitchView?.('live'))}
-          >&nbsp;&nbsp; {unlocks.has('live') ? '🎛' : '🔒'} Mode Live</button
-        >
+        <!-- ⚠️ Ce qui est VERROUILLÉ ne s'affiche pas. Cette entrée était le
+             DERNIER 🔒 de l'application : la passe du 2026-08-27 avait mesuré
+             « plus aucun cadenas dans le DOM » sur un joueur NEUF, qui n'a pas
+             encore l'Atelier — donc jamais cette barre de menus. Mesuré
+             depuis, en jouant la carrière : le cadenas est là de l'acte 2 à
+             l'acte 7, c'est-à-dire presque tout le jeu. -->
+        {#if unlocks.has('live')}
+          <button onclick={() => choose(() => onSwitchView?.('live'))}
+            >&nbsp;&nbsp; 🎛 Mode Live</button
+          >
+        {/if}
       </div>
     {/if}
   </div>
@@ -145,7 +151,9 @@
             // pas une action — la refermer obligerait à rouvrir pour choisir.
             e.stopPropagation();
             keepSynthAndTempo = !keepSynthAndTempo;
-          }}>{keepSynthAndTempo ? '☑' : '☐'} Garder le synthé et le tempo actuels</button
+          }}>{keepSynthAndTempo ? '☑' : '☐'} Garder {unlocks.has('synth')
+            ? 'le synthé et le tempo actuels'
+            : 'le tempo actuel'}</button
         >
         <!-- ⚠️ Les morceaux sont VERROUILLÉS pendant une commande. Sans ça,
              une commande de style se satisfait en trois clics : ouvrir le
@@ -168,13 +176,20 @@
             >
           {/each}
         {/each}
-        <div class="sep">Banque de séquences</div>
-        {#if sequenceBank.entries.length === 0}
-          <div class="empty">Vide — enregistre une séquence depuis l’onglet Production.</div>
-        {:else}
-          {#each sequenceBank.entries as e (e.id)}
-            <button onclick={() => choose(() => onLoadBank?.(e.id))}>{e.name}</button>
-          {/each}
+        <!-- ⚠️ La banque ne se range QUE depuis l'onglet Production. Tant qu'il
+             est fermé, cette section était vide et sa seule phrase nommait
+             l'onglet fermé : elle annonçait une fonctionnalité au lieu de la
+             laisser se découvrir. Elle réapparaît avec l'onglet — ou plus tôt
+             si le récit y a déposé des boucles (la scène de l'acte 6). -->
+        {#if unlocks.has('production') || sequenceBank.entries.length > 0}
+          <div class="sep">Banque de séquences</div>
+          {#if sequenceBank.entries.length === 0}
+            <div class="empty">Vide — enregistre une séquence depuis l’onglet Production.</div>
+          {:else}
+            {#each sequenceBank.entries as e (e.id)}
+              <button onclick={() => choose(() => onLoadBank?.(e.id))}>{e.name}</button>
+            {/each}
+          {/if}
         {/if}
       </div>
     {/if}

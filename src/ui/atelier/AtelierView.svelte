@@ -34,6 +34,7 @@
   } from '../../stores/share';
   import { rankPresets, type ClosestMatch } from '../../engine/similarity';
   import { unlocks } from '../../stores/unlocks.svelte';
+  import type { LockedModule } from '../../model/unlocks';
   import { playSystemSound } from '../xp/systemSounds';
 
   // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
@@ -252,20 +253,26 @@
   // naturellement les 3 lignes sous un seul groupe, comme l'original.
   // En mémoire seulement (pas de localStorage) : reflète l'exploration de
   // CETTE session, pas un score à conserver.
-  const PRODUCTION_GROUPS = [
+  /* ⚠️ Un conseil ne nomme que ce qui est OUVERT. Chaque groupe porte donc le
+     module où il vit — `drum-*` est sur l'onglet Rythme (toujours là),
+     `synth-*` sur le Synthé, `effets-bus` sur Production. Sans ce filtre, le
+     conseil listait « Gamme & harmonie · Sidechain · Effets de bus » à un
+     joueur de l'acte 2, à qui l'application ne montre qu'un seul onglet :
+     il énumérait le contenu de deux modules fermés. */
+  const PRODUCTION_GROUPS: { id: string; label: string; module?: LockedModule }[] = [
     { id: 'drum-groove', label: 'Groove batterie' },
     { id: 'drum-sequence', label: 'Séquence (Drum)' },
     { id: 'drum-timbre', label: 'Timbre (Drum)' },
     { id: 'drum-filtre', label: 'Filtre & espace (Drum)' },
-    { id: 'synth-harmonie', label: 'Gamme & harmonie' },
-    { id: 'synth-sequence', label: 'Séquence (Synthé)' },
-    { id: 'synth-oscillateur', label: 'Oscillateur & enveloppe' },
-    { id: 'synth-detune', label: 'Détune & modulation' },
-    { id: 'synth-filtre', label: 'Filtre & espace (Synthé)' },
-    { id: 'synth-arpege', label: 'Jeu de la nappe (arpège & bourdon)' },
-    { id: 'synth-sidechain', label: 'Sidechain' },
-    { id: 'synth-groove', label: 'Groove synthé & espace' },
-    { id: 'effets-bus', label: 'Effets de bus & mix' },
+    { id: 'synth-harmonie', label: 'Gamme & harmonie', module: 'synth' },
+    { id: 'synth-sequence', label: 'Séquence (Synthé)', module: 'synth' },
+    { id: 'synth-oscillateur', label: 'Oscillateur & enveloppe', module: 'synth' },
+    { id: 'synth-detune', label: 'Détune & modulation', module: 'synth' },
+    { id: 'synth-filtre', label: 'Filtre & espace (Synthé)', module: 'synth' },
+    { id: 'synth-arpege', label: 'Jeu de la nappe (arpège & bourdon)', module: 'synth' },
+    { id: 'synth-sidechain', label: 'Sidechain', module: 'synth' },
+    { id: 'synth-groove', label: 'Groove synthé & espace', module: 'synth' },
+    { id: 'effets-bus', label: 'Effets de bus & mix', module: 'production' },
   ];
   let productionTouched = $state(new Set<string>());
   function markProductionTouched(e: Event) {
@@ -280,13 +287,21 @@
   function hasNotes(row: { pattern: unknown[] }, isPad = false): boolean {
     return isPad ? row.pattern.some((v) => typeof v === 'number' && v >= 0) : row.pattern.some((v) => !!v);
   }
-  const productionUntouched = $derived(PRODUCTION_GROUPS.filter((g) => !productionTouched.has(g.id)));
+  const productionGroups = $derived(
+    PRODUCTION_GROUPS.filter((g) => !g.module || unlocks.has(g.module)),
+  );
+  const productionUntouched = $derived(productionGroups.filter((g) => !productionTouched.has(g.id)));
   const productionTip = $derived.by(() => {
     if (!hasNotes(pattern.state.rows.kick)) return "Commence par poser un rythme sur le Kick — c'est la base de tout le morceau.";
     if (!hasNotes(pattern.state.rows.snare)) return 'Ajoute la Snare pour marquer le contretemps.';
     if (!hasNotes(pattern.state.rows.hat))
       return 'Le Hat apporte du mouvement — pose quelques pas, ou tente une rafale (clic droit / appui long).';
+    /* ⚠️ Ce conseil envoyait au Synthé — un onglet que l'application ne montre
+       pas avant l'acte 4. Mesuré en jouant : il s'affichait de l'acte 2 à
+       l'acte 3 sur un écran qui n'a qu'un onglet. Un conseil qui nomme une
+       porte fermée n'est pas un conseil, c'est une annonce. */
     if (
+      unlocks.has('synth') &&
       !hasNotes(pattern.state.synthRows.bass) &&
       !hasNotes(pattern.state.synthRows.pad, true) &&
       !hasNotes(pattern.state.synthRows.melody)
@@ -294,7 +309,10 @@
       return 'Passe au Synthé : le 🎲 sur la Nappe pose vite un fond harmonique pour démarrer.';
     }
     if (productionTouched.size === 0) {
-      return 'Le rythme de base est posé — explore les réglages avancés (Groove, Filtres, Effets...) pour le personnaliser.';
+      /* Les trois sections citées sont celles de CHAQUE ligne de batterie, sur
+         l'onglet Rythme : les seules dont on soit sûr qu'elles sont à l'écran.
+         « Effets » nommait le bus, c'est-à-dire l'onglet Production. */
+      return 'Le rythme de base est posé — ouvre les réglages d’une ligne (Séquence, Timbre, Filtre & espace) pour le personnaliser.';
     }
     if (productionUntouched.length === 0) return "Tu as touché à tous les modules — libre à toi d'affiner le rythme !";
     return `Tu peux continuer à affiner, ou explorer : ${productionUntouched.map((g) => g.label).join(' · ')}`;
