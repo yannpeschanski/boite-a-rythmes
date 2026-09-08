@@ -26,3 +26,25 @@ le dire.
 ⚠️ Régénérer **ne perd pas** les annotations : elles sont indexées par
 identifiant de carte (`a3-e11`, `res-45`…). Mais insérer une étape au milieu
 d'un acte décale les identifiants des suivantes — exporter avant, dans le doute.
+
+## `assemblage.html` — la fiche de décision du Mode Live
+
+Vingt-cinq cartes : le cadrage, ce que la mesure a trouvé, **les six choix que
+j'ai tranchés seul sur la branche** (et qui peuvent tous être renversés), le
+plan tranche par tranche, et les questions ouvertes. Mêmes gestes que ci-dessus
+(D'ACCORD / À DISCUTER / NON, une note, export Markdown).
+
+⚠️ **Celle-ci n'est PAS dérivée des données** — son contenu est l'audit
+[`docs/plan/07-audit-assemblage-de-morceau.md`](../plan/07-audit-assemblage-de-morceau.md),
+pas l'état du jeu. Elle n'a donc pas de script de régénération : elle se modifie
+à la main, comme le document qu'elle accompagne.
+
+## `assemblage-2.html` — deuxième tour
+
+Onze cartes, après les quatorze réponses du premier tour. Trois choses : les
+trois points que je n'avais pas su expliquer (deux répondent **en image**, les
+captures sont embarquées dans le fichier), l'état de l'art demandé, et le plan
+révisé — la réponse de Yann sur l'export **annule** la recommandation
+principale de l'audit 07.
+
+Écrite à la main comme la précédente, pas dérivée des données.

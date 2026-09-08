@@ -195,6 +195,110 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ---
 
+## Le Mode Live — les PARTIES et les MONTAGES
+
+⚠️ **SECTION SOUS ARBITRAGE — 25 cartes tranchées, la branche non mergée.**
+Ce qui suit décrit `claude/mode-livre-params-sequences-oiwtul`. Reste ouvert :
+le loquet 🎲, que Yann veut **essayer avant de juger** — d'où la préversion par
+PR. Fiches `docs/relecture/assemblage.html` et `assemblage-2.html` ; audits
+`docs/plan/07` et `08`.
+
+⚠️ **Le cadrage est tranché, et il est le mainstream de la catégorie** : on
+PRÉPARE de la matière, on JOUE la structure. Beaucoup de grooveboxes n'ont pas
+de mode morceau du tout, par choix — le Song Mode d'Elektron est arrivé par mise
+à jour, des années après. Corollaire : **le mot juste est SCÈNE**, pas
+« section », parce que la chaîne est un ordre suggéré et non une timeline. Et
+un morceau ne se rend PAS hors ligne : sans automation — exclue — un rendu
+produirait une version morte. La sortie audio est le ⏺ REC, donc l'enregistreur
+n'est plus une commodité (256 Mo de pic à dix minutes, à traiter).
+
+⚠️ **Une architecture se pense en LETTRES, et une section en cite une —
+jamais « rien ».** `Section.sequenceId: string | null` pointait une entrée de
+banque au nom libre : remplir le modèle POP demandait huit allers-retours dans un
+sélecteur de ⚙, et tant qu'ils n'étaient pas faits les huit sections portaient
+`null`, donc jouaient toutes le motif courant. L'état PAR DÉFAUT de la
+fonctionnalité était l'inaudible. `Section.partie` (`model/parties.ts`, A à D)
+est obligatoire, et une lettre encore vide se replie sur **A** — jamais sur « le
+motif courant », qui vaut n'importe lequel. `tests/architecture.test.ts` interdit
+qu'un montage soit inaudible : deux sections qui se suivent doivent différer.
+
+⚠️ **Le PRIME est le calque, il n'a pas de champ à lui.** A′ est « A avec des
+lignes en moins » — c'est `Section.lignes`, et c'est ce qui fait tenir avec un
+seul mécanisme l'intro qui entre, le pont et l'outro qui s'efface. Les calques
+sont NOMMÉS (`CALQUE_ENTREE`, `CALQUE_PONT`, `CALQUE_SORTIE`…) pour qu'une intro
+soit la même d'un montage à l'autre.
+
+⚠️ **Quatre lettres, pas plus** — mesure, pas avis : la bande du Live fait 832 px
+en 844 × 390 et porte AUSSI la chaîne et les deux commandes de jeu ; quatre
+pastilles y tiennent à 56 px.
+
+⚠️ **Un MONTAGE porte les trois à la fois — chaîne, calques, boutons.** Une
+chaîne sans SUIVANT ni TENIR sous le pouce se joue contre le musicien. Ses
+`boutons` sont consommés par un **`$effect`**, jamais par la fonction qui charge :
+le JEU monte un montage tout seul à la scène de l'acte 6, et une règle à deux
+domiciles n'est appliquée qu'à un seul. Un identifiant non reconnu est ignoré,
+jamais refusé en bloc.
+
+⚠️ **Les PARTIES et la BANQUE ne se confondent pas.** La banque est le matériel
+(l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
+sous A ne touche pas la banque.
+
+⚠️ **Rien de ce qui se fait EN JOUANT ne vit derrière ⚙.** Réassigner passe par
+**deux loquets, un geste chacun** : 🎲 tire au hasard, ASSIGNER ouvre la liste ;
+allumés, boutons, pad et inclinaison se réassignent sur place d'un simple tap.
+Ça ne peut pas être un geste posé sur le bouton lui-même : l'appui long y est
+déjà pris (la rafale de `kind: 'ligne'`, le maintien de TENIR).
+⚠️ **Sur cette surface, ce qui n'est pas ÉCRIT n'existe pas** — troisième fois
+qu'un appui long coûte cher (les pastilles, la bande, la liste). Un seul loquet
+où l'appui long ouvrait le catalogue : le tirage a plu, la liste n'a été trouvée
+par personne. D'où le mot « ASSIGNER » sur le bouton, et plus aucun geste caché.
+⚠️ Corollaire de câblage : le sélecteur doit vivre **hors** de l'overlay ⚙ — il y
+était imbriqué, donc il ne s'ouvrait que depuis ⚙.
+
+⚠️ **RANGER une lettre est un geste de PRÉPARATION : ça vit dans l'Atelier,
+onglet Production.** L'appui long qui rangeait depuis la bande du Live écrasait
+un motif sans confirmation, et il a été expliqué DEUX FOIS sans être compris —
+après deux tentatives, ce n'est plus la rédaction qui est en cause, c'est le
+geste. Un geste qu'on ne comprend pas en le LISANT ne se trouve pas en JOUANT.
+Sur la surface de scène, une pastille ne fait plus qu'une chose : jouer.
+
+⚠️ **Le MIX suit la bascule de section ; le TEMPO, jamais.** Une lettre porte un
+SON complet — « on passe du temps à chercher un son, il ne faut pas l'écraser ».
+`appliquerSection` appelle donc `refreshMixSettings()`. Ce qui rend ça
+compatible avec « bouger les paramètres en direct » : `liveFilter` et
+`liveReverbSend` sont des nœuds SÉPARÉS qu'`applyMixSettings` n'écrit jamais, le
+pad et l'inclinaison gardent la main. Et la reconstruction de l'impulsion de
+réverbe est **gardée** (`derniereTailleReverbe`) — c'est la seule opération
+coûteuse de la fonction, et elle tomberait à chaque frontière de mesure.
+
+⚠️ **Un montage doit être LISIBLE quelque part** — il pose trois choses d'un
+tap (chaîne, lignes coupées, six boutons) et la bande du Live n'en montre que le
+résultat, dans des cases de 60 px. `MontagePanel` (Atelier, onglet Production)
+l'écrit : chaque scène, sa lettre, **ce qu'on entend** (le calque en clair, pas
+un compte de lignes), sa longueur, son départ, et les boutons demandés. Le
+calque se dit par ce qui SONNE, jamais par ce qui est coupé — même règle que les
+fiches de style.
+
+⚠️ **Une lettre VIDE rend le cycle de A, parce qu'elle JOUERA A.** Le repli de
+`appliquerSection` doit valoir aussi pour ce qui DÉCRIT la chaîne : sans ça
+l'écran annonçait « 2 mesures » là où on en entend 8. Une règle à deux domiciles
+n'est appliquée qu'à un seul — ici les deux domiciles sont *jouer* et *afficher*.
+
+⚠️ **Le CYCLE PROPRE est une propriété du MOTIF, pas de la chaîne.** Compter
+toutes les sections avec le cycle du motif COURANT donnait, pour la même chaîne,
+« 1 min 44 » ou « 26 s » selon la lettre chargée — la vraie durée valant
+1 min 02. `dureeSecondes`/`mesuresTotales` prennent donc `cycleDe(partie)`, et
+`parties.cycle()` le mémoïse sur `rangeeLe`.
+
+⚠️ **Un garde-fou inventé se reconnaît à ce qu'il rejette.** J'avais posé « un
+montage fait entendre au moins TROIS choses, sinon c'est un aller-retour » : il
+a rejeté **AABA**, la forme de morceau la plus documentée qui soit, qui n'a que
+deux matières. Ce qui reste et suffit est « jamais uniforme » — c'est exactement
+ce que « pas du tout audible » désignait. Corollaire : la répétition consécutive
+(A A B A) est un PROCÉDÉ, pas un défaut.
+
+---
+
 ## Le récit
 
 ⚠️ **Le jeu s'appelle FACE B** — le nom du label, pas celui de l'outil. Il vit
@@ -279,15 +383,14 @@ monte pas sur scène avec deux morceaux. Corollaire : une scène peut suivre la
 dernière commande d'un acte, parce qu'elle ne PRODUIT rien.
 ⚠️ `section` est **facultatif** sur une boucle, et c'est la distinction entre le
 MATÉRIEL et le MORCEAU : toutes les boucles vont dans la banque de séquences,
-seules celles qui portent une section entrent dans l'architecture. Une
-architecture décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois,
-les six autres restant à un clic.
+seules celles qui portent une section entrent dans les PARTIES. Une architecture
+décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois, les six
+autres restant à un clic.
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
 l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
-monté : cinq commandes sous 44 px (les exceptions revendiquées), aucun
-débordement. ⚠️ La bande d'architecture est le piège : **sans architecture
-chargée elle n'existe pas**, donc ses huit cases (36 px) n'avaient jamais été
-mesurées — c'est la scène de l'acte 6 qui les met devant tout le monde.
+monté : six commandes sous 44 px (les exceptions revendiquées), aucun
+débordement ; la bande fait 44 px, ses quatre pastilles 56 px et ses huit cases
+52,7 px.
 
 ⚠️ **Un MORCEAU, c'est trois boucles qui se répondent, et un DISQUE en compte
 trois.** L'acte 6 livre neuf boucles (trois morceaux × couplet / refrain / pont).
@@ -1009,6 +1112,23 @@ dépasse presque toujours l'estimation.
   démonstrations et les mesures que ce fichier-ci résume. **Le tenir à jour**, et
   y garder les entrées courtes.
 - **`HISTOIRE.md`** — le récit source, entièrement porté.
+
+⚠️ **Une sonde pressée fait « corriger » du code qui marche.**
+`setValueAtTime(v, ctx.currentTime)` ne se relit pas dans `.value` tant que
+l'horloge audio n'a pas vraiment démarré : lue 250 ms après `start()`, elle
+disait que le mix ne suivait pas une bascule ; lue à 1 s, elle donne la bonne
+valeur. Avant de conclure qu'un réglage audio ne s'applique pas, vérifier
+d'abord que l'horloge tourne.
+
+⚠️ **Un CONSTAT de conception appelle un audit, pas une implémentation.**
+« On fait fausse route », « c'est pas audible », « le nom est peut-être abusif »
+ne sont pas des commandes : y répondre par du code, c'est trancher sans
+arbitrage des questions qui n'ont pas été posées — et c'est le reproche du
+2026-09-07 (*« trop focalisé dans l'exécution directe »*). Le format qui marche
+est la **fiche annotable** (`docs/relecture/`) : une carte par décision, la
+recommandation en premier, et les choix qu'on a pris seul listés pour être
+renversés. Un constat d'ERGONOMIE ou de bug se code ; un constat sur ce que le
+produit EST s'audite d'abord.
 
 **Style de travail avec Yann :** instructions courtes (« go », « pars sur… »), il
 attend qu'on avance sans reposer trop de questions. Exceptions : demande explicite

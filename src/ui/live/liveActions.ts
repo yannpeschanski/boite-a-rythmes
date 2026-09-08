@@ -609,3 +609,26 @@ export function axesFor(ids: LiveAxisId[]): LiveAxisDef[] {
 export function vizById(id: LiveVizId): LiveVizDef {
   return LIVE_VIZ.find((v) => v.id === id)!;
 }
+
+/* CONSERVER MES BOUTONS — arbitrage de Yann : un montage qui remplace les six
+ * assignations sans prévenir est destructeur et silencieux. Le drapeau vit à
+ * côté des assignations plutôt que dans l'architecture : c'est une habitude de
+ * jeu, pas une propriété du morceau. */
+const CONSERVER_KEY = 'boite-a-rythme:mode-live-conserver-boutons';
+
+export function chargerConserverBoutons(): boolean {
+  try {
+    return localStorage.getItem(CONSERVER_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function saveConserverBoutons(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(CONSERVER_KEY, '1');
+    else localStorage.removeItem(CONSERVER_KEY);
+  } catch {
+    /* quota plein ou stockage refusé : le choix vaut pour la session */
+  }
+}

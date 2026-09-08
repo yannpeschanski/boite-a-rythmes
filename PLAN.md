@@ -29,6 +29,8 @@ une ligne réécrite ni réordonnée.
 | [`04-maquettes-et-moodboards.md`](docs/plan/04-maquettes-et-moodboards.md) | Maquettes — les sept séries de propositions |
 | [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) | **Audit du Mode Live (2026-09-02)** — pas une archive : un chantier OUVERT, mesuré et pas encore arbitré |
 | [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
+| [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode, ce que la mesure trouve, et les décisions qui restent. Fiche annotable : `docs/relecture/assemblage.html` |
+| [`08-etat-de-lart-structures.md`](docs/plan/08-etat-de-lart-structures.md) | **État de l'art (2026-09-07)** — ce que font les machines, les longueurs conventionnelles, et les quatre modèles proposés. Fiche : `docs/relecture/assemblage-2.html` |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans
@@ -43,6 +45,188 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ---
 
 ## Journal des livraisons — Mode jeu et Mode carrière
+
+### ✅ Deux loquets, et un montage qu'on peut enfin lire (2026-09-07)
+
+> Après le premier essai de Yann sur la préversion : *« le random marche très
+> bien […] il faut donc un bouton similaire pour pouvoir assigner un bouton sans
+> aller dans les réglages »*, et *« pour les assemblages, il faudrait qu'on
+> puisse comprendre ce qui est fait quelque part »*.
+
+**Deux loquets, un geste chacun, écrit sur le bouton.** 🎲 tire au hasard,
+**ASSIGNER** ouvre le catalogue — sur les six boutons, les deux moitiés du pad et
+l'inclinaison. ⚠️ Le diagnostic derrière : le loquet unique offrait déjà la liste
+**par appui long**, et personne ne l'a trouvée. C'est la troisième fois qu'un
+appui long coûte cher dans ce mode. Règle acquise : *sur cette surface, ce qui
+n'est pas écrit n'existe pas*. Plus aucun geste caché sur les boutons ni le pad.
+
+**`MontagePanel`** (Atelier, onglet Production, sous les parties) : la chaîne en
+toutes lettres — chaque scène, sa lettre, **ce qu'on entend**, sa longueur, à
+quelle mesure elle commence, le total, et les six boutons que le montage demande.
+Plus un avertissement quand la chaîne cite une lettre encore vide.
+
+**⚠️ Un défaut trouvé en écrivant ce panneau, et c'est le meilleur argument pour
+lui :** une lettre vide affichait « 2 mesures » là où on en entend 8. Le repli
+sur A vivait dans `appliquerSection` (ce qui JOUE) et pas dans le calcul de durée
+(ce qui AFFICHE) — les deux domiciles, sur une règle écrite le matin même.
+`parties.cycle()` applique désormais le repli, et un test tient l'arithmétique.
+
+**Vérifié.** 655 tests, 0 erreur de types, les deux builds, `parcours-carriere`.
+Mesuré en 844 × 390 : bandeau sans débordement (ASSIGNER 67 × 44), 🎲 + tap =
+tirage sans sélecteur, ASSIGNER + tap = 20 options, ASSIGNER sur le pad = « PAD —
+AXE Y » **sans que la valeur du pad bouge**. Panneau lisible en 390 px, sans
+débordement de page.
+
+⚠️ Piège de mesure reconfirmé : le HMR de Vite fait croire à une régression du
+panneau (`.chaine` absent). Redémarrer `npm run dev` avant de conclure.
+
+
+### ✅ Les 25 arbitrages appliqués, et la préversion par PR (2026-09-07)
+
+> Troisième tour. Yann a répondu aux deux fiches (25 cartes) ; cette entrée
+> n'exécute que ce qui est tranché. Détail dans
+> [`07`](docs/plan/07-audit-assemblage-de-morceau.md) et
+> [`08`](docs/plan/08-etat-de-lart-structures.md).
+
+**La préversion par PR — le préalable, et il en était un.** Les pull requests
+étaient testées mais **jamais déployées** ; le seul artefact récupérable était
+le fichier autonome, qui en `file://` n'est pas un contexte sécurisé, donc
+`DeviceOrientationEvent` refuse et le capteur d'inclinaison ne marche pas.
+**C'est la raison, restée non nommée pendant trois audits, pour laquelle « le
+Mode Live n'a jamais été essayé sur un vrai téléphone » : un empêchement, pas un
+oubli.** Un job `preview` déploie désormais chaque PR sur une URL à elle et la
+commente sur la PR (commentaire mis à jour, jamais empilé).
+
+**Ce qui a été appliqué :** trois lettres (A, B, C) ; le mix suit la bascule,
+le tempo jamais ; la durée juste ; les pastilles du Live ne rangent plus ; le
+panneau PARTIES déménage dans l'onglet Production ; l'option « conserver mes
+boutons » ; SONNERIE retiré, AABA, RONDO et « A B C · A B′ C′ » ajoutés.
+
+**Ce qui a été payé, et qui vaut règle :**
+
+- ⚠️ **Un garde-fou inventé se reconnaît à ce qu'il rejette.** « Un montage fait
+  entendre au moins TROIS choses » a rejeté **AABA** — la forme la plus
+  documentée qui soit, et elle n'a que deux matières. La règle sortait de mon
+  avis, pas d'une mesure. Reste « jamais uniforme », qui suffit.
+- ⚠️ **Un geste expliqué deux fois sans être compris est un geste à supprimer.**
+  L'appui long qui rangeait une lettre est parti ; ranger est de la préparation,
+  donc de l'Atelier, où il y a la place pour des boutons nommés.
+- ⚠️ **Une sonde pressée fait « corriger » du code qui marche.**
+  `setValueAtTime(v, currentTime)` ne se relit pas dans `.value` tant que
+  l'horloge audio n'a pas démarré : à 250 ms la sonde disait que le mix ne
+  suivait pas, à 1 s elle donne 0,8 comme demandé.
+- ⚠️ **« CHARGER » débordait de son bouton** en 390 px — un seul mot, donc
+  insécable, dans une boîte de 54 px. Vu à la capture, corrigé en passant à une
+  partie par rangée sous 210 px.
+
+**Vérifié.** 654 tests, 0 erreur de types, les deux builds,
+`parcours-carriere.cjs` depuis un joueur neuf (épilogue atteint, set monté).
+Mesuré : mix qui suit (réverbe 0 → 0,8 ; volume 1 → 1,3 ; tempo conservé) ;
+durée identique quelle que soit la lettre chargée (1 min 02, 31 mesures, contre
+« 1 min 44 » ou « 26 s » avant) ; bande du Live 3 pastilles à 56 × 44 et 8 cases
+à 60 × 44 sans débordement ; panneau Production sans débordement de texte,
+aucune cible sous 44 px en tactile.
+
+**Reste ouvert :** le loquet 🎲 — « il faut tester pour juger », et c'est
+maintenant possible.
+
+
+### ✅ Le Mode Live pense en PARTIES A/B/C, et plus rien ne passe par ⚙ (2026-09-07)
+
+> ⚠️ **CORRECTION DU MÊME JOUR — cette livraison n'aurait pas dû être une
+> livraison.** Yann : *« je me serais attendu à un vrai travail d'audit avec la
+> proposition d'un plan sérieux sur la base de mes constats. Trop focalisé dans
+> l'exécution directe. »* Il a raison : son message posait un DIAGNOSTIC, pas
+> une commande. Ce qui suit reste exact sur ce qui a été fait et mesuré, mais
+> **six de ses choix ont été tranchés sans arbitrage** et l'affichage de la
+> durée y est faux. L'audit qui rouvre tout est
+> [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) ;
+> la branche ne se merge pas avant la fiche `docs/relecture/assemblage.html`.
+
+> Yann : *« l'histoire des séquences, architectures, etc. J'ai l'impression
+> qu'on fait fausse route […] trop compliqué et pas du tout audible »*, plus
+> *« il faut éviter à tout le monde d'aller dans les réglages »* — et la forme
+> qu'il décrit : `intro · A · B · A · B · A′ · B qui s'efface`, ou `ABB′ABB′A′`.
+
+**Ce que « pas du tout audible » désignait, mesuré.** L'ancienne bande citait des
+entrées de banque : composer, cliquer ➕, taper un nom dans un `prompt()`, passer
+en Live, ouvrir ⚙, ouvrir un sélecteur, y retrouver le nom — **et recommencer par
+SECTION**, huit fois pour le modèle POP. Tant que ces huit voyages n'étaient pas
+faits, les huit sections portaient `sequenceId: null`, c'est-à-dire jouaient
+toutes le motif courant. **L'état par défaut de la fonctionnalité était
+l'inaudible**, et aucun test ne le regardait.
+
+**Ce qui remplace.** Quatre PARTIES (`model/parties.ts`, A à D), une par lettre.
+`Section.partie` est **obligatoire** — une lettre encore vide se replie sur A,
+jamais sur « le motif courant », qui vaut n'importe lequel. Le **prime est le
+calque** : A′ est `Section.lignes`, donc l'intro qui entre, le pont et l'outro
+qui s'efface tiennent avec un seul mécanisme et zéro motif de plus à composer.
+
+**Cinq MONTAGES**, et un montage porte la chaîne, les calques ET les six boutons :
+`BOUCLE`, `COUPLET / REFRAIN` (l'exemple 1 de Yann, ligne pour ligne),
+`A B B′` (l'exemple 2), `CLUB` (l'arc d'intensité — **une seule partie**, ce sont
+les lignes qui entrent et sortent), `SONNERIE`.
+
+**Les gestes, sur la surface de jeu.** La bande fait une seule rangée de 44 px :
+quatre pastilles (tap = jouer la lettre, ou sauter à sa section ; appui long =
+y ranger ce qu'on entend), la chaîne (tap = y sauter ; appui long = changer sa
+lettre ou sa longueur), `▸ TENIR ≡`. Sans chaîne, la rangée devient le bouton
+qui monte un morceau. Et un **loquet 🎲** : allumé, les six boutons, le pad
+(en deux moitiés X/Y) et l'inclinaison se réassignent sur place — tap = un
+tirage, appui long = la liste complète.
+
+**Fichiers.** `model/parties.ts` (neuf), `stores/parties.svelte.ts` (neuf),
+`ui/atelier/PartiesStrip.svelte` (neuf), `model/architecture.ts` (réécrit),
+`stores/architecture.svelte.ts` (réécrit + migration), `ui/live/LiveView.svelte`,
+`ui/atelier/AtelierView.svelte`, `stores/game.svelte.ts`,
+`tests/architecture.test.ts`, `scripts/parcours-carriere.cjs`.
+
+**Ce qui a été payé en chemin, et qui vaut règle :**
+
+- ⚠️ **Le sélecteur était imbriqué DANS l'overlay ⚙** : ouvert depuis la bande,
+  il ne s'affichait pas — le chantier entier annulé par une accolade. Trouvé en
+  jouant le chemin réel (cliquer la bande), pas en relisant le code.
+- ⚠️ **Les boutons d'un montage se consomment dans un `$effect`**, pas dans la
+  fonction de chargement : le JEU monte un montage tout seul à la scène de
+  l'acte 6, et il serait arrivé sans SUIVANT ni TENIR.
+- ⚠️ **Les deux moitiés du pad vivent DANS le pad** : sans `stopPropagation`,
+  l'appui descendait au gestionnaire du pad, qui capturait le pointeur et
+  déplaçait la valeur de l'axe qu'on réassignait.
+- ⚠️ **La migration traduit, elle n'abandonne pas** : les `sequenceId`
+  enregistrés deviennent A, B, C, D dans leur ordre d'apparition et leur contenu
+  est recopié dans les parties. Valider d'abord aurait rendu le mono-cycle, sans
+  un mot — le piège déjà payé sur les assignations de boutons. Elle est **pure**
+  (`migrerArchitecture`, dans `model/`) parce qu'une migration se joue sur la
+  sauvegarde de quelqu'un d'autre : six tests, plus un rejeu dans le navigateur
+  sur un `localStorage` à l'ancien format.
+- ⚠️ **Une migration se joue UNE FOIS** : la forme migrée est réécrite tout de
+  suite. Sans ça l'ancienne reste sur le disque, la migration se rejoue à chaque
+  chargement, et une lettre qu'on vient de vider se remplit toute seule au
+  rechargement suivant. Vu en mesurant, pas en relisant.
+- ⚠️ **`page.goto` vers le MÊME fragment ne recharge pas** — les stores restent
+  initialisés, la migration ne se joue jamais et on croit qu'elle est cassée.
+  C'est le cousin du piège HMR déjà noté pour `parcours-carriere.cjs`.
+- ⚠️ **Le petit ↓ de l'Atelier tombait à 20,3 px** en pointeur grossier, et
+  l'élargir à 44 poussait la bande sur deux rangées de la barre sticky. D'où le
+  même geste qu'en Live (appui long), le ↓ restant pour les pointeurs fins.
+- ⚠️ **`⛓` et `⤓` ne se rendent pas** dans la chasse fixe du mode (tofu à la
+  capture) — `≡` et `↓`.
+
+**Vérifié.** 650 tests (dont 14 neufs — montages et migration, y compris *« ne peuvent
+pas être INAUDIBLES : deux sections qui se suivent diffèrent »*), 0 erreur de
+types, les deux builds. Mesuré en 844 × 390 pointeur grossier, set monté :
+bande 832 × 44, pastilles 56 × 44, huit cases 52,7 × 44, `.main` inchangé à
+252 px, zéro erreur console, six commandes sous 44 px (les exceptions
+revendiquées). En 390 × 844, la bande de l'Atelier tient sur une rangée (61 px),
+cibles à 44 × 46. `scripts/parcours-carriere.cjs` rejoué depuis un joueur neuf :
+l'acte 6 monte *« 9/9 boucles en banque, parties ABC, 8 sections »*, l'épilogue
+est atteint.
+
+**Ce qui n'est PAS fait, et qui reste à trancher :** le NOM. Yann : *« le
+dénominatif "mode live" est peut-être abusif »*. Il vit dans le splash, la barre
+de navigation, le titre de fenêtre et le récit (les scènes des actes 6 et 7) —
+un renommage touche donc le texte du jeu, pas seulement une étiquette.
+
 
 ### ✅ FB-015 en trois morceaux, et la mélodie entre dans les cahiers (2026-09-05)
 

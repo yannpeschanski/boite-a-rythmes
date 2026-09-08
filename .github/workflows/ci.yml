@@ -1,8 +1,15 @@
 name: CI & Deploy
 
-# Une seule branche pour l'instant : tout push sur main déclenche
-# tests -> build -> déploiement. Les pull requests sont testées sans être
-# déployées.
+# Tout push sur main déclenche tests -> build -> déploiement en production.
+#
+# ⚠️ Une pull request déclenche une PRÉVERSION, sur une URL à elle. Ce n'est pas
+# un confort : sans elle, RIEN n'était testable ailleurs que sur le site en
+# ligne. Le seul artefact récupérable était le fichier HTML autonome — et ouvert
+# en `file://`, ce n'est pas un contexte sécurisé, donc `DeviceOrientationEvent`
+# refuse la permission et le capteur d'inclinaison ne marche pas. C'est la
+# raison, restée non nommée pendant trois audits, pour laquelle « le Mode Live
+# n'a jamais été essayé sur un vrai téléphone » : ce n'était pas un oubli,
+# c'était un empêchement.
 on:
   push:
     branches: [main]
@@ -45,6 +52,97 @@ jobs:
         with:
           name: boite-a-rythmes-fichier-unique
           path: dist-singlefile/index.html
+
+  preview:
+    name: Préversion Vercel
+    # Même garde que la production : rien n'est publié si un test échoue.
+    needs: test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Pour écrire l'URL en commentaire sur la pull request.
+      pull-requests: write
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      # Même repli que la production : Vercel non configuré -> on saute, on
+      # n'échoue pas.
+      - name: Vercel est-il configuré ?
+        id: check
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "### Préversion ignorée — Vercel n'est pas configuré." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Installer la CLI Vercel
+        if: steps.check.outputs.ready == 'true'
+        run: npm install --global vercel@latest
+      # `--environment=preview`, et le build SANS `--prod` : c'est toute la
+      # différence avec le job du dessous. L'URL produite est propre à cette
+      # exécution, le site en ligne n'est pas touché.
+      - name: Récupérer la configuration du projet
+        if: steps.check.outputs.ready == 'true'
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build de préversion
+        if: steps.check.outputs.ready == 'true'
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Déployer la préversion
+        id: deploy
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Préversion : $url" >> "$GITHUB_STEP_SUMMARY"
+      # Le commentaire est MIS À JOUR, jamais empilé : une PR qui reçoit dix
+      # pushes ne doit pas porter dix commentaires identiques.
+      - name: Publier l'URL sur la pull request
+        if: steps.check.outputs.ready == 'true'
+        uses: actions/github-script@v7
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marqueur = '<!-- preversion-vercel -->';
+            const corps = [
+              marqueur,
+              '### 📱 Préversion',
+              '',
+              `${process.env.URL}`,
+              '',
+              'À ouvrir sur un téléphone : c’est en HTTPS, donc le capteur',
+              'd’inclinaison du Mode Live peut demander sa permission — ce que',
+              'le fichier autonome ouvert en local ne permet pas.',
+            ].join('\n');
+            const { data: existants } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const ancien = existants.find((c) => c.body && c.body.includes(marqueur));
+            if (ancien) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: ancien.id,
+                body: corps,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: corps,
+              });
+            }
 
   deploy:
     name: Déploiement Vercel

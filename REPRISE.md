@@ -3,16 +3,15 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-05 — la relecture annotée est **entièrement
-> rentrée**, retours de jeu compris : les neuf cases prioritaires (le synthé dans
-> les cahiers, actes 5 et 4), les étoiles et les remarques des travaux en
-> atelier, et **l'acte 6 en trois MORCEAUX de trois boucles** (neuf cahiers,
-> mélodie comprise) dont le single se monte en set dans le Mode Live. La fiche
-> se régénère par `npx vite-node scripts/relecture-mode-jeu.ts`
-> (`docs/relecture/mode-jeu.html`).
+> Dernière mise à jour : 2026-09-07 — **chantier du MODE LIVE : 25 cartes
+> arbitrées, tout ce qui est tranché est appliqué.** Deux audits
+> ([07](docs/plan/07-audit-assemblage-de-morceau.md),
+> [08](docs/plan/08-etat-de-lart-structures.md)) et deux fiches
+> (`docs/relecture/assemblage.html`, `assemblage-2.html`).
 >
-> ⚠️ **La décision en attente est le MODE LIVE** — voir « Le chantier ouvert »
-> plus bas.
+> ⚠️ **Il ne reste qu'une chose à décider, et elle se décide en JOUANT** : le
+> loquet 🎲 (« il faut tester pour juger »). La préversion par PR existe
+> maintenant pour ça — chaque pull request a son URL, testable au téléphone.
 
 ## Où en est le projet
 
@@ -20,7 +19,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 623 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 655 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -63,25 +62,51 @@ Deux limites connues et non traitées, par choix : rien ne traverse les appareil
 granularité est l'étape, pas l'exercice — un exercice abandonné reprend à son
 début.
 
-## ⚠️ Le chantier OUVERT — le Mode Live et l'architecture de morceau
+## ⚠️ Le chantier du MODE LIVE — arbitré et appliqué, une carte restante
 
-**C'est la décision en attente**, posée par Yann le 2026-09-05 :
+⚠️ **Leçon de méthode, à ne pas répéter.** Une première passe a répondu au
+diagnostic de Yann par une implémentation directe — *« trop focalisé dans
+l'exécution directe »*. Un constat sur ce que le produit EST s'audite avant de
+se coder. La règle est dans `CLAUDE.md`, le format qui marche est la fiche
+annotable (25 cartes, 25 réponses).
 
-> « Par ailleurs, il faudra retravailler le mode live… en l'état, le système
-> d'architecture de morceau ne fonctionne pas super bien à mon goût… à
-> réfléchir. »
+### Le cadrage — tranché, et c'est la norme de la catégorie
 
-Arbitrage pris pour l'acte 6 : **le laisser de côté**. Les neuf boucles y ont été
-livrées, et la scène n'en monte qu'une en set — bâtir trois sets sur une
-mécanique qui ne convient pas serait construire sur du sable.
+Yann refusait le choix binaire scène / établi, **et il avait raison** : beaucoup
+de grooveboxes n'ont pas de mode morceau, par choix, parce qu'elles sont faites
+pour être JOUÉES en temps réel. Le Song Mode d'Elektron est arrivé par mise à
+jour, des années après. **On prépare de la matière, on joue la structure.** Le
+mot juste est **SCÈNE**, pas « section ».
 
-Ce qu'il y a déjà, et qu'il faut relire avant de repartir :
-[`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) et
-[`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md),
-tous deux ouverts. Trois façons d'attaquer avaient été proposées : le laisser de
-côté (choisi), l'auditer en le JOUANT avec mesures à l'appui, ou générer une
-**fiche HTML annotable** comme celle du Mode jeu — c'est ce dernier format qui a
-le mieux marché la fois précédente (21 cases annotées, toutes rentrées).
+### Appliqué
+
+| | |
+|---|---|
+| Trois lettres A, B, C | et les modèles RONDO / « A B C · A B′ C′ » les citent |
+| Le mix SUIT la bascule, le tempo JAMAIS | « on passe du temps à chercher un son » |
+| La durée juste | chaque section avec le cycle de SA lettre |
+| Les pastilles du Live ne rangent plus | ranger est de la préparation → onglet Production |
+| Option « conserver mes boutons » | un montage n'écrase plus en silence |
+| SONNERIE retiré, AABA ajouté | la forme de 32 mesures tombe pile sur nos tours |
+| ❌ Export hors ligne d'un morceau | **annulé** — sans automation il serait mort |
+| ✅ **Préversion Vercel par pull request** | le préalable à tout test réel |
+
+### Jugé sur la préversion (2026-09-07)
+
+Yann a essayé : *« le random marche très bien »*. Deux suites immédiates,
+livrées : un second loquet **ASSIGNER** (le tirage plaisait, mais la liste
+n'était accessible que par appui long — donc trouvée par personne), et un
+panneau **Montage** dans l'Atelier qui écrit ce qu'un montage fait
+(*« il faudrait qu'on puisse comprendre ce qui est fait quelque part »*).
+
+### Ce qui suit, une fois le loquet jugé
+
+1. **⏺ REC** est devenu LA sortie audio : 256 Mo de pic à dix minutes, WAV et
+   pas MP3. Deux sorties connues (tampon pré-alloué, encodage au fil de l'eau).
+2. **Sauvegarder un morceau en JSON** — demandé, pas fait. Question ouverte :
+   les boutons font-ils partie du morceau ?
+3. **Ranger la banque et les lettres** — deux vocabulaires qui s'ignorent.
+4. Après écoute seulement : le fill recalé sur la section, l'automation.
 
 ---
 

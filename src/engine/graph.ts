@@ -57,6 +57,12 @@ export interface GraphNodes {
   // le son. Créés systématiquement (live/offline/jeu) comme le reste du
   // graphe : rien ne les lit en dehors du Mode Live.
   lineAnalyser: Record<DrumRowName | SynthRowName, AnalyserNode>;
+  /* La dernière taille de réverbe pour laquelle une impulsion a été construite.
+     ⚠️ Sert de garde dans `applyMixSettings` : reconstruire l'impulsion est la
+     seule opération COÛTEUSE de la fonction (une allocation de plusieurs
+     secondes de bruit). Depuis que le mix suit les bascules de section, elle
+     serait appelée à chaque frontière de mesure — sur un téléphone. */
+  derniereTailleReverbe: number;
   // Bus drum : chaîne d'effets globaux (saturation/compression/bitcrush).
   masterGain: GainNode;
   sat: WaveShaperNode;
@@ -344,6 +350,7 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
     synthLineLimiter,
     synthDuckGain,
     noiseBuffer,
+    derniereTailleReverbe: state.synthGlobal.reverbSize,
   };
 }
 
@@ -373,6 +380,10 @@ export function applyMixSettings(g: GraphNodes, state: PatternStateV2): void {
     lim.threshold.setValueAtTime(enabled ? -6 : 0, now);
     lim.ratio.setValueAtTime(enabled ? 10 : 1, now);
   });
-  // La taille de réverbe demande une nouvelle impulsion (pas un simple gain).
-  g.reverb.buffer = buildReverbImpulse(g.ctx, state.synthGlobal.reverbSize / 100);
+  /* La taille de réverbe demande une nouvelle impulsion (pas un simple gain) —
+     donc on ne la reconstruit QUE si elle a changé. Voir `derniereTailleReverbe`. */
+  if (g.derniereTailleReverbe !== state.synthGlobal.reverbSize) {
+    g.reverb.buffer = buildReverbImpulse(g.ctx, state.synthGlobal.reverbSize / 100);
+    g.derniereTailleReverbe = state.synthGlobal.reverbSize;
+  }
 }

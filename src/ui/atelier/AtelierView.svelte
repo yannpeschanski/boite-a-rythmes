@@ -20,6 +20,8 @@
   import SequenceBank from './SequenceBank.svelte';
   import { presetToState } from '../../model/presetAdapter';
   import { sequenceBank } from '../../stores/bank.svelte';
+  import PartiesStrip from './PartiesStrip.svelte';
+  import MontagePanel from './MontagePanel.svelte';
   import type { SongPresetData } from '../../model/presets/songs';
   import ExportBar from './ExportBar.svelte';
   import ToolBar from './ToolBar.svelte';
@@ -753,6 +755,20 @@
            pas porter. La gestion de la banque (enregistrer, renommer,
            supprimer) est un petit CRUD — en pleine largeur ici, ses quatre
            boutons ne débordent plus comme dans l'ancien bloc étroit. -->
+      <!-- LES PARTIES A/B/C, à côté de la banque — arbitrage de Yann : « je le
+           mettrais dans le volet production pour pas prendre une place dans la
+           sticky ». Voisines exprès : la banque est le MATÉRIEL (tout ce qu'on
+           a composé), les parties sont ce qui est MONTÉ maintenant. -->
+      <XpWindow title="Parties du morceau — A / B / C" icon="🅰" accent="amber">
+        <PartiesStrip />
+      </XpWindow>
+      <!-- Le MONTAGE juste sous les parties : l'un dit la matière, l'autre ce
+           qu'on en fait. Un montage se charge d'un tap en Mode Live et pose
+           trois choses d'un coup (chaîne, lignes coupées, boutons) — sans cet
+           écran, on le subit sans pouvoir le lire. -->
+      <XpWindow title="Montage du morceau" icon="⛓" accent="amber">
+        <MontagePanel />
+      </XpWindow>
       <XpWindow title="Banque de séquences" icon="🗄" accent="teal">
         <SequenceBank />
       </XpWindow>
