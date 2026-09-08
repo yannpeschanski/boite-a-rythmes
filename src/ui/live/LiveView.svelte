@@ -40,7 +40,7 @@
   } from '../../model/architecture';
   import { AudioEngine, type PadMode } from '../../engine/AudioEngine';
   import { barDuration, coupee } from '../../engine/groove';
-  import { audioBufferToWavBlob, downloadBlob } from '../../engine/render-offline';
+  import { downloadBlob } from '../../engine/render-offline';
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
   import { niveauBarre, CHUTE_CAPUCHON } from '../xp/spectrumBands';
@@ -930,9 +930,11 @@
      matériel : c'est là que vivent les neuf boucles de l'acte 6, dont trois
      seulement montent dans les lettres. */
 
-  function downloadCapture(buffer: AudioBuffer) {
+  /* Le magnétophone rend désormais le WAV directement : il l'écrit au fil de
+     l'eau (engine/recorder.ts), il n'y a plus d'AudioBuffer à reconvertir. */
+  function downloadCapture(wav: Blob) {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    downloadBlob(audioBufferToWavBlob(buffer), `rythme-live-${stamp}.wav`);
+    downloadBlob(wav, `rythme-live-${stamp}.wav`);
   }
 
   async function togglePlay() {
@@ -940,9 +942,9 @@
       // Un live take en cours n'a de sens que pendant la lecture — STOP le
       // termine et livre le WAV plutôt que de le jeter silencieusement.
       if (recording) {
-        const buffer = engine.stopCapture();
+        const wav = engine.stopCapture();
         recording = false;
-        if (buffer) downloadCapture(buffer);
+        if (wav) downloadCapture(wav);
       }
       engine.stop();
       playing = false;
@@ -962,9 +964,9 @@
   // réellement joué (triggers/pad/inclinaison compris), voir PLAN.md §7.
   async function toggleRecord() {
     if (recording) {
-      const buffer = engine.stopCapture();
+      const wav = engine.stopCapture();
       recording = false;
-      if (buffer) downloadCapture(buffer);
+      if (wav) downloadCapture(wav);
       return;
     }
     /* ⚠️ À L'ARRÊT, ⏺ LANCE LE MORCEAU DEPUIS SON DÉBUT. Le bouton était

@@ -276,6 +276,29 @@ AVANT `start()` (même règle que la bascule de tampon), et `startCapture` ouvre
 l'audio lui-même — sa garde `if (!this.ctx) return` en faisait un no-op silencieux
 sur une page fraîche.
 
+⚠️ **Le magnétophone accumule de l'Int16, jamais des `Float32Array`.**
+`engine/recorder.ts` gardait chaque bloc du worklet puis les concaténait : dix
+minutes de prise faisaient 256 Mo de pic (le float, sa copie 16 bits, et le
+Blob). Il écrit maintenant dans un `Int16Array` qui grandit par paliers de 30 s
+— ~57 Mo aux mêmes dix minutes, plafonnées par `MINUTES_MAX_CAPTURE`. L'en-tête
+RIFF a **une seule** définition (`enteteWav`, `render-offline.ts`) : deux
+écrivains WAV finissent par diverger.
+
+⚠️ **Un MORCEAU s'enregistre en JSON, et les BOUTONS en font partie**
+(`model/morceau.ts` — « oui, les boutons font partie, c'est un des intérêts »).
+Un morceau ne dit pas seulement ce qui joue, il dit ce que les mains peuvent en
+faire. Ce n'est **pas** le format v2 et ça ne le touche pas : le fichier
+*contient* un état v2 par lettre. `lireMorceau` **répare** — une lettre
+illisible est ignorée, une section abîmée tombe, une chaîne perdue devient
+`null` — parce qu'une validation tout ou rien rend le défaut et perd tout le
+reste, en silence.
+
+⚠️ **La BANQUE et les LETTRES ont maintenant un geste qui les relie** — « → A »,
+dans `SequenceBank.svelte`. Deux listes côte à côte qui ne se parlent pas, c'est
+ce que « il faut faire du rangement » désignait ; et la distinction est
+désormais ÉCRITE sur l'écran (la banque est le matériel, les lettres sont le
+morceau monté maintenant), pas seulement vraie dans le code.
+
 ⚠️ **Rien de ce qui se fait EN JOUANT ne vit derrière ⚙.** Réassigner passe par
 **deux loquets, un geste chacun** : 🎲 tire au hasard, ASSIGNER ouvre la liste ;
 allumés, boutons, pad et inclinaison se réassignent sur place d'un simple tap.

@@ -100,6 +100,13 @@ class ArchitectureStore {
     this.boutonsDemandes = null;
   }
 
+  /** Poser une chaîne venue d'ailleurs — un fichier de morceau. */
+  remplacer(a: Architecture): void {
+    this.courante = a;
+    this.boutonsDemandes = null;
+    ecrire(a);
+  }
+
   effacer(): void {
     this.courante = null;
     this.boutonsDemandes = null;

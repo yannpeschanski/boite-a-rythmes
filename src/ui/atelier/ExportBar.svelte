@@ -25,7 +25,7 @@
   }: {
     engine: { stop: () => void; countIn: (onTick?: (beat: number) => void) => Promise<void> };
     playing: boolean;
-    recordLive: (bars: number) => Promise<AudioBuffer>;
+    recordLive: (bars: number) => Promise<Blob>;
   } = $props();
 
   let seconds = $state(20);
@@ -74,10 +74,10 @@
       status = 'Précompte…';
       await engine.countIn((beat) => (status = `Précompte… ${beat}`));
       status = `Enregistrement du direct en cours… (~${durationS}s)`;
-      const buffer = await recordLive(bars);
+      const wav = await recordLive(bars);
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
       status = 'Écriture du WAV…';
-      downloadBlob(audioBufferToWavBlob(buffer), `rythme-live-${stamp}.wav`);
+      downloadBlob(wav, `rythme-live-${stamp}.wav`);
       status = 'Terminé ✓';
     } catch (err) {
       status = 'Échec de l’enregistrement : ' + (err instanceof Error ? err.message : String(err));
