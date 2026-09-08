@@ -56,19 +56,37 @@ export function scheduleAutosave(): void {
   }, 1000);
 }
 
-export function hasAutosave(): boolean {
+/* ⚠️ La session précédente se lit UNE fois, à l'ENTRÉE dans l'Atelier, et se
+ * garde en mémoire : l'autosave de la session courante écrit dans la même clé
+ * dès le premier geste, donc un bandeau « Restaurer » qui relirait
+ * `localStorage` au moment du clic ne trouverait plus que ce que la visite en
+ * cours vient d'écrire. Mesuré : la session d'avant disparaissait une seconde
+ * après l'entrée dans l'Atelier, et « Restaurer » rechargeait alors l'écran sur
+ * lui-même — sans rien dire. */
+export function lireAutosave(): string | null {
   try {
-    return !!localStorage.getItem(KEY_AUTOSAVE);
+    return localStorage.getItem(KEY_AUTOSAVE);
+  } catch {
+    return null;
+  }
+}
+
+/** true si ce JSON décrit autre chose que ce qui est à l'écran — un bandeau qui
+ *  propose de restaurer ce qu'on a déjà sous les yeux n'est que du bruit. La
+ *  comparaison passe par un aller-retour de sérialisation : le JSON stocké peut
+ *  venir d'une version antérieure du format, seul l'état relu fait foi. */
+export function autosaveDiffere(json: string): boolean {
+  try {
+    return serializeState(deserializeState(json)) !== pattern.toJson();
   } catch {
     return false;
   }
 }
 
-export function restoreAutosave(): boolean {
+/** Applique une session lue par `lireAutosave`. */
+export function appliquerAutosave(json: string): boolean {
   try {
-    const raw = localStorage.getItem(KEY_AUTOSAVE);
-    if (!raw) return false;
-    pattern.loadJson(raw);
+    pattern.loadJson(json);
     return true;
   } catch {
     return false;
