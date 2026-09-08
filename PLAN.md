@@ -46,6 +46,51 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le catalogue s'élargit, les montages prennent du relief, ⏺ part du début (2026-09-08)
+
+> Yann, après avoir joué : *« pas convaincu des paramètres retenus pour les
+> boutons, il faut en ajouter bien d'autres »*, *« pas convaincu des
+> organisations de morceaux, il n'y a pas assez de mute et de modifs dans les
+> presets d'assemblages »*, et *« il faut qu'on puisse appuyer sur rec soit en
+> cours de lecture, soit que ça lance la lecture/enregistrement au début du
+> morceau »*.
+
+**Le catalogue : 20 → 30, et le trou se comptait.** Réparti avant : 4
+déclencheurs, 4 bascules, 5 pas, 5 lignes — et **2 maintenus**. Or un pupitre de
+scène est fait de gestes momentanés. Six entrent (FILTRE, RÉVERBE, SATURE,
+BITCRUSH, SANS KICK, BATT. SEULE), plus quatre PAS cycliques (SWING, GHOSTS,
+FILLS, SIDECHAIN). Coût moteur : deux getters. ⚠️ Ce n'est **pas** un retour en
+arrière sur la cure de 2026-09-02, qui retirait des familles de VARIANTES ; un
+test interdit qu'elles reviennent.
+
+**Les montages : 13/38 scènes avec calque → 24/40**, et surtout AABA et RONDO
+n'en avaient aucun. Trois règles testées : une chaîne entre et sort, deux scènes
+sur la même lettre ne sonnent pas toutes pareil, il reste au moins une scène
+pleine. CLUB gagne une RELANCE (le beat seul avant le second climax).
+
+**⏺ REC** lance le morceau depuis sa première scène quand on est à l'arrêt.
+
+**Ce qui a été payé :**
+
+- ⚠️ **RONDO a rejeté ma règle « une chaîne entre et sort »** — un rondo énonce
+  son refrain plein d'entrée. On lui a donné une INTRO plutôt que d'affaiblir la
+  règle : c'est l'inverse de l'arbitrage AABA (où la règle était fausse), et la
+  différence est que celle-ci sert l'auditeur.
+- ⚠️ **Le cycle des PAS ne marchait que par accident** : swing, ghosts et fills
+  partent d'une valeur qui EST un palier ; le sidechain part à 0,6 et reculait
+  d'un cran au premier appui. `palierSuivant` va au prochain palier au-dessus.
+- ⚠️ **`startCapture` sortait en silence** si l'audio n'existait pas — donc ⏺ à
+  froid n'aurait rien capté.
+- ⚠️ **Ma sonde de maintenus était fausse** : une seule mesure pour toutes les
+  familles, et la queue de réverbe du bouton précédent contaminait le suivant.
+  Elle accusait SATURE de ne pas revenir et BITCRUSH de ne rien faire.
+
+**Vérifié.** 665 tests (dont `tests/boutons-live.test.ts`, neuf), 0 erreur de
+types, les deux builds, `parcours-carriere`. Mesuré sur les vrais nœuds : les six
+maintenus « agissent ✓ reviennent ✓ », les quatre cycles bouclent, et ⏺ à l'arrêt
+passe le transport en ■ STOP, le bouton en REC… et allume la première scène.
+
+
 ### ✅ Deux loquets, et un montage qu'on peut enfin lire (2026-09-07)
 
 > Après le premier essai de Yann sur la préversion : *« le random marche très

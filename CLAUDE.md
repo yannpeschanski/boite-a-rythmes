@@ -243,6 +243,39 @@ jamais refusé en bloc.
 (l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
 sous A ne touche pas la banque.
 
+⚠️ **Le catalogue de boutons manquait de MAINTENUS, et ça se comptait :** 2 sur
+20. Un pupitre de scène est fait de gestes momentanés (fermer un filtre le temps
+d'un break, retirer le kick quatre temps). Six sont entrés, plus quatre PAS
+cycliques — et ⚠️ **ce n'est pas un retour en arrière sur la cure de 2026-09-02**,
+qui retirait des FAMILLES DE VARIANTES (neuf rafales, six pas de voix). Un
+maintenu porte son ALLER *et* son RETOUR (`hold(engine, on, base)`), et le retour
+relit le morceau : rouvrir « à 20 kHz » serait faux si le morceau ferme le
+filtre. `tests/boutons-live.test.ts` interdit qu'une famille de variantes
+revienne (aucun id ne finit par un chiffre, deux miroirs au plus).
+
+⚠️ **Un PAS cyclique va au prochain palier AU-DESSUS de la valeur, en bouclant**
+(`palierSuivant`). La première version avançait d'un index et ne marchait que si
+la valeur de départ tombait PILE sur un palier — vrai du swing, des ghosts et des
+fills, faux du sidechain (0,6 par défaut), qui reculait d'un cran au premier
+appui. Trois boutons verts sur quatre ne prouvent rien quand ils partent tous
+d'une valeur ronde.
+
+⚠️ **Un montage a du RELIEF ou n'est pas une forme.** Compté avant correction :
+13 scènes sur 38 portaient un calque, et AABA comme RONDO n'en avaient AUCUN —
+leurs lettres répétées sonnaient donc identiques. Trois règles tenues par
+`tests/architecture.test.ts` : une chaîne ENTRE et SORT (un calque à chaque
+bout) ; deux scènes sur la même lettre ne sonnent pas toutes pareil ; et il reste
+au moins une scène PLEINE — un morceau sans plein n'a que des trous. ⚠️ RONDO a
+rejeté la première règle (son refrain s'énonce plein d'entrée) : on lui a donné
+une INTRO plutôt que d'affaiblir la règle.
+
+⚠️ **⏺ REC lance le morceau depuis son début quand la lecture est à l'arrêt.**
+Depuis que l'export hors ligne est écarté, il EST la sortie audio : il ne peut
+pas rater le début de ce qu'il est seul à livrer. Le magnétophone se branche
+AVANT `start()` (même règle que la bascule de tampon), et `startCapture` ouvre
+l'audio lui-même — sa garde `if (!this.ctx) return` en faisait un no-op silencieux
+sur une page fraîche.
+
 ⚠️ **Rien de ce qui se fait EN JOUANT ne vit derrière ⚙.** Réassigner passe par
 **deux loquets, un geste chacun** : 🎲 tire au hasard, ASSIGNER ouvre la liste ;
 allumés, boutons, pad et inclinaison se réassignent sur place d'un simple tap.

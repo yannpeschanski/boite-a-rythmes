@@ -192,7 +192,45 @@ describe('les montages livrés d’usine', () => {
   it('deux matières suffisent — AABA en est la preuve', () => {
     const aaba = montageParNom('AABA')!;
     expect(new Set(aaba.sections.map((s) => s.partie)).size).toBe(2);
-    expect(new Set(aaba.sections.map(empreinte)).size).toBe(2);
+    /* ⚠️ Deux MATIÈRES, mais pas deux SONS : les trois A d'un AABA doivent se
+       traiter différemment, sinon la forme est une liste. C'est tout le sujet
+       de ce montage — voir la règle du relief plus bas. */
+    expect(new Set(aaba.sections.map(empreinte)).size).toBeGreaterThan(2);
+  });
+
+  /* ---- LE RELIEF ----
+   *
+   * Yann, 2026-09-08 : « pas assez de mute et de modifs dans les presets
+   * d'assemblages ». Compté avant : 13 scènes sur 38 portaient un calque, et
+   * AABA comme RONDO n'en avaient AUCUN — leurs lettres répétées sonnaient donc
+   * strictement pareil. Trois règles en découlent, et elles se mesurent.
+   */
+  it('une chaîne ENTRE et SORT — un calque à chaque bout', () => {
+    for (const m of MONTAGES) {
+      if (m.sections.length < 4) continue; // BOUCLE n'est pas une forme
+      expect(m.sections[0].lignes, `${m.nom} : la première scène`).not.toBeNull();
+      expect(m.sections[m.sections.length - 1].lignes, `${m.nom} : la dernière`).not.toBeNull();
+    }
+  });
+
+  it('deux scènes sur la même lettre ne sonnent pas TOUTES pareil', () => {
+    /* La répétition consécutive reste un procédé (A A B A) ; ce qu'on interdit,
+       c'est qu'une lettre citée plusieurs fois n'ait jamais qu'un seul
+       traitement — c'est ce qui rendait AABA et RONDO plats. */
+    for (const m of MONTAGES) {
+      if (m.sections.length < 4) continue;
+      for (const lettre of new Set(m.sections.map((s) => s.partie))) {
+        const scenes = m.sections.filter((s) => s.partie === lettre);
+        if (scenes.length < 2) continue;
+        expect(new Set(scenes.map(empreinte)).size, `${m.nom} : la lettre ${lettre}`).toBeGreaterThan(1);
+      }
+    }
+  });
+
+  it('garde au moins une scène PLEINE — un morceau sans plein n’a que des trous', () => {
+    for (const m of MONTAGES) {
+      expect(m.sections.some((s) => s.lignes === null), m.nom).toBe(true);
+    }
   });
 
   it('demandent au plus les TROIS lettres, et A toujours', () => {
@@ -259,11 +297,13 @@ describe('les montages livrés d’usine', () => {
   });
 
   it('libelleDePartie écrit le PRIME sur le calque, pas sur un champ', () => {
+    /* Structurel et non par NOM : « COUPLET » portait un calque hier et pas
+       aujourd'hui, ce qui faisait échouer un test qui ne mesurait pas ça. */
     const m = montageParNom('COUPLET / REFRAIN')!;
-    const couplet = m.sections.find((s) => s.nom === 'COUPLET')!;
-    const intro = m.sections.find((s) => s.nom === 'INTRO')!;
-    expect(libelleDePartie(couplet)).toBe('A');
-    expect(libelleDePartie(intro)).toBe('A′');
+    const plein = m.sections.find((s) => s.lignes === null)!;
+    const calque = m.sections.find((s) => s.lignes !== null)!;
+    expect(libelleDePartie(plein)).toBe(plein.partie);
+    expect(libelleDePartie(calque)).toBe(`${calque.partie}′`);
   });
 
   it('la lettre C est CITÉE — sinon elle n’aurait pas lieu d’exister', () => {

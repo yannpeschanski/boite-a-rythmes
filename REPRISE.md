@@ -19,7 +19,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 655 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 665 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -99,7 +99,24 @@ n'était accessible que par appui long — donc trouvée par personne), et un
 panneau **Montage** dans l'Atelier qui écrit ce qu'un montage fait
 (*« il faudrait qu'on puisse comprendre ce qui est fait quelque part »*).
 
-### Ce qui suit, une fois le loquet jugé
+### Retour de jeu du 2026-09-08, livré
+
+Yann a joué la préversion. *« Le random marche très bien »* ; le reste a produit
+trois corrections : un second loquet **ASSIGNER** (la liste n'était qu'en appui
+long, donc trouvée par personne), un panneau **Montage** qui écrit ce qu'un
+montage fait, puis — après un second essai — **le catalogue élargi de 20 à 30
+boutons** (il n'avait que 2 gestes maintenus sur 20), **les montages en relief**
+(13 scènes sur 38 portaient un calque, AABA et RONDO aucun) et **⏺ REC qui lance
+le morceau depuis son début**.
+
+### Ce qui reste
+
+⚠️ Deux points arbitrés mais **pas encore faits** : sauvegarder un morceau monté
+en JSON — **et les boutons en font partie**, Yann : « c'est un des intérêts » —
+et le rangement banque / lettres. Plus l'enregistreur lui-même (256 Mo de pic à
+dix minutes, WAV et pas MP3), maintenant qu'il est la seule sortie audio.
+
+### Ce qui suit ensuite
 
 1. **⏺ REC** est devenu LA sortie audio : 256 Mo de pic à dix minutes, WAV et
    pas MP3. Deux sorties connues (tampon pré-alloué, encodage au fil de l'eau).

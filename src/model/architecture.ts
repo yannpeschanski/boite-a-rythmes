@@ -184,6 +184,12 @@ export const CALQUE_SORTIE: LineName[] = ['hat', 'pad', 'melody'];
 export const CALQUE_MONTEE: LineName[] = ['kick', 'hat', 'snare', 'bass'];
 /** Le break de club : plus rien ne frappe. */
 export const CALQUE_BREAK: LineName[] = ['pad', 'melody'];
+/** Le squelette : le beat nu, rien pour l'habiller. */
+export const CALQUE_SQUELETTE: LineName[] = ['kick', 'snare'];
+/** Le décollage : tout le haut, plus une frappe. */
+export const CALQUE_SANS_BATTERIE: LineName[] = ['bass', 'pad', 'melody'];
+/** Dépouillé : les deux graves, et c'est tout — le couplet qui rentre. */
+export const CALQUE_DEPOUILLE: LineName[] = ['kick', 'bass'];
 
 let compteur = 0;
 function sec(nom: string, partie: PartieId, cycles: number, lignes: LineName[] | null = null): Section {
@@ -233,6 +239,19 @@ const BOUTONS_CLUB: string[][] = [
 ];
 
 export const MONTAGES: Montage[] = [
+  /* ⚠️ CHAQUE MONTAGE A UN RELIEF, et c'est une correction du 2026-09-08.
+   * Yann : « pas convaincu des organisations de morceaux, il n'y a pas assez
+   * de mute et de modifs dans les presets d'assemblages ». Compté avant :
+   * 13 scènes sur 38 portaient un calque, et **AABA comme RONDO n'en avaient
+   * aucun** — leurs lettres répétées sonnaient donc strictement pareil. Or
+   * c'est le calque qui fait la différence entre une forme et une liste.
+   *
+   * Trois règles tenues par `tests/architecture.test.ts` :
+   *  - une chaîne ENTRE et SORT (un calque à chaque bout) ;
+   *  - deux scènes qui citent la même lettre ne sonnent pas toutes pareil ;
+   *  - le climax et le refrain restent PLEINS — un morceau sans moment plein
+   *    n'a pas de relief non plus, seulement des trous.
+   */
   {
     nom: 'BOUCLE',
     desc: 'A en boucle — les mains font tout',
@@ -240,14 +259,14 @@ export const MONTAGES: Montage[] = [
     boutons: null,
   },
   {
-    /* L'exemple 1 de Yann, ligne pour ligne :
-       « un A qui entre progressivement : Intro / A : couplet / B : refrain /
-         A : couplet / B : refrain / A′ ou B′ : pont / B qui s'efface : outro » */
+    /* L'exemple 1 de Yann. Les deux COUPLETS ne sonnent pas pareil : le
+       premier entre dépouillé, le second revient plein — c'est la variation la
+       plus courante de la pop, et elle ne coûte pas un motif de plus. */
     nom: 'COUPLET / REFRAIN',
     desc: 'Intro · A B A B · pont · B · outro',
     sections: [
       sec('INTRO', 'A', 1, CALQUE_ENTREE),
-      sec('COUPLET', 'A', 2),
+      sec('COUPLET', 'A', 2, CALQUE_DEPOUILLE),
       sec('REFRAIN', 'B', 2),
       sec('COUPLET', 'A', 2),
       sec('REFRAIN', 'B', 2),
@@ -258,81 +277,90 @@ export const MONTAGES: Montage[] = [
     boutons: BOUTONS_CHAINE,
   },
   {
-    /* L'exemple 2 : « ABB′ABB′A′ outro ». */
+    /* L'exemple 2 : « ABB′ABB′A′ outro ». Les deux B′ diffèrent — le premier
+       allège, le second casse. */
     nom: 'A B B′',
     desc: 'A B B′ · A B B′ · A′ · outro',
     sections: [
+      sec('A', 'A', 1, CALQUE_ENTREE),
       sec('A', 'A', 2),
       sec('B', 'B', 2),
       sec('B PRIME', 'B', 2, CALQUE_PONT),
-      sec('A', 'A', 2),
+      sec('A', 'A', 2, CALQUE_DEPOUILLE),
       sec('B', 'B', 2),
-      sec('B PRIME', 'B', 2, CALQUE_PONT),
-      sec('A PRIME', 'A', 1, CALQUE_PONT),
+      sec('B PRIME', 'B', 1, CALQUE_BREAK),
       sec('OUTRO', 'A', 1, CALQUE_SORTIE),
     ],
     boutons: BOUTONS_CHAINE,
   },
   {
-    /* ⚠️ La forme de 32 mesures — la plus documentée qui soit, et la seule où
-       UNE SEULE section contraste. Sur un cycle de 4, « ×2 » vaut 8 mesures :
-       ce modèle tombe donc EXACTEMENT sur A(8) A(8) B(8) A(8), la forme
-       historique. Ce n'est pas un réglage, c'est une conséquence du choix de
-       compter en tours (audit 06 §4). */
+    /* ⚠️ La forme de 32 mesures, et le seul montage où le calque n'est pas un
+       ornement mais le SUJET : AABA n'a que deux matières, donc ce sont les
+       traitements qui doivent différer. Le premier A énonce le thème nu, le
+       second le remplit, le dernier le laisse partir. Sur un cycle de 4, « ×2 »
+       vaut 8 mesures : la forme tombe exactement sur A(8) A(8) B(8) A(8). */
     nom: 'AABA',
-    desc: 'La forme de 32 mesures — seul le B contraste',
+    desc: 'La forme de 32 mesures — deux matières, trois traitements',
     sections: [
+      sec('A', 'A', 2, CALQUE_SQUELETTE),
       sec('A', 'A', 2),
-      sec('A', 'A', 2),
-      sec('B', 'B', 2),
-      sec('A', 'A', 2),
+      sec('B', 'B', 2, CALQUE_SANS_BATTERIE),
+      sec('A', 'A', 2, CALQUE_SORTIE),
     ],
     boutons: BOUTONS_CHAINE,
   },
   {
-    /* Arbitré par Yann : le seul modèle qui demande TROIS motifs, et donc la
-       seule raison d'être de la lettre C. Forme classique. */
+    /* Le seul montage qui demande TROIS motifs. Le refrain A reste PLEIN à
+       chaque retour — c'est lui l'ancre ; ce sont les épisodes qui contrastent,
+       et ils contrastent différemment l'un de l'autre. */
     nom: 'RONDO',
     desc: 'A B A C A — le refrain revient entre deux contrastes',
     sections: [
+      /* ⚠️ L'INTRO est une scène À PART, et c'est la seule sortie propre : la
+         règle « une chaîne entre et sort » voulait un calque sur la première
+         scène, mais un rondo énonce son refrain PLEIN dès la première fois.
+         Affaiblir la règle pour faire rentrer RONDO aurait été le mauvais
+         arbitrage ; lui donner quatre mesures d'entrée garde les deux vraies. */
+      sec('INTRO', 'A', 1, CALQUE_ENTREE),
       sec('A', 'A', 2),
-      sec('B', 'B', 2),
+      sec('B', 'B', 2, CALQUE_DEPOUILLE),
       sec('A', 'A', 2),
-      sec('C', 'C', 2),
-      sec('A', 'A', 2),
+      sec('C', 'C', 2, CALQUE_SANS_BATTERIE),
+      sec('A', 'A', 2, CALQUE_SORTIE),
     ],
     boutons: BOUTONS_CHAINE,
   },
   {
-    /* Arbitré par Yann (« ajouter également un abc ab′c′ ») : trois matières,
-       puis la même suite ALLÉGÉE. C'est la forme où le second passage ne
-       change pas de motifs mais de densité — les calques font le contraste,
-       les lettres font la matière. */
+    /* Trois matières, puis les mêmes ALLÉGÉES — ici le second passage ne change
+       pas de motifs, seulement de densité. C'est la forme où le calque porte
+       tout le travail. */
     nom: 'A B C · A B′ C′',
     desc: 'Trois matières, puis les mêmes en retrait',
     sections: [
+      sec('INTRO', 'A', 1, CALQUE_ENTREE),
       sec('A', 'A', 2),
       sec('B', 'B', 2),
       sec('C', 'C', 2),
-      sec('A', 'A', 2),
+      sec('A PRIME', 'A', 2, CALQUE_DEPOUILLE),
       sec('B PRIME', 'B', 2, CALQUE_PONT),
       sec('C PRIME', 'C', 1, CALQUE_SORTIE),
     ],
     boutons: BOUTONS_CHAINE,
   },
   {
-    /* L'arc d'INTENSITÉ — une seule lettre, ce sont les LIGNES qui entrent et
-       sortent. C'est ce que le calque sert à faire, et c'est pour ça qu'il
-       n'est pas décoratif : ce montage ne demande QU'UNE partie remplie.
-       Longueurs conformes à la convention (intro 16, montée 16, drop 32
-       mesures sur un cycle de 4) — voir docs/plan/08 §2. */
+    /* L'arc d'INTENSITÉ — une seule lettre, ce sont les LIGNES qui font le
+       morceau. La RELANCE est ce qui manquait : après un break, le beat revient
+       seul une mesure avant que tout retombe, sinon les deux climax
+       s'enchaînent sans qu'on entende qu'on y revient. Longueurs conformes à la
+       convention (intro 16, montée 16, drop 32 mesures sur un cycle de 4). */
     nom: 'CLUB',
-    desc: 'Une seule partie — intro, montée, climax, break',
+    desc: 'Une seule partie — intro, montée, climax, break, relance',
     sections: [
       sec('INTRO', 'A', 2, CALQUE_ENTREE),
       sec('MONTÉE', 'A', 2, CALQUE_MONTEE),
       sec('CLIMAX', 'A', 4),
       sec('BREAK', 'A', 1, CALQUE_BREAK),
+      sec('RELANCE', 'A', 1, CALQUE_SQUELETTE),
       sec('CLIMAX', 'A', 4),
       sec('SORTIE', 'A', 2, CALQUE_SORTIE),
     ],
