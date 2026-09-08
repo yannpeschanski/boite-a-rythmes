@@ -58,6 +58,7 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     const { sequenceBank } = await import('/src/stores/bank.svelte.ts');
     const { architecture } = await import('/src/stores/architecture.svelte.ts');
     const { parties } = await import('/src/stores/parties.svelte.ts');
+    const { PARTIES } = await import('/src/model/parties.ts');
     const log = [];
     const modules = () => ['atelier', 'synth', 'production', 'live'].filter((m) => unlocks.has(m)).join(',') || '—';
 
@@ -93,7 +94,11 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
                  en ont toutes une par construction) mais « combien de LETTRES
                  sont réellement rangées » — une chaîne dont les lettres sont
                  vides se replie sur A et joue huit fois la même chose. */
-              const lettres = ['A', 'B', 'C', 'D'].filter((l) => parties.remplie(l));
+              /* ⚠️ La liste des lettres se LIT dans le modèle. Écrite à la
+                 main (`['A','B','C','D']`, hérité des quatre pastilles), elle
+                 annonçait « parties ABCD » sur trois lettres : `remplie('D')`
+                 lit une case inexistante, et `undefined !== null` est vrai. */
+              const lettres = PARTIES.filter((l) => parties.remplie(l));
               return ` — set : ${enBanque.length}/${noms.length} boucles en banque, parties ${lettres.join('') || '—'}, ${architecture.sections.length} sections`;
             })()
           : '';

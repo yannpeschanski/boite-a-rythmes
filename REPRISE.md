@@ -3,8 +3,10 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-07 — **chantier du MODE LIVE : 25 cartes
-> arbitrées, tout ce qui est tranché est appliqué.** Deux audits
+> Dernière mise à jour : 2026-09-08 — **chantier du MODE LIVE : 25 cartes
+> arbitrées, tout ce qui est tranché est appliqué**, plus les trois chantiers
+> de la relance (le catalogue de boutons et le relief des montages ; le fichier
+> de morceau, le rangement banque ↔ lettres, le magnétophone). Deux audits
 > ([07](docs/plan/07-audit-assemblage-de-morceau.md),
 > [08](docs/plan/08-etat-de-lart-structures.md)) et deux fiches
 > (`docs/relecture/assemblage.html`, `assemblage-2.html`).
@@ -12,6 +14,10 @@
 > ⚠️ **Il ne reste qu'une chose à décider, et elle se décide en JOUANT** : le
 > loquet 🎲 (« il faut tester pour juger »). La préversion par PR existe
 > maintenant pour ça — chaque pull request a son URL, testable au téléphone.
+>
+> ⚠️ **Ce qui reste ouvert du Mode Live** : le nom (« mode live » jugé
+> peut-être abusif — laissé tel quel sur recommandation, *« on pourra changer
+> plus tard »*), et l'essai sur un vrai téléphone en paysage.
 
 ## Où en est le projet
 
@@ -19,7 +25,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 665 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 680 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus

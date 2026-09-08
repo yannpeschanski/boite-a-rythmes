@@ -1063,7 +1063,7 @@ export class AudioEngine {
 
   // Renvoie null si aucune capture n'était en cours (bouton relâché deux
   // fois, ou lecture arrêtée entretemps sans capture démarrée).
-  stopCapture(): AudioBuffer | null {
+  stopCapture(): Blob | null {
     if (!this.liveRecorder) return null;
     const buffer = this.liveRecorder.stop();
     this.liveRecorder = null;
@@ -1102,7 +1102,7 @@ export class AudioEngine {
   // s'entend dans le résultat, comme dans l'original (LiveRecorder). Le tap
   // se fait via un AudioWorklet (recorder.ts) plutôt que le ScriptProcessorNode
   // déprécié de l'original.
-  async startLiveRecording(bars: number): Promise<AudioBuffer> {
+  async startLiveRecording(bars: number): Promise<Blob> {
     this.stop();
     this.ensureAudio();
     const ctx = this.ctx!;
@@ -1113,10 +1113,10 @@ export class AudioEngine {
     const durationMs = (barDuration(this.getState().tempo) * bars + 1.0) * 1000;
     return new Promise((resolve) => {
       setTimeout(() => {
-        const buffer = this.liveRecorder!.stop();
+        const wav = this.liveRecorder!.stop();
         this.liveRecorder = null;
         this.stop();
-        resolve(buffer);
+        resolve(wav);
       }, durationMs);
     });
   }

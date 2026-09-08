@@ -90,18 +90,25 @@ export async function renderPattern(
   return ctx.startRendering();
 }
 
-// Écrivain WAV RIFF/PCM 16 bits mono — partagé par l'export offline et
-// l'enregistrement en direct.
-export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
-  const data = buffer.getChannelData(0);
-  const sampleRate = buffer.sampleRate;
-  const bytes = new ArrayBuffer(44 + data.length * 2);
+/* Un échantillon flottant -1..1 vers l'entier 16 bits du WAV.
+   Asymétrique exprès : la plage signée va de −32768 à +32767. */
+export function versInt16(v: number): number {
+  const s = Math.max(-1, Math.min(1, v));
+  return s < 0 ? s * 0x8000 : s * 0x7fff;
+}
+
+/* L'en-tête RIFF/PCM 16 bits mono — 44 octets, et UNE SEULE définition.
+   L'enregistrement en direct accumule déjà de l'Int16 (voir recorder.ts) et
+   l'export offline part d'un AudioBuffer : les deux se rejoignent ici plutôt
+   que d'écrire deux fois le même en-tête, qui finiraient par diverger. */
+export function enteteWav(nbEchantillons: number, sampleRate: number): ArrayBuffer {
+  const bytes = new ArrayBuffer(44);
   const view = new DataView(bytes);
   const writeStr = (offset: number, s: string) => {
     for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
   };
   writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + data.length * 2, true);
+  view.setUint32(4, 36 + nbEchantillons * 2, true);
   writeStr(8, 'WAVE');
   writeStr(12, 'fmt ');
   view.setUint32(16, 16, true);
@@ -112,13 +119,27 @@ export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
   view.setUint16(32, 2, true);
   view.setUint16(34, 16, true);
   writeStr(36, 'data');
-  view.setUint32(40, data.length * 2, true);
-  let offset = 44;
-  for (let i = 0; i < data.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, data[i]));
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-  }
-  return new Blob([bytes], { type: 'audio/wav' });
+  view.setUint32(40, nbEchantillons * 2, true);
+  return bytes;
+}
+
+/** Assemble un WAV à partir d'échantillons DÉJÀ en 16 bits. */
+export function wavDepuisInt16(data: Int16Array, sampleRate: number): Blob {
+  /* `data.buffer.slice(...)` plutôt que la vue : `Int16Array` peut porter un
+     `SharedArrayBuffer` du point de vue des types, que `BlobPart` refuse. Et
+     comme on passe une SOUS-VUE (voir recorder.ts), il faut de toute façon
+     n'emporter que la portion écrite. */
+  const octets = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+  return new Blob([enteteWav(data.length, sampleRate), octets], { type: 'audio/wav' });
+}
+
+// Écrivain WAV RIFF/PCM 16 bits mono — utilisé par l'export offline, qui part
+// d'un AudioBuffer. Le direct, lui, n'en fabrique plus (voir recorder.ts).
+export function audioBufferToWavBlob(buffer: AudioBuffer): Blob {
+  const data = buffer.getChannelData(0);
+  const pcm = new Int16Array(data.length);
+  for (let i = 0; i < data.length; i++) pcm[i] = versInt16(data[i]);
+  return wavDepuisInt16(pcm, buffer.sampleRate);
 }
 
 // Encodage MP3 par blocs de 1152 échantillons, avec yield périodique pour ne

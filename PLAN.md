@@ -46,6 +46,62 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un morceau se sauvegarde, la banque se range, la prise tient dix minutes (2026-09-08)
+
+> Yann : *« il faudrait pouvoir sauvegarder des morceaux montés en JSON avant le
+> wav »*, *« oui, les boutons font partie, c'est un des intérêts »*, *« il faut
+> faire du rangement entre la banque des séquences et les assemblages de
+> morceau »*. Puis : *« ok go »*.
+
+**Le fichier de morceau — `src/model/morceau.ts`.** Un morceau monté n'existait
+que dans le `localStorage` du navigateur qui l'avait fabriqué : l'appli savait
+partager un RYTHME par URL depuis toujours, mais pas un MORCEAU. Le fichier
+porte les trois choses à la fois — les lettres, la chaîne, et **les boutons**,
+arbitrage explicite. Ce n'est pas le format v2 et ça ne le touche pas : il
+*contient* un état v2 par lettre. `MontagePanel` porte la rangée (nom, 💾
+Enregistrer, 📂 Ouvrir…, « garder mes boutons à l'ouverture ») et rend compte de
+ce qui a été posé.
+
+**Le rangement banque ↔ lettres — `SequenceBank.svelte`.** Deux listes
+coexistaient sans qu'un mot dise à quoi sert laquelle. Le panneau l'écrit
+maintenant (la banque est le matériel, les lettres sont le morceau monté
+*maintenant*) et un seul geste les relie : « → A », qui tire du matériel vers
+une lettre, avec confirmation si elle est pleine et un ⟲ qui le signale.
+
+**Le magnétophone — `engine/recorder.ts`.** Il gardait chaque bloc du worklet en
+`Float32Array` puis concaténait : dix minutes faisaient **256 Mo de pic**. Il
+accumule maintenant directement de l'Int16 par paliers de 30 s — ~57 Mo aux
+mêmes dix minutes, plafonné par `MINUTES_MAX_CAPTURE`. L'en-tête RIFF est
+extrait dans `render-offline.ts` (`enteteWav`, `wavDepuisInt16`) : deux
+écrivains WAV finissent par diverger.
+
+**Ce qui a été payé :**
+
+- ⚠️ **`lireMorceau` répare au lieu de refuser.** Une validation tout ou rien
+  aurait rendu un fichier dont une seule section est abîmée et perdu les trois
+  lettres, en silence. Une lettre illisible est ignorée, une section invalide
+  tombe, une chaîne perdue devient `null` — et seul un fichier sans *aucune*
+  lettre ni chaîne est refusé, parce qu'il n'ouvrirait rien.
+- ⚠️ **`Int16Array` n'est pas un `BlobPart`** du point de vue des types (il peut
+  porter un `SharedArrayBuffer`) : `wavDepuisInt16` passe par
+  `data.buffer.slice(byteOffset, …)`, ce qui règle aussi le fait qu'on lui donne
+  une SOUS-VUE.
+- ⚠️ **`scripts/parcours-carriere.cjs` annonçait « parties ABCD »** sur trois
+  lettres : sa liste était écrite à la main, héritée des quatre pastilles, et
+  `remplie('D')` lit une case inexistante — `undefined !== null` est vrai. Elle
+  lit `PARTIES` maintenant. Une liste dupliquée d'une constante ment en silence
+  le jour où la constante change.
+
+**Vérifié.** 680 tests (dont `tests/morceau.test.ts`, huit, et
+`tests/enregistreur.test.ts`), 0 erreur de types, les deux builds,
+`parcours-carriere` sans erreur console. Mesuré au navigateur : aller-retour
+complet du fichier (montage COUPLET/REFRAIN, 8 scènes, 1 lettre, 6 boutons →
+tout effacé → rouvert à l'identique), les nouvelles commandes à 44 px en
+390 × 844 tactile (→ A/B/C, la rangée fichier, les parties), aucun conteneur
+neuf qui déborde ; et ⏺ à froid en 844 × 390 rend un WAV de 4,56 s, RIFF
+valide, pic à 30 892 — pas un silence.
+
+
 ### ✅ Le catalogue s'élargit, les montages prennent du relief, ⏺ part du début (2026-09-08)
 
 > Yann, après avoir joué : *« pas convaincu des paramètres retenus pour les

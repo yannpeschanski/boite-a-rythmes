@@ -32,8 +32,35 @@
   } from '../../model/architecture';
   import { actionById } from '../live/liveActions';
   import type { LiveActionId } from '../live/liveActions';
+  import { telechargerMorceau, ouvrirFichierMorceau } from '../../stores/morceau.svelte';
 
   const sections = $derived(architecture.sections);
+
+  /* ---- LE FICHIER ----
+   * Un morceau, c'est les lettres + la chaîne + les boutons. Les trois vivent
+   * dans trois stores ; le fichier est le seul endroit où ils se rejoignent. */
+  let nomMorceau = $state('');
+  let conserverBoutons = $state(false);
+  let compteRendu = $state('');
+  let champFichier: HTMLInputElement;
+
+  function enregistrer() {
+    telechargerMorceau(nomMorceau || architecture.courante?.nom || 'Morceau');
+    compteRendu = 'Morceau enregistré.';
+  }
+
+  async function ouvrir(e: Event) {
+    const f = (e.currentTarget as HTMLInputElement).files?.[0];
+    if (!f) return;
+    const r = await ouvrirFichierMorceau(f, conserverBoutons);
+    /* ⚠️ Un échec ne doit jamais être silencieux : un fichier illisible qui ne
+       fait RIEN laisse croire que l'appli est cassée. */
+    compteRendu = r
+      ? `« ${r.nom} » ouvert — ${r.lettres} partie${r.lettres > 1 ? 's' : ''}, ${r.scenes} scène${r.scenes > 1 ? 's' : ''}${r.boutons ? ', boutons posés' : ''}.`
+      : '⚠ Ce fichier n’est pas un morceau lisible.';
+    if (r) nomMorceau = r.nom;
+    champFichier.value = ''; // rouvrir le MÊME fichier doit re-déclencher l'événement
+  }
   const cycleDe = $derived((id: 'A' | 'B' | 'C') => parties.cycle(id));
 
   /* Le cumul : à quelle mesure chaque scène commence. C'est ce qu'on lit quand
@@ -124,6 +151,35 @@
   {/if}
 {/if}
 
+<div class="fichier">
+  <span class="titre">Le morceau</span>
+  <input
+    class="nom-morceau"
+    type="text"
+    placeholder="Nom du morceau"
+    bind:value={nomMorceau}
+    aria-label="Nom du morceau"
+  />
+  <button class="xp-btn" onclick={enregistrer}>💾 Enregistrer</button>
+  <button class="xp-btn" onclick={() => champFichier.click()}>📂 Ouvrir…</button>
+  <input
+    class="cache"
+    type="file"
+    accept="application/json,.json"
+    bind:this={champFichier}
+    onchange={ouvrir}
+  />
+  <label class="garde">
+    <input type="checkbox" bind:checked={conserverBoutons} />
+    garder mes boutons à l’ouverture
+  </label>
+</div>
+<p class="hint fichier-aide">
+  Le fichier contient les <strong>parties</strong>, la <strong>chaîne</strong> et les
+  <strong>six boutons</strong> du Mode Live — c’est le morceau entier, pas seulement son rythme.
+  {#if compteRendu}<br /><span class="rendu" class:alerte={compteRendu.startsWith('⚠')}>{compteRendu}</span>{/if}
+</p>
+
 <div class="choix">
   <label for="montage-select">Montage</label>
   <select
@@ -208,6 +264,49 @@
     display: block;
     margin-top: 3px;
   }
+  .fichier {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 10px 0 6px;
+    padding-top: 8px;
+    border-top: 1px solid var(--xp-line);
+  }
+  .fichier .titre {
+    font-size: 8px;
+    letter-spacing: var(--xp-ls-wide, 0.08em);
+    color: var(--xp-muted);
+  }
+  .nom-morceau {
+    flex: 1 1 140px;
+    min-width: 0;
+    font-family: var(--xp-font);
+    font-size: 10px;
+    padding: 4px;
+    border: 1px solid var(--xp-line);
+    background: var(--xp-field-bg);
+    color: var(--xp-text);
+  }
+  .cache {
+    display: none;
+  }
+  .garde {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8.5px;
+    color: var(--xp-muted);
+  }
+  .fichier-aide {
+    margin-top: 0;
+  }
+  .rendu {
+    color: var(--xp-lcd);
+  }
+  .rendu.alerte {
+    color: var(--xp-accent-amber);
+  }
   .choix {
     display: flex;
     align-items: center;
@@ -232,7 +331,12 @@
      règles écrites plus bas. Et un <select> est un élément REMPLACÉ : pas de
      pseudo-élément possible, c'est sa propre boîte qui monte. */
   @media (pointer: coarse) {
-    .choix select {
+    /* ⚠️ `<select>` et `<input>` sont des éléments REMPLACÉS : Chromium n'y rend
+       aucun pseudo-élément, donc pas de `.tap44` possible — c'est leur propre
+       boîte qui monte. */
+    .choix select,
+    .nom-morceau,
+    .fichier .xp-btn {
       min-height: 44px;
     }
   }
