@@ -36,6 +36,14 @@
   } from '../../model/architecture';
   import { PARTIES, type PartieId } from '../../model/parties';
   import { telechargerMorceau, ouvrirFichierMorceau } from '../../stores/morceau.svelte';
+  import { unlocks } from '../../stores/unlocks.svelte';
+
+  /* ⚠️ LE PANNEAU DOIT SAVOIR EMMENER AU LIVE. On monte ici et on joue
+     là-bas : sans une sortie ÉCRITE au bout, le seul chemin était la barre de
+     menus (Mode → Mode Live), c'est-à-dire à l'autre bout de l'écran et sous
+     un menu déroulant. « Il faut un bouton plus évident pour nous emmener sur
+     le mode live à la fin de cette partie de montage des morceaux. » */
+  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live') => void } = $props();
 
   const sections = $derived(architecture.sections);
 
@@ -272,6 +280,19 @@
   {#if compteRendu}<br /><span class="rendu" class:alerte={compteRendu.startsWith('⚠')}>{compteRendu}</span>{/if}
 </p>
 
+<!-- ⚠️ LA SORTIE EST LE DERNIER MOT DU PANNEAU. On PRÉPARE de la matière ici,
+     on JOUE la structure là-bas : le montage fini, la seule chose qui reste à
+     faire est de monter sur scène. ⚠️ Et ce qui est VERROUILLÉ ne s'affiche
+     pas — un joueur qui n'a pas encore le Mode Live ne doit pas lire son nom
+     sur un bouton. ⚠️ Le Live n'existe qu'à l'HORIZONTALE : l'écran qui y
+     envoie doit le dire, sinon on y arrive sur un mur d'instructions. -->
+{#if unlocks.has('live')}
+  <button class="vers-live" onclick={() => onSwitchView?.('live')}>
+    <span class="titre">🎛 {architecture.courante ? 'Jouer ce montage en Mode Live' : 'Ouvrir le Mode Live'}</span>
+    <span class="sous">à l’horizontale — tourne ton téléphone. Tu redescends quand tu veux.</span>
+  </button>
+{/if}
+
 <style>
   .hint,
   .manque {
@@ -504,6 +525,40 @@
   .rendu {
     color: var(--xp-lcd);
   }
+
+  /* ---- LA SORTIE VERS LE LIVE ----
+   * Ambre, comme l'accent de la fenêtre qui l'abrite : ce n'est pas une
+   * VALIDATION (le vert du Mode jeu), c'est un départ. Pleine largeur et deux
+   * lignes — le seul bouton du panneau qui doive se voir sans être cherché. */
+  .vers-live {
+    display: block;
+    width: 100%;
+    margin: 10px 0 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-out);
+    background: linear-gradient(180deg, #e0a52b, #a86f10);
+    color: var(--xp-lcd-bg);
+    font-family: var(--xp-font);
+    text-align: left;
+    cursor: pointer;
+  }
+  .vers-live:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .vers-live .titre {
+    display: block;
+    font-size: var(--xp-size-btn);
+    font-weight: 700;
+    letter-spacing: var(--xp-ls-btn);
+    text-transform: uppercase;
+  }
+  .vers-live .sous {
+    display: block;
+    margin-top: 3px;
+    font-size: 8.5px;
+    opacity: 0.85;
+  }
   .rendu.alerte {
     color: var(--xp-accent-amber);
   }
@@ -518,7 +573,8 @@
     .nom-montage,
     .nom-scene,
     .nom-morceau,
-    .xp-btn {
+    .xp-btn,
+    .vers-live {
       min-height: 44px;
     }
     /* Les boutons de scène montent EUX-MÊMES à 44 (voir le commentaire sur

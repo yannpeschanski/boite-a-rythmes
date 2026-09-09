@@ -358,7 +358,11 @@ coûteuse de la fonction, et elle tomberait à chaque frontière de mesure.
 montre que le résultat, dans des cases de 60 px. `MontagePanel` l'écrit : chaque
 scène, sa lettre, **ce qu'on entend** (le calque en clair, pas un compte de
 lignes), sa longueur, son départ. Le calque se dit par ce qui SONNE, jamais par
-ce qui est coupé — même règle que les fiches de style. ⚠️ Neuf cibles de 44 px
+ce qui est coupé — même règle que les fiches de style. ⚠️ **Il porte aussi la
+SORTIE vers le Live**, en dernier : on prépare ici, on joue là-bas, et le seul
+chemin était un menu déroulant à l'autre bout de l'écran. Masquée tant que le
+module est fermé, et elle dit l'HORIZONTALE — sinon on arrive sur « tourne ton
+téléphone ». ⚠️ Neuf cibles de 44 px
 ne tiennent pas sur une rangée de 312 px (mesuré) : ce qui se LIT reste visible,
 ce qui se fait une fois (couper une ligne, déplacer, retirer) est derrière un
 bouton **écrit**, jamais un geste caché.

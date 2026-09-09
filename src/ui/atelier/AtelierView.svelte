@@ -823,7 +823,7 @@
            résultat, dans des cases de 60 px : monter est un geste de
            PRÉPARATION, il vit dans l'Atelier. -->
       <XpWindow title="Montage du morceau" icon="⛓" accent="amber">
-        <MontagePanel />
+        <MontagePanel {onSwitchView} />
       </XpWindow>
       <XpWindow title="Banque de séquences" icon="🗄" accent="teal">
         <SequenceBank />
