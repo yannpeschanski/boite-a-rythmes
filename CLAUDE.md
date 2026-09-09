@@ -323,12 +323,25 @@ servent aussi de titre. En mode VOLUMES la ligne se scinde : le nom coupe, la
 piste devient le curseur — un interactif dans un interactif ne se tape pas de
 façon prévisible.
 
-⚠️ **Asymétrie ASSUMÉE, en attente d'arbitrage : un override survit à une
-bascule de section, un nœud du morceau non.** Les volumes de batterie passent
-par `liveDrumOverride` (relu à chaque fenêtre) et tiennent ; ceux du synthé
-passent par `synthLineGain`, que `refreshMixSettings` réécrit à chaque scène.
-La vue efface donc son affichage des volumes de synthé à la bascule — montrer
-un chiffre que plus personne ne joue serait pire que les deux comportements.
+⚠️ **UN RÉGLAGE POSÉ EN DIRECT SAIT REVENIR — par le bouton, et par la scène.**
+Arbitré le 2026-09-09 (« il faut qu'on puisse revenir comme c'était avant, soit
+lorsqu'on change le bouton, soit quand on passe à la partie suivante »), ce qui
+clôt l'asymétrie override / nœud : les deux rendent la main ensemble. Deux
+moments, un seul mécanisme — le `repos` d'une entrée. **Une action qui LATCHE
+(bascule, pas) en porte un**, au même titre qu'un axe ; un déclencheur ou un
+maintenu n'en a pas besoin et ne doit pas en avoir (deux chemins de retour pour
+un geste, ce sont deux vérités à garder d'accord). Réassigner un bouton sans
+rendre ce qu'il tenait est un cul-de-sac : le seul bouton qui savait défaire le
+réglage vient d'être réassigné. `appliquerSection` appelle
+`relacherReglagesLive()`, qui épargne les deux nœuds DÉDIÉS (le pad garde la
+main pendant qu'une scène passe) et les mutes (le calque en est seul maître).
+
+⚠️ **Le 🎲 tire aussi le TYPE du bouton** (`tirerMode`, `liveActions.ts`) —
+actions, curseur ou curseur momentané, à parts égales. Il ne tirait que DANS le
+mode courant : un bouton d'actions le restait à vie, et rencontrer un curseur
+demandait d'aller le choisir exprès. La fonction vit dans le module pur, pas
+dans la vue : une fonction de tirage recopiée dans un test ne teste que la
+copie.
 
 ⚠️ **La bascule ACTIONS / CURSEUR / MOMENTANÉ vit dans le SÉLECTEUR, pas dans
 ⚙.** Mesuré avant correction : la surface portait six boutons en mode ACTIONS et

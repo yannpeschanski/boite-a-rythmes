@@ -50,6 +50,7 @@
     axesFor,
     loadLiveAssignments,
     saveLiveAssignments,
+    tirerMode,
     loadLiveSnapshots,
     saveLiveSnapshots,
     vizById,
@@ -344,6 +345,8 @@
    * Les trois modes sont ÉCRITS sur trois boutons, jamais devinés — quatrième
    * fois que ce mode paie un geste caché. */
   function choisirMode(i: number, mode: SlotMode, momentane: boolean) {
+    // Changer de type, c'est changer ce que le bouton fait : il rend d'abord.
+    if (assignments.slotModes[i] !== mode) relacherSlot(i);
     assignments.slotModes[i] = mode;
     assignments.faderMomentane[i] = momentane;
     saveLiveAssignments(assignments);
@@ -486,8 +489,48 @@
   // courant — contrairement à 🔀 qui rebrasse tout d'un coup. Agit même sur
   // un bouton verrouillé : le verrou protège du brassage global accidentel
   // par 🔀, pas d'un geste posé délibérément sur sa propre ligne.
+  /* ⚠️ CE QU'UN BOUTON TENAIT DOIT ÊTRE RENDU QUAND IL CHANGE (2026-09-09,
+   * retour de Yann après test : « quand on bascule un paramètre — exemple :
+   * arpégiateur — il faut qu'on puisse revenir comme c'était avant, soit
+   * lorsqu'on change le bouton, soit quand on passe à la partie suivante »).
+   *
+   * Sans ça, réassigner un bouton ABANDONNE son réglage : la nappe reste en
+   * arpège, la batterie reste coupée, et plus AUCUNE commande de l'écran ne
+   * peut les défaire — le seul bouton qui savait le faire vient d'être
+   * réassigné. C'est un cul-de-sac qu'on ne voit qu'en jouant.
+   *
+   * On appelle donc le `repos` des entrées SORTANTES, des deux catalogues : les
+   * axes l'ont depuis le curseur momentané, les actions qui latchent viennent
+   * de le recevoir. Une entrée sans `repos` ne latche rien — rien à rendre. */
+  function relacherSlot(i: number) {
+    /* Les deux catalogues : un slot porte TOUJOURS les deux assignations, et on
+       ignore laquelle jouait — relâcher ce qui n'était pas engagé est un
+       no-op, alors qu'oublier ce qui l'était laisse un cul-de-sac. */
+    const sortantes = [...assignments.slotFaders[i], ...assignments.slots[i]];
+    for (const id of assignments.slotFaders[i]) axisById(id).repos?.(engine, st);
+    for (const id of assignments.slots[i]) actionById(id).repos?.(engine, st);
+    // La VUE doit suivre ce que le moteur vient de rendre, sinon l'écran
+    // affiche un état que plus personne ne joue.
+    if (sortantes.includes('petit-hp')) petitHP = false;
+    padMode = engine.padMode;
+    resynchroniserMutes();
+  }
+
+  /** Recale l'affichage des coupures sur ce que le moteur dit vraiment. */
+  function resynchroniserMutes() {
+    for (const n of [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES]) {
+      const ov = n in st.rows ? engine.liveMuteDe(n as DrumRowName) : engine.liveMuteSynthDe(n as SynthRowName);
+      if (ov === undefined) delete liveMute[n];
+      else liveMute[n] = ov;
+    }
+  }
+
   function randomizeSlot(i: number) {
-    if (assignments.slotModes[i] === 'fader') assignments.slotFaders[i] = [pickAxis()];
+    relacherSlot(i);
+    const { mode, momentane } = tirerMode(); // le TYPE fait partie du tirage
+    assignments.slotModes[i] = mode;
+    assignments.faderMomentane[i] = momentane;
+    if (mode === 'fader') assignments.slotFaders[i] = [pickAxis()];
     else assignments.slots[i] = [pickAction()];
     saveLiveAssignments(assignments);
   }
@@ -559,7 +602,15 @@
     if (picker?.kind !== 'slot') return;
     const current = assignments.slots[picker.index];
     if (current.includes(id)) {
-      if (current.length > 1) assignments.slots[picker.index] = current.filter((x) => x !== id);
+      if (current.length > 1) {
+        /* Une entrée qu'on RETIRE rend ce qu'elle tenait — sinon elle laisse
+           son réglage derrière elle sans plus aucun bouton pour le défaire. */
+        actionById(id).repos?.(engine, st);
+        padMode = engine.padMode;
+        if (id === 'petit-hp') petitHP = false;
+        resynchroniserMutes();
+        assignments.slots[picker.index] = current.filter((x) => x !== id);
+      }
     } else {
       assignments.slots[picker.index] = [...current, id];
     }
@@ -584,7 +635,10 @@
     if (picker?.kind !== 'slotFader') return;
     const current = assignments.slotFaders[picker.index];
     if (current.includes(id)) {
-      if (current.length > 1) assignments.slotFaders[picker.index] = current.filter((x) => x !== id);
+      if (current.length > 1) {
+        axisById(id).repos?.(engine, st); // même règle que pour les actions
+        assignments.slotFaders[picker.index] = current.filter((x) => x !== id);
+      }
     } else {
       assignments.slotFaders[picker.index] = [...current, id];
     }
@@ -675,11 +729,18 @@
        que dit la lettre. Garder la valeur posée à la main afficherait un
        chiffre que plus personne ne joue — et le séquenceur est le seul écran
        qui dit le niveau d'une ligne.
-       ⚠️ Les volumes de BATTERIE ne sont PAS effacés : eux passent par un
-       override relu à chaque fenêtre, donc ils tiennent vraiment à travers la
-       bascule. Asymétrie assumée entre les deux familles, pas un oubli — elle
-       attend un arbitrage (PLAN.md). */
-    for (const name of SYNTH_ROW_NAMES) delete volLive[name];
+       ⚠️ L'ASYMÉTRIE EST TRANCHÉE (2026-09-09) : « il faut qu'on puisse revenir
+       comme c'était avant […] quand on passe à la partie suivante ». Les nœuds
+       du morceau étaient déjà repris par `refreshMixSettings` ; les OVERRIDES,
+       eux, survivaient — un volume de batterie posé à la main tenait à travers
+       les scènes, son jumeau du synthé non. Les deux familles rendent
+       maintenant la main ensemble.
+       ⚠️ `relacherReglagesLive` épargne les deux nœuds DÉDIÉS (filtre, réverbe)
+       et les mutes : le pad garde la main pendant qu'une scène passe, et le
+       calque ci-dessous reste seul maître des coupures. */
+    engine.relacherReglagesLive();
+    volLive = {};
+    padMode = engine.padMode;
     /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
        sur une seule séquence.
        ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien

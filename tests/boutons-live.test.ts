@@ -15,6 +15,7 @@ import {
   ACTIONS_TIRABLES,
   DEFAUTS_SLOTS,
   palierSuivant,
+  tirerMode,
   loadLiveAssignments,
 } from '../src/ui/live/liveActions';
 
@@ -112,6 +113,28 @@ describe('le catalogue reste sain après l’extension', () => {
     // Un slot en mode fader garde quand même une action derrière lui —
     // basculer le mode ne doit jamais laisser le bouton vide.
     expect(DEFAUTS_SLOTS.every((slot) => slot.length > 0)).toBe(true);
+  });
+
+  /* ⚠️ LE TIRAGE CHANGE AUSSI LE TYPE (2026-09-09, retour de Yann : « il ne
+     faut pas choisir entre un bouton et un curseur ou un autre type de bouton
+     — quand ça randomise, ça peut transformer un bouton en fader »). Le 🎲 ne
+     tirait que DANS le mode courant : un bouton d'actions le restait à vie, et
+     découvrir les curseurs demandait de les choisir exprès. Le test dit ce que
+     `tirerMode` doit rendre possible — les trois issues, aucune impossible. */
+  it('un tirage de mode peut rendre les trois types de bouton', () => {
+    // Les trois issues, et aucune impossible : c'est ce que « ça peut
+    // transformer un bouton en fader » demande.
+    expect(tirerMode(0.0)).toEqual({ mode: 'actions', momentane: false });
+    expect(tirerMode(0.5)).toEqual({ mode: 'fader', momentane: false });
+    expect(tirerMode(0.9)).toEqual({ mode: 'fader', momentane: true });
+    // Sur mille tirages réels, les trois sortent — un mode inatteignable
+    // serait exactement le défaut qu'on vient de corriger.
+    const vus = new Set<string>();
+    for (let i = 0; i < 1000; i++) {
+      const t = tirerMode();
+      vus.add(`${t.mode}${t.momentane ? '-momentane' : ''}`);
+    }
+    expect([...vus].sort()).toEqual(['actions', 'fader', 'fader-momentane']);
   });
 
   /* Les sept axes que la fiche laisse à l'Atelier, et les trois qu'elle

@@ -143,3 +143,55 @@ describe('un réglage par ligne arrive jusqu’à l’ordonnanceur', () => {
     expect(lu(st).rows.kick.volume).toBe(1);
   });
 });
+
+/* ---- TOUT RENDRE À LA BASCULE DE SCÈNE ----
+ *
+ * ⚠️ L'ASYMÉTRIE EST TRANCHÉE (2026-09-09) : « il faut qu'on puisse revenir
+ * comme c'était avant […] quand on passe à la partie suivante ». Les nœuds du
+ * morceau étaient déjà repris par `refreshMixSettings` ; les OVERRIDES, eux,
+ * survivaient — un volume de batterie posé à la main tenait à travers les
+ * scènes, son jumeau du synthé non. Les deux familles rendent la main ensemble.
+ */
+describe('une bascule de scène rend les réglages au morceau', () => {
+  it('efface les quatre couches d’override', () => {
+    const st = motif();
+    const { engine } = monterMoteur(() => st);
+    const lu = () =>
+      (engine as unknown as { withLiveOverrides(x: PatternStateV2): PatternStateV2 }).withLiveOverrides(st);
+
+    engine.setLiveGrooveParam('spontRoll', 80);
+    engine.setLiveDrumParam('kick', 'volume', 0.2);
+    engine.setLiveSynthVoiceParam('bass', 'chorusMix', 0.9);
+    engine.liveStepPadMode();
+    expect(lu().spontRoll).toBe(80);
+    expect(lu().rows.kick.volume).toBe(0.2);
+    expect(lu().synthRows.bass.voice.chorusMix).toBe(0.9);
+    expect(engine.padMode).not.toBe('normal');
+
+    engine.relacherReglagesLive();
+    expect(lu().spontRoll).toBe(st.spontRoll);
+    expect(lu().rows.kick.volume).toBe(1);
+    expect(lu().synthRows.bass.voice.chorusMix).toBe(st.synthRows.bass.voice.chorusMix);
+    expect(engine.padMode).toBe('normal');
+  });
+
+  /* ⚠️ CE QU'ELLE NE DOIT PAS TOUCHER, et c'est ce qui la rend compatible avec
+     le mode : les MUTES. `appliquerSection` les repose déjà, ligne par ligne,
+     d'après le calque de la scène — les effacer ici ferait deux écrivains pour
+     une même chose, et une ligne coupée par le calque se rouvrirait sous nos
+     pieds au moment même où la scène la coupe. */
+  it('laisse les coupures au calque de la scène', () => {
+    const st = motif();
+    const { engine } = monterMoteur(() => st);
+    engine.liveSetMute('kick', true);
+    engine.liveSetSynthMute('pad', true);
+    engine.setLiveSynthVoiceParam('pad', 'chorusMix', 0.9);
+
+    engine.relacherReglagesLive();
+    expect(engine.liveMuteDe('kick')).toBe(true);
+    expect(engine.liveMuteSynthDe('pad')).toBe(true);
+    // …mais le réglage de voix de la MÊME ligne, lui, est bien rendu.
+    const lu = (engine as unknown as { withLiveOverrides(x: PatternStateV2): PatternStateV2 }).withLiveOverrides(st);
+    expect(lu.synthRows.pad.voice.chorusMix).toBe(st.synthRows.pad.voice.chorusMix);
+  });
+});

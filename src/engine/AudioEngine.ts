@@ -794,6 +794,43 @@ export class AudioEngine {
     return suivant;
   }
 
+  /* Le retour du MODE NAPPE au morceau — voir `clearLiveGrooveParam`.
+     ⚠️ Le cycle de `liveStepPadMode` boucle mais ne ramène pas ICI : il ramène
+     au « normal » du moteur, qui est faux si la lettre chargée jouait un
+     arpège. Effacer l'override est le seul retour qui relit le morceau. */
+  clearLivePadMode(): void {
+    const { padArpEnabled: _a, padDroneEnabled: _d, ...reste } = this.liveSynthGlobalOverride;
+    this.liveSynthGlobalOverride = reste;
+  }
+
+  /* ⚠️ TOUT RENDRE AU MORCEAU (2026-09-09, retour de Yann : « il faut qu'on
+   * puisse revenir comme c'était avant […] quand on passe à la partie
+   * suivante »). Efface les QUATRE couches d'override — groove, lignes de
+   * batterie, voix de synthé, synthé global — d'un coup.
+   *
+   * ⚠️ Ce qu'elle ne touche PAS, et c'est la règle du mode : `liveFilter` et
+   * `liveReverbSend`, les deux nœuds DÉDIÉS que `applyMixSettings` n'écrit
+   * jamais. Le pad et l'inclinaison gardent la main pendant qu'une scène
+   * passe — les remettre au neutre ici ferait retomber le filtre à chaque
+   * frontière, c'est-à-dire retirer au pad ce qui le rend jouable.
+   *
+   * ⚠️ Les MUTES ne sont pas effacés ici non plus : `appliquerSection` les
+   * repose déjà, ligne par ligne, d'après le calque de la scène. Les effacer
+   * en plus ferait deux écrivains pour une même chose. */
+  relacherReglagesLive(): void {
+    this.liveGrooveOverride = {};
+    this.liveDrumOverride = {};
+    this.liveSynthGlobalOverride = {};
+    /* Les mutes de ligne synthé vivent dans la MÊME couche que les réglages de
+       voix : on efface le reste et on garde `muted`, sinon une ligne coupée par
+       le calque de la scène se rouvrirait sous nos pieds. */
+    const garde: typeof this.liveSynthOverride = {};
+    for (const [nom, ov] of Object.entries(this.liveSynthOverride)) {
+      if (ov?.muted !== undefined) garde[nom as SynthRowName] = { muted: ov.muted };
+    }
+    this.liveSynthOverride = garde;
+  }
+
   /** Le mode de nappe EFFECTIF (override live par-dessus le motif). */
   get padMode(): PadMode {
     const sg = this.getState().synthGlobal;

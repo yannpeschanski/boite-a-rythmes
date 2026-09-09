@@ -13,7 +13,7 @@
  * chercherait du côté du geste.
  */
 import { describe, it, expect } from 'vitest';
-import { LIVE_AXES } from '../src/ui/live/liveActions';
+import { LIVE_ACTIONS, LIVE_AXES } from '../src/ui/live/liveActions';
 import { defaultState } from '../src/model/defaults';
 import type { AudioEngine } from '../src/engine/AudioEngine';
 
@@ -111,5 +111,58 @@ describe('le curseur momentané rend le réglage au morceau', () => {
     expect(lire('filter').args[0]).toBe(20000);
     expect(lire('reverb').args[0]).toBe(0);
     expect(lire('saturation').args[0]).toBeCloseTo(0.42, 5);
+  });
+});
+
+/* ---- LE RETOUR DES ACTIONS QUI LATCHENT ----
+ *
+ * ⚠️ Yann, après test : « quand on bascule un paramètre — exemple :
+ * arpégiateur — il faut qu'on puisse revenir comme c'était avant d'une manière
+ * ou d'une autre. » Un `hold` sait revenir : son relâché EST son retour. Une
+ * BASCULE ou un PAS, non — ils laissent le morceau dans l'état où le dernier
+ * appui l'a mis, et réassigner le bouton abandonnait ce réglage sans plus
+ * aucune commande pour le défaire. Un cul-de-sac qu'on ne voit qu'en jouant.
+ */
+describe('une action qui latche sait revenir au morceau', () => {
+  const LATCHENT = ['toggle', 'step'];
+
+  it('donne un retour à toute bascule et à tout pas', () => {
+    for (const a of LIVE_ACTIONS) {
+      if (!LATCHENT.includes(a.kind)) continue;
+      expect(a.repos, `${a.id} latche et ne sait pas revenir`).toBeTypeOf('function');
+    }
+  });
+
+  /* ⚠️ Et l'inverse : un DÉCLENCHEUR ou un MAINTENU n'a pas à en porter. Un
+     `repos` sur un `hold` voudrait dire deux chemins de retour pour le même
+     geste — celui du relâché et celui-ci — donc deux vérités à garder
+     d'accord. Le compte est là exprès : si la population des `latchent`
+     devenait vide, ce test passerait sans plus rien protéger. */
+  it('n’en donne pas à ce qui ne latche rien, et la population n’est pas vide', () => {
+    const latchent = LIVE_ACTIONS.filter((a) => LATCHENT.includes(a.kind));
+    expect(latchent.length).toBeGreaterThan(0);
+    for (const a of LIVE_ACTIONS) {
+      if (LATCHENT.includes(a.kind)) continue;
+      expect(a.repos, `${a.id} ne latche rien mais porte un repos`).toBeUndefined();
+    }
+  });
+
+  it('rend le MODE NAPPE au morceau plutôt qu’au « normal » du moteur', () => {
+    const e = moteurEspion();
+    LIVE_ACTIONS.find((a) => a.id === 'step-pad-mode')!.repos!(e.engine, defaultState());
+    /* ⚠️ Le cycle boucle, mais il ne ramène pas au morceau : il ramène au
+       « normal » du moteur, faux si la lettre chargée jouait un arpège.
+       Effacer l'override est le seul retour qui relise le morceau. */
+    expect(e.appels.map((a) => a.methode)).toEqual(['clearLivePadMode']);
+  });
+
+  it('rend les coupures au motif, jamais forcées ouvertes', () => {
+    for (const id of ['mute-drums', 'mute-synth']) {
+      const e = moteurEspion();
+      LIVE_ACTIONS.find((a) => a.id === id)!.repos!(e.engine, defaultState());
+      expect(e.appels.length, id).toBeGreaterThan(0);
+      // `null` = suivre le motif : une ligne coupée dans l'Atelier le reste.
+      for (const a of e.appels) expect(a.args[1], id).toBeNull();
+    }
   });
 });
