@@ -98,6 +98,17 @@ export interface LiveActionDef {
      (on = false). L'entrée porte donc son geste ET son retour au repos : c'est
      ce qui rend un maintien sûr, un doigt qui glisse hors du bouton relâche. */
   hold?: (engine: AudioEngine, on: boolean, base: PatternStateV2) => void;
+
+  /* ⚠️ LE RETOUR D'UNE ACTION QUI LATCHE (2026-09-09, retour de Yann après
+   * test : « quand on bascule un paramètre — exemple : arpégiateur — il faut
+   * qu'on puisse revenir comme c'était avant d'une manière ou d'une autre »).
+   *
+   * Un `hold` sait revenir : son relâché EST son retour. Une BASCULE ou un PAS,
+   * non — ils laissent le morceau dans l'état où le dernier appui l'a mis, et
+   * plus rien ne le défait. Les entrées concernées portent donc `repos`, appelé
+   * quand le bouton CHANGE d'assignation et à chaque bascule de scène.
+   * Déclencheurs et maintenus n'en ont pas besoin : ils ne latchent rien. */
+  repos?: (engine: AudioEngine, base: PatternStateV2) => void;
 }
 
 /* Le prochain palier au-dessus de `v`, en bouclant sur le premier.
@@ -131,18 +142,41 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   /* Le geste du DROP. Le séquenceur coupe ligne par ligne ; couper tout un
      groupe d'un coup n'y est pas faisable en un tap, et c'est le geste le
      plus courant d'un set. */
-  { id: 'mute-drums', label: 'COUPER BATT.', color: 'var(--cell-kick)', desc: 'Couper toute la batterie (bascule)', kind: 'toggle', category: 'COUPURES' },
-  { id: 'mute-synth', label: 'COUPER SYNTHÉ', color: 'var(--cell-bass)', desc: 'Couper tout le synthé (bascule)', kind: 'toggle', category: 'COUPURES' },
+  {
+    id: 'mute-drums', label: 'COUPER BATT.', color: 'var(--cell-kick)',
+    desc: 'Couper toute la batterie (bascule)', kind: 'toggle', category: 'COUPURES',
+    // `null` = suivre le motif : une ligne coupée dans l'Atelier le reste.
+    repos: (e) => DRUM_ROW_NAMES.forEach((n) => e.liveSetMute(n, null)),
+  },
+  {
+    id: 'mute-synth', label: 'COUPER SYNTHÉ', color: 'var(--cell-bass)',
+    desc: 'Couper tout le synthé (bascule)', kind: 'toggle', category: 'COUPURES',
+    repos: (e) => SYNTH_ROW_NAMES.forEach((n) => e.liveSetSynthMute(n, null)),
+  },
 
 
   /* UN bouton, trois états — et ce n'est pas un raffinement : le bourdon
      court-circuite l'arpège dans le scheduler, donc deux interrupteurs
      donneraient un bouton ARPÈGE inerte tant que le bourdon est actif. */
-  { id: 'step-pad-mode', label: 'MODE NAPPE', color: 'var(--cell-pad)', desc: 'Normal → arpège → bourdon (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepPadMode() },
+  {
+    id: 'step-pad-mode', label: 'MODE NAPPE', color: 'var(--cell-pad)',
+    desc: 'Normal → arpège → bourdon (pas)', kind: 'step', category: 'NAPPE',
+    step: (e) => e.liveStepPadMode(),
+    /* ⚠️ L'EXEMPLE QUE YANN DONNE. Le cycle a beau boucler, il ne ramène pas au
+       MORCEAU : il ramène au « normal » du moteur, qui est faux si la lettre
+       chargée jouait un arpège. Le retour efface l'override, donc la nappe
+       rejoue ce que la lettre dit — quoi qu'elle dise. */
+    repos: (e) => e.clearLivePadMode(),
+  },
 
   // Le petit haut-parleur de l'acte 4 : il existait dans le moteur et n'avait
   // jamais été exposé au Live, où il est un outil d'écoute évident.
-  { id: 'petit-hp', label: 'PETIT HP', color: '#8fa1b3', desc: 'Écoute petit haut-parleur (bascule)', kind: 'toggle', category: 'MIX' },
+  {
+    id: 'petit-hp', label: 'PETIT HP', color: '#8fa1b3',
+    desc: 'Écoute petit haut-parleur (bascule)', kind: 'toggle', category: 'MIX',
+    // Une façon d'ÉCOUTER, pas un réglage de morceau : le repos est le grand HP.
+    repos: (e) => e.setPetitHautParleur(false),
+  },
 
   // Maintenu : le temps de l'appui, le pad joue la mélodie au doigt (glisser =
   // degré de gamme + octave), et la mélodie programmée est coupée pour ne pas
@@ -663,6 +697,23 @@ const DEFAULT_ASSIGNMENTS: LiveAssignments = {
 
 const KEY = 'boite-a-rythme:mode-live-assign';
 const ACTION_IDS = new Set(LIVE_ACTIONS.map((a) => a.id));
+
+/* ⚠️ LE TIRAGE PORTE AUSSI SUR LE TYPE DU BOUTON (2026-09-09, retour de Yann
+ * après test : « il ne faut pas choisir entre un bouton et un curseur ou un
+ * autre type de bouton — quand ça randomise, ça peut transformer un bouton en
+ * fader »).
+ *
+ * Le 🎲 ne tirait que DANS le mode courant : un bouton d'actions le restait à
+ * vie, et rencontrer un curseur demandait d'aller le choisir exprès. Le mode
+ * fait donc partie du tirage. Trois issues ÉQUIPROBABLES — pondérer reviendrait
+ * à décider à la place du hasard ce qu'on lui demande justement de trouver.
+ *
+ * Vit ici et non dans la vue pour être testable : une fonction de tirage
+ * recopiée dans un test ne teste que la copie. */
+export function tirerMode(alea = Math.random()): { mode: SlotMode; momentane: boolean } {
+  const n = Math.floor(alea * 3);
+  return { mode: n === 0 ? 'actions' : 'fader', momentane: n === 2 };
+}
 
 /* Les entrées que le 🎲 a le droit de tirer — voir `tirable`. */
 export const ACTIONS_TIRABLES: LiveActionDef[] = LIVE_ACTIONS.filter((a) => a.tirable !== false);

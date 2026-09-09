@@ -48,6 +48,59 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un réglage live sait revenir, et le 🎲 change aussi le type (2026-09-09)
+
+> Deux retours de Yann après avoir testé la version en ligne :
+> *« il ne faut pas choisir entre un bouton et un curseur ou un autre type de
+> bouton. quand ça randomise, ça peut transformer un bouton en fader. »*
+> *« quand on bascule un paramètre (exemple : arpegiator), il faut qu'on puisse
+> revenir comme c'était avant d'une manière ou d'une autre. soit lorsqu'on
+> change le bouton, soit quand on passe à la partie suivante. »*
+
+⚠️ **Le second retour TRANCHE l'asymétrie laissée ouverte à la tranche
+précédente** — un override survivait à une bascule de scène, un nœud du morceau
+non. Les deux rendent la main ensemble maintenant.
+
+**Un seul mécanisme, deux moments.** Le `repos` d'une entrée existait pour les
+axes (curseur momentané) ; il s'étend aux ACTIONS QUI LATCHENT — les deux
+coupures de groupe, MODE NAPPE, PETIT HP. Un `hold` n'en a pas besoin (son
+relâché EST son retour) et un déclencheur non plus ; le test l'exige dans les
+deux sens, et compte la population pour ne pas passer à vide.
+
+⚠️ **L'exemple de Yann est le bon** : le cycle de MODE NAPPE boucle, mais il ne
+ramène pas au MORCEAU — il ramène au « normal » du moteur, faux si la lettre
+chargée jouait un arpège. D'où `clearLivePadMode()` : effacer l'override est le
+seul retour qui relise la lettre. Et sans relâchement à la réassignation, la
+nappe restait en arpège **sans plus aucun bouton pour la défaire** — le seul qui
+savait venait d'être réassigné. Un cul-de-sac qu'on ne voit qu'en jouant.
+
+Le relâchement est branché sur **quatre chemins** : le 🎲, le retrait d'une
+entrée dans le sélecteur, le changement de type, et la bascule de scène
+(`relacherReglagesLive`, qui efface les quatre couches d'override). ⚠️ Elle
+épargne les deux nœuds DÉDIÉS (filtre, réverbe) — les remettre au neutre ferait
+retomber le filtre à chaque frontière, c'est-à-dire retirer au pad ce qui le
+rend jouable — et les MUTES, dont le calque de la scène est seul maître.
+
+**Le tirage porte aussi sur le TYPE** (`tirerMode`) : actions, curseur ou
+curseur momentané, à parts égales. Il vit dans le module pur et non dans la vue,
+parce qu'une fonction de tirage recopiée dans un test ne teste que la copie —
+c'est d'ailleurs le premier test que j'avais écrit, et il ne valait rien.
+
+**Vérifié au navigateur, au geste réel** (844 × 390) :
+- douze tirages successifs sur les six boutons donnent neuf répartitions
+  différentes — `3/3/3`, `0/6/2`, `4/2/1`, `1/5/3`… : un bouton d'actions
+  devient bien un curseur, et un curseur momentané ;
+- MODE NAPPE posé, pressé → le bouton s'allume (la nappe a quitté « normal ») ;
+  le 🎲 le transforme en « GHOST NOTES MOMENTANÉ » ; MODE NAPPE reposé sur un
+  bouton NEUF → **éteint**, donc la nappe est revenue au morceau.
+
+⚠️ **Une assertion vide attrapée en route.** La première version reposait MODE
+NAPPE sur le MÊME bouton et lisait son état — sauf que le clic dans le
+sélecteur n'avait pas pris : le bouton ne portait pas l'entrée, et le test
+mesurait le vide en affichant ✅. La garde qui l'a trouvé (« le bouton
+porte-t-il bien ce qu'on mesure ? ») vaut d'être gardée dans tout script de
+mesure d'interface.
+
 ### ✅ Le mini séquenceur règle les volumes — ▦ PAS / ▮ VOLUMES (2026-09-09)
 
 > Demandé DEUX fois sur la fiche, pour la batterie puis pour le synthé : *« il
