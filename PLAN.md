@@ -31,6 +31,8 @@ une ligne réécrite ni réordonnée.
 | [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
 | [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode, ce que la mesure trouve, et les décisions qui restent. Fiche annotable : `docs/relecture/assemblage.html` |
 | [`08-etat-de-lart-structures.md`](docs/plan/08-etat-de-lart-structures.md) | **État de l'art (2026-09-07)** — ce que font les machines, les longueurs conventionnelles, et les quatre modèles proposés. Fiche : `docs/relecture/assemblage-2.html` |
+| [`09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md) | **État de l'art (2026-09-09)** — les COMMANDES du Mode Live — pourquoi les gestes rythmiques sont musicalement FAUX (bouillie, frappes empilées par le swing, accent retourné, hors grille), mesuré par `scripts/banc-live.cjs` ; ce que les machines mettent sous les doigts ; huit pistes à arbitrer. Fiche : `docs/relecture/parametres-live.html` |
+| [`relecture/parametres-live.html`](docs/relecture/parametres-live.html) | **Fiche à cocher (2026-09-09)** — les 69 paramètres de l'Atelier, et pour chacun plusieurs façons de l'amener au Mode Live. `scripts/relecture-parametres-live.cjs` |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans
@@ -45,6 +47,262 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ---
 
 ## Journal des livraisons — Mode jeu et Mode carrière
+
+### ✅ Le mini séquenceur règle les volumes — ▦ PAS / ▮ VOLUMES (2026-09-09)
+
+> Demandé DEUX fois sur la fiche, pour la batterie puis pour le synthé : *« il
+> faudrait pouvoir régler le volume au niveau du mini séquenceur, quitte à
+> revoir le design ici »*, puis *« cf. commentaire déjà fait […] à voir
+> comment »*.
+
+⚠️ **Une moitié de la demande était déjà vraie et n'a rien coûté :** le mini
+séquenceur montre les lignes de SYNTHÉ depuis toujours — `lignesQuiSonnent`
+balaie `[...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES]` et ne garde que ce qui sonne.
+Sur le motif d'accueil il n'affiche que trois lignes de batterie parce que le
+synthé y est muet ; sur un preset fourni il en montre sept. Vérifié avant de
+coder — la coche « SÉQUENCEUR » sur le mute des lignes de synthé était déjà
+tenue.
+
+**Ce qui manquait, c'était le volume.** Deux modes ÉCRITS au-dessus du bloc :
+▦ PAS (la grille d'aujourd'hui, inchangée) et ▮ VOLUMES (une barre par ligne,
+glissée). ⚠️ Pas un geste sur la ligne : elle est déjà prise par le mute, et ce
+serait le quatrième geste caché de ce mode. Les deux boutons servent en prime de
+TITRE au bloc, qui n'en avait pas.
+
+⚠️ **Deux familles, deux chemins — encore.** Le volume d'une ligne de batterie
+se lit sur `row` à la frappe, donc `setLiveDrumParam` (l'override de la tranche
+précédente, réutilisé tel quel). Celui d'une ligne de synthé est un nœud,
+`synthLineGain` : d'où `setLiveSynthLineVolume`. **Mesuré** que c'est le bon
+nœud, par rendu hors ligne sur la basse d'un preset : nœud à 0,2 → **−10,6 dB**
+(pas −14 : le limiteur de ligne rattrape), nœud à 0 → **−162,5 dB**, silence.
+
+Les six volumes entrent aussi au catalogue (`volume-<ligne>`, 66 → 72 axes) :
+la fiche les coche `CURSEUR` *et* `PAR LIGNE`, donc ils doivent être
+assignables à un bouton autant que réglables ici — les deux écrivent la même
+couche.
+
+⚠️ **UNE ASYMÉTRIE ASSUMÉE, qui attend un arbitrage.** Un override survit à une
+bascule de section ; un nœud du morceau non, puisque `refreshMixSettings` le
+réécrit (« le MIX suit la bascule »). Donc un volume de batterie posé à la main
+TIENT à travers les scènes, un volume de synthé NON. Ce n'est pas nouveau — les
+overrides de groove et de voix se comportaient déjà ainsi — mais ça devient
+visible maintenant que les deux familles sont côte à côte dans le même écran. La
+vue efface au moins son affichage des volumes de synthé à la bascule : montrer
+un chiffre que plus personne ne joue serait pire que les deux comportements.
+**La question à trancher : une bascule de scène doit-elle rendre la main au
+morceau sur TOUT ce qu'on a réglé en direct, ou sur rien ?**
+
+Vérifié au navigateur, preset boom bap chargé, 844 × 390 : sept lignes
+affichées (kick, caisse, charley, clap, basse, nappe, mélodie), volumes lus sur
+le morceau (100/90/60/55/100/100/100), glisser sur la 3e → 20 %, mute toujours
+joignable dans ce mode, aucune erreur JS, aucun débordement.
+
+⚠️ **Rugosité mesurée** : à sept lignes, le visualiseur tombe à 34 px (la rangée
+de modes en prend 30). Rien n'est coupé et le spectre reste lisible comme
+mouvement — mais c'est la limite. Le panneau du visualiseur était déjà signalé
+comme plus haut que ce qu'il remplit ; c'est là qu'il faudra reprendre de la
+place si une ligne s'ajoute.
+
+### ✅ La rangée de knobs — six réglages PAR LIGNE (2026-09-09)
+
+Suite directe de la tranche précédente, sur les coches `PAR LIGNE` de la fiche :
+**filtre, réverbe, delay, pitch, decay, décalage**, sur **kick, caisse,
+charley**. Plus les **envois par ligne du synthé**. Catalogue : 42 → 66 axes,
+en trois groupes neufs (LIGNE KICK / LIGNE CAISSE / LIGNE CHARLEY).
+
+⚠️ **Deux domiciles, parce qu'il y a deux endroits où le moteur LIT.** Les
+envois sont des **nœuds** du graphe (`lineReverbSend` / `lineDelaySend`, déjà là,
+un par ligne) : on les écrit directement, et le repos relit le morceau — c'est
+ce qui rend le « throw » juste, on noie une frappe et la ligne revient à son
+envoi d'origine. Le reste (pitch, decay, filtre, décalage) se lit sur `row` au
+moment de PROGRAMMER une note, donc passe par `liveDrumOverride`, jumelle de
+`liveSynthOverride`, effacée au repos.
+
+**Mesuré** (rendu hors ligne, motif nu kick + charley) : filtre à 800 Hz sur le
+CHARLEY → **−29,6 dB d'aigus, 0,0 dB de graves**. C'est exactement ce que la
+fiche demandait — « filtrer la basse en gardant le kick net, ce que le filtre
+global ne peut pas faire ». Le même filtre sur le KICK ne touche pas les aigus
+(0,0 dB) : il n'en a pas, et c'est juste.
+
+⚠️ **TROIS lignes, pas cinq** — « pas forcément toutes les lignes ». On prend
+celles que la surface montre déjà (le mini séquenceur affiche kick, caisse,
+charley) : un réglage qu'on ne voit pas se régler ne se trouve pas. Six × cinq
+auraient fait trente entrées sur un catalogue qu'on venait de dégraisser.
+
+⚠️ **L'ATTAQUE est absente alors qu'elle est COCHÉE.** Elle porte deux coches
+qui se contredisent — `PAR LIGNE` *et* `ATELIER` — et seule la seconde porte un
+argument (« un réglage de son, qu'on trouve une fois pour toutes »). On a suivi
+l'argument plutôt que le compte ; elle rentre d'un mot.
+
+⚠️ **Une fixture de moteur se CONSTRUIT.** `bascule-mesure.test.ts` recopiait à
+la main la vingtaine d'états privés du moteur : le nouvel override l'a cassée
+sur `Object.keys(undefined)`, et chaque champ suivant l'aurait cassée. Elle part
+maintenant de `new AudioEngine(etat)` et ne feint que le contexte, le graphe et
+le kit. Une liste tenue à la main dans un test est une copie de la vérité, donc
+quelque chose qui diverge.
+
+`tests/reglages-par-ligne.test.ts` teste le **câblage** (un `shiftPct` en direct
+déplace bien les frappes de SA ligne, le motif ne bouge pas, l'effacement rend
+la ligne au morceau) — vérifié par mutation : neutraliser la couche fait tomber
+deux tests sur trois. Vérifié aussi au navigateur : 66 axes, 11 groupes,
+« FILTRE CHARLEY » assigné en momentané depuis la surface, aucune erreur JS.
+
+⚠️ **Rugosité connue** : 30 des 66 axes restent des réglages de voix de synthé
+(45 %, contre 78 % avant la révision). Le 🎲 tire là-dedans — c'est meilleur,
+ce n'est pas réglé.
+
+### ✅ Les curseurs existent — le Mode Live suit la fiche à cocher (2026-09-09)
+
+> Arbitrage de Yann sur le retour de la fiche : **lecture littérale** (les onze
+> commandes déjà présentes que rien ne cochait sortent du Live), et on commence
+> par **« les curseurs existent »**.
+
+**Le chemin qui manquait.** Mesuré avant : la surface portait 6 boutons en mode
+ACTIONS et **0 fader** ; ASSIGNER + tap proposait **31 entrées dont aucun axe** ;
+le seul chemin vers un curseur était ⚙ → ASSIGNATION → bascule → rouvrir →
+choisir → refermer, **six gestes dans un menu**. D'où « ça manque de boutons où
+on règle un curseur, je ne comprends pas pourquoi ils ont disparu ». La bascule
+**⏻ ACTIONS / ≈ CURSEUR / ≋ MOMENTANÉ** est maintenant dans le sélecteur, écrite
+sur trois boutons, et le défaut livré est **mixte : 3 gestes, 3 curseurs, dont
+un momentané**. Mesuré après : 3 / 3 / 1, 42 axes proposés en 8 groupes.
+
+**Le curseur MOMENTANÉ** (six coches `MAINT+DOSE` sur la fiche, et le
+*Touch Enable* de Maschine) : le doigt se pose, le curseur prend la main et
+DOSE ; le doigt lâche, le réglage revient au morceau. ⚠️ Le retour ne grave pas
+une valeur, il **efface l'override** (`clearLiveGrooveParam`,
+`clearLiveSynthVoiceParam`, `clearLiveSynthRowParam`) : écrire `base.swing`
+marcherait aujourd'hui et serait faux au premier changement de scène, qui
+réécrit le mix sous le doigt. Vérifié au navigateur, geste réel : `MOMENTANÉ` →
+80 % → 20 % → `MOMENTANÉ`, **y compris quand le doigt sort du bouton**.
+
+**Le catalogue.** 30 actions → 12, 55 axes → 42. Sortis : les frappes de ligne
+et leur rafale, les quatre PAS de groove, ton et gamme, BYPASS LIM., les quatre
+maintenus que le momentané remplace, le stepper de tempo, le volume master, la
+banque. Entrés : `spont-roll`, `random-velocity`, `synth-swing`.
+⚠️ **Les macros de l'Atelier gagnent contre les paramètres bruts** : `cutoff`,
+`filterEnvAmount` et `filterEnvRelease` deviennent BRILLANCE et MOUVEMENT, sous
+le nom que l'écran emploie. `brillance` reprend la courbe EXACTE de l'ancien
+`cutoff` — c'est un renommage, d'où la correspondance de migration plutôt qu'un
+`null`.
+
+⚠️ **La migration des AXES n'existait pas.** `migrer` ne réécrivait que les
+actions ; `isValid` étant tout ou rien, une assignation citant `swing` ou
+`cutoff-bass` aurait rendu les défauts — six boutons et trois snapshots perdus
+sans un mot, le défaut exact que `catalogue-live.test.ts` existe pour empêcher,
+à un tableau près. Le champ AJOUTÉ `faderMomentane` se migre pour la même
+raison, par l'autre bout.
+
+⚠️ **Deux garde-fous RÉANCRÉS, aucun retiré.** « Assez de gestes momentanés »
+comptait les maintenus du seul catalogue d'actions (8 sur 30) : il compte
+maintenant les maintenus **plus** les axes capables de repos, parce que ce qui
+les remplace est un momentané meilleur. Et la population des entrées miroir
+(`tirable: false`) est devenue vide avec ton et gamme : le test l'**affirme**
+au lieu de rester vrai par vacuité.
+
+⚠️ **Ce qui NE sort pas, malgré la lecture littérale** : la bande de scènes
+A/B/C. L'option de la fiche la confondait avec la banque sous le mot
+« séquenceur » ; retirer la bande viderait le mode de ce qu'il est. C'est
+l'accès à la BANQUE depuis ⚙ qui part — et la fiche le dit ailleurs, sur la
+carte « charger un preset » : « les LETTRES A/B/C font déjà ce travail, et
+mieux ».
+
+Code mort retiré dans la foulée : huit méthodes du moteur devenues
+inatteignables (`setLiveVolume`, `setLiveCompression`, `setLiveSidechainDepth`,
+`setLiveLimiters`, `liveSidechainValeur`, `liveStepTranspose`, `liveStepScale`,
+`liveStepVoicePreset`). Les trois `liveSet*Roll` restent, **avec leur statut
+écrit** : le geste doit revenir quantifié et réutilisera ce chemin.
+
+Vérifié : `npm run check` 0 erreur, 707 tests, les deux builds, et au navigateur
+en 844 × 390 — aucune erreur JS, pas de débordement, quatre cibles sous 44 px
+(les exceptions revendiquées, deux de moins qu'avant : le stepper de tempo est
+parti).
+
+⚠️ **Rugosité connue, à traiter avec les réglages par ligne** : un curseur
+CONTINU affiche 50 % tant qu'on n'y a pas touché, parce que `axisValues` part à
+0,5 et qu'aucun axe ne sait lire sa valeur DEPUIS le morceau. Le momentané n'a
+pas le problème (il n'affiche rien au repos). La sortie est une lecture inverse
+par axe, qui viendra avec les réglages par ligne.
+
+### ✅ La fiche à cocher : les 69 paramètres de l'Atelier face au Mode Live (2026-09-09)
+
+> Yann, après deux passes d'audit qui ne lui allaient pas : *« Je ne suis pas
+> satisfait de ta manière de traiter ce sujet. Je propose une idée, je te laisse
+> la rendre pertinente. Tu me fais un petit fichier html avec la liste des
+> paramètres de l'atelier. Pour chaque paramètre de l'atelier, tu proposes
+> plusieurs manières de les intégrer au mode live. Je n'ai plus qu'à cocher ceux
+> que je trouve pertinents. »*
+
+`docs/relecture/parametres-live.html`, généré par
+`scripts/relecture-parametres-live.cjs`. **69 paramètres** relevés dans le code
+(`model/types.ts` + les cinq panneaux de l'Atelier), **184 propositions**
+réparties sur dix façons d'intégrer : CURSEUR, PAD, MAINTENU, MAINT+DOSE, PAS,
+BASCULE, COUP, PAR LIGNE, SÉQUENCEUR, ATELIER.
+
+⚠️ **Ne rien cocher est une réponse** — « ce paramètre reste dans l'Atelier » —
+et l'export le dit explicitement, sinon un paramètre non traité ne se
+distinguerait pas d'un paramètre oublié. Chaque ligne porte aussi son état
+RÉEL (« DÉJÀ — axe SWING » / « ABSENT »), lu dans `liveActions.ts` : c'est ce
+qui rend le delta visible, et ce qui permet de DÉCOCHER pour retirer.
+
+Vérifié au navigateur : 0 erreur JS, aucun débordement horizontal en 900 px ni
+en 390 px, coches et notes persistées au rechargement, export Markdown complet.
+
+### ✅ Benchmark des commandes du Mode Live — et la correction d'axe (2026-09-09)
+
+> Yann, après avoir joué : *« ça manque d'énormément de paramètres dans le mode
+> live. Le seul paramètre que j'utilise, c'est le filtre et le break. Rafale &
+> fill : plutôt inaudible. Jouer à la main : inaudible. Cumuler les effets […] à
+> supprimer. Ça manque de boutons où on règle un curseur […]. Fais d'abord un
+> benchmark avant de faire une vraie proposition. »*
+>
+> Puis, le même jour : *« quand je disais inaudible, je voulais dire INUTILE
+> VOIRE DÉSAGRÉABLE aux oreilles, c'était une manière de parler. »*
+
+Un CONSTAT de conception : audit d'abord, aucun code de fonctionnalité.
+Livré : [`docs/plan/09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md)
+et `scripts/banc-live.cjs`.
+
+⚠️ **La première passe mesurait le NIVEAU, et répondait à côté** — un geste peut
+être parfaitement audible ET musicalement faux. Le banc a donc deux moitiés : §A
+le niveau (il dit quand un geste n'arrive pas jusqu'à l'oreille), §B la
+SÉQUENCE, qui dit pourquoi il est désagréable. Compter les événements ne dit ni
+l'un ni l'autre : une rafale ×4 sur le charley fait passer une mesure de boom bap
+de 17 à 72 frappes.
+
+**Quatre défauts musicaux, mesurés :**
+
+- ⚠️ **La rafale empile deux frappes AU MÊME INSTANT dès qu'il y a du swing.**
+  Elle subdivise le pas linéairement (`rollDur = stepDur / roll`) quand le swing
+  en retarde le départ : l'écart au pas suivant vaut `pas × (1/N − swing)`, nul
+  à swing 25 % en ×4, négatif au-delà. **7 frappes empilées par mesure** à 25 %,
+  14 à 50 %, 21 à 75 %. Et à swing 8 % — ce que le preset boom bap livre — les
+  intervalles vont de 27 à 53 ms : un tremblement, pas un roulement.
+- ⚠️ **Elle fait de la bouillie que le moteur s'interdit ailleurs.**
+  `scheduler.ts` pose `MIN_ROLL_GAP = 0,045 s` (« en dessous, deux frappes de
+  snare se confondent ») et le FILL le respecte ; le chemin `forcedRoll` ne le
+  consulte pas. Mesuré : 39–40 ms sur trois lignes de presets du catalogue.
+- ⚠️ **Elle RETOURNE l'accent : −9,1 dB sur la frappe qui tombe sur le temps**
+  (rampe de vélocité 0,35 → 1,0, juste pour une montée, fausse en boucle). Le
+  groove se dissout tant qu'on tient.
+- **La frappe à la main n'est quantifiée par rien** — ±81 à ±334 ms selon le
+  motif — alors que le Mode jeu a le calibrage, `justesseDesFrappes` et
+  `quantize`. Elle ne déclenche pas non plus le sidechain.
+
+Le FILL, lui, respecte le plancher : son défaut est d'arriver **0,75 à 1,75
+mesure après l'appui** (1,5 à 4,5 s) et de ne toucher qu'un quart de mesure. Le
+BREAK marche parce qu'il fait **−21 dB sur les 3/4 de la mesure**, au prochain
+temps fort.
+
+Et les curseurs n'ont pas disparu : la surface porte **6 boutons en mode ACTIONS
+et 0 fader**, ASSIGNER propose **31 entrées dont 0 axe**, le seul chemin est ⚙ +
+six gestes. Le catalogue tient **55 axes dont 43 de préparation** ; il reste 12
+macros de scène, dont 2 sont montrées. La catégorie en pose 8 ou 9, toujours
+visibles.
+
+⚠️ **Deux pistes de la première passe étaient à l'envers** et ont été
+corrigées : amplifier une frappe qui tombe à ±120 ms de la grille la rend plus
+désagréable, pas moins. Huit pistes listées, classées par rapport effet/risque,
+aucune tranchée — fiche annotable à venir.
 
 ### ✅ Le panneau Montage a une sortie vers le Live (2026-09-09)
 

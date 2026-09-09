@@ -269,22 +269,87 @@ Monter reste un geste de PRÉPARATION : la surface de scène n'y gagne rien.
 (l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
 sous A ne touche pas la banque.
 
-⚠️ **Le catalogue de boutons manquait de MAINTENUS, et ça se comptait :** 2 sur
-20. Un pupitre de scène est fait de gestes momentanés (fermer un filtre le temps
-d'un break, retirer le kick quatre temps). Six sont entrés, plus quatre PAS
-cycliques — et ⚠️ **ce n'est pas un retour en arrière sur la cure de 2026-09-02**,
-qui retirait des FAMILLES DE VARIANTES (neuf rafales, six pas de voix). Un
-maintenu porte son ALLER *et* son RETOUR (`hold(engine, on, base)`), et le retour
-relit le morceau : rouvrir « à 20 kHz » serait faux si le morceau ferme le
-filtre. `tests/boutons-live.test.ts` interdit qu'une famille de variantes
-revienne (aucun id ne finit par un chiffre, deux miroirs au plus).
+⚠️ **Un geste momentané porte son ALLER *et* son RETOUR, et le retour RELIT le
+morceau.** Vrai des maintenus (`hold(engine, on, base)`) comme des curseurs
+momentanés (`LiveAxisDef.repos`) : rouvrir « à 20 kHz » serait faux si le morceau
+ferme le filtre. Là où le réglage passe par un override du moteur, le repos
+l'**efface** (`clearLiveGrooveParam`, `clearLiveSynthVoiceParam`,
+`clearLiveSynthRowParam`) — écrire `base.swing` marcherait aujourd'hui et serait
+faux au premier changement de scène. `tests/curseur-momentane.test.ts` tient
+l'invariant qui compte : **le repos touche exactement ce que l'aller a touché**,
+et un axe sans `repos` ne peut pas être momentané.
+
+⚠️ **Le catalogue suit la fiche à cocher du 2026-09-09**
+(`docs/relecture/parametres-live.html`, 69 paramètres) — et sur cette fiche,
+**ne rien cocher voulait dire « ça reste dans l'Atelier »**, lecture littérale
+arbitrée. 30 actions → 12, 55 axes → 42, puis 66 avec les réglages par ligne. Sont sortis : les frappes de ligne et
+leur rafale, les quatre PAS de groove, ton et gamme, le bypass des limiteurs,
+les maintenus SATURE / BITCRUSH / SANS KICK / BATT. SEULE, le stepper de tempo,
+le volume master et la banque. Sont entrés : trois curseurs (`spont-roll`,
+`random-velocity`, `synth-swing`) et le **mode momentané**. ⚠️ Les macros de
+l'Atelier gagnent contre les paramètres bruts : `cutoff`, `filterEnvAmount` et
+`filterEnvRelease` deviennent BRILLANCE et MOUVEMENT, sous le nom que l'écran
+emploie — c'est la macro nommée de Circuit et d'Ableton, et l'Atelier l'avait
+déjà écrite.
+
+⚠️ **Un réglage EN DIRECT a deux domiciles, selon où le moteur LIT.** Les
+envois (réverbe, delay) sont des **nœuds** (`lineReverbSend` / `lineDelaySend`,
+un par ligne, batterie et synthé confondues) : `setLiveLineSend` les écrit, et
+leur repos relit le morceau. Tout le reste d'une ligne (pitch, decay, filtre,
+décalage) se lit sur `row` au moment de **programmer** une note, donc passe par
+une couche d'override relue à chaque fenêtre (`liveDrumOverride`, jumelle de
+`liveSynthOverride`), et son repos l'efface. Les confondre donne un réglage qui
+ne s'applique qu'à la note suivante, ou un qui ne s'applique jamais.
+
+⚠️ **Les réglages par ligne ne couvrent que les lignes que la surface MONTRE**
+(kick, caisse, charley — celles du mini séquenceur) : « pas forcément toutes les
+lignes ». Six réglages × trois lignes ; les cinq en auraient fait trente sur un
+catalogue qu'on venait de dégraisser, et un réglage qu'on ne voit pas se régler
+ne se trouve pas. `tests/reglages-par-ligne.test.ts` teste le **câblage**, pas le
+calcul — c'est lui qui casse (CLAUDE.md).
+
+⚠️ **Une fixture de moteur se CONSTRUIT, elle ne se recopie pas champ par
+champ.** `bascule-mesure.test.ts` listait à la main la vingtaine d'états privés
+du moteur : ajouter un override l'a cassée sur `Object.keys(undefined)`, et
+chaque suivant l'aurait cassée. `new AudioEngine(etat)` fait tourner tous les
+initialiseurs sans toucher à l'audio — on ne feint plus que le contexte, le
+graphe et le kit.
+
+⚠️ **Le mini séquenceur a DEUX modes écrits — ▦ PAS et ▮ VOLUMES.** Régler un
+volume à l'endroit où on voit la ligne était demandé deux fois ; y mettre un
+GESTE (glisser sur la ligne) aurait fait le quatrième geste caché du mode, la
+ligne étant déjà prise par le mute. Deux boutons nommés au-dessus du bloc lui
+servent aussi de titre. En mode VOLUMES la ligne se scinde : le nom coupe, la
+piste devient le curseur — un interactif dans un interactif ne se tape pas de
+façon prévisible.
+
+⚠️ **Asymétrie ASSUMÉE, en attente d'arbitrage : un override survit à une
+bascule de section, un nœud du morceau non.** Les volumes de batterie passent
+par `liveDrumOverride` (relu à chaque fenêtre) et tiennent ; ceux du synthé
+passent par `synthLineGain`, que `refreshMixSettings` réécrit à chaque scène.
+La vue efface donc son affichage des volumes de synthé à la bascule — montrer
+un chiffre que plus personne ne joue serait pire que les deux comportements.
+
+⚠️ **La bascule ACTIONS / CURSEUR / MOMENTANÉ vit dans le SÉLECTEUR, pas dans
+⚙.** Mesuré avant correction : la surface portait six boutons en mode ACTIONS et
+zéro fader, ASSIGNER proposait 31 entrées dont **aucun axe**, et le seul chemin
+vers un curseur était ⚙ + six gestes. Quatrième fois que ce mode paie un geste
+caché — le défaut livré est désormais **mixte** (trois gestes, trois curseurs
+dont un momentané), et `tests/boutons-live.test.ts` l'exige.
+
+⚠️ **Retirer une entrée du catalogue oblige à migrer les DEUX tableaux.**
+`migrer` ne réécrivait que les actions ; `isValid` étant tout ou rien, un axe
+disparu cité par une assignation enregistrée rendait les défauts — six boutons
+et trois snapshots perdus sans un mot. Un champ AJOUTÉ (`faderMomentane`) se
+migre pour la même raison, par l'autre bout.
 
 ⚠️ **Un PAS cyclique va au prochain palier AU-DESSUS de la valeur, en bouclant**
 (`palierSuivant`). La première version avançait d'un index et ne marchait que si
 la valeur de départ tombait PILE sur un palier — vrai du swing, des ghosts et des
 fills, faux du sidechain (0,6 par défaut), qui reculait d'un cran au premier
 appui. Trois boutons verts sur quatre ne prouvent rien quand ils partent tous
-d'une valeur ronde.
+d'une valeur ronde. ⚠️ Plus aucune entrée ne s'en sert depuis la révision : il
+reste exporté et testé pour les PAS à venir (fill automatique, arpège).
 
 ⚠️ **Un montage a du RELIEF ou n'est pas une forme.** Compté avant correction :
 13 scènes sur 38 portaient un calque, et AABA comme RONDO n'en avaient AUCUN —

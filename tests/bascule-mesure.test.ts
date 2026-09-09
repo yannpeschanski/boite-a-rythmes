@@ -18,8 +18,9 @@
  *   3. la mesure de section repart à zéro, pour que les fills tombent à la fin
  *      d'une section et non à la mesure 3 de la lecture.
  *
- * Le moteur est monté à la main (`Object.create(AudioEngine.prototype)`),
- * même technique que `tests/latence-audio.test.ts` : ni Web Audio, ni DOM.
+ * Le moteur est CONSTRUIT puis privé de son audio (`new AudioEngine(etat)`,
+ * puis on feint le contexte et le kit) : ni Web Audio, ni DOM, et aucun état
+ * privé recopié à la main — voir le commentaire de `monterMoteur`.
  */
 import { describe, it, expect } from 'vitest';
 import { AudioEngine } from '../src/engine/AudioEngine';
@@ -33,45 +34,27 @@ function monterMoteur(etat: () => PatternStateV2) {
   const events: string[] = [];
   const { drum, synth } = makeRecorders(events);
   const ctx = { currentTime: 0, outputLatency: 0.02 };
-  const engine = Object.create(AudioEngine.prototype) as AudioEngine;
+  /* ⚠️ LE MOTEUR EST CONSTRUIT, PAS FABRIQUÉ CHAMP PAR CHAMP.
+   *
+   * Cette fixture montait l'objet avec `Object.create(AudioEngine.prototype)`
+   * puis RECOPIAIT à la main la vingtaine d'états privés du moteur (`liveMute`,
+   * `liveGrooveOverride`, les curseurs…). Elle a cassé le jour où un champ
+   * d'override a été ajouté — `Object.keys(undefined)` — et elle aurait cassé
+   * à chaque suivant : une liste tenue à la main dans un test est une copie de
+   * la vérité, donc quelque chose qui diverge.
+   *
+   * `new AudioEngine(etat)` fait tourner tous les initialiseurs de champs sans
+   * toucher à l'audio (le constructeur ne fait que retenir le getter). On ne
+   * surcharge donc plus que ce qu'il FAUT feindre : le contexte, le graphe, le
+   * kit, et le fait qu'on est en lecture. */
+  const engine = new AudioEngine(etat);
   Object.assign(engine, {
     ctx,
     graph: {},
     kit: drum,
     synth,
     isPlaying: true,
-    getState: etat,
-    ghostTargetRow: 'snare',
-    cursors: {
-      kick: { stepIndex: 0, nextStepTime: 0 },
-      snare: { stepIndex: 0, nextStepTime: 0 },
-      hat: { stepIndex: 0, nextStepTime: 0 },
-      clap: { stepIndex: 0, nextStepTime: 0 },
-      shaker: { stepIndex: 0, nextStepTime: 0 },
-    },
-    synthCursors: {
-      bass: { stepIndex: 0, nextStepTime: 0, lastFreq: null, lastFreqs: null },
-      pad: { stepIndex: 0, nextStepTime: 0, lastFreq: null, lastFreqs: null },
-      melody: { stepIndex: 0, nextStepTime: 0, lastFreq: null, lastFreqs: null },
-    },
-    currentBar: 0,
-    sectionStartBar: 0,
     nextBarTime: barDuration(etat().tempo),
-    pendingSwap: null,
-    breakRequested: false,
-    breakWindow: null,
-    fillRequested: false,
-    forcedFillBar: null,
-    playheadQueue: [],
-    liveMute: {},
-    liveHatRoll: null,
-    liveKickRoll: null,
-    liveSnareRoll: null,
-    liveSidechainDepth: null,
-    liveGrooveOverride: {},
-    liveSynthOverride: {},
-    liveSynthGlobalOverride: {},
-    liveVoicePresetIndex: {},
   });
   const prive = engine as unknown as { tick(): void };
   /** Avance l'horloge audio par pas de 25 ms (LOOKAHEAD) et tique. */

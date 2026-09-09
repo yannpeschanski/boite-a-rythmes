@@ -8,7 +8,15 @@
  * départ tombait pile sur un palier.
  */
 import { describe, it, expect } from 'vitest';
-import { LIVE_ACTIONS, ACTIONS_TIRABLES, palierSuivant } from '../src/ui/live/liveActions';
+import {
+  LIGNES_REGLABLES,
+  LIVE_ACTIONS,
+  LIVE_AXES,
+  ACTIONS_TIRABLES,
+  DEFAUTS_SLOTS,
+  palierSuivant,
+  loadLiveAssignments,
+} from '../src/ui/live/liveActions';
 
 describe('palierSuivant — le cycle d’un bouton PAS', () => {
   it('avance d’un palier quand on part PILE dessus', () => {
@@ -48,7 +56,6 @@ describe('le catalogue reste sain après l’extension', () => {
   it('chaque entrée porte le geste que son `kind` annonce', () => {
     for (const a of LIVE_ACTIONS) {
       if (a.kind === 'step') expect(a.step, a.id).toBeTypeOf('function');
-      if (a.kind === 'ligne') expect(a.ligne, a.id).toBeTruthy();
       /* Les deux maintenus historiques (TENIR, SOLO MÉLO) sont câblés à la main
          dans `runAction` parce qu'ils touchent l'état de la VUE, pas seulement
          le moteur. Tous les autres portent leur geste. */
@@ -58,14 +65,97 @@ describe('le catalogue reste sain après l’extension', () => {
     }
   });
 
-  /* ⚠️ LE VRAI TROU QUE L'EXTENSION COMBLE, et il se comptait : un pupitre de
-     scène est fait de gestes MOMENTANÉS — on ferme un filtre le temps d'un
-     break, on coupe le kick quatre temps. Le catalogue à 20 entrées n'avait
-     que DEUX maintenus sur vingt. */
+  /* ⚠️ LE GARDE-FOU DES GESTES MOMENTANÉS, RÉANCRÉ — pas retiré.
+   *
+   * Il comptait les maintenus du seul catalogue d'ACTIONS, et il y en avait
+   * huit sur trente. La révision du 2026-09-09 en retire quatre (SATURE,
+   * BITCRUSH, SANS KICK, BATT. SEULE) : lu comme avant, le test tomberait, et
+   * le baisser à quatre serait le vider de son sens.
+   *
+   * Or ce qui les remplace est un momentané MEILLEUR — le curseur momentané,
+   * qui DOSE au lieu de sauter à une valeur gravée. La population à compter
+   * n'est donc plus « les maintenus » mais « ce qui se joue au doigt et revient
+   * tout seul » : les maintenus PLUS les axes capables de repos. Retirer le
+   * compte serait perdre ce qu'il protège ; le réancrer, c'est le garder vrai.
+   * (CLAUDE.md : réancrer sur une population plus large, jamais retirer le
+   * compte.) */
   it('offre assez de gestes MOMENTANÉS pour un pupitre de scène', () => {
     const maintenus = LIVE_ACTIONS.filter((a) => a.kind === 'hold');
-    expect(maintenus.length).toBeGreaterThanOrEqual(8);
-    expect(maintenus.length / LIVE_ACTIONS.length).toBeGreaterThan(0.2);
+    const momentanables = LIVE_AXES.filter((a) => typeof a.repos === 'function');
+    expect(maintenus.length + momentanables.length).toBeGreaterThanOrEqual(8);
+    // Et le geste reste offert des DEUX côtés : un catalogue d'actions sans
+    // aucun maintenu voudrait dire que TENIR et SOLO MÉLO sont partis aussi.
+    expect(maintenus.length).toBeGreaterThan(0);
+    expect(momentanables.length).toBeGreaterThan(0);
+  });
+
+  /* ⚠️ UN CURSEUR MOMENTANÉ QUI NE SAIT PAS REVENIR LAISSE LE MORCEAU LÀ OÙ LE
+     DOIGT L'A LÂCHÉ — et un doigt glisse. C'est la règle des maintenus, portée
+     aux axes : `repos` est ce qui autorise le mode momentané, et l'interface
+     désactive le bouton pour un axe qui n'en a pas. Aujourd'hui ils en ont tous
+     un ; le jour où on ajoute un axe sans, ce test le dit. */
+  it('donne à chaque axe un retour au morceau', () => {
+    for (const a of LIVE_AXES) expect(a.repos, a.id).toBeTypeOf('function');
+  });
+
+  /* ⚠️ LE DÉFAUT PORTE DES CURSEURS, et c'est tout l'objet du lot. L'ancien
+     mettait les six boutons en mode ACTIONS : personne ne rencontrait jamais un
+     curseur sans aller le chercher dans ⚙ — « ça manque de boutons où on règle
+     un curseur, je ne comprends pas pourquoi ils ont disparu ». */
+  it('livre une surface MIXTE : des gestes ET des curseurs', () => {
+    const a = loadLiveAssignments();
+    const curseurs = a.slotModes.filter((m) => m === 'fader').length;
+    expect(curseurs).toBeGreaterThanOrEqual(2);
+    expect(curseurs).toBeLessThan(a.slotModes.length);
+    // Dont au moins un momentané : c'est le geste le plus demandé de la fiche.
+    expect(a.faderMomentane.some((m, i) => m && a.slotModes[i] === 'fader')).toBe(true);
+    // Un slot en mode fader garde quand même une action derrière lui —
+    // basculer le mode ne doit jamais laisser le bouton vide.
+    expect(DEFAUTS_SLOTS.every((slot) => slot.length > 0)).toBe(true);
+  });
+
+  /* Les sept axes que la fiche laisse à l'Atelier, et les trois qu'elle
+     demande. Un catalogue se relit mal ; un test le dit. */
+  it('a retiré ce qui reste à l’Atelier et posé les curseurs demandés', () => {
+    const ids = new Set(LIVE_AXES.map((a) => a.id));
+    for (const parti of ['swing', 'drag', 'fill-intensity', 'compression', 'volume', 'sidechain-depth'])
+      expect(ids.has(parti), parti).toBe(false);
+    for (const entre of ['spont-roll', 'random-velocity', 'synth-swing'])
+      expect(ids.has(entre), entre).toBe(true);
+    // Les macros de l'Atelier remplacent les paramètres bruts, sous leur nom.
+    for (const brut of ['cutoff-bass', 'resonance-bass', 'filter-env-bass', 'vibrato-bass'])
+      expect(ids.has(brut), brut).toBe(false);
+    for (const macro of ['brillance-bass', 'mouvement-bass', 'vibrato-synthe'])
+      expect(ids.has(macro), macro).toBe(true);
+  });
+
+  /* ⚠️ LA RANGÉE DE KNOBS D'UNE TABLE DE MIXAGE — six réglages par ligne, sur
+     les TROIS lignes que la surface montre. « Pas forcément toutes les
+     lignes » : clap et shaker n'y sont pas, parce que le mini séquenceur ne
+     les affiche pas et qu'un réglage qu'on ne voit pas se régler ne se trouve
+     pas. Le test dit les deux moitiés — ce qui est là, et ce qui ne l'est
+     pas. */
+  it('donne six réglages par ligne, aux trois lignes que la surface montre', () => {
+    const ids = new Set(LIVE_AXES.map((a) => a.id));
+    for (const ligne of LIGNES_REGLABLES)
+      for (const quoi of ['filtre', 'reverb', 'delay', 'pitch', 'decay', 'decalage'])
+        expect(ids.has(`${quoi}-${ligne}`), `${quoi}-${ligne}`).toBe(true);
+    for (const dehors of ['clap', 'shaker']) {
+      expect(LIGNES_REGLABLES).not.toContain(dehors);
+      expect(ids.has(`filtre-${dehors}`), dehors).toBe(false);
+    }
+    // L'attaque porte deux coches qui se contredisent (PAR LIGNE et ATELIER) :
+    // on a suivi l'argument, pas le compte. Elle rentrera d'un mot.
+    expect(ids.has('attaque-kick')).toBe(false);
+  });
+
+  /* Les envois par ligne existent des DEUX côtés — batterie et synthé — parce
+     que le « throw » de réverbe se fait sur la ligne qu'on veut noyer, pas sur
+     celles que le graphe a rendues faciles. */
+  it('donne des envois par ligne à la batterie ET au synthé', () => {
+    const ids = new Set(LIVE_AXES.map((a) => a.id));
+    for (const ligne of [...LIGNES_REGLABLES, 'bass', 'pad', 'melody'])
+      for (const quoi of ['reverb', 'delay']) expect(ids.has(`${quoi}-${ligne}`), `${quoi}-${ligne}`).toBe(true);
   });
 
   /* ⚠️ ET LA CURE DE 2026-09-02 NE DOIT PAS SE DÉFAIRE. Elle avait retiré les

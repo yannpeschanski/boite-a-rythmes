@@ -25,7 +25,6 @@
   //    juste indirectés par l'assignation courante.
   import { onMount, onDestroy, untrack } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
-  import { sequenceBank } from '../../stores/bank.svelte';
   import { architecture } from '../../stores/architecture.svelte';
   import { parties } from '../../stores/parties.svelte';
   import { PARTIES, type PartieId } from '../../model/parties';
@@ -84,7 +83,6 @@
   // portée du Mode Live pas étendue à ces deux lignes (PLAN.md §6, mute/roll
   // exclus de cette passe), présentes seulement pour satisfaire le type
   // Record<DrumRowName, …> désormais élargi.
-  let rollHeld = $state<Record<DrumRowName, number | null>>({ kick: null, snare: null, hat: null, clap: null, shaker: null });
   /* Mute du Mode Live — TERNAIRE : une clé absente veut dire « suivre le
      motif », `true` couper, `false` forcer ouvert. C'est ce qui permet au
      séquenceur ci-dessous de rouvrir une ligne coupée dans l'Atelier tout en
@@ -100,7 +98,6 @@
   // Bypass limiteurs (catalogue étendu, PLAN.md §7) : false = normal, comme
   // les mutes qui démarrent tous éteints plutôt que de refléter le réglage
   // réel du pattern.
-  let limitersBypassed = $state(false);
   /* MODE NAPPE — trois états exclusifs, tenus par le moteur (padMode) parce
      que le bourdon court-circuite l'arpège dans l'ordonnanceur. Le miroir
      local sert seulement à l'affichage du bouton. */
@@ -147,14 +144,6 @@
         return DRUM_ROW_NAMES.every((n) => ligneCoupee(n));
       case 'mute-synth':
         return SYNTH_ROW_NAMES.every((n) => ligneCoupee(n));
-      case 'ligne-kick':
-        return rollHeld.kick !== null;
-      case 'ligne-snare':
-        return rollHeld.snare !== null;
-      case 'ligne-hat':
-        return rollHeld.hat !== null;
-      case 'bypass-limiters':
-        return limitersBypassed;
       case 'petit-hp':
         return petitHP;
       case 'solo-melody':
@@ -190,11 +179,6 @@
     basculerLigne(name);
   }
 
-  function toggleLimitersBypass() {
-    limitersBypassed = !limitersBypassed;
-    engine.setLiveLimiters(!limitersBypassed);
-  }
-
   // Dispatch générique : chaque slot ne sait plus "ce qu'il fait", seulement
   // quelle action lui est assignée — un bouton MUTE réassigné en ROLL doit se
   // comporter EXACTEMENT comme le bouton ROLL d'origine.
@@ -225,9 +209,6 @@
         if (on) basculerGroupe(SYNTH_ROW_NAMES);
         break;
 
-      case 'bypass-limiters':
-        if (on) toggleLimitersBypass();
-        break;
       case 'petit-hp':
         if (on) {
           petitHP = !petitHP;
@@ -242,15 +223,6 @@
 
       default: {
         const def = actionById(actionId);
-        /* LIGNES — tap = un coup, maintenu = la rafale. Le coup part au
-           pointerdown et non au relâché : attendre pour distinguer un tap d'un
-           maintien ajouterait 200 ms à un DÉCLENCHEUR, exactement ce
-           qu'AVANCE_DECLENCHEMENT passe sa vie à éviter. */
-        if (def.kind === 'ligne' && def.ligne) {
-          if (on) frapperLigne(def.ligne);
-          else relacherLigne(def.ligne);
-          break;
-        }
         // Boutons PAS : chaque entrée porte directement son geste.
         if (on && def.kind === 'step') {
           def.step?.(engine);
@@ -273,43 +245,6 @@
       else engine.liveSetSynthMute(n as SynthRowName, !toutCoupe);
     }
     hapticTick();
-  }
-
-  /* Frappe à la main : le coup sonne TOUT DE SUITE (engine.preview, le même
-     appel que le clic sur une case de l'Atelier), puis, si le doigt reste
-     posé, la rafale prend le relais et monte d'un cran par temps.
-     ⚠️ Clap et shaker n'ont pas de rafale dans l'ordonnanceur : leur maintien
-     ne fait rien de plus, et c'est dit dans le libellé du catalogue. */
-  const DELAI_RAFALE = 0.2; // s avant que le maintien devienne une rafale
-  const rafaleTimers: Partial<Record<DrumRowName, ReturnType<typeof setTimeout>[]>> = {};
-
-  function poserRafale(name: DrumRowName, mult: number) {
-    if (name === 'kick') engine.liveSetKickRoll(mult);
-    else if (name === 'snare') engine.liveSetSnareRoll(mult);
-    else if (name === 'hat') engine.liveSetHatRoll(mult);
-    else return;
-    rollHeld[name] = mult;
-  }
-
-  function frapperLigne(name: DrumRowName) {
-    engine.preview(name, 1);
-    if (name === 'clap' || name === 'shaker') return;
-    const temps = 60 / Math.max(1, st.tempo); // une noire
-    rafaleTimers[name] = [
-      setTimeout(() => poserRafale(name, 2), DELAI_RAFALE * 1000),
-      setTimeout(() => poserRafale(name, 3), (DELAI_RAFALE + temps) * 1000),
-      setTimeout(() => poserRafale(name, 4), (DELAI_RAFALE + 2 * temps) * 1000),
-    ];
-  }
-
-  function relacherLigne(name: DrumRowName) {
-    (rafaleTimers[name] ?? []).forEach(clearTimeout);
-    rafaleTimers[name] = [];
-    if (name === 'clap' || name === 'shaker') return;
-    if (name === 'kick') engine.liveSetKickRoll(null);
-    else if (name === 'snare') engine.liveSetSnareRoll(null);
-    else engine.liveSetHatRoll(null);
-    rollHeld[name] = null;
   }
 
   // Bouton CHAOS (assignable comme les autres, PLAN.md §7) : tire un
@@ -396,6 +331,33 @@
         : { kind: 'slot', index: i };
   }
 
+  /* ⚠️ LA BASCULE DE MODE VIT DANS LE SÉLECTEUR, pas dans ⚙.
+   *
+   * C'est la raison d'être de ce lot. Le mode fader existait depuis toujours et
+   * n'était atteignable que par ⚙ → ASSIGNATION → « ⏻ ACTIONS » → rouvrir la
+   * liste → choisir → refermer : six gestes, dans un menu, pour une chose qu'on
+   * fait en jouant. Mesuré : ASSIGNER + tap sur un bouton proposait 31 entrées
+   * dont ZÉRO axe, donc aucun chemin ne menait à un curseur depuis la surface.
+   * D'où : « ça manque de boutons où on règle un curseur, je ne comprends pas
+   * pourquoi ils ont disparu. »
+   *
+   * Les trois modes sont ÉCRITS sur trois boutons, jamais devinés — quatrième
+   * fois que ce mode paie un geste caché. */
+  function choisirMode(i: number, mode: SlotMode, momentane: boolean) {
+    assignments.slotModes[i] = mode;
+    assignments.faderMomentane[i] = momentane;
+    saveLiveAssignments(assignments);
+    picker = mode === 'fader' ? { kind: 'slotFader', index: i } : { kind: 'slot', index: i };
+  }
+
+  /* Un axe qui ne sait pas revenir au repos ne peut pas être momentané : le
+     bouton MOMENTANÉ se désactive plutôt que de mentir. Aujourd'hui tous les
+     axes portent un `repos` — la garde reste parce que c'est ce qui protège le
+     jour où on en ajoute un sans. */
+  function peutEtreMomentane(i: number): boolean {
+    return assignments.slotFaders[i].every((id) => typeof axisById(id).repos === 'function');
+  }
+
   function onSlotDown(i: number) {
     if (modeAssign) return; // sous loquet, tout se joue au relâché
     if (assignments.slotModes[i] === 'fader') return; // le fader se pilote au glisser (faderPointerDown), pas au tap
@@ -451,7 +413,12 @@
   // de lecture (gauche = 0%, droite = 100%, frac direct). Un seul drag actif
   // à la fois (comme le pad, `dragging`), le multi-touch simultané sur deux
   // faders n'est pas géré.
-  let faderDraggingIndex: number | null = null;
+  /* ⚠️ `$state` obligatoire depuis que le rendu en DÉRIVE : un curseur
+     momentané n'affiche sa valeur que sous le doigt, donc le template lit
+     `faderDraggingIndex`. Muté sans `$state`, il resterait figé et le bouton
+     n'aurait jamais l'air tenu (CLAUDE.md : « un objet muté doit être $state,
+     sinon le prop qui en dérive est figé »). */
+  let faderDraggingIndex = $state<number | null>(null);
   function setFader(i: number, clientX: number, clientY: number, rect: DOMRect) {
     const horizontal = assignments.faderOrientation[i] === 'horizontal';
     const frac = horizontal
@@ -467,8 +434,20 @@
   function faderPointerMove(i: number, e: PointerEvent, el: HTMLDivElement) {
     if (faderDraggingIndex === i) setFader(i, e.clientX, e.clientY, el.getBoundingClientRect());
   }
-  function faderPointerUp() {
+  /* ⚠️ LE RELÂCHÉ D'UN CURSEUR MOMENTANÉ REND LE RÉGLAGE AU MORCEAU.
+   *
+   * Même contrat que la seconde moitié d'un maintenu : le doigt lâche, le
+   * morceau reprend la main — et « le morceau » se relit (`repos` efface
+   * l'override), il ne se grave pas. Un doigt qui glisse hors du bouton passe
+   * par `onpointerleave`, donc par ici : c'est ce qui rend un maintien sûr.
+   *
+   * Un axe sans `repos` ne peut pas être momentané (le sélecteur refuse de le
+   * proposer), donc `?.` n'avale rien ici — il ne fait que dire au typage ce
+   * que le sélecteur garantit. */
+  function faderPointerUp(i: number) {
     faderDraggingIndex = null;
+    if (!assignments.faderMomentane[i]) return;
+    for (const id of assignments.slotFaders[i]) axisById(id).repos?.(engine, st);
   }
 
   // Volume master toujours accessible dans le bandeau (PLAN.md §7, audit du
@@ -479,50 +458,16 @@
   // synchronisé si 'volume' est AUSSI assigné à un bouton/axe ailleurs
   // (dernière source qui écrit fait foi, même convention que pad/fader/
   // inclinaison).
-  let volDragging = false;
-  function setVolumeFromClientX(clientX: number, rect: DOMRect) {
-    const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    applyAxisValue(['volume'], frac);
-  }
-  function volPointerDown(e: PointerEvent, el: HTMLDivElement) {
-    volDragging = true;
-    el.setPointerCapture(e.pointerId);
-    setVolumeFromClientX(e.clientX, el.getBoundingClientRect());
-  }
-  function volPointerMove(e: PointerEvent, el: HTMLDivElement) {
-    if (volDragging) setVolumeFromClientX(e.clientX, el.getBoundingClientRect());
-  }
-  function volPointerUp() {
-    volDragging = false;
-  }
 
-  // Tempo toujours accessible dans le bandeau (même audit) — un stepper
-  // ±1 BPM plutôt qu'un glisser sur le LCD (piste initiale de PLAN.md) :
-  // plus précis et sans risque de dérailler le tempo en plein set d'un
-  // geste imprécis sur une zone minuscule. Appui maintenu = défilement
-  // automatique (400 ms avant le premier cran, puis un cran toutes les
-  // 120 ms), même charte que les vrais steppers de tempo des boîtes à
-  // rythmes matérielles. Écrit directement dans pattern.state.tempo, comme
-  // tapTempo() dans ToolBar.svelte (Atelier) — pas un axe du catalogue Live,
-  // le tempo n'en a jamais fait partie.
-  let tempoRepeatDelay: ReturnType<typeof setTimeout> | null = null;
-  let tempoRepeatTimer: ReturnType<typeof setInterval> | null = null;
-  function stepTempo(delta: number) {
-    pattern.state.tempo = Math.max(40, Math.min(200, Math.round(pattern.state.tempo) + delta));
-  }
-  function tempoPointerDown(delta: number) {
-    stepTempo(delta);
-    tempoRepeatDelay = setTimeout(() => {
-      tempoRepeatTimer = setInterval(() => stepTempo(delta), 120);
-    }, 400);
-  }
-  function tempoPointerUp() {
-    if (tempoRepeatDelay) clearTimeout(tempoRepeatDelay);
-    if (tempoRepeatTimer) clearInterval(tempoRepeatTimer);
-    tempoRepeatDelay = null;
-    tempoRepeatTimer = null;
-  }
-
+  /* ⚠️ LE TEMPO ET LE VOLUME MASTER ONT QUITTÉ LE BANDEAU (2026-09-09).
+     Rien de coché sur leur carte de la fiche, et « ne rien cocher » y voulait
+     dire « ça reste dans l'Atelier ». Les deux y sont, en pleine taille : ici
+     ils prenaient de la largeur sur une rangée qui porte aussi le transport,
+     ⏺ REC, les deux loquets et ⚙. Le tempo garde un affichage en LCD — le
+     LIRE en jouant reste utile, le RÉGLER est de la préparation.
+     ⚠️ L'axe `volume` est parti du catalogue avec eux : un mini-fader qui
+     écrivait un axe que plus personne ne peut assigner serait un doublon
+     orphelin. */
   function toggleSlotMode(i: number) {
     assignments.slotModes[i] = assignments.slotModes[i] === 'fader' ? 'actions' : 'fader';
     saveLiveAssignments(assignments);
@@ -606,7 +551,6 @@
     | { kind: 'axis'; which: 'axisX' | 'axisY' | 'axisTilt' }
     | { kind: 'slotFader'; index: number }
     | { kind: 'viz' }
-    | { kind: 'bank' }
     | { kind: 'montage' }
     | { kind: 'section'; index: number };
   let picker = $state<Picker | null>(null);
@@ -654,16 +598,6 @@
     picker = null;
   }
 
-  // Bascule vers une séquence de la banque (PLAN.md §6, retour de Yann :
-  // « pouvoir basculer de l'une à l'autre depuis le mode live ») — pas une
-  // assignation persistée comme les autres kinds de picker (rien à retenir
-  // dans LiveAssignments), un chargement immédiat comme un rappel de
-  // snapshot : `pattern.replace` en direct, le pattern joué change tout de
-  // suite (playhead/scheduler le relisent au prochain tick).
-  function commitBankLoad(id: string) {
-    sequenceBank.load(id);
-    picker = null;
-  }
 
   /* ---- LA BANDE D'ARCHITECTURE (macro-séquenceur) ----
    *
@@ -735,6 +669,17 @@
           `applyMixSettings` n'écrit jamais. Le pad, l'inclinaison et les faders
           gardent donc la main pendant qu'une section passe. */
     engine.refreshMixSettings();
+    /* ⚠️ ET CE QU'IL REPREND, LUI, DOIT CESSER D'ÊTRE AFFICHÉ COMME RÉGLÉ.
+       Les volumes de ligne du synthé passent par les nœuds du MORCEAU
+       (`synthLineGain`), donc `refreshMixSettings` vient de les remettre à ce
+       que dit la lettre. Garder la valeur posée à la main afficherait un
+       chiffre que plus personne ne joue — et le séquenceur est le seul écran
+       qui dit le niveau d'une ligne.
+       ⚠️ Les volumes de BATTERIE ne sont PAS effacés : eux passent par un
+       override relu à chaque fenêtre, donc ils tiennent vraiment à travers la
+       bascule. Asymétrie assumée entre les deux familles, pas un oubli — elle
+       attend un arbitrage (PLAN.md). */
+    for (const name of SYNTH_ROW_NAMES) delete volLive[name];
     /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
        sur une seule séquence.
        ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
@@ -1163,6 +1108,59 @@
     if (name in st.rows) return (st.rows[name as DrumRowName].pattern[i] ?? 0) > 0;
     const v = st.synthRows[name as SynthRowName].pattern[i];
     return name === 'pad' ? typeof v === 'number' && v >= 0 : v != null;
+  }
+
+  /* ---- LE MINI SÉQUENCEUR RÈGLE AUSSI LES VOLUMES (2026-09-09) ----
+   *
+   * ⚠️ Demandé deux fois sur la fiche à cocher, pour la batterie puis pour le
+   * synthé : « il faudrait pouvoir régler le volume au niveau du mini
+   * séquenceur, quitte à revoir le design ici ». C'est le geste le plus
+   * universel d'un pupitre, et il n'existait nulle part — ni ici, ni comme axe.
+   *
+   * ⚠️ POURQUOI UN MODE ÉCRIT, ET PAS UN GESTE SUR LA LIGNE. La ligne est déjà
+   * prise : elle coupe au tap, sur toute sa surface. Y ajouter un glisser
+   * ferait le quatrième geste caché de ce mode — « sur cette surface, ce qui
+   * n'est pas ÉCRIT n'existe pas ». Deux boutons nommés au-dessus du bloc
+   * disent lequel des deux on règle, et rien ne change de sens sous le doigt.
+   *
+   * ⚠️ Le volume live est un ÉTAT DE VUE, pas du morceau : `null` veut dire
+   * « suis le morceau ». Le moteur, lui, reçoit un override (batterie) ou un
+   * nœud (synthé) — jamais une écriture dans `PatternStateV2`. */
+  let seqMode = $state<'pas' | 'volume'>('pas');
+  let volLive = $state<Partial<Record<DrumRowName | SynthRowName, number>>>({});
+
+  /** Le volume EFFECTIF d'une ligne : le live s'il existe, sinon le morceau. */
+  function volumeDe(name: DrumRowName | SynthRowName): number {
+    const live = volLive[name];
+    if (live !== undefined) return live;
+    return name in st.rows ? st.rows[name as DrumRowName].volume : st.synthRows[name as SynthRowName].volume;
+  }
+
+  /* Le plafond diffère : la batterie va à 1, le synthé à 1,5 — mêmes bornes
+     que les curseurs de l'Atelier, le Live n'invente pas une échelle. */
+  const volMax = (name: DrumRowName | SynthRowName) => (name in st.rows ? 1 : 1.5);
+
+  function poserVolume(name: DrumRowName | SynthRowName, frac: number) {
+    const v = Math.max(0, Math.min(1, frac)) * volMax(name);
+    volLive[name] = v;
+    if (name in st.rows) engine.setLiveDrumParam(name as DrumRowName, 'volume', v);
+    else engine.setLiveSynthLineVolume(name as SynthRowName, v);
+  }
+
+  let volDrag: DrumRowName | SynthRowName | null = null;
+  function volDown(name: DrumRowName | SynthRowName, e: PointerEvent, el: HTMLElement) {
+    volDrag = name;
+    el.setPointerCapture(e.pointerId);
+    const r = el.getBoundingClientRect();
+    poserVolume(name, (e.clientX - r.left) / r.width);
+  }
+  function volMove(name: DrumRowName | SynthRowName, e: PointerEvent, el: HTMLElement) {
+    if (volDrag !== name) return;
+    const r = el.getBoundingClientRect();
+    poserVolume(name, (e.clientX - r.left) / r.width);
+  }
+  function volUp() {
+    volDrag = null;
   }
 
   const lignesQuiSonnent = $derived(
@@ -1765,7 +1763,6 @@
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
-    tempoPointerUp(); // au cas où on quitte le Mode Live avec le stepper de tempo maintenu
     // Quitter le Mode Live (×) pendant un enregistrement en cours livre quand
     // même le WAV plutôt que de le jeter — même geste que STOP (togglePlay).
     if (recording) {
@@ -1808,21 +1805,7 @@
         </button>
         <div class="lcd-block">
           <div class="lcd-tempo">
-            <button
-              class="tempo-btn tap44"
-              onpointerdown={() => tempoPointerDown(-1)}
-              onpointerup={tempoPointerUp}
-              onpointerleave={tempoPointerUp}
-              title="Tempo −1 (maintenir pour défiler)"
-            >−</button>
             <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}{sectionCourante ? ` · ${sectionCourante.nom}` : ''}</span>
-            <button
-              class="tempo-btn tap44"
-              onpointerdown={() => tempoPointerDown(1)}
-              onpointerup={tempoPointerUp}
-              onpointerleave={tempoPointerUp}
-              title="Tempo +1 (maintenir pour défiler)"
-            >+</button>
           </div>
           <!-- Le musicien pense en CYCLES, l'ingénieur lit des MESURES : les
                deux sont affichés, et personne ne se trompe sur ce que « ×8 »
@@ -1834,21 +1817,6 @@
               TOUT RÉEL · 🎲 AU HASARD · ASSIGNER POUR CHOISIR
             {/if}
           </span>
-        </div>
-        <div
-          class="vol-slider tap44"
-          role="slider"
-          aria-label="Volume"
-          aria-valuenow={Math.round(axisValues['volume'] * 100)}
-          tabindex="0"
-          onpointerdown={(e) => volPointerDown(e, e.currentTarget as HTMLDivElement)}
-          onpointermove={(e) => volPointerMove(e, e.currentTarget as HTMLDivElement)}
-          onpointerup={volPointerUp}
-          onpointerleave={volPointerUp}
-          title="Volume master"
-        >
-          <div class="vol-fill" style:width="{axisValues['volume'] * 100}%"></div>
-          <span class="vol-val">{Math.round(axisValues['volume'] * 100)}%</span>
         </div>
         {#if modeAssign}
           <!-- Sous le loquet, l'inclinaison se RÉASSIGNE au lieu de s'activer :
@@ -2001,10 +1969,20 @@
                 </button>
               {:else if mode === 'fader'}
                 {@const faderIds = assignments.slotFaders[i]}
-                {@const val = axisValues[faderIds[0]] ?? 0.5}
+                {@const momentane = assignments.faderMomentane[i]}
+                {@const tenu = faderDraggingIndex === i}
+                <!-- ⚠️ Un momentané AU REPOS n'affiche pas de valeur : il n'en
+                     porte pas. Le réglage est au morceau, pas au bouton — la
+                     barre serait un chiffre inventé, et c'est la même erreur
+                     que le maintenu qui « rouvre à 20 kHz ». Il montre donc son
+                     nom et le mot MOMENTANÉ, et ne se remplit que sous le
+                     doigt. -->
+                {@const val = momentane && !tenu ? 0 : (axisValues[faderIds[0]] ?? 0.5)}
                 {@const horizontal = assignments.faderOrientation[i] === 'horizontal'}
                 <div
                   class="abtn fader-btn"
+                  class:momentane
+                  class:tenu
                   class:horizontal
                   role="slider"
                   aria-label={axesFor(faderIds)
@@ -2014,8 +1992,8 @@
                   tabindex="0"
                   onpointerdown={(e) => faderPointerDown(i, e, e.currentTarget as HTMLDivElement)}
                   onpointermove={(e) => faderPointerMove(i, e, e.currentTarget as HTMLDivElement)}
-                  onpointerup={faderPointerUp}
-                  onpointerleave={faderPointerUp}
+                  onpointerup={() => faderPointerUp(i)}
+                  onpointerleave={() => faderPointerUp(i)}
                 >
                   {#if horizontal}
                     <div class="fader-fill" style:width="{val * 100}%"></div>
@@ -2023,7 +2001,7 @@
                     <div class="fader-fill" style:height="{val * 100}%"></div>
                   {/if}
                   <span class="fader-label">{axesFor(faderIds).map((a) => a.label).join(' + ')}</span>
-                  <span class="fader-val">{Math.round(val * 100)}%</span>
+                  <span class="fader-val">{momentane && !tenu ? 'MOMENTANÉ' : `${Math.round(val * 100)}%`}</span>
                 </div>
               {:else}
                 {@const defs = actionsFor(actionIds)}
@@ -2053,20 +2031,63 @@
                de six, elle descend à 22 px pour que le visualiseur garde une
                place lisible (mesuré : 8 lignes à 26 px ne lui laisseraient que
                17 px). Le séquenceur prend ce qu'il faut, le visualiseur le reste. -->
+          <!-- Les deux modes du bloc, ÉCRITS. Le bloc n'avait pas de titre ;
+               il en a un maintenant, et c'est lui qui dit ce qu'on règle. -->
+          <div class="seq-modes">
+            <button class="seq-mode tap44-y" class:on={seqMode === 'pas'} onclick={() => (seqMode = 'pas')}>▦ PAS</button>
+            <button class="seq-mode tap44-y" class:on={seqMode === 'volume'} onclick={() => (seqMode = 'volume')}
+              >▮ VOLUMES</button
+            >
+          </div>
           <div class="seq" style:--ligne-h="{lignesVisibles.length > 6 ? 22 : 26}px">
             {#each lignesVisibles as name (name)}
               {@const muet = ligneCoupee(name)}
-              <button
-                class="ligne"
-                class:muet
-                onpointerdown={() => basculerLigne(name)}
-                aria-pressed={muet}
-                title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
-              >
-                <span class="pastille" style:background={LINE_COLOR[name]}></span>
-                <span class="nom">{LIGNE_LIBELLE[name]}</span>
-                <canvas class="piste" bind:this={pisteCanvas[name]}></canvas>
-              </button>
+              {#if seqMode === 'pas'}
+                <!-- Mode PAS : la ligne entière coupe, exactement comme avant. -->
+                <button
+                  class="ligne"
+                  class:muet
+                  onpointerdown={() => basculerLigne(name)}
+                  aria-pressed={muet}
+                  title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
+                >
+                  <span class="pastille" style:background={LINE_COLOR[name]}></span>
+                  <span class="nom">{LIGNE_LIBELLE[name]}</span>
+                  <canvas class="piste" bind:this={pisteCanvas[name]}></canvas>
+                </button>
+              {:else}
+                <!-- Mode VOLUMES : le nom coupe, la piste devient le curseur.
+                     Deux cibles distinctes plutôt qu'un bouton contenant un
+                     curseur — un interactif dans un interactif ne se tape pas
+                     de façon prévisible. -->
+                {@const v = volumeDe(name)}
+                {@const frac = v / volMax(name)}
+                <div class="ligne" class:muet>
+                  <button
+                    class="ligne-mute"
+                    onpointerdown={() => basculerLigne(name)}
+                    aria-pressed={muet}
+                    title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
+                  >
+                    <span class="pastille" style:background={LINE_COLOR[name]}></span>
+                    <span class="nom">{LIGNE_LIBELLE[name]}</span>
+                  </button>
+                  <div
+                    class="ligne-vol"
+                    role="slider"
+                    tabindex="0"
+                    aria-label="Volume {LIGNE_LIBELLE[name]}"
+                    aria-valuenow={Math.round(frac * 100)}
+                    onpointerdown={(e) => volDown(name, e, e.currentTarget as HTMLDivElement)}
+                    onpointermove={(e) => volMove(name, e, e.currentTarget as HTMLDivElement)}
+                    onpointerup={volUp}
+                    onpointerleave={volUp}
+                  >
+                    <div class="ligne-vol-fill" style:width="{frac * 100}%" style:background={LINE_COLOR[name]}></div>
+                    <span class="ligne-vol-val">{Math.round(v * 100)}%</span>
+                  </div>
+                </div>
+              {/if}
             {/each}
           </div>
           <div class="viz-wrap">
@@ -2224,10 +2245,17 @@
                   <span class="assign-row-val">{libelleDePartie(sec)} ×{sec.cycles}</span>
                 </button>
               {/each}
-              <button class="assign-row" onclick={() => (picker = { kind: 'bank' })}>
-                <span class="assign-row-label">BANQUE DE SÉQUENCES</span>
-                <span class="assign-row-val">{sequenceBank.entries.length} enregistrée{sequenceBank.entries.length === 1 ? '' : 's'}</span>
-              </button>
+              <!-- ⚠️ LA BANQUE A QUITTÉ ⚙ (2026-09-09). Rien de coché sur sa carte
+                   de la fiche, et sur la carte « charger un preset » la réponse
+                   est écrite : « les LETTRES A/B/C font déjà ce travail, et
+                   mieux — elles portent le morceau qu'on a préparé ». Un second
+                   chemin vers un motif, plus pauvre que le premier et caché dans
+                   un menu, n'avait pas à rester. La banque elle-même n'a pas
+                   bougé : elle est dans l'Atelier, où on la range.
+                   ⚠️ Ce qui reste, et qui n'est PAS la banque : la bande de
+                   scènes A/B/C. L'option de la fiche les confondait sous le mot
+                   « séquenceur » ; retirer la bande viderait le mode de ce qu'il
+                   est. -->
             </div>
 
             <h4 class="snapshots-title">SNAPSHOTS <span class="picker-hint">— appui court sauvegarde, appui long rappelle</span></h4>
@@ -2267,8 +2295,6 @@
                     ? `BOUTON ${picker.index + 1} — FADER`
                     : picker.kind === 'viz'
                       ? 'VISUALISEUR'
-                      : picker.kind === 'bank'
-                        ? 'BANQUE DE SÉQUENCES'
                         : picker.kind === 'montage'
                           ? 'MONTER UN MORCEAU'
                           : picker.kind === 'section'
@@ -2284,10 +2310,49 @@
                   class="picker-hint">— plusieurs possibles</span
                 >{/if}
               </h4>
-              {#if picker.kind === 'bank'}
+              {#if picker.kind === 'slot' || picker.kind === 'slotFader'}
+                {@const i = picker.index}
+                {@const estFader = assignments.slotModes[i] === 'fader'}
+                {@const estMomentane = estFader && assignments.faderMomentane[i]}
+                <!-- Les trois modes d'un bouton, ÉCRITS. C'est le chemin qui
+                     manquait : depuis la surface de jeu, ASSIGNER + tap ne
+                     proposait que des actions, et le mode curseur n'existait
+                     que dans ⚙. -->
+                <div class="picker-modes">
+                  <button
+                    class="picker-mode"
+                    class:on={!estFader}
+                    onclick={() => choisirMode(i, 'actions', false)}
+                  >⏻ ACTIONS</button>
+                  <button
+                    class="picker-mode"
+                    class:on={estFader && !estMomentane}
+                    onclick={() => choisirMode(i, 'fader', false)}
+                  >≈ CURSEUR</button>
+                  <button
+                    class="picker-mode"
+                    class:on={estMomentane}
+                    disabled={estFader && !peutEtreMomentane(i)}
+                    title="Le doigt se pose : le curseur prend la main et dose. Le doigt lâche : le morceau reprend."
+                    onclick={() => choisirMode(i, 'fader', true)}
+                  >≋ MOMENTANÉ</button>
+                  {#if estFader}
+                    <button
+                      class="picker-mode"
+                      onclick={() => toggleFaderOrientation(i)}
+                      title="Sens du glisser (vertical / horizontal)"
+                    >{assignments.faderOrientation[i] === 'horizontal' ? '↔' : '↕'}</button>
+                  {/if}
+                </div>
                 <p class="picker-caption">
-                  Les séquences enregistrées dans l'Atelier (bouton ➕ à côté des presets) — un tap
-                  charge tout de suite le pattern joué, sans perdre les assignations du Live.
+                  {#if estMomentane}
+                    Le doigt se pose : le curseur prend la main et dose. Le doigt lâche : le réglage
+                    revient à ce que dit le morceau.
+                  {:else if estFader}
+                    On glisse sur le bouton : la position donne la valeur, et elle reste.
+                  {:else}
+                    Un tap déclenche, un maintien tient — le bouton porte une ou plusieurs actions.
+                  {/if}
                 </p>
               {/if}
               <div class="picker-list">
@@ -2391,16 +2456,6 @@
                   {#each LIVE_VIZ as v (v.id)}
                     <button class="picker-row" class:current={v.id === assignments.viz} onclick={() => commitViz(v.id)}>
                       <span class="picker-label">{v.label}</span>
-                    </button>
-                  {/each}
-                {:else if sequenceBank.entries.length === 0}
-                  <p class="picker-empty">
-                    Aucune séquence enregistrée — dans l'Atelier, bandeau des presets, ➕ pour en sauvegarder une.
-                  </p>
-                {:else}
-                  {#each sequenceBank.entries as e (e.id)}
-                    <button class="picker-row" onclick={() => commitBankLoad(e.id)}>
-                      <span class="picker-label">{e.name}</span>
                     </button>
                   {/each}
                 {/if}
@@ -2606,60 +2661,9 @@
   .lcd-tempo .lcd {
     min-width: 0;
   }
-  .tempo-btn {
-    flex: none;
-    width: 15px;
-    height: 15px;
-    padding: 0;
-    border-radius: 3px;
-    border: 1px solid var(--amp-line);
-    background: var(--amp-bg-1);
-    color: var(--amp-lcd-fg);
-    font-size: 11px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    touch-action: none;
-  }
-  .tempo-btn:active {
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
-  }
   /* Volume master toujours accessible (même audit) — mini-fader horizontal
      dans le bandeau, même mécanique que .fader-btn.horizontal mais hors
      catalogue d'assignation (volPointerDown/Move dans le script). */
-  .vol-slider {
-    position: relative;
-    flex: none;
-    width: 54px;
-    height: 22px;
-    border-radius: 4px;
-    border: 1px solid var(--amp-line);
-    background: rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-    cursor: ew-resize;
-    touch-action: none;
-  }
-  .vol-fill {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, #7a4a08, var(--amp-amber));
-    box-shadow: 0 0 4px rgba(255, 176, 32, 0.55);
-  }
-  .vol-val {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    font-size: 8px;
-    font-weight: 700;
-    color: var(--amp-text);
-  }
   .tilt-warn {
     position: absolute;
     left: 6px;
@@ -3087,6 +3091,47 @@
      Yann, PLAN.md §7) : verticale par défaut (remplissage en hauteur,
      ancré en bas) ou horizontale (.horizontal, remplissage en largeur,
      ancré à gauche — sens de lecture, gauche = 0%). */
+  /* La rangée de MODE en tête du sélecteur — trois cibles de 44 px, ÉCRITES,
+     dans le vocabulaire du mode (mêmes couleurs que .picker-row). L'ambre dit
+     l'état, comme partout ailleurs ici : c'est de l'ÉTAT, pas du chrome. */
+  .picker-modes {
+    display: flex;
+    gap: 5px;
+    padding: 0 0 7px;
+    flex-wrap: wrap;
+  }
+  .picker-mode {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--amp-text);
+    background: var(--amp-bg-2);
+    border: 1px solid var(--amp-line);
+  }
+  .picker-mode.on {
+    color: var(--amp-amber);
+    background: var(--amp-bg-1);
+    border-color: var(--amp-hi);
+  }
+  .picker-mode:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  /* Un curseur MOMENTANÉ au repos ne montre pas de valeur : il est en attente,
+     pas à zéro. Il s'allume sous le doigt. */
+  .fader-btn.momentane:not(.tenu) .fader-val {
+    color: var(--amp-amber);
+  }
+  .fader-btn.tenu {
+    border-color: var(--amp-hi);
+  }
+
   .fader-btn {
     overflow: hidden;
     justify-content: flex-end;
@@ -3134,6 +3179,74 @@
      (une ligne = 26 px, plafonnée par la place disponible), et le
      visualiseur prend le reste. Six lignes laissent ~83 px au visualiseur,
      huit ~59 — ça tient dans les deux cas. */
+  /* Les deux modes du bloc — 44 px pleins, c'est la seule rangée du séquenceur
+     qui n'est pas une exception revendiquée. Elle sert aussi de titre : le
+     bloc n'en avait pas, et « ce qui n'est pas écrit n'existe pas ». */
+  .seq-modes {
+    display: flex;
+    gap: 4px;
+    flex: none;
+    margin-bottom: 4px;
+  }
+  .seq-mode {
+    flex: 1 1 0;
+    min-height: 30px;
+    font-family: inherit;
+    font-size: 8.5px;
+    letter-spacing: 0.09em;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--amp-text);
+    background: var(--amp-bg-2);
+    border: 1px solid var(--amp-line);
+  }
+  .seq-mode.on {
+    color: var(--amp-amber);
+    background: var(--amp-bg-1);
+    border-color: var(--amp-hi);
+  }
+  /* Mode VOLUMES : le nom coupe, la piste devient le curseur. Deux cibles
+     distinctes — un interactif dans un interactif ne se tape pas de façon
+     prévisible. */
+  .seq .ligne .ligne-mute {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: none;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .seq .ligne .ligne-vol {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 0 0 1px var(--amp-line);
+    cursor: ew-resize;
+    touch-action: none;
+    overflow: hidden;
+  }
+  .seq .ligne .ligne-vol-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    opacity: 0.55;
+  }
+  .seq .ligne .ligne-vol-val {
+    position: absolute;
+    inset: 0 4px 0 auto;
+    display: flex;
+    align-items: center;
+    font-size: 8.5px;
+    letter-spacing: 0.05em;
+    color: var(--amp-text);
+  }
+
   .seq {
     display: flex;
     flex-direction: column;
@@ -3536,13 +3649,6 @@
     margin-top: 10px;
     width: 100%;
   }
-  .picker-empty {
-    font-size: 10.5px;
-    color: #9aa0a6;
-    line-height: 1.5;
-    padding: 10px 4px;
-    margin: 0;
-  }
   .picker-caption {
     font-size: 10.5px;
     color: #9aa0a6;
@@ -3580,9 +3686,6 @@
     /* Le curseur de volume est un `<div>` en `overflow: hidden` : il recadre
        le pseudo-élément de `.tap44`, comme les éléments remplacés. C'est donc
        sa propre boîte qui monte. */
-    .vol-slider {
-      height: 44px;
-    }
     /* Les cases de la bande d'architecture. Mesurées à 36 px : personne ne les
        avait vues, parce que sans architecture chargée la bande n'existe pas —
        et jusqu'à la scène de l'acte 6, aucun écran n'en chargeait une. Deux
