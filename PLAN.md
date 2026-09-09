@@ -31,6 +31,7 @@ une ligne réécrite ni réordonnée.
 | [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
 | [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode, ce que la mesure trouve, et les décisions qui restent. Fiche annotable : `docs/relecture/assemblage.html` |
 | [`08-etat-de-lart-structures.md`](docs/plan/08-etat-de-lart-structures.md) | **État de l'art (2026-09-07)** — ce que font les machines, les longueurs conventionnelles, et les quatre modèles proposés. Fiche : `docs/relecture/assemblage-2.html` |
+| [`09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md) | **État de l'art (2026-09-09)** — les COMMANDES du Mode Live : ce que nos gestes font en dB (`scripts/banc-live.cjs`), ce que les machines mettent sous les doigts, et huit pistes à arbitrer. Fiche à venir |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans
@@ -45,6 +46,43 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ---
 
 ## Journal des livraisons — Mode jeu et Mode carrière
+
+### ✅ Benchmark des commandes du Mode Live — cinq remarques, cinq mesures (2026-09-09)
+
+> Yann, après avoir joué : *« ça manque d'énormément de paramètres dans le mode
+> live. Le seul paramètre que j'utilise, c'est le filtre et le break. Rafale &
+> fill : plutôt inaudible. Jouer à la main : inaudible. Cumuler les effets […] à
+> supprimer. Ça manque de boutons où on règle un curseur, je ne comprends pas
+> pourquoi ils ont disparu. Fais d'abord un benchmark avant de faire une vraie
+> proposition. »*
+
+Un CONSTAT de conception : audit d'abord, aucun code de fonctionnalité.
+Livré : [`docs/plan/09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md)
+et `scripts/banc-live.cjs`, qui rend le motif hors ligne deux fois — sans puis
+avec le geste — et compare les NIVEAUX.
+
+⚠️ **Compter les événements aurait dit l'inverse.** Une rafale ×4 sur le charley
+fait passer une mesure de boom bap de 17 à 72 frappes : au compte, un geste
+énorme. Au niveau, **0,0 dB** dans le mix, et **−1,1 dB** sur sa propre ligne
+(la ligne est déjà en doubles-croches, et la rampe de vélocité part à 0,35).
+Même piège que `params-alea.test.ts`, pris par l'autre bout.
+
+Les cinq remarques, mesurées : le FILL n'agit que sur le dernier quart de mesure
+(**+1,8 dB** sur la house) et arrive **0,75 à 1,75 mesure** après l'appui, soit
+1,5 à 4,5 s ; la rafale de caisse fait **+10 à +17 dB sur sa ligne** et **+0,4 à
++2,7 dB** dans le mix ; une frappe de charley à la main est **10 à 19 dB SOUS**
+le mix (`preview()` joue au volume nominal, sans accent ni sidechain) ; et les
+deux gestes que Yann utilise sont les deux seuls qui soient gros et immédiats —
+le BREAK fait **−21 dB** sur les 3/4 de la mesure.
+
+Et les curseurs n'ont pas disparu : mesuré en 844 × 390, la surface porte
+**6 boutons en mode ACTIONS et 0 fader**, ASSIGNER propose **31 entrées dont
+0 axe**, et le seul chemin vers un curseur est ⚙ + six gestes — contre la règle
+que ce mode s'est donnée. Le catalogue tient **55 axes dont 43 sont des réglages
+de voix de synthé** ; il reste 12 macros de scène, dont 2 sont montrées. La
+catégorie en pose 8 ou 9, toujours visibles (Circuit, Ableton, Maschine).
+
+Huit pistes listées, aucune tranchée — fiche annotable à venir.
 
 ### ✅ Le panneau Montage a une sortie vers le Live (2026-09-09)
 
