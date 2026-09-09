@@ -3,7 +3,12 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-09 — **le morceau se monte à la main**. Le
+> Dernière mise à jour : 2026-09-09 — **le panneau Montage a une sortie vers le
+> Live** : un bouton ambre pleine largeur en dernier (« Jouer ce montage en Mode
+> Live »), masqué tant que le module est fermé et qui dit l'horizontale. Avant
+> lui, le seul chemin était le menu Mode.
+>
+> Avant cela, le même jour : **le morceau se monte à la main**. Le
 > panneau Montage (Atelier, onglet Production) est devenu l'ÉDITEUR de la
 > chaîne : partir d'un modèle ou d'une page blanche, et par scène la lettre, les
 > tours, le nom, les lignes qui sonnent, plus monter / descendre / dupliquer /

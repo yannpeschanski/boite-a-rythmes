@@ -46,6 +46,39 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le panneau Montage a une sortie vers le Live (2026-09-09)
+
+> Yann : *« Il faut un bouton plus évident pour nous emmener sur le mode live à
+> la fin de cette partie de montage des morceaux »*
+
+**Fichiers touchés :** `src/ui/atelier/MontagePanel.svelte`,
+`src/ui/atelier/AtelierView.svelte`, `CLAUDE.md`, `REPRISE.md`.
+
+**Le constat.** Le panneau devenu éditeur laissait le geste suivant sans chemin :
+monter fini, il fallait aller chercher **Mode → Mode Live** dans la barre de
+menus, à l'autre bout de l'écran et sous un menu déroulant. On prépare ici, on
+joue là-bas ; la sortie manquait.
+
+**Ce qui est livré.** Un bouton pleine largeur en ambre, en **dernier** dans le
+panneau — « 🎛 Jouer ce montage en Mode Live », ou « Ouvrir le Mode Live » quand
+aucune chaîne n'est montée. Ambre et non vert : ce n'est pas une validation,
+c'est un départ ; et c'est l'accent de la fenêtre qui l'abrite. Le panneau reçoit
+`onSwitchView` d'`AtelierView`, qui l'avait déjà.
+
+**Deux règles de la maison, appliquées telles quelles.**
+
+- *Ce qui est verrouillé ne s'affiche pas* : `{#if unlocks.has('live')}`. Le cas
+  réel est un joueur des actes 5 à 7, qui a la Production mais pas encore le
+  Live — vérifié par `scripts/verrous-masques.cjs`, qui joue la carrière et
+  relit neuf écrans par acte : **aucune fuite**.
+- *L'écran qui envoie au Live doit dire l'HORIZONTALE* : la seconde ligne du
+  bouton le fait, sinon on arrive sur un mur « tourne ton téléphone » — ce que
+  la mesure a d'ailleurs constaté en cliquant en portrait.
+
+**Vérifié :** 0 erreur de types, 697 tests, les deux builds ; le bouton mesuré à
+322 × 61 px en 390 × 844 tactile (aucun débordement, la campagne du panneau
+reste à « aucune cible sous 44 px ») ; et le clic emmène bien au Mode Live.
+
 ### ✅ Le morceau se monte à la main — et les boutons cessent de suivre (2026-09-09)
 
 > Yann : *« Il faut pouvoir monter le morceau comme on le souhaite : choisir la
