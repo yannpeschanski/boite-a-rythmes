@@ -1267,15 +1267,21 @@ donc une boucle `until [ -n "$(curl … )" ]` **ne se termine jamais**. Penser a
 
 - **Sur une PR** → `pull_request_read method=get_check_runs`. Direct, quelques
   centaines d'octets. C'est le seul à utiliser tant qu'on est sur une PR.
-- **Sur `main` après un merge** → il n'y a **pas** de raccourci, et deux fausses
-  pistes coûtent du temps : `get_commit` n'expose pas les check runs, et deviner
-  un id de run répond 404. La méthode est donc `actions_list
-  method=list_workflow_runs` (filtre `branch: main`), **une fois** : son résultat
-  fait ~93 Ko, le harness le déverse dans un fichier et ne rend qu'une erreur —
-  ce n'est donc **pas** un gouffre à tokens, mais il faut savoir que c'est
-  attendu. Parser le fichier en `python3` (`json.load` → `workflow_runs[0]`) pour
-  en tirer l'id, puis `actions_list method=list_workflow_jobs` sur cet id, qui
-  donne les deux jobs (« Tests & build » et « Déploiement Vercel »).
+- **Sur `main` après un merge** → `actions_list method=list_workflow_runs` avec
+  **`resource_id: 'ci.yml'` + `perPage: 1`** et le filtre
+  `{branch: 'main', event: 'push'}` : une réponse courte, lisible directement,
+  d'où on tire l'id du run. Puis `actions_list method=list_workflow_jobs` sur
+  cet id, qui donne les trois jobs. ⚠️ Sans `resource_id` ni `perPage` le
+  résultat fait ~93 Ko et part dans un fichier à parser — c'était l'ancienne
+  méthode, elle marche mais rien ne l'oblige. Deux fausses pistes restent
+  fausses : `get_commit` n'expose pas les check runs, et deviner un id répond 404.
+
+⚠️ **L'API des Actions RETARDE de plusieurs minutes.** `get_check_runs` a
+annoncé « in_progress » vingt minutes après la fin réelle d'un job, et
+`list_workflow_jobs` avançait d'une seule étape par interrogation. Ne pas en
+conclure qu'un job est bloqué : `list_workflow_jobs` (le plus frais des trois)
+et `get_job_logs` — dont le 404 signifie « pas encore fini », pas « cassé » —
+tranchent. Et le verrou est **`Tests & build`**, jamais la préversion Vercel.
 
 ⚠️ Ne jamais relire un fichier déversé en entier : le parser.
 
