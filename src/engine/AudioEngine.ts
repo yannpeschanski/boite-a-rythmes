@@ -3,7 +3,15 @@
 // tout ce qui tombe dans les 0.25s à venir sur l'horloge audioCtx.currentTime
 // (jamais setTimeout). SCHEDULE_AHEAD élargi (était 0.12) : plus de tolérance
 // si le fil principal est occupé un instant.
-import type { PatternStateV2, DrumRowName, SynthRowName, SynthVoice, SynthRowState, SynthGlobalState } from '../model/types';
+import type {
+  PatternStateV2,
+  DrumRowName,
+  DrumRowState,
+  SynthRowName,
+  SynthVoice,
+  SynthRowState,
+  SynthGlobalState,
+} from '../model/types';
 import {
   buildGraph,
   applyMixSettings,
@@ -210,6 +218,20 @@ export class AudioEngine {
   private liveGrooveOverride: Partial<
     Pick<PatternStateV2, 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity' | 'spontRoll' | 'randomVelocity' | 'synthSwing'>
   > = {};
+  /* ⚠️ L'OVERRIDE PAR LIGNE DE BATTERIE (2026-09-09) — jumeau de celui du
+   * synthé, et pour la même raison : ces champs se lisent sur `row` au moment
+   * de PROGRAMMER une note (`kit.playKick(t, g, row)`, `row.shiftPct`), pas sur
+   * un nœud du graphe. Les écrire en direct demande donc une couche relue à
+   * chaque fenêtre de scheduling, jamais écrite dans le motif — on repart de
+   * l'Atelier exactement comme on y était.
+   *
+   * ⚠️ Les ENVOIS (réverbe, delay) ne passent PAS par ici : eux sont des nœuds
+   * (`lineReverbSend`, `lineDelaySend`), donc `setLiveLineSend` les écrit
+   * directement. Deux mécanismes, parce qu'il y a deux endroits où le moteur
+   * lit — les confondre ferait un réglage qui ne s'applique qu'à la note
+   * suivante, ou un qui ne s'applique jamais. */
+  private liveDrumOverride: Partial<Record<DrumRowName, Partial<DrumRowState>>> = {};
+
   private liveSynthOverride: Partial<
     Record<SynthRowName, { voice?: Partial<SynthVoice>; glide?: number; strum?: number; muted?: boolean }>
   > = {};
@@ -296,9 +318,18 @@ export class AudioEngine {
     const hasGroove = Object.keys(this.liveGrooveOverride).length > 0;
     const hasSynth = Object.keys(this.liveSynthOverride).length > 0;
     const hasGlobal = Object.keys(this.liveSynthGlobalOverride).length > 0;
-    if (!hasGroove && !hasSynth && !hasGlobal) return state;
+    const hasDrum = Object.keys(this.liveDrumOverride).length > 0;
+    if (!hasGroove && !hasSynth && !hasGlobal && !hasDrum) return state;
     let next = state;
     if (hasGroove) next = { ...next, ...this.liveGrooveOverride };
+    if (hasDrum) {
+      const rows = { ...next.rows };
+      (Object.keys(this.liveDrumOverride) as DrumRowName[]).forEach((name) => {
+        const ov = this.liveDrumOverride[name];
+        if (ov) rows[name] = { ...rows[name], ...ov };
+      });
+      next = { ...next, rows };
+    }
     if (hasGlobal) next = { ...next, synthGlobal: { ...next.synthGlobal, ...this.liveSynthGlobalOverride } };
     if (hasSynth) {
       const synthRows = { ...next.synthRows };
@@ -687,6 +718,36 @@ export class AudioEngine {
       ...this.liveSynthOverride,
       [name]: { ...this.liveSynthOverride[name], [key]: value },
     };
+  }
+
+  /* Un réglage de LIGNE de batterie en direct (2026-09-09) — pitch, decay,
+     décalage, filtre… Mêmes champs et mêmes unités que les pastilles Timbre et
+     Séquence de l'Atelier : le Live ne doit pas inventer une seconde échelle
+     pour le même bouton. */
+  setLiveDrumParam<K extends keyof DrumRowState>(name: DrumRowName, key: K, value: DrumRowState[K]): void {
+    this.liveDrumOverride = {
+      ...this.liveDrumOverride,
+      [name]: { ...this.liveDrumOverride[name], [key]: value },
+    };
+  }
+
+  /** Le retour au morceau d'un réglage de ligne — voir `clearLiveGrooveParam`. */
+  clearLiveDrumParam(name: DrumRowName, key: keyof DrumRowState): void {
+    const { [key]: _drop, ...reste } = this.liveDrumOverride[name] ?? {};
+    this.liveDrumOverride = { ...this.liveDrumOverride, [name]: reste };
+  }
+
+  /* ⚠️ LES ENVOIS SONT DES NŒUDS, PAS UN OVERRIDE — d'où ce chemin séparé.
+   * `lineReverbSend` / `lineDelaySend` existent déjà, un par ligne, batterie ET
+   * synthé confondues (`graph.ts`), et `applyMixSettings` les écrit depuis le
+   * morceau. On écrit donc le nœud, comme `setLiveSaturation`, et le repos
+   * relit le morceau — ce qui rend le « throw » de réverbe compatible avec la
+   * règle du mode : le MIX suit la bascule de section, donc une section qui
+   * arrive reprend la main, et c'est voulu. */
+  setLiveLineSend(name: DrumRowName | SynthRowName, quoi: 'reverb' | 'delay', amount01: number): void {
+    if (!this.graph || !this.ctx) return;
+    const cible = quoi === 'reverb' ? this.graph.lineReverbSend : this.graph.lineDelaySend;
+    cible[name].gain.setTargetAtTime(amount01, this.ctx.currentTime, 0.01);
   }
 
   /** Le retour au morceau d'un glide / étalement — voir `clearLiveGrooveParam`. */

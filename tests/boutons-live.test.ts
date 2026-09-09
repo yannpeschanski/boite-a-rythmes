@@ -9,6 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
+  LIGNES_REGLABLES,
   LIVE_ACTIONS,
   LIVE_AXES,
   ACTIONS_TIRABLES,
@@ -126,6 +127,35 @@ describe('le catalogue reste sain après l’extension', () => {
       expect(ids.has(brut), brut).toBe(false);
     for (const macro of ['brillance-bass', 'mouvement-bass', 'vibrato-synthe'])
       expect(ids.has(macro), macro).toBe(true);
+  });
+
+  /* ⚠️ LA RANGÉE DE KNOBS D'UNE TABLE DE MIXAGE — six réglages par ligne, sur
+     les TROIS lignes que la surface montre. « Pas forcément toutes les
+     lignes » : clap et shaker n'y sont pas, parce que le mini séquenceur ne
+     les affiche pas et qu'un réglage qu'on ne voit pas se régler ne se trouve
+     pas. Le test dit les deux moitiés — ce qui est là, et ce qui ne l'est
+     pas. */
+  it('donne six réglages par ligne, aux trois lignes que la surface montre', () => {
+    const ids = new Set(LIVE_AXES.map((a) => a.id));
+    for (const ligne of LIGNES_REGLABLES)
+      for (const quoi of ['filtre', 'reverb', 'delay', 'pitch', 'decay', 'decalage'])
+        expect(ids.has(`${quoi}-${ligne}`), `${quoi}-${ligne}`).toBe(true);
+    for (const dehors of ['clap', 'shaker']) {
+      expect(LIGNES_REGLABLES).not.toContain(dehors);
+      expect(ids.has(`filtre-${dehors}`), dehors).toBe(false);
+    }
+    // L'attaque porte deux coches qui se contredisent (PAR LIGNE et ATELIER) :
+    // on a suivi l'argument, pas le compte. Elle rentrera d'un mot.
+    expect(ids.has('attaque-kick')).toBe(false);
+  });
+
+  /* Les envois par ligne existent des DEUX côtés — batterie et synthé — parce
+     que le « throw » de réverbe se fait sur la ligne qu'on veut noyer, pas sur
+     celles que le graphe a rendues faciles. */
+  it('donne des envois par ligne à la batterie ET au synthé', () => {
+    const ids = new Set(LIVE_AXES.map((a) => a.id));
+    for (const ligne of [...LIGNES_REGLABLES, 'bass', 'pad', 'melody'])
+      for (const quoi of ['reverb', 'delay']) expect(ids.has(`${quoi}-${ligne}`), `${quoi}-${ligne}`).toBe(true);
   });
 
   /* ⚠️ ET LA CURE DE 2026-09-02 NE DOIT PAS SE DÉFAIRE. Elle avait retiré les

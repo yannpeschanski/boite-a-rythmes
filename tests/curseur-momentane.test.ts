@@ -70,12 +70,30 @@ describe('le curseur momentané rend le réglage au morceau', () => {
     for (const axe of LIVE_AXES) {
       const aller = moteurEspion();
       axe.apply(aller.engine, 0.8);
-      const parOverride = aller.appels.every((a) => /^setLive(Groove|SynthVoice|SynthRow)Param$/.test(a.methode));
+      const parOverride = aller.appels.every((a) => /^setLive(Groove|Drum|SynthVoice|SynthRow)Param$/.test(a.methode));
       if (!parOverride) continue;
       const retour = moteurEspion();
       axe.repos!(retour.engine, base);
       for (const a of retour.appels) expect(a.methode, axe.id).toMatch(/^clearLive/);
     }
+  });
+
+  /* ⚠️ LES ENVOIS NE REVIENNENT PAS À ZÉRO, ILS REVIENNENT AU MORCEAU.
+     Un envoi de réverbe est un NŒUD du graphe, pas un override : son repos ne
+     peut pas « effacer une couche », il doit relire ce que la ligne envoyait.
+     Le lâcher à zéro assécherait une ligne que le morceau voulait mouillée —
+     c'est la même faute que rouvrir un filtre « à 20 kHz ». */
+  it('rend un envoi de ligne à ce que le morceau envoyait', () => {
+    const base = defaultState();
+    base.rows.kick.reverbSend = 0.35;
+    base.synthRows.pad.delaySend = 0.6;
+    const lire = (id: string) => {
+      const e = moteurEspion();
+      LIVE_AXES.find((a) => a.id === id)!.repos!(e.engine, base);
+      return e.appels[0].args;
+    };
+    expect(lire('reverb-kick')).toEqual(['kick', 'reverb', 0.35]);
+    expect(lire('delay-pad')).toEqual(['pad', 'delay', 0.6]);
   });
 
   /* Les deux macros historiques n'ont pas d'override : leurs nœuds (liveFilter,

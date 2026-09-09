@@ -48,6 +48,54 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ La rangée de knobs — six réglages PAR LIGNE (2026-09-09)
+
+Suite directe de la tranche précédente, sur les coches `PAR LIGNE` de la fiche :
+**filtre, réverbe, delay, pitch, decay, décalage**, sur **kick, caisse,
+charley**. Plus les **envois par ligne du synthé**. Catalogue : 42 → 66 axes,
+en trois groupes neufs (LIGNE KICK / LIGNE CAISSE / LIGNE CHARLEY).
+
+⚠️ **Deux domiciles, parce qu'il y a deux endroits où le moteur LIT.** Les
+envois sont des **nœuds** du graphe (`lineReverbSend` / `lineDelaySend`, déjà là,
+un par ligne) : on les écrit directement, et le repos relit le morceau — c'est
+ce qui rend le « throw » juste, on noie une frappe et la ligne revient à son
+envoi d'origine. Le reste (pitch, decay, filtre, décalage) se lit sur `row` au
+moment de PROGRAMMER une note, donc passe par `liveDrumOverride`, jumelle de
+`liveSynthOverride`, effacée au repos.
+
+**Mesuré** (rendu hors ligne, motif nu kick + charley) : filtre à 800 Hz sur le
+CHARLEY → **−29,6 dB d'aigus, 0,0 dB de graves**. C'est exactement ce que la
+fiche demandait — « filtrer la basse en gardant le kick net, ce que le filtre
+global ne peut pas faire ». Le même filtre sur le KICK ne touche pas les aigus
+(0,0 dB) : il n'en a pas, et c'est juste.
+
+⚠️ **TROIS lignes, pas cinq** — « pas forcément toutes les lignes ». On prend
+celles que la surface montre déjà (le mini séquenceur affiche kick, caisse,
+charley) : un réglage qu'on ne voit pas se régler ne se trouve pas. Six × cinq
+auraient fait trente entrées sur un catalogue qu'on venait de dégraisser.
+
+⚠️ **L'ATTAQUE est absente alors qu'elle est COCHÉE.** Elle porte deux coches
+qui se contredisent — `PAR LIGNE` *et* `ATELIER` — et seule la seconde porte un
+argument (« un réglage de son, qu'on trouve une fois pour toutes »). On a suivi
+l'argument plutôt que le compte ; elle rentre d'un mot.
+
+⚠️ **Une fixture de moteur se CONSTRUIT.** `bascule-mesure.test.ts` recopiait à
+la main la vingtaine d'états privés du moteur : le nouvel override l'a cassée
+sur `Object.keys(undefined)`, et chaque champ suivant l'aurait cassée. Elle part
+maintenant de `new AudioEngine(etat)` et ne feint que le contexte, le graphe et
+le kit. Une liste tenue à la main dans un test est une copie de la vérité, donc
+quelque chose qui diverge.
+
+`tests/reglages-par-ligne.test.ts` teste le **câblage** (un `shiftPct` en direct
+déplace bien les frappes de SA ligne, le motif ne bouge pas, l'effacement rend
+la ligne au morceau) — vérifié par mutation : neutraliser la couche fait tomber
+deux tests sur trois. Vérifié aussi au navigateur : 66 axes, 11 groupes,
+« FILTRE CHARLEY » assigné en momentané depuis la surface, aucune erreur JS.
+
+⚠️ **Rugosité connue** : 30 des 66 axes restent des réglages de voix de synthé
+(45 %, contre 78 % avant la révision). Le 🎲 tire là-dedans — c'est meilleur,
+ce n'est pas réglé.
+
 ### ✅ Les curseurs existent — le Mode Live suit la fiche à cocher (2026-09-09)
 
 > Arbitrage de Yann sur le retour de la fiche : **lecture littérale** (les onze

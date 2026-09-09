@@ -282,7 +282,7 @@ et un axe sans `repos` ne peut pas être momentané.
 ⚠️ **Le catalogue suit la fiche à cocher du 2026-09-09**
 (`docs/relecture/parametres-live.html`, 69 paramètres) — et sur cette fiche,
 **ne rien cocher voulait dire « ça reste dans l'Atelier »**, lecture littérale
-arbitrée. 30 actions → 12, 55 axes → 42. Sont sortis : les frappes de ligne et
+arbitrée. 30 actions → 12, 55 axes → 42, puis 66 avec les réglages par ligne. Sont sortis : les frappes de ligne et
 leur rafale, les quatre PAS de groove, ton et gamme, le bypass des limiteurs,
 les maintenus SATURE / BITCRUSH / SANS KICK / BATT. SEULE, le stepper de tempo,
 le volume master et la banque. Sont entrés : trois curseurs (`spont-roll`,
@@ -291,6 +291,29 @@ l'Atelier gagnent contre les paramètres bruts : `cutoff`, `filterEnvAmount` et
 `filterEnvRelease` deviennent BRILLANCE et MOUVEMENT, sous le nom que l'écran
 emploie — c'est la macro nommée de Circuit et d'Ableton, et l'Atelier l'avait
 déjà écrite.
+
+⚠️ **Un réglage EN DIRECT a deux domiciles, selon où le moteur LIT.** Les
+envois (réverbe, delay) sont des **nœuds** (`lineReverbSend` / `lineDelaySend`,
+un par ligne, batterie et synthé confondues) : `setLiveLineSend` les écrit, et
+leur repos relit le morceau. Tout le reste d'une ligne (pitch, decay, filtre,
+décalage) se lit sur `row` au moment de **programmer** une note, donc passe par
+une couche d'override relue à chaque fenêtre (`liveDrumOverride`, jumelle de
+`liveSynthOverride`), et son repos l'efface. Les confondre donne un réglage qui
+ne s'applique qu'à la note suivante, ou un qui ne s'applique jamais.
+
+⚠️ **Les réglages par ligne ne couvrent que les lignes que la surface MONTRE**
+(kick, caisse, charley — celles du mini séquenceur) : « pas forcément toutes les
+lignes ». Six réglages × trois lignes ; les cinq en auraient fait trente sur un
+catalogue qu'on venait de dégraisser, et un réglage qu'on ne voit pas se régler
+ne se trouve pas. `tests/reglages-par-ligne.test.ts` teste le **câblage**, pas le
+calcul — c'est lui qui casse (CLAUDE.md).
+
+⚠️ **Une fixture de moteur se CONSTRUIT, elle ne se recopie pas champ par
+champ.** `bascule-mesure.test.ts` listait à la main la vingtaine d'états privés
+du moteur : ajouter un override l'a cassée sur `Object.keys(undefined)`, et
+chaque suivant l'aurait cassée. `new AudioEngine(etat)` fait tourner tous les
+initialiseurs sans toucher à l'audio — on ne feint plus que le contexte, le
+graphe et le kit.
 
 ⚠️ **La bascule ACTIONS / CURSEUR / MOMENTANÉ vit dans le SÉLECTEUR, pas dans
 ⚙.** Mesuré avant correction : la surface portait six boutons en mode ACTIONS et

@@ -7,7 +7,7 @@
 // catalogue reste des données pures, testable sans monter le composant ni
 // instancier de contexte audio.
 import type { AudioEngine } from '../../engine/AudioEngine';
-import type { SynthRowName, SynthVoice, PatternStateV2 } from '../../model/types';
+import type { DrumRowName, DrumRowState, SynthRowName, SynthVoice, PatternStateV2 } from '../../model/types';
 import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
 /* Le catalogue d'ACTIONS — révisé le 2026-09-02 (docs/plan/05-audit-mode-live).
@@ -285,6 +285,88 @@ function synthAxesFor(name: SynthRowName): LiveAxisDef[] {
   return defs;
 }
 
+/* ---- LES RÉGLAGES PAR LIGNE (2026-09-09) ----
+ *
+ * ⚠️ C'est la rangée de knobs d'une table de mixage, et c'est ce que la fiche
+ * demande le plus fort : « un filtre par ligne, ça permet de filtrer la basse
+ * en gardant le kick net — ce que le filtre global ne peut pas faire ». Les
+ * tables Pioneer posent un Color FX par voie ; le TR-8S un knob CTRL par
+ * instrument. Nous n'avions que du global.
+ *
+ * ⚠️ TROIS LIGNES, PAS CINQ — « en curseur par ligne ? pas forcément toutes les
+ * lignes ». On prend celles que la surface MONTRE déjà (le mini séquenceur du
+ * Live affiche kick, caisse, charley) : un réglage qu'on ne voit pas se régler
+ * est un réglage qu'on ne trouve pas. Six réglages × trois lignes font
+ * dix-huit entrées ; les cinq lignes en auraient fait trente, sur un catalogue
+ * qu'on vient justement de dégraisser.
+ *
+ * ⚠️ L'ATTAQUE est absente ALORS QU'ELLE EST COCHÉE — elle porte deux coches
+ * qui se contredisent (PAR LIGNE *et* ATELIER), et seule la seconde porte un
+ * argument : « un réglage de son, qu'on trouve une fois pour toutes ». On suit
+ * l'argument plutôt que le compte ; elle rentrera d'un mot. */
+const DRUM_LABEL: Record<DrumRowName, string> = {
+  kick: 'KICK',
+  snare: 'CAISSE',
+  hat: 'CHARLEY',
+  clap: 'CLAP',
+  shaker: 'SHAKER',
+};
+
+/* Les lignes qui reçoivent des réglages en direct. Clap et shaker en sont
+   dehors : la surface ne les montre pas. */
+export const LIGNES_REGLABLES: DrumRowName[] = ['kick', 'snare', 'hat'];
+
+function drumAxesFor(name: DrumRowName): LiveAxisDef[] {
+  const category = `LIGNE ${DRUM_LABEL[name]}`;
+  const s = DRUM_LABEL[name];
+  /* Mêmes champs, mêmes bornes et mêmes unités que les pastilles Séquence et
+     Timbre de l'Atelier (DrumRowView.svelte) — le Live n'invente pas une
+     seconde échelle pour le même bouton. */
+  const champ = (key: keyof DrumRowState, valeur: (v: number) => number) => ({
+    apply: (e: AudioEngine, v: number) => e.setLiveDrumParam(name, key, valeur(v) as never),
+    repos: (e: AudioEngine) => e.clearLiveDrumParam(name, key),
+  });
+  /* Les envois passent par le NŒUD, pas par l'override : leur repos relit donc
+     le morceau au lieu d'effacer une couche. C'est ce qui rend le « throw » de
+     réverbe juste — on noie une frappe, on lâche, la ligne revient à son
+     envoi d'origine. */
+  const envoi = (quoi: 'reverb' | 'delay') => ({
+    apply: (e: AudioEngine, v: number) => e.setLiveLineSend(name, quoi, v),
+    repos: (e: AudioEngine, base: PatternStateV2) =>
+      e.setLiveLineSend(name, quoi, (quoi === 'reverb' ? base.rows[name].reverbSend : base.rows[name].delaySend) || 0),
+  });
+  return [
+    { id: `filtre-${name}`, label: `FILTRE ${s}`, category, ...champ('filterCutoff', (v) => expMap(200, 20000, v)) },
+    { id: `reverb-${name}`, label: `RÉVERBE ${s}`, category, ...envoi('reverb') },
+    { id: `delay-${name}`, label: `DELAY ${s}`, category, ...envoi('delay') },
+    // ±24 demi-tons, cran central : le milieu du curseur rend la hauteur d'origine.
+    { id: `pitch-${name}`, label: `PITCH ${s}`, category, ...champ('pitch', (v) => Math.round(linMap(-24, 24, v))) },
+    { id: `decay-${name}`, label: `DECAY ${s}`, category, ...champ('decay', (v) => Math.round(linMap(-50, 50, v))) },
+    // Le décalage ne s'entend que CONTRE un point fixe : c'est tout l'intérêt
+    // de l'avoir par ligne (« faire glisser le charley contre le kick »).
+    { id: `decalage-${name}`, label: `DÉCALAGE ${s}`, category, ...champ('shiftPct', (v) => Math.round(linMap(-50, 50, v))) },
+  ];
+}
+
+/** Les envois d'une ligne de SYNTHÉ — mêmes nœuds, même repos. */
+function synthSendsFor(name: SynthRowName): LiveAxisDef[] {
+  const category = LINE_LABEL[name];
+  const s = LINE_SHORT[name];
+  const envoi = (quoi: 'reverb' | 'delay') => ({
+    apply: (e: AudioEngine, v: number) => e.setLiveLineSend(name, quoi, v),
+    repos: (e: AudioEngine, base: PatternStateV2) =>
+      e.setLiveLineSend(
+        name,
+        quoi,
+        (quoi === 'reverb' ? base.synthRows[name].reverbSend : base.synthRows[name].delaySend) || 0,
+      ),
+  });
+  return [
+    { id: `reverb-${name}`, label: `RÉVERBE ${s}`, category, ...envoi('reverb') },
+    { id: `delay-${name}`, label: `DELAY ${s}`, category, ...envoi('delay') },
+  ];
+}
+
 /** Le même réglage de voix sur LES TROIS lignes de synthé à la fois. */
 function ensembleSynthe(
   id: string,
@@ -397,9 +479,17 @@ export const LIVE_AXES: LiveAxisDef[] = [
   ensembleSynthe('tone-synthe', 'SATURATION SYNTHÉ', 'tone', (v) => linMap(0, 100, v)),
   ensembleSynthe('vibrato-synthe', 'VIBRATO SYNTHÉ', 'vibratoDepth', (v) => v),
 
-  // Voix synthé, une catégorie par ligne.
+  // Les réglages PAR LIGNE — la rangée de knobs. Avant les voix de synthé
+  // dans la liste, parce que ce sont des gestes de scène et pas des réglages
+  // de son : le sélecteur se lit du plus jouable au plus fin.
+  ...LIGNES_REGLABLES.flatMap(drumAxesFor),
+
+  // Voix synthé, une catégorie par ligne — envois d'abord, pour la même raison.
+  ...synthSendsFor('bass'),
   ...synthAxesFor('bass'),
+  ...synthSendsFor('pad'),
   ...synthAxesFor('pad'),
+  ...synthSendsFor('melody'),
   ...synthAxesFor('melody'),
 ];
 
