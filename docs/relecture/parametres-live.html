@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Les paramètres de l'Atelier au Mode Live — à cocher</title>
+<style>
+:root{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+--bg:#0e0e13;--carte:#17171f;--carte2:#1e1e28;--bord:#2c2c3a;--text:#e6e6ef;--doux:#9a9ab0;
+--violet:#7c6cf0;--vert:#39c26a;--ambre:#e8a33d;--rouge:#e2585f;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--sans)}
+header.top{position:sticky;top:0;z-index:5;background:#12121a;border-bottom:1px solid var(--bord);
+padding:10px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:15px;margin:0;font-weight:650;flex:1 1 240px}
+header.top button{font:13px var(--sans);background:var(--carte2);color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:6px 10px;cursor:pointer}
+header.top button.on{background:var(--violet);border-color:var(--violet);color:#fff}
+#compteur{font:12px var(--mono);color:var(--doux)}
+main{max-width:920px;margin:0 auto;padding:20px 18px 90px}
+.intro{background:var(--carte);border:1px solid var(--bord);border-left:3px solid var(--violet);
+border-radius:10px;padding:14px 16px;margin:0 0 20px;font-size:14px}
+.intro p{margin:0 0 8px}.intro p:last-child{margin:0}
+details.leg{background:var(--carte);border:1px solid var(--bord);border-radius:10px;padding:10px 16px;margin:0 0 26px;font-size:13.5px}
+details.leg summary{cursor:pointer;color:var(--doux);font-weight:600}
+details.leg ul{margin:10px 0 2px;padding-left:0;list-style:none}
+details.leg li{margin:0 0 7px}
+section.grp{margin:0 0 30px}
+section.grp>h2{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--doux);
+margin:0 0 6px;border-bottom:1px solid var(--bord);padding-bottom:6px}
+section.grp>.chapo{color:var(--doux);font-size:13.5px;margin:0 0 14px}
+.fiche{background:var(--carte);border:1px solid var(--bord);border-radius:10px;margin:0 0 12px;padding:11px 14px 12px}
+.fiche.hide{display:none}
+.fiche.coche{border-color:var(--vert)}
+.fiche>header{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.fiche .ref{font:11px var(--mono);color:var(--doux);flex:none}
+.fiche h3{margin:0;font-size:15px;font-weight:650}
+.fiche .ou{font-size:11.5px;color:var(--doux);border:1px solid var(--bord);border-radius:20px;padding:1px 8px}
+.quoi{margin:5px 0 4px;font-size:13.5px;color:var(--text)}
+.actuel{margin:0 0 9px;font:12px var(--mono)}
+.actuel.ok{color:var(--vert)}.actuel.ko{color:var(--ambre)}
+.opts{display:flex;flex-direction:column;gap:5px}
+label.opt{display:flex;gap:8px;align-items:flex-start;background:#101018;border:1px solid var(--bord);
+border-radius:7px;padding:7px 9px;cursor:pointer;font-size:13.5px;min-height:44px}
+label.opt:hover{border-color:#3d3d50}
+label.opt.checked{background:#12241a;border-color:var(--vert)}
+label.opt input{margin:3px 0 0;width:17px;height:17px;flex:none;accent-color:var(--vert)}
+.code{font:11px var(--mono);letter-spacing:.05em;background:var(--carte2);border:1px solid var(--bord);
+border-radius:4px;padding:2px 6px;flex:none;color:#c9c9dd;white-space:nowrap;cursor:help}
+.etoile{color:var(--vert);flex:none;font-size:13px}
+.badge{font:10px var(--mono);background:#2a2a38;color:var(--doux);border-radius:4px;padding:2px 5px;flex:none}
+.txt{flex:1 1 auto;min-width:0}
+.fiche textarea{width:100%;margin-top:7px;font:13.5px/1.4 var(--sans);color:var(--text);
+background:#101018;border:1px solid var(--bord);border-radius:6px;padding:6px 8px;resize:vertical}
+.fiche textarea:focus{outline:1px solid var(--violet)}
+dialog{background:var(--carte);color:var(--text);border:1px solid var(--bord);border-radius:10px;
+max-width:820px;width:92vw;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog textarea{width:100%;height:56vh;font:12px/1.5 var(--mono);background:#101018;color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:9px}
+dialog .actions{display:flex;gap:8px;margin-top:10px}
+dialog button{font:13px var(--sans);background:var(--carte2);color:var(--text);border:1px solid var(--bord);
+border-radius:6px;padding:7px 12px;cursor:pointer}
+</style></head><body>
+<header class="top">
+<h1>Les paramètres de l'Atelier — comment les amener au Mode Live</h1>
+<span id="compteur"></span>
+<button id="f-absents">Seulement ce qui manque</button>
+<button id="f-coches">Seulement mes coches</button>
+<button id="export">Exporter mes coches</button>
+</header>
+<main>
+<div class="intro">
+<p><b>Comment ça marche.</b> Un bloc par paramètre de l'Atelier — les 69 qu'il contient vraiment, relevés dans le code. Sous chacun, plusieurs façons de l'amener sur la surface de scène. <b>Coche celles qui te parlent, autant que tu veux ; ne rien cocher veut dire « ça reste dans l'Atelier ».</b> Puis « Exporter mes coches » et recolle le résultat.</p>
+<p>Le <span class="etoile">★</span> est ce que je recommande, la pastille « déjà » est ce que le Mode Live fait aujourd'hui — coche-la quand même si tu veux la garder, décoche-la (laisse-la vide) si tu veux qu'elle disparaisse. La ligne verte ou ambre sous le nom dit l'état actuel.</p>
+<p>Tes coches restent dans ce navigateur, rien ne part sur le réseau. Exporter avant de vider tes données.</p>
+</div>
+<details class="leg"><summary>Les dix façons d'intégrer un paramètre — la légende</summary><ul><li><span class="code">CURSEUR</span> Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.</li><li><span class="code">PAD</span> Assignable à un axe du pad XY ou à l’inclinaison du téléphone.</li><li><span class="code">MAINTENU</span> Appui = la valeur extrême, relâché = retour à ce que dit le morceau.</li><li><span class="code">MAINT+DOSE</span> Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.</li><li><span class="code">PAS</span> Un bouton qui avance d’un palier à chaque appui, en bouclant.</li><li><span class="code">BASCULE</span> Un interrupteur : allumé / éteint.</li><li><span class="code">COUP</span> Un déclencheur ponctuel, pris en compte à la prochaine mesure.</li><li><span class="code">PAR LIGNE</span> Une commande par ligne, comme la rangée de knobs d’une table de mixage.</li><li><span class="code">SÉQUENCEUR</span> Dans la petite grille déjà présente à l’écran du Live.</li><li><span class="code">ATELIER</span> Reste de la PRÉPARATION : ne descend pas sur scène.</li></ul></details>
+<section class="grp"><h2>Transport et général</h2><p class="chapo">Ce qui vaut pour tout le morceau, à portée immédiate dans l’Atelier.</p><article class="fiche" data-ref="g1.1">
+<header><span class="ref">g1.1</span><h3>Tempo</h3><span class="ou">Bandeau</span></header>
+<p class="quoi">40 à 200 BPM.</p>
+<p class="actuel ok">DÉJÀ — stepper ±1 BPM dans le bandeau (maintien = défilement)</p>
+<div class="opts"><label class="opt deja" data-id="g1.1.1"><input type="checkbox" data-id="g1.1.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Garder le stepper ±1 : précis, et sans risque de dérailler d’un geste imprécis.</span></label>
+<label class="opt" data-id="g1.1.2"><input type="checkbox" data-id="g1.1.2">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Un curseur de tempo : rapide, mais un glissement de 2 mm = 10 BPM.</span></label>
+<label class="opt reco" data-id="g1.1.3"><input type="checkbox" data-id="g1.1.3">
+<span class="code" title="Un déclencheur ponctuel, pris en compte à la prochaine mesure.">COUP</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un TAP TEMPO : on tape le tempo au doigt, comme dans l’Atelier.</span></label>
+<label class="opt" data-id="g1.1.4"><input type="checkbox" data-id="g1.1.4">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe du pad — à éviter : le tempo dérive au moindre frôlement.</span></label></div>
+<textarea data-note="g1.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g1.2">
+<header><span class="ref">g1.2</span><h3>Volume général</h3><span class="ou">Production</span></header>
+<p class="quoi">50 à 150 %.</p>
+<p class="actuel ok">DÉJÀ — mini-fader du bandeau + axe « VOLUME »</p>
+<div class="opts"><label class="opt deja" data-id="g1.2.1"><input type="checkbox" data-id="g1.2.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="badge">déjà</span>
+<span class="txt">Aussi sur un bouton, pour l’avoir sous le pouce.</span></label>
+<label class="opt deja" data-id="g1.2.2"><input type="checkbox" data-id="g1.2.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe du pad.</span></label>
+<label class="opt" data-id="g1.2.3"><input type="checkbox" data-id="g1.2.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Un fondu tenu : on baisse le temps d’un break, on lâche, ça revient.</span></label></div>
+<textarea data-note="g1.2" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Groove de la batterie</h2><p class="chapo">Onglet Rythme, bloc « Groove ». C’est ce qui fait qu’un motif identique sonne différemment.</p><article class="fiche" data-ref="g2.1">
+<header><span class="ref">g2.1</span><h3>Swing</h3><span class="ou">Groove</span></header>
+<p class="quoi">Retarde les pas impairs, 0 à 75 %.</p>
+<p class="actuel ok">DÉJÀ — axe « SWING » + bouton PAS (0→25→50→66)</p>
+<div class="opts"><label class="opt reco" data-id="g2.1.1"><input type="checkbox" data-id="g2.1.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le balayage continu : on entend le groove glisser du droit au chaloupé.</span></label>
+<label class="opt deja" data-id="g2.1.2"><input type="checkbox" data-id="g2.1.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt deja" data-id="g2.1.3"><input type="checkbox" data-id="g2.1.3">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Les quatre paliers.</span></label>
+<label class="opt" data-id="g2.1.4"><input type="checkbox" data-id="g2.1.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Swinguer deux mesures puis revenir.</span></label></div>
+<textarea data-note="g2.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g2.2">
+<header><span class="ref">g2.2</span><h3>Traîne</h3><span class="ou">Groove</span></header>
+<p class="quoi">Retard fixe de TOUS les pas, 0 à 30 %.</p>
+<p class="actuel ok">DÉJÀ — axe « TRAÎNE »</p>
+<div class="opts"><label class="opt" data-id="g2.2.1"><input type="checkbox" data-id="g2.2.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g2.2.2"><input type="checkbox" data-id="g2.2.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g2.2.3"><input type="checkbox" data-id="g2.2.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Elle est GLOBALE et uniforme : sans point fixe contre quoi s’entendre, elle est presque inaudible en boucle (c’est déjà pour ça qu’elle est hors du catalogue d’exercices).</span></label></div>
+<textarea data-note="g2.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g2.3">
+<header><span class="ref">g2.3</span><h3>Rafales spontanées</h3><span class="ou">Groove</span></header>
+<p class="quoi">Probabilité qu’un pas de charley parte en rafale, 0 à 100 %.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g2.3.1"><input type="checkbox" data-id="g2.3.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Doser le désordre du charley en direct.</span></label>
+<label class="opt" data-id="g2.3.2"><input type="checkbox" data-id="g2.3.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g2.3.3"><input type="checkbox" data-id="g2.3.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Ouvrir les vannes le temps d’une transition, puis revenir au propre.</span></label>
+<label class="opt" data-id="g2.3.4"><input type="checkbox" data-id="g2.3.4">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Trois paliers (0 / 20 / 50 %).</span></label></div>
+<textarea data-note="g2.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g2.4">
+<header><span class="ref">g2.4</span><h3>Ghost notes</h3><span class="ou">Groove</span></header>
+<p class="quoi">Densité des frappes fantômes, 0 à 40 %.</p>
+<p class="actuel ok">DÉJÀ — axe « GHOST NOTES » + bouton PAS (0→15→30)</p>
+<div class="opts"><label class="opt" data-id="g2.4.1"><input type="checkbox" data-id="g2.4.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g2.4.2"><input type="checkbox" data-id="g2.4.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt deja" data-id="g2.4.3"><input type="checkbox" data-id="g2.4.3">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Les trois paliers.</span></label>
+<label class="opt" data-id="g2.4.4"><input type="checkbox" data-id="g2.4.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Épaissir le groove le temps d’un couplet.</span></label></div>
+<textarea data-note="g2.4" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g2.5">
+<header><span class="ref">g2.5</span><h3>Ligne des ghost notes</h3><span class="ou">Groove</span></header>
+<p class="quoi">Quelle ligne reçoit les fantômes (caisse par défaut).</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g2.5.1"><input type="checkbox" data-id="g2.5.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Un bouton qui fait tourner kick → caisse → charley.</span></label>
+<label class="opt reco" data-id="g2.5.2"><input type="checkbox" data-id="g2.5.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">C’est un choix d’arrangement, pas un geste.</span></label></div>
+<textarea data-note="g2.5" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g2.6">
+<header><span class="ref">g2.6</span><h3>Vélocité aléatoire</h3><span class="ou">Groove</span></header>
+<p class="quoi">Dispersion des gains, 0 à 100 % — l’humanisation.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g2.6.1"><input type="checkbox" data-id="g2.6.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">De la machine parfaite au batteur fatigué, en continu.</span></label>
+<label class="opt" data-id="g2.6.2"><input type="checkbox" data-id="g2.6.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt" data-id="g2.6.3"><input type="checkbox" data-id="g2.6.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Débrider deux mesures.</span></label></div>
+<textarea data-note="g2.6" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g2.7">
+<header><span class="ref">g2.7</span><h3>Intensité du fill</h3><span class="ou">Groove</span></header>
+<p class="quoi">Dose la montée de fin de mesure, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « INT. FILL » + bouton PAS (0→50→100)</p>
+<div class="opts"><label class="opt" data-id="g2.7.1"><input type="checkbox" data-id="g2.7.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g2.7.2"><input type="checkbox" data-id="g2.7.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt deja" data-id="g2.7.3"><input type="checkbox" data-id="g2.7.3">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Trois paliers.</span></label></div>
+<textarea data-note="g2.7" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g2.8">
+<header><span class="ref">g2.8</span><h3>Fill toutes les N mesures</h3><span class="ou">Groove</span></header>
+<p class="quoi">Fill automatique : jamais, 2, 4 ou 8 mesures.</p>
+<p class="actuel ko">ABSENT — seul le fill MANUEL existe en Live</p>
+<div class="opts"><label class="opt reco" data-id="g2.8.1"><input type="checkbox" data-id="g2.8.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un bouton qui fait tourner jamais → 8 → 4 → 2 : le morceau respire tout seul pendant qu’on fait autre chose.</span></label>
+<label class="opt" data-id="g2.8.2"><input type="checkbox" data-id="g2.8.2">
+<span class="code" title="Un interrupteur : allumé / éteint.">BASCULE</span>
+<span class="txt">Fill auto activé / coupé, sans choisir la période.</span></label>
+<label class="opt" data-id="g2.8.3"><input type="checkbox" data-id="g2.8.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un réglage de morceau, pas un geste.</span></label></div>
+<textarea data-note="g2.8" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Production — le bus batterie</h2><p class="chapo">Onglet Production. Trois traitements sur toute la batterie, plus les limiteurs.</p><article class="fiche" data-ref="g3.1">
+<header><span class="ref">g3.1</span><h3>Saturation</h3><span class="ou">Production</span></header>
+<p class="quoi">Drive sur le bus batterie, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « SATUR. BATT. » + maintenu « SATURE »</p>
+<div class="opts"><label class="opt" data-id="g3.1.1"><input type="checkbox" data-id="g3.1.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g3.1.2"><input type="checkbox" data-id="g3.1.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt deja" data-id="g3.1.3"><input type="checkbox" data-id="g3.1.3">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="badge">déjà</span>
+<span class="txt">Le maintenu binaire actuel.</span></label>
+<label class="opt reco" data-id="g3.1.4"><input type="checkbox" data-id="g3.1.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le même maintenu, mais dosé par la position — c’est ce que fait le ruban de Maschine.</span></label></div>
+<textarea data-note="g3.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g3.2">
+<header><span class="ref">g3.2</span><h3>Compression</h3><span class="ou">Production</span></header>
+<p class="quoi">Colle le bus batterie, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « COMP. BATT. »</p>
+<div class="opts"><label class="opt" data-id="g3.2.1"><input type="checkbox" data-id="g3.2.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g3.2.2"><input type="checkbox" data-id="g3.2.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt" data-id="g3.2.3"><input type="checkbox" data-id="g3.2.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Écraser le temps d’un passage.</span></label></div>
+<textarea data-note="g3.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g3.3">
+<header><span class="ref">g3.3</span><h3>Bitcrush</h3><span class="ou">Production</span></header>
+<p class="quoi">Réduction de résolution, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « CRUSH BATT. » + maintenu « BITCRUSH »</p>
+<div class="opts"><label class="opt" data-id="g3.3.1"><input type="checkbox" data-id="g3.3.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g3.3.2"><input type="checkbox" data-id="g3.3.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt deja" data-id="g3.3.3"><input type="checkbox" data-id="g3.3.3">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="badge">déjà</span>
+<span class="txt">Le maintenu binaire actuel.</span></label>
+<label class="opt reco" data-id="g3.3.4"><input type="checkbox" data-id="g3.3.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Dosé par la position.</span></label></div>
+<textarea data-note="g3.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g3.4">
+<header><span class="ref">g3.4</span><h3>Limiteurs</h3><span class="ou">Production</span></header>
+<p class="quoi">Protection par ligne et sur la sortie.</p>
+<p class="actuel ok">DÉJÀ — bascule « BYPASS LIM. »</p>
+<div class="opts"><label class="opt deja" data-id="g3.4.1"><input type="checkbox" data-id="g3.4.1">
+<span class="code" title="Un interrupteur : allumé / éteint.">BASCULE</span><span class="badge">déjà</span>
+<span class="txt">Le bypass actuel.</span></label>
+<label class="opt" data-id="g3.4.2"><input type="checkbox" data-id="g3.4.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un garde-fou, pas un geste de scène : le retirer en public est le meilleur moyen de saturer.</span></label></div>
+<textarea data-note="g3.4" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Chaque ligne de batterie</h2><p class="chapo">Les trois pastilles sous une ligne dans l’Atelier — Séquence, Timbre, Filtre &amp; espace. Cinq lignes (kick, caisse, charley, clap, shaker) partagent les mêmes réglages, d’où « PAR LIGNE » : une commande qui existe une fois par ligne, comme la rangée de knobs d’une table de mixage.</p><article class="fiche absent" data-ref="g4.1">
+<header><span class="ref">g4.1</span><h3>Pas (subdivision)</h3><span class="ou">Séquence</span></header>
+<p class="quoi">De 1 à 32 pas pour la ligne — c’est ce qui fait les polyrythmies.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g4.1.1"><input type="checkbox" data-id="g4.1.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Un bouton qui fait tourner 8 → 12 → 16 sur une ligne : le motif se déforme sans qu’on touche une case.</span></label>
+<label class="opt" data-id="g4.1.2"><input type="checkbox" data-id="g4.1.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt reco" data-id="g4.1.3"><input type="checkbox" data-id="g4.1.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Changer la subdivision, c’est réécrire le motif — plus une décision qu’un geste.</span></label></div>
+<textarea data-note="g4.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.2">
+<header><span class="ref">g4.2</span><h3>Décalage</h3><span class="ou">Séquence</span></header>
+<p class="quoi">Avance ou retarde toute la ligne, −50 à +50 % d’un pas.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g4.2.1"><input type="checkbox" data-id="g4.2.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Faire glisser le charley contre le kick, en direct : un vrai geste de groove.</span></label>
+<label class="opt reco" data-id="g4.2.2"><input type="checkbox" data-id="g4.2.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un par ligne, sinon il n’a rien contre quoi s’entendre.</span></label>
+<label class="opt" data-id="g4.2.3"><input type="checkbox" data-id="g4.2.3">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt" data-id="g4.2.4"><input type="checkbox" data-id="g4.2.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Décaler le temps d’un passage.</span></label></div>
+<textarea data-note="g4.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.3">
+<header><span class="ref">g4.3</span><h3>Volume de la ligne</h3><span class="ou">Séquence</span></header>
+<p class="quoi">0 à 100 % — le vrai mélangeur.</p>
+<p class="actuel ko">ABSENT en continu (seules les COUPURES existent)</p>
+<div class="opts"><label class="opt reco" data-id="g4.3.1"><input type="checkbox" data-id="g4.3.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Cinq curseurs de volume = une table de mixage. C’est le geste de scène le plus universel qui soit.</span></label>
+<label class="opt reco" data-id="g4.3.2"><input type="checkbox" data-id="g4.3.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt" data-id="g4.3.3"><input type="checkbox" data-id="g4.3.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Baisser une ligne le temps d’un break plutôt que la couper net.</span></label></div>
+<textarea data-note="g4.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.4">
+<header><span class="ref">g4.4</span><h3>Coups euclidiens</h3><span class="ou">Séquence</span></header>
+<p class="quoi">Répartit N coups sur les pas de la ligne, automatiquement.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g4.4.1"><input type="checkbox" data-id="g4.4.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Un bouton qui ajoute un coup à chaque appui : le motif se densifie tout seul.</span></label>
+<label class="opt" data-id="g4.4.2"><input type="checkbox" data-id="g4.4.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt reco" data-id="g4.4.3"><input type="checkbox" data-id="g4.4.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Il ÉCRASE le motif écrit à la main — dangereux en plein set.</span></label></div>
+<textarea data-note="g4.4" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g4.5">
+<header><span class="ref">g4.5</span><h3>Muet</h3><span class="ou">Séquence</span></header>
+<p class="quoi">Coupe la ligne.</p>
+<p class="actuel ok">DÉJÀ — séquenceur du Live, « COUPER BATT. », « SANS KICK » (maintenu)</p>
+<div class="opts"><label class="opt deja" data-id="g4.5.1"><input type="checkbox" data-id="g4.5.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span><span class="badge">déjà</span>
+<span class="txt">On coupe une ligne là où on la voit.</span></label>
+<label class="opt deja" data-id="g4.5.2"><input type="checkbox" data-id="g4.5.2">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="badge">déjà</span>
+<span class="txt">Retirer une ligne quatre temps, puis la rendre.</span></label>
+<label class="opt" data-id="g4.5.3"><input type="checkbox" data-id="g4.5.3">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Un maintenu par ligne, pas seulement pour le kick.</span></label></div>
+<textarea data-note="g4.5" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.6">
+<header><span class="ref">g4.6</span><h3>Pitch</h3><span class="ou">Timbre</span></header>
+<p class="quoi">±24 demi-tons sur la voix de la ligne.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g4.6.1"><input type="checkbox" data-id="g4.6.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Monter la caisse claire d’une octave en direct : un classique.</span></label>
+<label class="opt reco" data-id="g4.6.2"><input type="checkbox" data-id="g4.6.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt" data-id="g4.6.3"><input type="checkbox" data-id="g4.6.3">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g4.6.4"><input type="checkbox" data-id="g4.6.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un « riser » tenu : la caisse monte tant qu’on tient.</span></label></div>
+<textarea data-note="g4.6" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.7">
+<header><span class="ref">g4.7</span><h3>Attaque</h3><span class="ou">Timbre</span></header>
+<p class="quoi">0 à 100 → +0 à 80 ms sur l’attaque.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g4.7.1"><input type="checkbox" data-id="g4.7.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt" data-id="g4.7.2"><input type="checkbox" data-id="g4.7.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt reco" data-id="g4.7.3"><input type="checkbox" data-id="g4.7.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un réglage de son, qu’on trouve une fois pour toutes.</span></label></div>
+<textarea data-note="g4.7" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.8">
+<header><span class="ref">g4.8</span><h3>Decay</h3><span class="ou">Timbre</span></header>
+<p class="quoi">−50 à +50 → durée de la queue.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g4.8.1"><input type="checkbox" data-id="g4.8.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Raccourcir le kick pour un passage sec, l’allonger pour un drop.</span></label>
+<label class="opt reco" data-id="g4.8.2"><input type="checkbox" data-id="g4.8.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt" data-id="g4.8.3"><input type="checkbox" data-id="g4.8.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Tenu.</span></label></div>
+<textarea data-note="g4.8" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.9">
+<header><span class="ref">g4.9</span><h3>Tone</h3><span class="ou">Timbre</span></header>
+<p class="quoi">−100 à +100, drive doux (surtout le kick).</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g4.9.1"><input type="checkbox" data-id="g4.9.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt" data-id="g4.9.2"><input type="checkbox" data-id="g4.9.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt reco" data-id="g4.9.3"><input type="checkbox" data-id="g4.9.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le jeu enseigne lui-même que son effet ne s’entend presque pas en studio (verbe « laverie ») : mauvais candidat pour la scène.</span></label></div>
+<textarea data-note="g4.9" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.10">
+<header><span class="ref">g4.10</span><h3>Filtre passe-bas</h3><span class="ou">Filtre &amp; espace</span></header>
+<p class="quoi">200 Hz à 20 kHz, PAR LIGNE.</p>
+<p class="actuel ko">ABSENT par ligne — le filtre du Live est global</p>
+<div class="opts"><label class="opt reco" data-id="g4.10.1"><input type="checkbox" data-id="g4.10.1">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un filtre par ligne, c’est la rangée Sound Color FX d’une table Pioneer. Ça permet de filtrer la basse en gardant le kick net — ce que le filtre global ne peut pas faire.</span></label>
+<label class="opt reco" data-id="g4.10.2"><input type="checkbox" data-id="g4.10.2">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt" data-id="g4.10.3"><input type="checkbox" data-id="g4.10.3">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g4.10.4"><input type="checkbox" data-id="g4.10.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Fermer le filtre d’une ligne le temps d’un break.</span></label></div>
+<textarea data-note="g4.10" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.11">
+<header><span class="ref">g4.11</span><h3>Envoi réverbe</h3><span class="ou">Filtre &amp; espace</span></header>
+<p class="quoi">0 à 100 %, PAR LIGNE.</p>
+<p class="actuel ko">ABSENT par ligne — la réverbe du Live est globale</p>
+<div class="opts"><label class="opt reco" data-id="g4.11.1"><input type="checkbox" data-id="g4.11.1">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Noyer la caisse seule, pas tout le morceau.</span></label>
+<label class="opt" data-id="g4.11.2"><input type="checkbox" data-id="g4.11.2">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt reco" data-id="g4.11.3"><input type="checkbox" data-id="g4.11.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le « throw » de réverbe : on noie une frappe, on lâche.</span></label></div>
+<textarea data-note="g4.11" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g4.12">
+<header><span class="ref">g4.12</span><h3>Envoi delay</h3><span class="ou">Filtre &amp; espace</span></header>
+<p class="quoi">0 à 100 %, PAR LIGNE.</p>
+<p class="actuel ko">ABSENT par ligne</p>
+<div class="opts"><label class="opt reco" data-id="g4.12.1"><input type="checkbox" data-id="g4.12.1">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt" data-id="g4.12.2"><input type="checkbox" data-id="g4.12.2">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt reco" data-id="g4.12.3"><input type="checkbox" data-id="g4.12.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le « delay throw », le geste de dub par excellence.</span></label></div>
+<textarea data-note="g4.12" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Synthé — les réglages globaux</h2><p class="chapo">Module Synthé, bloc du haut. Ils valent pour les trois lignes à la fois.</p><article class="fiche" data-ref="g5.1">
+<header><span class="ref">g5.1</span><h3>Tonalité</h3><span class="ou">Synthé</span></header>
+<p class="quoi">Les 12 notes.</p>
+<p class="actuel ok">DÉJÀ — boutons PAS « TON +1 » et « TON −1 »</p>
+<div class="opts"><label class="opt deja" data-id="g5.1.1"><input type="checkbox" data-id="g5.1.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Les deux boutons ±1 demi-ton.</span></label>
+<label class="opt" data-id="g5.1.2"><input type="checkbox" data-id="g5.1.2">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Un curseur de transposition, avec cran central.</span></label>
+<label class="opt reco" data-id="g5.1.3"><input type="checkbox" data-id="g5.1.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Transposer tant qu’on tient, revenir au relâché : une modulation qu’on ne peut pas oublier de défaire.</span></label></div>
+<textarea data-note="g5.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g5.2">
+<header><span class="ref">g5.2</span><h3>Gamme</h3><span class="ou">Synthé</span></header>
+<p class="quoi">Cinq modes.</p>
+<p class="actuel ok">DÉJÀ — boutons PAS « GAMME → » et « GAMME ← »</p>
+<div class="opts"><label class="opt deja" data-id="g5.2.1"><input type="checkbox" data-id="g5.2.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Les deux boutons.</span></label>
+<label class="opt" data-id="g5.2.2"><input type="checkbox" data-id="g5.2.2">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span>
+<span class="txt">Basculer en mineur le temps d’un pont.</span></label></div>
+<textarea data-note="g5.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g5.3">
+<header><span class="ref">g5.3</span><h3>Nombre d’accords</h3><span class="ou">Synthé</span></header>
+<p class="quoi">4 à 7 triades diatoniques.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g5.3.1"><input type="checkbox" data-id="g5.3.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Un bouton 4 → 5 → 6 → 7.</span></label>
+<label class="opt reco" data-id="g5.3.2"><input type="checkbox" data-id="g5.3.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Change la grille harmonique du morceau : c’est de l’écriture.</span></label></div>
+<textarea data-note="g5.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g5.4">
+<header><span class="ref">g5.4</span><h3>Taux de remplissage</h3><span class="ou">Synthé</span></header>
+<p class="quoi">Densité du remplissage automatique des lignes de synthé.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g5.4.1"><input type="checkbox" data-id="g5.4.1">
+<span class="code" title="Un déclencheur ponctuel, pris en compte à la prochaine mesure.">COUP</span>
+<span class="txt">Un bouton « regénère les lignes de synthé » : hasard maîtrisé, à la mesure.</span></label>
+<label class="opt reco" data-id="g5.4.2"><input type="checkbox" data-id="g5.4.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Il RÉÉCRIT les notes — irréversible en plein morceau, et l’annulation n’existe pas dans le Live.</span></label></div>
+<textarea data-note="g5.4" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g5.5">
+<header><span class="ref">g5.5</span><h3>Swing synthé</h3><span class="ou">Synthé</span></header>
+<p class="quoi">0 à 75 %, indépendant de celui de la batterie.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g5.5.1"><input type="checkbox" data-id="g5.5.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Décaler le synthé contre une batterie droite : c’est exactement ce qui fait le feel.</span></label>
+<label class="opt" data-id="g5.5.2"><input type="checkbox" data-id="g5.5.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt" data-id="g5.5.3"><input type="checkbox" data-id="g5.5.3">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Quatre paliers, comme le swing batterie.</span></label></div>
+<textarea data-note="g5.5" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g5.6">
+<header><span class="ref">g5.6</span><h3>Traîne synthé</h3><span class="ou">Synthé</span></header>
+<p class="quoi">0 à 30 %.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g5.6.1"><input type="checkbox" data-id="g5.6.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt reco" data-id="g5.6.2"><input type="checkbox" data-id="g5.6.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Même raison que la traîne batterie : globale, donc sans repère.</span></label></div>
+<textarea data-note="g5.6" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g5.7">
+<header><span class="ref">g5.7</span><h3>Taille de la réverbe</h3><span class="ou">Synthé</span></header>
+<p class="quoi">0 à 100 % → impulsion de 0,5 à 3,5 s.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g5.7.1"><input type="checkbox" data-id="g5.7.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Trois tailles (petite / salle / cathédrale) : un pas, pas un balayage.</span></label>
+<label class="opt" data-id="g5.7.2"><input type="checkbox" data-id="g5.7.2">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">⚠️ Chaque changement RECONSTRUIT l’impulsion — la seule opération coûteuse du moteur. En continu, elle craquerait.</span></label>
+<label class="opt" data-id="g5.7.3"><input type="checkbox" data-id="g5.7.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Laisser la taille en préparation, ne piloter que le DOSAGE en scène.</span></label></div>
+<textarea data-note="g5.7" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g5.8">
+<header><span class="ref">g5.8</span><h3>Feedback du delay</h3><span class="ou">Synthé</span></header>
+<p class="quoi">0 à 90 %.</p>
+<p class="actuel ok">DÉJÀ — axe « DELAY FB »</p>
+<div class="opts"><label class="opt" data-id="g5.8.1"><input type="checkbox" data-id="g5.8.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g5.8.2"><input type="checkbox" data-id="g5.8.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g5.8.3"><input type="checkbox" data-id="g5.8.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Pousser le feedback jusqu’à l’auto-oscillation puis lâcher : le geste de dub.</span></label></div>
+<textarea data-note="g5.8" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g5.9">
+<header><span class="ref">g5.9</span><h3>Division du delay</h3><span class="ou">Synthé</span></header>
+<p class="quoi">Croche, croche pointée, noire, double.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g5.9.1"><input type="checkbox" data-id="g5.9.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un bouton qui fait tourner les quatre divisions : ça change complètement le rebond.</span></label>
+<label class="opt" data-id="g5.9.2"><input type="checkbox" data-id="g5.9.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un réglage de son.</span></label></div>
+<textarea data-note="g5.9" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Le sidechain</h2><p class="chapo">Module Synthé, bloc « Sidechain ». Qui déclenche, qui est ducké, de combien.</p><article class="fiche absent" data-ref="g6.1">
+<header><span class="ref">g6.1</span><h3>Déclencheurs (kick, caisse)</h3><span class="ou">Sidechain</span></header>
+<p class="quoi">Quelles frappes font respirer le synthé.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g6.1.1"><input type="checkbox" data-id="g6.1.1">
+<span class="code" title="Un interrupteur : allumé / éteint.">BASCULE</span>
+<span class="txt">Deux interrupteurs.</span></label>
+<label class="opt reco" data-id="g6.1.2"><input type="checkbox" data-id="g6.1.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un câblage, pas un geste.</span></label></div>
+<textarea data-note="g6.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g6.2">
+<header><span class="ref">g6.2</span><h3>Cibles (basse, nappe, mélodie)</h3><span class="ou">Sidechain</span></header>
+<p class="quoi">Quelles lignes sont duckées.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g6.2.1"><input type="checkbox" data-id="g6.2.1">
+<span class="code" title="Un interrupteur : allumé / éteint.">BASCULE</span>
+<span class="txt">Trois interrupteurs — mettre la nappe dans la pompe le temps d’un refrain a du sens.</span></label>
+<label class="opt reco" data-id="g6.2.2"><input type="checkbox" data-id="g6.2.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un câblage.</span></label></div>
+<textarea data-note="g6.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g6.3">
+<header><span class="ref">g6.3</span><h3>Profondeur du sidechain</h3><span class="ou">Sidechain</span></header>
+<p class="quoi">0 à 100 % — l’ampleur de la pompe.</p>
+<p class="actuel ok">DÉJÀ — axe « SIDECHAIN » + bouton PAS (0→50→100)</p>
+<div class="opts"><label class="opt reco" data-id="g6.3.1"><input type="checkbox" data-id="g6.3.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g6.3.2"><input type="checkbox" data-id="g6.3.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt deja" data-id="g6.3.3"><input type="checkbox" data-id="g6.3.3">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Trois paliers.</span></label>
+<label class="opt" data-id="g6.3.4"><input type="checkbox" data-id="g6.3.4">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Pomper à fond le temps d’un drop.</span></label></div>
+<textarea data-note="g6.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g6.4">
+<header><span class="ref">g6.4</span><h3>Retour du sidechain</h3><span class="ou">Sidechain</span></header>
+<p class="quoi">20 à 600 ms — la vitesse de remontée.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g6.4.1"><input type="checkbox" data-id="g6.4.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">C’est lui qui fait la différence entre « ça respire » et « ça pompe » — plus expressif que la profondeur.</span></label>
+<label class="opt" data-id="g6.4.2"><input type="checkbox" data-id="g6.4.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label></div>
+<textarea data-note="g6.4" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Chaque ligne de synthé</h2><p class="chapo">Basse, nappe, mélodie. Le catalogue du Live en contient déjà quatorze par ligne — 43 axes sur 55 — et c’est précisément ce qui rend le tirage 🎲 illisible : quatre chances sur cinq de tomber sur un réglage de voix. La question posée ici n’est donc pas « faut-il les ajouter » mais « lesquels méritent de RESTER ».</p><article class="fiche absent" data-ref="g7.1">
+<header><span class="ref">g7.1</span><h3>Cycles (mesures)</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">1 à 16 mesures pour la ligne.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g7.1.1"><input type="checkbox" data-id="g7.1.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Doubler ou diviser la longueur d’une ligne en direct.</span></label>
+<label class="opt reco" data-id="g7.1.2"><input type="checkbox" data-id="g7.1.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Réécrit la structure de la ligne.</span></label></div>
+<textarea data-note="g7.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g7.2">
+<header><span class="ref">g7.2</span><h3>Notes du cycle</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">1 à 128 notes réparties sur le cycle.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g7.2.1"><input type="checkbox" data-id="g7.2.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Densifier la ligne d’un cran.</span></label>
+<label class="opt reco" data-id="g7.2.2"><input type="checkbox" data-id="g7.2.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Redimensionne le motif.</span></label></div>
+<textarea data-note="g7.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g7.3">
+<header><span class="ref">g7.3</span><h3>Décalage</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">−50 à +50 % d’un pas.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g7.3.1"><input type="checkbox" data-id="g7.3.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Faire traîner la basse derrière le kick.</span></label>
+<label class="opt" data-id="g7.3.2"><input type="checkbox" data-id="g7.3.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Un par ligne.</span></label></div>
+<textarea data-note="g7.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g7.4">
+<header><span class="ref">g7.4</span><h3>Volume de la ligne</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">0 à 150 %.</p>
+<p class="actuel ko">ABSENT en continu</p>
+<div class="opts"><label class="opt reco" data-id="g7.4.1"><input type="checkbox" data-id="g7.4.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">La suite de la table de mixage : huit lignes, huit volumes.</span></label>
+<label class="opt reco" data-id="g7.4.2"><input type="checkbox" data-id="g7.4.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un par ligne.</span></label>
+<label class="opt" data-id="g7.4.3"><input type="checkbox" data-id="g7.4.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Retirer la nappe deux mesures.</span></label></div>
+<textarea data-note="g7.4" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.5">
+<header><span class="ref">g7.5</span><h3>Glide</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">Portamento entre deux notes, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « GLIDE » par ligne</p>
+<div class="opts"><label class="opt" data-id="g7.5.1"><input type="checkbox" data-id="g7.5.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g7.5.2"><input type="checkbox" data-id="g7.5.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g7.5.3"><input type="checkbox" data-id="g7.5.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Rendre la basse liquide le temps d’un passage.</span></label></div>
+<textarea data-note="g7.5" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.6">
+<header><span class="ref">g7.6</span><h3>Étalement (nappe)</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">Arpège les notes de l’accord, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « ÉTALEMENT »</p>
+<div class="opts"><label class="opt" data-id="g7.6.1"><input type="checkbox" data-id="g7.6.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g7.6.2"><input type="checkbox" data-id="g7.6.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label></div>
+<textarea data-note="g7.6" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.7">
+<header><span class="ref">g7.7</span><h3>Voix (preset de la ligne)</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">Choisir une voix dans le catalogue.</p>
+<p class="actuel ok">RETIRÉ le 2026-09-02 — « de la préparation, pas un geste de scène »</p>
+<div class="opts"><label class="opt reco" data-id="g7.7.1"><input type="checkbox" data-id="g7.7.1">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Maintenir l’arbitrage : on ne feuillette pas des presets en plein morceau.</span></label>
+<label class="opt" data-id="g7.7.2"><input type="checkbox" data-id="g7.7.2">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span>
+<span class="txt">Le faire revenir, avec deux ou trois voix seulement au lieu de tout le catalogue.</span></label></div>
+<textarea data-note="g7.7" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g7.8">
+<header><span class="ref">g7.8</span><h3>Forme d’onde</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">Sinus, triangle, dent de scie, carré.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g7.8.1"><input type="checkbox" data-id="g7.8.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un bouton qui fait tourner les quatre : c’est le changement de couleur le plus franc du synthé, et il est instantané.</span></label>
+<label class="opt" data-id="g7.8.2"><input type="checkbox" data-id="g7.8.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un réglage de son.</span></label></div>
+<textarea data-note="g7.8" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.9">
+<header><span class="ref">g7.9</span><h3>Brillance</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">MACRO déjà nommée dans l’Atelier : elle pilote le cutoff en échelle log.</p>
+<p class="actuel ok">DÉJÀ, mais en pièces détachées — axe « CUTOFF » par ligne</p>
+<div class="opts"><label class="opt reco" data-id="g7.9.1"><input type="checkbox" data-id="g7.9.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Porter la MACRO telle quelle, sous son nom, plutôt que le paramètre brut : c’est exactement la macro nommée de Circuit et d’Ableton, et l’Atelier l’a déjà écrite.</span></label>
+<label class="opt" data-id="g7.9.2"><input type="checkbox" data-id="g7.9.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt reco" data-id="g7.9.3"><input type="checkbox" data-id="g7.9.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Fermer une ligne le temps d’un break.</span></label></div>
+<textarea data-note="g7.9" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.10">
+<header><span class="ref">g7.10</span><h3>Mouvement</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">MACRO déjà nommée : ampleur ET temps de fermeture de l’enveloppe de filtre, ensemble.</p>
+<p class="actuel ok">DÉJÀ, mais en pièces détachées — axes « ENV. FILTRE » et « FERM. FILTRE »</p>
+<div class="opts"><label class="opt reco" data-id="g7.10.1"><input type="checkbox" data-id="g7.10.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Porter la macro sous son nom, et retirer les deux axes bruts qu’elle remplace.</span></label>
+<label class="opt" data-id="g7.10.2"><input type="checkbox" data-id="g7.10.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span>
+<span class="txt">Sur un axe.</span></label></div>
+<textarea data-note="g7.10" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.11">
+<header><span class="ref">g7.11</span><h3>Attaque / Release</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">0 à 200 ms et 0 à 4 s.</p>
+<p class="actuel ok">DÉJÀ — axes « ATTACK » et « RELEASE » par ligne</p>
+<div class="opts"><label class="opt" data-id="g7.11.1"><input type="checkbox" data-id="g7.11.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt deja" data-id="g7.11.2"><input type="checkbox" data-id="g7.11.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt" data-id="g7.11.3"><input type="checkbox" data-id="g7.11.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Deux réglages qu’on trouve une fois, et qu’on ne rejoue pas.</span></label></div>
+<textarea data-note="g7.11" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g7.12">
+<header><span class="ref">g7.12</span><h3>Courbes d’attaque et de release</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">Linéaire ou exponentielle.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g7.12.1"><input type="checkbox" data-id="g7.12.1">
+<span class="code" title="Un interrupteur : allumé / éteint.">BASCULE</span>
+<span class="txt">Deux interrupteurs.</span></label>
+<label class="opt reco" data-id="g7.12.2"><input type="checkbox" data-id="g7.12.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Trop fin pour la scène.</span></label></div>
+<textarea data-note="g7.12" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.13">
+<header><span class="ref">g7.13</span><h3>Sub</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">Octave grave ajoutée, 0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « SUB » par ligne</p>
+<div class="opts"><label class="opt reco" data-id="g7.13.1"><input type="checkbox" data-id="g7.13.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Ajouter du grave sur un drop : franc et immédiat.</span></label>
+<label class="opt deja" data-id="g7.13.2"><input type="checkbox" data-id="g7.13.2">
+<span class="code" title="Assignable à un axe du pad XY ou à l’inclinaison du téléphone.">PAD</span><span class="badge">déjà</span>
+<span class="txt">Sur un axe.</span></label>
+<label class="opt" data-id="g7.13.3"><input type="checkbox" data-id="g7.13.3">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Tenu.</span></label></div>
+<textarea data-note="g7.13" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.14">
+<header><span class="ref">g7.14</span><h3>Saturation de la voix</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">0 à 100 % sur la ligne (champ `tone`).</p>
+<p class="actuel ok">DÉJÀ — axe « TONE » par ligne</p>
+<div class="opts"><label class="opt" data-id="g7.14.1"><input type="checkbox" data-id="g7.14.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt reco" data-id="g7.14.2"><input type="checkbox" data-id="g7.14.2">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Salir une ligne deux mesures.</span></label></div>
+<textarea data-note="g7.14" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.15">
+<header><span class="ref">g7.15</span><h3>Détune et mix de détune</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">Désaccord de la seconde voix, 0 à 30 cents, et son dosage.</p>
+<p class="actuel ok">DÉJÀ — axes « DÉTUNE » et « MIX DÉT. »</p>
+<div class="opts"><label class="opt" data-id="g7.15.1"><input type="checkbox" data-id="g7.15.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt reco" data-id="g7.15.2"><input type="checkbox" data-id="g7.15.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un réglage de son ; deux axes pour une seule idée.</span></label></div>
+<textarea data-note="g7.15" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.16">
+<header><span class="ref">g7.16</span><h3>Chorus</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">0 à 100 %.</p>
+<p class="actuel ok">DÉJÀ — axe « CHORUS » par ligne</p>
+<div class="opts"><label class="opt" data-id="g7.16.1"><input type="checkbox" data-id="g7.16.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt" data-id="g7.16.2"><input type="checkbox" data-id="g7.16.2">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span>
+<span class="txt">Élargir le temps d’un refrain.</span></label>
+<label class="opt" data-id="g7.16.3"><input type="checkbox" data-id="g7.16.3">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un réglage de son.</span></label></div>
+<textarea data-note="g7.16" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.17">
+<header><span class="ref">g7.17</span><h3>Vibrato (profondeur et vitesse)</h3><span class="ou">Timbre synthé</span></header>
+<p class="quoi">Deux curseurs.</p>
+<p class="actuel ok">DÉJÀ — axes « VIBRATO » et « VIB. RATE »</p>
+<div class="opts"><label class="opt" data-id="g7.17.1"><input type="checkbox" data-id="g7.17.1">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label>
+<label class="opt reco" data-id="g7.17.2"><input type="checkbox" data-id="g7.17.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Deux axes pour un détail — candidats au retrait.</span></label></div>
+<textarea data-note="g7.17" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g7.18">
+<header><span class="ref">g7.18</span><h3>Envois réverbe et delay</h3><span class="ou">Filtre &amp; espace synthé</span></header>
+<p class="quoi">0 à 100 % chacun, PAR LIGNE.</p>
+<p class="actuel ko">ABSENT par ligne</p>
+<div class="opts"><label class="opt reco" data-id="g7.18.1"><input type="checkbox" data-id="g7.18.1">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Noyer la mélodie seule.</span></label>
+<label class="opt reco" data-id="g7.18.2"><input type="checkbox" data-id="g7.18.2">
+<span class="code" title="Le momentané des machines : l’appui engage, la position du doigt dose, le relâché rend le morceau.">MAINT+DOSE</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le throw de réverbe ou de delay sur une ligne choisie.</span></label>
+<label class="opt" data-id="g7.18.3"><input type="checkbox" data-id="g7.18.3">
+<span class="code" title="Un des six boutons devient un curseur : on glisse dessus, la position donne la valeur.">CURSEUR</span>
+<span class="txt">Sur un bouton.</span></label></div>
+<textarea data-note="g7.18" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g7.19">
+<header><span class="ref">g7.19</span><h3>Muet (ligne de synthé)</h3><span class="ou">Séquence synthé</span></header>
+<p class="quoi">Coupe la ligne.</p>
+<p class="actuel ok">DÉJÀ — « COUPER SYNTHÉ », « BATT. SEULE », « SOLO MÉLO »</p>
+<div class="opts"><label class="opt reco" data-id="g7.19.1"><input type="checkbox" data-id="g7.19.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Le séquenceur du Live ne montre que trois lignes de batterie : y ajouter les lignes de synthé les rendrait coupables là où on les voit.</span></label>
+<label class="opt deja" data-id="g7.19.2"><input type="checkbox" data-id="g7.19.2">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="badge">déjà</span>
+<span class="txt">Un maintenu par ligne.</span></label></div>
+<textarea data-note="g7.19" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>La nappe — ses trois modes</h2><p class="chapo">Module Synthé, ligne Nappe. Normal, arpège, bourdon — exclusifs dans le moteur.</p><article class="fiche" data-ref="g8.1">
+<header><span class="ref">g8.1</span><h3>Mode de la nappe</h3><span class="ou">Nappe</span></header>
+<p class="quoi">Normal → arpège → bourdon.</p>
+<p class="actuel ok">DÉJÀ — bouton PAS « MODE NAPPE »</p>
+<div class="opts"><label class="opt deja" data-id="g8.1.1"><input type="checkbox" data-id="g8.1.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="badge">déjà</span>
+<span class="txt">Les trois états sur un bouton.</span></label>
+<label class="opt reco" data-id="g8.1.2"><input type="checkbox" data-id="g8.1.2">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Passer en bourdon tant qu’on tient : une pédale de tension.</span></label></div>
+<textarea data-note="g8.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g8.2">
+<header><span class="ref">g8.2</span><h3>Motif de l’arpège</h3><span class="ou">Nappe</span></header>
+<p class="quoi">Montant, descendant, aller-retour, aléatoire.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g8.2.1"><input type="checkbox" data-id="g8.2.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un bouton qui fait tourner les quatre.</span></label>
+<label class="opt" data-id="g8.2.2"><input type="checkbox" data-id="g8.2.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un réglage de son.</span></label></div>
+<textarea data-note="g8.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g8.3">
+<header><span class="ref">g8.3</span><h3>Débit de l’arpège</h3><span class="ou">Nappe</span></header>
+<p class="quoi">2, 4 ou 8 notes par pas.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt reco" data-id="g8.3.1"><input type="checkbox" data-id="g8.3.1">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Trois débits : c’est un geste de montée évident.</span></label>
+<label class="opt" data-id="g8.3.2"><input type="checkbox" data-id="g8.3.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span>
+<span class="txt">Un réglage de son.</span></label></div>
+<textarea data-note="g8.3" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>La séquence elle-même</h2><p class="chapo">Les cases, pas les curseurs. C’est là que le Mode Live est déjà le plus complet — et là que la mesure a trouvé le plus de défauts.</p><article class="fiche" data-ref="g9.1">
+<header><span class="ref">g9.1</span><h3>Allumer / éteindre un pas</h3><span class="ou">Grille</span></header>
+<p class="quoi">Le geste de base de l’Atelier.</p>
+<p class="actuel ok">DÉJÀ — séquenceur 3 lignes du Live</p>
+<div class="opts"><label class="opt deja" data-id="g9.1.1"><input type="checkbox" data-id="g9.1.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span><span class="badge">déjà</span>
+<span class="txt">Les trois lignes actuelles.</span></label>
+<label class="opt" data-id="g9.1.2"><input type="checkbox" data-id="g9.1.2">
+<span class="code" title="Une commande par ligne, comme la rangée de knobs d’une table de mixage.">PAR LIGNE</span>
+<span class="txt">Étendre aux cinq lignes de batterie, pas seulement trois.</span></label></div>
+<textarea data-note="g9.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g9.2">
+<header><span class="ref">g9.2</span><h3>Variantes d’un pas</h3><span class="ou">Grille</span></header>
+<p class="quoi">Rim shot sur la caisse, charley ouvert.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g9.2.1"><input type="checkbox" data-id="g9.2.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span>
+<span class="txt">Un appui long sur une case du séquenceur du Live.</span></label>
+<label class="opt reco" data-id="g9.2.2"><input type="checkbox" data-id="g9.2.2">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un bouton « OUVERT » tenu : tous les charleys s’ouvrent tant qu’on tient — ça, c’est un vrai geste de scène.</span></label></div>
+<textarea data-note="g9.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g9.3">
+<header><span class="ref">g9.3</span><h3>Rafale d’un pas (×1 à ×4)</h3><span class="ou">Grille</span></header>
+<p class="quoi">Écrite case par case dans l’Atelier.</p>
+<p class="actuel ok">DÉJÀ, mais en maintien global sur une ligne entière</p>
+<div class="opts"><label class="opt deja" data-id="g9.3.1"><input type="checkbox" data-id="g9.3.1">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="badge">déjà</span>
+<span class="txt">Le maintien actuel — ⚠️ il remplit TOUTE la ligne, il escalade tout seul ×2→×3→×4, il ignore le plancher anti-bouillie du moteur et il empile deux frappes au même instant dès qu’il y a du swing.</span></label>
+<label class="opt reco" data-id="g9.3.2"><input type="checkbox" data-id="g9.3.2">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Choisir la DIVISION (1/8, 1/16, 1/32, triolets) au lieu d’un multiplicateur qui monte tout seul — c’est le Note Repeat des MPC, et il ne peut pas déborder.</span></label>
+<label class="opt" data-id="g9.3.3"><input type="checkbox" data-id="g9.3.3">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span>
+<span class="txt">Poser la rafale sur une case précise, comme dans l’Atelier.</span></label></div>
+<textarea data-note="g9.3" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g9.4">
+<header><span class="ref">g9.4</span><h3>Frapper une ligne à la main</h3><span class="ou">Pad de saisie</span></header>
+<p class="quoi">Jouer un coup au doigt.</p>
+<p class="actuel ok">DÉJÀ — cinq boutons de ligne</p>
+<div class="opts"><label class="opt deja" data-id="g9.4.1"><input type="checkbox" data-id="g9.4.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span><span class="badge">déjà</span>
+<span class="txt">Les cinq boutons actuels — ⚠️ la frappe n’est aimantée par aucune grille (±81 à ±334 ms selon le motif) et ne déclenche pas le sidechain.</span></label>
+<label class="opt reco" data-id="g9.4.2"><input type="checkbox" data-id="g9.4.2">
+<span class="code" title="Un bouton qui avance d’un palier à chaque appui, en bouclant.">PAS</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Un aimant vers le pas le plus proche, réglable (aucun / au pas / au temps) — c’est le Timing Correct des MPC.</span></label></div>
+<textarea data-note="g9.4" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g9.5">
+<header><span class="ref">g9.5</span><h3>Écrire une note de synthé</h3><span class="ou">Pad de saisie</span></header>
+<p class="quoi">Le clavier de degrés de l’Atelier.</p>
+<p class="actuel ok">PARTIEL — « SOLO MÉLO » joue la mélodie au pad, en maintenu</p>
+<div class="opts"><label class="opt" data-id="g9.5.1"><input type="checkbox" data-id="g9.5.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span>
+<span class="txt">Un vrai clavier de degrés sur la surface du Live.</span></label>
+<label class="opt deja" data-id="g9.5.2"><input type="checkbox" data-id="g9.5.2">
+<span class="code" title="Appui = la valeur extrême, relâché = retour à ce que dit le morceau.">MAINTENU</span><span class="badge">déjà</span>
+<span class="txt">Le solo actuel.</span></label></div>
+<textarea data-note="g9.5" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+<section class="grp"><h2>Le morceau et les outils</h2><p class="chapo">Ce qui n’est pas un paramètre mais qu’on trouve dans l’Atelier, et qui pose la même question.</p><article class="fiche absent" data-ref="g10.1">
+<header><span class="ref">g10.1</span><h3>Charger un preset (34 morceaux)</h3><span class="ou">Menu Morceaux</span></header>
+<p class="quoi">Remplace tout l’état.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g10.1.1"><input type="checkbox" data-id="g10.1.1">
+<span class="code" title="Un déclencheur ponctuel, pris en compte à la prochaine mesure.">COUP</span>
+<span class="txt">Un bouton qui charge un morceau au prochain début de mesure.</span></label>
+<label class="opt reco" data-id="g10.1.2"><input type="checkbox" data-id="g10.1.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">Les LETTRES A/B/C font déjà ce travail, et mieux : elles portent le morceau qu’on a préparé.</span></label></div>
+<textarea data-note="g10.1" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche" data-ref="g10.2">
+<header><span class="ref">g10.2</span><h3>Banque de séquences</h3><span class="ou">Menu Morceaux</span></header>
+<p class="quoi">Les motifs rangés.</p>
+<p class="actuel ok">DÉJÀ — la banque et les lettres A/B/C</p>
+<div class="opts"><label class="opt deja" data-id="g10.2.1"><input type="checkbox" data-id="g10.2.1">
+<span class="code" title="Dans la petite grille déjà présente à l’écran du Live.">SÉQUENCEUR</span><span class="badge">déjà</span>
+<span class="txt">La bande de scènes actuelle.</span></label></div>
+<textarea data-note="g10.2" rows="1" placeholder="note libre…"></textarea>
+</article>
+<article class="fiche absent" data-ref="g10.3">
+<header><span class="ref">g10.3</span><h3>Annuler / Rétablir</h3><span class="ou">Barre d’outils</span></header>
+<p class="quoi">L’historique.</p>
+<p class="actuel ko">ABSENT du Mode Live</p>
+<div class="opts"><label class="opt" data-id="g10.3.1"><input type="checkbox" data-id="g10.3.1">
+<span class="code" title="Un déclencheur ponctuel, pris en compte à la prochaine mesure.">COUP</span>
+<span class="txt">Un bouton ANNULER sur la surface : ce serait le filet de tout ce qui précède.</span></label>
+<label class="opt reco" data-id="g10.3.2"><input type="checkbox" data-id="g10.3.2">
+<span class="code" title="Reste de la PRÉPARATION : ne descend pas sur scène.">ATELIER</span><span class="etoile" title="ce que je recommande">★</span>
+<span class="txt">⚠️ Mais rien de ce que fait le Live n’entre dans l’historique : ce bouton annulerait la dernière action de l’ATELIER, pas le geste qu’on vient de faire. À ne pas poser tel quel.</span></label></div>
+<textarea data-note="g10.3" rows="1" placeholder="note libre…"></textarea>
+</article></section>
+</main>
+<dialog id="dlg"><p style="margin:0 0 8px;font-weight:650">Mes coches</p>
+<textarea id="out" readonly></textarea>
+<div class="actions"><button id="copier">Copier</button><button id="fermer">Fermer</button></div></dialog>
+<script>
+const CLE = 'params-live-v1';
+const etat = JSON.parse(localStorage.getItem(CLE) || '{}');
+const cases = [...document.querySelectorAll('input[type=checkbox]')];
+const notes = [...document.querySelectorAll('textarea[data-note]')];
+function sauver(){ localStorage.setItem(CLE, JSON.stringify(etat)); }
+function peindre(){
+  let n = 0;
+  for (const c of cases){
+    const on = !!etat[c.dataset.id];
+    c.checked = on; c.closest('label').classList.toggle('checked', on); if (on) n++;
+  }
+  for (const f of document.querySelectorAll('.fiche'))
+    f.classList.toggle('coche', !!f.querySelector('input:checked'));
+  document.getElementById('compteur').textContent = n + ' / ' + cases.length + ' cochées';
+}
+for (const c of cases) c.addEventListener('change', () => { if (c.checked) etat[c.dataset.id] = 1; else delete etat[c.dataset.id]; sauver(); peindre(); });
+for (const t of notes){ t.value = etat['n:' + t.dataset.note] || '';
+  t.addEventListener('input', () => { if (t.value.trim()) etat['n:' + t.dataset.note] = t.value; else delete etat['n:' + t.dataset.note]; sauver(); }); }
+let fA = false, fC = false;
+function filtrer(){
+  document.getElementById('f-absents').classList.toggle('on', fA);
+  document.getElementById('f-coches').classList.toggle('on', fC);
+  for (const f of document.querySelectorAll('.fiche')){
+    const ok = (!fA || f.classList.contains('absent')) && (!fC || f.classList.contains('coche'));
+    f.classList.toggle('hide', !ok);
+  }
+  for (const s of document.querySelectorAll('section.grp'))
+    s.style.display = s.querySelector('.fiche:not(.hide)') ? '' : 'none';
+}
+document.getElementById('f-absents').onclick = () => { fA = !fA; filtrer(); };
+document.getElementById('f-coches').onclick = () => { fC = !fC; filtrer(); };
+document.getElementById('export').onclick = () => {
+  const l = ['# Paramètres de l’Atelier -> Mode Live — ce que je retiens', ''];
+  for (const s of document.querySelectorAll('section.grp')){
+    const dedans = [];
+    for (const f of s.querySelectorAll('.fiche')){
+      const ch = [...f.querySelectorAll('input:checked')];
+      const note = (f.querySelector('textarea').value || '').trim();
+      if (!ch.length && !note) continue;
+      const nom = f.querySelector('h3').textContent;
+      dedans.push('- **' + nom + '**' + (ch.length ? '' : ' — (rien de coché)'));
+      for (const c of ch){
+        const lab = c.closest('label');
+        dedans.push('    - `' + lab.querySelector('.code').textContent + '` ' + lab.querySelector('.txt').textContent);
+      }
+      if (note) dedans.push('    - _note :_ ' + note);
+    }
+    if (dedans.length){ l.push('## ' + s.querySelector('h2').textContent, ''); l.push(...dedans, ''); }
+  }
+  const vides = [...document.querySelectorAll('.fiche')].filter((f) => !f.querySelector('input:checked')).map((f) => f.querySelector('h3').textContent);
+  if (vides.length) l.push('## Rien de coché — reste dans l’Atelier', '', vides.map((v) => '- ' + v).join('\n'), '');
+  document.getElementById('out').value = l.join('\n');
+  document.getElementById('dlg').showModal();
+};
+document.getElementById('copier').onclick = () => { const o = document.getElementById('out'); o.select(); document.execCommand('copy'); };
+document.getElementById('fermer').onclick = () => document.getElementById('dlg').close();
+peindre();
+</script></body></html>

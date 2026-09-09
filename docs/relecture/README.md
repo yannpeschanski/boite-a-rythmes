@@ -59,3 +59,29 @@ seul onglet.
 
 La mesure qui l'accompagne se relance : `node scripts/verrous-masques.cjs`
 (serveur de dev démarré). Écrite à la main, pas dérivée des données.
+
+## `parametres-live.html` — la fiche À COCHER des paramètres
+
+Demandée par Yann le 2026-09-09 : *« Tu me fais un petit fichier html avec la
+liste des paramètres de l'atelier. Pour chaque paramètre de l'atelier, tu
+proposes plusieurs manières de les intégrer au mode live. Je n'ai plus qu'à
+cocher ceux que je trouve pertinents. »*
+
+**69 paramètres, 184 propositions à cocher**, dix façons d'intégrer (curseur,
+axe du pad, maintenu, maintenu dosé, pas, bascule, coup, par ligne, séquenceur,
+ou rester dans l'Atelier). Gestes : cocher, une note libre par paramètre, deux
+filtres (ce qui manque au Live · mes coches), et « Exporter mes coches ».
+
+⚠️ **Ne rien cocher est une réponse** : ça veut dire « ce paramètre reste dans
+l'Atelier », et l'export le dit explicitement.
+
+Elle est **dérivée du code** — l'inventaire vient de `model/types.ts` et des
+cinq panneaux de l'Atelier, l'état « déjà là » de `ui/live/liveActions.ts`.
+La régénérer :
+
+```bash
+node scripts/relecture-parametres-live.cjs
+```
+
+⚠️ Les coches sont indexées par position (`g4.7.2`) : **insérer un paramètre au
+milieu d'un groupe décale les suivants.** Exporter avant de régénérer.

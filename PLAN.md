@@ -31,7 +31,8 @@ une ligne réécrite ni réordonnée.
 | [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
 | [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode, ce que la mesure trouve, et les décisions qui restent. Fiche annotable : `docs/relecture/assemblage.html` |
 | [`08-etat-de-lart-structures.md`](docs/plan/08-etat-de-lart-structures.md) | **État de l'art (2026-09-07)** — ce que font les machines, les longueurs conventionnelles, et les quatre modèles proposés. Fiche : `docs/relecture/assemblage-2.html` |
-| [`09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md) | **État de l'art (2026-09-09)** — les COMMANDES du Mode Live — pourquoi les gestes rythmiques sont musicalement FAUX (bouillie, frappes empilées par le swing, accent retourné, hors grille), mesuré par `scripts/banc-live.cjs` ; ce que les machines mettent sous les doigts ; huit pistes à arbitrer. Fiche à venir |
+| [`09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md) | **État de l'art (2026-09-09)** — les COMMANDES du Mode Live — pourquoi les gestes rythmiques sont musicalement FAUX (bouillie, frappes empilées par le swing, accent retourné, hors grille), mesuré par `scripts/banc-live.cjs` ; ce que les machines mettent sous les doigts ; huit pistes à arbitrer. Fiche : `docs/relecture/parametres-live.html` |
+| [`relecture/parametres-live.html`](docs/relecture/parametres-live.html) | **Fiche à cocher (2026-09-09)** — les 69 paramètres de l'Atelier, et pour chacun plusieurs façons de l'amener au Mode Live. `scripts/relecture-parametres-live.cjs` |
 
 ⚠️ **Les renvois `PLAN.md §1` à `§7` semés dans le code restent valides** : ces
 sections numérotées sont parties telles quelles dans
@@ -46,6 +47,30 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ---
 
 ## Journal des livraisons — Mode jeu et Mode carrière
+
+### ✅ La fiche à cocher : les 69 paramètres de l'Atelier face au Mode Live (2026-09-09)
+
+> Yann, après deux passes d'audit qui ne lui allaient pas : *« Je ne suis pas
+> satisfait de ta manière de traiter ce sujet. Je propose une idée, je te laisse
+> la rendre pertinente. Tu me fais un petit fichier html avec la liste des
+> paramètres de l'atelier. Pour chaque paramètre de l'atelier, tu proposes
+> plusieurs manières de les intégrer au mode live. Je n'ai plus qu'à cocher ceux
+> que je trouve pertinents. »*
+
+`docs/relecture/parametres-live.html`, généré par
+`scripts/relecture-parametres-live.cjs`. **69 paramètres** relevés dans le code
+(`model/types.ts` + les cinq panneaux de l'Atelier), **184 propositions**
+réparties sur dix façons d'intégrer : CURSEUR, PAD, MAINTENU, MAINT+DOSE, PAS,
+BASCULE, COUP, PAR LIGNE, SÉQUENCEUR, ATELIER.
+
+⚠️ **Ne rien cocher est une réponse** — « ce paramètre reste dans l'Atelier » —
+et l'export le dit explicitement, sinon un paramètre non traité ne se
+distinguerait pas d'un paramètre oublié. Chaque ligne porte aussi son état
+RÉEL (« DÉJÀ — axe SWING » / « ABSENT »), lu dans `liveActions.ts` : c'est ce
+qui rend le delta visible, et ce qui permet de DÉCOCHER pour retirer.
+
+Vérifié au navigateur : 0 erreur JS, aucun débordement horizontal en 900 px ni
+en 390 px, coches et notes persistées au rechargement, export Markdown complet.
 
 ### ✅ Benchmark des commandes du Mode Live — et la correction d'axe (2026-09-09)
 
