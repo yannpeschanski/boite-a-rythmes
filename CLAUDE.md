@@ -315,6 +315,21 @@ chaque suivant l'aurait cassée. `new AudioEngine(etat)` fait tourner tous les
 initialiseurs sans toucher à l'audio — on ne feint plus que le contexte, le
 graphe et le kit.
 
+⚠️ **Le mini séquenceur a DEUX modes écrits — ▦ PAS et ▮ VOLUMES.** Régler un
+volume à l'endroit où on voit la ligne était demandé deux fois ; y mettre un
+GESTE (glisser sur la ligne) aurait fait le quatrième geste caché du mode, la
+ligne étant déjà prise par le mute. Deux boutons nommés au-dessus du bloc lui
+servent aussi de titre. En mode VOLUMES la ligne se scinde : le nom coupe, la
+piste devient le curseur — un interactif dans un interactif ne se tape pas de
+façon prévisible.
+
+⚠️ **Asymétrie ASSUMÉE, en attente d'arbitrage : un override survit à une
+bascule de section, un nœud du morceau non.** Les volumes de batterie passent
+par `liveDrumOverride` (relu à chaque fenêtre) et tiennent ; ceux du synthé
+passent par `synthLineGain`, que `refreshMixSettings` réécrit à chaque scène.
+La vue efface donc son affichage des volumes de synthé à la bascule — montrer
+un chiffre que plus personne ne joue serait pire que les deux comportements.
+
 ⚠️ **La bascule ACTIONS / CURSEUR / MOMENTANÉ vit dans le SÉLECTEUR, pas dans
 ⚙.** Mesuré avant correction : la surface portait six boutons en mode ACTIONS et
 zéro fader, ASSIGNER proposait 31 entrées dont **aucun axe**, et le seul chemin

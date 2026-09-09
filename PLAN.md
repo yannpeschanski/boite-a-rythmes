@@ -48,6 +48,61 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le mini séquenceur règle les volumes — ▦ PAS / ▮ VOLUMES (2026-09-09)
+
+> Demandé DEUX fois sur la fiche, pour la batterie puis pour le synthé : *« il
+> faudrait pouvoir régler le volume au niveau du mini séquenceur, quitte à
+> revoir le design ici »*, puis *« cf. commentaire déjà fait […] à voir
+> comment »*.
+
+⚠️ **Une moitié de la demande était déjà vraie et n'a rien coûté :** le mini
+séquenceur montre les lignes de SYNTHÉ depuis toujours — `lignesQuiSonnent`
+balaie `[...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES]` et ne garde que ce qui sonne.
+Sur le motif d'accueil il n'affiche que trois lignes de batterie parce que le
+synthé y est muet ; sur un preset fourni il en montre sept. Vérifié avant de
+coder — la coche « SÉQUENCEUR » sur le mute des lignes de synthé était déjà
+tenue.
+
+**Ce qui manquait, c'était le volume.** Deux modes ÉCRITS au-dessus du bloc :
+▦ PAS (la grille d'aujourd'hui, inchangée) et ▮ VOLUMES (une barre par ligne,
+glissée). ⚠️ Pas un geste sur la ligne : elle est déjà prise par le mute, et ce
+serait le quatrième geste caché de ce mode. Les deux boutons servent en prime de
+TITRE au bloc, qui n'en avait pas.
+
+⚠️ **Deux familles, deux chemins — encore.** Le volume d'une ligne de batterie
+se lit sur `row` à la frappe, donc `setLiveDrumParam` (l'override de la tranche
+précédente, réutilisé tel quel). Celui d'une ligne de synthé est un nœud,
+`synthLineGain` : d'où `setLiveSynthLineVolume`. **Mesuré** que c'est le bon
+nœud, par rendu hors ligne sur la basse d'un preset : nœud à 0,2 → **−10,6 dB**
+(pas −14 : le limiteur de ligne rattrape), nœud à 0 → **−162,5 dB**, silence.
+
+Les six volumes entrent aussi au catalogue (`volume-<ligne>`, 66 → 72 axes) :
+la fiche les coche `CURSEUR` *et* `PAR LIGNE`, donc ils doivent être
+assignables à un bouton autant que réglables ici — les deux écrivent la même
+couche.
+
+⚠️ **UNE ASYMÉTRIE ASSUMÉE, qui attend un arbitrage.** Un override survit à une
+bascule de section ; un nœud du morceau non, puisque `refreshMixSettings` le
+réécrit (« le MIX suit la bascule »). Donc un volume de batterie posé à la main
+TIENT à travers les scènes, un volume de synthé NON. Ce n'est pas nouveau — les
+overrides de groove et de voix se comportaient déjà ainsi — mais ça devient
+visible maintenant que les deux familles sont côte à côte dans le même écran. La
+vue efface au moins son affichage des volumes de synthé à la bascule : montrer
+un chiffre que plus personne ne joue serait pire que les deux comportements.
+**La question à trancher : une bascule de scène doit-elle rendre la main au
+morceau sur TOUT ce qu'on a réglé en direct, ou sur rien ?**
+
+Vérifié au navigateur, preset boom bap chargé, 844 × 390 : sept lignes
+affichées (kick, caisse, charley, clap, basse, nappe, mélodie), volumes lus sur
+le morceau (100/90/60/55/100/100/100), glisser sur la 3e → 20 %, mute toujours
+joignable dans ce mode, aucune erreur JS, aucun débordement.
+
+⚠️ **Rugosité mesurée** : à sept lignes, le visualiseur tombe à 34 px (la rangée
+de modes en prend 30). Rien n'est coupé et le spectre reste lisible comme
+mouvement — mais c'est la limite. Le panneau du visualiseur était déjà signalé
+comme plus haut que ce qu'il remplit ; c'est là qu'il faudra reprendre de la
+place si une ligne s'ajoute.
+
 ### ✅ La rangée de knobs — six réglages PAR LIGNE (2026-09-09)
 
 Suite directe de la tranche précédente, sur les coches `PAR LIGNE` de la fiche :

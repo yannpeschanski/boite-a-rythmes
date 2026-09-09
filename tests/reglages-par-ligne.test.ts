@@ -110,4 +110,36 @@ describe('un réglage par ligne arrive jusqu’à l’ordonnanceur', () => {
     expect(effectif.rows.kick.pitch).toBe(12);
     expect(effectif.rows.snare).toBe(st.rows.snare);
   });
+
+  /* Le VOLUME d'une ligne de batterie emprunte le même chemin que le reste —
+     c'est ce qui permet au mini séquenceur de le régler en direct sans rien
+     écrire dans le morceau. (Celui d'une ligne de SYNTHÉ, lui, est un nœud du
+     graphe : il se mesure au rendu, pas ici.) */
+  it('fait passer le volume d’une ligne de batterie par la même couche', () => {
+    const st = motif();
+    const { engine } = monterMoteur(() => st);
+    const lu = () =>
+      (engine as unknown as { withLiveOverrides(x: PatternStateV2): PatternStateV2 }).withLiveOverrides(st);
+    engine.setLiveDrumParam('kick', 'volume', 0.2);
+    expect(lu().rows.kick.volume).toBe(0.2);
+    expect(st.rows.kick.volume).toBe(1);
+    engine.clearLiveDrumParam('kick', 'volume');
+    expect(lu().rows.kick.volume).toBe(1);
+  });
+
+  /* Le VOLUME d'une ligne de batterie emprunte le même chemin que le reste —
+     c'est ce qui permet au mini séquenceur de le régler en direct sans rien
+     écrire dans le morceau. (Celui d'une ligne de SYNTHÉ, lui, est un nœud du
+     graphe : il se mesure au rendu, pas ici.) */
+  it('fait passer le volume d’une ligne de batterie par la même couche', () => {
+    const st = motif();
+    const { engine } = monterMoteur(() => st);
+    engine.setLiveDrumParam('kick', 'volume', 0.2);
+    const lu = (s2: PatternStateV2) =>
+      (engine as unknown as { withLiveOverrides(x: PatternStateV2): PatternStateV2 }).withLiveOverrides(s2);
+    expect(lu(st).rows.kick.volume).toBe(0.2);
+    expect(st.rows.kick.volume).toBe(1);
+    engine.clearLiveDrumParam('kick', 'volume');
+    expect(lu(st).rows.kick.volume).toBe(1);
+  });
 });

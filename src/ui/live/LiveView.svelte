@@ -669,6 +669,17 @@
           `applyMixSettings` n'écrit jamais. Le pad, l'inclinaison et les faders
           gardent donc la main pendant qu'une section passe. */
     engine.refreshMixSettings();
+    /* ⚠️ ET CE QU'IL REPREND, LUI, DOIT CESSER D'ÊTRE AFFICHÉ COMME RÉGLÉ.
+       Les volumes de ligne du synthé passent par les nœuds du MORCEAU
+       (`synthLineGain`), donc `refreshMixSettings` vient de les remettre à ce
+       que dit la lettre. Garder la valeur posée à la main afficherait un
+       chiffre que plus personne ne joue — et le séquenceur est le seul écran
+       qui dit le niveau d'une ligne.
+       ⚠️ Les volumes de BATTERIE ne sont PAS effacés : eux passent par un
+       override relu à chaque fenêtre, donc ils tiennent vraiment à travers la
+       bascule. Asymétrie assumée entre les deux familles, pas un oubli — elle
+       attend un arbitrage (PLAN.md). */
+    for (const name of SYNTH_ROW_NAMES) delete volLive[name];
     /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
        sur une seule séquence.
        ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
@@ -1097,6 +1108,59 @@
     if (name in st.rows) return (st.rows[name as DrumRowName].pattern[i] ?? 0) > 0;
     const v = st.synthRows[name as SynthRowName].pattern[i];
     return name === 'pad' ? typeof v === 'number' && v >= 0 : v != null;
+  }
+
+  /* ---- LE MINI SÉQUENCEUR RÈGLE AUSSI LES VOLUMES (2026-09-09) ----
+   *
+   * ⚠️ Demandé deux fois sur la fiche à cocher, pour la batterie puis pour le
+   * synthé : « il faudrait pouvoir régler le volume au niveau du mini
+   * séquenceur, quitte à revoir le design ici ». C'est le geste le plus
+   * universel d'un pupitre, et il n'existait nulle part — ni ici, ni comme axe.
+   *
+   * ⚠️ POURQUOI UN MODE ÉCRIT, ET PAS UN GESTE SUR LA LIGNE. La ligne est déjà
+   * prise : elle coupe au tap, sur toute sa surface. Y ajouter un glisser
+   * ferait le quatrième geste caché de ce mode — « sur cette surface, ce qui
+   * n'est pas ÉCRIT n'existe pas ». Deux boutons nommés au-dessus du bloc
+   * disent lequel des deux on règle, et rien ne change de sens sous le doigt.
+   *
+   * ⚠️ Le volume live est un ÉTAT DE VUE, pas du morceau : `null` veut dire
+   * « suis le morceau ». Le moteur, lui, reçoit un override (batterie) ou un
+   * nœud (synthé) — jamais une écriture dans `PatternStateV2`. */
+  let seqMode = $state<'pas' | 'volume'>('pas');
+  let volLive = $state<Partial<Record<DrumRowName | SynthRowName, number>>>({});
+
+  /** Le volume EFFECTIF d'une ligne : le live s'il existe, sinon le morceau. */
+  function volumeDe(name: DrumRowName | SynthRowName): number {
+    const live = volLive[name];
+    if (live !== undefined) return live;
+    return name in st.rows ? st.rows[name as DrumRowName].volume : st.synthRows[name as SynthRowName].volume;
+  }
+
+  /* Le plafond diffère : la batterie va à 1, le synthé à 1,5 — mêmes bornes
+     que les curseurs de l'Atelier, le Live n'invente pas une échelle. */
+  const volMax = (name: DrumRowName | SynthRowName) => (name in st.rows ? 1 : 1.5);
+
+  function poserVolume(name: DrumRowName | SynthRowName, frac: number) {
+    const v = Math.max(0, Math.min(1, frac)) * volMax(name);
+    volLive[name] = v;
+    if (name in st.rows) engine.setLiveDrumParam(name as DrumRowName, 'volume', v);
+    else engine.setLiveSynthLineVolume(name as SynthRowName, v);
+  }
+
+  let volDrag: DrumRowName | SynthRowName | null = null;
+  function volDown(name: DrumRowName | SynthRowName, e: PointerEvent, el: HTMLElement) {
+    volDrag = name;
+    el.setPointerCapture(e.pointerId);
+    const r = el.getBoundingClientRect();
+    poserVolume(name, (e.clientX - r.left) / r.width);
+  }
+  function volMove(name: DrumRowName | SynthRowName, e: PointerEvent, el: HTMLElement) {
+    if (volDrag !== name) return;
+    const r = el.getBoundingClientRect();
+    poserVolume(name, (e.clientX - r.left) / r.width);
+  }
+  function volUp() {
+    volDrag = null;
   }
 
   const lignesQuiSonnent = $derived(
@@ -1967,20 +2031,63 @@
                de six, elle descend à 22 px pour que le visualiseur garde une
                place lisible (mesuré : 8 lignes à 26 px ne lui laisseraient que
                17 px). Le séquenceur prend ce qu'il faut, le visualiseur le reste. -->
+          <!-- Les deux modes du bloc, ÉCRITS. Le bloc n'avait pas de titre ;
+               il en a un maintenant, et c'est lui qui dit ce qu'on règle. -->
+          <div class="seq-modes">
+            <button class="seq-mode tap44-y" class:on={seqMode === 'pas'} onclick={() => (seqMode = 'pas')}>▦ PAS</button>
+            <button class="seq-mode tap44-y" class:on={seqMode === 'volume'} onclick={() => (seqMode = 'volume')}
+              >▮ VOLUMES</button
+            >
+          </div>
           <div class="seq" style:--ligne-h="{lignesVisibles.length > 6 ? 22 : 26}px">
             {#each lignesVisibles as name (name)}
               {@const muet = ligneCoupee(name)}
-              <button
-                class="ligne"
-                class:muet
-                onpointerdown={() => basculerLigne(name)}
-                aria-pressed={muet}
-                title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
-              >
-                <span class="pastille" style:background={LINE_COLOR[name]}></span>
-                <span class="nom">{LIGNE_LIBELLE[name]}</span>
-                <canvas class="piste" bind:this={pisteCanvas[name]}></canvas>
-              </button>
+              {#if seqMode === 'pas'}
+                <!-- Mode PAS : la ligne entière coupe, exactement comme avant. -->
+                <button
+                  class="ligne"
+                  class:muet
+                  onpointerdown={() => basculerLigne(name)}
+                  aria-pressed={muet}
+                  title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
+                >
+                  <span class="pastille" style:background={LINE_COLOR[name]}></span>
+                  <span class="nom">{LIGNE_LIBELLE[name]}</span>
+                  <canvas class="piste" bind:this={pisteCanvas[name]}></canvas>
+                </button>
+              {:else}
+                <!-- Mode VOLUMES : le nom coupe, la piste devient le curseur.
+                     Deux cibles distinctes plutôt qu'un bouton contenant un
+                     curseur — un interactif dans un interactif ne se tape pas
+                     de façon prévisible. -->
+                {@const v = volumeDe(name)}
+                {@const frac = v / volMax(name)}
+                <div class="ligne" class:muet>
+                  <button
+                    class="ligne-mute"
+                    onpointerdown={() => basculerLigne(name)}
+                    aria-pressed={muet}
+                    title={muet ? `${LIGNE_LIBELLE[name]} — coupée, taper pour rouvrir` : `${LIGNE_LIBELLE[name]} — taper pour couper`}
+                  >
+                    <span class="pastille" style:background={LINE_COLOR[name]}></span>
+                    <span class="nom">{LIGNE_LIBELLE[name]}</span>
+                  </button>
+                  <div
+                    class="ligne-vol"
+                    role="slider"
+                    tabindex="0"
+                    aria-label="Volume {LIGNE_LIBELLE[name]}"
+                    aria-valuenow={Math.round(frac * 100)}
+                    onpointerdown={(e) => volDown(name, e, e.currentTarget as HTMLDivElement)}
+                    onpointermove={(e) => volMove(name, e, e.currentTarget as HTMLDivElement)}
+                    onpointerup={volUp}
+                    onpointerleave={volUp}
+                  >
+                    <div class="ligne-vol-fill" style:width="{frac * 100}%" style:background={LINE_COLOR[name]}></div>
+                    <span class="ligne-vol-val">{Math.round(v * 100)}%</span>
+                  </div>
+                </div>
+              {/if}
             {/each}
           </div>
           <div class="viz-wrap">
@@ -3072,6 +3179,74 @@
      (une ligne = 26 px, plafonnée par la place disponible), et le
      visualiseur prend le reste. Six lignes laissent ~83 px au visualiseur,
      huit ~59 — ça tient dans les deux cas. */
+  /* Les deux modes du bloc — 44 px pleins, c'est la seule rangée du séquenceur
+     qui n'est pas une exception revendiquée. Elle sert aussi de titre : le
+     bloc n'en avait pas, et « ce qui n'est pas écrit n'existe pas ». */
+  .seq-modes {
+    display: flex;
+    gap: 4px;
+    flex: none;
+    margin-bottom: 4px;
+  }
+  .seq-mode {
+    flex: 1 1 0;
+    min-height: 30px;
+    font-family: inherit;
+    font-size: 8.5px;
+    letter-spacing: 0.09em;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--amp-text);
+    background: var(--amp-bg-2);
+    border: 1px solid var(--amp-line);
+  }
+  .seq-mode.on {
+    color: var(--amp-amber);
+    background: var(--amp-bg-1);
+    border-color: var(--amp-hi);
+  }
+  /* Mode VOLUMES : le nom coupe, la piste devient le curseur. Deux cibles
+     distinctes — un interactif dans un interactif ne se tape pas de façon
+     prévisible. */
+  .seq .ligne .ligne-mute {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: none;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .seq .ligne .ligne-vol {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.45);
+    box-shadow: inset 0 0 0 1px var(--amp-line);
+    cursor: ew-resize;
+    touch-action: none;
+    overflow: hidden;
+  }
+  .seq .ligne .ligne-vol-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    opacity: 0.55;
+  }
+  .seq .ligne .ligne-vol-val {
+    position: absolute;
+    inset: 0 4px 0 auto;
+    display: flex;
+    align-items: center;
+    font-size: 8.5px;
+    letter-spacing: 0.05em;
+    color: var(--amp-text);
+  }
+
   .seq {
     display: flex;
     flex-direction: column;

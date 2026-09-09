@@ -744,6 +744,15 @@ export class AudioEngine {
    * relit le morceau — ce qui rend le « throw » de réverbe compatible avec la
    * règle du mode : le MIX suit la bascule de section, donc une section qui
    * arrive reprend la main, et c'est voulu. */
+  /* Le volume d'une ligne de SYNTHÉ — un nœud lui aussi (`synthLineGain`),
+     là où le volume d'une ligne de batterie se lit sur `row` au moment de la
+     frappe et passe donc par `setLiveDrumParam`. Même échelle que le curseur
+     de l'Atelier : 0 à 1,5. */
+  setLiveSynthLineVolume(name: SynthRowName, volume: number): void {
+    if (!this.graph || !this.ctx) return;
+    this.graph.synthLineGain[name].gain.setTargetAtTime(volume, this.ctx.currentTime, 0.01);
+  }
+
   setLiveLineSend(name: DrumRowName | SynthRowName, quoi: 'reverb' | 'delay', amount01: number): void {
     if (!this.graph || !this.ctx) return;
     const cible = quoi === 'reverb' ? this.graph.lineReverbSend : this.graph.lineDelaySend;

@@ -336,6 +336,8 @@ function drumAxesFor(name: DrumRowName): LiveAxisDef[] {
       e.setLiveLineSend(name, quoi, (quoi === 'reverb' ? base.rows[name].reverbSend : base.rows[name].delaySend) || 0),
   });
   return [
+    // 0 à 1 comme le curseur de l'Atelier (qui l'affiche en 0-100 %).
+    { id: `volume-${name}`, label: `VOLUME ${s}`, category, ...champ('volume', (v) => v) },
     { id: `filtre-${name}`, label: `FILTRE ${s}`, category, ...champ('filterCutoff', (v) => expMap(200, 20000, v)) },
     { id: `reverb-${name}`, label: `RÉVERBE ${s}`, category, ...envoi('reverb') },
     { id: `delay-${name}`, label: `DELAY ${s}`, category, ...envoi('delay') },
@@ -362,6 +364,16 @@ function synthSendsFor(name: SynthRowName): LiveAxisDef[] {
       ),
   });
   return [
+    /* 0 à 1,5 comme le curseur de l'Atelier — le synthé monte au-dessus de 1,
+       pas la batterie. Le repos relit le morceau : c'est un nœud, pas un
+       override. */
+    {
+      id: `volume-${name}`,
+      label: `VOLUME ${s}`,
+      category,
+      apply: (e, v) => e.setLiveSynthLineVolume(name, v * 1.5),
+      repos: (e, base) => e.setLiveSynthLineVolume(name, base.synthRows[name].volume),
+    },
     { id: `reverb-${name}`, label: `RÉVERBE ${s}`, category, ...envoi('reverb') },
     { id: `delay-${name}`, label: `DELAY ${s}`, category, ...envoi('delay') },
   ];
