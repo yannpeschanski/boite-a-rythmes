@@ -3,7 +3,15 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-08 — **chantier du MODE LIVE : 25 cartes
+> Dernière mise à jour : 2026-09-09 — **l'acte 7 se joue en Mode Live** : le
+> concert monte le DISQUE (les trois morceaux de l'acte 6, un par lettre, sur
+> « A B C · A B′ C′ »), le rappel pose le jingle sur BOUCLE, et l'exercice
+> devient la BALANCE. Il corrige au passage un bug que rien ne mesurait : le
+> rappel faisait entendre le set de l'acte 6, parce que sa chaîne était restée
+> chargée. Règle neuve : **une scène pose tout ce qu'elle fait jouer — le motif
+> ET la chaîne**. Détail dans `PLAN.md`, première entrée.
+>
+> Avant cela : **chantier du MODE LIVE : 25 cartes
 > arbitrées, tout ce qui est tranché est appliqué**, plus les trois chantiers
 > de la relance (le catalogue de boutons et le relief des montages ; le fichier
 > de morceau, le rangement banque ↔ lettres, le magnétophone). Deux audits
@@ -22,7 +30,9 @@
 > **mesurés** par `scripts/verrous-masques.cjs`, qui joue la carrière et relit
 > neuf écrans par acte. Trois questions restent à trancher dans
 > `docs/relecture/masquer-le-verrouille.html` — dont **le Mode Live qui s'ouvre
-> pour la scène de l'acte 6 puis se referme jusqu'à l'épilogue**.
+> pour la scène de l'acte 6 puis se referme jusqu'à l'épilogue** (l'acte 7 en
+> fait maintenant TROIS scènes : la question est plus visible, toujours pas
+> tranchée).
 >
 > ⚠️ **Ce qui reste ouvert du Mode Live** : le nom (« mode live » jugé
 > peut-être abusif — laissé tel quel sur recommandation, *« on pourra changer
@@ -34,7 +44,7 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 680 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 689 tests, 0 erreur de types, les deux builds passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus

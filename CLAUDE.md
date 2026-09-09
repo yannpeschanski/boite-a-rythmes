@@ -225,7 +225,7 @@ jamais « rien ».** `Section.sequenceId: string | null` pointait une entrée de
 banque au nom libre : remplir le modèle POP demandait huit allers-retours dans un
 sélecteur de ⚙, et tant qu'ils n'étaient pas faits les huit sections portaient
 `null`, donc jouaient toutes le motif courant. L'état PAR DÉFAUT de la
-fonctionnalité était l'inaudible. `Section.partie` (`model/parties.ts`, A à D)
+fonctionnalité était l'inaudible. `Section.partie` (`model/parties.ts`, A à C)
 est obligatoire, et une lettre encore vide se replie sur **A** — jamais sur « le
 motif courant », qui vaut n'importe lequel. `tests/architecture.test.ts` interdit
 qu'un montage soit inaudible : deux sections qui se suivent doivent différer.
@@ -236,9 +236,11 @@ seul mécanisme l'intro qui entre, le pont et l'outro qui s'efface. Les calques
 sont NOMMÉS (`CALQUE_ENTREE`, `CALQUE_PONT`, `CALQUE_SORTIE`…) pour qu'une intro
 soit la même d'un montage à l'autre.
 
-⚠️ **Quatre lettres, pas plus** — mesure, pas avis : la bande du Live fait 832 px
-en 844 × 390 et porte AUSSI la chaîne et les deux commandes de jeu ; quatre
-pastilles y tiennent à 56 px.
+⚠️ **TROIS lettres** — arbitré (« partons sur 3 déjà ») et l'état de l'art suit :
+sur six formes de morceau courantes, cinq tiennent à deux lettres. La mesure ne
+s'y oppose pas — la bande du Live fait 832 px en 844 × 390 et porte AUSSI la
+chaîne et les deux commandes de jeu ; trois pastilles y sont plus à l'aise que
+quatre, à 56 px.
 
 ⚠️ **Un MONTAGE porte les trois à la fois — chaîne, calques, boutons.** Une
 chaîne sans SUIVANT ni TENIR sous le pouce se joue contre le musicien. Ses
@@ -451,11 +453,22 @@ récit avance. Elle emporte **soit** un morceau entier d'un acte précédent
 propre acte, montées en set (`bouclesDeLActe`, l'acte 6) — jamais les deux, on ne
 monte pas sur scène avec deux morceaux. Corollaire : une scène peut suivre la
 dernière commande d'un acte, parce qu'elle ne PRODUIT rien.
-⚠️ `section` est **facultatif** sur une boucle, et c'est la distinction entre le
+⚠️ **Une scène POSE tout ce qu'elle fait jouer — le motif ET la chaîne.** Le
+rappel de l'acte 7 chargeait le jingle et rien d'autre : la chaîne montée à la
+scène d'avant restait, et `appliquerSection(0)` (que le Live appelle au
+démarrage de la lecture) rechargeait la lettre A — le seul écran qui dit « celui
+que tu as fait » faisait entendre autre chose dès la première mesure. D'où
+`EtapeScene.montage`, et l'effacement de la chaîne quand il est absent : ne rien
+faire n'est pas neutre.
+⚠️ `partie` est **facultatif** sur une boucle, et c'est la distinction entre le
 MATÉRIEL et le MORCEAU : toutes les boucles vont dans la banque de séquences,
-seules celles qui portent une section entrent dans les PARTIES. Une architecture
+seules celles qui citent une LETTRE entrent dans les PARTIES. Une architecture
 décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois, les six
-autres restant à un clic.
+autres restant à un clic. Une boucle cite une lettre et non un nom de section :
+au concert de l'acte 7, A/B/C sont trois MORCEAUX, aucun n'est « le couplet ».
+⚠️ Après une scène, **on ne produit plus et on n'est plus noté** — mais une autre
+scène peut suivre : l'acte 7 joue son set (le disque de l'acte 6, un morceau par
+lettre, `depuisLActe`), puis son rappel (le jingle sur BOUCLE).
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
 l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
 monté : six commandes sous 44 px (les exceptions revendiquées), aucun
