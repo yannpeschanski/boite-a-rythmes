@@ -147,13 +147,21 @@ describe('une action qui latche sait revenir au morceau', () => {
     }
   });
 
-  it('rend le MODE NAPPE au morceau plutôt qu’au « normal » du moteur', () => {
+  it('rend le BOURDON au morceau plutôt qu’à « éteint »', () => {
     const e = moteurEspion();
-    LIVE_ACTIONS.find((a) => a.id === 'step-pad-mode')!.repos!(e.engine, defaultState());
-    /* ⚠️ Le cycle boucle, mais il ne ramène pas au morceau : il ramène au
-       « normal » du moteur, faux si la lettre chargée jouait un arpège.
-       Effacer l'override est le seul retour qui relise le morceau. */
-    expect(e.appels.map((a) => a.methode)).toEqual(['clearLivePadMode']);
+    LIVE_ACTIONS.find((a) => a.id === 'bourdon')!.repos!(e.engine, defaultState());
+    /* ⚠️ Le repos n'est pas `setLiveBourdon(false)` : la lettre chargée peut
+       demander un bourdon, et l'éteindre serait alors faux. Effacer
+       l'override est le seul retour qui relise le morceau — c'est la règle
+       que MODE NAPPE portait avant de se séparer en deux commandes. */
+    expect(e.appels.map((a) => a.methode)).toEqual(['clearLiveBourdon']);
+  });
+
+  it('rend le FILL AUTO au morceau, pas à zéro', () => {
+    const e = moteurEspion();
+    LIVE_ACTIONS.find((a) => a.id === 'step-fill-auto')!.repos!(e.engine, defaultState());
+    expect(e.appels.map((a) => a.methode)).toEqual(['clearLiveGrooveParam']);
+    expect(e.appels[0].args[0]).toBe('fillEvery');
   });
 
   it('rend les coupures au motif, jamais forcées ouvertes', () => {

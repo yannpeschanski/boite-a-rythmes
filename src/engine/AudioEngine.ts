@@ -11,6 +11,7 @@ import type {
   SynthVoice,
   SynthRowState,
   SynthGlobalState,
+  ArpPattern,
 } from '../model/types';
 import {
   buildGraph,
@@ -111,11 +112,20 @@ export type CleGroove =
   | 'fillIntensity'
   | 'spontRoll'
   | 'randomVelocity'
-  | 'synthSwing';
+  | 'synthSwing'
+  /* ⚠️ `fillEvery` n'est PAS un réglage continu comme ses voisins — c'est un
+     compte de mesures dont `serialize.ts` n'accepte que [0, 2, 4, 8]. Il vit
+     ici quand même : ce qui définit cette liste n'est pas la forme de la
+     valeur mais le fait qu'elle se lise à la programmation d'une note, donc
+     qu'elle passe par un override relu à chaque fenêtre — et qu'elle sache
+     revenir au morceau par le même `clearLiveGrooveParam` que les autres. */
+  | 'fillEvery';
 
-/* Les trois modes de la Nappe, dans l'ordre où le bouton PAS les fait
- * défiler. Ils sont EXCLUSIFS parce que le moteur les traite ainsi : le
- * bourdon court-circuite l'arpège dans le scheduler (voir liveStepPadMode). */
+/* Les trois modes de la Nappe. Ils sont EXCLUSIFS parce que le moteur les
+ * traite ainsi : le bourdon court-circuite l'arpège dans le scheduler. Le
+ * type reste utile après la séparation du bouton MODE NAPPE en BOURDON et
+ * curseur ARPÈGE — c'est ce que le getter `padMode` rend, et c'est ce que la
+ * vue lit pour savoir quel voyant allumer. */
 export type PadMode = 'normal' | 'arpege' | 'bourdon';
 
 /* Tampon de sortie demandé, en secondes — la moitié du budget de latence.
@@ -204,6 +214,13 @@ export class AudioEngine {
   private fillRequested = false;
   private forcedFillBar: number | null = null;
   private liveHatRoll: number | null = null;
+  /* OUVERT (maintenu) — le charley s'ouvre tant qu'on tient. Un drapeau du
+     contexte de programmation plutôt qu'un override de ligne : ce qu'on
+     change est l'ÉTAT D'UN PAS (1 fermé -> 2 ouvert), pas un champ de
+     `DrumRowState`, et `pattern` est un tableau qu'un override devrait
+     recopier en entier à chaque fenêtre. Même chemin que `liveHatRoll`
+     au-dessus, qui force la même ligne pour la même raison. */
+  private liveHatOuvert = false;
   // Catalogue d'actions étendu (PLAN.md §7) : rafale forcée kick/snare, même
   // principe que le hat (liveHatRoll) — un pas vide se met à sonner tant que
   // le bouton est maintenu (voir scheduler.ts, forceKickRoll/forceSnareRoll).
@@ -215,9 +232,10 @@ export class AudioEngine {
   // champs d'état simples relus à chaque fenêtre de scheduling plutôt que des
   // nœuds de graphe — un override appliqué juste avant chaque fenêtre
   // (withLiveOverrides) plutôt qu'un nœud dédié à construire pour chacun.
-  private liveGrooveOverride: Partial<
-    Pick<PatternStateV2, 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity' | 'spontRoll' | 'randomVelocity' | 'synthSwing'>
-  > = {};
+  /* ⚠️ Les clés sont CleGroove, une seule fois — la liste était écrite deux
+     fois (ici et dans le type), donc `fillEvery` ajouté d'un côté ne compilait
+     pas de l'autre. Une liste à deux domiciles n'est tenue à jour qu'à un. */
+  private liveGrooveOverride: Partial<Pick<PatternStateV2, CleGroove>> = {};
   /* ⚠️ L'OVERRIDE PAR LIGNE DE BATTERIE (2026-09-09) — jumeau de celui du
    * synthé, et pour la même raison : ces champs se lisent sur `row` au moment
    * de PROGRAMMER une note (`kit.playKick(t, g, row)`, `row.shiftPct`), pas sur
@@ -241,7 +259,10 @@ export class AudioEngine {
   // relu à chaque fenêtre que le groove ci-dessus, jamais écrit dans le
   // pattern.
   private liveSynthGlobalOverride: Partial<
-    Pick<SynthGlobalState, 'rootMidi' | 'scaleId' | 'padArpEnabled' | 'padDroneEnabled'>
+    Pick<
+      SynthGlobalState,
+      'rootMidi' | 'scaleId' | 'padArpEnabled' | 'padDroneEnabled' | 'padArpRate' | 'padArpPattern'
+    >
   > = {};
   // Index courant dans SYNTH_VOICE_PRESETS[name] pour le bouton PAS "voix" —
   // distinct de liveSynthOverride[name].voice (qui ne porte que les valeurs
@@ -565,6 +586,15 @@ export class AudioEngine {
     this.liveHatRoll = multiplier;
   }
 
+  /* OUVERT (maintenu) — chaque pas de charley qui SONNE s'ouvre tant qu'on
+     tient. Il n'allume aucun pas : ouvrir ce qui joue déjà est un geste de
+     timbre, ouvrir ce qui se tait serait un geste d'écriture, et le second
+     est celui que la mesure a fait retirer du mode (une frappe posée à la
+     main tombe à ±81 ms de la grille). Le relâché rend la ligne au morceau. */
+  liveSetHatOuvert(on: boolean): void {
+    this.liveHatOuvert = on;
+  }
+
   // Catalogue étendu (PLAN.md §7) — ROLL kick/snare, même principe que le
   // hat (scheduler.ts, forceKickRoll/forceSnareRoll).
   liveSetKickRoll(multiplier: number | null): void {
@@ -681,7 +711,7 @@ export class AudioEngine {
   /* La valeur EFFECTIVE d'un paramètre de groove — l'override s'il existe,
      sinon celle du morceau. Nécessaire aux boutons PAS cycliques : un bouton
      qui fait tourner le swing doit savoir d'où il part, sinon il repart de zéro
-     à chaque appui. Même principe que `padMode` pour MODE NAPPE. */
+     à chaque appui. Même principe que le getter `padMode`. */
   liveGrooveValeur(key: CleGroove): number {
     return this.liveGrooveOverride[key] ?? this.getState()[key];
   }
@@ -765,41 +795,66 @@ export class AudioEngine {
     this.liveSynthOverride = { ...this.liveSynthOverride, [name]: reste };
   }
 
-  // Interrupteur générique pour un booléen de synthGlobal (arpège nappe pour
-  // l'instant) — même familier que les autres setLive* ci-dessus.
-  setLiveSynthGlobalBool(key: 'padArpEnabled' | 'padDroneEnabled', value: boolean): void {
-    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, [key]: value };
-  }
-
-  /* MODE NAPPE — un bouton PAS à trois états plutôt que deux interrupteurs.
+  /* L'ARPÈGE EN UN SEUL GESTE — le curseur à 13 crans de la fiche à cocher
+   * (« aucun arpège, 2/4/8 notes & montant, descendant, aller-retour,
+   * aléatoire »). `rate: null` = aucun arpège.
    *
-   * ⚠️ Ce n'est pas un raffinement d'interface. Dans `scheduler.ts`, la branche
-   * du bourdon fait `continue` AVANT celle de l'arpège, et son commentaire le
-   * dit : « ni roll ni arpège ici ». Le bourdon gagne donc sur l'arpège, en
-   * silence. Deux bascules indépendantes donneraient un bouton ARPÈGE inerte
-   * tant que le bourdon est actif — et on chercherait la panne. Un cycle rend
-   * l'état impossible à contredire.
-   */
-  liveStepPadMode(): PadMode {
-    const sg = this.getState().synthGlobal;
-    const arp = this.liveSynthGlobalOverride.padArpEnabled ?? sg.padArpEnabled;
-    const drone = this.liveSynthGlobalOverride.padDroneEnabled ?? sg.padDroneEnabled;
-    const courant: PadMode = drone ? 'bourdon' : arp ? 'arpege' : 'normal';
-    const suivant: PadMode = courant === 'normal' ? 'arpege' : courant === 'arpege' ? 'bourdon' : 'normal';
+   * ⚠️ IL ÉTEINT LE BOURDON, et ce n'est pas une politesse. Dans
+   * `scheduler.ts`, la branche du bourdon fait `continue` AVANT celle de
+   * l'arpège : bourdon allumé, ce curseur serait INAUDIBLE sur toute sa
+   * course, et on chercherait la panne. C'est le piège que l'ancien MODE NAPPE
+   * évitait en n'offrant qu'un cycle ; maintenant que les deux ont chacun leur
+   * commande, l'exclusivité se tient ici — le DERNIER geste gagne, et il
+   * s'entend. Même convention que le filtre, où le pad et le maintenu écrivent
+   * le même nœud. */
+  setLiveArpege(cran: { rate: number | null; pattern: ArpPattern }): void {
     this.liveSynthGlobalOverride = {
       ...this.liveSynthGlobalOverride,
-      padArpEnabled: suivant === 'arpege',
-      padDroneEnabled: suivant === 'bourdon',
+      padArpEnabled: cran.rate !== null,
+      padDroneEnabled: false,
+      ...(cran.rate !== null
+        ? { padArpRate: String(cran.rate), padArpPattern: cran.pattern }
+        : {}),
     };
-    return suivant;
   }
 
-  /* Le retour du MODE NAPPE au morceau — voir `clearLiveGrooveParam`.
-     ⚠️ Le cycle de `liveStepPadMode` boucle mais ne ramène pas ICI : il ramène
-     au « normal » du moteur, qui est faux si la lettre chargée jouait un
-     arpège. Effacer l'override est le seul retour qui relit le morceau. */
-  clearLivePadMode(): void {
-    const { padArpEnabled: _a, padDroneEnabled: _d, ...reste } = this.liveSynthGlobalOverride;
+  /* Le retour au morceau du curseur d'arpège — il rend AUSSI le bourdon, que
+     l'aller a éteint. Le repos doit toucher exactement ce que l'aller a
+     touché (tests/curseur-momentane.test.ts) : n'effacer que l'arpège
+     laisserait la nappe sans bourdon alors que la lettre en demande un. */
+  clearLiveArpege(): void {
+    const {
+      padArpEnabled: _a,
+      padArpRate: _r,
+      padArpPattern: _p,
+      padDroneEnabled: _d,
+      ...reste
+    } = this.liveSynthGlobalOverride;
+    this.liveSynthGlobalOverride = reste;
+  }
+
+  /* BOURDON — la note tenue, « un bouton qui tient jusqu'à la fin de la partie
+   * en cours » (fiche à cocher, g8.1). Ce qui réalise « jusqu'à la fin de la
+   * partie » n'est pas un minuteur : c'est `relacherReglagesLive()`, que la
+   * bascule de scène appelle déjà et qui efface cette couche. Le bouton
+   * s'éteint donc tout seul à la frontière, sans que rien ici ne compte les
+   * mesures. */
+  setLiveBourdon(on: boolean): void {
+    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, padDroneEnabled: on };
+  }
+
+  /* La valeur EFFECTIVE d'un réglage de groove — l'override s'il y en a un,
+     le morceau sinon. C'est ce qu'un bouton PAS doit lire pour savoir d'où
+     avancer : partir du morceau seul ferait reculer le bouton d'un cran dès
+     le second appui, et partir de l'override seul le ferait démarrer à côté
+     de ce qu'on entend. */
+  grooveValeur(key: CleGroove): number {
+    return this.liveGrooveOverride[key] ?? this.getState()[key];
+  }
+
+  /** Le retour au morceau du bourdon — voir `clearLiveGrooveParam`. */
+  clearLiveBourdon(): void {
+    const { padDroneEnabled: _d, ...reste } = this.liveSynthGlobalOverride;
     this.liveSynthGlobalOverride = reste;
   }
 
@@ -1032,6 +1087,7 @@ export class AudioEngine {
         liveMute: this.liveMute,
         forceFill: this.forcedFillBar === this.currentBar,
         forceHatRoll: this.liveHatRoll,
+        forceHatOpen: this.liveHatOuvert,
         forceKickRoll: this.liveKickRoll,
         forceSnareRoll: this.liveSnareRoll,
       },
@@ -1368,6 +1424,47 @@ export class AudioEngine {
   // l'aperçu ▶ Tester (previewSynth). withLiveOverrides (et non l'état brut) :
   // un cutoff/résonance mélodie réglé en direct sur un autre axe s'entend
   // aussi ici.
+  /* SOLO NAPPE / SOLO BASSE au pad — les deux lignes de synthé qui manquaient
+   * (fiche à cocher : « il faut également SOLO NAPPE », et sa voisine « à faire
+   * sur l'ensemble des lignes de synthé »). Frères de `playLiveMelodyNote`
+   * juste en dessous, et frères par le REGISTRE, qui est ce qui compte : la
+   * nappe passe par `chordFreqs` (ancrage −12 demi-tons) et la basse par
+   * `degreeFreq(…, −24)`, exactement comme le scheduler les joue. Sans ça le
+   * doigt sonnerait une octave à côté de ce que la grille joue — le piège que
+   * `playChordPreview` et `playDegreePreview` documentent déjà tous les deux.
+   *
+   * ⚠️ La nappe reçoit un INDEX d'accord, jamais un degré (CLAUDE.md) : le pad
+   * balaie `chordsFor(state)`, pas la gamme. */
+  playLivePadChord(chordIdx: number): void {
+    if (!this.ctx || !this.synth) return;
+    void this.ctx.resume();
+    const state = this.withLiveOverrides(this.getState());
+    const freqs = chordFreqs(state, chordsFor(state), chordIdx);
+    if (!freqs.length) return;
+    const row = state.synthRows.pad;
+    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
+    this.synth.playPadChord(freqs, t, 0.6, 0.3, row.voice, (row.strum || 0) * 0.08, 0, null);
+  }
+
+  /** Le nombre d'accords que le pad peut balayer — la course de SOLO NAPPE. */
+  liveChordCount(): number {
+    return chordsFor(this.getState()).length;
+  }
+
+  liveBassFreqForDegree(degree: number, octaveShift: number): number {
+    return degreeFreq(this.withLiveOverrides(this.getState()), degree, octaveShift, -24);
+  }
+
+  playLiveBassNote(freq: number, glideFrom: number | null): void {
+    if (!this.ctx || !this.synth) return;
+    void this.ctx.resume();
+    const row = this.withLiveOverrides(this.getState()).synthRows.bass;
+    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
+    const glideTime = (row.glide || 0) * 0.12;
+    const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
+    this.synth.playBassNote(freq, t, 0.5, 0.45, row.voice, glide);
+  }
+
   playLiveMelodyNote(freq: number, glideFrom: number | null): void {
     if (!this.ctx || !this.synth) return;
     void this.ctx.resume();

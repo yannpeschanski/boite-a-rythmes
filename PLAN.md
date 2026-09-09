@@ -48,6 +48,121 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les gestes nommés du Mode Live (2026-09-09)
+
+> La dernière tranche de la fiche à cocher (`docs/relecture/parametres-live.html`)
+> — les cinq entrées où Yann ne cochait pas une case mais ÉCRIVAIT le geste
+> qu'il voulait :
+> *« un Pas avec 8 4 2 mais aussi pas de fill si on souhaite le retirer »* ·
+> *« je ferais juste un bouton bourdon qui tient jusqu'à la fin de la partie en
+> cours »* · *« je ferais un curseur avec (3 × 4 + 1) = 13 options d'arpège
+> différentes »* · *« il faut également SOLO NAPPE »*.
+
+**Cinq commandes**, plus un mécanisme d'affichage qu'elles réclamaient.
+
+| Commande | Forme | Ce qu'elle fait |
+|---|---|---|
+| ARPÈGE | curseur **cranté** (13) | AUCUN, puis 2/4/8 × ▲ ▼ ▲▼ ⁇ |
+| BOURDON | bascule | la nappe tient — jusqu'à la fin de la partie |
+| FILLS | PAS | aucun → 8 → 4 → 2 mesures |
+| OUVERT | maintenu | le charley s'ouvre |
+| SOLO NAPPE / SOLO BASSE | maintenus | jouer la ligne au pad |
+
+⚠️ **MODE NAPPE est REMPLACÉ, pas retiré.** Ses trois états se sont séparés
+dans les deux commandes que la fiche demandait. Le cycle à trois états était le
+seul moyen de tenir leur exclusivité tant qu'ils partageaient un bouton — le
+bourdon fait `continue` AVANT l'arpège dans `scheduler.ts`, donc deux
+interrupteurs indépendants auraient donné un curseur d'arpège **inaudible sur
+toute sa course**, sans erreur ni voyant. Séparés, l'exclusivité se tient dans
+le moteur : `setLiveArpege` éteint le bourdon, et son repos le rend. Les DEUX
+anciens identifiants (`toggle-pad-arp`, déjà migré une fois, et `step-pad-mode`)
+tombent directement sur `bourdon` : `isValid` est tout ou rien, un cran mort au
+milieu rendrait les défauts.
+
+⚠️ **L'ordre des treize crans est le DÉBIT d'abord**, ce qui fait du curseur un
+geste : pousser à droite accélère (2 → 4 → 8), les quatre motifs se promenant
+dans chaque palier. Rangé par motif, la même course aurait fait trois montées
+en dents de scie. AUCUN est au bout GAUCHE — un curseur d'effet dont le repos
+allume déjà l'effet n'a pas de position neutre.
+
+⚠️ **Le PAS de fill avance par INDEX, et c'est légitime ici** — contrairement à
+ce que `palierSuivant` impose ailleurs. `serialize.ts` n'accepte QUE `[0, 2, 4, 8]`
+pour `fillEvery` et rabat le reste sur 0 : la valeur de départ tombe donc
+TOUJOURS pile sur un cran, ce qui était exactement la condition que le sidechain
+ne remplissait pas. Et `palierSuivant` ferait le contraire du geste demandé — il
+monterait 0 → 2 → 4 → 8, du plus fourni au plus rare.
+
+**Deux mesures qui ont changé le code :**
+
+⚠️ **Un curseur intouché MENTAIT.** Mesuré au navigateur : `axisValues` part à
+0,5 pour tous les axes, donc un curseur ARPÈGE jamais touché annonçait
+« 4 ▼ » pendant que la nappe ne jouait AUCUN arpège. C'est la même faute que le
+maintenu qui « rouvre à 20 kHz » — le réglage est au MORCEAU tant que le doigt
+n'a rien écrit, et un axe ne sait pas relire le morceau. D'où `axisTouche` et le
+mot **AU MORCEAU**, rendu à chaque repos, réassignation et bascule de scène. Ça
+se voyait surtout sur un axe cranté (le libellé nomme un état précis qui
+n'existe pas) ; le continu disait déjà « 50 % », faux pareil mais plus discret.
+
+⚠️ **Le pourcentage reste le repli quand DEUX axes sont empilés** — deux
+libellés ne tiennent pas dans la case, et la position est alors réellement
+commune. Trouvé parce que ma première mesure lisait « 50 % » sur un bouton qui
+portait ARPÈGE **et** RAFALES SPONT. : la mesure accusait le libellé, le défaut
+était dans le protocole de mesure.
+
+**Trois pièges payés côté tests :**
+
+1. ⚠️ **Un espion qui RÉIMPLÉMENTE la méthode teste sa propre copie.** Mon
+   premier test « poser un arpège éteint le bourdon » passait un faux
+   `setLiveArpege` qui refaisait le calcul dans le test : retirer l'extinction
+   du bourdon dans `AudioEngine` ne le faisait PAS tomber. Refait sur un vrai
+   `new AudioEngine(etat)` (qui fait tourner les initialiseurs sans toucher à
+   l'audio) en lisant l'état EFFECTIF, celui que le scheduler lira.
+2. ⚠️ **Le motif d'accueil laisse la nappe VIDE** (`-1` partout) : « 0 arpège »
+   était vrai pour la mauvaise raison, et le test l'aurait dit ✅. C'est le
+   contrôle POSITIF — arpège seul DOIT sonner — qui l'a trouvé.
+3. ⚠️ **Une liste d'exceptions dans un test se rallonge en silence.** Les
+   maintenus câblés dans la vue étaient énumérés par id au milieu de
+   `boutons-live.test.ts` ; deux solos de plus l'ont fait tomber. Le drapeau
+   vit maintenant dans la DONNÉE (`dansLaVue`), et le test vérifie aussi
+   l'inverse — pas de dispense pour un PAS qui aurait oublié son geste.
+
+**Vérifié.** `npm run check` 0 erreur, **740 tests**, les deux builds.
+`tests/gestes-nommes.test.ts` (17 cas) confronté à **six mutations**, toutes
+tombées : drapeau OUVERT posé une ligne trop haut (il allumerait les pas muets),
+`setLiveArpege` sans extinction du bourdon, `clearLiveArpege` sans le bourdon,
+`cranDe` sans borne, ordre des crans du fill inversé, relâché d'OUVERT bloqué
+sur `true`.
+
+**Au navigateur** (844 × 390, tactile) : le curseur affiche
+AU MORCEAU → AUCUN → 2 ▼ → 2 ⁇ → 4 ▼ → 4 ⁇ → 8 ▼ → 8 ⁇ le long de sa course ;
+BOURDON et FILLS latchent, SOLO NAPPE s'allume sous le doigt et s'éteint au
+relâché ; sur COUPLET / REFRAIN (8 scènes, AABABABB) le bourdon engagé en scène
+0 est **éteint en scène 2** — la promesse « jusqu'à la fin de la partie »,
+mesurée sur le DOM et non sur le store, `sectionIndex` étant un état local du
+composant ; quatorze tirages 🎲 donnent 13 répartitions de type distinctes et
+font sortir les cinq nouvelles entrées ; zéro erreur console. Les quatre cibles
+sous 44 px et le débordement de 4 px de la barre de titre sont **identiques sur
+`main`** (mesuré avec `git stash`) — ce sont les exceptions revendiquées, pas
+une régression de ce lot.
+
+**Fichiers** : `engine/AudioEngine.ts` (`setLiveArpege`/`clearLiveArpege`,
+`setLiveBourdon`/`clearLiveBourdon`, `liveSetHatOuvert`, `grooveValeur`,
+`playLivePadChord`/`playLiveBassNote`/`liveBassFreqForDegree`/`liveChordCount` ;
+`liveStepPadMode`, `clearLivePadMode` et `setLiveSynthGlobalBool` retirés,
+plus rien ne les atteignait), `engine/scheduler.ts` (`forceHatOpen`),
+`ui/live/liveActions.ts` (`crans`/`libelle`/`cranDe`, `CRANS_ARPEGE`,
+`CRANS_FILL`, `dansLaVue`, migration), `ui/live/LiveView.svelte`,
+`tests/gestes-nommes.test.ts` (neuf), `tests/helpers/rejeu.ts` (les forçages),
+et quatre tests réancrés.
+
+**Reste ouvert** : la fiche disait *« à faire sur l'ensemble des lignes de
+synthé »* à côté de « il faut également SOLO NAPPE ». J'ai lu SOLO comme
+« JOUER au pad » — la seule lecture cohérente avec le bouton qui portait déjà ce
+mot (SOLO MÉLO), et j'ai fait les deux lignes manquantes. Si le mot voulait dire
+« ISOLER », c'est un autre geste, et il reste à faire.
+
+---
+
 ### ✅ Un réglage live sait revenir, et le 🎲 change aussi le type (2026-09-09)
 
 > Deux retours de Yann après avoir testé la version en ligne :

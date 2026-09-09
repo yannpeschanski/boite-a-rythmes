@@ -67,7 +67,17 @@ export function makeRecorders(events: Ev[]) {
 // `fillSeed` : graine du SECOND flux, celui réservé aux frappes ajoutées par
 // le fill de clap. Séparé pour pouvoir le faire varier SEUL — c'est comme ça
 // qu'on prouve qu'il ne touche pas au flux principal.
-export function renderEvents(state: PatternStateV2, bars: number, seed: number, fillSeed = 999): Ev[] {
+// `forcages` : les drapeaux du MODE LIVE que l'AudioEngine pose sur le
+// contexte de programmation (OUVERT, FILL forcé, rafales). Ils n'ont pas de
+// place dans un rendu hors ligne, mais c'est le seul moyen de MESURER ce
+// qu'ils font au son plutôt que de relire le code qui les lit.
+export function renderEvents(
+  state: PatternStateV2,
+  bars: number,
+  seed: number,
+  fillSeed = 999,
+  forcages: { forceHatOpen?: boolean; forceFill?: boolean } = {},
+): Ev[] {
   const events: Ev[] = [];
   const { drum, synth } = makeRecorders(events);
   const rng = makeSeededRng(seed);
@@ -101,6 +111,7 @@ export function renderEvents(state: PatternStateV2, bars: number, seed: number, 
         breakWindow: null,
         ghostTargetRow: state.ghostRow ?? 'snare',
         emitPlayhead: noop,
+        ...forcages,
       },
       horizon,
     );

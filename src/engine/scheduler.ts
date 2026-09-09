@@ -84,6 +84,10 @@ export interface ScheduleContext {
   liveMute?: Partial<Record<DrumRowName, boolean>>;
   forceFill?: boolean;
   forceHatRoll?: number | null;
+  /* OUVERT (Mode Live, maintenu) — voir `liveSetHatOuvert`. Contrairement à
+     `forceHatRoll` juste au-dessus, il n'ALLUME aucun pas : il change l'état
+     d'un pas qui sonne déjà (1 fermé -> 2 ouvert). */
+  forceHatOpen?: boolean;
   // Rafale forcée kick/snare (Mode Live, PLAN.md §7) — même principe que
   // forceHatRoll : un pas vide se met à sonner tant que le bouton est
   // maintenu, plutôt qu'une rafale qui ne s'applique qu'aux pas déjà actifs.
@@ -231,6 +235,10 @@ function triggerHatStep(
   let stepState = hat.pattern[col];
   if ((fillHere || rollForced) && stepState === 0) stepState = 1;
   if (stepState === 0) return;
+  /* OUVERT : APRÈS la sortie sur `stepState === 0`, et c'est tout l'écart
+     avec les deux forçages du dessus — un pas muet le reste, seuls les pas
+     qui sonnent s'ouvrent. */
+  if (cx.forceHatOpen && stepState === 1) stepState = 2;
 
   let roll = hat.rolls[col];
   if (fillHere) {
