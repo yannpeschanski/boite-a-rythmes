@@ -46,6 +46,122 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 7 se joue en Mode Live — le set, puis le rappel (2026-09-09)
+
+> Yann : *« il faut maintenant retravailler le dernier acte par rapport aux
+> modifs qu'on a apporté au mode live »*
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/stores/game.svelte.ts`,
+`tests/carriere.test.ts`, `scripts/parcours-carriere.cjs`,
+`scripts/verrous-masques.cjs`, `CLAUDE.md`, `REPRISE.md`.
+
+**Le constat, mesuré.** L'acte 7 avait été écrit quand le Mode Live ne savait
+qu'enchaîner un motif. Depuis, il a gagné les parties A/B/C, sept montages avec
+leurs calques et leurs boutons, et ⏺ REC comme seule sortie audio. L'acte, lui,
+n'avait pas bougé : le concert se jouait au **clavier du Mode jeu** (un exercice
+`jouer`), et on ne montait sur scène que pour le rappel. Autrement dit **la
+répétition de l'acte 6 était plus riche que le concert de l'acte 7**.
+
+**Et un bug, que la même passe a trouvé.** Le rappel chargeait le jingle de
+l'acte 3 dans l'Atelier — et rien d'autre. Or la chaîne montée à la scène de
+l'acte 6 était encore là, et le Mode Live appelle `appliquerSection(0)` au
+démarrage de la lecture : il rechargeait la lettre A. **Le seul écran du jeu qui
+dit « celui que tu as fait » faisait entendre autre chose, dès la première
+mesure.** D'où la règle : *une scène pose tout ce qu'elle fait jouer — le motif
+ET la chaîne.*
+
+**Ce que `HISTOIRE.md` demandait déjà**, et qui n'avait jamais été porté :
+« Tu dois : lancer les morceaux ; compter les départs ; enchaîner ; gérer les
+silences ; rattraper une erreur ; tenir le tempo ; écouter le public. » Sept
+verbes, tous du Mode Live, absents du jeu — donc, pour le joueur, inexistants.
+Ils sont maintenant sur l'écran qui envoie sur scène, avec le bouton REC (une
+capacité qu'aucun mot ne nomme n'existe pas).
+
+**L'acte, refait :**
+
+| | avant | après |
+|---|---|---|
+| 1 | DIX-HUIT HEURES | DIX-HUIT HEURES |
+| 2 | TRENTE PERSONNES | **exercice 38 — la balance** (salle vide) |
+| 3 | AVANT DE COMMENCER | TRENTE PERSONNES |
+| 4 | **exercice 38** — « le premier morceau » | AVANT DE COMMENCER |
+| 5 | TU REPRENDS | **scène LE SET** — le disque, un morceau par lettre |
+| 6 | AU QUATRIÈME | TU REPRENDS |
+| 7 | scène ON RÉCLAME LE JINGLE | AU QUATRIÈME |
+| 8 | LE RAPPEL | scène ON RÉCLAME LE JINGLE (montage BOUCLE) |
+| 9 | ELLE PREND LE MICRO | LE RAPPEL · ELLE PREND LE MICRO |
+
+L'exercice **reste** et change de PLACE, pas de rôle : il ne peut plus être « le
+premier morceau » — celui-là se joue pour de vrai — mais le retirer enlèverait
+la seule mécanique qui dit ce que le texte raconte (`justesseDesFrappes` retient
+la meilleure fenêtre CONSÉCUTIVE, donc la note pardonne un début raté et
+récompense la reprise : « tu te planteras, mais maintenant tu sais quoi faire
+après »). Il devient **la balance**, salle vide, avant que les trente arrivent.
+
+**Les deux scènes ne font pas la même chose**, et c'est ce qui les justifie
+toutes les deux :
+
+- **LE SET** monte le DISQUE — les trois morceaux de l'acte 6, **un par
+  lettre**, sur « A B C · A B′ C′ » (trois matières, puis les mêmes en retrait,
+  c'est-à-dire un set). Les neuf boucles vont quand même toutes en banque : les
+  refrains et les ponts restent à un tap. La quatrième scène du montage est le
+  RETOUR du premier morceau, soit exactement l'écran suivant (« au quatrième,
+  quelqu'un danse »). L'acte 6, lui, monte UN morceau en couplet / refrain /
+  pont — c'est la répétition, pas le concert.
+- **LE RAPPEL** pose le jingle sous A sur **BOUCLE** (« A en boucle — les mains
+  font tout »), ce que le texte raconte : la salle chante, il n'y a rien à
+  enchaîner.
+
+**Trois changements de modèle**, tous dictés par le premier :
+
+1. `EtapeScene.montage` — le nom d'un montage du catalogue. Absent, la chaîne
+   est **effacée** (un seul motif qui tourne) : ne rien faire n'est pas une
+   option, c'est justement le bug.
+2. Une boucle cite sa **LETTRE** (`partie: 'A'`) et non plus un nom de section
+   (`section: 'COUPLET'`) que le store traduisait. La traduction ne marchait que
+   pour un montage : au concert, aucun des trois morceaux n'est « le couplet ».
+3. `EtapeScene.depuisLActe` — l'acte qui a livré les boucles, le sien par
+   défaut. Sans lui, une scène ne peut monter que ce que son propre acte vient
+   de produire, et le dernier acte — celui qui ne produit rien, par décision —
+   n'aurait jamais rien à jouer.
+
+**Un garde-fou assoupli, pour la seule raison qui le justifiait.** « Après la
+scène, il ne reste que du récit » devient « on ne produit plus et on n'est plus
+noté » : une scène ne PRODUIT rien (c'est déjà pourquoi elle peut suivre la
+dernière commande d'un acte), donc deux scènes séparées par du récit ne se
+marchent pas dessus. Ce que la règle visait vraiment — redescendre de scène pour
+retourner à l'établi — reste interdit.
+
+**Mesuré.** `scripts/parcours-carriere.cjs` joue la carrière entière et dit
+maintenant **ce qu'on va réellement entendre** (la lettre de la première section,
+pas le motif chargé) — c'est la ligne qui aurait attrapé le bug :
+
+```
+scène « NEUF BOUCLES, UN DISQUE » → set : 9/9 boucles, parties ABC, montage « COUPLET / REFRAIN » (8 scènes)
+  → à la lecture, on entend : QUI PASSE — COUPLET
+scène « LE SET »                 → set : 9/9 boucles, parties ABC, montage « A B C · A B′ C′ » (7 scènes)
+  → à la lecture, on entend : QUI PASSE — COUPLET
+scène « ON RÉCLAME LE JINGLE »   → morceau seul, montage « BOUCLE » (1 scène), A = JINGLE LAVERIE (V3)
+  → à la lecture, on entend : JINGLE LAVERIE (V3)
+```
+
+`verrous-masques.cjs` : `✅ aucune fuite`. Et les dix écrans de l'acte mesurés
+en 390 × 844, pointeur grossier : aucune ligne qui se replie, aucun conteneur
+qui déborde. La mesure a corrigé une ligne que l'œil validait — « Le bouton REC
+garde la prise : la seule trace qu'il y aura » se repliait à 59 signes.
+
+**Deux détails de rédaction payés en passant :** « ⏺ » s'affiche en simple point
+dans la chasse fixe (donc en rien du tout) — on écrit « le bouton REC » ; et
+« tourne ton téléphone » vit dans la VUE, sous **toute** scène : l'écrire aussi
+dans la donnée l'affichait deux fois à trois lignes d'écart. Retiré des deux
+scènes.
+
+**Reste ouvert, et ce n'est pas à moi de le trancher** : le Mode Live s'ouvre
+maintenant pour **trois** scènes avant d'être donné à l'épilogue (carte Q1 de
+`docs/relecture/masquer-le-verrouille.html`, recommandation A — l'ouvrir pour de
+bon dès l'acte 6). L'acte 7 ne fait qu'aggraver le symptôme ; la question reste
+entière.
+
 ### ✅ Le tour d'horizon des verrous — quatre fuites, et une mesure qui les tient (2026-09-08)
 
 > Yann : *« il faut masquer ce qui est verrouillé. les joueurs ne doivent pas

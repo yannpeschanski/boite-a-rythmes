@@ -15,6 +15,7 @@ import {
   ACTE_DU_DISQUE,
   ANNEE,
   dateDeLActe,
+  type Etape,
 } from '../src/model/carriere';
 import {
   LEVELS,
@@ -23,6 +24,7 @@ import {
   mesuresDeLArrangement,
 } from '../src/model/presets/levels';
 import { parametre } from '../src/model/parametres';
+import { montageParNom } from '../src/model/architecture';
 import { PRESETS } from '../src/model/presets/songs';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
 import { game } from '../src/stores/game.svelte';
@@ -1471,12 +1473,12 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
      * sections exactement portent une séquence, et ce sont les trois boucles
      * d'un même morceau — monter le couplet d'un morceau sous le refrain d'un
      * autre ferait un set qui n'a jamais été écrit. */
-    const montees = (scene.bouclesDeLActe ?? []).filter((b) => b.section);
+    const montees = (scene.bouclesDeLActe ?? []).filter((b) => b.partie);
     expect(montees, 'ce n’est pas UN morceau qu’on monte').toHaveLength(3);
     expect(new Set(montees.map((b) => (b.serie ?? '').split('-')[0])).size).toBe(1);
-    expect(new Set(montees.map((b) => b.section))).toEqual(
-      new Set(['COUPLET', 'REFRAIN', 'PONT']),
-    );
+    // Couplet = A, refrain = B, pont = C : les lettres que le montage cite.
+    expect(montees.map((b) => b.partie)).toEqual(['A', 'B', 'C']);
+    expect(scene.montage).toBe('COUPLET / REFRAIN');
     // Elle emprunte le Mode Live le temps de la scène — l'épilogue l'ouvre.
     expect(scene.modulesRequis).toContain('live');
     expect(acte6().module, 'l’acte 6 n’ouvre aucun module pour de bon').toBeNull();
@@ -1685,6 +1687,62 @@ describe('L’acte 7 joue, et ouvre le Mode Live', () => {
       a.etapes.flatMap((e) => (e.kind === 'recit' ? e.lignes : [])),
     );
     for (const l of ailleurs) expect(l).not.toContain('{pseudo}');
+  });
+
+  /* ⚠️ LE CONCERT SE JOUE EN MODE LIVE — l'acte refait le 2026-09-09.
+   *
+   * Avant, l'acte n'y montait que pour le RAPPEL : le concert lui-même était un
+   * exercice au clavier du Mode jeu, si bien que la répétition de l'acte 6
+   * (« neuf boucles, un disque ») était plus riche que le concert de l'acte 7.
+   * Les deux scènes se distinguent, et ce test garde la distinction : le SET
+   * monte le disque, un MORCEAU par lettre ; le RAPPEL pose une boucle. */
+  it('⚠️ monte le DISQUE en set — un morceau par lettre', () => {
+    const scenes = acte7().etapes.filter((e) => e.kind === 'scene');
+    expect(scenes, 'le concert et le rappel').toHaveLength(2);
+    const [set, rappel] = scenes as Extract<Etape, { kind: 'scene' }>[];
+
+    // Le SET rejoue ce que l'acte 6 a livré — l'acte 7 ne produit rien.
+    expect(set.depuisLActe).toBe(6);
+    const series6 = ACTES[6].etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
+    expect(set.bouclesDeLActe?.map((b) => b.serie), 'les neuf boucles vont en banque').toEqual(
+      series6,
+    );
+    /* ⚠️ TROIS MORCEAUX, TROIS LETTRES — pas trois sections d'un morceau. Ce
+     * qui distingue le concert de la répétition : à l'acte 6 A/B/C sont le
+     * couplet, le refrain et le pont d'un même morceau ; ici ce sont trois
+     * morceaux différents, et c'est ce que « un set » veut dire. */
+    const montees = (set.bouclesDeLActe ?? []).filter((b) => b.partie);
+    expect(montees.map((b) => b.partie)).toEqual(['A', 'B', 'C']);
+    expect(new Set(montees.map((b) => b.serie.split('-')[0])).size, 'trois morceaux').toBe(3);
+    for (const b of montees) expect(b.serie).toMatch(/-couplet$/);
+    expect(set.montage).toBe('A B C · A B′ C′');
+
+    // Le RAPPEL, lui, tient dans une boucle — « les mains font tout ».
+    expect(rappel.morceauDeLActe).toBe(3);
+    expect(rappel.montage).toBe('BOUCLE');
+  });
+
+  /* ⚠️ CE QUI N'A PAS ÉTÉ PORTÉ N'EXISTE PAS. `HISTOIRE.md` écrit ce que le
+   * concert demande — « lancer les morceaux ; compter les départs ; enchaîner ;
+   * gérer les silences ; rattraper une erreur ; tenir le tempo ; écouter le
+   * public » — et cette liste n'était nulle part dans le jeu. L'écran qui
+   * envoie sur scène est le seul endroit où elle a un sens : après, on joue. */
+  it('⚠️ dit ce qu’on va faire sur scène, avant d’y envoyer', () => {
+    const set = acte7().etapes.find((e) => e.kind === 'scene');
+    if (set?.kind !== 'scene') throw new Error('pas de scène');
+    const texte = set.lignes.join(' ').toLowerCase();
+    for (const mot of ['lances', 'enchaînes', 'départs', 'tempo', 'silence', 'rattrapes', 'écoutes']) {
+      expect(texte, `« ${mot} » n’est dit nulle part`).toContain(mot);
+    }
+    /* ⚠️ Et la SORTIE AUDIO se nomme. Depuis que l'export hors ligne d'un
+     * morceau est écarté, ⏺ REC est la seule façon de garder ce qu'on joue —
+     * une capacité qu'aucun mot ne nomme n'existe pas, et c'est ici qu'elle a
+     * un sens : après, on est sur scène. */
+    expect(texte).toContain('rec');
+    /* ⚠️ « tourne ton téléphone » n'est PAS dans la donnée : la vue le dit sous
+     * TOUTE scène. L'écrire aussi ici l'affichait deux fois à trois lignes
+     * d'écart — une règle à deux domiciles, et les deux visibles. */
+    expect(texte, 'la vue le dit déjà, sous toutes les scènes').not.toContain('horizontale');
   });
 
   // Et plus rien après : la carrière est finie, le carnet est complet.
@@ -1925,8 +1983,17 @@ describe('la scène — le seul endroit où l’on joue', () => {
           `l’acte ${etape.morceauDeLActe} ne produit rien — la scène n’aurait aucun morceau`,
         ).toBe(true);
       }
-      // Les boucles citées sont livrées PAR CET ACTE, et avant la scène.
-      const avant = acte.etapes.slice(0, acte.etapes.indexOf(etape));
+      /* Les boucles citées sont livrées AVANT la scène — par son propre acte,
+       * ou par celui que `depuisLActe` nomme. Le concert de l'acte 7 rejoue le
+       * disque de l'acte 6 : sans ce second cas, le dernier acte — celui qui
+       * ne produit rien, par décision — n'aurait jamais rien à jouer. */
+      const source = etape.depuisLActe ?? acte.id;
+      expect(source, `scène « ${etape.entete} » : boucles d’un acte à venir`).toBeLessThanOrEqual(
+        acte.id,
+      );
+      const acteSource = ACTES.find((a) => a.id === source)!;
+      const avant =
+        source === acte.id ? acteSource.etapes.slice(0, acte.etapes.indexOf(etape)) : acteSource.etapes;
       for (const b of boucles) {
         expect(
           avant.some((e) => e.kind === 'commande' && e.serie === b.serie),
@@ -1945,12 +2012,51 @@ describe('la scène — le seul endroit où l’on joue', () => {
     }
   });
 
-  it('⚠️ après la scène, il ne reste que du récit', () => {
-    // Même règle que pour la dernière commande d'un acte : le concert est le
-    // dernier geste, ce qui suit le raconte.
+  /* ⚠️ APRÈS UNE SCÈNE, PLUS RIEN QUI SE NOTE NI QUI SE PRODUISE.
+   *
+   * La règle disait « il ne reste que du récit », et elle a été assouplie le
+   * 2026-09-09 pour la seule raison qui la justifiait : une scène ne PRODUIT
+   * rien (c'est déjà pourquoi elle peut suivre la dernière commande d'un acte),
+   * donc deux scènes séparées par du récit ne se marchent pas dessus — l'acte 7
+   * joue son set, puis son rappel. Ce qui reste interdit est ce que la règle
+   * visait vraiment : redescendre de scène pour retourner à l'établi. */
+  it('⚠️ après la scène, on ne produit plus et on n’est plus noté', () => {
     for (const { acte, i } of scenes) {
       for (const e of acte.etapes.slice(i + 1)) {
-        expect(e.kind, `une étape « ${e.kind} » suit la scène de l’acte ${acte.id}`).toBe('recit');
+        expect(
+          ['recit', 'scene'],
+          `une étape « ${e.kind} » suit la scène de l’acte ${acte.id}`,
+        ).toContain(e.kind);
+      }
+    }
+  });
+
+  /* ⚠️ UNE SCÈNE POSE TOUT CE QU'ELLE FAIT JOUER — le motif ET la chaîne.
+   *
+   * Mesuré le 2026-09-09 : le rappel de l'acte 7 chargeait le jingle dans
+   * l'Atelier et s'arrêtait là. La chaîne montée à la scène précédente était
+   * encore en place, et `appliquerSection(0)` — que le Mode Live appelle au
+   * démarrage de la lecture — rechargeait la lettre A. Le seul écran du jeu qui
+   * dit « celui que tu as fait » faisait donc entendre autre chose dès la
+   * première mesure. Le test regarde la DONNÉE, parce que c'est là que le trou
+   * était : une scène qui cite un montage doit remplir chaque lettre qu'il
+   * cite. */
+  it('⚠️ remplit toutes les LETTRES que son montage cite', () => {
+    for (const { etape } of scenes) {
+      if (!etape.montage) continue;
+      const m = montageParNom(etape.montage);
+      expect(m, `« ${etape.montage} » n’est pas un montage`).toBeTruthy();
+      // Un morceau seul se range sous A ; un set range les lettres qu'il cite.
+      const posees = new Set<string>(
+        etape.morceauDeLActe !== undefined
+          ? ['A']
+          : (etape.bouclesDeLActe ?? []).flatMap((b) => (b.partie ? [b.partie] : [])),
+      );
+      for (const s of m!.sections) {
+        expect(
+          posees.has(s.partie),
+          `scène « ${etape.entete} » : la lettre ${s.partie} du montage « ${m!.nom} » n’est posée par personne`,
+        ).toBe(true);
       }
     }
   });

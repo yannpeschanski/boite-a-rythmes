@@ -722,16 +722,35 @@ class GameStore {
     if (e?.kind !== 'scene') return;
     this.sceneEnCours = { acte: this.acteActif, etape: this.etapeActive };
     if (e.bouclesDeLActe?.length) {
-      this.monterLeSet(this.acteActif, e.bouclesDeLActe);
+      this.monterLeSet(e.depuisLActe ?? this.acteActif, e.bouclesDeLActe, e.montage);
       return;
     }
     if (e.morceauDeLActe === undefined) return;
     const p = productionDeLActe(this.productions, e.morceauDeLActe);
-    if (p) pattern.replace(deserializeState(p.etat));
+    if (!p) return;
+    pattern.replace(deserializeState(p.etat));
+    /* ⚠️ UN MORCEAU SEUL SE RANGE QUAND MÊME SOUS UNE LETTRE, et la scène POSE
+     * sa chaîne. Sans ça, la chaîne montée par la scène précédente restait en
+     * place : `appliquerSection(0)` part au démarrage de la lecture et
+     * recharge la lettre A, donc le rappel de l'acte 7 faisait entendre le set
+     * de l'acte 6 dès la première mesure — sur le seul écran du jeu qui dit
+     * « celui que tu as fait ». Une scène ne laisse jamais la chaîne d'avant
+     * décider de ce qu'on entend. */
+    parties.poser('A', p.etat, p.titre);
+    this.poserMontage(e.montage);
+  }
+
+  /* Poser la chaîne d'une scène — ou l'effacer. `effacer()` n'est pas un
+     no-op : c'est « un seul motif qui tourne », le comportement d'avant la
+     bande, et c'est le seul état où le motif qu'on vient de charger est sûr de
+     rester celui qu'on entend. */
+  private poserMontage(nom: string | undefined): void {
+    if (nom) architecture.chargerMontage(nom);
+    else architecture.effacer();
   }
 
   /* MONTER LE SET — les boucles livrées deviennent les PARTIES A, B et C, et le
-   * montage « COUPLET / REFRAIN » les enchaîne.
+   * montage que la scène nomme les enchaîne.
    *
    * ⚠️ Le Mode Live faisait déjà tout ça À LA MAIN : ranger une séquence,
    * charger un modèle, assigner une séquence à chaque section. Ce qui manquait
@@ -746,7 +765,8 @@ class GameStore {
    * ce qu'il y a, comme le rappel de l'acte 7. */
   private monterLeSet(
     acte: number,
-    boucles: Array<{ serie: string; nom: string; section?: string }>,
+    boucles: Array<{ serie: string; nom: string; partie?: PartieId }>,
+    montage: string | undefined,
   ): void {
     /* ⚠️ Toutes les boucles livrées vont dans la BANQUE, celles qui portent une
      * section vont en plus dans les PARTIES : la banque est le matériel du
@@ -754,28 +774,24 @@ class GameStore {
      * morceau qu'on monte sur scène — et on n'en monte qu'un. Sans cette
      * distinction, les six autres boucles n'existaient nulle part.
      *
-     * ⚠️ La correspondance section -> LETTRE est ce qui remplace les huit
-     * allers-retours dans un sélecteur : couplet = A, refrain = B, pont = C,
-     * c'est-à-dire exactement les lettres que le montage « COUPLET / REFRAIN »
-     * cite déjà. Le set est monté sans qu'un seul choix soit demandé. */
-    const LETTRE_DE_SECTION: Record<string, PartieId> = {
-      COUPLET: 'A',
-      REFRAIN: 'B',
-      PONT: 'C',
-    };
+     * ⚠️ Une boucle cite sa LETTRE, et le MONTAGE vient du récit. Elle citait
+     * un nom de section (« COUPLET ») qu'une table traduisait ici en A / B / C,
+     * et le montage était écrit en dur : ça ne marchait que pour un montage,
+     * celui de l'acte 6. Le set du concert monte TROIS MORCEAUX, un par lettre
+     * — aucun des trois n'est « le couplet ». Dans les deux cas le set est
+     * monté sans qu'un seul choix soit demandé. */
     let monteQuelqueChose = false;
     for (const b of boucles) {
       const p = productionDeLaSerie(this.productions, acte, b.serie);
       if (!p) continue;
       sequenceBank.poser(b.nom, p.etat);
-      const lettre = b.section ? LETTRE_DE_SECTION[b.section] : undefined;
-      if (lettre) {
-        parties.poser(lettre, p.etat, b.nom);
+      if (b.partie) {
+        parties.poser(b.partie, p.etat, b.nom);
         monteQuelqueChose = true;
       }
     }
     if (!monteQuelqueChose) return;
-    architecture.chargerMontage('COUPLET / REFRAIN');
+    this.poserMontage(montage);
     /* On entre sur la première partie, sinon la bande démarre sur le motif que
        l'Atelier avait sous la main. */
     if (parties.remplie('A')) parties.charger('A');

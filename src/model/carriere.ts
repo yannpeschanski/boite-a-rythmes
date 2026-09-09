@@ -26,6 +26,7 @@
  * Module PUR : ni rune, ni DOM, ni audio. Le store n'en garde que le curseur.
  */
 import type { LockedModule } from './unlocks';
+import type { PartieId } from './parties';
 import { LEVELS } from './presets/levels';
 import {
   type Contrainte,
@@ -275,6 +276,20 @@ export interface EtapeScene {
   morceauDeLActe?: number;
   /** Ouverts le temps de la scène — voir `EtapeCommande.modulesRequis`. */
   modulesRequis?: LockedModule[];
+  /* ⚠️ LE MONTAGE QUE LA SCÈNE POSE — et il n'est pas décoratif.
+   *
+   * Une scène ne laisse JAMAIS la chaîne précédente décider de ce qu'on
+   * entend. Mesuré le 2026-09-09 : le rappel de l'acte 7 chargeait le jingle
+   * dans l'Atelier, mais la chaîne montée à l'acte 6 était encore en place —
+   * `appliquerSection(0)` part au démarrage de la lecture et recharge la
+   * lettre A, donc le seul écran du jeu qui dit « celui que tu as fait »
+   * faisait entendre autre chose, dès la première mesure.
+   *
+   * Renseigné, c'est le nom d'un montage de `model/architecture.ts` (validé
+   * par `tests/carriere.test.ts`, qui vérifie aussi que la scène REMPLIT
+   * toutes les lettres que ce montage cite). Absent, la chaîne est effacée :
+   * un seul motif qui tourne. */
+  montage?: string;
   /* ⚠️ LES BOUCLES QU'ON MONTE EN SET, au lieu d'un seul morceau.
    *
    * Demande de Yann (2026-09-04) : *« pour chacun de ces morceaux, on travaille
@@ -283,20 +298,33 @@ export interface EtapeScene {
    * (`model/architecture.ts`) et le modèle POP porte déjà ces trois noms : ce
    * qui manquait n'était pas la mécanique, c'était de quoi la nourrir.
    *
-   * Chaque entrée range la production d'une SÉRIE de l'acte dans la banque de
-   * séquences, sous son nom, et l'assigne aux sections du modèle qui portent
-   * `section`. Les sections non citées (intro, outro) retombent sur le couplet.
+   * Chaque entrée range la production d'une SÉRIE dans la banque de séquences,
+   * sous son nom, et celles qui citent une LETTRE la rangent en plus sous
+   * cette lettre.
    *
-   * ⚠️ `section` est FACULTATIF, et c'est la distinction entre le matériel et
+   * ⚠️ Une entrée cite une LETTRE, pas un nom de section. Elle citait
+   * « COUPLET » / « REFRAIN » / « PONT », qu'une table du store traduisait en
+   * A / B / C : ça ne marchait que pour le montage COUPLET / REFRAIN. Le set
+   * du concert (acte 7) monte TROIS MORCEAUX, un par lettre — aucun des trois
+   * n'est « le couplet ». Une architecture se pense en lettres, la scène aussi.
+   *
+   * ⚠️ `partie` est FACULTATIF, et c'est la distinction entre le matériel et
    * le morceau : toutes les boucles vont dans la BANQUE, seules celles qui
-   * portent une section entrent dans l'ARCHITECTURE. L'acte 6 livre neuf
+   * citent une lettre entrent dans l'ARCHITECTURE. L'acte 6 livre neuf
    * boucles pour trois morceaux ; une architecture décrit UN morceau, donc on
    * en monte un et les six autres restent à un clic dans le sélecteur. Sans
    * ça, elles n'existaient nulle part dans le Mode Live.
    *
    * `morceauDeLActe` reste : une scène qui ne cite pas de boucles emporte un
    * morceau entier, comme le rappel de l'acte 7. */
-  bouclesDeLActe?: Array<{ serie: string; nom: string; section?: string }>;
+  bouclesDeLActe?: Array<{ serie: string; nom: string; partie?: PartieId }>;
+  /* L'acte qui a LIVRÉ ces boucles — le sien, sauf mention contraire.
+   *
+   * ⚠️ Le concert de l'acte 7 rejoue le disque de l'acte 6 : sans ce champ,
+   * une scène ne peut monter que ce que son propre acte vient de produire, et
+   * le dernier acte — celui qui ne produit rien, par décision — n'aurait
+   * jamais rien à jouer. */
+  depuisLActe?: number;
 }
 
 export interface EtapeCommande {
@@ -2432,14 +2460,16 @@ export const ACTES: Acte[] = [
           'SOL: Ce soir on joue le premier. Les autres sont là.',
           'SOL: Couplet, refrain, pont. C’est un morceau, maintenant.',
           'SOL: Moi je ne le conduis pas. C’est le tien.',
-          'Tourne ton téléphone : la scène est à l’horizontale.',
         ],
         bouton: 'Monter le set ▸',
         modulesRequis: ['live'],
+        // Un morceau, trois sections : couplet = A, refrain = B, pont = C,
+        // c'est-à-dire exactement les lettres que ce montage cite.
+        montage: 'COUPLET / REFRAIN',
         bouclesDeLActe: [
-          { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', section: 'COUPLET' },
-          { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN', section: 'REFRAIN' },
-          { serie: 'passe-pont', nom: 'QUI PASSE — PONT', section: 'PONT' },
+          { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', partie: 'A' },
+          { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN', partie: 'B' },
+          { serie: 'passe-pont', nom: 'QUI PASSE — PONT', partie: 'C' },
           { serie: 'seul-couplet', nom: 'ÉCOUTE SEUL — COUPLET' },
           { serie: 'seul-refrain', nom: 'ÉCOUTE SEUL — REFRAIN' },
           { serie: 'seul-pont', nom: 'ÉCOUTE SEUL — PONT' },
@@ -2473,19 +2503,40 @@ export const ACTES: Acte[] = [
     module: 'live',
     resume: 'La salle chante un jingle de lessive refusé par l’agence.',
     etapes: [
-      /* ⚠️ L'acte cite les deux niveaux `jouer` (37 et 38) et rien d'autre, et
-       * ce n'est pas un pis-aller : `justesseDesFrappes` retient la MEILLEURE
-       * FENÊTRE CONSÉCUTIVE et non la moyenne du tour. Autrement dit, la
-       * notation pardonne déjà un début raté et récompense la reprise — ce qui
-       * est mot pour mot ce que Sol répond avant de brancher les enceintes :
-       * « Tu te planteras. Mais maintenant tu sais quoi faire après. » La
-       * mécanique portait la leçon de l'acte avant qu'il soit écrit.
+      /* ⚠️ L'ACTE SE JOUE EN MODE LIVE — refait le 2026-09-09, après le
+       * chantier du Mode Live (parties A/B/C, montages, calques, boutons de
+       * scène, ⏺ REC). Il était écrit quand le Live ne savait qu'enchaîner un
+       * motif : le concert s'y jouait au clavier du Mode jeu, et on ne montait
+       * sur scène que pour le rappel. Résultat mesuré : la RÉPÉTITION de
+       * l'acte 6 était plus riche que le CONCERT de l'acte 7.
+       *
+       * Et `HISTOIRE.md` le demandait déjà, mot pour mot : « Tu dois : lancer
+       * les morceaux ; compter les départs ; enchaîner ; gérer les silences ;
+       * rattraper une erreur ; tenir le tempo ; écouter le public. » Cette
+       * liste n'avait jamais été portée — donc, pour le joueur, elle n'existait
+       * pas.
+       *
+       * Deux scènes, et elles ne font pas la même chose :
+       *  - LE SET monte le DISQUE (les trois morceaux de l'acte 6, un par
+       *    lettre) sur le montage « A B C · A B′ C′ » — trois matières, puis
+       *    les mêmes en retrait, c'est-à-dire un set ;
+       *  - LE RAPPEL pose le jingle sous A sur le montage BOUCLE (« les mains
+       *    font tout »), ce qui est exactement ce que le texte raconte.
+       *
+       * ⚠️ L'exercice reste, et il a changé de PLACE, pas de rôle. Il ne peut
+       * plus être « le premier morceau » — le premier morceau se joue
+       * maintenant pour de vrai — mais le vider de l'acte retirerait la seule
+       * mécanique qui dit ce que le texte raconte : `justesseDesFrappes`
+       * retient la MEILLEURE FENÊTRE CONSÉCUTIVE et non la moyenne du tour,
+       * donc la notation pardonne un début raté et récompense la reprise, mot
+       * pour mot ce que Sol répond avant de brancher les enceintes. Il devient
+       * donc LA BALANCE : la salle est vide, se planter ne coûte rien encore.
+       * C'est le 38 qui reste (« à vue », le plus chargé des deux) ; le 37
+       * reste au réservoir.
        *
        * Aucune commande ici, contrairement aux actes 2 à 6 : on ne produit
-       * plus, on joue. Et le Mode Live s'ouvre à la FIN — le récit décrit ce
-       * qu'on y fera (lancer, enchaîner, rattraper), l'acte le donne en
-       * sortant. Pas de commande non plus dans un module qu'on n'a pas encore
-       * ouvert : c'est la même règle qu'à l'acte 1. */
+       * plus, on joue. Le Mode Live est PRÊTÉ par les deux scènes
+       * (`modulesRequis`) et ouvert pour de bon en sortant de l'acte. */
       {
         kind: 'recit',
         source: 'lcd',
@@ -2497,6 +2548,12 @@ export const ACTES: Acte[] = [
           'Rachid coupe les machines.',
           'Il ne l’avait jamais fait pour personne.',
         ],
+      },
+      {
+        kind: 'exercice',
+        niveau: 38,
+        commande:
+          'La balance. La salle est vide, personne n’écoute encore — c’est le dernier moment où te planter ne coûte rien.',
       },
       {
         kind: 'recit',
@@ -2521,27 +2578,50 @@ export const ACTES: Acte[] = [
           'SOL: Mais maintenant tu sais quoi faire après.',
         ],
       },
-      /* ⚠️ UN SEUL PILOTE depuis le 2026-09-04 — *« à revoir ou supprimer »*
-       * (Yann, sur les deux). Ils étaient DEUX à faire la même chose à trois
-       * écrans d'intervalle, et depuis que le rappel se joue pour de vrai en
-       * Mode Live, le second est une répétition de la répétition.
+      /* ⚠️ LE CONCERT SE JOUE. C'est le seul moment du jeu où le récit décrit
+       * le joueur en train de JOUER, et il se jouait au clavier du Mode jeu.
        *
-       * C'est « revoir » et non « supprimer » : la mécanique reste le fond de
-       * l'acte — `justesseDesFrappes` retient la meilleure fenêtre consécutive
-       * et non la moyenne du tour, donc la notation pardonne un début raté et
-       * récompense la reprise, mot pour mot ce que Sol répond avant de
-       * brancher les enceintes. Vider l'acte de ses exercices retirerait la
-       * seule mécanique qui dit ce que le texte raconte.
+       * Les trois morceaux de l'acte 6 deviennent les trois LETTRES — un
+       * morceau par lettre, ce que la scène de l'acte 6 ne pouvait pas faire
+       * (elle monte UN morceau en couplet / refrain / pont). Les neuf boucles
+       * vont quand même toutes en banque : les refrains et les ponts restent à
+       * un tap sous le pouce, et c'est ce qui fait qu'un set se joue au lieu de
+       * se dérouler.
        *
-       * C'est le 38 qui reste (« à vue », le plus chargé des deux : quatre à
-       * cinq coups à lire et à poser, contre trois à quatre à retrouver), et
-       * il hérite du RATÉ que portait le 37 — l'écran suivant parle de
-       * reprendre, il lui faut quelque chose à reprendre. Le 37 reste au
-       * réservoir. */
+       * ⚠️ Le montage n'est pas choisi au hasard : « A B C · A B′ C′ » énonce
+       * les trois matières puis les reprend en retrait. Sa quatrième scène
+       * après l'intro est le RETOUR du premier morceau — c'est-à-dire
+       * exactement l'écran suivant, « au quatrième, quelqu'un danse ». */
       {
-        kind: 'exercice',
-        niveau: 38,
-        commande: 'Le premier morceau. Tu rates presque ton entrée — et il ne s’arrête pas pour t’attendre.',
+        kind: 'scene',
+        entete: 'LE SET',
+        lignes: [
+          'SOL: Trois morceaux. Tu les lances, tu les enchaînes.',
+          'SOL: Tu comptes les départs, tu tiens le tempo.',
+          'SOL: Un silence au bon endroit, c’est de la musique aussi.',
+          'SOL: Si tu te plantes, tu rattrapes. Tu ne reviens pas.',
+          'SOL: Et tu écoutes la salle. Moi je ne conduis pas.',
+          // ⚠️ Le bouton REC porte un point et le mot : l'écrire « ⏺ » le rend
+          // en point tout court dans la chasse fixe, donc en rien du tout.
+          'Le bouton REC garde la prise — la seule trace.',
+        ],
+        bouton: 'Lancer le premier morceau ▸',
+        modulesRequis: ['live'],
+        // Le disque de l'acte 6 : un MORCEAU par lettre, et les neuf boucles
+        // en banque.
+        montage: 'A B C · A B′ C′',
+        depuisLActe: 6,
+        bouclesDeLActe: [
+          { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', partie: 'A' },
+          { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN' },
+          { serie: 'passe-pont', nom: 'QUI PASSE — PONT' },
+          { serie: 'seul-couplet', nom: 'ÉCOUTE SEUL — COUPLET', partie: 'B' },
+          { serie: 'seul-refrain', nom: 'ÉCOUTE SEUL — REFRAIN' },
+          { serie: 'seul-pont', nom: 'ÉCOUTE SEUL — PONT' },
+          { serie: 'attend-couplet', nom: 'PERSONNE N’ATTEND — COUPLET', partie: 'C' },
+          { serie: 'attend-refrain', nom: 'PERSONNE N’ATTEND — REFRAIN' },
+          { serie: 'attend-pont', nom: 'PERSONNE N’ATTEND — PONT' },
+        ],
       },
       {
         kind: 'recit',
@@ -2566,12 +2646,15 @@ export const ACTES: Acte[] = [
           'Puis les applaudissements.',
         ],
       },
-      /* ⚠️ LE RAPPEL SE JOUE. L'écran suivant raconte trente personnes en train
-       * de chanter douze secondes écrites pour vendre de la lessive : le seul
-       * moment du jeu où le récit décrit le joueur en train de JOUER. Il se
-       * jouait au clavier du Mode jeu, et le Mode Live s'ouvrait après, en
-       * récompense. Il s'ouvre maintenant ICI, avec le jingle du joueur
-       * dedans — celui qu'il a livré à Rachid à l'acte 3. */
+      /* ⚠️ LE RAPPEL POSE SON MOTIF ET SA CHAÎNE, et c'est une correction, pas
+       * un ornement. La scène chargeait le jingle dans l'Atelier et s'arrêtait
+       * là : la chaîne montée pour le set était encore en place, et le premier
+       * `appliquerSection(0)` du Mode Live rechargeait la lettre A. Le seul
+       * écran du jeu qui dit « celui que tu as fait » faisait donc entendre
+       * autre chose, dès la première mesure.
+       *
+       * BOUCLE, « A en boucle — les mains font tout », est aussi ce que le
+       * texte raconte : la salle chante, on n'a rien à enchaîner. */
       {
         kind: 'scene',
         entete: 'ON RÉCLAME LE JINGLE',
@@ -2586,6 +2669,9 @@ export const ACTES: Acte[] = [
         // L'acte 3 est celui du jingle de la laverie — sa commande le range
         // dans la discographie sous « JINGLE LAVERIE ».
         morceauDeLActe: 3,
+        // Une seule scène, sur A : le morceau tient dans une boucle et ce sont
+        // les mains qui font le reste.
+        montage: 'BOUCLE',
         // Le concert OUVRE le Mode Live : sans ça, l'étape enverrait dans un
         // module cadenassé.
         modulesRequis: ['live'],

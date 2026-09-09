@@ -84,6 +84,10 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         /* ⚠️ Une scène qui monte un SET : on vérifie que les trois boucles sont
            bien arrivées dans la banque et assignées aux sections. Sans ça,
            l'acte 6 finirait sur trois fichiers que personne n'enchaîne. */
+        /* ⚠️ Une scène qui emporte UN morceau se lit aussi : elle doit poser sa
+           chaîne, sinon celle de la scène d'avant reste et le motif chargé est
+           écrasé au premier `appliquerSection(0)` — le rappel de l'acte 7
+           faisait entendre le set de l'acte 6. */
         const set = e.bouclesDeLActe
           ? (() => {
               const noms = e.bouclesDeLActe.map((b) => b.nom);
@@ -99,11 +103,27 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
                  annonçait « parties ABCD » sur trois lettres : `remplie('D')`
                  lit une case inexistante, et `undefined !== null` est vrai. */
               const lettres = PARTIES.filter((l) => parties.remplie(l));
-              return ` — set : ${enBanque.length}/${noms.length} boucles en banque, parties ${lettres.join('') || '—'}, ${architecture.sections.length} sections`;
+              return ` — set : ${enBanque.length}/${noms.length} boucles en banque, parties ${lettres.join('') || '—'}, montage « ${architecture.courante?.nom ?? '—'} » (${architecture.sections.length} scènes)`;
             })()
-          : '';
+          : ` — morceau seul, montage « ${architecture.courante?.nom ?? '—'} » (${architecture.sections.length} scènes), A = ${parties.get('A')?.nom || '—'}`;
+        /* ⚠️ CE QU'ON VA RÉELLEMENT ENTENDRE, et non ce que la scène a chargé.
+           Le Mode Live appelle `appliquerSection(0)` au démarrage de la
+           lecture : c'est la LETTRE de la première section qui joue, pas le
+           motif que la scène vient de poser dans l'Atelier. Le rappel de
+           l'acte 7 chargeait le jingle et faisait entendre le set de l'acte 6,
+           dès la première mesure, parce que la chaîne d'avant était restée. */
+        const premiere = architecture.sections[0];
+        const entendu = premiere
+          ? parties.get(premiere.partie)?.nom || parties.get('A')?.nom || '(lettre vide)'
+          : 'le motif chargé';
+        const alerte =
+          e.morceauDeLActe !== undefined && premiere && entendu !== (parties.get('A')?.nom || '')
+            ? `   ⚠️ la scène emporte un morceau mais fait entendre « ${entendu} »`
+            : null;
         game.terminerScene();
         log.push(`   scène « ${e.entete} » → Mode Live ${ouvert ? 'ouvert' : '⚠️ CADENASSÉ'}${set}`);
+        log.push(`     → à la lecture, on entend : ${entendu}`);
+        if (alerte) log.push(alerte);
         continue;
       }
       if (e.kind === 'livraison') {
