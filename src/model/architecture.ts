@@ -198,45 +198,26 @@ function sec(nom: string, partie: PartieId, cycles: number, lignes: LineName[] |
 
 /* ---- LES MONTAGES ----
  *
- * ⚠️ UN MONTAGE N'EST PAS QU'UNE CHAÎNE. Yann : « qu'il y ait des presets
- * d'architecture / affectation de bouton / lignes mutées qui permettent de
- * pouvoir assembler un morceau très facilement ». Les trois vont ensemble et
- * c'est le point : une chaîne de sections sans les boutons qui la pilotent
- * (SUIVANT, TENIR) se joue contre le musicien, et les lignes mutées SONT les
- * calques des sections. Un montage porte donc les trois d'un coup.
+ * ⚠️ UN MONTAGE EST UN POINT DE DÉPART, PAS UN CARCAN. Il pose une CHAÎNE et
+ * ses CALQUES ; tout s'y modifie ensuite, scène par scène, dans le panneau
+ * Montage de l'Atelier — lettre, tours, lignes qui sonnent, ordre, et la liste
+ * elle-même. « Il faut pouvoir monter le morceau comme on le souhaite :
+ * choisir la structure parmi des presets ou la créer de toute pièce. »
  *
- * Les deux premiers sont les deux exemples de Yann, écrits tels quels.
- * `boutons` cite des identifiants du catalogue `ui/live/liveActions` : le
- * modèle ne connaît pas l'UI, c'est elle qui valide (et ignore ce qu'elle ne
- * reconnaît pas, plutôt que de refuser le montage en bloc — même leçon que la
- * migration des assignations).
+ * ⚠️ IL NE PORTE PLUS DE BOUTONS, et c'est un arbitrage du 2026-09-09 :
+ * « on peut laisser tomber le choix des boutons associés aux paramètres, ça ne
+ * fait pas ses preuves ». Un montage qui remplaçait six assignations obligeait
+ * à un loquet « conserver mes boutons » dans ⚙ et à une case à cocher de plus à
+ * l'ouverture d'un fichier ; les deux coûtaient en lisibilité ce que la
+ * fonction ne rendait pas. Désormais RIEN ne touche aux boutons déjà réglés —
+ * ni un montage, ni un fichier de morceau — et il n'y a plus de coche.
  */
 export interface Montage {
   nom: string;
   /** Une ligne, lue sur le bouton qui le charge. */
   desc: string;
   sections: Section[];
-  /** Les six boutons du Mode Live, ou `null` pour ne pas y toucher. */
-  boutons: string[][] | null;
 }
-
-const BOUTONS_CHAINE: string[][] = [
-  ['section-next'],
-  ['section-hold'],
-  ['ligne-kick'],
-  ['ligne-snare'],
-  ['break'],
-  ['fill'],
-];
-
-const BOUTONS_CLUB: string[][] = [
-  ['section-next'],
-  ['mute-drums'],
-  ['ligne-kick'],
-  ['ligne-hat'],
-  ['break'],
-  ['chaos'],
-];
 
 export const MONTAGES: Montage[] = [
   /* ⚠️ CHAQUE MONTAGE A UN RELIEF, et c'est une correction du 2026-09-08.
@@ -256,7 +237,6 @@ export const MONTAGES: Montage[] = [
     nom: 'BOUCLE',
     desc: 'A en boucle — les mains font tout',
     sections: [sec('BOUCLE', 'A', 4)],
-    boutons: null,
   },
   {
     /* L'exemple 1 de Yann. Les deux COUPLETS ne sonnent pas pareil : le
@@ -274,7 +254,6 @@ export const MONTAGES: Montage[] = [
       sec('REFRAIN', 'B', 2),
       sec('OUTRO', 'B', 1, CALQUE_SORTIE),
     ],
-    boutons: BOUTONS_CHAINE,
   },
   {
     /* L'exemple 2 : « ABB′ABB′A′ outro ». Les deux B′ diffèrent — le premier
@@ -291,7 +270,6 @@ export const MONTAGES: Montage[] = [
       sec('B PRIME', 'B', 1, CALQUE_BREAK),
       sec('OUTRO', 'A', 1, CALQUE_SORTIE),
     ],
-    boutons: BOUTONS_CHAINE,
   },
   {
     /* ⚠️ La forme de 32 mesures, et le seul montage où le calque n'est pas un
@@ -307,7 +285,6 @@ export const MONTAGES: Montage[] = [
       sec('B', 'B', 2, CALQUE_SANS_BATTERIE),
       sec('A', 'A', 2, CALQUE_SORTIE),
     ],
-    boutons: BOUTONS_CHAINE,
   },
   {
     /* Le seul montage qui demande TROIS motifs. Le refrain A reste PLEIN à
@@ -328,7 +305,6 @@ export const MONTAGES: Montage[] = [
       sec('C', 'C', 2, CALQUE_SANS_BATTERIE),
       sec('A', 'A', 2, CALQUE_SORTIE),
     ],
-    boutons: BOUTONS_CHAINE,
   },
   {
     /* Trois matières, puis les mêmes ALLÉGÉES — ici le second passage ne change
@@ -345,7 +321,6 @@ export const MONTAGES: Montage[] = [
       sec('B PRIME', 'B', 2, CALQUE_PONT),
       sec('C PRIME', 'C', 1, CALQUE_SORTIE),
     ],
-    boutons: BOUTONS_CHAINE,
   },
   {
     /* L'arc d'INTENSITÉ — une seule lettre, ce sont les LIGNES qui font le
@@ -364,7 +339,6 @@ export const MONTAGES: Montage[] = [
       sec('CLIMAX', 'A', 4),
       sec('SORTIE', 'A', 2, CALQUE_SORTIE),
     ],
-    boutons: BOUTONS_CLUB,
   },
 ];
 
@@ -384,6 +358,88 @@ export function montageFrais(nom: string): Architecture | null {
 
 export function montageParNom(nom: string): Montage | null {
   return MONTAGES.find((m) => m.nom === nom) ?? null;
+}
+
+/* ---- MONTER SOI-MÊME ----
+ *
+ * ⚠️ UN MODÈLE EST UN DÉPART, PAS UNE IDENTITÉ. Yann : « choisir la structure
+ * comme on le souhaite, parmi des presets ou la créer de toute pièce ». Tout ce
+ * qui suit est la part PURE de cette édition — l'ajout, la copie, le
+ * déplacement, le retrait, et la bascule d'une ligne dans un calque. Le store
+ * n'en fait que le câblage réactif et l'écriture sur disque, si bien que la
+ * règle qui compte se teste sans navigateur.
+ *
+ * ⚠️ LE NOM D'UNE CHAÎNE ÉDITÉE N'EST PLUS CELUI DU MODÈLE. Garder « RONDO »
+ * sur une chaîne dont on a retiré trois scènes ferait mentir le seul mot que
+ * l'écran affiche en grand. `montageFrais` continue de poser le nom du modèle ;
+ * dès qu'une scène bouge, le store passe par `nomEdite`.
+ */
+
+/** L'ordre dans lequel les lignes se lisent partout — batterie puis synthé. */
+export const LIGNES_ORDRE: LineName[] = [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES];
+
+/** Les calques nommés, offerts en raccourci par l'éditeur. */
+export const CALQUES_NOMMES: Array<{ nom: string; lignes: LineName[] }> = [
+  { nom: 'ENTRÉE', lignes: CALQUE_ENTREE },
+  { nom: 'DÉPOUILLÉ', lignes: CALQUE_DEPOUILLE },
+  { nom: 'SQUELETTE', lignes: CALQUE_SQUELETTE },
+  { nom: 'MONTÉE', lignes: CALQUE_MONTEE },
+  { nom: 'PONT', lignes: CALQUE_PONT },
+  { nom: 'BREAK', lignes: CALQUE_BREAK },
+  { nom: 'SANS BATTERIE', lignes: CALQUE_SANS_BATTERIE },
+  { nom: 'SORTIE', lignes: CALQUE_SORTIE },
+];
+
+/** Une scène neuve, avec un identifiant à elle — les clés de `{#each}` en vivent. */
+export function nouvelleSection(
+  nom = 'SCÈNE',
+  partie: PartieId = 'A',
+  cycles = 2,
+  lignes: LineName[] | null = null,
+): Section {
+  return { id: `sec-${++compteur}`, nom, partie, cycles, lignes: lignes ? [...lignes] : null };
+}
+
+/** Le point de départ de « de toute pièce » : une scène pleine, et rien d'autre. */
+export function chaineVierge(): Architecture {
+  return { nom: 'MON MORCEAU', sections: [nouvelleSection('SCÈNE 1', 'A', 2)] };
+}
+
+/**
+ * Le nom que porte une chaîne qu'on vient de modifier.
+ *
+ * Un modèle édité n'est plus ce modèle : on le dit une fois, on ne l'empile
+ * pas (« RONDO (modifié) (modifié) » est le défaut qu'on évite ici).
+ */
+export function nomEdite(nom: string): string {
+  if (montageParNom(nom) === null) return nom;
+  return `${nom} (modifié)`;
+}
+
+/**
+ * Bascule une ligne dans le calque d'une section, et rend le calque suivant.
+ *
+ * ⚠️ `null` VEUT DIRE « TOUTES », pas « aucune » — retirer une ligne d'une
+ * section pleine part donc de la liste complète, jamais d'un tableau vide.
+ * Et une section qui retrouve toutes ses lignes redevient `null` : sans ça
+ * elle resterait affichée « A′ » alors qu'elle sonne exactement comme A.
+ */
+export function basculerLigne(lignes: LineName[] | null, ligne: LineName): LineName[] | null {
+  const base = lignes === null ? [...LIGNES_ORDRE] : lignes;
+  const suivant = base.includes(ligne)
+    ? base.filter((l) => l !== ligne)
+    : LIGNES_ORDRE.filter((l) => base.includes(l) || l === ligne);
+  return suivant.length === LIGNES_ORDRE.length ? null : suivant;
+}
+
+/** Déplacer une scène d'un cran — hors bornes, la liste ne bouge pas. */
+export function deplacerSection(sections: Section[], index: number, delta: number): Section[] {
+  const cible = index + delta;
+  if (index < 0 || index >= sections.length || cible < 0 || cible >= sections.length) return sections;
+  const copie = [...sections];
+  const [s] = copie.splice(index, 1);
+  copie.splice(cible, 0, s);
+  return copie;
 }
 
 /* ---- LA MIGRATION DE L'ANCIENNE FORME ----

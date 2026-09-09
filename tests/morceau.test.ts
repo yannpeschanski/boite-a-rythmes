@@ -1,9 +1,11 @@
 /* LE FICHIER DE MORCEAU — ce qui survit au navigateur qui l'a fabriqué.
  *
  * ⚠️ CE QUE CES TESTS TIENNENT. Un morceau n'est pas un rythme : il porte les
- * LETTRES, la CHAÎNE qui les enchaîne et les BOUTONS qui la pilotent. Les
- * trois doivent faire l'aller-retour sans perte — c'est la seule raison d'être
- * du format.
+ * LETTRES et la CHAÎNE qui les enchaîne. Les deux doivent faire l'aller-retour
+ * sans perte — c'est la seule raison d'être du format. Les BOUTONS du Mode Live
+ * en faisaient partie ; ils en sont sortis le 2026-09-09 (« ça ne fait pas ses
+ * preuves »), et le test qui compte désormais est qu'un ancien fichier qui les
+ * porte encore s'ouvre quand même.
  *
  * Et surtout : `lireMorceau` RÉPARE au lieu de refuser. Une validation tout ou
  * rien rend les défauts (une section abîmée) et perd tout le reste, en
@@ -27,12 +29,11 @@ function morceauType(): MorceauVivant {
     nom: 'Mon morceau',
     parties: { A: { nom: 'couplet', json }, B: { nom: 'refrain', json } },
     chaine: montageFrais(MONTAGES[1].nom),
-    boutons: [['live-mute-kick'], ['live-filtre-ferme']],
   };
 }
 
 describe('le fichier de morceau', () => {
-  it('fait l’aller-retour sans rien perdre — lettres, chaîne ET boutons', () => {
+  it('fait l’aller-retour sans rien perdre — les lettres ET la chaîne', () => {
     const avant = morceauType();
     const fichier = construireMorceau(avant);
     const relu = lireMorceau(JSON.parse(JSON.stringify(fichier)));
@@ -45,7 +46,10 @@ describe('le fichier de morceau', () => {
     expect(relu!.chaine!.sections.map((s) => s.partie)).toEqual(
       avant.chaine!.sections.map((s) => s.partie),
     );
-    expect(relu!.boutons).toEqual(avant.boutons);
+    // Les calques voyagent aussi : sans eux, une chaîne rouverte sonne à plat.
+    expect(relu!.chaine!.sections.map((s) => s.lignes)).toEqual(
+      avant.chaine!.sections.map((s) => s.lignes),
+    );
   });
 
   it('refuse ce qui n’est pas un morceau, jamais autre chose', () => {
@@ -83,11 +87,17 @@ describe('le fichier de morceau', () => {
     expect(Object.keys(relu!.parties).sort()).toEqual(['A', 'B']);
   });
 
-  it('des boutons absents ou vides valent « ne rien imposer », pas un tableau vide', () => {
-    const f = construireMorceau({ ...morceauType(), boutons: null });
-    expect(lireMorceau(f)!.boutons).toBeNull();
-    expect(lireMorceau({ ...f, boutons: [[], []] })!.boutons).toBeNull();
-    expect(lireMorceau({ ...f, boutons: 'oui' })!.boutons).toBeNull();
+  it('n’écrit plus de boutons — et ignore ceux d’un ancien fichier', () => {
+    /* ⚠️ La vraie question d'une révocation de champ : le fichier de QUELQU'UN
+       D'AUTRE, écrit avant. Un champ de trop ne doit pas faire refuser un
+       morceau — c'est la même règle que la migration d'architecture. */
+    const f = construireMorceau(morceauType());
+    expect('boutons' in f).toBe(false);
+    const ancien = { ...f, boutons: [['live-mute-kick'], ['live-filtre-ferme']] };
+    const relu = lireMorceau(ancien);
+    expect(relu).not.toBeNull();
+    expect('boutons' in relu!).toBe(false);
+    expect(Object.keys(relu!.parties).sort()).toEqual(['A', 'B']);
   });
 
   it('un nom de fichier reste ouvrable partout', () => {

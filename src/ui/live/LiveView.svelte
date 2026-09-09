@@ -53,8 +53,6 @@
     saveLiveAssignments,
     loadLiveSnapshots,
     saveLiveSnapshots,
-    chargerConserverBoutons,
-    saveConserverBoutons,
     vizById,
     ACTIONS_TIRABLES,
     LIVE_ACTIONS,
@@ -688,6 +686,16 @@
   const archSections = $derived(architecture.sections);
   const cycleMotif = $derived(cycleDuMotif(st));
   const sectionCourante = $derived(archSections[sectionIndex] ?? null);
+
+  /* ⚠️ LA CHAÎNE PEUT RACCOURCIR SOUS LES PIEDS DU CURSEUR. Depuis que le
+     panneau Montage de l'Atelier retire et déplace des scènes, `sectionIndex`
+     peut pointer au-delà de la dernière : la tête de lecture n'aurait plus de
+     section courante, donc plus de longueur, donc plus d'avance automatique —
+     un morceau qui s'arrête sans rien dire. On le ramène dans la chaîne. */
+  $effect(() => {
+    const n = archSections.length;
+    if (n && sectionIndex >= n) sectionIndex = n - 1;
+  });
   /* La longueur de la section EN COURS se lit sur le motif chargé — c'est lui
      qui joue. Les longueurs AFFICHÉES, elles, se lisent lettre par lettre. */
   const mesuresCourantes = $derived(sectionCourante ? mesuresDeSection(sectionCourante, cycleMotif) : 0);
@@ -788,47 +796,16 @@
      l'incrément du compteur, la valeur vaut brièvement −1. */
   let mesureDansSection = $state(0);
 
-  /* ⚠️ LES BOUTONS D'UN MONTAGE SE CONSOMMENT DANS UN EFFET, pas dans la
-     fonction de chargement. Le montage n'est pas toujours chargé d'ici : le
-     JEU en monte un tout seul à la scène de l'acte 6 (`game.monterLeSet`), et
-     un montage chargé là-bas serait arrivé sans ses commandes de section —
-     c'est-à-dire une chaîne sans SUIVANT ni TENIR, qui joue contre le
-     musicien. Une règle à deux domiciles n'est appliquée qu'à un seul.
+  /* ⚠️ UN MONTAGE NE TOUCHE PLUS AUX BOUTONS (2026-09-09). Il en portait six,
+     posés ici par un `$effect` parce que le JEU charge lui aussi des montages
+     (`game.monterLeSet`) et qu'une règle à deux domiciles n'est appliquée qu'à
+     un seul. Yann, après essai : « on peut laisser tomber le choix des boutons
+     associés aux paramètres, ça ne fait pas ses preuves. » Ce que ça enlève de
+     l'écran : le loquet « CONSERVER MES BOUTONS » de ⚙, qui n'existait que
+     pour se protéger de ce remplacement. Ce qu'il reste : les assignations
+     réglées à la main sont gardées, toujours. */
 
-     Ce que le catalogue ne reconnaît pas est ignoré, jamais refusé en bloc :
-     même leçon que la migration des assignations, où le tout-ou-rien perdait
-     les six boutons ET les trois snapshots, en silence. */
-  /* ⚠️ « Ou une option "conserver mes boutons ?" » — Yann. Un montage qui écrase
-     six assignations sans prévenir est destructeur et silencieux ; le loquet
-     reste donc à la main de qui joue. Persisté avec le reste : c'est une
-     habitude de jeu, pas un réglage de morceau. */
-  let conserverBoutons = $state(chargerConserverBoutons());
-
-  $effect(() => {
-    const voulus = architecture.boutonsDemandes;
-    if (!voulus) return;
-    if (untrack(() => conserverBoutons)) {
-      architecture.boutonsConsommes();
-      return;
-    }
-    /* `untrack` : l'effet écrit dans `assignments`, qu'il lit pour garder le
-       défaut d'un rang non cité. Sans ça il se redéclencherait sur sa propre
-       écriture. */
-    const courants = untrack(() => assignments);
-    const slots = courants.slots.map((defaut, i) => {
-      const ids = (voulus[i] ?? []).filter((id): id is LiveActionId =>
-        LIVE_ACTIONS.some((a) => a.id === id),
-      );
-      return ids.length ? ids : defaut;
-    });
-    assignments = { ...courants, slots, slotModes: slots.map(() => 'actions' as SlotMode) };
-    saveLiveAssignments(assignments);
-    architecture.boutonsConsommes();
-  });
-
-  /* Charger un MONTAGE : la chaîne, les calques de lignes ET les six boutons
-     d'un coup — c'est ce que « des presets d'architecture / affectation de
-     bouton / lignes mutées » veut dire, et les trois vont ensemble. */
+  /* Charger un MONTAGE : la chaîne et les calques de lignes. */
   function chargerMontage(nom: string) {
     architecture.chargerMontage(nom);
     basculeEnAttente = false;
@@ -2233,16 +2210,6 @@
                 <span class="assign-row-label">VISUALISEUR</span>
                 <span class="assign-row-val">{vizById(assignments.viz).label}</span>
               </button>
-              <button
-                class="assign-row"
-                onclick={() => {
-                  conserverBoutons = !conserverBoutons;
-                  saveConserverBoutons(conserverBoutons);
-                }}
-              >
-                <span class="assign-row-label">CONSERVER MES BOUTONS</span>
-                <span class="assign-row-val">{conserverBoutons ? '☑ un montage n’y touche pas' : '☐ un montage les remplace'}</span>
-              </button>
               <button class="assign-row" onclick={() => (picker = { kind: 'montage' })}>
                 <span class="assign-row-label">MONTAGE</span>
                 <span class="assign-row-val"
@@ -2367,11 +2334,11 @@
                   {/each}
                 {:else if picker.kind === 'montage'}
                   <p class="picker-caption">
-                    Un montage pose la CHAÎNE (intro, couplet, refrain…), les LIGNES que chaque
-                    scène laisse sonner, et les six BOUTONS qui la pilotent. Il ne reste qu'à
-                    ranger un motif sous A — et un second sous B si la forme en demande deux.
-                    On compte en TOURS du motif : ici {cycleMotif} mesure{cycleMotif > 1 ? 's' : ''} par tour,
-                    calculé sur les lignes qui sonnent.
+                    Un montage pose la CHAÎNE (intro, couplet, refrain…) et les LIGNES que chaque
+                    scène laisse sonner. Il ne reste qu'à ranger un motif sous A — et un second
+                    sous B si la forme en demande deux. On compte en TOURS du motif : ici {cycleMotif}
+                    mesure{cycleMotif > 1 ? 's' : ''} par tour, calculé sur les lignes qui sonnent.
+                    Tes boutons ne bougent pas : un montage n'y touche plus.
                   </p>
                   <button class="picker-row" class:current={!architecture.courante} onclick={quitterArchitecture}>
                     <span class="picker-label">AUCUN</span>
@@ -2397,7 +2364,9 @@
                   {@const idx = picker.index}
                   <p class="picker-caption">
                     La LETTRE que joue cette scène, et sa longueur en tours. Une lettre encore vide
-                    joue A — une chaîne dit toujours ce qu'elle joue.
+                    joue A — une chaîne dit toujours ce qu'elle joue. Pour AJOUTER, retirer ou
+                    déplacer des scènes, et choisir les lignes que chacune laisse sonner : Atelier,
+                    onglet Production, panneau Montage.
                   </p>
                   <div class="picker-cycles">
                     <button class="amp-btn" onclick={() => architecture.poserCycles(idx, archSections[idx].cycles - 1)}>−</button>
