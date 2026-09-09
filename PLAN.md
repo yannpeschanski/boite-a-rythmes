@@ -46,6 +46,88 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le morceau se monte à la main — et les boutons cessent de suivre (2026-09-09)
+
+> Yann : *« Il faut pouvoir monter le morceau comme on le souhaite : choisir la
+> structure comme on le souhaite, parmi des presets ou la créer de toute pièce ;
+> quelle partie A B ou C ? Combien de cycles ? Qu'on puisse par exemple choisir
+> quelles lignes sont mutées ? On peut laisser tomber le choix des boutons
+> associés aux paramètres, ça ne fait pas ses preuves. Ce qui permet également de
+> toujours garder les boutons déjà réglés à l'ouverture et enlever la coche qui
+> fait perdre en lisibilité. »*
+
+**Fichiers touchés :** `src/model/architecture.ts`, `src/model/morceau.ts`,
+`src/stores/architecture.svelte.ts`, `src/stores/morceau.svelte.ts`,
+`src/ui/atelier/MontagePanel.svelte`, `src/ui/atelier/AtelierView.svelte`,
+`src/ui/live/LiveView.svelte`, `src/ui/live/liveActions.ts`,
+`tests/architecture.test.ts`, `tests/morceau.test.ts`, `CLAUDE.md`, `REPRISE.md`.
+
+**Ce qui manquait.** Les sept modèles étaient à prendre ou à laisser. Le seul
+geste d'édition — la lettre et les tours — vivait derrière un **appui long sur
+une case de la bande du Live**, c'est-à-dire sur la surface de scène ; rien ne
+permettait d'ajouter, de retirer, de déplacer une scène, ni de choisir les
+lignes qu'elle laisse sonner. Un modèle était donc une identité, pas un départ.
+
+**Ce qui est livré.** `MontagePanel` (Atelier, onglet Production) devient
+l'éditeur : partir d'un modèle **ou d'une page blanche** (`chaineVierge`), et
+par scène la lettre (A/B/C), les tours (− ×n +), le nom, les huit lignes qui
+sonnent — en bascules ou par les huit **calques nommés** — plus monter,
+descendre, dupliquer, retirer. Le panneau garde ce qu'il écrivait déjà : ce
+qu'on entend en clair, la longueur, le départ, le total et la durée.
+
+**Deux règles neuves, et pourquoi.**
+
+- *Ce qui change la FORME marque le nom* (`nomEdite`, une seule fois) : la bande
+  du Live affiche « RONDO » en grand, et une chaîne dont on a retiré trois
+  scènes ne l'est plus. Renommer une SCÈNE y échappe — ça ne change pas ce qu'on
+  entend, et le nom clignoterait à chaque touche tapée.
+- *Retirer la dernière scène efface la chaîne* : une architecture à zéro section
+  ne passe pas `valide()`, donc gardée en mémoire elle disparaîtrait au
+  rechargement suivant, sans un mot.
+
+**Les boutons sortent du montage ET du fichier.** `Montage.boutons`,
+`architecture.boutonsDemandes`, le `$effect` qui les consommait dans
+`LiveView`, le loquet « CONSERVER MES BOUTONS » de ⚙ et la coche « garder mes
+boutons à l'ouverture » du panneau ont tous disparu ; `MorceauFichier.boutons`
+aussi, et un ancien fichier qui le porte encore s'ouvre — le champ est ignoré,
+jamais un motif de refus (`tests/morceau.test.ts`). Ce que ça **ne** coûte pas :
+SUIVANT et TENIR ne sont pas des assignations mais deux commandes fixes de la
+bande, donc une chaîne reste jouable sans qu'un montage impose quoi que ce soit.
+
+**Trois choses trouvées à la mesure, pas à l'œil** (390 × 844, `hasTouch`,
+`isMobile`) :
+
+1. **Les enveloppes `.tap44` se marchaient dessus.** Sur les A/B/C — 19 px de
+   large, 2 px d'écart — le pseudo-élément de 44 px du voisin recouvrait le
+   bouton : la sonde trouvait « A » à 21 px et « C » à 44, et un tap serait
+   tombé à côté. Ces boutons-là ont de la place : c'est leur **boîte** qui monte
+   à 44 sous `coarse`.
+2. **Le panneau débordait de 12 px**, pour la même raison — les enveloppes
+   dépassaient `.rang`. Disparu avec elles.
+3. **Neuf cibles de 44 px ne tiennent pas sur 312 px** (il en faudrait 396). La
+   rangée visible garde donc ce qui se LIT (lettre, tours) ; ce qui se fait une
+   fois (lignes, ordre, retrait) passe derrière un bouton **écrit** — pas un
+   geste caché, troisième fois que l'appui long coûte cher.
+
+**Un bug de câblage trouvé au passage.** La chaîne peut désormais RACCOURCIR
+sous les pieds du curseur : `sectionIndex` pouvait pointer au-delà de la
+dernière scène, donc plus de section courante, donc plus de longueur, donc plus
+d'avance automatique — un morceau qui s'arrête sans rien dire. Un `$effect` le
+ramène dans la chaîne.
+
+**Vérifié :** `npm run check` 0 erreur, 697 tests (dont neuf neufs sur la part
+pure de l'édition), les deux builds ; la carrière entière rejouée
+(`scripts/parcours-carriere.cjs`) — les scènes des actes 6 et 7 montent toujours
+leur montage, sans console d'erreur ; et le panneau mesuré dans cinq états
+(aucun montage, page blanche, trois scènes, détail ouvert, modèle à huit
+scènes) : **aucune cible sous 44 px, aucun débordement**.
+
+⚠️ **Une piste de méthode à retenir.** La première campagne de mesure était
+FAUSSE et le disait à l'envers : un `page.screenshot({ fullPage: true })` remet
+à zéro l'émulation mobile de Chromium, si bien que tout ce qui était mesuré
+après lui l'était au format bureau — `pointer: coarse` ne s'appliquait plus.
+Prendre les captures pleine page **après** les mesures, jamais entre deux.
+
 ### ✅ L'acte 7 se joue en Mode Live — le set, puis le rappel (2026-09-09)
 
 > Yann : *« il faut maintenant retravailler le dernier acte par rapport aux

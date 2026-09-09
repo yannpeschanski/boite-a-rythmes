@@ -54,7 +54,10 @@ zone touchable monte à 44 px **sans que le dessin grandisse**, via un
 pseudo-élément sous `@media (pointer: coarse)`. Trois pièges :
 
 - ces enveloppes **débordent et se marchent dessus** — d'où l'écartement du
-  rythme vertical dans les mêmes blocs `coarse` ;
+  rythme vertical dans les mêmes blocs `coarse` ; sur une rangée SERRÉE (les
+  A/B/C d'une scène, 19 px espacés de 2) l'enveloppe du voisin recouvre le
+  bouton et le tap tombe à côté : là, c'est la **boîte elle-même** qui monte à
+  44, pas un pseudo-élément ;
 - un bloc `@media` posé au milieu d'un `<style>` Svelte est **écrasé par les
   règles écrites plus bas** : les mettre en fin de `<style>` ;
 - `getBoundingClientRect()` ne voit pas le pseudo-élément — mesurer avec
@@ -242,12 +245,25 @@ s'y oppose pas — la bande du Live fait 832 px en 844 × 390 et porte AUSSI la
 chaîne et les deux commandes de jeu ; trois pastilles y sont plus à l'aise que
 quatre, à 56 px.
 
-⚠️ **Un MONTAGE porte les trois à la fois — chaîne, calques, boutons.** Une
-chaîne sans SUIVANT ni TENIR sous le pouce se joue contre le musicien. Ses
-`boutons` sont consommés par un **`$effect`**, jamais par la fonction qui charge :
-le JEU monte un montage tout seul à la scène de l'acte 6, et une règle à deux
-domiciles n'est appliquée qu'à un seul. Un identifiant non reconnu est ignoré,
-jamais refusé en bloc.
+⚠️ **Un MONTAGE pose une CHAÎNE et ses CALQUES — plus jamais de boutons.**
+Il en portait six, remplacés à chaque chargement ; révoqué le 2026-09-09 (« on
+peut laisser tomber le choix des boutons associés aux paramètres, ça ne fait pas
+ses preuves »). Ce que ça enlève de l'écran : le loquet « CONSERVER MES
+BOUTONS » de ⚙ et la coche « garder mes boutons à l'ouverture » du panneau, qui
+n'existaient que pour se protéger de ce remplacement. **Rien ne touche plus aux
+assignations réglées à la main** — ni un montage, ni un fichier de morceau. Ce
+que ça ne coûte pas : SUIVANT et TENIR ne sont pas des assignations mais deux
+commandes fixes de la bande.
+
+⚠️ **Un modèle est un DÉPART, pas une identité — tout se monte à la main.**
+« Il faut pouvoir monter le morceau comme on le souhaite » : `MontagePanel`
+(Atelier, onglet Production) ajoute, duplique, déplace et retire des scènes,
+change la lettre, les tours et les lignes qui sonnent, et démarre aussi d'une
+page blanche (`chaineVierge`). Deux conséquences : ce qui change la FORME
+marque le nom (`nomEdite`, une seule fois — « RONDO (modifié) »), parce que
+c'est le seul mot que la bande affiche en grand ; et retirer la dernière scène
+**efface** la chaîne, une architecture à zéro section ne passant pas `valide()`.
+Monter reste un geste de PRÉPARATION : la surface de scène n'y gagne rien.
 
 ⚠️ **Les PARTIES et la BANQUE ne se confondent pas.** La banque est le matériel
 (l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
@@ -294,10 +310,11 @@ Blob). Il écrit maintenant dans un `Int16Array` qui grandit par paliers de 30 s
 RIFF a **une seule** définition (`enteteWav`, `render-offline.ts`) : deux
 écrivains WAV finissent par diverger.
 
-⚠️ **Un MORCEAU s'enregistre en JSON, et les BOUTONS en font partie**
-(`model/morceau.ts` — « oui, les boutons font partie, c'est un des intérêts »).
-Un morceau ne dit pas seulement ce qui joue, il dit ce que les mains peuvent en
-faire. Ce n'est **pas** le format v2 et ça ne le touche pas : le fichier
+⚠️ **Un MORCEAU s'enregistre en JSON : les LETTRES et la CHAÎNE, pas les
+boutons** (`model/morceau.ts`). Ils en faisaient partie par arbitrage ; sortis
+le 2026-09-09 avec le reste — un champ `boutons` d'un ancien fichier est
+**ignoré**, jamais un motif de refus. Ce n'est **pas** le format v2 et ça ne le
+touche pas : le fichier
 *contient* un état v2 par lettre. `lireMorceau` **répare** — une lettre
 illisible est ignorée, une section abîmée tombe, une chaîne perdue devient
 `null` — parce qu'une validation tout ou rien rend le défaut et perd tout le
@@ -337,13 +354,14 @@ pad et l'inclinaison gardent la main. Et la reconstruction de l'impulsion de
 réverbe est **gardée** (`derniereTailleReverbe`) — c'est la seule opération
 coûteuse de la fonction, et elle tomberait à chaque frontière de mesure.
 
-⚠️ **Un montage doit être LISIBLE quelque part** — il pose trois choses d'un
-tap (chaîne, lignes coupées, six boutons) et la bande du Live n'en montre que le
-résultat, dans des cases de 60 px. `MontagePanel` (Atelier, onglet Production)
-l'écrit : chaque scène, sa lettre, **ce qu'on entend** (le calque en clair, pas
-un compte de lignes), sa longueur, son départ, et les boutons demandés. Le
-calque se dit par ce qui SONNE, jamais par ce qui est coupé — même règle que les
-fiches de style.
+⚠️ **Un montage doit être LISIBLE là où il se monte** — la bande du Live n'en
+montre que le résultat, dans des cases de 60 px. `MontagePanel` l'écrit : chaque
+scène, sa lettre, **ce qu'on entend** (le calque en clair, pas un compte de
+lignes), sa longueur, son départ. Le calque se dit par ce qui SONNE, jamais par
+ce qui est coupé — même règle que les fiches de style. ⚠️ Neuf cibles de 44 px
+ne tiennent pas sur une rangée de 312 px (mesuré) : ce qui se LIT reste visible,
+ce qui se fait une fois (couper une ligne, déplacer, retirer) est derrière un
+bouton **écrit**, jamais un geste caché.
 
 ⚠️ **Une lettre VIDE rend le cycle de A, parce qu'elle JOUERA A.** Le repli de
 `appliquerSection` doit valoir aussi pour ce qui DÉCRIT la chaîne : sans ça

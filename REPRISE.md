@@ -3,7 +3,18 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-09 — **l'acte 7 se joue en Mode Live** : le
+> Dernière mise à jour : 2026-09-09 — **le morceau se monte à la main**. Le
+> panneau Montage (Atelier, onglet Production) est devenu l'ÉDITEUR de la
+> chaîne : partir d'un modèle ou d'une page blanche, et par scène la lettre, les
+> tours, le nom, les lignes qui sonnent, plus monter / descendre / dupliquer /
+> retirer. Et les BOUTONS sortent du montage **et** du fichier de morceau
+> (« ça ne fait pas ses preuves ») : plus rien ne remplace les assignations
+> réglées à la main, donc plus de loquet « CONSERVER MES BOUTONS » dans ⚙ ni de
+> coche à l'ouverture. Détail dans `PLAN.md`, première entrée — dont trois
+> défauts que seule la mesure a vus (enveloppes `.tap44` qui se recouvrent,
+> débordement de 12 px, et neuf cibles de 44 px impossibles sur 312).
+>
+> Avant cela : **l'acte 7 se joue en Mode Live** : le
 > concert monte le DISQUE (les trois morceaux de l'acte 6, un par lettre, sur
 > « A B C · A B′ C′ »), le rappel pose le jingle sur BOUCLE, et l'exercice
 > devient la BALANCE. Il corrige au passage un bug que rien ne mesurait : le
@@ -111,7 +122,7 @@ mot juste est **SCÈNE**, pas « section ».
 | Le mix SUIT la bascule, le tempo JAMAIS | « on passe du temps à chercher un son » |
 | La durée juste | chaque section avec le cycle de SA lettre |
 | Les pastilles du Live ne rangent plus | ranger est de la préparation → onglet Production |
-| Option « conserver mes boutons » | un montage n'écrase plus en silence |
+| ~~Option « conserver mes boutons »~~ | **retirée** — un montage ne touche plus aux boutons du tout (2026-09-09) |
 | SONNERIE retiré, AABA ajouté | la forme de 32 mesures tombe pile sur nos tours |
 | ❌ Export hors ligne d'un morceau | **annulé** — sans automation il serait mort |
 | ✅ **Préversion Vercel par pull request** | le préalable à tout test réel |
@@ -145,8 +156,9 @@ dix minutes, WAV et pas MP3), maintenant qu'il est la seule sortie audio.
 
 1. **⏺ REC** est devenu LA sortie audio : 256 Mo de pic à dix minutes, WAV et
    pas MP3. Deux sorties connues (tampon pré-alloué, encodage au fil de l'eau).
-2. **Sauvegarder un morceau en JSON** — demandé, pas fait. Question ouverte :
-   les boutons font-ils partie du morceau ?
+2. ~~**Sauvegarder un morceau en JSON**~~ — fait. La question « les boutons
+   font-ils partie du morceau ? » a été tranchée deux fois : oui d'abord, puis
+   **non** le 2026-09-09, à l'usage.
 3. **Ranger la banque et les lettres** — deux vocabulaires qui s'ignorent.
 4. Après écoute seulement : le fill recalé sur la section, l'automation.
 

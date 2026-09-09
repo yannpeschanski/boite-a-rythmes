@@ -817,9 +817,11 @@
         <PartiesStrip />
       </XpWindow>
       <!-- Le MONTAGE juste sous les parties : l'un dit la matière, l'autre ce
-           qu'on en fait. Un montage se charge d'un tap en Mode Live et pose
-           trois choses d'un coup (chaîne, lignes coupées, boutons) — sans cet
-           écran, on le subit sans pouvoir le lire. -->
+           qu'on en fait. C'est ICI qu'on monte le morceau — la structure (un
+           modèle ou de toute pièce), la lettre de chaque scène, sa longueur et
+           les lignes qu'elle laisse sonner. La bande du Live n'en montre que le
+           résultat, dans des cases de 60 px : monter est un geste de
+           PRÉPARATION, il vit dans l'Atelier. -->
       <XpWindow title="Montage du morceau" icon="⛓" accent="amber">
         <MontagePanel />
       </XpWindow>

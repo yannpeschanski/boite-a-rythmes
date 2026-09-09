@@ -1,17 +1,20 @@
 /* UN MORCEAU — ce qui se sauvegarde et se rouvre.
  *
  * ⚠️ POURQUOI CE FICHIER EXISTE. L'appli savait partager un RYTHME par URL
- * depuis toujours, mais un morceau monté — les lettres, la chaîne qui les
- * enchaîne, les boutons qui la pilotent — n'existait que dans le
+ * depuis toujours, mais un morceau monté — les lettres et la chaîne qui les
+ * enchaîne — n'existait que dans le
  * `localStorage` du navigateur qui l'avait fabriqué. Yann : « il faudrait
  * pouvoir sauvegarder des morceaux montés en JSON avant le wav ».
  *
- * ⚠️ LES BOUTONS EN FONT PARTIE, et c'est un arbitrage explicite : « oui, les
- * boutons font partie, c'est un des intérêts ». Un morceau ne dit pas seulement
- * ce qui joue, il dit ce que les mains peuvent en faire — une chaîne sans
- * SUIVANT ni TENIR sous le pouce se joue contre le musicien. Ils sont donc dans
- * le fichier ; l'option « conserver mes boutons » du Mode Live reste le moyen
- * de ne pas se les faire écraser à l'ouverture.
+ * ⚠️ LES BOUTONS N'EN FONT PLUS PARTIE — révocation du 2026-09-09. Ils y
+ * étaient par arbitrage (« oui, les boutons font partie, c'est un des
+ * intérêts ») ; à l'usage, « ça ne fait pas ses preuves ». Ce que ça coûtait se
+ * lisait à l'écran : une coche « garder mes boutons à l'ouverture » ici, un
+ * loquet « CONSERVER MES BOUTONS » dans ⚙ du Live, et le risque, sinon, de se
+ * faire remplacer six assignations par un fichier ouvert pour écouter.
+ * Désormais les assignations déjà réglées sont TOUJOURS gardées, il n'y a plus
+ * rien à cocher, et le champ laissé par un ancien fichier est simplement
+ * ignoré — on ne refuse pas un fichier pour un champ de trop.
  *
  * ⚠️ CE N'EST PAS LE FORMAT V2, et ça ne le touche pas. Un morceau CONTIENT des
  * états v2 (un par lettre, sérialisés tels quels) ; le contrat central n'est ni
@@ -32,15 +35,12 @@ export interface MorceauFichier {
   parties: Partial<Record<PartieId, { nom: string; json: string }>>;
   /** La chaîne, ou `null` si le morceau est un simple motif qui tourne. */
   chaine: Architecture | null;
-  /** Les six boutons du Mode Live — voir l'en-tête. `null` = ne rien imposer. */
-  boutons: string[][] | null;
 }
 
 export interface MorceauVivant {
   nom: string;
   parties: Partial<Record<PartieId, { nom: string; json: string }>>;
   chaine: Architecture | null;
-  boutons: string[][] | null;
 }
 
 export function construireMorceau(m: MorceauVivant): MorceauFichier {
@@ -51,7 +51,6 @@ export function construireMorceau(m: MorceauVivant): MorceauFichier {
     enregistreLe: Date.now(),
     parties: m.parties,
     chaine: m.chaine,
-    boutons: m.boutons,
   };
 }
 
@@ -72,8 +71,8 @@ function sectionValide(s: unknown): s is Section {
  * Relit un fichier de morceau. Rend `null` si ce n'en est pas un.
  *
  * ⚠️ ON RÉPARE CE QU'ON PEUT, ON NE REFUSE QU'EN DERNIER RECOURS. Une lettre
- * illisible est ignorée, une chaîne abîmée devient `null`, des boutons inconnus
- * disparaissent — mais un fichier qui porte ne serait-ce qu'une lettre valable
+ * illisible est ignorée, une chaîne abîmée devient `null`, un champ inconnu est
+ * laissé de côté — mais un fichier qui porte ne serait-ce qu'une lettre valable
  * s'ouvre. C'est la leçon déjà payée deux fois ici : une validation tout ou
  * rien rend les défauts et perd tout, en silence.
  */
@@ -98,12 +97,6 @@ export function lireMorceau(v: unknown): MorceauFichier | null {
     if (sections.length) chaine = { nom: c.nom, sections };
   }
 
-  const boutons = Array.isArray(m.boutons)
-    ? m.boutons
-        .map((slot) => (Array.isArray(slot) ? slot.filter((x): x is string => typeof x === 'string') : []))
-        .filter((slot) => slot.length > 0)
-    : null;
-
   // Un fichier sans une seule lettre ni chaîne n'ouvrirait rien : autant le dire.
   if (!Object.keys(parties).length && !chaine) return null;
 
@@ -114,7 +107,6 @@ export function lireMorceau(v: unknown): MorceauFichier | null {
     enregistreLe: typeof m.enregistreLe === 'number' ? m.enregistreLe : Date.now(),
     parties,
     chaine,
-    boutons: boutons && boutons.length ? boutons : null,
   };
 }
 

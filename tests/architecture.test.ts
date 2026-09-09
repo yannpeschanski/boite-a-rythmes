@@ -15,6 +15,13 @@ import { describe, it, expect } from 'vitest';
 import { defaultState } from '../src/model/defaults';
 import {
   cycleDuMotif,
+  basculerLigne,
+  deplacerSection,
+  nouvelleSection,
+  chaineVierge,
+  nomEdite,
+  CALQUES_NOMMES,
+  LIGNES_ORDRE,
   mesuresDeSection,
   dureeSecondes,
   formaterDuree,
@@ -27,7 +34,6 @@ import {
 } from '../src/model/architecture';
 import type { Section } from '../src/model/architecture';
 import { PARTIES, estPartieId } from '../src/model/parties';
-import { LIVE_ACTIONS } from '../src/ui/live/liveActions';
 import type { PatternStateV2 } from '../src/model/types';
 
 /** Un motif où seule la batterie sonne : toutes les lignes font une mesure. */
@@ -273,26 +279,15 @@ describe('les montages livrés d’usine', () => {
     expect(lettres.filter((l) => l === 'B').length).toBeGreaterThan(1);
   });
 
-  it('ne demandent que des boutons qui existent au catalogue', () => {
-    /* Le modèle ne connaît pas l'UI : il cite des identifiants en clair. Une
-       coquille y serait ignorée en silence par le chargement (qui garde le
-       défaut du rang) — donc invisible sans ce test. */
-    const ids = new Set(LIVE_ACTIONS.map((a) => a.id as string));
-    const avecBoutons = MONTAGES.filter((m) => m.boutons !== null);
-    expect(avecBoutons.length).toBeGreaterThan(0);
-    for (const m of avecBoutons) {
-      expect(m.boutons!.length).toBe(6);
-      for (const slot of m.boutons!) {
-        expect(slot.length).toBeGreaterThan(0);
-        for (const id of slot) expect(ids.has(id)).toBe(true);
-      }
-    }
-  });
-
-  it('donnent SUIVANT et TENIR aux chaînes — sans quoi la chaîne joue contre le musicien', () => {
+  it('ne portent PLUS de boutons — un montage pose une chaîne, rien d’autre', () => {
+    /* ⚠️ RÉVOCATION DU 2026-09-09, et le test la garde. Un montage remplaçait
+       les six assignations du Live (« pas ses preuves ») ; le prix en était un
+       loquet « CONSERVER MES BOUTONS » dans ⚙ et une coche de plus à
+       l'ouverture d'un fichier. Ce que ça n'a PAS coûté : SUIVANT et TENIR ne
+       sont pas des assignations, ce sont deux commandes fixes de la bande —
+       une chaîne reste jouable sans qu'un montage impose quoi que ce soit. */
     for (const m of MONTAGES) {
-      if (m.sections.length <= 1 || !m.boutons) continue;
-      expect(m.boutons.flat()).toContain('section-next');
+      expect(Object.keys(m).sort()).toEqual(['desc', 'nom', 'sections']);
     }
   });
 
@@ -447,5 +442,97 @@ describe('une lettre vide se compte comme A, puisqu’elle joue A', () => {
     for (const s of chaine.filter((x) => x.partie === 'C')) {
       expect(mesuresDeSection(s, cycleDe('C'))).toBe(mesuresDeSection(s, cycleDe('A')));
     }
+  });
+});
+
+/* ---- MONTER LA CHAÎNE SOI-MÊME ----
+ *
+ * ⚠️ POURQUOI CES TESTS. « Il faut pouvoir monter le morceau comme on le
+ * souhaite » (2026-09-09) : les sept modèles étaient à prendre ou à laisser.
+ * Ce que l'édition ajoute est réactif et vit dans le store, mais les trois
+ * règles qui peuvent MENTIR sont pures et se tiennent ici — le calque plein qui
+ * doit redevenir « toutes », le déplacement hors bornes, et le nom d'un modèle
+ * qu'on vient de modifier.
+ */
+describe('éditer une chaîne — la part pure', () => {
+  it('retirer une ligne d’une scène PLEINE part de toutes, jamais d’un tableau vide', () => {
+    /* `null` veut dire « toutes », pas « aucune ». Le confondre couperait sept
+       lignes sur huit au premier clic — un montage rendu inaudible par le
+       geste censé l'affiner. */
+    const apres = basculerLigne(null, 'snare');
+    expect(apres).not.toBeNull();
+    expect(apres).toHaveLength(LIGNES_ORDRE.length - 1);
+    expect(apres).not.toContain('snare');
+    expect(apres![0]).toBe('kick'); // et l'ordre de lecture est conservé
+  });
+
+  it('une scène qui retrouve toutes ses lignes redevient « toutes » — donc A, pas A′', () => {
+    /* Sinon elle resterait affichée A′ en sonnant exactement comme A : le
+       prime est le CALQUE, il n'a pas de champ à lui. */
+    const sansSnare = basculerLigne(null, 'snare')!;
+    expect(basculerLigne(sansSnare, 'snare')).toBeNull();
+  });
+
+  it('rajouter une ligne la remet à sa place dans l’ordre de lecture', () => {
+    const calque = basculerLigne(basculerLigne(null, 'kick')!, 'hat')!;
+    const remis = basculerLigne(calque, 'kick')!;
+    expect(remis.indexOf('kick')).toBeLessThan(remis.indexOf('snare'));
+  });
+
+  it('déplacer hors des bornes ne bouge RIEN — et se reconnaît à l’identité', () => {
+    /* Le store lit cette identité pour ne pas marquer le nom du montage :
+       un ↑ sur la première scène ne doit pas transformer « RONDO » en
+       « RONDO (modifié) ». */
+    const sections = montageFrais('RONDO')!.sections;
+    expect(deplacerSection(sections, 0, -1)).toBe(sections);
+    expect(deplacerSection(sections, sections.length - 1, 1)).toBe(sections);
+    expect(deplacerSection(sections, -3, 1)).toBe(sections);
+  });
+
+  it('déplacer échange bien deux scènes voisines', () => {
+    const sections = montageFrais('RONDO')!.sections;
+    const bouge = deplacerSection(sections, 0, 1);
+    expect(bouge[0].id).toBe(sections[1].id);
+    expect(bouge[1].id).toBe(sections[0].id);
+    expect(bouge).toHaveLength(sections.length);
+  });
+
+  it('un modèle modifié cesse de porter le nom du modèle, et ne l’empile pas', () => {
+    expect(nomEdite('RONDO')).toBe('RONDO (modifié)');
+    expect(nomEdite('RONDO (modifié)')).toBe('RONDO (modifié)');
+    expect(nomEdite('MON MORCEAU')).toBe('MON MORCEAU');
+  });
+
+  it('une chaîne vierge est jouable telle quelle — une scène pleine sur A', () => {
+    const a = chaineVierge();
+    expect(a.sections).toHaveLength(1);
+    expect(a.sections[0].partie).toBe('A');
+    expect(a.sections[0].lignes).toBeNull();
+    expect(a.sections[0].cycles).toBeGreaterThan(0);
+    // Deux chaînes vierges ne partagent pas d'identifiant : `{#each}` en vit.
+    expect(chaineVierge().sections[0].id).not.toBe(a.sections[0].id);
+  });
+
+  it('une scène neuve reçoit un identifiant à elle', () => {
+    expect(nouvelleSection().id).not.toBe(nouvelleSection().id);
+    // Et son calque est COPIÉ : deux scènes ne doivent pas partager un tableau.
+    const l = ['kick'] as const;
+    const s1 = nouvelleSection('X', 'A', 1, [...l]);
+    s1.lignes!.push('hat');
+    expect(nouvelleSection('Y', 'A', 1, [...l]).lignes).toEqual(['kick']);
+  });
+
+  it('les calques offerts en raccourci ne citent que des lignes qui existent', () => {
+    /* Une coquille dans un raccourci poserait un calque qui ne coupe rien, en
+       silence — la famille de défaut de `forceVariantCount`. */
+    expect(CALQUES_NOMMES.length).toBeGreaterThan(3);
+    for (const c of CALQUES_NOMMES) {
+      expect(c.lignes.length).toBeGreaterThan(0);
+      expect(c.lignes.length).toBeLessThan(LIGNES_ORDRE.length);
+      for (const l of c.lignes) expect(LIGNES_ORDRE).toContain(l);
+    }
+    // Deux raccourcis ne doivent pas faire entendre la même chose.
+    const signatures = CALQUES_NOMMES.map((c) => [...c.lignes].sort().join('+'));
+    expect(new Set(signatures).size).toBe(signatures.length);
   });
 });
