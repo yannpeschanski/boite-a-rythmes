@@ -112,6 +112,23 @@
   // l'affichage) — reset à chaque nouvelle prise du bouton.
   let soloMelodyHeld = $state(false);
   let lastMelodyFreq: number | null = null;
+  /* SOLO NAPPE / SOLO BASSE — mêmes maintenus, même rôle : pendant l'appui le
+     pad joue la ligne au doigt. Un seul peut être tenu à la fois côté PAD (un
+     doigt, une surface), mais rien n'interdit de tenir les trois boutons ; le
+     dernier pris gagne, comme partout ailleurs dans le mode. */
+  let soloPadHeld = $state(false);
+  let soloBassHeld = $state(false);
+  let lastBassFreq: number | null = null;
+  let dernierAccord = -1;
+  /* BOURDON — une bascule, mais dont l'extinction peut venir d'ailleurs que
+     du bouton : la bascule de scène l'efface (« jusqu'à la fin de la partie en
+     cours »). D'où la relecture sur `engine.padMode` plutôt qu'un booléen
+     local qu'on croirait sur parole. */
+  let bourdon = $derived(padMode === 'bourdon');
+  /* Le cran courant du bouton FILLS — lu sur le moteur (override par-dessus le
+     morceau), pour la même raison que `bourdon` : la bascule de scène le
+     remet au morceau sans passer par le bouton. */
+  let fillAuto = $state(0);
 
   let assignments = $state(loadLiveAssignments());
   let assignOpen = $state(false);
@@ -149,12 +166,21 @@
         return petitHP;
       case 'solo-melody':
         return soloMelodyHeld;
+      case 'solo-pad':
+        return soloPadHeld;
+      case 'solo-bass':
+        return soloBassHeld;
       case 'section-hold':
         return tenirSection;
-      case 'step-pad-mode':
-        // Un bouton PAS n'a pas d'état « engagé », sauf celui-ci : NORMAL est
-        // le repos, arpège et bourdon s'entendent et doivent se voir.
-        return padMode !== 'normal';
+      case 'bourdon':
+        // Lu sur le MOTEUR, pas sur un booléen local : la bascule de scène
+        // l'éteint sans passer par le bouton, et un voyant qui reste allumé
+        // sur une nappe qui ne tient plus est un mensonge.
+        return bourdon;
+      case 'step-fill-auto':
+        // Un bouton PAS n'a pas d'état « engagé », sauf celui-ci : « aucun
+        // fill » est le repos, et les trois autres crans s'entendent.
+        return fillAuto !== 0;
       default:
         return false;
     }
@@ -221,6 +247,25 @@
         engine.liveSetSynthMute('melody', on ? true : null);
         if (on) lastMelodyFreq = null;
         break;
+      /* Les deux autres lignes de synthé, même geste : on coupe la ligne
+         PROGRAMMÉE pendant qu'on la joue à la main, sinon les deux se
+         télescopent — c'est ce que SOLO MÉLO fait depuis toujours. */
+      case 'solo-pad':
+        soloPadHeld = on;
+        engine.liveSetSynthMute('pad', on ? true : null);
+        if (on) dernierAccord = -1;
+        break;
+      case 'solo-bass':
+        soloBassHeld = on;
+        engine.liveSetSynthMute('bass', on ? true : null);
+        if (on) lastBassFreq = null;
+        break;
+      case 'bourdon':
+        if (on) {
+          engine.setLiveBourdon(!bourdon);
+          padMode = engine.padMode;
+        }
+        break;
 
       default: {
         const def = actionById(actionId);
@@ -228,6 +273,7 @@
         if (on && def.kind === 'step') {
           def.step?.(engine);
           padMode = engine.padMode;
+          fillAuto = engine.grooveValeur('fillEvery');
         }
         /* MAINTENUS : l'entrée est appelée à l'appui ET au relâché, et c'est
            elle qui sait revenir au repos. On lui passe le morceau courant —
@@ -450,7 +496,11 @@
   function faderPointerUp(i: number) {
     faderDraggingIndex = null;
     if (!assignments.faderMomentane[i]) return;
-    for (const id of assignments.slotFaders[i]) axisById(id).repos?.(engine, st);
+    for (const id of assignments.slotFaders[i]) {
+      axisById(id).repos?.(engine, st);
+      // Il vient de RENDRE le réglage : la valeur n'est plus à lui.
+      delete axisTouche[id];
+    }
   }
 
   // Volume master toujours accessible dans le bandeau (PLAN.md §7, audit du
@@ -507,12 +557,16 @@
        ignore laquelle jouait — relâcher ce qui n'était pas engagé est un
        no-op, alors qu'oublier ce qui l'était laisse un cul-de-sac. */
     const sortantes = [...assignments.slotFaders[i], ...assignments.slots[i]];
-    for (const id of assignments.slotFaders[i]) axisById(id).repos?.(engine, st);
+    for (const id of assignments.slotFaders[i]) {
+      axisById(id).repos?.(engine, st);
+      delete axisTouche[id];
+    }
     for (const id of assignments.slots[i]) actionById(id).repos?.(engine, st);
     // La VUE doit suivre ce que le moteur vient de rendre, sinon l'écran
     // affiche un état que plus personne ne joue.
     if (sortantes.includes('petit-hp')) petitHP = false;
     padMode = engine.padMode;
+    fillAuto = engine.grooveValeur('fillEvery');
     resynchroniserMutes();
   }
 
@@ -741,6 +795,13 @@
     engine.relacherReglagesLive();
     volLive = {};
     padMode = engine.padMode;
+    /* C'est ICI que « le bourdon tient jusqu'à la fin de la partie en cours »
+       se réalise : `relacherReglagesLive` a effacé la couche, on relit les
+       deux voyants qui en dépendent. Rien ne compte les mesures. */
+    fillAuto = engine.grooveValeur('fillEvery');
+    // `relacherReglagesLive` vient de rendre les overrides : plus aucun
+    // curseur ne porte sa valeur, ils repartent tous AU MORCEAU.
+    axisTouche = {};
     /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
        sur une seule séquence.
        ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
@@ -1030,6 +1091,17 @@
   // partagé, l'inclinaison changerait le son sans que les bandes ambrées ne
   // bougent, ce qui serait trompeur.
   let axisValues = $state<Record<LiveAxisId, number>>(Object.fromEntries(LIVE_AXES.map((a) => [a.id, 0.5])));
+  /* ⚠️ CE QU'UN CURSEUR N'A PAS ENCORE TOUCHÉ N'EST PAS À LUI (mesuré au
+   * navigateur, 2026-09-09). `axisValues` part à 0,5 pour tout le monde : un
+   * curseur ARPÈGE jamais touché annonçait « 4 ▼ » pendant que la nappe ne
+   * jouait AUCUN arpège. C'est la même faute que le momentané qui « rouvre à
+   * 20 kHz » — le réglage est au MORCEAU tant que le doigt n'a rien écrit, et
+   * un axe ne sait pas relire le morceau.
+   *
+   * Ça se voit surtout sur un axe CRANTÉ, dont le libellé nomme un état précis
+   * qui n'existe pas ; un continu affichait déjà « 50 % », faux de la même
+   * façon mais plus discret. Les deux disent maintenant AU MORCEAU. */
+  let axisTouche = $state<Partial<Record<LiveAxisId, true>>>({});
 
   // Le ou les paramètres assignés à chaque axe (filtre par défaut en X,
   // reverb en Y, réassignables depuis l'overlay ⚙, catalogue étendu
@@ -1041,6 +1113,7 @@
   function applyAxisValue(axisIds: LiveAxisId[], value01: number) {
     for (const axisId of axisIds) {
       axisValues[axisId] = value01;
+      axisTouche[axisId] = true;
       axisById(axisId).apply(engine, value01);
     }
   }
@@ -1065,13 +1138,51 @@
     }
   }
 
+  /* SOLO BASSE — même découpage que la mélodie, mais le REGISTRE vient du
+     moteur (`liveBassFreqForDegree`, −24 demi-tons comme le scheduler). Sans
+     ça le doigt sonnerait deux octaves au-dessus de ce que la grille joue. */
+  function playSoloBass(px: number, py: number) {
+    const degree = Math.min(7, Math.floor(px * 7) + 1);
+    const yInverted = 1 - py;
+    const octave = yInverted < 1 / 3 ? -1 : yInverted < 2 / 3 ? 0 : 1;
+    const freq = engine.liveBassFreqForDegree(degree, octave);
+    if (freq !== lastBassFreq) {
+      engine.playLiveBassNote(freq, lastBassFreq);
+      lastBassFreq = freq;
+    }
+  }
+
+  /* SOLO NAPPE — la nappe balaie des ACCORDS, pas des degrés, donc le pad se
+     découpe en autant de zones qu'il y a d'accords et non en sept. L'axe Y ne
+     sert pas : un accord n'a pas d'octave à choisir dans ce modèle (le registre
+     est ancré à −12 par `chordFreqs`), et inventer un usage à Y ferait un
+     geste de plus qu'aucun mot n'explique. */
+  function playSoloPad(px: number) {
+    const n = Math.max(1, engine.liveChordCount());
+    const idx = Math.min(n - 1, Math.floor(px * n));
+    if (idx !== dernierAccord) {
+      engine.playLivePadChord(idx);
+      dernierAccord = idx;
+    }
+  }
+
   // Les deux paramètres sont inversés pour l'axe Y du pad (haut du pad =
   // 100%), pas pour l'axe X ni pour l'inclinaison.
   function setPad(clientX: number, clientY: number, rect: DOMRect) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    /* ⚠️ L'ordre décide quand deux solos sont tenus ensemble, et il faut
+       qu'il soit ÉCRIT : le pad est une surface, elle ne joue qu'une ligne. */
     if (soloMelodyHeld) {
       playSoloMelody(padX, padY);
+      return;
+    }
+    if (soloPadHeld) {
+      playSoloPad(padX);
+      return;
+    }
+    if (soloBassHeld) {
+      playSoloBass(padX, padY);
       return;
     }
     applyAxisValue(assignments.axisX, padX);
@@ -2038,7 +2149,14 @@
                      que le maintenu qui « rouvre à 20 kHz ». Il montre donc son
                      nom et le mot MOMENTANÉ, et ne se remplit que sous le
                      doigt. -->
-                {@const val = momentane && !tenu ? 0 : (axisValues[faderIds[0]] ?? 0.5)}
+                {@const vierge = !momentane && faderIds.every((id) => !axisTouche[id])}
+                {@const val = (momentane && !tenu) || vierge ? 0 : (axisValues[faderIds[0]] ?? 0.5)}
+                <!-- ⚠️ Un axe CRANTÉ dit son cran, pas un pourcentage : « 38 % »
+                     d'arpège ne nomme rien. Le libellé ne vaut que pour un axe
+                     SEUL — empilés, deux libellés ne tiennent pas dans la case
+                     et le pourcentage redevient la seule lecture honnête de la
+                     position commune. -->
+                {@const cran = faderIds.length === 1 ? axisById(faderIds[0]).libelle : undefined}
                 {@const horizontal = assignments.faderOrientation[i] === 'horizontal'}
                 <div
                   class="abtn fader-btn"
@@ -2062,7 +2180,15 @@
                     <div class="fader-fill" style:height="{val * 100}%"></div>
                   {/if}
                   <span class="fader-label">{axesFor(faderIds).map((a) => a.label).join(' + ')}</span>
-                  <span class="fader-val">{momentane && !tenu ? 'MOMENTANÉ' : `${Math.round(val * 100)}%`}</span>
+                  <span class="fader-val"
+                    >{momentane && !tenu
+                      ? 'MOMENTANÉ'
+                      : vierge
+                        ? 'AU MORCEAU'
+                        : cran
+                          ? cran(val)
+                          : `${Math.round(val * 100)}%`}</span
+                  >
                 </div>
               {:else}
                 {@const defs = actionsFor(actionIds)}

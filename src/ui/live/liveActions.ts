@@ -7,7 +7,14 @@
 // catalogue reste des données pures, testable sans monter le composant ni
 // instancier de contexte audio.
 import type { AudioEngine } from '../../engine/AudioEngine';
-import type { DrumRowName, DrumRowState, SynthRowName, SynthVoice, PatternStateV2 } from '../../model/types';
+import type {
+  ArpPattern,
+  DrumRowName,
+  DrumRowState,
+  SynthRowName,
+  SynthVoice,
+  PatternStateV2,
+} from '../../model/types';
 import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
 /* Le catalogue d'ACTIONS — révisé le 2026-09-02 (docs/plan/05-audit-mode-live).
@@ -55,10 +62,15 @@ import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
  *  · SANS KICK et BATT. SEULE : les coupures sont demandées dans le mini
  *    séquenceur, là où on voit les lignes.
  *
- * ⚠️ MODE NAPPE reste, en sursis : la fiche n'y coche rien mais la note dit
- * « je ferais juste un bouton bourdon qui tient jusqu'à la fin de la partie en
- * cours ». C'est une REFONTE, pas un retrait — la faire est le lot des gestes
- * nommés, et retirer le bouton d'ici là ne laisserait rien à sa place. */
+ * ⚠️ MODE NAPPE est parti le 2026-09-09 avec le lot des GESTES NOMMÉS, et il
+ * est REMPLACÉ, pas retiré : ses trois états se sont séparés en les deux
+ * commandes que la fiche demandait — BOURDON (« un bouton bourdon qui tient
+ * jusqu'à la fin de la partie en cours ») et le curseur ARPÈGE à treize crans.
+ * Un cycle à trois états était le seul moyen de tenir leur exclusivité tant
+ * qu'ils partageaient un bouton ; séparés, elle se tient dans le moteur, où
+ * `setLiveArpege` éteint le bourdon (voir son commentaire). La migration
+ * envoie l'ancien identifiant sur BOURDON — c'en est la moitié qui est un
+ * BOUTON, l'autre étant devenue un axe. */
 export type LiveActionId =
   | 'break'
   | 'fill'
@@ -67,9 +79,13 @@ export type LiveActionId =
   | 'section-hold'
   | 'mute-drums'
   | 'mute-synth'
-  | 'step-pad-mode'
+  | 'step-fill-auto'
+  | 'bourdon'
   | 'petit-hp'
   | 'solo-melody'
+  | 'solo-pad'
+  | 'solo-bass'
+  | 'hold-ouvert'
   | 'hold-filtre'
   | 'hold-reverb';
 
@@ -99,6 +115,15 @@ export interface LiveActionDef {
      ce qui rend un maintien sûr, un doigt qui glisse hors du bouton relâche. */
   hold?: (engine: AudioEngine, on: boolean, base: PatternStateV2) => void;
 
+  /* ⚠️ CE MAINTENU EST CÂBLÉ DANS LA VUE, pas ici — il touche l'état de
+     l'écran (quelle ligne le pad joue, la boucle de scène) et pas seulement le
+     moteur, donc il ne peut pas tenir dans une fonction qui ne reçoit que le
+     moteur. Le drapeau vit dans la DONNÉE et non dans une liste d'exceptions
+     écrite au milieu d'un test : une exception qu'on ne voit qu'en lisant un
+     test est une exception que personne ne voit (CLAUDE.md) — et cette liste-là
+     aurait été à rallonger à chaque solo ajouté, en silence. */
+  dansLaVue?: true;
+
   /* ⚠️ LE RETOUR D'UNE ACTION QUI LATCHE (2026-09-09, retour de Yann après
    * test : « quand on bascule un paramètre — exemple : arpégiateur — il faut
    * qu'on puisse revenir comme c'était avant d'une manière ou d'une autre »).
@@ -118,6 +143,12 @@ export interface LiveActionDef {
  * cas du swing, des ghosts et des fills par défaut, donc trois tests verts sur
  * quatre. Le sidechain part à 0,6 : le bouton renvoyait 0 au lieu de 1, soit un
  * cran EN ARRIÈRE au premier appui. Mesuré, pas relu. */
+/* Les crans du bouton FILLS, dans l'ordre où il les fait défiler — de rien
+   vers le plus fourni, comme la note le demande. Ce sont AUSSI, à l'ordre
+   près, les seules valeurs que `serialize.ts` accepte pour `fillEvery` : la
+   liste n'invente pas de paliers, elle range ceux du modèle. */
+export const CRANS_FILL = [0, 8, 4, 2];
+
 export function palierSuivant(paliers: number[], v: number): number {
   const eps = (paliers[paliers.length - 1] - paliers[0]) / 1000;
   const i = paliers.findIndex((x) => x > v + eps);
@@ -136,7 +167,7 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
      c'est le seul cas où une action est inerte, et il est visible : la bande
      n'est pas là. */
   { id: 'section-next', label: 'SUIVANT ▸', color: 'var(--cell-clap)', desc: 'Scène suivante (à la mesure)', kind: 'trigger', category: 'SCÈNE' },
-  { id: 'section-hold', label: 'TENIR', color: 'var(--cell-clap)', desc: 'Boucler la scène (maintenu)', kind: 'hold', category: 'SCÈNE' },
+  { id: 'section-hold', label: 'TENIR', color: 'var(--cell-clap)', desc: 'Boucler la scène (maintenu)', kind: 'hold', category: 'SCÈNE', dansLaVue: true },
 
 
   /* Le geste du DROP. Le séquenceur coupe ligne par ligne ; couper tout un
@@ -155,18 +186,38 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   },
 
 
-  /* UN bouton, trois états — et ce n'est pas un raffinement : le bourdon
-     court-circuite l'arpège dans le scheduler, donc deux interrupteurs
-     donneraient un bouton ARPÈGE inerte tant que le bourdon est actif. */
+  /* BOURDON — la note tenue, et le seul bouton du mode dont l'extinction est
+     une DATE plutôt qu'un second appui : « un bouton bourdon qui tient jusqu'à
+     la fin de la partie en cours ». Rien ici ne compte les mesures — c'est
+     `relacherReglagesLive()` que la bascule de scène appelle déjà qui l'éteint,
+     et `repos` fait le même travail à la réassignation. Le bouton reste une
+     BASCULE : on peut le couper avant la fin de la partie, sinon un geste
+     lancé par erreur dure jusqu'à la frontière. */
   {
-    id: 'step-pad-mode', label: 'MODE NAPPE', color: 'var(--cell-pad)',
-    desc: 'Normal → arpège → bourdon (pas)', kind: 'step', category: 'NAPPE',
-    step: (e) => e.liveStepPadMode(),
-    /* ⚠️ L'EXEMPLE QUE YANN DONNE. Le cycle a beau boucler, il ne ramène pas au
-       MORCEAU : il ramène au « normal » du moteur, qui est faux si la lettre
-       chargée jouait un arpège. Le retour efface l'override, donc la nappe
-       rejoue ce que la lettre dit — quoi qu'elle dise. */
-    repos: (e) => e.clearLivePadMode(),
+    id: 'bourdon', label: 'BOURDON', color: 'var(--cell-pad)',
+    desc: 'La nappe tient jusqu’à la fin de la partie', kind: 'toggle', category: 'NAPPE',
+    repos: (e) => e.clearLiveBourdon(),
+  },
+
+  /* LE FILL AUTOMATIQUE — « un PAS avec 8 4 2 mais aussi PAS DE FILL si on
+     souhaite le retirer » (fiche à cocher). L'ordre suit la note : de plus en
+     plus fourni, en partant de rien.
+
+     ⚠️ Il avance par INDEX, contrairement à ce que `palierSuivant` impose
+     ailleurs — et c'est légitime ici pour une raison qui se vérifie :
+     `serialize.ts` n'accepte QUE [0, 2, 4, 8] pour ce champ et rabat tout le
+     reste sur 0, donc la valeur de départ tombe TOUJOURS pile sur un cran,
+     ce qui était exactement la condition que le sidechain ne remplissait pas.
+     `palierSuivant` ferait d'ailleurs le contraire du geste demandé : il
+     monterait 0 → 2 → 4 → 8, c'est-à-dire du plus fourni au plus rare. */
+  {
+    id: 'step-fill-auto', label: 'FILLS', color: 'var(--cell-snare)',
+    desc: 'Aucun → toutes les 8 → 4 → 2 mesures', kind: 'step', category: 'GROOVE',
+    step: (e) => {
+      const i = CRANS_FILL.indexOf(e.grooveValeur('fillEvery'));
+      e.setLiveGrooveParam('fillEvery', CRANS_FILL[(i + 1) % CRANS_FILL.length]);
+    },
+    repos: (e) => e.clearLiveGrooveParam('fillEvery'),
   },
 
   // Le petit haut-parleur de l'acte 4 : il existait dans le moteur et n'avait
@@ -181,7 +232,18 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   // Maintenu : le temps de l'appui, le pad joue la mélodie au doigt (glisser =
   // degré de gamme + octave), et la mélodie programmée est coupée pour ne pas
   // se télescoper avec ce qui est joué à la main.
-  { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE' },
+  { id: 'solo-melody', label: 'SOLO MÉLO', color: 'var(--cell-melody)', desc: 'Jouer la mélodie au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE', dansLaVue: true },
+  /* « Il faut également SOLO NAPPE » — et sa voisine sur la fiche, « à faire
+     sur l'ensemble des lignes de synthé ». Mêmes maintenus que SOLO MÉLO,
+     donc même lecture du mot SOLO : JOUER la ligne au pad, pas l'isoler.
+     C'est ce que fait le bouton qui portait déjà ce nom, et deux boutons qui
+     commencent par le même mot doivent faire la même chose.
+     ⚠️ La nappe balaie des ACCORDS (un index dans `chordsFor`), pas des
+     degrés — c'est la règle du modèle, et c'est aussi ce qui la rend jouable
+     au doigt : quatre accords sur une largeur de pad se visent, sept degrés
+     × trois octaves non. */
+  { id: 'solo-pad', label: 'SOLO NAPPE', color: 'var(--cell-pad)', desc: 'Jouer les accords au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE', dansLaVue: true },
+  { id: 'solo-bass', label: 'SOLO BASSE', color: 'var(--cell-bass)', desc: 'Jouer la basse au pad (maintenu)', kind: 'hold', category: 'PERFORMANCE', dansLaVue: true },
 
   /* ---- LES MAINTENUS ----
    *
@@ -202,6 +264,14 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
     id: 'hold-reverb', label: 'RÉVERBE', color: '#7fd4ff',
     desc: 'Noie dans la réverbe tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
     hold: (e, on) => e.setLiveReverbWet(on ? 0.85 : 0),
+  },
+  /* OUVERT — le charley s'ouvre tant qu'on tient. Il n'allume aucun pas :
+     ouvrir ce qui sonne déjà est un geste de TIMBRE, allumer un pas serait un
+     geste d'écriture, et c'est celui que la mesure a fait retirer du mode. */
+  {
+    id: 'hold-ouvert', label: 'OUVERT', color: 'var(--cell-hat)',
+    desc: 'Ouvre le charley tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
+    hold: (e, on) => e.liveSetHatOuvert(on),
   },
 
 ];
@@ -240,6 +310,29 @@ export interface LiveAxisDef {
    * le proposer — un maintien qui ne sait pas revenir laisse le morceau là où
    * le doigt l'a lâché, et un doigt glisse. */
   repos?: (engine: AudioEngine, base: PatternStateV2) => void;
+
+  /* ⚠️ UN AXE CRANTÉ DIT SON CRAN, JAMAIS UN POURCENTAGE (2026-09-09, fiche à
+   * cocher : « je ferais un curseur avec (3 × 4 + 1) = 13 options d'arpège
+   * différentes »).
+   *
+   * Un curseur continu peut s'afficher en % : 40 % de brillance veut dire
+   * quelque chose. Un curseur qui CHOISIT dans une liste, non — « 38 % »
+   * d'arpège ne nomme rien, et sur cette surface ce qui n'est pas ÉCRIT
+   * n'existe pas (troisième fois que ça se paie). `crans` quantifie la course
+   * et `libelle` donne le mot que le bouton affiche à la place du chiffre.
+   *
+   * Les deux vont ENSEMBLE : un axe cranté sans libellé montrerait des
+   * pourcentages qui sautent, ce qui est pire que les deux. */
+  crans?: number;
+  libelle?: (value01: number) => string;
+}
+
+/* Le cran d'un axe cranté, et le seul endroit qui fait cette division —
+   `apply`, `libelle` et l'affichage doivent tomber sur le MÊME entier, sinon
+   le bouton nomme un cran et en joue un autre. Le `min` borne le 1,0 du bout
+   de course, qui sinon donnerait un index hors liste. */
+export function cranDe(value01: number, crans: number): number {
+  return Math.min(crans - 1, Math.floor(value01 * crans));
 }
 
 const linMap = (min: number, max: number, value01: number) => min + (max - min) * value01;
@@ -449,7 +542,48 @@ function ensembleSynthe(
  * pas « rendu impossible » — séparer les deux listes demanderait deux
  * catalogues qui devraient rester d'accord, ce que ce fichier passe déjà son
  * temps à éviter. */
+/* LES TREIZE CRANS DE L'ARPÈGE — « aucun arpège, 2/4/8 notes & montant,
+ * descendant, aller-retour, aléatoire » (fiche à cocher, note de Yann sur
+ * g8.2/g8.3, qui demandait DEUX boutons PAS et devient UN curseur).
+ *
+ * ⚠️ L'ORDRE EST LE DÉBIT D'ABORD, et c'est ce qui fait du curseur un GESTE.
+ * La fiche vendait le débit comme « un geste de montée évident » : rangé
+ * ainsi, pousser le curseur vers la droite accélère la nappe (2 → 4 → 8), et
+ * les quatre motifs se promènent à l'intérieur de chaque palier. Rangé par
+ * motif, la même course aurait fait trois montées en dents de scie.
+ *
+ * AUCUN est en PREMIER, au repos du curseur, parce que c'est l'état d'un
+ * morceau qui n'a rien demandé — un curseur d'effet dont le bout gauche
+ * allume déjà l'effet n'a pas de position neutre. */
+export const CRANS_ARPEGE: { rate: number | null; pattern: ArpPattern; label: string }[] = [
+  { rate: null, pattern: 'up', label: 'AUCUN' },
+  { rate: 2, pattern: 'up', label: '2 ▲' },
+  { rate: 2, pattern: 'down', label: '2 ▼' },
+  { rate: 2, pattern: 'updown', label: '2 ▲▼' },
+  { rate: 2, pattern: 'random', label: '2 ⁇' },
+  { rate: 4, pattern: 'up', label: '4 ▲' },
+  { rate: 4, pattern: 'down', label: '4 ▼' },
+  { rate: 4, pattern: 'updown', label: '4 ▲▼' },
+  { rate: 4, pattern: 'random', label: '4 ⁇' },
+  { rate: 8, pattern: 'up', label: '8 ▲' },
+  { rate: 8, pattern: 'down', label: '8 ▼' },
+  { rate: 8, pattern: 'updown', label: '8 ▲▼' },
+  { rate: 8, pattern: 'random', label: '8 ⁇' },
+];
+
 export const LIVE_AXES: LiveAxisDef[] = [
+  /* L'ARPÈGE DE LA NAPPE — le seul axe CRANTÉ du catalogue. Il choisit dans
+     une liste au lieu de doser une valeur, donc il affiche son cran. */
+  {
+    id: 'arp-nappe',
+    label: 'ARPÈGE',
+    category: 'NAPPE',
+    crans: CRANS_ARPEGE.length,
+    libelle: (v) => CRANS_ARPEGE[cranDe(v, CRANS_ARPEGE.length)].label,
+    apply: (e, v) => e.setLiveArpege(CRANS_ARPEGE[cranDe(v, CRANS_ARPEGE.length)]),
+    repos: (e) => e.clearLiveArpege(),
+  },
+
   // Macros live historiques (phase 2) — nœuds de graphe dédiés
   // (liveFilter/liveReverbSend, graph.ts), toujours neutres ailleurs. Leur
   // repos EST le neutre : c'est ce que faisaient déjà les maintenus.
@@ -782,8 +916,14 @@ const CORRESPONDANCES: Record<string, LiveActionId | null> = {
   'step-voice-pad-prev': null,
   'step-voice-melody-next': null,
   'step-voice-melody-prev': null,
-  // L'arpège devient un état du bouton MODE NAPPE.
-  'toggle-pad-arp': 'step-pad-mode',
+  /* L'arpège avait déjà migré une fois, vers l'état ARPÈGE de MODE NAPPE.
+     Celui-ci part à son tour : la chaîne se raccourcit d'un maillon plutôt que
+     de garder un cran mort, sinon `isValid` rendrait les défauts. Les deux
+     tombent sur BOURDON, la moitié de MODE NAPPE qui est restée un BOUTON —
+     l'autre moitié est devenue le curseur ARPÈGE, et un bouton ne peut pas
+     migrer vers un axe : les deux tableaux d'assignation sont distincts. */
+  'toggle-pad-arp': 'bourdon',
+  'step-pad-mode': 'bourdon',
 };
 
 /* ⚠️ LA MIGRATION DES AXES — elle n'existait pas, et il la fallait.

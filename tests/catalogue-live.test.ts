@@ -102,10 +102,20 @@ describe('migration des assignations enregistrées', () => {
     expect(loadLiveAssignments().slots[0]).toEqual(['break', 'chaos']);
   });
 
-  it('fait de l’ancien interrupteur d’arpège le bouton MODE NAPPE', async () => {
+  /* ⚠️ UNE MIGRATION EN DEUX SAUTS SE RACCOURCIT, elle ne s'enchaîne pas.
+     L'arpège avait déjà migré une fois (`toggle-pad-arp` -> `step-pad-mode`) ;
+     MODE NAPPE part à son tour, séparé en BOURDON et en curseur ARPÈGE. Les
+     DEUX anciens identifiants tombent donc directement sur BOURDON : garder un
+     cran mort au milieu ferait échouer `isValid`, qui est tout ou rien, et
+     rendrait les défauts — six boutons et trois snapshots perdus sans un mot.
+     Le curseur ne peut pas être la cible : un bouton et un axe vivent dans
+     deux tableaux d'assignation distincts. */
+  it('envoie les deux anciens noms de l’arpège sur BOURDON, sans cran mort', async () => {
     const { loadLiveAssignments } = await catalogue();
-    stockage.setItem(KEY, JSON.stringify({ ...ANCIENNE, slots: [['toggle-pad-arp'], ['fill'], ['break'], ['chaos'], ['break'], ['fill']] }));
-    expect(loadLiveAssignments().slots[0]).toEqual(['step-pad-mode']);
+    for (const ancien of ['toggle-pad-arp', 'step-pad-mode']) {
+      stockage.setItem(KEY, JSON.stringify({ ...ANCIENNE, slots: [[ancien], ['fill'], ['break'], ['chaos'], ['break'], ['fill']] }));
+      expect(loadLiveAssignments().slots[0], ancien).toEqual(['bourdon']);
+    }
   });
 });
 

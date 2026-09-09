@@ -315,6 +315,39 @@ chaque suivant l'aurait cassée. `new AudioEngine(etat)` fait tourner tous les
 initialiseurs sans toucher à l'audio — on ne feint plus que le contexte, le
 graphe et le kit.
 
+⚠️ **Un axe CRANTÉ dit son cran, un axe intouché dit AU MORCEAU.** « 38 % »
+d'arpège ne nomme rien : `LiveAxisDef.crans` + `libelle` remplacent le
+pourcentage, et `cranDe` fait la division à un seul endroit — sinon le bouton
+nomme un cran et en joue un autre. Et `axisValues` partant à 0,5, un curseur
+jamais touché ANNONÇAIT un réglage que personne ne jouait (mesuré : « 4 ▼ » sur
+une nappe sans arpège) ; `axisTouche` le fait dire AU MORCEAU, jusqu'au premier
+doigt. Même règle que le momentané au repos.
+
+⚠️ **BOURDON et ARPÈGE sont EXCLUSIFS, et l'exclusivité vit dans le moteur.**
+Le scheduler traite le bourdon avant l'arpège et fait `continue` : bourdon
+allumé, le curseur d'arpège serait inaudible sur toute sa course, sans erreur
+ni voyant. C'est ce qu'un cycle à trois états (l'ancien MODE NAPPE) évitait en
+n'offrant qu'un bouton ; séparés en deux commandes — « un bouton bourdon qui
+tient jusqu'à la fin de la partie en cours » et le curseur à 13 crans —
+`setLiveArpege` éteint le bourdon et son repos le rend. Le DERNIER geste gagne,
+et il s'entend. ⚠️ « Jusqu'à la fin de la partie » n'est pas un minuteur : c'est
+`relacherReglagesLive()` que la bascule de scène appelle déjà.
+
+⚠️ **OUVERT ouvre ce qui SONNE, il n'allume rien** (`forceHatOpen`, posé APRÈS
+la sortie sur `stepState === 0`). Ouvrir un pas qui joue est un geste de timbre ;
+allumer un pas serait un geste d'écriture, et c'est celui que la mesure a fait
+retirer du mode. Le compte de frappes ne bouge pas — `tests/gestes-nommes.test.ts`.
+
+⚠️ **SOLO NAPPE et SOLO BASSE se JOUENT au pad, comme SOLO MÉLO** — deux boutons
+qui commencent par le même mot font la même chose. Chacun coupe sa ligne
+programmée pendant qu'on la joue, et chacun tient son REGISTRE du moteur
+(`chordFreqs` à −12, `degreeFreq` à −24) : sans ça le doigt sonne à l'octave de
+ce que la grille joue. La nappe balaie des ACCORDS, pas des degrés.
+
+⚠️ **Un maintenu câblé dans la VUE le DIT (`dansLaVue`), il ne se liste pas dans
+un test.** Une liste d'exceptions écrite au milieu d'un test se rallonge en
+silence — celle-ci est tombée au deuxième solo ajouté.
+
 ⚠️ **Le mini séquenceur a DEUX modes écrits — ▦ PAS et ▮ VOLUMES.** Régler un
 volume à l'endroit où on voit la ligne était demandé deux fois ; y mettre un
 GESTE (glisser sur la ligne) aurait fait le quatrième geste caché du mode, la

@@ -162,7 +162,7 @@ describe('une bascule de scène rend les réglages au morceau', () => {
     engine.setLiveGrooveParam('spontRoll', 80);
     engine.setLiveDrumParam('kick', 'volume', 0.2);
     engine.setLiveSynthVoiceParam('bass', 'chorusMix', 0.9);
-    engine.liveStepPadMode();
+    engine.setLiveBourdon(true);
     expect(lu().spontRoll).toBe(80);
     expect(lu().rows.kick.volume).toBe(0.2);
     expect(lu().synthRows.bass.voice.chorusMix).toBe(0.9);

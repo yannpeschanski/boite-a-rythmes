@@ -57,12 +57,15 @@ describe('le catalogue reste sain après l’extension', () => {
   it('chaque entrée porte le geste que son `kind` annonce', () => {
     for (const a of LIVE_ACTIONS) {
       if (a.kind === 'step') expect(a.step, a.id).toBeTypeOf('function');
-      /* Les deux maintenus historiques (TENIR, SOLO MÉLO) sont câblés à la main
-         dans `runAction` parce qu'ils touchent l'état de la VUE, pas seulement
-         le moteur. Tous les autres portent leur geste. */
-      if (a.kind === 'hold' && !['section-hold', 'solo-melody'].includes(a.id)) {
-        expect(a.hold, a.id).toBeTypeOf('function');
-      }
+      /* Certains maintenus sont câblés à la main dans `runAction` parce qu'ils
+         touchent l'état de la VUE et pas seulement le moteur. Ils le DISENT
+         (`dansLaVue`) au lieu d'être listés ici : une liste d'exceptions dans
+         un test se rallonge en silence à chaque entrée ajoutée, et personne ne
+         la lit — c'était le cas, et deux solos de plus l'ont fait tomber. */
+      if (a.kind === 'hold' && !a.dansLaVue) expect(a.hold, a.id).toBeTypeOf('function');
+      // Et l'inverse : le drapeau ne sert qu'aux maintenus, pas de dispense
+      // pour un PAS qui aurait oublié son geste.
+      if (a.dansLaVue) expect(a.kind, a.id).toBe('hold');
     }
   });
 
