@@ -7,7 +7,7 @@
 // catalogue reste des données pures, testable sans monter le composant ni
 // instancier de contexte audio.
 import type { AudioEngine } from '../../engine/AudioEngine';
-import type { DrumRowName, SynthRowName, PatternStateV2 } from '../../model/types';
+import type { SynthRowName, SynthVoice, PatternStateV2 } from '../../model/types';
 import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
 
 /* Le catalogue d'ACTIONS — révisé le 2026-09-02 (docs/plan/05-audit-mode-live).
@@ -33,52 +33,45 @@ import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
  * Mesuré : 31 entrées dont 19 variantes (61 %) -> 20 entrées dont 2 (10 %),
  * et le nombre de gestes réellement distincts MONTE.
  */
+/* Les identifiants d'ACTION — RÉVISÉS le 2026-09-09 d'après la fiche à cocher
+ * (`docs/relecture/parametres-live.html`), en lecture littérale : sur cette
+ * fiche, NE RIEN COCHER voulait dire « ce paramètre reste dans l'Atelier ».
+ *
+ * ⚠️ CE QUI EST PARTI, ET CE N'EST PAS UN OUBLI — dix-huit entrées.
+ *  · les cinq FRAPPES DE LIGNE et leur rafale : mesurées d'abord inutiles puis
+ *    fausses (une frappe à la main tombe à ±81 à ±334 ms de la grille ; la
+ *    rafale ignore le plancher anti-bouillie du moteur, empile deux frappes au
+ *    même instant dès qu'il y a du swing, et retourne l'accent de 9 dB —
+ *    `docs/plan/09-etat-de-lart-controles-live.md`). Elles reviendront
+ *    quantifiées, ou pas du tout ;
+ *  · les quatre PAS de groove (swing, ghosts, fills, sidechain) : leur
+ *    paramètre est demandé en CURSEUR, pas en paliers ;
+ *  · les quatre PAS d'harmonie (ton ±1, gamme ←/→) : rien de coché. Ce sont
+ *    aussi les deux dernières entrées `tirable: false` — le drapeau reste, sa
+ *    population est vide, et le test le dit plutôt que de se taire ;
+ *  · BYPASS LIM. : « un garde-fou, pas un geste de scène » ;
+ *  · SATURE et BITCRUSH maintenus : remplacés par le curseur MOMENTANÉ, qui
+ *    est le même geste en mieux (il DOSE au lieu de sauter à une valeur) ;
+ *  · SANS KICK et BATT. SEULE : les coupures sont demandées dans le mini
+ *    séquenceur, là où on voit les lignes.
+ *
+ * ⚠️ MODE NAPPE reste, en sursis : la fiche n'y coche rien mais la note dit
+ * « je ferais juste un bouton bourdon qui tient jusqu'à la fin de la partie en
+ * cours ». C'est une REFONTE, pas un retrait — la faire est le lot des gestes
+ * nommés, et retirer le bouton d'ici là ne laisserait rien à sa place. */
 export type LiveActionId =
   | 'break'
   | 'fill'
   | 'chaos'
   | 'section-next'
   | 'section-hold'
-  | 'ligne-kick'
-  | 'ligne-snare'
-  | 'ligne-hat'
-  | 'ligne-clap'
-  | 'ligne-shaker'
   | 'mute-drums'
   | 'mute-synth'
-  | 'step-transpose-up'
-  | 'step-transpose-down'
-  | 'step-scale-next'
-  | 'step-scale-prev'
   | 'step-pad-mode'
-  | 'bypass-limiters'
   | 'petit-hp'
   | 'solo-melody'
-  /* ---- L'EXTENSION DU 2026-09-08 ----
-   * Yann, après avoir joué : « pas convaincu des paramètres retenus pour les
-   * boutons, il faut en ajouter bien d'autres ».
-   *
-   * ⚠️ CE N'EST PAS UN RETOUR EN ARRIÈRE SUR LA CURE DE 2026-09-02, et il ne
-   * faut pas le lire ainsi. Cette cure a retiré des VARIANTES d'un même geste
-   * (neuf rafales pour trois lignes, six pas de preset de voix) ; on ajoute ici
-   * des gestes DISTINCTS, et aucune famille de variantes ne revient.
-   *
-   * Ce que la mesure disait du catalogue à 20 entrées : 4 déclencheurs,
-   * 4 bascules, 5 pas, 5 lignes — et **2 MAINTENUS**. Or un pupitre de scène
-   * est fait de gestes momentanés : on ferme un filtre le temps d'un break, on
-   * noie dans la réverbe deux mesures, on coupe le kick quatre temps. Le trou
-   * était là, il se comptait, et il ne coûte rien au moteur : tout ce qui suit
-   * s'appuie sur des méthodes qui existent déjà. */
   | 'hold-filtre'
-  | 'hold-reverb'
-  | 'hold-sature'
-  | 'hold-crush'
-  | 'hold-sans-kick'
-  | 'hold-batterie-seule'
-  | 'step-swing'
-  | 'step-ghosts'
-  | 'step-fills'
-  | 'step-sidechain';
+  | 'hold-reverb';
 
 export interface LiveActionDef {
   id: LiveActionId;
@@ -87,9 +80,12 @@ export interface LiveActionDef {
   desc: string;
   /* trigger : un coup au pointerdown · toggle : bascule au pointerdown ·
      hold : actif tant que maintenu · step : avance un paramètre discret d'un
-     cran · ligne : TAP = un coup à la main, MAINTENU = la rafale (voir
-     LIGNE_DE, et LiveView.onSlotDown pour l'escalade ×2 -> ×3 -> ×4). */
-  kind: 'trigger' | 'toggle' | 'hold' | 'step' | 'ligne';
+     cran.
+     ⚠️ `ligne` (TAP = une frappe à la main, MAINTENU = la rafale) est parti le
+     2026-09-09 : mesuré hors grille de ±81 à ±334 ms, et sa rafale ignorait le
+     plancher anti-bouillie du moteur. Le geste reviendra quantifié, pas tel
+     quel. */
+  kind: 'trigger' | 'toggle' | 'hold' | 'step';
   category: string;
   /* Retiré du tirage 🎲 sans être retiré du catalogue : les entrées MIROIR
      (TON −1, GAMME ←) servent quand on les assigne à la main, mais les tirer
@@ -98,8 +94,6 @@ export interface LiveActionDef {
   tirable?: boolean;
   // Uniquement pour kind:'step' — l'entrée porte directement son geste.
   step?: (engine: AudioEngine) => void;
-  // Uniquement pour kind:'ligne' — quelle ligne de batterie on frappe.
-  ligne?: DrumRowName;
   /* Uniquement pour kind:'hold' — appelé à l'appui (on = true) ET au relâché
      (on = false). L'entrée porte donc son geste ET son retour au repos : c'est
      ce qui rend un maintien sûr, un doigt qui glisse hors du bouton relâche. */
@@ -133,22 +127,6 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   { id: 'section-next', label: 'SUIVANT ▸', color: 'var(--cell-clap)', desc: 'Scène suivante (à la mesure)', kind: 'trigger', category: 'SCÈNE' },
   { id: 'section-hold', label: 'TENIR', color: 'var(--cell-clap)', desc: 'Boucler la scène (maintenu)', kind: 'hold', category: 'SCÈNE' },
 
-  /* FRAPPER une ligne — le manque le plus criant du mode, mis au jour en
-   * triant le catalogue : un mode conçu pour jouer sur scène où aucun bouton
-   * ne jouait une note de batterie. `AudioEngine.preview()` savait pourtant
-   * déjà le faire (c'est ce que l'Atelier appelle au clic sur une case).
-   *
-   * Et la rafale n'est pas une entrée de plus : une ligne n'a pas besoin de
-   * deux boutons. Tap = un coup, maintenu = la rafale qui monte ×2 -> ×3 ->
-   * ×4. Cinq entrées couvrent ce qui en demandait quatorze. */
-  { id: 'ligne-kick', label: 'KICK', color: 'var(--cell-kick)', desc: 'Frappe · maintenu = rafale', kind: 'ligne', category: 'LIGNES', ligne: 'kick' },
-  { id: 'ligne-snare', label: 'CAISSE', color: 'var(--cell-snare)', desc: 'Frappe · maintenu = rafale', kind: 'ligne', category: 'LIGNES', ligne: 'snare' },
-  { id: 'ligne-hat', label: 'CHARLEY', color: 'var(--cell-hat)', desc: 'Frappe · maintenu = rafale', kind: 'ligne', category: 'LIGNES', ligne: 'hat' },
-  // Clap et shaker n'ont pas de rafale dans l'ordonnanceur : le tap frappe,
-  // le maintien ne fait rien de plus. Les exclure aurait été pire — ce sont
-  // deux lignes qui sonnent et qu'aucun bouton n'atteignait.
-  { id: 'ligne-clap', label: 'CLAP', color: 'var(--cell-clap)', desc: 'Frappe à la main', kind: 'ligne', category: 'LIGNES', ligne: 'clap' },
-  { id: 'ligne-shaker', label: 'SHAKER', color: 'var(--cell-shaker)', desc: 'Frappe à la main', kind: 'ligne', category: 'LIGNES', ligne: 'shaker' },
 
   /* Le geste du DROP. Le séquenceur coupe ligne par ligne ; couper tout un
      groupe d'un coup n'y est pas faisable en un tap, et c'est le geste le
@@ -156,20 +134,12 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
   { id: 'mute-drums', label: 'COUPER BATT.', color: 'var(--cell-kick)', desc: 'Couper toute la batterie (bascule)', kind: 'toggle', category: 'COUPURES' },
   { id: 'mute-synth', label: 'COUPER SYNTHÉ', color: 'var(--cell-bass)', desc: 'Couper tout le synthé (bascule)', kind: 'toggle', category: 'COUPURES' },
 
-  /* HARMONIE — globale, les trois lignes de synthé à la fois. La décliner par
-     ligne ferait douze entrées pour une question que personne ne se pose en
-     jouant. ±1 demi-ton, borné à ±1 octave. */
-  { id: 'step-transpose-up', label: 'TON +1', color: '#ffb020', desc: 'Transpose +1 demi-ton (tout le synthé)', kind: 'step', category: 'HARMONIE', step: (e) => e.liveStepTranspose(1) },
-  { id: 'step-transpose-down', label: 'TON −1', color: '#ffb020', desc: 'Transpose −1 demi-ton (tout le synthé)', kind: 'step', category: 'HARMONIE', tirable: false, step: (e) => e.liveStepTranspose(-1) },
-  { id: 'step-scale-next', label: 'GAMME →', color: '#ffb020', desc: 'Mode suivant (tout le synthé)', kind: 'step', category: 'HARMONIE', step: (e) => e.liveStepScale(1) },
-  { id: 'step-scale-prev', label: 'GAMME ←', color: '#ffb020', desc: 'Mode précédent (tout le synthé)', kind: 'step', category: 'HARMONIE', tirable: false, step: (e) => e.liveStepScale(-1) },
 
   /* UN bouton, trois états — et ce n'est pas un raffinement : le bourdon
      court-circuite l'arpège dans le scheduler, donc deux interrupteurs
      donneraient un bouton ARPÈGE inerte tant que le bourdon est actif. */
   { id: 'step-pad-mode', label: 'MODE NAPPE', color: 'var(--cell-pad)', desc: 'Normal → arpège → bourdon (pas)', kind: 'step', category: 'NAPPE', step: (e) => e.liveStepPadMode() },
 
-  { id: 'bypass-limiters', label: 'BYPASS LIM.', color: '#ff5a5a', desc: 'Bypass limiteurs (bascule)', kind: 'toggle', category: 'MIX' },
   // Le petit haut-parleur de l'acte 4 : il existait dans le moteur et n'avait
   // jamais été exposé au Live, où il est un outil d'écoute évident.
   { id: 'petit-hp', label: 'PETIT HP', color: '#8fa1b3', desc: 'Écoute petit haut-parleur (bascule)', kind: 'toggle', category: 'MIX' },
@@ -199,67 +169,7 @@ export const LIVE_ACTIONS: LiveActionDef[] = [
     desc: 'Noie dans la réverbe tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
     hold: (e, on) => e.setLiveReverbWet(on ? 0.85 : 0),
   },
-  {
-    id: 'hold-sature', label: 'SATURE', color: '#ffb020',
-    desc: 'Pousse la saturation tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
-    hold: (e, on, base) => e.setLiveSaturation(on ? 0.9 : base.globalSaturation / 100),
-  },
-  {
-    id: 'hold-crush', label: 'BITCRUSH', color: '#ffb020',
-    desc: 'Écrase le son tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
-    hold: (e, on, base) => e.setLiveBitcrush(on ? 0.7 : base.globalBitcrush / 100),
-  },
-  /* Le drop INVERSE : le séquenceur coupe une ligne d'un tap, mais il la laisse
-     coupée. Retirer le kick quatre temps est un geste, pas un réglage. */
-  {
-    id: 'hold-sans-kick', label: 'SANS KICK', color: 'var(--cell-kick)',
-    desc: 'Retire le kick tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
-    hold: (e, on) => e.liveSetMute('kick', on ? true : null),
-  },
-  {
-    id: 'hold-batterie-seule', label: 'BATT. SEULE', color: 'var(--cell-kick)',
-    desc: 'Coupe le synthé tant qu’on tient', kind: 'hold', category: 'MAINTENUS',
-    hold: (e, on) => SYNTH_ROW_NAMES.forEach((n) => e.liveSetSynthMute(n, on ? true : null)),
-  },
 
-  /* ---- LES PAS CYCLIQUES ----
-   *
-   * ⚠️ UN bouton par réglage, pas deux. Une paire ＋/− serait exactement la
-   * famille de variantes que la cure de 2026-09-02 a retirée ; un cycle qui
-   * boucle dit la même chose avec une entrée, et c'est déjà le motif de MODE
-   * NAPPE. Les paliers sont ceux qu'on entend, pas une rampe fine : un bouton
-   * qu'on tape en jouant doit changer quelque chose au premier appui. */
-  {
-    id: 'step-swing', label: 'SWING', color: '#c9a227',
-    desc: 'Swing : 0 → 25 → 50 → 66 %', kind: 'step', category: 'GROOVE',
-    step: (e) => {
-      const paliers = [0, 25, 50, 66];
-      e.setLiveGrooveParam('swing', palierSuivant(paliers, e.liveGrooveValeur('swing')));
-    },
-  },
-  {
-    id: 'step-ghosts', label: 'GHOSTS', color: '#c9a227',
-    desc: 'Ghost notes : 0 → 15 → 30 %', kind: 'step', category: 'GROOVE',
-    step: (e) => {
-      const paliers = [0, 15, 30];
-      e.setLiveGrooveParam('ghostDensity', palierSuivant(paliers, e.liveGrooveValeur('ghostDensity')));
-    },
-  },
-  {
-    id: 'step-fills', label: 'FILLS', color: '#c9a227',
-    desc: 'Intensité des fills : 0 → 50 → 100 %', kind: 'step', category: 'GROOVE',
-    step: (e) => {
-      const paliers = [0, 50, 100];
-      e.setLiveGrooveParam('fillIntensity', palierSuivant(paliers, e.liveGrooveValeur('fillIntensity')));
-    },
-  },
-  {
-    id: 'step-sidechain', label: 'SIDECHAIN', color: 'var(--cell-bass)',
-    desc: 'Pompe : 0 → 50 → 100 %', kind: 'step', category: 'GROOVE',
-    step: (e) => {
-      e.setLiveSidechainDepth(palierSuivant([0, 0.5, 1], e.liveSidechainValeur()));
-    },
-  },
 ];
 
 // Catalogue d'axes — étendu très largement (PLAN.md §7, demande explicite de
@@ -281,6 +191,21 @@ export interface LiveAxisDef {
   // quel setter d'AudioEngine appeler) — LiveView n'a plus qu'à appeler
   // axisById(id).apply(engine, value01).
   apply: (engine: AudioEngine, value01: number) => void;
+  /* ⚠️ LE RETOUR AU MORCEAU — ce qui rend un curseur MOMENTANÉ possible.
+   *
+   * Même rôle que la seconde moitié d'un `hold` : le doigt lâche, et le
+   * réglage revient à ce que dit le MORCEAU. Là où l'axe passe par un override
+   * du moteur, le retour est de l'EFFACER — la couche du dessous redevient
+   * visible, quelle qu'elle soit ; écrire `base.swing` marcherait aujourd'hui
+   * et serait faux au premier changement de scène. Les deux macros historiques
+   * (filtre, réverbe) ont des nœuds à elles, toujours neutres ailleurs : leur
+   * repos est le neutre, exactement ce que faisaient déjà HOLD FILTRE et HOLD
+   * RÉVERBE.
+   *
+   * Un axe SANS `repos` ne peut pas être momentané, et le sélecteur refuse de
+   * le proposer — un maintien qui ne sait pas revenir laisse le morceau là où
+   * le doigt l'a lâché, et un doigt glisse. */
+  repos?: (engine: AudioEngine, base: PatternStateV2) => void;
 }
 
 const linMap = (min: number, max: number, value01: number) => min + (max - min) * value01;
@@ -289,98 +214,63 @@ const expMap = (min: number, max: number, value01: number) => min * Math.pow(max
 const LINE_LABEL: Record<SynthRowName, string> = { bass: 'BASSE', pad: 'NAPPE', melody: 'MÉLODIE' };
 const LINE_SHORT: Record<SynthRowName, string> = { bass: 'BASSE', pad: 'NAPPE', melody: 'MÉLO' };
 
-// 14 réglages par ligne synthé (+ étalement pour la nappe seule) — mêmes
-// champs, mêmes plages et mêmes unités que SynthRowView.svelte (Atelier),
-// pour que ce que fait le pad corresponde à ce que montrerait le curseur
-// équivalent. Cutoff/résonance/enveloppe de filtre en courbe exponentielle
-// (plus naturel à l'oreille pour un balayage), le reste en linéaire.
+/* Les réglages de voix par ligne — RÉVISÉ le 2026-09-09 sur la fiche à cocher
+ * (`docs/relecture/parametres-live.html`).
+ *
+ * ⚠️ LES MACROS DE L'ATELIER GAGNENT CONTRE LES PARAMÈTRES BRUTS. L'Atelier
+ * n'expose pas `cutoff`, `filterEnvAmount` et `filterEnvRelease` : il expose
+ * BRILLANCE et MOUVEMENT, deux macros nommées qui les pilotent (SynthRowView).
+ * Le Live montrait les trois champs bruts — trois entrées de catalogue pour
+ * deux idées, sous des noms qu'aucun écran n'emploie. On porte les macros
+ * telles quelles, sous leur nom, et les bruts s'en vont : c'est mot pour mot ce
+ * que font Circuit et Ableton, et l'Atelier avait déjà fait le travail.
+ * `brillance` reprend d'ailleurs EXACTEMENT la courbe de l'ancien `cutoff`
+ * (100→4000 Hz en log, CUT_MIN/CUT_MAX de SynthRowView) : c'est un
+ * renommage, pas un nouveau réglage — d'où la correspondance de migration.
+ *
+ * Sont aussi partis : `resonance` (aucun curseur de l'Atelier ne l'expose) et
+ * le vibrato par ligne, remplacé par UN axe d'ensemble (« pourquoi pas tester
+ * un pad sur l'ensemble ? »). 15 entrées par ligne -> 10. */
 function synthAxesFor(name: SynthRowName): LiveAxisDef[] {
   const category = LINE_LABEL[name];
   const s = LINE_SHORT[name];
+  const voix = (key: keyof SynthVoice, valeur: (v: number) => unknown) => ({
+    apply: (e: AudioEngine, v: number) => e.setLiveSynthVoiceParam(name, key, valeur(v) as never),
+    repos: (e: AudioEngine) => e.clearLiveSynthVoiceParam(name, key),
+  });
   const defs: LiveAxisDef[] = [
+    // La macro de l'Atelier, sous son nom : 100 -> 4000 Hz en log.
+    { id: `brillance-${name}`, label: `BRILLANCE ${s}`, category, ...voix('cutoff', (v) => expMap(100, 4000, v)) },
+    /* MOUVEMENT pilote DEUX champs ensemble, et c'est tout l'intérêt : « à
+       faible mouvement une fermeture longue ne s'entend pas, à fort mouvement
+       une fermeture instantanée fait un clic » (SynthRowView). Les mêmes deux
+       formules, pas une troisième inventée pour le direct. */
     {
-      id: `cutoff-${name}`,
-      label: `CUTOFF ${s}`,
+      id: `mouvement-${name}`,
+      label: `MOUVEMENT ${s}`,
       category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'cutoff', expMap(100, 4000, v)),
+      apply: (e, v) => {
+        e.setLiveSynthVoiceParam(name, 'filterEnvAmount', linMap(0, 4000, v));
+        e.setLiveSynthVoiceParam(name, 'filterEnvRelease', linMap(0.05, 0.6, v));
+      },
+      repos: (e) => {
+        e.clearLiveSynthVoiceParam(name, 'filterEnvAmount');
+        e.clearLiveSynthVoiceParam(name, 'filterEnvRelease');
+      },
     },
-    {
-      id: `resonance-${name}`,
-      label: `RÉSO ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'resonance', expMap(0.3, 12, v)),
-    },
-    {
-      id: `attack-${name}`,
-      label: `ATTACK ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'attack', linMap(0, 0.2, v)),
-    },
-    {
-      id: `release-${name}`,
-      label: `RELEASE ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'release', linMap(0, 4, v)),
-    },
-    {
-      id: `subgain-${name}`,
-      label: `SUB ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'subGain', v),
-    },
-    {
-      id: `detune-${name}`,
-      label: `DÉTUNE ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'detuneCents', linMap(0, 30, v)),
-    },
-    {
-      id: `detune-mix-${name}`,
-      label: `MIX DÉT. ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'detuneGain', v),
-    },
-    {
-      id: `chorus-${name}`,
-      label: `CHORUS ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'chorusMix', v),
-    },
-    {
-      id: `vibrato-${name}`,
-      label: `VIBRATO ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'vibratoDepth', v),
-    },
-    {
-      id: `vibrato-rate-${name}`,
-      label: `VIB. RATE ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'vibratoRate', linMap(1, 12, v)),
-    },
-    {
-      id: `tone-${name}`,
-      label: `TONE ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'tone', linMap(0, 100, v)),
-    },
-    {
-      id: `filter-env-${name}`,
-      label: `ENV. FILTRE ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'filterEnvAmount', linMap(0, 4000, v)),
-    },
-    {
-      id: `filter-env-release-${name}`,
-      label: `FERM. FILTRE ${s}`,
-      category,
-      apply: (e, v) => e.setLiveSynthVoiceParam(name, 'filterEnvRelease', linMap(0, 4, v)),
-    },
+    { id: `attack-${name}`, label: `ATTACK ${s}`, category, ...voix('attack', (v) => linMap(0, 0.2, v)) },
+    { id: `release-${name}`, label: `RELEASE ${s}`, category, ...voix('release', (v) => linMap(0, 4, v)) },
+    { id: `subgain-${name}`, label: `SUB ${s}`, category, ...voix('subGain', (v) => v) },
+    { id: `detune-${name}`, label: `DÉTUNE ${s}`, category, ...voix('detuneCents', (v) => linMap(0, 30, v)) },
+    { id: `detune-mix-${name}`, label: `MIX DÉT. ${s}`, category, ...voix('detuneGain', (v) => v) },
+    { id: `chorus-${name}`, label: `CHORUS ${s}`, category, ...voix('chorusMix', (v) => v) },
+    { id: `tone-${name}`, label: `SATURATION ${s}`, category, ...voix('tone', (v) => linMap(0, 100, v)) },
     {
       id: `glide-${name}`,
       label: `GLIDE ${s}`,
       category,
       apply: (e, v) => e.setLiveSynthRowParam(name, 'glide', v),
+      repos: (e) => e.clearLiveSynthRowParam(name, 'glide'),
     },
   ];
   if (name === 'pad') {
@@ -389,43 +279,123 @@ function synthAxesFor(name: SynthRowName): LiveAxisDef[] {
       label: 'ÉTALEMENT',
       category,
       apply: (e, v) => e.setLiveSynthRowParam('pad', 'strum', v),
+      repos: (e) => e.clearLiveSynthRowParam('pad', 'strum'),
     });
   }
   return defs;
 }
 
+/** Le même réglage de voix sur LES TROIS lignes de synthé à la fois. */
+function ensembleSynthe(
+  id: string,
+  label: string,
+  key: keyof SynthVoice,
+  valeur: (v: number) => unknown,
+): LiveAxisDef {
+  return {
+    id,
+    label,
+    category: 'SYNTHÉ (ENSEMBLE)',
+    apply: (e, v) => SYNTH_ROW_NAMES.forEach((n) => e.setLiveSynthVoiceParam(n, key, valeur(v) as never)),
+    repos: (e) => SYNTH_ROW_NAMES.forEach((n) => e.clearLiveSynthVoiceParam(n, key)),
+  };
+}
+
+/* Le catalogue d'AXES — révisé le 2026-09-09 d'après la fiche à cocher.
+ *
+ * ⚠️ CE QUI EST PARTI, ET POURQUOI CE N'EST PAS UN OUBLI. Sept entrées n'ont
+ * rien de coché sur la fiche, et « ne rien cocher » y était une réponse : le
+ * paramètre reste dans l'Atelier. Sont donc sortis SWING, TRAÎNE, INT. FILL,
+ * COMP. BATT., VOLUME et SIDECHAIN — plus les paramètres bruts que BRILLANCE
+ * et MOUVEMENT remplacent. Le catalogue passe de 55 à 42 entrées, et la part
+ * des réglages de voix de 78 % à 74 % : c'est ce qui rend le tirage 🎲 moins
+ * absurde, puisqu'il tire là-dedans.
+ *
+ * ⚠️ Le FILTRE et la RÉVERBE globaux restent, et ce n'est pas une entorse : la
+ * fiche ne les posait pas (ses cartes « filtre passe-bas » et « envoi réverbe »
+ * parlent des réglages PAR LIGNE, à venir). Ce sont les deux nœuds dédiés du
+ * Live, et le filtre est le seul paramètre que Yann dit utiliser.
+ *
+ * ⚠️ Un axe coché CURSEUR reste assignable au PAD, et inversement : les deux
+ * lisent le même catalogue. Ne pas cocher PAD veut dire « pas par défaut »,
+ * pas « rendu impossible » — séparer les deux listes demanderait deux
+ * catalogues qui devraient rester d'accord, ce que ce fichier passe déjà son
+ * temps à éviter. */
 export const LIVE_AXES: LiveAxisDef[] = [
   // Macros live historiques (phase 2) — nœuds de graphe dédiés
-  // (liveFilter/liveReverbSend, graph.ts), toujours neutres ailleurs.
-  { id: 'filter', label: 'FILTRE', apply: (e, v) => e.setLiveFilterCutoff(expMap(200, 20000, v)) },
-  { id: 'reverb', label: 'REVERB', apply: (e, v) => e.setLiveReverbWet(v) },
+  // (liveFilter/liveReverbSend, graph.ts), toujours neutres ailleurs. Leur
+  // repos EST le neutre : c'est ce que faisaient déjà les maintenus.
+  {
+    id: 'filter',
+    label: 'FILTRE',
+    apply: (e, v) => e.setLiveFilterCutoff(expMap(200, 20000, v)),
+    repos: (e) => e.setLiveFilterCutoff(20000),
+  },
+  { id: 'reverb', label: 'REVERB', apply: (e, v) => e.setLiveReverbWet(v), repos: (e) => e.setLiveReverbWet(0) },
 
-  // Groove — mêmes champs/unités que les curseurs Groove de l'Atelier.
-  { id: 'swing', label: 'SWING', category: 'GROOVE', apply: (e, v) => e.setLiveGrooveParam('swing', linMap(0, 75, v)) },
-  { id: 'drag', label: 'TRAÎNE', category: 'GROOVE', apply: (e, v) => e.setLiveGrooveParam('drag', linMap(0, 30, v)) },
+  /* Groove — mêmes champs et mêmes unités que les curseurs Groove de
+     l'Atelier. RAFALES SPONT., VÉLOCITÉ ALÉA. et SWING SYNTHÉ sont entrés le
+     2026-09-09 : trois curseurs demandés, trois champs qui existaient déjà
+     dans `PatternStateV2` et que `withLiveOverrides` applique sans une ligne
+     de moteur en plus. */
   {
     id: 'ghost-density',
     label: 'GHOST NOTES',
     category: 'GROOVE',
     apply: (e, v) => e.setLiveGrooveParam('ghostDensity', linMap(0, 40, v)),
+    repos: (e) => e.clearLiveGrooveParam('ghostDensity'),
   },
   {
-    id: 'fill-intensity',
-    label: 'INT. FILL',
+    id: 'spont-roll',
+    label: 'RAFALES SPONT.',
     category: 'GROOVE',
-    apply: (e, v) => e.setLiveGrooveParam('fillIntensity', linMap(0, 100, v)),
+    apply: (e, v) => e.setLiveGrooveParam('spontRoll', linMap(0, 100, v)),
+    repos: (e) => e.clearLiveGrooveParam('spontRoll'),
+  },
+  {
+    id: 'random-velocity',
+    label: 'VÉLOCITÉ ALÉA.',
+    category: 'GROOVE',
+    apply: (e, v) => e.setLiveGrooveParam('randomVelocity', linMap(0, 100, v)),
+    repos: (e) => e.clearLiveGrooveParam('randomVelocity'),
+  },
+  {
+    id: 'synth-swing',
+    label: 'SWING SYNTHÉ',
+    category: 'GROOVE',
+    apply: (e, v) => e.setLiveGrooveParam('synthSwing', linMap(0, 75, v)),
+    repos: (e) => e.clearLiveGrooveParam('synthSwing'),
   },
 
-  // Bus DRUM uniquement (globalSaturation/globalBitcrush/globalCompression,
-  // model/types.ts) — pas le mix entier.
-  { id: 'saturation', label: 'SATUR. BATT.', category: 'BUS BATTERIE', apply: (e, v) => e.setLiveSaturation(v) },
-  { id: 'bitcrush', label: 'CRUSH BATT.', category: 'BUS BATTERIE', apply: (e, v) => e.setLiveBitcrush(v) },
-  { id: 'compression', label: 'COMP. BATT.', category: 'BUS BATTERIE', apply: (e, v) => e.setLiveCompression(v) },
+  // Bus DRUM uniquement (globalSaturation/globalBitcrush, model/types.ts) —
+  // pas le mix entier. Pas d'override : on écrit le nœud, donc le repos relit
+  // le morceau.
+  {
+    id: 'saturation',
+    label: 'SATUR. BATT.',
+    category: 'BUS BATTERIE',
+    apply: (e, v) => e.setLiveSaturation(v),
+    repos: (e, base) => e.setLiveSaturation(base.globalSaturation / 100),
+  },
+  {
+    id: 'bitcrush',
+    label: 'CRUSH BATT.',
+    category: 'BUS BATTERIE',
+    apply: (e, v) => e.setLiveBitcrush(v),
+    repos: (e, base) => e.setLiveBitcrush(base.globalBitcrush / 100),
+  },
 
-  // Mix global.
-  { id: 'volume', label: 'VOLUME', category: 'MIX', apply: (e, v) => e.setLiveVolume(v) },
-  { id: 'delay-feedback', label: 'DELAY FB', category: 'MIX', apply: (e, v) => e.setLiveDelayFeedback(v) },
-  { id: 'sidechain-depth', label: 'SIDECHAIN', category: 'MIX', apply: (e, v) => e.setLiveSidechainDepth(v) },
+  {
+    id: 'delay-feedback',
+    label: 'DELAY FB',
+    category: 'MIX',
+    apply: (e, v) => e.setLiveDelayFeedback(v),
+    repos: (e, base) => e.setLiveDelayFeedback(base.synthGlobal.delayFeedback / 100),
+  },
+
+  // Les deux réglages de voix demandés « sur l'ensemble des lignes de synthé ».
+  ensembleSynthe('tone-synthe', 'SATURATION SYNTHÉ', 'tone', (v) => linMap(0, 100, v)),
+  ensembleSynthe('vibrato-synthe', 'VIBRATO SYNTHÉ', 'vibratoDepth', (v) => v),
 
   // Voix synthé, une catégorie par ligne.
   ...synthAxesFor('bass'),
@@ -522,6 +492,15 @@ export interface LiveAssignments {
   slotModes: SlotMode[]; // longueur SLOT_COUNT — ignoré (mode 'actions') si le bouton n'a jamais été basculé en fader
   slotFaders: LiveAxisId[][]; // longueur SLOT_COUNT, 1+ axes — utilisé seulement si slotModes[i] === 'fader'
   faderOrientation: FaderOrientation[]; // longueur SLOT_COUNT — utilisé seulement si slotModes[i] === 'fader'
+  /* Le curseur MOMENTANÉ (2026-09-09) — longueur SLOT_COUNT, utilisé seulement
+     en mode fader. Le doigt se pose : le curseur prend la main ET dose ; le
+     doigt lâche : `LiveAxisDef.repos` rend le réglage au morceau.
+     ⚠️ C'est le geste le plus demandé de la fiche à cocher (six coches sur
+     MAINT+DOSE), et c'est celui des machines : « par défaut les Perform FX sont
+     en mode Touch Enable — on entre, on ajoute un intérêt momentané, on lâche,
+     et on revient au signal propre ». Il remplace les maintenus binaires
+     SATURE et BITCRUSH, qui sautaient à une valeur gravée au lieu de doser. */
+  faderMomentane: boolean[];
   axisX: LiveAxisId[];
   axisY: LiveAxisId[];
   // Inclinaison (phase 4) : optionnelle, jamais requise — n'agit sur rien
@@ -531,21 +510,49 @@ export interface LiveAssignments {
 }
 
 /* Le défaut par rang de bouton — exporté parce que la migration s'en sert pour
-   remplir un slot vidé par un déménagement, et que le test le vérifie. */
+   remplir un slot vidé par un déménagement, et que le test le vérifie.
+
+   ⚠️ TROIS GESTES ET TROIS CURSEURS, et c'est le cœur du lot. L'ancien défaut
+   mettait les six boutons en mode ACTIONS : personne ne rencontrait jamais un
+   curseur sans aller le chercher dans ⚙, d'où « ça manque de boutons où on
+   règle un curseur, je ne comprends pas pourquoi ils ont disparu ». La
+   catégorie en pose huit ou neuf, toujours visibles (Circuit, Ableton,
+   Maschine) ; on en pose trois, plus les deux axes du pad.
+
+   Les rangs 3 et 4 portent deux curseurs qu'aucun chemin n'atteignait
+   (RAFALES SPONT. et GHOST NOTES), le rang 5 un curseur MOMENTANÉ sur la
+   saturation — le geste que la fiche demande le plus. Un slot en mode fader
+   garde quand même une action derrière lui : basculer le mode ne doit pas
+   laisser le bouton vide. */
 export const DEFAUTS_SLOTS: LiveActionId[][] = [
   ['break'],
   ['fill'],
-  ['ligne-kick'],
-  ['ligne-snare'],
-  ['ligne-hat'],
+  ['mute-drums'],
   ['chaos'],
+  ['hold-filtre'],
+  ['mute-synth'],
 ];
+
+/* Le mode de chaque rang, et son axe si c'est un curseur. Les trois tableaux
+   restent alignés sur DEFAUTS_SLOTS — un slot porte TOUJOURS les deux
+   assignations, seule `slotModes` dit laquelle joue. */
+const DEFAUTS_MODES: SlotMode[] = ['actions', 'actions', 'fader', 'fader', 'fader', 'actions'];
+const DEFAUTS_FADERS: LiveAxisId[][] = [
+  ['filter'],
+  ['reverb'],
+  ['spont-roll'],
+  ['ghost-density'],
+  ['saturation'],
+  ['delay-feedback'],
+];
+const DEFAUTS_MOMENTANE: boolean[] = [false, false, false, false, true, false];
 
 const DEFAULT_ASSIGNMENTS: LiveAssignments = {
   slots: DEFAUTS_SLOTS.map((s) => [...s]),
-  slotModes: ['actions', 'actions', 'actions', 'actions', 'actions', 'actions'],
-  slotFaders: [['filter'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
+  slotModes: [...DEFAUTS_MODES],
+  slotFaders: DEFAUTS_FADERS.map((f) => [...f]),
   faderOrientation: ['vertical', 'vertical', 'vertical', 'vertical', 'vertical', 'vertical'],
+  faderMomentane: [...DEFAUTS_MOMENTANE],
   axisX: ['filter'],
   axisY: ['reverb'],
   axisTilt: ['filter'],
@@ -572,15 +579,42 @@ export const ACTIONS_TIRABLES: LiveActionDef[] = LIVE_ACTIONS.filter((a) => a.ti
  * reprend le défaut de son rang plutôt que de rester vide.
  */
 const CORRESPONDANCES: Record<string, LiveActionId | null> = {
-  'roll-kick-x2': 'ligne-kick',
-  'roll-kick-x3': 'ligne-kick',
-  'roll-kick-x4': 'ligne-kick',
-  'roll-snare-x2': 'ligne-snare',
-  'roll-snare-x3': 'ligne-snare',
-  'roll-snare-x4': 'ligne-snare',
-  'roll-hat-x2': 'ligne-hat',
-  'roll-hat-x3': 'ligne-hat',
-  'roll-hat-x4': 'ligne-hat',
+  /* Les rafales avaient fusionné avec les frappes de ligne en 2026-09-02 ;
+     les frappes de ligne sont parties à leur tour en 2026-09-09. Deux
+     déménagements de suite sur le même identifiant : la correspondance vise
+     donc `null`, pas une entrée intermédiaire qui n'existe plus non plus. */
+  'roll-kick-x2': null,
+  'roll-kick-x3': null,
+  'roll-kick-x4': null,
+  'roll-snare-x2': null,
+  'roll-snare-x3': null,
+  'roll-snare-x4': null,
+  'roll-hat-x2': null,
+  'roll-hat-x3': null,
+  'roll-hat-x4': null,
+  'ligne-kick': null,
+  'ligne-snare': null,
+  'ligne-hat': null,
+  'ligne-clap': null,
+  'ligne-shaker': null,
+  // Leur paramètre est demandé en CURSEUR, pas en paliers.
+  'step-swing': null,
+  'step-ghosts': null,
+  'step-fills': null,
+  'step-sidechain': null,
+  // Rien de coché sur la fiche : ton et gamme restent dans l'Atelier.
+  'step-transpose-up': null,
+  'step-transpose-down': null,
+  'step-scale-next': null,
+  'step-scale-prev': null,
+  // « Un garde-fou, pas un geste de scène. »
+  'bypass-limiters': null,
+  // Remplacés par le curseur MOMENTANÉ, qui dose au lieu de sauter.
+  'hold-sature': null,
+  'hold-crush': null,
+  // Les coupures sont demandées dans le mini séquenceur.
+  'hold-sans-kick': null,
+  'hold-batterie-seule': null,
   // Déménagés dans le séquenceur : on coupe une ligne là où on la voit.
   'mute-kick': null,
   'mute-snare': null,
@@ -599,6 +633,65 @@ const CORRESPONDANCES: Record<string, LiveActionId | null> = {
   'toggle-pad-arp': 'step-pad-mode',
 };
 
+/* ⚠️ LA MIGRATION DES AXES — elle n'existait pas, et il la fallait.
+ *
+ * `migrer` ne réécrivait que les ACTIONS. Or la révision du 2026-09-09 retire
+ * treize AXES : une assignation enregistrée qui cite `swing` ou `cutoff-bass`
+ * aurait fait échouer `isValid` en bloc, donc rendu les défauts — les six
+ * boutons ET les trois snapshots perdus d'un coup, sans un mot. Exactement le
+ * défaut que `catalogue-live.test.ts` existe pour empêcher, à un tableau près.
+ *
+ * BRILLANCE et MOUVEMENT ne sont pas des réglages neufs : ce sont les macros
+ * que l'Atelier expose déjà, et `brillance` reprend la courbe exacte de l'ancien
+ * `cutoff`. Les anciens identifiants pointent donc vers eux plutôt que vers
+ * `null` — on ne perd pas l'assignation, on la renomme.
+ */
+const CORRESPONDANCES_AXES: Record<string, LiveAxisId | null> = {
+  // Le même réglage, sous le nom que l'écran emploie.
+  'cutoff-bass': 'brillance-bass',
+  'cutoff-pad': 'brillance-pad',
+  'cutoff-melody': 'brillance-melody',
+  'filter-env-bass': 'mouvement-bass',
+  'filter-env-pad': 'mouvement-pad',
+  'filter-env-melody': 'mouvement-melody',
+  'filter-env-release-bass': 'mouvement-bass',
+  'filter-env-release-pad': 'mouvement-pad',
+  'filter-env-release-melody': 'mouvement-melody',
+  // Le vibrato par ligne devient un seul axe d'ensemble.
+  'vibrato-bass': 'vibrato-synthe',
+  'vibrato-pad': 'vibrato-synthe',
+  'vibrato-melody': 'vibrato-synthe',
+  'vibrato-rate-bass': null,
+  'vibrato-rate-pad': null,
+  'vibrato-rate-melody': null,
+  // Aucun curseur de l'Atelier n'expose la résonance.
+  'resonance-bass': null,
+  'resonance-pad': null,
+  'resonance-melody': null,
+  // Rien de coché sur la fiche : ils restent dans l'Atelier.
+  swing: null,
+  drag: null,
+  'fill-intensity': null,
+  compression: null,
+  volume: null,
+  'sidechain-depth': null,
+};
+
+/* Réécrit une liste d'axes. Un slot/axe vidé par les retraits reprend son
+   défaut plutôt que de rester vide — même règle que pour les actions, et pour
+   la même raison : un tableau vide ferait perdre au sélecteur toute trace de
+   ce qui est assigné. */
+function migrerListeAxes(v: unknown, defaut: LiveAxisId[]): LiveAxisId[] {
+  if (!Array.isArray(v)) return defaut;
+  const sortie: LiveAxisId[] = [];
+  for (const brut of v) {
+    if (typeof brut !== 'string') continue;
+    const id = brut in CORRESPONDANCES_AXES ? CORRESPONDANCES_AXES[brut] : brut;
+    if (id && AXIS_IDS.has(id) && !sortie.includes(id)) sortie.push(id);
+  }
+  return sortie.length ? sortie : defaut;
+}
+
 function migrerListeActions(v: unknown, defaut: LiveActionId[]): LiveActionId[] {
   if (!Array.isArray(v)) return defaut;
   const sortie: LiveActionId[] = [];
@@ -615,10 +708,21 @@ function migrer(v: unknown): unknown {
   if (!v || typeof v !== 'object') return v;
   const a = v as { slots?: unknown };
   if (!Array.isArray(a.slots)) return v;
-  const defauts = DEFAUTS_SLOTS;
+  const v2 = v as Partial<LiveAssignments>;
+  const rang = <T>(t: T[] | undefined, i: number, d: T) => (Array.isArray(t) && t[i] !== undefined ? t[i] : d);
   return {
     ...a,
-    slots: a.slots.map((slot, i) => migrerListeActions(slot, defauts[i] ?? defauts[0])),
+    slots: a.slots.map((slot, i) => migrerListeActions(slot, DEFAUTS_SLOTS[i] ?? DEFAUTS_SLOTS[0])),
+    slotFaders: a.slots.map((_, i) =>
+      migrerListeAxes(v2.slotFaders?.[i], DEFAUTS_FADERS[i] ?? DEFAUTS_FADERS[0]),
+    ),
+    /* ⚠️ Un champ AJOUTÉ se migre aussi. `faderMomentane` n'existe dans aucune
+       assignation enregistrée : sans ce remplissage, `isValid` le trouverait
+       absent et rendrait les défauts — le même tout-ou-rien, par l'autre bout. */
+    faderMomentane: a.slots.map((_, i) => rang(v2.faderMomentane, i, DEFAUTS_MOMENTANE[i] ?? false)),
+    axisX: migrerListeAxes(v2.axisX, DEFAULT_ASSIGNMENTS.axisX),
+    axisY: migrerListeAxes(v2.axisY, DEFAULT_ASSIGNMENTS.axisY),
+    axisTilt: migrerListeAxes(v2.axisTilt, DEFAULT_ASSIGNMENTS.axisTilt),
   };
 }
 const AXIS_IDS = new Set(LIVE_AXES.map((a) => a.id));
@@ -646,6 +750,9 @@ function isValid(v: unknown): v is LiveAssignments {
     Array.isArray(a.faderOrientation) &&
     a.faderOrientation.length === SLOT_COUNT &&
     a.faderOrientation.every((o) => FADER_ORIENTATIONS.includes(o as FaderOrientation)) &&
+    Array.isArray(a.faderMomentane) &&
+    a.faderMomentane.length === SLOT_COUNT &&
+    a.faderMomentane.every((m) => typeof m === 'boolean') &&
     isValidAxisList(a.axisX) &&
     isValidAxisList(a.axisY) &&
     isValidAxisList(a.axisTilt) &&

@@ -61,19 +61,25 @@ describe('migration des assignations enregistrées', () => {
     expect(loadLiveAssignments().slots[0]).toEqual([temoin]);
   });
 
-  it('fait des rafales ×2/×3/×4 l’entrée fusionnée de leur ligne', async () => {
-    const { loadLiveAssignments } = await catalogue();
+  /* ⚠️ DEUX DÉMÉNAGEMENTS DE SUITE SUR LE MÊME IDENTIFIANT. Les rafales étaient
+     devenues l'entrée fusionnée de leur ligne (2026-09-02) ; les frappes de
+     ligne sont parties à leur tour (2026-09-09, fiche à cocher). Une
+     correspondance qui pointe vers une entrée elle-même disparue ne migre
+     rien : elle refait échouer `isValid`. Le slot doit donc reprendre le
+     défaut de son rang, comme n'importe quel retrait. */
+  it('ne laisse pas une rafale pointer vers une ligne elle aussi disparue', async () => {
+    const { loadLiveAssignments, DEFAUTS_SLOTS } = await catalogue();
     stockage.setItem(
       KEY,
       JSON.stringify({
         ...ANCIENNE,
-        slots: [['roll-kick-x2'], ['roll-snare-x3'], ['roll-hat-x4'], ['break'], ['fill'], ['chaos']],
+        slots: [['roll-kick-x2'], ['roll-snare-x3'], ['ligne-hat'], ['break'], ['fill'], ['chaos']],
       }),
     );
     const a = loadLiveAssignments();
-    expect(a.slots[0]).toEqual(['ligne-kick']);
-    expect(a.slots[1]).toEqual(['ligne-snare']);
-    expect(a.slots[2]).toEqual(['ligne-hat']);
+    expect(a.slots[0]).toEqual(DEFAUTS_SLOTS[0]);
+    expect(a.slots[1]).toEqual(DEFAUTS_SLOTS[1]);
+    expect(a.slots[2]).toEqual(DEFAUTS_SLOTS[2]);
   });
 
   it('retire les entrées qui ont changé de domicile sans vider le slot', async () => {
@@ -87,20 +93,75 @@ describe('migration des assignations enregistrées', () => {
     expect(a.slots[2]).toEqual(DEFAUTS_SLOTS[2]);
   });
 
-  it('déduplique une ligne citée deux fois par la fusion des rafales', async () => {
+  it('ne cite jamais deux fois la même action dans un slot', async () => {
     const { loadLiveAssignments } = await catalogue();
     stockage.setItem(
       KEY,
-      JSON.stringify({ ...ANCIENNE, slots: [['roll-hat-x2', 'roll-hat-x4'], ['fill'], ['break'], ['chaos'], ['break'], ['fill']] }),
+      JSON.stringify({ ...ANCIENNE, slots: [['break', 'break', 'chaos'], ['fill'], ['break'], ['chaos'], ['break'], ['fill']] }),
     );
-    const a = loadLiveAssignments();
-    expect(a.slots[0]).toEqual(['ligne-hat']);
+    expect(loadLiveAssignments().slots[0]).toEqual(['break', 'chaos']);
   });
 
   it('fait de l’ancien interrupteur d’arpège le bouton MODE NAPPE', async () => {
     const { loadLiveAssignments } = await catalogue();
     stockage.setItem(KEY, JSON.stringify({ ...ANCIENNE, slots: [['toggle-pad-arp'], ['fill'], ['break'], ['chaos'], ['break'], ['fill']] }));
     expect(loadLiveAssignments().slots[0]).toEqual(['step-pad-mode']);
+  });
+});
+
+/* ⚠️ LA MIGRATION DES AXES — elle n'existait pas, et la révision du 2026-09-09
+ * la rendait indispensable : `migrer` ne réécrivait que les ACTIONS, alors que
+ * treize AXES viennent de disparaître. Une assignation citant `swing` ou
+ * `cutoff-bass` aurait fait échouer `isValid` en bloc — six boutons et trois
+ * snapshots perdus sans un mot, exactement le défaut que ce fichier existe pour
+ * empêcher, à un tableau près. */
+describe('migration des AXES', () => {
+  beforeEach(() => stockage.map.clear());
+
+  it('renomme un paramètre brut en la macro qui le remplace', async () => {
+    const { loadLiveAssignments } = await catalogue();
+    stockage.setItem(
+      KEY,
+      JSON.stringify({ ...ANCIENNE, slotFaders: [['cutoff-bass'], ['filter-env-pad'], ['vibrato-melody'], ['reverb'], ['filter'], ['reverb']] }),
+    );
+    const a = loadLiveAssignments();
+    // Ce n'est pas un réglage neuf : `brillance` reprend la courbe exacte de
+    // l'ancien `cutoff`. On ne perd pas l'assignation, on la renomme.
+    expect(a.slotFaders[0]).toEqual(['brillance-bass']);
+    expect(a.slotFaders[1]).toEqual(['mouvement-pad']);
+    expect(a.slotFaders[2]).toEqual(['vibrato-synthe']);
+  });
+
+  it('ne renvoie PAS les défauts quand un axe cité a disparu', async () => {
+    const { loadLiveAssignments } = await catalogue();
+    const temoin = 'solo-melody';
+    stockage.setItem(
+      KEY,
+      JSON.stringify({
+        ...ANCIENNE,
+        slots: [[temoin], ...ANCIENNE.slots.slice(1)],
+        axisX: ['swing'],
+        slotFaders: [['volume'], ['reverb'], ['filter'], ['reverb'], ['filter'], ['reverb']],
+      }),
+    );
+    const a = loadLiveAssignments();
+    // Le slot témoin survit : c'est la preuve qu'on n'est pas retombé sur les
+    // défauts en bloc à cause de `swing` et `volume`.
+    expect(a.slots[0]).toEqual([temoin]);
+    // Et les axes disparus reprennent un défaut plutôt que de rester vides.
+    expect(a.axisX.length).toBeGreaterThan(0);
+    expect(a.slotFaders[0].length).toBeGreaterThan(0);
+  });
+
+  it('remplit le champ AJOUTÉ que les assignations enregistrées n’ont pas', async () => {
+    const { loadLiveAssignments } = await catalogue();
+    // `faderMomentane` n'existe dans aucun enregistrement d'avant : sans
+    // remplissage, `isValid` le trouverait absent et rendrait les défauts —
+    // le même tout-ou-rien, par l'autre bout.
+    stockage.setItem(KEY, JSON.stringify(ANCIENNE));
+    const a = loadLiveAssignments();
+    expect(a.faderMomentane).toHaveLength(6);
+    expect(a.faderMomentane.every((m) => typeof m === 'boolean')).toBe(true);
   });
 });
 
@@ -113,28 +174,30 @@ describe('le catalogue lui-même', () => {
     expect(variantes).toEqual([]);
   });
 
-  it('garde les entrées miroir mais les sort du tirage', async () => {
+  /* ⚠️ LA POPULATION DES MIROIRS EST DEVENUE VIDE, ET C'EST ÉCRIT ICI.
+     Les deux seules entrées `tirable: false` étaient TON −1 et GAMME ← ; ton
+     et gamme sont sortis du catalogue le 2026-09-09. Un garde-fou dont la
+     population se vide passe en silence (CLAUDE.md) — on l'affirme donc
+     explicitement au lieu de le laisser vrai par vacuité, et la règle qu'il
+     protégeait (un miroir ne se tire pas au hasard) reste vérifiée si un
+     miroir revient. */
+  it('n’a plus aucune entrée miroir — et sortirait du tirage celle qui reviendrait', async () => {
     const { LIVE_ACTIONS, ACTIONS_TIRABLES } = await catalogue();
     const miroirs = LIVE_ACTIONS.filter((a) => a.tirable === false).map((a) => a.id);
-    // ⚠️ Le compte est là exprès : un garde-fou dont la population devient
-    // vide passe en silence (CLAUDE.md). Si plus rien n'est marqué
-    // `tirable: false`, c'est le drapeau qui a disparu, pas le problème.
-    expect(miroirs.length).toBeGreaterThan(0);
+    expect(miroirs).toEqual([]);
     for (const id of miroirs) expect(ACTIONS_TIRABLES.some((a) => a.id === id)).toBe(false);
     expect(ACTIONS_TIRABLES.length).toBe(LIVE_ACTIONS.length - miroirs.length);
   });
 
-  it('donne une ligne de batterie réelle à chaque entrée « ligne »', async () => {
+  /* ⚠️ Les frappes de ligne sont parties le 2026-09-09 : mesurées hors grille
+     de ±81 à ±334 ms, et leur rafale ignorait le plancher anti-bouillie du
+     moteur (`docs/plan/09-etat-de-lart-controles-live.md`). Le test ne
+     disparaît pas avec elles — il DIT qu'elles sont parties, sinon leur retour
+     par recopie passerait inaperçu. Elles reviendront quantifiées, ou pas. */
+  it('ne rejoue plus une frappe de ligne non quantifiée', async () => {
     const { LIVE_ACTIONS } = await catalogue();
-    const { DRUM_ROW_NAMES } = await import('../src/model/types');
-    const lignes = LIVE_ACTIONS.filter((a) => a.kind === 'ligne');
-    expect(lignes.length).toBe(DRUM_ROW_NAMES.length);
-    for (const a of lignes) {
-      // Un `ligne` sans `ligne` frapperait dans le vide — même famille de
-      // défaut que `forceVariantCount`, déclaré et lu par personne.
-      expect(a.ligne).toBeDefined();
-      expect(DRUM_ROW_NAMES).toContain(a.ligne!);
-    }
+    expect(LIVE_ACTIONS.map((a) => a.kind)).not.toContain('ligne');
+    expect(LIVE_ACTIONS.filter((a) => a.id.startsWith('ligne-'))).toEqual([]);
   });
 
   it('donne un geste à chaque entrée « pas »', async () => {

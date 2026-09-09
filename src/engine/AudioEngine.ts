@@ -91,6 +91,20 @@ const AVANCE_BASCULE = 0.06; // s
  */
 export const AVANCE_DECLENCHEMENT = 0.008; // s
 
+/* Les réglages de groove pilotables EN DIRECT (override relu à chaque fenêtre
+   de scheduling, jamais écrit dans le motif). Les trois derniers sont entrés
+   avec les curseurs du Mode Live (arbitrage du 2026-09-09) : ce sont des
+   champs de `PatternStateV2`, donc `withLiveOverrides` les applique sans une
+   ligne de plus. */
+export type CleGroove =
+  | 'swing'
+  | 'drag'
+  | 'ghostDensity'
+  | 'fillIntensity'
+  | 'spontRoll'
+  | 'randomVelocity'
+  | 'synthSwing';
+
 /* Les trois modes de la Nappe, dans l'ordre où le bouton PAS les fait
  * défiler. Ils sont EXCLUSIFS parce que le moteur les traite ainsi : le
  * bourdon court-circuite l'arpège dans le scheduler (voir liveStepPadMode). */
@@ -193,8 +207,9 @@ export class AudioEngine {
   // champs d'état simples relus à chaque fenêtre de scheduling plutôt que des
   // nœuds de graphe — un override appliqué juste avant chaque fenêtre
   // (withLiveOverrides) plutôt qu'un nœud dédié à construire pour chacun.
-  private liveSidechainDepth: number | null = null;
-  private liveGrooveOverride: Partial<Pick<PatternStateV2, 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity'>> = {};
+  private liveGrooveOverride: Partial<
+    Pick<PatternStateV2, 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity' | 'spontRoll' | 'randomVelocity' | 'synthSwing'>
+  > = {};
   private liveSynthOverride: Partial<
     Record<SynthRowName, { voice?: Partial<SynthVoice>; glide?: number; strum?: number; muted?: boolean }>
   > = {};
@@ -247,7 +262,7 @@ export class AudioEngine {
     const graph = this.graph;
     if (!graph) return;
     const sg = this.getState().synthGlobal;
-    const depth = this.liveSidechainDepth ?? sg.sidechainDepth / 100;
+    const depth = sg.sidechainDepth / 100;
     const release = sg.sidechainRelease / 1000;
     const floor = Math.max(0.001, 1 - depth);
     const targets: SynthRowName[] = [];
@@ -500,6 +515,19 @@ export class AudioEngine {
     return this.liveSynthOverride[name]?.muted;
   }
 
+  /* ⚠️ LES TROIS RAFALES N'ONT PLUS D'APPELANT — et c'est un état transitoire,
+   * pas un oubli. Les frappes de ligne du Mode Live sont parties le 2026-09-09
+   * (fiche à cocher, rien de coché) après mesure : la rafale ignorait le
+   * plancher anti-bouillie du moteur (39-40 ms contre les 45 ms que le FILL
+   * respecte), empilait deux frappes au même instant dès qu'il y avait du
+   * swing, et retournait l'accent de 9 dB.
+   *
+   * On les garde parce que le geste doit revenir QUANTIFIÉ — un note repeat à
+   * division choisie, qui répète la frappe tenue au lieu de remplir la ligne —
+   * et qu'il réutilisera ce chemin de forçage dans l'ordonnanceur. Si ce lot
+   * est abandonné, ce sont ces trois méthodes ET `forceKickRoll` /
+   * `forceSnareRoll` / `forceHatRoll` (scheduler.ts) qu'il faut retirer
+   * ensemble : les laisser à moitié ferait un forçage que rien n'atteint. */
   // Bouton ROLL×2 (maintenu) : force le hat en rafale tant qu'il est
   // enfoncé ; `null` relâche le forçage.
   liveSetHatRoll(multiplier: number | null): void {
@@ -581,17 +609,8 @@ export class AudioEngine {
     this.graph.crush.curve = bitcrushCurve(amount01);
   }
 
-  setLiveCompression(amount01: number): void {
-    if (!this.graph || !this.ctx) return;
-    applyCompressionAmount(this.graph.comp, amount01, this.ctx);
-    this.graph.makeup.gain.setValueAtTime(makeupGainForCompression(amount01), this.ctx.currentTime);
-  }
 
   // 50..150 % — même plage que le curseur "Volume général" de l'Atelier.
-  setLiveVolume(amount01: number): void {
-    if (!this.graph || !this.ctx) return;
-    this.graph.finalGain.gain.setValueAtTime(0.5 + amount01, this.ctx.currentTime);
-  }
 
   setLiveDelayFeedback(amount01: number): void {
     if (!this.graph || !this.ctx) return;
@@ -601,42 +620,43 @@ export class AudioEngine {
   // Pas de nœud continu : juste relu au prochain déclenchement sidechain
   // (triggerSidechainDuck) — un bouton relâché ou un STOP retombe sur le
   // réglage de l'Atelier (sg.sidechainDepth), jamais écrasé.
-  setLiveSidechainDepth(amount01: number): void {
-    this.liveSidechainDepth = amount01;
-  }
 
   // Catalogue étendu (PLAN.md §7) — bouton BYPASS LIMITEURS : mêmes valeurs
   // exactes que buildGraph (graph.ts) pour enabled/disabled, appliquées
   // directement sur le limiteur déjà construit plutôt que reconstruire le
   // graphe.
-  setLiveLimiters(enabled: boolean): void {
-    if (!this.graph || !this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.graph.finalLimiter.threshold.setValueAtTime(enabled ? -1 : 0, now);
-    this.graph.finalLimiter.ratio.setValueAtTime(enabled ? 12 : 1, now);
-  }
 
   // Groove global (swing/traîne/densité de ghost notes/intensité de fill) —
   // relu à chaque fenêtre de scheduling (withLiveOverrides), jamais écrit
   // dans le pattern : mêmes champs que les curseurs Groove de l'Atelier,
   // mêmes unités (0..100, voir AtelierView.svelte).
-  setLiveGrooveParam(key: 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity', value: number): void {
+  setLiveGrooveParam(key: CleGroove, value: number): void {
     this.liveGrooveOverride = { ...this.liveGrooveOverride, [key]: value };
+  }
+
+  /* ⚠️ LE RETOUR AU MORCEAU D'UN FADER MOMENTANÉ, et c'est le seul juste.
+   *
+   * Un maintenu doit savoir revenir au repos, et « le repos » n'est pas une
+   * valeur qu'on grave : c'est ce que dit le MORCEAU, qui peut changer sous le
+   * doigt (une bascule de section réécrit le mix). Là où le réglage passe par
+   * un override, le retour est donc de l'EFFACER — la couche du dessous
+   * redevient visible, quelle qu'elle soit. Écrire `base.swing` à la place
+   * marcherait aujourd'hui et serait faux au premier changement de scène. */
+  clearLiveGrooveParam(key: CleGroove): void {
+    const { [key]: _drop, ...reste } = this.liveGrooveOverride;
+    this.liveGrooveOverride = reste;
   }
 
   /* La valeur EFFECTIVE d'un paramètre de groove — l'override s'il existe,
      sinon celle du morceau. Nécessaire aux boutons PAS cycliques : un bouton
      qui fait tourner le swing doit savoir d'où il part, sinon il repart de zéro
      à chaque appui. Même principe que `padMode` pour MODE NAPPE. */
-  liveGrooveValeur(key: 'swing' | 'drag' | 'ghostDensity' | 'fillIntensity'): number {
+  liveGrooveValeur(key: CleGroove): number {
     return this.liveGrooveOverride[key] ?? this.getState()[key];
   }
 
   /* Le SIDECHAIN en direct, même lecture — `liveSidechainDepth` est un 0..1,
      là où le groove est en 0..100 (unités des curseurs de l'Atelier). */
-  liveSidechainValeur(): number {
-    return this.liveSidechainDepth ?? this.getState().synthGlobal.sidechainDepth / 100;
-  }
 
   // Réglages de voix synthé par ligne — posés PAR NOTE (chaque voix crée son
   // propre BiquadFilterNode/gain au déclenchement, voices/synth.ts), donc pas
@@ -652,6 +672,13 @@ export class AudioEngine {
     };
   }
 
+  /** Le retour au morceau d'un réglage de voix — voir `clearLiveGrooveParam`. */
+  clearLiveSynthVoiceParam(name: SynthRowName, key: keyof SynthVoice): void {
+    const voice = { ...this.liveSynthOverride[name]?.voice };
+    delete voice[key as string];
+    this.liveSynthOverride = { ...this.liveSynthOverride, [name]: { ...this.liveSynthOverride[name], voice } };
+  }
+
   // Glide et étalement (strum, nappe seulement) vivent sur la ligne, pas
   // dans SynthVoice — même principe, mêmes unités que row.glide/row.strum
   // (0..1, voir SynthRowView.svelte).
@@ -660,6 +687,12 @@ export class AudioEngine {
       ...this.liveSynthOverride,
       [name]: { ...this.liveSynthOverride[name], [key]: value },
     };
+  }
+
+  /** Le retour au morceau d'un glide / étalement — voir `clearLiveGrooveParam`. */
+  clearLiveSynthRowParam(name: SynthRowName, key: 'glide' | 'strum'): void {
+    const { [key]: _drop, ...reste } = this.liveSynthOverride[name] ?? {};
+    this.liveSynthOverride = { ...this.liveSynthOverride, [name]: reste };
   }
 
   // Interrupteur générique pour un booléen de synthGlobal (arpège nappe pour
@@ -704,41 +737,16 @@ export class AudioEngine {
   // continues. ±1 demi-ton par appui, borné à ±1 octave autour de la
   // tonalité de l'Atelier — un dial chromatique plutôt qu'une roue infinie,
   // pour rester dans un ambitus qui reste musical pendant un set.
-  liveStepTranspose(deltaSemitones: number): void {
-    const base = this.getState().synthGlobal.rootMidi;
-    const current = this.liveSynthGlobalOverride.rootMidi ?? base;
-    const next = Math.max(base - 12, Math.min(base + 12, current + deltaSemitones));
-    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, rootMidi: next };
-  }
 
   // Cycle circulaire dans SCALE_LIBRARY (5 modes) — contrairement à la
   // tonalité, il n'y a pas de "trop loin", donc ça boucle plutôt que de se
   // bloquer en bout de liste.
-  liveStepScale(delta: number): void {
-    const base = this.getState().synthGlobal.scaleId;
-    const current = this.liveSynthGlobalOverride.scaleId ?? base;
-    const idx = Math.max(0, SCALE_LIBRARY.findIndex((s) => s.id === current));
-    const nextIdx = (idx + delta + SCALE_LIBRARY.length) % SCALE_LIBRARY.length;
-    this.liveSynthGlobalOverride = { ...this.liveSynthGlobalOverride, scaleId: SCALE_LIBRARY[nextIdx].id };
-  }
 
   // Cycle circulaire dans SYNTH_VOICE_PRESETS[name] — remplace le voice
   // complet plutôt que de fusionner champ à champ, comme le ferait un vrai
   // changement de preset dans l'Atelier (SynthRowView.svelte) : les réglages
   // fins déjà réglés en direct sur d'autres axes pour cette ligne sont donc
   // écrasés par le preset, pas conservés en dessous.
-  liveStepVoicePreset(name: SynthRowName, delta: number): void {
-    const list = SYNTH_VOICE_PRESETS[name];
-    const idx = this.liveVoicePresetIndex[name] ?? 0;
-    const nextIdx = (idx + delta + list.length) % list.length;
-    this.liveVoicePresetIndex[name] = nextIdx;
-    const voice = resolveVoicePreset(name, list[nextIdx].id);
-    if (!voice) return;
-    this.liveSynthOverride = {
-      ...this.liveSynthOverride,
-      [name]: { ...this.liveSynthOverride[name], voice },
-    };
-  }
 
   // Fréquence effective d'un degré/octave pour la mélodie jouée à la main
   // (bouton SOLO MÉLO, LiveView.playSoloMelody) — relit la tonalité/gamme

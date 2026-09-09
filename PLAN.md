@@ -48,6 +48,78 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les curseurs existent — le Mode Live suit la fiche à cocher (2026-09-09)
+
+> Arbitrage de Yann sur le retour de la fiche : **lecture littérale** (les onze
+> commandes déjà présentes que rien ne cochait sortent du Live), et on commence
+> par **« les curseurs existent »**.
+
+**Le chemin qui manquait.** Mesuré avant : la surface portait 6 boutons en mode
+ACTIONS et **0 fader** ; ASSIGNER + tap proposait **31 entrées dont aucun axe** ;
+le seul chemin vers un curseur était ⚙ → ASSIGNATION → bascule → rouvrir →
+choisir → refermer, **six gestes dans un menu**. D'où « ça manque de boutons où
+on règle un curseur, je ne comprends pas pourquoi ils ont disparu ». La bascule
+**⏻ ACTIONS / ≈ CURSEUR / ≋ MOMENTANÉ** est maintenant dans le sélecteur, écrite
+sur trois boutons, et le défaut livré est **mixte : 3 gestes, 3 curseurs, dont
+un momentané**. Mesuré après : 3 / 3 / 1, 42 axes proposés en 8 groupes.
+
+**Le curseur MOMENTANÉ** (six coches `MAINT+DOSE` sur la fiche, et le
+*Touch Enable* de Maschine) : le doigt se pose, le curseur prend la main et
+DOSE ; le doigt lâche, le réglage revient au morceau. ⚠️ Le retour ne grave pas
+une valeur, il **efface l'override** (`clearLiveGrooveParam`,
+`clearLiveSynthVoiceParam`, `clearLiveSynthRowParam`) : écrire `base.swing`
+marcherait aujourd'hui et serait faux au premier changement de scène, qui
+réécrit le mix sous le doigt. Vérifié au navigateur, geste réel : `MOMENTANÉ` →
+80 % → 20 % → `MOMENTANÉ`, **y compris quand le doigt sort du bouton**.
+
+**Le catalogue.** 30 actions → 12, 55 axes → 42. Sortis : les frappes de ligne
+et leur rafale, les quatre PAS de groove, ton et gamme, BYPASS LIM., les quatre
+maintenus que le momentané remplace, le stepper de tempo, le volume master, la
+banque. Entrés : `spont-roll`, `random-velocity`, `synth-swing`.
+⚠️ **Les macros de l'Atelier gagnent contre les paramètres bruts** : `cutoff`,
+`filterEnvAmount` et `filterEnvRelease` deviennent BRILLANCE et MOUVEMENT, sous
+le nom que l'écran emploie. `brillance` reprend la courbe EXACTE de l'ancien
+`cutoff` — c'est un renommage, d'où la correspondance de migration plutôt qu'un
+`null`.
+
+⚠️ **La migration des AXES n'existait pas.** `migrer` ne réécrivait que les
+actions ; `isValid` étant tout ou rien, une assignation citant `swing` ou
+`cutoff-bass` aurait rendu les défauts — six boutons et trois snapshots perdus
+sans un mot, le défaut exact que `catalogue-live.test.ts` existe pour empêcher,
+à un tableau près. Le champ AJOUTÉ `faderMomentane` se migre pour la même
+raison, par l'autre bout.
+
+⚠️ **Deux garde-fous RÉANCRÉS, aucun retiré.** « Assez de gestes momentanés »
+comptait les maintenus du seul catalogue d'actions (8 sur 30) : il compte
+maintenant les maintenus **plus** les axes capables de repos, parce que ce qui
+les remplace est un momentané meilleur. Et la population des entrées miroir
+(`tirable: false`) est devenue vide avec ton et gamme : le test l'**affirme**
+au lieu de rester vrai par vacuité.
+
+⚠️ **Ce qui NE sort pas, malgré la lecture littérale** : la bande de scènes
+A/B/C. L'option de la fiche la confondait avec la banque sous le mot
+« séquenceur » ; retirer la bande viderait le mode de ce qu'il est. C'est
+l'accès à la BANQUE depuis ⚙ qui part — et la fiche le dit ailleurs, sur la
+carte « charger un preset » : « les LETTRES A/B/C font déjà ce travail, et
+mieux ».
+
+Code mort retiré dans la foulée : huit méthodes du moteur devenues
+inatteignables (`setLiveVolume`, `setLiveCompression`, `setLiveSidechainDepth`,
+`setLiveLimiters`, `liveSidechainValeur`, `liveStepTranspose`, `liveStepScale`,
+`liveStepVoicePreset`). Les trois `liveSet*Roll` restent, **avec leur statut
+écrit** : le geste doit revenir quantifié et réutilisera ce chemin.
+
+Vérifié : `npm run check` 0 erreur, 707 tests, les deux builds, et au navigateur
+en 844 × 390 — aucune erreur JS, pas de débordement, quatre cibles sous 44 px
+(les exceptions revendiquées, deux de moins qu'avant : le stepper de tempo est
+parti).
+
+⚠️ **Rugosité connue, à traiter avec les réglages par ligne** : un curseur
+CONTINU affiche 50 % tant qu'on n'y a pas touché, parce que `axisValues` part à
+0,5 et qu'aucun axe ne sait lire sa valeur DEPUIS le morceau. Le momentané n'a
+pas le problème (il n'affiche rien au repos). La sortie est une lecture inverse
+par axe, qui viendra avec les réglages par ligne.
+
 ### ✅ La fiche à cocher : les 69 paramètres de l'Atelier face au Mode Live (2026-09-09)
 
 > Yann, après deux passes d'audit qui ne lui allaient pas : *« Je ne suis pas

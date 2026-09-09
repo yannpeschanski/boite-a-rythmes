@@ -269,22 +269,49 @@ Monter reste un geste de PRÉPARATION : la surface de scène n'y gagne rien.
 (l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
 sous A ne touche pas la banque.
 
-⚠️ **Le catalogue de boutons manquait de MAINTENUS, et ça se comptait :** 2 sur
-20. Un pupitre de scène est fait de gestes momentanés (fermer un filtre le temps
-d'un break, retirer le kick quatre temps). Six sont entrés, plus quatre PAS
-cycliques — et ⚠️ **ce n'est pas un retour en arrière sur la cure de 2026-09-02**,
-qui retirait des FAMILLES DE VARIANTES (neuf rafales, six pas de voix). Un
-maintenu porte son ALLER *et* son RETOUR (`hold(engine, on, base)`), et le retour
-relit le morceau : rouvrir « à 20 kHz » serait faux si le morceau ferme le
-filtre. `tests/boutons-live.test.ts` interdit qu'une famille de variantes
-revienne (aucun id ne finit par un chiffre, deux miroirs au plus).
+⚠️ **Un geste momentané porte son ALLER *et* son RETOUR, et le retour RELIT le
+morceau.** Vrai des maintenus (`hold(engine, on, base)`) comme des curseurs
+momentanés (`LiveAxisDef.repos`) : rouvrir « à 20 kHz » serait faux si le morceau
+ferme le filtre. Là où le réglage passe par un override du moteur, le repos
+l'**efface** (`clearLiveGrooveParam`, `clearLiveSynthVoiceParam`,
+`clearLiveSynthRowParam`) — écrire `base.swing` marcherait aujourd'hui et serait
+faux au premier changement de scène. `tests/curseur-momentane.test.ts` tient
+l'invariant qui compte : **le repos touche exactement ce que l'aller a touché**,
+et un axe sans `repos` ne peut pas être momentané.
+
+⚠️ **Le catalogue suit la fiche à cocher du 2026-09-09**
+(`docs/relecture/parametres-live.html`, 69 paramètres) — et sur cette fiche,
+**ne rien cocher voulait dire « ça reste dans l'Atelier »**, lecture littérale
+arbitrée. 30 actions → 12, 55 axes → 42. Sont sortis : les frappes de ligne et
+leur rafale, les quatre PAS de groove, ton et gamme, le bypass des limiteurs,
+les maintenus SATURE / BITCRUSH / SANS KICK / BATT. SEULE, le stepper de tempo,
+le volume master et la banque. Sont entrés : trois curseurs (`spont-roll`,
+`random-velocity`, `synth-swing`) et le **mode momentané**. ⚠️ Les macros de
+l'Atelier gagnent contre les paramètres bruts : `cutoff`, `filterEnvAmount` et
+`filterEnvRelease` deviennent BRILLANCE et MOUVEMENT, sous le nom que l'écran
+emploie — c'est la macro nommée de Circuit et d'Ableton, et l'Atelier l'avait
+déjà écrite.
+
+⚠️ **La bascule ACTIONS / CURSEUR / MOMENTANÉ vit dans le SÉLECTEUR, pas dans
+⚙.** Mesuré avant correction : la surface portait six boutons en mode ACTIONS et
+zéro fader, ASSIGNER proposait 31 entrées dont **aucun axe**, et le seul chemin
+vers un curseur était ⚙ + six gestes. Quatrième fois que ce mode paie un geste
+caché — le défaut livré est désormais **mixte** (trois gestes, trois curseurs
+dont un momentané), et `tests/boutons-live.test.ts` l'exige.
+
+⚠️ **Retirer une entrée du catalogue oblige à migrer les DEUX tableaux.**
+`migrer` ne réécrivait que les actions ; `isValid` étant tout ou rien, un axe
+disparu cité par une assignation enregistrée rendait les défauts — six boutons
+et trois snapshots perdus sans un mot. Un champ AJOUTÉ (`faderMomentane`) se
+migre pour la même raison, par l'autre bout.
 
 ⚠️ **Un PAS cyclique va au prochain palier AU-DESSUS de la valeur, en bouclant**
 (`palierSuivant`). La première version avançait d'un index et ne marchait que si
 la valeur de départ tombait PILE sur un palier — vrai du swing, des ghosts et des
 fills, faux du sidechain (0,6 par défaut), qui reculait d'un cran au premier
 appui. Trois boutons verts sur quatre ne prouvent rien quand ils partent tous
-d'une valeur ronde.
+d'une valeur ronde. ⚠️ Plus aucune entrée ne s'en sert depuis la révision : il
+reste exporté et testé pour les PAS à venir (fill automatique, arpège).
 
 ⚠️ **Un montage a du RELIEF ou n'est pas une forme.** Compté avant correction :
 13 scènes sur 38 portaient un calque, et AABA comme RONDO n'en avaient AUCUN —
