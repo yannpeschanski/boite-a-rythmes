@@ -69,7 +69,26 @@
     type LiveAssignments,
   } from './liveActions';
 
-  let { onExit }: { onExit: () => void } = $props();
+  /* ⚠️ LA SCÈNE — ce que le RÉCIT met sur cette surface, ou `null` en jeu libre.
+   *
+   * Retour du 2026-09-10 : *« je n'ai pas compris ce qu'il se passait »* au
+   * dernier acte, puis *« en quoi consiste le niveau ? »*. On sortait de « Sol
+   * branche les enceintes » pour atterrir sur le Mode Live générique — bandeau
+   * « BOÎTE À RYTHMES — LIVE », afficheur sur ARRÊT, et pour seule sortie les
+   * trois points du coin. Une scène est le seul écran sans cahier ni cible :
+   * elle doit donc DIRE ce qu'on y fait, sinon rien ne le fait à sa place.
+   *
+   * Trois choses, et pas une de plus — le reste de la surface ne bouge pas,
+   * une pastille continue de ne faire qu'une chose : jouer. */
+  let {
+    onExit,
+    scene = null,
+  }: { onExit: () => void; scene?: { titre: string; consigne: string } | null } = $props();
+
+  /* La carte de départ ne se voit qu'AVANT le premier son : elle dit de lancer,
+     donc elle n'a plus rien à dire une fois qu'on a lancé. Elle ne revient pas
+     à l'arrêt — on ne redonne pas la consigne à qui vient de jouer. */
+  let carteScene = $state(true);
 
   const engine = new AudioEngine(() => pattern.snapshot());
   const st = $derived(pattern.state);
@@ -1956,11 +1975,45 @@
     <div class="live">
       <div class="titlebar">
         <span class="grip"></span>
-        <span class="app-name">BOÎTE À RYTHMES — LIVE</span>
-        <button class="win-dots tap44" onclick={onExit} title="Quitter le Mode Live" aria-label="Quitter">
-          <span></span><span></span><span></span>
-        </button>
+        <span class="app-name">{scene ? scene.titre : 'BOÎTE À RYTHMES — LIVE'}</span>
+        <!-- ⚠️ La porte se NOMME quand on est venu par le récit. L'écran qui y
+             envoie promet « tu redescends de scène quand tu veux » et la seule
+             sortie était trois points sans un mot : quatrième fois que ce mode
+             paie un geste non écrit. En jeu libre, les points restent — on n'y
+             a rien promis. -->
+        {#if scene}
+          <button class="exit-nomme tap44" onclick={onExit}>◂ REDESCENDRE</button>
+        {:else}
+          <button class="win-dots tap44" onclick={onExit} title="Quitter le Mode Live" aria-label="Quitter">
+            <span></span><span></span><span></span>
+          </button>
+        {/if}
       </div>
+      <!-- ⚠️ LA CARTE DE DÉPART — hors flux (`position: absolute`), pour la même
+           raison que `.tilt-warn` : `.live` est une grille à quatre rangées
+           déclarées, un enfant de plus dans le flux décalerait l'auto-placement
+           et la dernière rangée cesserait de s'étirer. Elle ne coûte donc pas
+           un pixel à la mise en page mesurée en 844 × 390.
+           Elle porte les deux choses qui manquaient : ce qu'on fait ici, et
+           qu'il faut LANCER — l'afficheur disait « ARRÊT » et rien ne demandait
+           d'appuyer. Le bouton EST la consigne. -->
+      {#if scene && carteScene}
+        <div class="carte-scene">
+          <div class="carte-titre">{scene.titre}</div>
+          <p class="carte-ligne">{scene.consigne}</p>
+          <div class="carte-actions">
+            <button
+              class="amp-btn carte-go tap44"
+              onclick={() => {
+                carteScene = false;
+                togglePlay();
+              }}>▶ LANCER</button
+            >
+            <button class="carte-lien tap44" onclick={() => (carteScene = false)}>Regarder d’abord</button>
+          </div>
+          <p class="carte-pied">Tu redescends quand tu veux — <b>◂ REDESCENDRE</b>, en haut.</p>
+        </div>
+      {/if}
       <div class="topbar">
         <button class="amp-btn stop tap44" onclick={togglePlay}>{playing ? '■ STOP' : '▶ PLAY'}</button>
         <button
@@ -2851,6 +2904,87 @@
   /* Volume master toujours accessible (même audit) — mini-fader horizontal
      dans le bandeau, même mécanique que .fader-btn.horizontal mais hors
      catalogue d'assignation (volPointerDown/Move dans le script). */
+  /* La SORTIE ÉCRITE du bandeau — même hauteur que les points qu'elle
+     remplace (16 px de titlebar), donc aucune conséquence sur la grille. */
+  .exit-nomme {
+    margin-left: auto;
+    font: inherit;
+    font-size: 9px;
+    letter-spacing: var(--xp-ls-2, 0.08em);
+    color: var(--amp-lcd, #7ef0a0);
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--amp-line);
+    border-radius: 2px;
+    padding: 1px 6px;
+    cursor: pointer;
+  }
+  .exit-nomme:active {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  /* LA CARTE DE DÉPART D'UNE SCÈNE. Hors flux, centrée, et elle disparaît au
+     premier son — voir `carteScene`. */
+  .carte-scene {
+    position: absolute;
+    left: 50%;
+    /* ⚠️ SOUS LA BANDE, jamais par-dessus. Mesuré en 844 × 390 : le bandeau va
+       de 6 à 22, le transport de 26 à 80, la BANDE (les lettres, la chaîne, ▸ et
+       TENIR) de 84 à 128. La carte parle justement de la chaîne — la couvrir
+       pendant qu'on la décrit serait le contraire du but. Posée à 134, elle
+       recouvre le haut des pads, c'est-à-dire ce dont on n'a pas besoin avant
+       d'avoir lancé. */
+    top: 134px;
+    transform: translateX(-50%);
+    z-index: 20;
+    width: min(420px, 80%);
+    text-align: center;
+    /* Le biseau d'un pixel, comme tout le reste de la surface — une carte
+       plate se lirait comme un élément d'une autre application. */
+    background: linear-gradient(180deg, var(--amp-hi), var(--amp-bg-2) 40%, var(--amp-bg-3));
+    border: 1px solid var(--amp-line);
+    border-radius: 3px;
+    padding: 12px 14px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+      0 8px 28px rgba(0, 0, 0, 0.7);
+  }
+  .carte-titre {
+    font-size: 12px;
+    letter-spacing: var(--xp-ls-2, 0.08em);
+    color: var(--xp-accent-amber, #e0a94a);
+  }
+  .carte-ligne {
+    margin: 8px 0 12px;
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--amp-text, #d8d8e0);
+  }
+  .carte-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .carte-go {
+    font-size: 12px;
+    padding: 6px 16px;
+  }
+  .carte-lien {
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: 9px;
+    color: var(--amp-dim, #9a9aa8);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .carte-pied {
+    margin: 10px 0 0;
+    font-size: 9px;
+    color: var(--amp-dim, #9a9aa8);
+  }
+
   .tilt-warn {
     position: absolute;
     left: 6px;

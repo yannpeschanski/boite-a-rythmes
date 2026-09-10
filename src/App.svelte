@@ -65,6 +65,19 @@
      Live retomberait sur l'Atelier — hors du récit, au milieu de l'acte 7. */
   let retourDeScene = $state(false);
 
+  /* ⚠️ CE QUE LA SCÈNE MET SUR LA SURFACE DU LIVE, ou `null` en jeu libre.
+   *
+   * Le titre vient de l'ACTE et de l'entête de l'étape (« ACTE 7 · LE SET ») ;
+   * la ligne vient de la donnée (`EtapeScene.surScene`). Lu ici plutôt que dans
+   * `LiveView` : la vue ne connaît pas le récit, et c'est ce qui lui permet de
+   * rester le même écran pour tout le monde. */
+  const sceneLive = $derived.by(() => {
+    if (!retourDeScene) return null;
+    const e = game.scene;
+    if (!e) return null;
+    return { titre: `ACTE ${game.acteActif} · ${e.entete}`, consigne: e.surScene };
+  });
+
   function enter(v: 'atelier' | 'game' | 'live', mod?: LockedModule) {
     if (mod && !unlocks.has(mod)) return;
     view = v;
@@ -76,6 +89,7 @@
        la main à l'Atelier ; monter sur scène pendant le concert et redescendre
        dans l'Atelier ferait sortir du récit au milieu de l'acte 7. -->
   <LiveView
+    scene={sceneLive}
     onExit={() => {
       if (retourDeScene) {
         retourDeScene = false;

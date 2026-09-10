@@ -3,10 +3,15 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-09 — **le panneau Montage a une sortie vers le
-> Live** : un bouton ambre pleine largeur en dernier (« Jouer ce montage en Mode
-> Live »), masqué tant que le module est fermé et qui dit l'horizontale. Avant
-> lui, le seul chemin était le menu Mode.
+> Dernière mise à jour : 2026-09-10 — **une scène dit ce qu'on y fait**. Retour
+> de jeu sur le dernier acte (*« je n'ai pas compris ce qu'il se passait »*,
+> *« en quoi consiste le niveau ? »*) : une scène est le seul écran sans cahier
+> ni cible, donc le seul où rien ne porte la consigne à sa place — on sortait du
+> récit pour atterrir sur le Mode Live générique, afficheur sur ARRÊT, sortie
+> réduite aux trois points du coin. D'où `EtapeScene.surScene`, le bandeau
+> « ACTE 7 · LE SET », la sortie écrite **◂ REDESCENDRE**, et une carte de départ
+> qui porte **▶ LANCER**. La surface de jeu ne bouge pas. Détail dans `PLAN.md`,
+> première entrée.
 >
 > Avant cela, le même jour : **le morceau se monte à la main**. Le
 > panneau Montage (Atelier, onglet Production) est devenu l'ÉDITEUR de la
