@@ -2031,6 +2031,24 @@ describe('la scène — le seul endroit où l’on joue', () => {
     }
   });
 
+  /* ⚠️ UNE SCÈNE DIT CE QU'ON Y FAIT — c'est le seul écran qui n'a ni cahier
+   * ni cible, donc le seul où rien ne porte la consigne à sa place.
+   *
+   * Retour du 2026-09-10 sur le dernier acte : *« je n'ai pas compris ce qu'il
+   * se passait »*, puis *« en quoi consiste le niveau ? »*. On sortait du récit
+   * pour atterrir sur le Mode Live générique, afficheur sur ARRÊT. `surScene`
+   * est donc OBLIGATOIRE — le type le tient, ce test tient le reste : qu'elle
+   * ne soit pas vide, et qu'elle ne recopie pas le bouton (le bouton est sur
+   * l'écran d'AVANT, il ne dit rien à qui est déjà sur scène). */
+  it('⚠️ dit ce qu’on y fait, une fois dessus', () => {
+    for (const { etape } of scenes) {
+      expect(etape.surScene.trim().length, `scène « ${etape.entete} »`).toBeGreaterThan(20);
+      expect(etape.surScene, `scène « ${etape.entete} »`).not.toBe(etape.bouton);
+      // Une consigne se lit d'un coup d'œil sur une surface de jeu.
+      expect(etape.surScene.length, `scène « ${etape.entete} » : trop long`).toBeLessThanOrEqual(120);
+    }
+  });
+
   /* ⚠️ UNE SCÈNE POSE TOUT CE QU'ELLE FAIT JOUER — le motif ET la chaîne.
    *
    * Mesuré le 2026-09-09 : le rappel de l'acte 7 chargeait le jingle dans

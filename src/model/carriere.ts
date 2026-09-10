@@ -264,6 +264,20 @@ export interface EtapeScene {
   lignes: string[];
   /** Le libellé du bouton qui monte sur scène. */
   bouton: string;
+  /* ⚠️ CE QU'ON LIT UNE FOIS SUR SCÈNE — une ligne, et elle est obligatoire.
+   *
+   * Retour de jeu du 2026-09-10, sur le dernier acte : *« je n'ai pas compris
+   * ce qu'il se passait »*, puis *« en quoi consiste le niveau ? »*. Mesuré en
+   * rejouant : on sort de « Sol branche les enceintes » et on atterrit sur le
+   * Mode Live GÉNÉRIQUE — bandeau « BOÎTE À RYTHMES — LIVE », afficheur sur
+   * ARRÊT, et pour seule sortie les trois points du coin. Rien ne disait qu'on
+   * était au concert, rien ne demandait de lancer, rien ne nommait la porte.
+   *
+   * Une scène est le seul écran du jeu sans cahier et sans cible — par
+   * décision, un concert ne se note pas. C'est justement pour ça qu'elle doit
+   * DIRE ce qu'on y fait : ailleurs, la consigne est portée par ce qu'on
+   * vérifie. Le texte reste dans la DONNÉE, avec le reste du récit. */
+  surScene: string;
   /* L'acte dont on emporte la production. Elle existe : cet acte a une
    * commande, et `tests/carriere.test.ts` le vérifie.
    *
@@ -2462,6 +2476,7 @@ export const ACTES: Acte[] = [
           'SOL: Moi je ne le conduis pas. C’est le tien.',
         ],
         bouton: 'Monter le set ▸',
+        surScene: 'Ton disque est dans la machine. Lance-le, et fais-le tourner.',
         modulesRequis: ['live'],
         // Un morceau, trois sections : couplet = A, refrain = B, pont = C,
         // c'est-à-dire exactement les lettres que ce montage cite.
@@ -2606,6 +2621,8 @@ export const ACTES: Acte[] = [
           'Le bouton REC garde la prise — la seule trace.',
         ],
         bouton: 'Lancer le premier morceau ▸',
+        surScene:
+          'Trois morceaux, dans l’ordre. La chaîne avance seule ; ▸ passe à la scène suivante, TENIR la garde.',
         modulesRequis: ['live'],
         // Le disque de l'acte 6 : un MORCEAU par lettre, et les neuf boucles
         // en banque.
@@ -2666,6 +2683,7 @@ export const ACTES: Acte[] = [
           'SOL: Ils le connaissent mieux que toi.',
         ],
         bouton: 'Monter sur scène ▸',
+        surScene: 'Le jingle tourne en boucle. La salle chante ; toi, tu fais le reste.',
         // L'acte 3 est celui du jingle de la laverie — sa commande le range
         // dans la discographie sous « JINGLE LAVERIE ».
         morceauDeLActe: 3,

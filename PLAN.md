@@ -48,6 +48,74 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une scène dit ce qu'on y fait (2026-09-10)
+
+> Yann, sur le dernier acte : *« je n'ai pas compris ce qu'il se passait »*,
+> puis, quand je lui ai demandé où ça décrochait : *« en quoi consiste le
+> niveau ? »*
+
+**Fichiers touchés :** `src/model/carriere.ts`, `src/ui/live/LiveView.svelte`,
+`src/App.svelte`, `tests/carriere.test.ts`, `CLAUDE.md`.
+
+**Le diagnostic, mesuré en rejouant la carrière entière.** L'acte 7 est le seul
+qui se termine sur une SCÈNE, et une scène est le seul écran du jeu sans cahier
+et sans cible — par décision : un concert ne se note pas. Partout ailleurs, la
+consigne est portée par ce qu'on VÉRIFIE. Ici, plus rien ne la portait :
+
+| ce qu'on voyait | ce qui manquait |
+|---|---|
+| bandeau « BOÎTE À RYTHMES — LIVE » | rien ne disait qu'on était au concert |
+| afficheur « ARRÊT » | rien ne demandait de lancer |
+| trois points ▪▪▪ dans le coin | l'écran d'avant promet « tu redescends quand tu veux » |
+
+Et ça tombait au pire endroit : le module vient d'être PRÊTÉ pour la scène, donc
+le joueur découvrait les trois pastilles, les sept scènes de chaîne, ▸/TENIR, les
+six pads et le mini séquenceur au moment le plus tendu du récit.
+
+**Trois corrections, et pas une de plus.** La surface de jeu ne bouge pas — une
+pastille continue de ne faire qu'une chose :
+
+1. **`EtapeScene.surScene`**, obligatoire : une ligne, dans la DONNÉE, avec le
+   reste du récit. Trois écrites (l'acte 6 et les deux de l'acte 7).
+2. **Le bandeau porte « ACTE 7 · LE SET »**, et la sortie s'écrit
+   **◂ REDESCENDRE**. En jeu libre, rien ne change : on n'y a rien promis, les
+   trois points restent.
+3. **Une carte de départ** avec le titre, la consigne, et **▶ LANCER** — le
+   bouton EST la consigne, puisque l'afficheur disait ARRÊT. Elle disparaît au
+   premier son et ne revient pas : on ne redonne pas la consigne à qui vient de
+   jouer. « Regarder d'abord » la referme sans lancer.
+
+**Deux choses que la mesure a décidées, pas l'œil.** La carte est **hors flux**
+(`position: absolute`, comme `.tilt-warn`) parce que `.live` est une grille à
+quatre rangées déclarées : un enfant de plus dans le flux décale l'auto-placement
+et la dernière rangée cesse de s'étirer. Et elle est posée à **134 px**, pas
+centrée : mesuré en 844 × 390, le bandeau va de 6 à 22, le transport de 26 à 80,
+et la BANDE — les lettres, la chaîne, ▸ et TENIR — de **84 à 128**. Or la carte
+parle justement de la chaîne ; centrée, elle la couvrait pendant qu'elle la
+décrivait. À 134 elle recouvre les pads, c'est-à-dire ce dont on n'a pas besoin
+avant d'avoir lancé.
+
+**Mesuré après**, en 844 × 390, pointeur grossier, set monté : carte 420 × 158
+entièrement dans l'écran, **zones touchables à 44 px** pour ◂ REDESCENDRE (dessin
+94 × 16) et ▶ LANCER (67 × 44), aucun débordement, aucune erreur console. ▶ LANCER
+→ la carte disparaît, l'afficheur passe à « 120 BPM · LECTURE · INTRO ». Les deux
+scènes de l'acte 7 vérifiées, titre le plus long compris (« ACTE 7 · ON RÉCLAME
+LE JINGLE », non tronqué).
+
+**⚠️ Deux pièges de HARNAIS payés en route, et ils invalidaient la mesure.**
+`browser.newPage({hasTouch})` ne propage pas l'émulation dans ce build (il faut
+`browser.newContext`), et un `screenshot({fullPage: true})` la **perd** pour tout
+le reste du run. Dans les deux cas `pointer: coarse` retombe à faux, le
+pseudo-élément de `.tap44` n'existe plus, et la mesure annonçait « 16 px » sur un
+bouton qui en fait 44 — exactement le faux positif que `CLAUDE.md` décrit déjà,
+par une cause qu'il ne nommait pas. Lire `matchMedia('(pointer: coarse)')` avant
+de conclure.
+
+`tests/carriere.test.ts` : toute scène déclare une `surScene` non vide, qui ne
+recopie pas le bouton de l'écran d'avant (il est sur l'écran d'AVANT, il ne dit
+rien à qui est déjà sur scène) et tient en 120 signes. 741 tests, 0 erreur de
+types, les deux builds ; `parcours-carriere.cjs` et `verrous-masques.cjs` verts.
+
 ### ✅ Les gestes nommés du Mode Live (2026-09-09)
 
 > La dernière tranche de la fiche à cocher (`docs/relecture/parametres-live.html`)

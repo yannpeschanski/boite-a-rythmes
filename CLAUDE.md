@@ -602,6 +602,17 @@ au concert de l'acte 7, A/B/C sont trois MORCEAUX, aucun n'est « le couplet ».
 ⚠️ Après une scène, **on ne produit plus et on n'est plus noté** — mais une autre
 scène peut suivre : l'acte 7 joue son set (le disque de l'acte 6, un morceau par
 lettre, `depuisLActe`), puis son rappel (le jingle sur BOUCLE).
+⚠️ **Une scène DIT ce qu'on y fait — `EtapeScene.surScene`, obligatoire.** C'est
+le seul écran sans cahier ni cible : ailleurs, la consigne est portée par ce
+qu'on vérifie. Retour de jeu : *« je n'ai pas compris ce qu'il se passait »*,
+puis *« en quoi consiste le niveau ? »* — on sortait du récit pour atterrir sur
+le Mode Live GÉNÉRIQUE, afficheur sur ARRÊT, sortie réduite aux trois points du
+coin. D'où, et pas une de plus : le bandeau porte « ACTE n · ENTÊTE », la sortie
+s'écrit **◂ REDESCENDRE**, et une carte de départ (hors flux, sous la BANDE
+qu'elle décrit — mesuré : bandeau 6→22, transport 26→80, bande 84→128) dit la
+consigne et porte **▶ LANCER**, qui EST la consigne. Elle disparaît au premier
+son et ne revient pas. La surface de jeu, elle, ne bouge pas.
+
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
 l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
 monté : six commandes sous 44 px (les exceptions revendiquées), aucun
@@ -1297,6 +1308,14 @@ vérification visuelle avec Playwright (headless, Chromium à `/opt/pw-browsers/
 driver global en CommonJS depuis `/opt/node22/lib/node_modules/playwright/index.js`).
 **Vérifier visuellement ne suffit pas pour une mise en page : mesurer.** Les
 scripts de mesure ont trouvé des défauts invisibles à l'œil.
+
+⚠️ **Mesurer une zone TOUCHABLE : deux pièges de harnais, pas de CSS.**
+`browser.newPage({hasTouch})` **ne propage pas** l'émulation dans ce build (il
+faut `browser.newContext`), et un `screenshot({fullPage: true})` la **perd** pour
+tout le reste du run. Dans les deux cas `pointer: coarse` retombe à faux, le
+pseudo-élément de `.tap44` n'existe plus, et la mesure annonce « 16 px » sur un
+bouton qui en fait 44. Lire `matchMedia('(pointer: coarse)').matches` AVANT de
+conclure quoi que ce soit.
 
 ⚠️ **`progresCarriere` est un GETTER : lui affecter une valeur ne fait RIEN, en
 silence.** Dans un script de mesure, `game.progresCarriere = {...}` est avalé
