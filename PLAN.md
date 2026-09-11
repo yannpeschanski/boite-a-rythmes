@@ -48,6 +48,41 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les préversions par PR sont retirées (2026-09-11)
+
+> Yann : *« pourquoi je reçois des mails de github alors que je n'en recevais
+> pas avant ? »*, puis *« arrête avec les préversions »*.
+
+**Fichiers touchés :** `.github/workflows/ci.yml`, `CLAUDE.md`, `REPRISE.md`.
+
+**La cause, tracée à un commit.** Deux choses se combinaient. Les pull requests
+sont ouvertes sous le compte de Yann — c'est son jeton que j'utilise — et GitHub
+abonne automatiquement l'auteur au fil de sa PR. Et depuis `253577c` (#167, le
+2026-09-08), le job « Préversion Vercel » écrivait l'URL de préversion en
+**commentaire** sur chaque PR. Un commentaire sur un fil suivi = un mail.
+
+Vérifié plutôt que supposé : **PR #166 → zéro commentaire ; PR #167 → le premier
+commentaire de préversion, le 2026-09-08 à 07:37**. C'est exactement la date où
+les mails ont commencé. Avant, une PR s'ouvrait et se mergeait sans qu'un mot
+soit écrit dedans : l'abonnement existait déjà, il n'y avait rien à notifier.
+
+**Ce qui est retiré :** le job `preview` en entier, sa permission
+`pull-requests: write`, et l'en-tête du workflow qui l'expliquait. Une pull
+request est désormais **testée, jamais déployée ni commentée** ; il ne reste que
+`test` et `deploy`.
+
+**Ce que ça coûte, et c'est assumé.** La préversion était le seul chemin vers
+une URL HTTPS testable au téléphone — en `file://` le fichier autonome n'est pas
+un contexte sécurisé, donc `DeviceOrientationEvent` refuse la permission et
+l'inclinaison du Mode Live ne marche pas. C'était « la raison, restée non nommée
+pendant trois audits, du *jamais essayé en vrai* ». Ce qui se juge en jouant se
+juge donc sur le site en ligne, après merge.
+
+⚠️ **La règle qui reste, et qui est plus large que le job supprimé : rien ne
+doit écrire sur une pull request.** Ni URL, ni état, ni résumé. Le coût n'était
+pas le déploiement, c'était la notification — réintroduire un commentaire « plus
+discret » rouvrirait exactement le même problème.
+
 ### ✅ Une scène dit ce qu'on y fait (2026-09-10)
 
 > Yann, sur le dernier acte : *« je n'ai pas compris ce qu'il se passait »*,

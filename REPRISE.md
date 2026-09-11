@@ -41,8 +41,10 @@
 > (`docs/relecture/assemblage.html`, `assemblage-2.html`).
 >
 > ⚠️ **Il ne reste qu'une chose à décider, et elle se décide en JOUANT** : le
-> loquet 🎲 (« il faut tester pour juger »). La préversion par PR existe
-> maintenant pour ça — chaque pull request a son URL, testable au téléphone.
+> loquet 🎲 (« il faut tester pour juger ») — sur le site en ligne, une fois
+> mergé. ⚠️ **Les préversions par PR sont RETIRÉES** (2026-09-11, « arrête avec
+> les préversions ») : elles commentaient chaque PR, donc envoyaient un mail à
+> chaque fois. Rien ne doit plus écrire sur une pull request.
 >
 > ⚠️ **Tour d'horizon des verrous (2026-09-08)** — « masquer ce qui est
 > verrouillé » : quatre écrans nommaient encore un module fermé (le dernier 🔒
@@ -135,7 +137,7 @@ mot juste est **SCÈNE**, pas « section ».
 | ~~Option « conserver mes boutons »~~ | **retirée** — un montage ne touche plus aux boutons du tout (2026-09-09) |
 | SONNERIE retiré, AABA ajouté | la forme de 32 mesures tombe pile sur nos tours |
 | ❌ Export hors ligne d'un morceau | **annulé** — sans automation il serait mort |
-| ✅ **Préversion Vercel par pull request** | le préalable à tout test réel |
+| ~~Préversion Vercel par pull request~~ | **retirée le 2026-09-11** — elle commentait chaque PR, donc un mail à chaque fois |
 
 ### Jugé sur la préversion (2026-09-07)
 
