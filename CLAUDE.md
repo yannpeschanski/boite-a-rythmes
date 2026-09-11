@@ -210,9 +210,9 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ⚠️ **SECTION SOUS ARBITRAGE — 25 cartes tranchées, la branche non mergée.**
 Ce qui suit décrit `claude/mode-livre-params-sequences-oiwtul`. Reste ouvert :
-le loquet 🎲, que Yann veut **essayer avant de juger** — d'où la préversion par
-PR. Fiches `docs/relecture/assemblage.html` et `assemblage-2.html` ; audits
-`docs/plan/07` et `08`.
+le loquet 🎲, que Yann veut **essayer avant de juger** — donc sur le site en
+ligne, une fois mergé. Fiches `docs/relecture/assemblage.html` et
+`assemblage-2.html` ; audits `docs/plan/07` et `08`.
 
 ⚠️ **Le cadrage est tranché, et il est le mainstream de la catégorie** : on
 PRÉPARE de la matière, on JOUE la structure. Beaucoup de grooveboxes n'ont pas
@@ -1292,7 +1292,15 @@ annoncé « in_progress » vingt minutes après la fin réelle d'un job, et
 `list_workflow_jobs` avançait d'une seule étape par interrogation. Ne pas en
 conclure qu'un job est bloqué : `list_workflow_jobs` (le plus frais des trois)
 et `get_job_logs` — dont le 404 signifie « pas encore fini », pas « cassé » —
-tranchent. Et le verrou est **`Tests & build`**, jamais la préversion Vercel.
+tranchent. Et le verrou est **`Tests & build`** — c'est le seul job d'une PR.
+
+⚠️ **Pas de PRÉVERSION par pull request, et c'est une demande** (« arrête avec
+les préversions », 2026-09-11). Elle écrivait l'URL en COMMENTAIRE sur la PR ;
+les PR étant ouvertes sous le compte de Yann, GitHub l'abonne au fil et chaque
+commentaire lui envoyait un mail. **Ne rien faire écrire sur une PR** — ni URL,
+ni état, ni résumé : le coût n'est pas le déploiement, c'est la notification.
+Une PR est TESTÉE, jamais déployée ni commentée ; ce qui se juge en jouant se
+juge sur le site, après merge.
 
 ⚠️ Ne jamais relire un fichier déversé en entier : le parser.
 
