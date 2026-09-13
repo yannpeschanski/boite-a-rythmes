@@ -19,10 +19,10 @@
   //    vrai niveau de la ligne kick plutôt qu'à une horloge synthétique ;
   //  - l'overlay ⚙ permet de changer toutes ces associations (appui =
   //    option suivante, cycle) et les persiste dans localStorage ;
-  //  - BREAK/FILL/MUTE/ROLL et le filtre/reverb restent les mêmes appels
-  //    moteur qu'en phase 2 (AudioEngine.requestBreak/liveRequestFill/
-  //    liveSetMute/liveSetHatRoll/setLiveFilterCutoff/setLiveReverbWet),
-  //    juste indirectés par l'assignation courante.
+  //  - BREAK/FILL/MUTE et le filtre/reverb restent les mêmes appels moteur
+  //    qu'en phase 2 (AudioEngine.requestBreak/liveRequestFill/liveSetMute/
+  //    setLiveFilterCutoff/setLiveReverbWet), juste indirectés par
+  //    l'assignation courante. (ROLL est parti avec les rafales de ligne.)
   import { onMount, onDestroy, untrack } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { architecture } from '../../stores/architecture.svelte';
@@ -368,8 +368,9 @@
    * surface de jeu — pour un geste qu'on fait justement en jouant.
    *
    * Et ça ne peut PAS être un geste posé sur le bouton lui-même : l'appui long
-   * y est déjà pris, c'est la rafale (`kind: 'ligne'`, escalade ×2 -> ×3 -> ×4)
-   * et le maintien de TENIR / SOLO MÉLO. Un loquet règle les deux problèmes
+   * y est déjà pris par les MAINTENUS — TENIR, les trois SOLO, FILTRE, RÉVERBE,
+   * OUVERT. (Il l'était aussi par la rafale de `kind: 'ligne'`, partie avec les
+   * frappes de ligne ; l'argument tient sans elle, les maintenus suffisent.) Un loquet règle les deux problèmes
    * d'un coup — allumé, toute la surface (les six boutons, le pad, l'inclinaison)
    * se réassigne au lieu de jouer : tap = un tirage au hasard, appui long = la
    * liste complète, sur place. Éteint, rien n'a changé.
@@ -2738,7 +2739,7 @@
     --amp-text: var(--xp-text);
     font-family: ui-monospace, 'JetBrains Mono', monospace;
 
-    /* ⚠️ L'appui LONG est le geste normal de ce mode (une rafale se tient),
+    /* ⚠️ L'appui LONG est le geste normal de ce mode (un maintenu se tient),
        et le libellé d'un bouton est du texte ordinaire : sans ces trois
        lignes, Chrome Android sélectionne le mot et ouvre son menu
        « Sélectionner / Copier / Coller » par-dessus l'instrument.

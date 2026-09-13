@@ -83,16 +83,13 @@ export interface ScheduleContext {
      exactement comme on y était. */
   liveMute?: Partial<Record<DrumRowName, boolean>>;
   forceFill?: boolean;
-  forceHatRoll?: number | null;
-  /* OUVERT (Mode Live, maintenu) — voir `liveSetHatOuvert`. Contrairement à
-     `forceHatRoll` juste au-dessus, il n'ALLUME aucun pas : il change l'état
-     d'un pas qui sonne déjà (1 fermé -> 2 ouvert). */
+  /* OUVERT (Mode Live, maintenu) — voir `liveSetHatOuvert`.
+     ⚠️ Il n'ALLUME aucun pas : il change l'état d'un pas qui SONNE déjà
+     (1 fermé -> 2 ouvert). C'est ce qui le distingue des rafales forcées
+     `forceKickRoll` / `forceSnareRoll` / `forceHatRoll`, retirées le
+     2026-09-13 : celles-là faisaient sonner un pas vide, c'est-à-dire
+     ÉCRIRE, et c'est précisément ce que la mesure a condamné. */
   forceHatOpen?: boolean;
-  // Rafale forcée kick/snare (Mode Live, PLAN.md §7) — même principe que
-  // forceHatRoll : un pas vide se met à sonner tant que le bouton est
-  // maintenu, plutôt qu'une rafale qui ne s'applique qu'aux pas déjà actifs.
-  forceKickRoll?: number | null;
-  forceSnareRoll?: number | null;
 }
 
 // Renvoie true si un ghost note a été déclenché (flash visuel en direct).
@@ -180,21 +177,13 @@ function triggerKickSnareStep(
     }
   }
 
-  // ROLL×2/3/4 (Mode Live) : forcé exactement comme le ferait un fill — un
-  // pas vide se met à sonner tant que le bouton est maintenu, même logique
-  // que le hat (triggerHatStep) plutôt qu'un chemin séparé.
-  // Le clap n'a pas de rafale forcée dédiée en Mode Live (pas d'équivalent
-  // forceClapRoll — portée du Mode Live volontairement pas étendue à
-  // clap/shaker dans cette passe, PLAN.md §6).
-  const forcedRoll = name === 'kick' ? cx.forceKickRoll : name === 'snare' ? cx.forceSnareRoll : null;
-  let stepState = row.pattern[col]; // kick/clap: 0/1 — snare: 0/1(normal)/2(rim shot)
-  if (forcedRoll != null && !stepState) stepState = 1;
+  const stepState = row.pattern[col]; // kick/clap: 0/1 — snare: 0/1(normal)/2(rim shot)
   if (stepState) {
     const isRim = name === 'snare' && stepState === 2;
     // Un seul déclenchement de sidechain par pas, même en rafale (4 coups
     // rapides ne déclenchent pas 4 pompes).
     cx.onSidechainTrigger?.(name, time);
-    const roll = forcedRoll ?? (row.rolls ? row.rolls[col] : 1);
+    const roll = row.rolls ? row.rolls[col] : 1;
     if (roll > 1) {
       const rollDur = stepDur / roll;
       for (let k = 0; k < roll; k++) {
@@ -228,23 +217,19 @@ function triggerHatStep(
   const hat = state.rows.hat;
   if (coupee(hat.muted, cx.liveMute?.hat)) return;
   const fillHere = fillNow && isLastSteps(col, hat.subdiv);
-  // ROLL×2 (Mode Live) : forcé exactement comme le ferait un fill — un pas
-  // vide se met à sonner tant que le bouton est maintenu, même logique que
-  // fillHere ci-dessous plutôt qu'un chemin séparé.
-  const rollForced = cx.forceHatRoll != null;
   let stepState = hat.pattern[col];
-  if ((fillHere || rollForced) && stepState === 0) stepState = 1;
+  if (fillHere && stepState === 0) stepState = 1;
   if (stepState === 0) return;
   /* OUVERT : APRÈS la sortie sur `stepState === 0`, et c'est tout l'écart
-     avec les deux forçages du dessus — un pas muet le reste, seuls les pas
-     qui sonnent s'ouvrent. */
+     avec le FILL juste au-dessus — un pas muet le reste, seuls les pas qui
+     sonnent s'ouvrent. Le fill a le droit d'allumer un pas parce qu'il est
+     une figure de fin de mesure, écrite par le morceau ; un geste de la main
+     ne l'a pas, et c'est ce que la mesure a tranché. */
   if (cx.forceHatOpen && stepState === 1) stepState = 2;
 
   let roll = hat.rolls[col];
   if (fillHere) {
     roll = 4;
-  } else if (rollForced) {
-    roll = cx.forceHatRoll!;
   } else if (roll === 1 && rng() * 100 < state.spontRoll) {
     roll = 2 + Math.floor(rng() * 3); // rafale spontanée 2-4, cette passe seulement
   }

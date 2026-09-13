@@ -213,19 +213,12 @@ export class AudioEngine {
   private liveMute: Partial<Record<DrumRowName, boolean>> = {};
   private fillRequested = false;
   private forcedFillBar: number | null = null;
-  private liveHatRoll: number | null = null;
   /* OUVERT (maintenu) — le charley s'ouvre tant qu'on tient. Un drapeau du
      contexte de programmation plutôt qu'un override de ligne : ce qu'on
      change est l'ÉTAT D'UN PAS (1 fermé -> 2 ouvert), pas un champ de
      `DrumRowState`, et `pattern` est un tableau qu'un override devrait
-     recopier en entier à chaque fenêtre. Même chemin que `liveHatRoll`
-     au-dessus, qui force la même ligne pour la même raison. */
+     recopier en entier à chaque fenêtre. */
   private liveHatOuvert = false;
-  // Catalogue d'actions étendu (PLAN.md §7) : rafale forcée kick/snare, même
-  // principe que le hat (liveHatRoll) — un pas vide se met à sonner tant que
-  // le bouton est maintenu (voir scheduler.ts, forceKickRoll/forceSnareRoll).
-  private liveKickRoll: number | null = null;
-  private liveSnareRoll: number | null = null;
   // Catalogue étendu (PLAN.md §7) : sidechain n'a pas de nœud continu (juste
   // une valeur relue à chaque déclenchement, voir triggerSidechainDuck) ; le
   // groove (swing/traîne/ghost/fill) et les réglages de voix synthé sont des
@@ -567,25 +560,6 @@ export class AudioEngine {
     return this.liveSynthOverride[name]?.muted;
   }
 
-  /* ⚠️ LES TROIS RAFALES N'ONT PLUS D'APPELANT — et c'est un état transitoire,
-   * pas un oubli. Les frappes de ligne du Mode Live sont parties le 2026-09-09
-   * (fiche à cocher, rien de coché) après mesure : la rafale ignorait le
-   * plancher anti-bouillie du moteur (39-40 ms contre les 45 ms que le FILL
-   * respecte), empilait deux frappes au même instant dès qu'il y avait du
-   * swing, et retournait l'accent de 9 dB.
-   *
-   * On les garde parce que le geste doit revenir QUANTIFIÉ — un note repeat à
-   * division choisie, qui répète la frappe tenue au lieu de remplir la ligne —
-   * et qu'il réutilisera ce chemin de forçage dans l'ordonnanceur. Si ce lot
-   * est abandonné, ce sont ces trois méthodes ET `forceKickRoll` /
-   * `forceSnareRoll` / `forceHatRoll` (scheduler.ts) qu'il faut retirer
-   * ensemble : les laisser à moitié ferait un forçage que rien n'atteint. */
-  // Bouton ROLL×2 (maintenu) : force le hat en rafale tant qu'il est
-  // enfoncé ; `null` relâche le forçage.
-  liveSetHatRoll(multiplier: number | null): void {
-    this.liveHatRoll = multiplier;
-  }
-
   /* OUVERT (maintenu) — chaque pas de charley qui SONNE s'ouvre tant qu'on
      tient. Il n'allume aucun pas : ouvrir ce qui joue déjà est un geste de
      timbre, ouvrir ce qui se tait serait un geste d'écriture, et le second
@@ -593,16 +567,6 @@ export class AudioEngine {
      main tombe à ±81 ms de la grille). Le relâché rend la ligne au morceau. */
   liveSetHatOuvert(on: boolean): void {
     this.liveHatOuvert = on;
-  }
-
-  // Catalogue étendu (PLAN.md §7) — ROLL kick/snare, même principe que le
-  // hat (scheduler.ts, forceKickRoll/forceSnareRoll).
-  liveSetKickRoll(multiplier: number | null): void {
-    this.liveKickRoll = multiplier;
-  }
-
-  liveSetSnareRoll(multiplier: number | null): void {
-    this.liveSnareRoll = multiplier;
   }
 
   // Pad XY du Mode Live — balayage de filtre (axe X) et voile de réverbe
@@ -1086,10 +1050,7 @@ export class AudioEngine {
         emitPlayhead: (ev) => this.playheadQueue.push(ev),
         liveMute: this.liveMute,
         forceFill: this.forcedFillBar === this.currentBar,
-        forceHatRoll: this.liveHatRoll,
         forceHatOpen: this.liveHatOuvert,
-        forceKickRoll: this.liveKickRoll,
-        forceSnareRoll: this.liveSnareRoll,
       },
       horizon,
     );

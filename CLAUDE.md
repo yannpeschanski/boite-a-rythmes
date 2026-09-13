@@ -283,7 +283,12 @@ et un axe sans `repos` ne peut pas être momentané.
 (`docs/relecture/parametres-live.html`, 69 paramètres) — et sur cette fiche,
 **ne rien cocher voulait dire « ça reste dans l'Atelier »**, lecture littérale
 arbitrée. 30 actions → 12, 55 axes → 42, puis 66 avec les réglages par ligne. Sont sortis : les frappes de ligne et
-leur rafale, les quatre PAS de groove, ton et gamme, le bypass des limiteurs,
+leur rafale (⚠️ **et leur chemin de forçage avec**, arbitré « à supprimer » le
+2026-09-13 : `forceKickRoll` / `forceSnareRoll` / `forceHatRoll` ont quitté
+`scheduler.ts` et le moteur. Un forçage que plus rien n'atteint n'est pas une
+option gardée au chaud, c'est du code que la prochaine lecture croira vivant —
+et il faisait mentir le banc, qui passait ces clés et lisait le motif nu.
+`forceHatOpen` reste : il n'allume aucun pas), les quatre PAS de groove, ton et gamme, le bypass des limiteurs,
 les maintenus SATURE / BITCRUSH / SANS KICK / BATT. SEULE, le stepper de tempo,
 le volume master et la banque. Sont entrés : trois curseurs (`spont-roll`,
 `random-velocity`, `synth-swing`) et le **mode momentané**. ⚠️ Les macros de
@@ -441,7 +446,7 @@ morceau monté maintenant), pas seulement vraie dans le code.
 **deux loquets, un geste chacun** : 🎲 tire au hasard, ASSIGNER ouvre la liste ;
 allumés, boutons, pad et inclinaison se réassignent sur place d'un simple tap.
 Ça ne peut pas être un geste posé sur le bouton lui-même : l'appui long y est
-déjà pris (la rafale de `kind: 'ligne'`, le maintien de TENIR).
+déjà pris par les MAINTENUS (TENIR, les trois SOLO, FILTRE, RÉVERBE, OUVERT).
 ⚠️ **Sur cette surface, ce qui n'est pas ÉCRIT n'existe pas** — troisième fois
 qu'un appui long coûte cher (les pastilles, la bande, la liste). Un seul loquet
 où l'appui long ouvrait le catalogue : le tirage a plu, la liste n'a été trouvée
