@@ -48,6 +48,56 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les rafales de ligne : le chemin de forçage part aussi (2026-09-13)
+
+> *« à supprimer »* — réponse de Yann à la seule question de l'audit du Mode
+> Live qui attendait une décision et non un arbitrage : les frappes de ligne
+> reviennent-elles QUANTIFIÉES, ou pas du tout ?
+
+Les rafales avaient quitté le catalogue le 2026-09-09 après mesure (elles
+ignoraient le plancher anti-bouillie de 45 ms, empilaient deux frappes au même
+instant dès qu'il y avait du swing, retournaient l'accent de 9 dB). Leur
+**chemin de forçage** était resté dans le moteur, explicitement pour un retour
+quantifié. Il part.
+
+**Ce qui est retiré** : `forceKickRoll` / `forceSnareRoll` / `forceHatRoll` du
+contexte de `scheduler.ts` et le code qui les lisait dans `triggerKickSnareStep`
+et `triggerHatStep` ; `liveKickRoll` / `liveSnareRoll` / `liveHatRoll` et leurs
+trois setters dans `AudioEngine`.
+
+⚠️ **`forceHatOpen` RESTE, et la distinction est la même qu'avant** : il ouvre
+un pas qui SONNE, il n'en allume aucun. Les rafales faisaient sonner un pas
+vide — c'est-à-dire ÉCRIRE — et c'est précisément ce que la mesure a condamné.
+Le FILL garde le droit d'allumer un pas parce qu'il est une figure de fin de
+mesure écrite par le morceau, pas un geste de la main.
+
+⚠️ **Le banc mentait déjà, et il aurait continué en vert.** `scripts/banc-live.cjs`
+passait ces clés à `scheduleDrumWindow`. Une clé inconnue ne lève rien : le banc
+aurait rendu les chiffres du motif NU en les présentant comme ceux d'une rafale
+— « 0,0 dB », la bonne conclusion pour la mauvaise raison. La colonne RAFALE de
+§A et **tout §B** (bouillie, empilement sous swing, accent retourné, hors
+grille — les quatre ne décrivaient que la rafale forcée) sont donc retirés, avec
+un renvoi vers `docs/plan/09`, §1.B, où les chiffres restent écrits. Ce qui reste
+de §A est vivant : le FILL est une figure du morceau, et la frappe pesée contre
+le mix est la mesure à refaire le jour où un note repeat quantifié se présente.
+
+⚠️ **Aucun tirage du `rng` ne se décale — prouvé, pas supposé.** Les deux
+fonctions touchées consomment l'aléatoire, donc le risque était de rendre les
+anciens exports non reproductibles (CLAUDE.md). Vérifié par une empreinte
+SHA-256 de la séquence d'événements sur **treize motifs** (défaut + douze
+presets, 25 010 événements) : `772811416b94264fc812b551e98050ad` avant comme
+après. La sonde a été retirée — `tests/scheduler.test.ts` tient l'invariant en
+permanence, elle ne servait qu'à la démonstration.
+
+**Vérifié** : `npm run check` 0 erreur, 741 tests, les deux builds.
+
+**Reste** : trois commentaires citaient la rafale comme justification vivante
+(deux dans `LiveView.svelte`, un dans `CLAUDE.md` — l'appui long « déjà pris »).
+L'argument tient sans elle, les maintenus suffisent ; c'est l'exemple qui était
+mort, pas la raison.
+
+---
+
 ### ✅ Les préversions par PR sont retirées (2026-09-11)
 
 > Yann : *« pourquoi je reçois des mails de github alors que je n'en recevais
