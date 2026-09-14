@@ -84,9 +84,14 @@ export interface Contrainte {
   /* ⚠️ Une INTERDICTION, pas une tâche — et la distinction n'est pas cosmétique.
    *
    * Presque toutes les lignes d'un cahier décrivent quelque chose à FAIRE, donc
-   * décoché à l'ouverture et coché quand c'est fait. « Ton morceau, pas le
-   * preset chargé depuis le menu » est l'inverse : elle est satisfaite tant
+   * décoché à l'ouverture et coché quand c'est fait. « Ton morceau — celui que
+   * tu as fait, pas un tout prêt » est l'inverse : elle est satisfaite tant
    * qu'on ne triche pas, et elle se DÉcoche si on triche.
+   *
+   * ⚠️ Et son libellé ne NOMME plus le menu (2026-09-14) : le catalogue des 34
+   * morceaux est fermé jusqu'à la fin de l'acte 5, or ces cahiers se jouent aux
+   * actes 3 à 5 — la ligne désignait donc une porte que le joueur ne voit pas.
+   * Ce qu'on refuse est la PROVENANCE, et ça se dit sans l'adresse.
    *
    * Sans ce champ, la règle « aucune case n'est cochée à l'ouverture » —
    * celle qui garantit qu'un cahier n'est pas du théâtre — devrait faire une

@@ -92,11 +92,31 @@ partir du 5 ; barre de bascule absente à l'acte 1, deux entrées à partir du 2
 trois à partir du 7. Le menu « Mode » de la barre de menus, lui, n'avait rien à
 adapter : il masque déjà le Mode Live fermé et garde toujours deux destinations.
 
+⚠️ **Et l'AIDE suit les modules** (*« attention à ce que l'aide soit bien
+adaptée aux modules disponibles »*). Le conseil 💡 l'était déjà — chaque groupe
+de `PRODUCTION_GROUPS` porte son module, et le conseil qui envoyait au Synthé
+est filtré depuis. Ce que le catalogue fermé vient de casser, c'est ailleurs :
+**cinq lignes de cahier disaient « pas le preset chargé depuis le menu »**, aux
+actes 3 à 5 — elles désignaient une porte que le joueur ne voit plus. Ce qu'on
+refuse est la PROVENANCE, et ça se dit sans l'adresse : « Ton morceau — celui
+que tu as fait, pas un tout prêt ». Deux mesures pour que ça ne se reperde pas :
+un test (aucun libellé de cahier ne nomme un menu, avec le compte de la
+population, sinon il passe au vert en ne mesurant plus rien) et
+`verrous-masques.cjs`, qui lit maintenant le menu Fichier à la recherche des
+**libellés** de presets — « morceau » est partout dans le récit, un libellé de
+preset n'est nulle part ailleurs. Sonde vérifiée non vide : en forçant la
+vérification quand le catalogue est ouvert, elle voit ses 39 libellés.
+
+⚠️ **Piège repayé** : le premier passage du script a annoncé « PARCOURS BLOQUÉ à
+l'acte 5 » et « modules — » partout. Ce n'est pas une régression, c'est le HMR
+de Vite sur un serveur qui tournait pendant les éditions — trait pour trait ce
+que `CLAUDE.md` décrit. Redémarré, le parcours passe et ne trouve aucune fuite.
+
 ⚠️ **Ce que ça n'a PAS fait** : donner autre chose à ouvrir à l'acte 7. Il ne
 paie plus aucune dette mécanique — comme les actes 0, 2 et 5 — et sa récompense
 est le concert puis l'épilogue. Question posée par Yann, laissée ouverte.
 
-**Vérifié** : `npm run check` 0 erreur (288 fichiers), **744 tests**, les deux
+**Vérifié** : `npm run check` 0 erreur (288 fichiers), **745 tests**, les deux
 builds (autonome 875 ko, 292 ko gzip), `parcours-carriere.cjs` sur un serveur de
 dev fraîchement démarré (carrière entière, aucune erreur console),
 `verrous-masques.cjs` (aucune fuite), et une mesure par acte des trois écrans

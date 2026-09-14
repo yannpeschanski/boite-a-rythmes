@@ -1292,7 +1292,7 @@ export const ACTES: Acte[] = [
         cahier: [
           ...dansLaSection(LA_PHRASE, [
             AVOIR_PRODUIT,
-            pasUnPresetCharge('Ta phrase — pas un preset chargé depuis le menu'),
+            pasUnPresetCharge('Ta phrase — celle que tu as écrite, pas une toute prête'),
             unePhrase('melody', 4, 3, 'Une vraie phrase : quatre notes au moins, trois hauteurs différentes'),
             seReposeSurLaTonique('melody', 'Elle se repose : la dernière note est la tonique (degré 1)'),
             lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
@@ -1465,7 +1465,7 @@ export const ACTES: Acte[] = [
         cahier: [
           ...dansLaSection(LE_MORCEAU, [
             AVOIR_PRODUIT,
-            pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+            pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
             dansLeStyleFiche(FICHE_TECHNO, 'Un morceau techno — c’est un club, pas un salon'),
             lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes qui tiennent le morceau'),
             ligneSynthPresente('bass', 'Une basse — sans elle il n’y a rien à faire danser'),
@@ -1782,7 +1782,7 @@ export const ACTES: Acte[] = [
         serie: 'club',
         cahier: [
           AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
           dansLeStyleFiche(FICHE_GARAGE, 'Ça doit boiter comme le garage — le genre, pas la copie'),
           ligneSynthPresente('bass', 'Une basse — un club sans basse est une salle d’attente'),
         ],
@@ -1862,7 +1862,7 @@ export const ACTES: Acte[] = [
         serie: 'latino',
         cahier: [
           AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
           dansLeStyleFiche(FICHE_DEMBOW, 'Ça doit sonner dembow — le genre, pas la copie'),
           ligneSynthPresente('bass', 'Une basse — c’est elle qui porte le riddim'),
         ],
@@ -1917,7 +1917,7 @@ export const ACTES: Acte[] = [
          * dit qu'elle se fait sans consigne (« tu vois, maintenant »). */
         cahier: [
           AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
           ...dansLaSection(ZM_GENRE, [
             dansLeStyleFiche(FICHE_DANCEHALL, 'Ça doit sonner dancehall — le genre, pas la copie'),
           ]),

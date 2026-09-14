@@ -64,9 +64,9 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
     let garde = 0;
     let acteVu = -1;
     while (garde++ < 400) {
-      if (game.enEpilogue) { log.push(`ÉPILOGUE atteint — modules: ${modules()}`); snaps.push({ acte: 'epilogue', modules: modules(), ls: JSON.stringify(localStorage) }); break; }
+      if (game.enEpilogue) { log.push(`ÉPILOGUE atteint — modules: ${modules()}`); snaps.push({ acte: 'epilogue', modules: modules(), catalogue: unlocks.catalogue, ls: JSON.stringify(localStorage) }); break; }
       const a = game.acteCourant, e = game.etapeCourante;
-      if (a.id !== acteVu) { log.push(`── ACTE ${a.id} « ${a.titre} » (${a.etapes.length} étapes) — modules: ${modules()}`); acteVu = a.id; snaps.push({ acte: a.id, modules: modules(), ls: JSON.stringify(localStorage) }); }
+      if (a.id !== acteVu) { log.push(`── ACTE ${a.id} « ${a.titre} » (${a.etapes.length} étapes) — modules: ${modules()}`); acteVu = a.id; snaps.push({ acte: a.id, modules: modules(), catalogue: unlocks.catalogue, ls: JSON.stringify(localStorage) }); }
       if (!e) { log.push(`⚠️ acte ${a.id} étape ${game.etapeActive} : AUCUNE ÉTAPE`); break; }
 
       if (e.kind === 'recit') { game.avancerCarriere(); game.acteTermineAAnnoncer = null; continue; }
@@ -486,6 +486,14 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
      ce qui s'affiche. Les mots sont ceux qui NOMMENT un module : un module
      fermé ne doit pas être nommable, même en creux (« depuis l'onglet
      Production », « garder le synthé »).
+
+     ⚠️ Le CATALOGUE des 34 morceaux s'y ajoute (2026-09-14) : fermé jusqu'à la
+     fin de l'acte 5, il ne doit pas plus se nommer qu'un module. On le mesure
+     là où il vit — le menu Fichier — en cherchant les LIBELLÉS des presets
+     plutôt qu'un mot : « morceau » est partout dans le récit, un libellé de
+     preset n'est nulle part ailleurs. C'est ce qui a trouvé les cinq lignes de
+     cahier « pas le preset chargé depuis le menu », qui désignaient une porte
+     que le joueur des actes 3 à 5 ne voit pas.
      --------------------------------------------------------------------- */
   const MOTS = {
     synth: ['Synthé', 'synthé', 'Nappe'],
@@ -493,6 +501,10 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
     live: ['Mode Live'],
   };
   let fuites = 0;
+  const LIBELLES_PRESETS = await page.evaluate(async () => {
+    const { PRESETS, PRESET_CATEGORIES } = await import('/src/model/presets/songs.ts');
+    return [...PRESETS.map((p) => p.label), ...PRESET_CATEGORIES];
+  });
 
   for (const snap of journal.snaps) {
     await page.goto('http://localhost:5173/', { waitUntil: 'networkidle' });
@@ -512,7 +524,7 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
       const uniques = [...new Set(vus)];
       if (uniques.length) { fuites++; console.log(`  ⚠️ ${ecran} — ${uniques.join(' · ')}`); }
     };
-    console.log(`ACTE ${snap.acte} — ouverts : ${snap.modules}`);
+    console.log(`ACTE ${snap.acte} — ouverts : ${snap.modules} · catalogue ${snap.catalogue ? 'ouvert' : 'fermé'}`);
 
     dire('accueil', await page.evaluate(() => document.body.innerText));
 
@@ -526,7 +538,12 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
         if (!(await b.count())) continue;
         await b.click();
         await page.waitForTimeout(120);
-        dire(`Atelier · menu ${menu}`, await page.evaluate(() => document.querySelector('.dropdown')?.innerText ?? ''));
+        const texteMenu = await page.evaluate(() => document.querySelector('.dropdown')?.innerText ?? '');
+        dire(`Atelier · menu ${menu}`, texteMenu);
+        if (menu === 'Fichier' && !snap.catalogue) {
+          const vus = LIBELLES_PRESETS.filter((l) => texteMenu.toUpperCase().includes(l.toUpperCase()));
+          if (vus.length) { fuites++; console.log(`  ⚠️ Atelier · menu Fichier — catalogue FERMÉ mais ${vus.length} libellé(s) affiché(s) : « ${vus.slice(0, 3).join(' · ')} »`); }
+        }
         await b.click();
         await page.waitForTimeout(80);
       }

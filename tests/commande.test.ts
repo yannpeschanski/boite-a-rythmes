@@ -703,6 +703,33 @@ async function etatQuiSatisfait(
 
 const demandeVoix = (cahier: Array<{ id: string }>) => cahier.some((c) => c.id === 'voix');
 
+/* ⚠️ UN CAHIER NE DONNE PAS D'ADRESSE — il dit une PROPRIÉTÉ.
+ *
+ * Cinq lignes disaient « pas le preset chargé depuis le menu ». Elles se
+ * jouent aux actes 3 à 5, où le catalogue des 34 morceaux est désormais fermé
+ * (`catalogueOuvert`) : elles désignaient donc une porte que le joueur ne voit
+ * pas — même défaut que le conseil 💡 qui envoyait au Synthé avant l'acte 4.
+ * Ce qu'on refuse est la PROVENANCE, et ça se dit sans l'adresse.
+ *
+ * La règle tenue ici est volontairement étroite et littérale : aucun libellé
+ * de cahier ne nomme un MENU. Ce qui s'affiche à l'écran, lui, est mesuré en
+ * jouant par `scripts/verrous-masques.cjs`.
+ */
+describe('un cahier dit une propriété, jamais où cliquer', () => {
+  it('aucun libellé de contrainte ne nomme un menu', async () => {
+    const { ACTES } = await import('../src/model/carriere');
+    const libelles = ACTES.flatMap((a) =>
+      a.etapes.flatMap((e) => (e.kind === 'commande' ? e.cahier.map((c) => c.libelle) : [])),
+    );
+    // Sans ce compte, le jour où les cahiers changent de forme le test passe
+    // au vert en ne mesurant plus rien.
+    expect(libelles.length).toBeGreaterThan(50);
+    for (const l of libelles) {
+      expect(l.toLowerCase(), `« ${l} » nomme un menu`).not.toMatch(/\bmenus?\b/);
+    }
+  });
+});
+
 /* Toutes les commandes du récit doivent être SATISFIABLES — une commande dont
  * le cahier ne peut pas être rempli est un cul-de-sac que seul un joueur
  * découvrirait, après avoir cherché. */

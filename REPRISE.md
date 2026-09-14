@@ -5,7 +5,7 @@
 >
 > Dernière mise à jour : 2026-09-14 — **point d'étape : rien n'est en cours.**
 > `main` est vert et déployé. Vérifié ce jour : **0 erreur de types sur
-> 288 fichiers, 744 tests, les deux builds** (l'autonome fait 875 ko, 292 ko
+> 288 fichiers, 745 tests, les deux builds** (l'autonome fait 875 ko, 292 ko
 > gzip), plus `parcours-carriere.cjs` et `verrous-masques.cjs`. Le chantier du Mode Live est **appliqué en entier** — treize livraisons
 > de #169 à #181 — et ce qui reste tient en trois points, dont **deux se
 > décident en JOUANT, pas en codant** :

@@ -531,6 +531,13 @@ d'onglets de l'Atelier, barre de bascule du Mode jeu. Un onglet seul ne sépare
 rien : il se lit comme un onglet, donc comme la promesse qu'il y en aura
 d'autres — le dernier indice de ce qui reste fermé, et il ne dit même pas quoi.
 Un onglet qui APPARAÎT à l'acte 3 dit la même chose, au moment où c'est vrai.
+⚠️ **Le catalogue non plus, et ça vaut pour un CAHIER** : cinq lignes disaient
+« pas le preset chargé depuis le menu » aux actes 3 à 5, où le catalogue est
+fermé. Un cahier dit une PROPRIÉTÉ, jamais où cliquer — ce qu'on refuse est la
+provenance, et ça se dit sans l'adresse. Tenu par `tests/commande.test.ts` (avec
+le compte de la population) et par `verrous-masques.cjs`, qui cherche dans le
+menu Fichier les **libellés** de presets : « morceau » est partout dans le
+récit, un libellé de preset n'est nulle part ailleurs.
 ⚠️ **Un module fermé ne se NOMME pas non plus** — ni dans une entrée de menu, ni
 dans un conseil (« passe au Synthé »), ni dans une section vide (« depuis
 l'onglet Production »), ni dans un TOTAL (« 78 niveaux » comptait un réservoir
