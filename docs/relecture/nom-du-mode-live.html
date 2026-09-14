@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>« Mode Live » — le nom est-il abusif ?</title>
+<style>
+:root{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+--bg:#0e0e13;--carte:#17171f;--carte2:#1e1e28;--bord:#2c2c3a;--text:#e6e6ef;--doux:#9a9ab0;
+--violet:#7c6cf0;--vert:#39c26a;--ambre:#e8a33d;--rouge:#e2585f;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);}
+header.top{position:sticky;top:0;z-index:5;background:#12121a;border-bottom:1px solid var(--bord);
+padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:16px;margin:0;font-weight:650}
+header.top .sous{color:var(--doux);font-size:12.5px;flex:1 1 240px;min-width:0}
+header.top select,header.top button{font:13px var(--sans);background:var(--carte2);color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:6px 10px;cursor:pointer}
+#compteur{font:12px var(--mono);color:var(--doux)}
+main{max-width:900px;margin:0 auto;padding:22px 18px 80px}
+.intro{background:var(--carte);border:1px solid var(--bord);border-left:3px solid var(--violet);
+border-radius:10px;padding:14px 16px;margin:0 0 26px;font-size:14px}
+.intro p{margin:0 0 8px}.intro p:last-child{margin:0}
+.acquis{background:#12241a;border:1px solid #2b5a3c;border-radius:10px;padding:12px 16px;margin:0 0 26px;font-size:13.5px}
+.acquis b{color:#8ee0a8}
+.acquis ul{margin:6px 0 0;padding-left:20px}.acquis li{margin:0 0 4px}
+section.grp{margin:0 0 34px}
+section.grp>h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--doux);
+margin:0 0 6px;border-bottom:1px solid var(--bord);padding-bottom:6px}
+section.grp>.chapo{color:var(--doux);font-size:13.5px;margin:0 0 14px}
+.fiche{background:var(--carte);border:1px solid var(--bord);border-radius:10px;margin:0 0 14px;overflow:hidden}
+.fiche.hide{display:none}
+.fiche>header{display:flex;gap:10px;align-items:baseline;padding:11px 14px 0}
+.fiche .ref{font:11px var(--mono);color:var(--doux);flex:none}
+.fiche h3{margin:0;font-size:15.5px;font-weight:650}
+.fiche-b{padding:8px 14px 12px;font-size:14px}
+.fiche-b p{margin:0 0 9px}.fiche-b p:last-child{margin:0}
+.fiche-b table{border-collapse:collapse;margin:4px 0 10px;font-size:13px;width:100%}
+.fiche-b th,.fiche-b td{border:1px solid var(--bord);padding:5px 8px;text-align:left}
+.fiche-b th{color:var(--doux);font-weight:600}
+.fiche-b code{font:12.5px var(--mono);background:#101018;padding:1px 4px;border-radius:3px}
+.fiche-b ul{margin:4px 0 10px;padding-left:20px}.fiche-b li{margin:0 0 5px}
+.fiche-b ul.opts{list-style:none;padding:0}
+.fiche-b ul.opts li{border-left:2px solid var(--bord);padding:2px 0 2px 11px;margin:0 0 8px}
+.fiche-b blockquote{margin:6px 0 10px;padding:8px 12px;border-left:3px solid var(--violet);
+background:#12121a;color:var(--doux);font-size:13.5px;font-style:italic}
+figure{margin:8px 0 12px}
+figure img{width:100%;height:auto;display:block;border:1px solid var(--bord);border-radius:6px;background:#000}
+figcaption{font-size:11.5px;color:var(--doux);margin-top:5px}
+.reco{background:var(--vert);color:#06210f;font-size:11px;padding:1px 6px;border-radius:4px;font-weight:700}
+.alerte{color:var(--ambre)}.pour{color:var(--vert)}
+.regle{color:var(--doux);font-style:italic;font-size:13px}
+.annot{display:flex;gap:9px;align-items:flex-start;flex-wrap:wrap;
+padding:9px 14px 11px;border-top:1px solid var(--bord);background:var(--carte2)}
+.prios{display:flex;gap:5px;flex:none}
+.p{font:11px var(--sans);letter-spacing:.04em;font-weight:700;border:1px solid var(--bord);
+background:#101018;color:var(--doux);border-radius:5px;padding:6px 9px;cursor:pointer}
+.fiche.p1 .p1{background:var(--vert);color:#06210f;border-color:var(--vert)}
+.fiche.p2 .p2{background:var(--ambre);color:#2a1a02;border-color:var(--ambre)}
+.fiche.p3 .p3{background:var(--rouge);color:#2a0508;border-color:var(--rouge)}
+.fiche.p1{border-color:var(--vert)}.fiche.p2{border-color:var(--ambre)}.fiche.p3{border-color:var(--rouge)}
+.annot textarea{flex:1 1 240px;min-height:36px;font:14px/1.45 var(--sans);color:var(--text);
+background:#101018;border:1px solid var(--bord);border-radius:6px;padding:7px 9px;resize:vertical}
+.annot textarea:focus{outline:1px solid var(--violet)}
+dialog{background:var(--carte);color:var(--text);border:1px solid var(--bord);border-radius:10px;
+max-width:820px;width:92vw;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog textarea{width:100%;height:52vh;font:12px/1.5 var(--mono);background:#101018;color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:9px}
+dialog .titre{font-weight:650;margin:0 0 8px}
+dialog .actions{display:flex;gap:8px;margin-top:10px}
+dialog button{font:13px var(--sans);background:var(--carte2);color:var(--text);border:1px solid var(--bord);
+border-radius:6px;padding:7px 12px;cursor:pointer}
+</style></head><body>
+</head><body>
+<header class="top">
+  <h1>« Mode Live » — le nom</h1>
+  <span class="sous">Onze cartes. La recommandation est en premier dans chaque section. Annote, puis « Exporter mes notes ».</span>
+  <span id="compteur"></span>
+  <select id="filtre" aria-label="filtrer">
+    <option value="tout">tout</option><option value="annote">annoté</option><option value="0">pas encore</option>
+    <option value="1">d'accord</option><option value="2">à discuter</option><option value="3">non</option>
+  </select>
+  <button type="button" id="btn-export">Exporter mes notes</button>
+</header>
+<main>
+<div class="intro">
+<p><b>Ta phrase.</b> <i>« Le nom "mode live" est peut-être abusif, qu’est-ce que
+tu en penses. »</i> Tu l’avais déjà dite une fois ; la réponse d’alors était
+« laissé tel quel, on pourra changer plus tard ». Je ne la reconduis pas telle
+quelle, parce qu’en mesurant j’ai trouvé un argument que je n’avais pas.</p>
+<p><b>Ma réponse courte.</b> Le nom n’est <b>pas</b> abusif sur ce que le mode
+FAIT — il est exact, et plus exact que je ne le croyais. Il l’est sur la
+<b>grammaire des noms</b> : c’est la seule entrée de l’accueil qui soit un
+adjectif anglais préfixé « Mode », au milieu d’un nom et d’un verbe français.
+Le problème n’est pas le sens, c’est la famille.</p>
+<p><b>Ce que cette fiche n’est pas.</b> Je n’ai rien renommé. Un constat sur ce
+que le produit EST s’arbitre avant de se coder — c’est ta règle, et c’est la
+raison d’être de cette fiche. Le périmètre exact du diff est chiffré en
+section 3, pour que « oui » et « non » se décident sur un coût réel.</p>
+</div>
+
+<div class="acquis">
+<b>Ce qui n’est pas en question :</b>
+<ul>
+<li>le <b>cadrage</b> du mode (« on prépare de la matière, on joue la structure ») — tranché, appliqué, hors sujet ici ;</li>
+<li>le mot <b>SCÈNE</b> pour l’unité d’un montage — tranché, et c’est précisément ce qui bloque une des options ;</li>
+<li>les <b>identifiants</b> du code (<code>ui/live/</code>, <code>liveActions.ts</code>, <code>setLiveArpege</code>…) : ils ne bougeraient dans aucun scénario. Voir la carte C1.</li>
+</ul>
+</div>
+
+<section class="grp"><h2>1 · Ce que la mesure dit</h2>
+<p class="chapo">Trois constats, dont un que je n’avais pas vu la première fois qu’on en a parlé.</p>
+
+<article class="fiche" data-id="n1">
+  <header><span class="ref">N1</span><h3>Sur le FOND, « live » est exact — <span class="reco">à décharge</span></h3></header>
+  <div class="fiche-b">
+<p>Un nom est abusif quand il promet ce que la chose ne fait pas. Ici il tient,
+sur quatre points vérifiables :</p>
+<ul>
+<li>le mode <b>n’existe qu’en temps réel</b> — le rendu hors ligne d’un morceau a été explicitement <b>refusé</b> (« sans automation, un rendu produirait une version morte ») ;</li>
+<li>sa seule sortie audio est <b>⏺ REC</b>, c’est-à-dire une <b>prise</b>, pas un export : ce qui en sort est une performance capturée ;</li>
+<li>rien n’y est automatisé : la structure se déclenche <b>à la main</b>, scène par scène ;</li>
+<li>le récit l’utilise <b>littéralement</b> comme une scène — l’acte 7 s’y appelle « LE SET » et « ON RÉCLAME LE JINGLE ».</li>
+</ul>
+<p class="regle">L’abus serait d’appeler « live » un mode qu’on peut rendre hors
+ligne. C’est l’inverse : c’est le seul endroit de l’appli qu’on ne PEUT PAS
+rendre.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="n2">
+  <header><span class="ref">N2</span><h3>Le défaut est de GRAMMAIRE — <span class="reco">mesuré</span></h3></header>
+  <div class="fiche-b">
+<p><b>Mesuré</b> sur l’accueil (<code>App.svelte</code>), les trois entrées que
+le joueur voit, avec leur sous-titre :</p>
+<table>
+<tr><th>Entrée</th><th>Nature</th><th>Sous-titre</th></tr>
+<tr><td>🥁 <b>Atelier</b></td><td>nom commun français</td><td>« Composer librement »</td></tr>
+<tr><td>🎮 <b>Jouer</b></td><td>verbe français</td><td>« Une carrière, acte par acte »</td></tr>
+<tr><td>🎛 <b>Mode Live</b></td><td><span class="alerte">adjectif anglais, préfixé « Mode »</span></td><td>« Manette paysage »</td></tr>
+</table>
+<p>C’est le seul des trois à porter « Mode ». Le seul en anglais. Et <b>Live</b>
+est aussi le nom d’un logiciel de la même catégorie, ce qui n’aide pas à le lire
+comme un nom commun.</p>
+<p class="regle">Ce n’est pas le sens qui sonne faux, c’est qu’il ne suit pas la
+règle que ses deux voisins suivent.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="n3">
+  <header><span class="ref">N3</span><h3>Le nom demande une glose, et elle décrit un OBJET</h3></header>
+  <div class="fiche-b">
+<p>Regarde la colonne « sous-titre » de la carte précédente. Les deux premiers
+disent ce qu’on y <b>fait</b> : composer, jouer une carrière. Le troisième dit à
+quoi ça <b>ressemble</b> : « Manette paysage ».</p>
+<p>Autrement dit, l’écran a déjà senti que « Mode Live » ne se suffisait pas, et
+il a compensé — mais en décrivant le meuble au lieu du métier. C’est le symptôme,
+pas la cause.</p>
+<p class="regle">Un nom qui a besoin d’être traduit sur la ligne d’en dessous est
+un nom qui n’a pas fini son travail. (Ça ne dit pas qu’il faut le changer : ça
+dit que le sous-titre est à réécrire dans <b>tous</b> les scénarios, y compris
+« on garde ». Voir Q2.)</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>2 · Les options</h2>
+<p class="chapo">Quatre. La recommandation d’abord — mais O1 (« ne rien faire ») a un vrai argument, et je ne le minimise pas.</p>
+
+<article class="fiche" data-id="o1">
+  <header><span class="ref">O1</span><h3>« LE DIRECT » — <span class="reco">ma recommandation</span></h3></header>
+  <div class="fiche-b">
+<p>Nom commun, français, même grammaire que ses voisins, aucune collision. Et
+surtout : <b>c’est déjà le mot du projet</b>.</p>
+<p><b>Mesuré</b> — « en direct » apparaît <b>35 fois</b> dans le code et
+<code>CLAUDE.md</code> pour désigner exactement ce concept :</p>
+<blockquote>« UN RÉGLAGE POSÉ EN DIRECT SAIT REVENIR » · « un réglage EN DIRECT a
+deux domiciles » · « il sert la lecture en direct »</blockquote>
+<p>Le français du projet pour cette idée <b>existe déjà</b> ; il n’est simplement
+jamais remonté jusqu’au nom du module. « Le Direct » ne l’invente pas, il le
+promeut. Et il garde le sens exact de la carte N1 : ce qui n’est pas enregistré
+d’avance.</p>
+<p><b>Ce que ça donnerait :</b> 🎛 <b>Direct</b> — « Jouer le morceau à la main ».</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="o2">
+  <header><span class="ref">O2</span><h3>GARDER « Mode Live » — l’option que je ne minimise pas</h3></header>
+  <div class="fiche-b">
+<p>L’argument est sérieux et il est le seul qui compte contre O1 :
+<b>« Live » est compris immédiatement par quiconque a déjà touché une
+groovebox.</b> « Direct » demande une demi-seconde de traduction. Ce que je gagne
+en cohérence interne, je peux le perdre en familiarité — et la familiarité se
+paie au premier contact, la cohérence seulement à la lecture attentive.</p>
+<p>Le projet a aussi un <b>précédent</b> pour ne pas renommer : les tokens
+<code>--xp-*</code>, gardés alors que la peau a changé, parce que « renommer
+n’aurait touché que des étiquettes, au prix d’un diff illisible ».</p>
+<p class="alerte">⚠️ Mais ce précédent porte sur des <b>identifiants internes</b>.
+Ici c’est l’inverse : le nom vu par le joueur est exactement la chose qui mérite
+d’être juste, et les identifiants, eux, ne bougeraient pas (C1). Le précédent
+plaide donc moins fort qu’il n’en a l’air.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="o3">
+  <header><span class="ref">O3</span><h3>« SCÈNE » — <span class="alerte">à écarter, et voici pourquoi</span></h3></header>
+  <div class="fiche-b">
+<p>C’est le mot qui vient en premier, et c’est un piège : <b>il est déjà pris
+deux fois</b>, par toi, et pour de bonnes raisons.</p>
+<ul>
+<li><b>l’unité d’un montage</b> — « le mot juste est SCÈNE, pas section, parce que la chaîne est un ordre suggéré et non une timeline » ;</li>
+<li><b>le cinquième type d’étape</b> du récit — <code>EtapeScene</code>, « on n’y retrouve rien, on JOUE ».</li>
+</ul>
+<p>« Mode Scène » produirait « la troisième scène de la Scène », et l’étape de
+récit qui s’appelle déjà scène s’y perdrait. Le coût de la confusion dépasse
+celui du problème qu’on répare.</p>
+<p class="regle">Je le mets quand même en fiche : si tu le préfères malgré tout,
+c’est l’un des deux autres emplois qu’il faudrait renommer, pas celui-ci.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="o4">
+  <header><span class="ref">O4</span><h3>Les deux outsiders — « PLATEAU » et « MANETTE »</h3></header>
+  <div class="fiche-b">
+<p>Pour ne pas te laisser un choix à deux branches seulement.</p>
+<ul class="opts">
+<li><b>LE PLATEAU</b> — le mot de théâtre pour la scène, côté technique. Français, nom commun, <b>aucune collision</b> avec SCÈNE, et il dit bien « l’endroit d’où on joue devant quelqu’un ». Reproche : moins immédiat que Direct pour qui n’a pas de culture spectacle.</li>
+<li><b>LA MANETTE</b> — le mot que l’accueil emploie <b>déjà</b> en sous-titre (« Manette paysage »). Avantage rare : il est testé, il est écrit à l’écran, et il décrit ce que le joueur a sous les doigts. Reproche : il nomme l’objet, pas l’activité — donc il hérite du défaut de N3 au lieu de le corriger.</li>
+</ul>
+<p class="regle">Je les classe tous deux derrière « Direct » — mais « Plateau »
+tient la route si « Direct » te paraît trop radio/télé.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>3 · Ce que ça coûte, chiffré</h2>
+<p class="chapo">Pour que « oui » et « non » se décident sur un nombre et pas sur une impression.</p>
+
+<article class="fiche" data-id="c1">
+  <header><span class="ref">C1</span><h3>Onze chaînes à changer, 333 identifiants qui ne bougent pas</h3></header>
+  <div class="fiche-b">
+<p><b>Mesuré</b> dans <code>src/</code> :</p>
+<table>
+<tr><th></th><th>Compte</th><th>Sort</th></tr>
+<tr><td>Chaînes <b>vues par le joueur</b></td><td><b>11</b></td><td class="alerte">à réécrire</td></tr>
+<tr><td>Identifiants <code>live*</code> / <code>Live*</code></td><td><b>333</b></td><td class="pour">inchangés</td></tr>
+<tr><td>Dossier <code>src/ui/live/</code></td><td>2 fichiers</td><td class="pour">inchangé</td></tr>
+</table>
+<p>Les onze : le menu <b>Mode</b> de l’Atelier, les deux boutons de l’accueil et
+de la barre de navigation, la sortie du Live (« Quitter… »), le bandeau
+<code>BOÎTE À RYTHMES — LIVE</code>, la sortie du <b>MontagePanel</b> (« Jouer ce
+montage en… »), deux libellés d’aide (PartiesStrip, SequenceBank), l’avertissement
+« à l’horizontale », et l’annonce de déverrouillage <code>'LE MODE LIVE'</code>.</p>
+<p class="regle">C’est <b>ta</b> règle <code>--xp-*</code> appliquée dans le bon
+sens : on renomme l’ÉTIQUETTE, on garde les identifiants. Le diff reste lisible.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="c2">
+  <header><span class="ref">C2</span><h3>Ce qui suit, et qu’il ne faut pas oublier</h3></header>
+  <div class="fiche-b">
+<p>Trois dépendances au-delà des onze chaînes :</p>
+<ul>
+<li><b>le récit</b> — l’annonce de déverrouillage dit « LE MODE LIVE ». C’est du texte de jeu, pas un libellé d’interface : il se relit, il ne se remplace pas mécaniquement ;</li>
+<li><b>les trois documents</b> — <code>CLAUDE.md</code> (une section entière s’intitule « Le Mode Live »), <code>REPRISE.md</code>, <code>PLAN.md</code>. Une passe, sans difficulté ;</li>
+<li><b>le vocabulaire courant</b> — « réglage live », « pad du Live ». Dans le code ils restent ; dans les textes visibles, il faut choisir une fois (« un réglage en direct »).</li>
+</ul>
+<p class="alerte">⚠️ Et une vérification obligatoire après coup :
+<code>node scripts/verrous-masques.cjs</code> — le nom du mode est justement une
+des chaînes que ce script surveille pour qu’un module fermé ne se nomme pas.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>4 · Ce que je n’ai pas tranché</h2>
+<p class="chapo">Deux questions qui se posent quelle que soit ta réponse aux options.</p>
+
+<article class="fiche" data-id="q1">
+  <header><span class="ref">Q1</span><h3>Faut-il garder le préfixe « Mode » ?</h3></header>
+  <div class="fiche-b">
+<p>Indépendant du reste. Aujourd’hui l’accueil dit « Atelier », « Jouer », et
+<b>« Mode Live »</b> — le seul préfixé. Si le mot qui suit est un nom commun
+(Direct, Plateau), le préfixe devient inutile : on dit « Atelier », pas « Mode
+Atelier ».</p>
+<p>Ma recommandation : <b>le retirer</b> dans tous les cas où le nom est un nom
+commun, le garder si on reste sur « Live » (où il sert justement de béquille
+grammaticale — « Live » seul ne se lit pas comme un nom).</p>
+<p class="regle">Ce qui est amusant : le fait que « Live » ait BESOIN du préfixe
+est une troisième preuve du constat N2.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="q2">
+  <header><span class="ref">Q2</span><h3>Le sous-titre de l’accueil est à réécrire même si on ne renomme rien</h3></header>
+  <div class="fiche-b">
+<p>« Manette paysage » décrit le meuble là où ses deux voisins décrivent le
+métier (N3). Que tu gardes « Live » ou non, cette ligne peut dire ce qu’on y
+fait :</p>
+<ul class="opts">
+<li>« Jouer le morceau à la main »</li>
+<li>« Enchaîner les parties en direct »</li>
+<li>« La scène — à l’horizontale »</li>
+</ul>
+<p class="alerte">⚠️ Avec une contrainte à ne pas perdre : c’est aussi le seul
+endroit qui prévient que le mode est <b>horizontal</b>. Si le sous-titre cesse de
+le dire, il faut que quelque chose d’autre le dise — sinon on retombe sur
+« tourne ton téléphone » sans prévenir, ce qui est exactement le défaut corrigé
+pour les scènes du récit.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+</main>
+
+<dialog id="dlg">
+  <p class="titre">Mes notes — à copier</p>
+  <textarea id="sortie" readonly></textarea>
+  <div class="actions">
+    <button type="button" id="btn-copier">Copier</button>
+    <button type="button" id="btn-fichier">Télécharger</button>
+    <button type="button" id="btn-reset">Tout effacer</button>
+    <button type="button" id="btn-fermer">Fermer</button>
+  </div>
+</dialog>
+<script>
+(function () {
+  var CLE = 'faceb-fiche-nom-live';
+  var etat = {};
+  try { etat = JSON.parse(localStorage.getItem(CLE) || '{}') || {}; } catch (e) { etat = {}; }
+  function garder() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {} }
+  var fiches = Array.prototype.slice.call(document.querySelectorAll('.fiche'));
+  var compteur = document.getElementById('compteur');
+  function peindre(f) {
+    var e = etat[f.dataset.id] || {};
+    f.classList.remove('p1', 'p2', 'p3');
+    if (e.p) f.classList.add('p' + e.p);
+    var ta = f.querySelector('textarea');
+    if (ta.value !== (e.note || '')) ta.value = e.note || '';
+    auto(ta);
+  }
+  function auto(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(36, ta.scrollHeight) + 'px'; }
+  function annote(id) { var e = etat[id]; return !!(e && (e.p || (e.note || '').trim())); }
+  function compter() {
+    var n = 0;
+    for (var i = 0; i < fiches.length; i++) if (annote(fiches[i].dataset.id)) n++;
+    compteur.textContent = n + ' / ' + fiches.length;
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('.p') : null;
+    if (!b) return;
+    var f = b.closest('.fiche'), id = f.dataset.id, p = b.dataset.p;
+    var e = etat[id] || (etat[id] = {});
+    if (p === '0') { delete e.p; delete e.note; f.querySelector('textarea').value = ''; }
+    else e.p = e.p === p ? undefined : p;
+    if (!e.p && !(e.note || '').trim()) delete etat[id];
+    garder(); peindre(f); compter(); filtrer();
+  });
+  document.addEventListener('input', function (ev) {
+    var ta = ev.target;
+    if (ta.tagName !== 'TEXTAREA' || !ta.closest('.fiche')) return;
+    var f = ta.closest('.fiche'), id = f.dataset.id;
+    var e = etat[id] || (etat[id] = {});
+    e.note = ta.value;
+    if (!e.p && !e.note.trim()) delete etat[id];
+    auto(ta); garder(); compter();
+  });
+  var filtre = document.getElementById('filtre');
+  function filtrer() {
+    var v = filtre.value;
+    fiches.forEach(function (f) {
+      var e = etat[f.dataset.id] || {};
+      var ok = v === 'tout' || (v === 'annote' && annote(f.dataset.id))
+        || (v === '0' && !annote(f.dataset.id)) || (v === e.p);
+      f.classList.toggle('hide', !ok);
+    });
+    document.querySelectorAll('section.grp').forEach(function (s) {
+      var reste = s.querySelectorAll('.fiche:not(.hide)').length;
+      s.style.display = (reste === 0 && v !== 'tout') ? 'none' : '';
+    });
+  }
+  filtre.addEventListener('change', filtrer);
+  var TITRES = { '1': "D'ACCORD", '2': 'À DISCUTER', '3': 'NON' };
+  function entree(f) {
+    var e = etat[f.dataset.id] || {};
+    var titre = (f.querySelector('h3') || {}).textContent || '';
+    var l = '- [' + f.dataset.id + '] ' + titre;
+    if ((e.note || '').trim()) l += '\n      > ' + e.note.trim().replace(/\n/g, '\n      > ');
+    return l;
+  }
+  function texte() {
+    var lignes = ['# « Mode Live » — le nom — ' + new Date().toLocaleDateString('fr-FR'), ''];
+    ['1', '2', '3'].forEach(function (p) {
+      var d = fiches.filter(function (f) { return (etat[f.dataset.id] || {}).p === p; });
+      if (!d.length) return;
+      lignes.push('## ' + TITRES[p] + ' (' + d.length + ')', '');
+      d.forEach(function (f) { lignes.push(entree(f)); });
+      lignes.push('');
+    });
+    var sansP = fiches.filter(function (f) {
+      var e = etat[f.dataset.id] || {};
+      return !e.p && (e.note || '').trim();
+    });
+    if (sansP.length) {
+      lignes.push('## Notes sans réponse (' + sansP.length + ')', '');
+      sansP.forEach(function (f) { lignes.push(entree(f)); });
+    }
+    if (lignes.length <= 2) lignes.push('(rien d’annoté)');
+    return lignes.join('\n');
+  }
+  var dlg = document.getElementById('dlg'), sortie = document.getElementById('sortie');
+  document.getElementById('btn-export').addEventListener('click', function () {
+    sortie.value = texte();
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    sortie.focus(); sortie.select();
+  });
+  document.getElementById('btn-fermer').addEventListener('click', function () {
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+  });
+  document.getElementById('btn-copier').addEventListener('click', function () {
+    sortie.select();
+    if (navigator.clipboard) navigator.clipboard.writeText(sortie.value).catch(function () {});
+    else document.execCommand('copy');
+  });
+  document.getElementById('btn-fichier').addEventListener('click', function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([sortie.value], { type: 'text/markdown' }));
+    a.download = 'nom-du-mode-live.md'; a.click();
+  });
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    if (!confirm('Effacer toutes les annotations ?')) return;
+    etat = {}; garder(); fiches.forEach(peindre); compter(); filtrer();
+  });
+  fiches.forEach(peindre); compter(); filtrer();
+})();
+</script></body></html>

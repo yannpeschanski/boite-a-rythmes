@@ -85,3 +85,25 @@ node scripts/relecture-parametres-live.cjs
 
 ⚠️ Les coches sont indexées par position (`g4.7.2`) : **insérer un paramètre au
 milieu d'un groupe décale les suivants.** Exporter avant de régénérer.
+
+## `nom-du-mode-live.html` — le nom du mode est-il abusif ?
+
+Onze cartes (2026-09-14), en réponse à *« le nom "mode live" est peut-être
+abusif, qu'est-ce que tu en penses »* — une question déjà posée une fois et
+close sur « on pourra changer plus tard ».
+
+Trois constats mesurés (le nom est exact sur le FOND, le défaut est de
+GRAMMAIRE, et le sous-titre de l'accueil trahit le symptôme), quatre options
+(garder · **LE DIRECT**, recommandé · SCÈNE, écartée pour double collision ·
+PLATEAU / MANETTE), le coût chiffré, et deux questions qui se posent quelle que
+soit la réponse.
+
+⚠️ **Rien n'est renommé** : c'est un constat sur ce que le produit EST, donc il
+s'arbitre avant de se coder. Le périmètre du diff est chiffré dans la carte C1 —
+**11 chaînes vues par le joueur, 333 identifiants inchangés** — pour que « oui »
+et « non » se décident sur un nombre.
+
+Écrite à la main, pas dérivée des données. Les mesures qu'elle cite se
+revérifient avec les greps de la carte C1 ; et un renommage, s'il a lieu, se
+termine par `node scripts/verrous-masques.cjs` — le nom du mode est une des
+chaînes que ce script surveille.
