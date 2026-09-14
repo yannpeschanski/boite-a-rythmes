@@ -963,7 +963,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * Un niveau de chacun, pour les essayer et les comparer avant d'en écrire
    * une campagne. Ils sont posés APRÈS le 34 : la progression existante n'est
    * pas touchée, et le joueur qui finit la campagne les trouve en bonus.
-   * Accessibles tout de suite avec le pseudo « master » ou #boss.
+   * Accessibles tout de suite avec le pseudo « master ».
    */
   // Subdivision 16 et non 8 : « compléter » vide un quart de la boucle, et un
   // quart de 8 pas fait deux doubles-croches par ligne — six cases en tout,

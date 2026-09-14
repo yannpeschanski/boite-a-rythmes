@@ -38,12 +38,6 @@ describe('déblocage des modules', () => {
     }
   });
 
-  it('ouvre tout avec le contournement #boss', () => {
-    for (const m of LOCKED_MODULES) {
-      expect(moduleUnlocked(m, { level: 1, bypass: true })).toBe(true);
-    }
-  });
-
   it("ouvre l'Atelier (et rien d'autre) pour un rythme partagé", () => {
     // Sans ça, un lien de partage envoyé à quelqu'un qui n'a jamais joué
     // tomberait sur un écran de verrou — une fonctionnalité déjà livrée qui

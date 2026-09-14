@@ -618,7 +618,11 @@ consigne et porte **▶ LANCER**, qui EST la consigne. Elle disparaît au premie
 son et ne revient pas. La surface de jeu, elle, ne bouge pas.
 
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
-l'écran qui y envoie doit le dire. Mesuré en 844 × 390, pointeur grossier, set
+l'écran qui **ENVOIE** doit le dire : une scène du récit, la sortie du
+`MontagePanel`. ⚠️ Pas l'ACCUEIL, où c'est le joueur qui choisit d'ouvrir le
+mode : son sous-titre « Manette paysage » est retiré (2026-09-14, « il sera
+indiqué si le téléphone est vertical »), la porte suffit — elle affiche
+« 📱 TOURNE TON TÉLÉPHONE » et un « ← Retour ». Mesuré en 844 × 390, pointeur grossier, set
 monté : six commandes sous 44 px (les exceptions revendiquées), aucun
 débordement ; la bande fait 44 px, ses quatre pastilles 56 px et ses huit cases
 52,7 px.
@@ -711,6 +715,13 @@ modules.** `src/model/carriere.ts` porte les huit actes ;
 - `moduleUnlocked` est un **OU** entre l'acte et le seuil de niveau, ce dernier lu
   sur le **plancher** — retirer le second membre priverait de leurs modules ceux
   qui jouent hors carrière.
+
+⚠️ **Un seul contournement, et il est le pseudo « master »** (arbitré le
+2026-09-14). Le contournement par URL `#boss` et le champ `UnlockContext.bypass`
+qu'il alimentait sont **retirés** : deux portes pour le même besoin, dont une qui
+persistait dans le stockage, donc la seule à pouvoir rester allumée sans qu'on
+s'en aperçoive. `master` ne passe pas par un forçage — il rend le niveau maximum,
+donc le chemin normal — et il ne se mémorise pas, par construction.
 
 Une commande d'acte ne doit **promettre que ce que le tirage tient** : les niveaux
 de paramètre tirent leur bouton ET leur sens, donc une consigne qui nomme l'un des

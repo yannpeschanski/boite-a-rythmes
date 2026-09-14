@@ -87,9 +87,10 @@
 > mode live »*), après fiche — `docs/relecture/nom-du-mode-live.html`. La
 > question avait été posée deux fois et close deux fois sur « on verra plus
 > tard » ; elle est désormais **fermée**, pas ajournée. Les sous-titres de
-> l'accueil (carte Q2) sont réglés le même jour : les deux qui GLOSAIENT sont
-> retirés, celui du Live reste parce qu'il PRÉVIENT. Ce qui reste ouvert du
-> Mode Live : l'essai sur un vrai téléphone en paysage.
+> l'accueil (carte Q2) sont réglés le même jour, puis **tous retirés** le
+> lendemain — l'horizontale se dit à la porte, pas avant. Le contournement par
+> URL `#boss` est retiré lui aussi : il ne reste que le pseudo « master ». Ce
+> qui reste ouvert du Mode Live : l'essai sur un vrai téléphone en paysage.
 
 ## Où en est le projet
 

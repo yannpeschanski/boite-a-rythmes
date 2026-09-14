@@ -48,6 +48,46 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'accueil se tait, et il ne reste qu'un contournement (2026-09-14)
+
+> *« Vire le sous-titre "manette paysage", il sera indiqué si le téléphone est
+> vertical »* · *« Tu peux virer les histoires de boss mode, j'utilise le pseudo
+> master pour vérifier que tout fonctionne. »*
+
+**Le dernier sous-titre tombe.** Q2 s'était close la veille sur une asymétrie
+défendue — deux glosaient, le troisième prévenait. L'arbitrage la supprime :
+l'horizontale n'a pas besoin d'être annoncée AVANT, parce que la porte la dit
+déjà (« 📱 TOURNE TON TÉLÉPHONE » + « ← Retour »). Une ligne qui double un écran
+existant n'apprend rien. `CLAUDE.md` gagne la frontière que la règle n'avait
+pas : l'écran qui **ENVOIE** doit le dire (une scène, la sortie du
+`MontagePanel`) — pas celui où le joueur **CHOISIT**.
+
+⚠️ **Deux portes dérobées pour un seul besoin, c'est une de trop.** Le
+contournement par URL `#boss` est retiré : constantes, regex `ON`/`OFF`,
+`read`/`write`, l'état `boss`, `init(hash)`, l'écouteur `hashchange` qui
+n'existait que pour lui, la branche `'url'` de `totalAccess` et son conseil.
+⚠️ **Et `UnlockContext.bypass` avec** — il n'était alimenté que par là, et la
+règle de #181 vaut ici mot pour mot : un forçage que plus rien n'atteint est du
+code que la prochaine lecture croira vivant. Son test part avec (741 → 740).
+
+`master` n'y touche pas, et c'est ce qui rend le retrait sûr : il ne force rien,
+il rend le niveau maximum — donc le chemin normal. Vérifié en jouant plutôt
+qu'en lisant : `#boss` dans l'URL n'ouvre plus rien et n'affiche plus de
+bandeau ; « master » saisi par le vrai formulaire ouvre les trois modules.
+⚠️ Le premier essai a échoué pour une raison qui était **dans le test** : un
+`goto` rechargeait la page, et `master` ne persiste pas — par construction, pour
+ne pas devenir un accès total invisible. C'est le piège de la sonde pressée, une
+fois de plus.
+
+**Le bandeau « Accès total » RESTE** (classe renommée `.acces-total`) : un doute
+sur l'état d'un contournement coûte plus cher que le contournement.
+
+**Vérifié** : check 0 erreur, 740 tests, les deux builds, `verrous-masques.cjs`
+sans fuite, et `parcours-carriere.cjs` de bout en bout — obligatoire ici, puisque
+`moduleUnlocked` est touché.
+
+---
+
 ### ✅ Le nom du Mode Live : fiche, puis réponse — on garde (2026-09-14)
 
 > *« Le nom "mode live" est peut-être abusif, qu'est-ce que tu en penses »* →
