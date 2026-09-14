@@ -100,8 +100,9 @@ soit la réponse.
 
 ✅ **Répondu le 2026-09-14 : on garde « Mode Live »** (*« gardons mode live »*).
 L'option retenue est O2, sur l'argument de familiarité. Q1 tombe par
-conséquence ; **Q2 (le sous-titre de l'accueil) reste ouverte**, elle ne
-dépendait pas du nom. La fiche est gardée comme trace du *pourquoi*.
+conséquence ; **Q2 est close le même jour** — les deux sous-titres qui glosaient
+un bouton sont retirés, celui du Mode Live reste parce qu'il prévient de
+l'horizontale. La fiche est gardée comme trace du *pourquoi*.
 
 ⚠️ **Rien n'a été renommé** : c'était un constat sur ce que le produit EST, donc
 il s'arbitrait avant de se coder. Le périmètre du diff est chiffré dans la carte C1 —
