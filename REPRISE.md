@@ -6,16 +6,19 @@
 > Dernière mise à jour : 2026-09-14 — **point d'étape : rien n'est en cours.**
 > `main` est vert et déployé. Vérifié ce jour : **0 erreur de types sur
 > 288 fichiers, 745 tests, les deux builds** (l'autonome fait 875 ko, 292 ko
-> gzip), plus `parcours-carriere.cjs` et `verrous-masques.cjs`. Le chantier du Mode Live est **appliqué en entier** — treize livraisons
-> de #169 à #181 — et ce qui reste tient en trois points, dont **deux se
-> décident en JOUANT, pas en codant** :
+> gzip), plus `parcours-carriere.cjs` et `verrous-masques.cjs`.
 >
-> 1. **le loquet 🎲** — la dernière des 25 cartes, que Yann voulait essayer avant
->    de juger : c'est en ligne depuis le 2026-09-13, donc jouable maintenant ;
-> 2. **l'essai sur un VRAI téléphone en paysage** — jamais fait ; le Mode Live
->    n'est mesuré qu'en 844 × 390 émulé, et une mesure émulée n'est pas une main ;
-> 3. **les deux creux de courbe mesurés** (neuf exercices sans grille aux actes
->    3-4, l'acte 5 qui serpente) — voir « La COURBE de difficulté ».
+> ⚠️ **Le chantier du Mode Live est CLOS** — treize livraisons de #169 à #181, et
+> ses deux derniers points sont tombés **en jouant**, le 2026-09-14 : le
+> **loquet 🎲 est validé**, et le mode a **tourné sur un vrai téléphone en
+> paysage**. C'était le dernier angle mort de MESURE du projet (tout le reste
+> était émulé en 844 × 390). Plus rien n'attend une écoute.
+>
+> **Ce qui reste tient donc en un point, et il se code** : les **deux creux de
+> courbe mesurés** — neuf exercices d'affilée sans grille aux actes 3-4, et
+> l'acte 5 qui serpente (voir « La COURBE de difficulté »). Derrière, les
+> chantiers non engagés : étendre les grilles écrites au-delà de l'acte 1, les
+> roasts d'exercice, les besaces, le code de reprise entre appareils.
 >
 > ✅ **Les trois questions de `masquer-le-verrouille.html` sont tranchées et
 > appliquées** (2026-09-14) : le Mode Live s'ouvre à l'acte 6 et n'y revient
@@ -68,9 +71,9 @@
 > [08](docs/plan/08-etat-de-lart-structures.md)) et deux fiches
 > (`docs/relecture/assemblage.html`, `assemblage-2.html`).
 >
-> ⚠️ **Il ne reste qu'une chose à décider, et elle se décide en JOUANT** : le
-> loquet 🎲 (« il faut tester pour juger ») — **mergé et déployé depuis le
-> 2026-09-13**, donc plus rien ne le retient.
+> ✅ **Le loquet 🎲 est VALIDÉ** (2026-09-14, en jouant sur le site) — c'était la
+> dernière des 25 cartes, et la seule qui attendait un essai plutôt qu'un
+> arbitrage.
 >
 > ⚠️ **Les préversions par PR sont RETIRÉES** (2026-09-11, « arrête avec
 > les préversions ») : elles commentaient chaque PR, donc envoyaient un mail à
@@ -95,7 +98,8 @@
 > l'accueil (carte Q2) sont réglés le même jour, puis **tous retirés** le
 > lendemain — l'horizontale se dit à la porte, pas avant. Le contournement par
 > URL `#boss` est retiré lui aussi : il ne reste que le pseudo « master ». Ce
-> qui reste ouvert du Mode Live : l'essai sur un vrai téléphone en paysage.
+> Le Mode Live n'a plus rien d'ouvert : son dernier point, l'essai sur un vrai
+> téléphone en paysage, est fait (2026-09-14) — et le loquet 🎲 est validé.
 
 ## Où en est le projet
 
@@ -205,12 +209,13 @@ a été tranchée deux fois : oui d'abord, puis **non** le 2026-09-09, à l'usag
 c'est ce « non » qui tient, et plus rien ne touche aux assignations réglées à la
 main.
 
-Ce qui reste ne se code pas, ça **s'écoute** : le loquet 🎲 et l'essai sur un
-vrai téléphone en paysage.
+✅ **Et ce qui restait à écouter a été écouté** (2026-09-14) : le loquet 🎲 est
+validé, le mode a tourné sur un vrai téléphone en paysage. Le chantier est clos.
 
 ### Ce qui suit ensuite
 
-Après écoute seulement, et rien avant : **l'automation d'axe par section**,
+L'écoute a eu lieu et n'a rien réclamé. Reste donc en réserve, et rien avant
+qu'on l'entende manquer : **l'automation d'axe par section**,
 délibérément remplacée par un escalier de sections tant que personne n'a entendu
 que ça manque. (Le fill recalé sur la section est fait — première tranche de
 l'audit du Mode Live.)
@@ -565,9 +570,10 @@ dans un terminal, puis `node scripts/parcours-carriere.cjs`). Même raison pour
 de poser l'objet attendu.
 
 **Pas encore vérifié :** un vrai parcours à la souris/au doigt de bout en bout
-(le script pilote le store, il ne clique pas). Et le Mode Live n'a **toujours
-jamais tourné sur un vrai téléphone** — c'est le dernier angle mort de mesure du
-projet, tout le reste étant émulé en 844 × 390.
+(le script pilote le store, il ne clique pas) — c'est le seul angle mort de
+mesure qui subsiste. ✅ Le Mode Live, lui, a **tourné sur un vrai téléphone en
+paysage** le 2026-09-14 : l'émulation 844 × 390 disait vrai, et le loquet 🎲 a
+été validé dans le même essai.
 
 ⚠️ Le paragraphe qui suit est **historique** : il date de l'audit du 2026-09-02
 ([`docs/plan/05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md), cinq
@@ -602,13 +608,13 @@ séquenceur qui porte les mutes et dit l'état réel, le catalogue trié
 (31 → 20 entrées, 19 variantes → 2), et la bande d'architecture avec ses trois
 modèles. 521 tests.
 
-⚠️ **Ce qui restait sur le Mode Live est fait, sauf une chose.** L'éditeur
-d'architecture existe (`MontagePanel`, Atelier → Production, #173) : ajouter,
-dupliquer, déplacer, retirer une scène, changer sa lettre, ses tours et les
-lignes qui sonnent, ou partir d'une page blanche. Ne reste que **l'automation
-d'axe par section**, délibérément remplacée par un escalier de sections tant que
-personne n'a entendu que ça manque — et **toujours aucun essai sur un vrai
-téléphone**.
+⚠️ **Ce qui restait sur le Mode Live est fait.** L'éditeur d'architecture existe
+(`MontagePanel`, Atelier → Production, #173) : ajouter, dupliquer, déplacer,
+retirer une scène, changer sa lettre, ses tours et les lignes qui sonnent, ou
+partir d'une page blanche. L'essai sur un vrai téléphone en paysage a eu lieu
+(2026-09-14) et le loquet 🎲 est validé. Reste en RÉSERVE, hors chantier :
+**l'automation d'axe par section**, délibérément remplacée par un escalier de
+sections tant que personne n'a entendu que ça manque.
 
 ## Les pièges qui ont coûté du temps
 
@@ -802,8 +808,8 @@ Aucune n'est engagée — demander avant de plonger.
 - ~~**Le Mode Live reste à l'acte 7**, jamais essayé en paysage~~ — **traité.**
   Le concert s'y joue maintenant (`EtapeScene`), et le mode a été mesuré en
   844 × 390 avec pointeur tactile : une seule commande sous 44 px de zone
-  touchable, aucun débordement. Reste à essayer sur un VRAI téléphone — une
-  mesure émulée n'est pas une main.
+  touchable, aucun débordement. ✅ **Et essayé sur un VRAI téléphone en paysage
+  le 2026-09-14 — rien à redire.** La mesure émulée disait vrai.
 - **Rien ne traverse les appareils** : téléphone et ordinateur sont deux joueurs
   distincts. Un « code de reprise » encodant la progression comme `share.ts`
   encode un rythme réglerait ça — chantier à part, non engagé.

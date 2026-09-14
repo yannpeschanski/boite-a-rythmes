@@ -48,6 +48,37 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le chantier du Mode Live est CLOS — les deux derniers points se jugeaient en jouant (2026-09-14)
+
+> *« Le loquet 🎲 — validé. L'essai sur un vrai téléphone en paysage — mode
+> live ok. »*
+
+Les deux seuls points qui restaient du chantier du Mode Live ne se codaient pas :
+ils attendaient une écoute et une main. Les deux sont tombés le même jour, et
+aucun n'a rien réclamé.
+
+**Le loquet 🎲** était la dernière des 25 cartes de l'audit d'assemblage —
+tranchée « il faut tester pour juger », en ligne depuis le 2026-09-13. Validé
+tel quel.
+
+**L'essai sur un VRAI téléphone en paysage** était le **dernier angle mort de
+mesure du projet** : tout le Mode Live n'avait jamais été vu qu'émulé en
+844 × 390 avec pointeur tactile, et une mesure émulée n'est pas une main. Elle
+disait vrai — rien à redire sur l'appareil. ⚠️ Ce que ça vaut : les six
+commandes sous 44 px (exceptions revendiquées), la bande à 44 px, ses pastilles
+à 56 et ses huit cases à 52,7 tiennent au doigt, pas seulement au pixel.
+
+Docs seulement — `CLAUDE.md` (le chantier n'a plus rien d'ouvert), `REPRISE.md`
+(six passages qui annonçaient encore ces deux attentes). ⚠️ Ce qui RESTE en
+réserve est inchangé et ne s'engage toujours pas sans qu'on l'entende manquer :
+**l'automation d'axe par section**. Et l'unique angle mort de mesure qui
+subsiste est ailleurs — un parcours complet à la souris/au doigt, le script
+pilotant le store sans cliquer.
+
+**Ce qui reste au projet tient maintenant en un point qui se CODE** : les deux
+creux de courbe mesurés (neuf exercices sans grille aux actes 3-4, l'acte 5 qui
+serpente).
+
 ### ✅ Le Live s'ouvre à l'acte 6, le catalogue à la fin du 5, et deux barres à une entrée disparaissent (2026-09-14)
 
 > *« Q1 : réponse A […] Q2 : je propose de verrouiller les presets et de les
