@@ -827,12 +827,16 @@ Aucune n'est engagée — demander avant de plonger.
   du 18 août, qui est postérieure aux trois maquettes. Bliss, les barres Luna et
   le thème `noir` sont retirés, l'appli ne parle plus qu'une langue visuelle :
   l'énoncé A/B/C décrit un écran qui n'existe plus. **Ce qui en survit est A1′**,
-  mesuré dans le DOM et toujours vrai : une ligne de batterie fait 99 px dont
-  **34 seulement pour les cases** (en-tête 28, cases 34, barre de pastilles 28).
-  Les chips *Séquence / Timbre* sont encore là, une barre par ligne
-  (`DrumRowView.svelte`, `SynthRowView.svelte`) ; l'antidote nommé par l'audit
-  est le panneau sérigraphié — étiquettes à même la surface, réglages en
-  surcouches.
+  re-mesuré dans l'appli en marche le 2026-09-14 (390 × 844) : une ligne de
+  batterie fait **121 px au DOIGT dont 34 pour les cases** — 28 % — et 99 px à
+  la souris (mêmes 34), la différence étant l'écartement `coarse` du tactile.
+  ⚠️ Le « 99 px » d'août était donc la mesure SOURIS ; sur un téléphone, c'est
+  pire. Découpage constant : en-tête 28, cases 34, barre de pastilles 28, le
+  reste en marges. L'onglet Rythme fait **1 792 px de haut au doigt** (2,1
+  écrans) et les cases y pèsent **9 %**. Les chips *Séquence / Timbre / Filtre &
+  espace* sont encore là, une barre par ligne (`DrumRowView.svelte`,
+  `SynthRowView.svelte`) ; l'antidote nommé par l'audit est le panneau
+  sérigraphié — étiquettes à même la surface, réglages en surcouches.
 - ~~**Le Mode Live reste à l'acte 7**, jamais essayé en paysage~~ — **traité.**
   Le concert s'y joue maintenant (`EtapeScene`), et le mode a été mesuré en
   844 × 390 avec pointeur tactile : une seule commande sous 44 px de zone
