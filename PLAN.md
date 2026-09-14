@@ -83,10 +83,21 @@ la fiche n'est pas la réponse, c'est qu'elle passe dans « Décisions actées, 
 pas rouvrir » de `REPRISE.md` — et que la fiche porte un bandeau ✅ pour qui
 l'ouvrirait ensuite.
 
-**Reste ouvert, et indépendant du nom** : la carte Q2, le sous-titre
-« Manette paysage », qui décrit le meuble là où ses voisins décrivent le métier —
-avec la contrainte de ne pas perdre l'avertissement « horizontale », dont c'est
-le seul porteur sur l'accueil.
+⚠️ **Et Q2 est close le même jour — une ligne sous un bouton doit APPRENDRE
+quelque chose.** *« Enlève les sous-titres »*, puis *« conserve la demande de
+passer horizontal, je pensais aux sous-titres de Jouer »*. Les deux qui
+GLOSAIENT partent (« Composer librement », « Une carrière, acte par acte »
+paraphrasaient un bouton qui se suffit) ; celui du Mode Live RESTE, parce qu'il
+ne glose pas — il prévient d'une contrainte qu'on ne peut pas deviner, et
+« l'écran qui y envoie doit le dire » vaut toujours.
+
+La mesure a levé le seul risque réel, l'alignement. En 390 px le Live passe à la
+ligne, donc les hauteurs inégales (61 / 61 / 77) ne font aucune rangée bancale ;
+et sur une seule rangée (640, 900, 1280) `align-items: stretch` égalise les trois
+à 77 px et les libellés tombent **à 0,0 px d'écart**. Aucun débordement, toutes
+les cibles au-dessus de 44 px en pointeur grossier, zéro erreur console.
+`.big small` a bien failli devenir une règle qui ne matche plus rien — elle
+redevient nécessaire dès que le Live garde sa ligne.
 
 ---
 

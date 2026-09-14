@@ -111,10 +111,15 @@
          un écran d'accueil où deux entrées sur trois sont barrées présente le
          jeu par ce qu'on ne peut PAS faire. -->
     <div class="choices">
+      <!-- ⚠️ Ces deux-là n'ont PAS de sous-titre, et c'est délibéré.
+           « Composer librement » et « Une carrière, acte par acte » ne faisaient
+           que paraphraser un bouton qui se suffit : un nom qui a besoin d'être
+           traduit dessous n'a pas fini son travail. Ne pas les réintroduire au
+           motif que le Mode Live en garde un — lui ne glose pas, il PRÉVIENT
+           (voir plus bas). Une ligne sous un bouton doit apprendre quelque
+           chose qu'on ne peut pas deviner. -->
       {#if unlocks.has('atelier')}
-        <button class="big" onclick={() => enter('atelier', 'atelier')}>
-          🥁 Atelier<small>Composer librement</small></button
-        >
+        <button class="big" onclick={() => enter('atelier', 'atelier')}>🥁 Atelier</button>
       {/if}
       <!-- ⚠️ Pas de COMPTE ici. « 78 niveaux » comptait le réservoir tout
            entier — la carrière n'en cite que 38, et le reste n'a même pas de
@@ -122,9 +127,12 @@
            qui n'en a pas encore vu un seul. C'est la règle qui a déjà retiré le
            « / 41 » du titre de fenêtre et les actes non atteints du carnet :
            rien de non atteint ne s'affiche, et surtout pas un total. -->
-      <button class="big" onclick={() => enter('game')}>
-        🎮 Jouer<small>Une carrière, acte par acte</small></button
-      >
+      <button class="big" onclick={() => enter('game')}>🎮 Jouer</button>
+      <!-- ⚠️ Celui-ci GARDE sa ligne, et ce n'est pas une exception au point
+           ci-dessus : les deux autres GLOSAIENT un nom qui se suffisait, celle-ci
+           PRÉVIENT. Le Mode Live n'existe qu'à l'horizontale, et « l'écran qui y
+           envoie doit le dire » — sans elle on n'apprend la contrainte qu'une
+           fois la porte franchie. C'est une consigne, pas un sous-titre. -->
       {#if unlocks.has('live')}
         <button class="big" onclick={() => enter('live', 'live')}>
           🎛 Mode Live<small>Manette paysage</small></button
