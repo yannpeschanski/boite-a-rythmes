@@ -75,9 +75,27 @@ réserve est inchangé et ne s'engage toujours pas sans qu'on l'entende manquer 
 subsiste est ailleurs — un parcours complet à la souris/au doigt, le script
 pilotant le store sans cliquer.
 
-**Ce qui reste au projet tient maintenant en un point qui se CODE** : les deux
-creux de courbe mesurés (neuf exercices sans grille aux actes 3-4, l'acte 5 qui
-serpente).
+⚠️ **Et les deux « creux de courbe » ont été RE-MESURÉS le même jour : ils
+décrivaient un jeu qui n'existe plus.** Ils dataient du 2026-08-31, avant la
+refonte de l'acte 2 en grilles écrites, avant les arrangements 75-78 de l'acte 3
+et avant le remplacement des exercices de l'acte 4 par la chaîne d'envois. Ce
+que la mesure d'aujourd'hui donne, dans l'ordre où la carrière joue ses **27**
+exercices :
+
+- « neuf d'affilée sans aucune grille » → le plus long trou fait **trois** (les
+  `melodie` 42-43-44), aussitôt suivi des quatre arrangements (9, 14, 26, 30
+  coups) ;
+- « l'acte 5 serpente sur dix exercices » → l'acte 5 en compte **deux** ;
+- « ~28 exercices générés » → **17 des 27 portent une cible écrite**, et 5 des
+  10 restants ne peuvent pas en avoir par construction (trois verbes de
+  paramètre, `style`, un preset). Restent 5 niveaux qui pourraient s'écrire.
+
+La courbe en coups par exercice : 4, 5, 13, —, 22, 23, 25, 25, 24, 26, —, 26,
+—, 24, —, 26, 26, —, —, —, 9, 14, 26, 30, —, —, —. Le seul creux qui SUBSISTE
+est la FIN : les trois derniers exercices (`style` 58, preset garage 16, `jouer`
+38) n'ont pas de cible écrite. C'est cohérent avec ce qu'ils enseignent, et
+c'est une question d'arbitrage, pas un défaut — d'où une question posée plutôt
+qu'un correctif.
 
 ### ✅ Le Live s'ouvre à l'acte 6, le catalogue à la fin du 5, et deux barres à une entrée disparaissent (2026-09-14)
 

@@ -14,11 +14,19 @@
 > paysage**. C'était le dernier angle mort de MESURE du projet (tout le reste
 > était émulé en 844 × 390). Plus rien n'attend une écoute.
 >
-> **Ce qui reste tient donc en un point, et il se code** : les **deux creux de
-> courbe mesurés** — neuf exercices d'affilée sans grille aux actes 3-4, et
-> l'acte 5 qui serpente (voir « La COURBE de difficulté »). Derrière, les
-> chantiers non engagés : étendre les grilles écrites au-delà de l'acte 1, les
-> roasts d'exercice, les besaces, le code de reprise entre appareils.
+> ⚠️ **Et les deux « creux de courbe » ont été re-mesurés le 2026-09-14 : ils
+> décrivaient un jeu qui n'existe plus.** L'acte 5 ne compte plus dix exercices
+> mais DEUX, et le trou de « neuf d'affilée sans grille » est retombé à trois
+> (les `melodie` de l'acte 3), suivi des quatre arrangements 75-78. Même chose
+> pour « étendre les grilles écrites » : **17 des 27 exercices portent une cible
+> écrite**, 5 des 10 restants ne peuvent pas en avoir par construction. Voir
+> « La COURBE de difficulté ».
+>
+> **Ce qui reste donc, et qui se code** : une question d'arbitrage (faut-il une
+> cible écrite à la FIN du jeu ? les trois derniers exercices sont `style`, un
+> preset et une frappe), cinq niveaux générés qui pourraient s'écrire, puis les
+> chantiers non engagés — les roasts d'exercice, les besaces, le code de reprise
+> entre appareils.
 >
 > ✅ **Les trois questions de `masquer-le-verrouille.html` sont tranchées et
 > appliquées** (2026-09-14) : le Mode Live s'ouvre à l'acte 6 et n'y revient
@@ -534,9 +542,17 @@ chaque ligne à un locuteur. À faire ensemble.
    L'acte 1 passe à douze exercices (12 → 48 cases, 4 → 26 notes), l'acte 2 à
    douze. Voir `PLAN.md`, « Un sujet, deux exercices ».
    **Reste l'acte 2** : beaucoup d'exercices d'atelier.
-10. **Étendre les grilles écrites au-delà de l'acte 1** — les autres actes citent
-    encore des niveaux générés (~28 exercices de grille). Même chantier, même
-    méthode : une promesse par test.
+10. ~~**Étendre les grilles écrites au-delà de l'acte 1**~~ — **largement FAIT,
+    re-mesuré le 2026-09-14.** Le « ~28 exercices générés » datait d'avant la
+    refonte de l'acte 2 (grilles écrites), les arrangements 75-78 de l'acte 3,
+    et le remplacement des exercices de l'acte 4 par la chaîne d'envois. Compté
+    dans l'ordre où la carrière joue : **17 des 27 exercices portent une cible
+    écrite** (3 à l'acte 0, 6 à l'acte 1, 4 à l'acte 2, 4 arrangements à
+    l'acte 3). Sur les 10 restants, **5 ne peuvent pas en avoir** — les trois
+    verbes de paramètre (48, 71, 47) tirent leur bouton, `style` (58) tire son
+    preset, et le 16 EST un preset. **Reste réellement ouvert : 5 niveaux** —
+    les trois `melodie` (42, 43, 44), le `silence` (52) et le `jouer` « à vue »
+    (38), qui est probablement très bien généré.
 11. **Les roasts d'EXERCICE** (`gameData.ts`) : tous les textes à revoir. Ceux
     de LIVRAISON sont faits (`reactions.ts`) — la différence compte : les
     premiers commentent la façon de jouer, les seconds le morceau produit.
@@ -773,15 +789,27 @@ Le niveau 63 (seize cases par ligne) donne son palier à l'acte 2 : le seuil
 passe au **21e exercice**, de 79 % à 49 % du parcours. Un test empêche
 désormais l'acte 2 de repasser sous l'acte 1.
 
-**Les deux creux qui restent, mesurés, à arbitrer :**
+⚠️ **Les « deux creux » étaient datés du 2026-08-31 et ne décrivent plus le jeu
+— re-mesurés le 2026-09-14**, après la refonte de l'acte 2, les arrangements
+75-78 et le remplacement des exercices de l'acte 4 par la chaîne d'envois.
 
-- **Exercices 22 à 30 : neuf d'affilée sans aucune grille** (actes 3 et 4).
-  Leur sujet est la mélodie et la production ; y poser une reproduction demande
-  de décider ce qu'elle enseigne.
-- **L'acte 5 repart à 16 cases** après le palier à 48, puis serpente : 16, 16,
-  20, 40, 36, 32, 24, 24, 28, 22. Le trier est trivial côté données, mais chaque
-  preset est attaché à une réplique (« Kelvin vérifie le hip-hop ») — trier
-  demande de réécrire ces lignes.
+- ~~« Exercices 22 à 30 : neuf d'affilée sans aucune grille »~~ — le plus long
+  trou est maintenant de **trois** (les trois `melodie` de l'acte 3, 42-43-44),
+  aussitôt suivi des quatre arrangements 75-78 (9, 14, 26 puis 30 coups). Ce que
+  ça laisse : une **fin de parcours** sans cible écrite — `style` (58), le
+  preset garage (16) et le `jouer` « à vue » (38), les trois derniers exercices
+  du jeu. C'est cohérent avec les actes qu'ils servent (reconnaître, jouer),
+  mais ça reste le seul endroit où la courbe ne monte plus.
+- ~~« L'acte 5 repart à 16 cases puis serpente : 16, 16, 20, 40, 36, 32, 24, 24,
+  28, 22 »~~ — **l'acte 5 ne compte plus que DEUX exercices** (58 et 16). La
+  liste décrivait dix exercices qui n'existent plus : le serpentement a disparu
+  avec eux.
+
+**La courbe réelle, en coups par exercice, dans l'ordre joué** (un tiret = pas
+de cible écrite : verbe de paramètre, mélodie, style ou frappe) : 4, 5, 13, —,
+22, 23, 25, 25, 24, 26, —, 26, —, 24, —, 26, 26, —, —, —, 9, 14, 26, 30, —, —,
+—. Ce qui reste à arbitrer tient en une question : **faut-il une cible écrite à
+la fin du jeu**, ou la fin doit-elle se jouer plutôt que se relever ?
 
 ## Pistes ouvertes, si rien d'autre n'est demandé
 
