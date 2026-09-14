@@ -27,9 +27,9 @@ une ligne réécrite ni réordonnée.
 | [`02-audits-et-arbitrages.md`](docs/plan/02-audits-et-arbitrages.md) | Audits de design et arbitrages de Yann |
 | [`03-journal-migration.md`](docs/plan/03-journal-migration.md) | Journal — la migration et la peau Winamp |
 | [`04-maquettes-et-moodboards.md`](docs/plan/04-maquettes-et-moodboards.md) | Maquettes — les sept séries de propositions |
-| [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) | **Audit du Mode Live (2026-09-02)** — pas une archive : un chantier OUVERT, mesuré et pas encore arbitré |
-| [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; ouvert lui aussi |
-| [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode, ce que la mesure trouve, et les décisions qui restent. Fiche annotable : `docs/relecture/assemblage.html` |
+| [`05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md) | **Audit du Mode Live (2026-09-02)** — ses cinq tranches sont arbitrées et les quatre premières livrées ; gardé pour le *pourquoi* et les mesures |
+| [`06-audit-architectures-de-morceau.md`](docs/plan/06-audit-architectures-de-morceau.md) | **Audit du macro-séquenceur (2026-09-02)** — décrire une architecture de morceau ; traité par les PARTIES et les MONTAGES |
+| [`07-audit-assemblage-de-morceau.md`](docs/plan/07-audit-assemblage-de-morceau.md) | **Audit de l'ASSEMBLAGE (2026-09-07)** — à quoi sert ce mode et ce que la mesure trouve ; ses 25 cartes sont tranchées et appliquées, sauf le loquet 🎲. Fiche annotable : `docs/relecture/assemblage.html` |
 | [`08-etat-de-lart-structures.md`](docs/plan/08-etat-de-lart-structures.md) | **État de l'art (2026-09-07)** — ce que font les machines, les longueurs conventionnelles, et les quatre modèles proposés. Fiche : `docs/relecture/assemblage-2.html` |
 | [`09-etat-de-lart-controles-live.md`](docs/plan/09-etat-de-lart-controles-live.md) | **État de l'art (2026-09-09)** — les COMMANDES du Mode Live — pourquoi les gestes rythmiques sont musicalement FAUX (bouillie, frappes empilées par le swing, accent retourné, hors grille), mesuré par `scripts/banc-live.cjs` ; ce que les machines mettent sous les doigts ; huit pistes à arbitrer. Fiche : `docs/relecture/parametres-live.html` |
 | [`relecture/parametres-live.html`](docs/relecture/parametres-live.html) | **Fiche à cocher (2026-09-09)** — les 69 paramètres de l'Atelier, et pour chacun plusieurs façons de l'amener au Mode Live. `scripts/relecture-parametres-live.cjs` |
@@ -47,6 +47,47 @@ puis ici ou dans l'archive correspondante (la démonstration).
 ---
 
 ## Journal des livraisons — Mode jeu et Mode carrière
+
+### ✅ Les documents rattrapent le code (2026-09-14)
+
+> *« Fais moi un point d'étape complet »* — et le point d'étape a trouvé que les
+> deux fichiers censés le porter étaient faux.
+
+Aucun changement de code. `main` est vert, déployé, aucune PR ouverte : 0 erreur
+de types sur 288 fichiers, 741 tests, les deux builds (l'autonome à 874 ko,
+292 ko gzip). Le chantier du Mode Live est appliqué en entier, #167 → #181.
+
+⚠️ **Un document de reprise faux coûte plus cher que pas de document.**
+`REPRISE.md` était daté du 10/09 avec trois livraisons derrière, annonçait
+« 689 tests » à un endroit et « 423 » à un autre, et listait comme À FAIRE le
+fichier de morceau, le rangement banque/lettres et le magnétophone — **les trois
+livrés par #169**. Il disait aussi que le Mode Live n'avait pas été retouché et
+que son éditeur d'architecture restait à écrire, faux depuis #173. Sept
+correctifs, chacun vérifié contre le code ou la CI, plus les compteurs
+**recomptés** plutôt que recopiés (78 niveaux, 12 verbes, 22 commandes,
+3 scènes — l'ancienne rédaction en annonçait trois à l'acte 7, il en a deux).
+
+⚠️ **Un paragraphe périmé se MARQUE, il ne se supprime pas.** Les constats de
+l'audit du Mode Live sont devenus faux, mais leur *pourquoi* tient : ils passent
+en HISTORIQUE avec un renvoi vers l'en-tête, plutôt que de disparaître. Même
+traitement pour le chantier des cahiers des charges, dont les deux tableaux sont
+verts de bout en bout : le titre cesse de dire « en cours », le contenu reste.
+
+⚠️ **Ce qui est relu à CHAQUE tour se paie au comptant.** `CLAUDE.md` ouvrait sa
+section Mode Live sur « SECTION SOUS ARBITRAGE — la branche non mergée » et
+nommait `claude/mode-livre-params-sequences-oiwtul`, disparue au squash. La
+prochaine session aurait cherché une branche qui n'existe plus, et cru qu'un
+chantier livré attendait un merge. Corrigé en une ligne de moins.
+
+**Ce qui reste ouvert**, et c'est désormais écrit au même endroit dans les deux
+fichiers : le loquet 🎲 et l'essai sur un vrai téléphone en paysage (les deux se
+jugent en JOUANT), les trois questions de `masquer-le-verrouille.html`,
+l'arbitrage design A/B/C ouvert depuis août, et les deux creux de courbe mesurés.
+
+**Vérifié** : `npm run check` 0 erreur, 741 tests, les deux builds — et le run de
+`main` après chaque merge, pas seulement celui de la PR.
+
+---
 
 ### ✅ Les rafales de ligne : le chemin de forçage part aussi (2026-09-13)
 
