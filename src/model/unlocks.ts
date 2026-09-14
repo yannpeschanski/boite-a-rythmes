@@ -93,8 +93,6 @@ export interface UnlockContext {
    * HISTOIRE.md, « Ce que le récit ouvre »).
    */
   acte?: number;
-  /** Contournement développeur (#boss) : tout est ouvert. */
-  bypass?: boolean;
   /**
    * Les modules qu'une commande EN COURS réclame — voir
    * `EtapeCommande.modulesRequis`. Ouverts le temps de la livraison, et rien
@@ -125,7 +123,6 @@ export interface UnlockContext {
  * que les sauvegardes d'avant ce champ.
  */
 export function moduleUnlocked(name: LockedModule, cx: UnlockContext): boolean {
-  if (cx.bypass) return true;
   if (name === 'atelier' && cx.sharedPattern) return true;
   if (cx.modulesRequis?.includes(name)) return true;
   if ((cx.acte ?? 0) > ACTE_DU_MODULE[name]) return true;

@@ -27,8 +27,6 @@
     // propriété de l'appareil, et il doit être posé AVANT le premier
     // AudioContext — celui-ci naît au premier son, donc après ce onMount.
     sortie.charger();
-    // Contournement #boss AVANT tout le reste : ce qui suit lit les verrous.
-    unlocks.init(location.hash);
     // Rythme partagé par URL : on entre directement dans l'Atelier. Le lien
     // vaut intention, il ouvre l'Atelier même verrouillé (voir model/unlocks).
     if (loadFromHash()) {
@@ -39,21 +37,12 @@
     // ci-dessous, pas à sa place) — pratique pour y revenir sans repasser
     // par l'écran d'accueil.
     if (location.hash === '#mode-live' && unlocks.has('live')) view = 'live';
-    // Taper #boss (ou #boss=off) dans la barre d'adresse d'une page DÉJÀ
-    // ouverte ne la recharge pas : sans cet écouteur, la bascule ne prendrait
-    // effet qu'au rechargement suivant — et on croirait qu'elle ne marche
-    // pas. Trouvé en testant #boss=off, pas en relisant le code.
-    window.addEventListener('hashchange', onHashChange);
   });
-  onDestroy(() => window.removeEventListener('hashchange', onHashChange));
 
-  function onHashChange() {
-    unlocks.init(location.hash);
-    // Si on retire l'accès total depuis un module désormais verrouillé, on
-    // ne laisse pas l'utilisateur dedans : retour à l'accueil.
-    if (view === 'atelier' && !unlocks.has('atelier')) view = 'splash';
-    if (view === 'live' && !unlocks.has('live')) view = 'splash';
-  }
+  /* ⚠️ Plus d'écouteur `hashchange` : il n'existait que pour #boss, dont la
+     bascule devait prendre effet sans rechargement. Le contournement retiré,
+     plus aucun verrou ne change en cours de page — et #mode-live, seul hash
+     restant, se lit une fois au montage. */
 
   // Verrou DUR (arbitrage D2 de Yann, 2026-08-16) : le module n'est pas
   // utilisable tant que le Mode jeu ne l'a pas ouvert. Il reste VISIBLE avec
@@ -111,13 +100,13 @@
          un écran d'accueil où deux entrées sur trois sont barrées présente le
          jeu par ce qu'on ne peut PAS faire. -->
     <div class="choices">
-      <!-- ⚠️ Ces deux-là n'ont PAS de sous-titre, et c'est délibéré.
-           « Composer librement » et « Une carrière, acte par acte » ne faisaient
-           que paraphraser un bouton qui se suffit : un nom qui a besoin d'être
-           traduit dessous n'a pas fini son travail. Ne pas les réintroduire au
-           motif que le Mode Live en garde un — lui ne glose pas, il PRÉVIENT
-           (voir plus bas). Une ligne sous un bouton doit apprendre quelque
-           chose qu'on ne peut pas deviner. -->
+      <!-- ⚠️ AUCUN sous-titre, et c'est délibéré. Les trois glosaient un bouton
+           qui se suffit. Le dernier à tomber est « Manette paysage » sous le Mode
+           Live (2026-09-14) : l'horizontale n'a pas besoin d'être annoncée AVANT,
+           parce que la porte elle-même la dit — « 📱 TOURNE TON TÉLÉPHONE », avec
+           un « ← Retour ». Une ligne sous un bouton devrait apprendre quelque
+           chose qu'on ne peut pas deviner, et celle-ci doublait un écran qui
+           existe déjà. -->
       {#if unlocks.has('atelier')}
         <button class="big" onclick={() => enter('atelier', 'atelier')}>🥁 Atelier</button>
       {/if}
@@ -128,19 +117,15 @@
            « / 41 » du titre de fenêtre et les actes non atteints du carnet :
            rien de non atteint ne s'affiche, et surtout pas un total. -->
       <button class="big" onclick={() => enter('game')}>🎮 Jouer</button>
-      <!-- ⚠️ Celui-ci GARDE sa ligne, et ce n'est pas une exception au point
-           ci-dessus : les deux autres GLOSAIENT un nom qui se suffisait, celle-ci
-           PRÉVIENT. Le Mode Live n'existe qu'à l'horizontale, et « l'écran qui y
-           envoie doit le dire » — sans elle on n'apprend la contrainte qu'une
-           fois la porte franchie. C'est une consigne, pas un sous-titre. -->
       {#if unlocks.has('live')}
-        <button class="big" onclick={() => enter('live', 'live')}>
-          🎛 Mode Live<small>Manette paysage</small></button
-        >
+        <button class="big" onclick={() => enter('live', 'live')}>🎛 Mode Live</button>
       {/if}
     </div>
+    <!-- ⚠️ L'accès total reste ANNONCÉ, même s'il n'a plus qu'une porte : un
+         doute sur l'état d'un contournement coûte plus cher que le
+         contournement (« le boss mode est toujours activé j'ai l'impression »). -->
     {#if unlocks.totalAccess}
-      <p class="boss">🔓 Accès total — <code>{unlocks.totalAccessHint}</code></p>
+      <p class="acces-total">🔓 Accès total — <code>{unlocks.totalAccessHint}</code></p>
     {/if}
     <!-- Le stockage refusé était SILENCIEUX : les modules se reverrouillaient
          à chaque visite et rien ne disait pourquoi. Un verrou qui revient sans
@@ -216,10 +201,6 @@
     color: var(--xp-text);
     text-shadow: none;
   }
-  .big small {
-    font-size: 9px;
-    color: var(--xp-muted);
-  }
   /* Verrouillé : le relief sortant disparaît (rien à enfoncer) et le bouton
      s'éteint, mais il garde sa taille et sa place — c'est ce qui le fait lire
      comme « pas encore » et non comme « absent ». */
@@ -230,12 +211,12 @@
     color: var(--xp-accent-amber);
     opacity: 0.95;
   }
-  .splash .boss {
+  .splash .acces-total {
     margin: 10px 0 0;
     font-size: var(--xp-size-body);
     opacity: 0.95;
   }
-  .splash .boss code {
+  .splash .acces-total code {
     background: rgba(0, 0, 0, 0.25);
     padding: 1px 5px;
     border-radius: 3px;

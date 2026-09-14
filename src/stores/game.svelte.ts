@@ -1134,11 +1134,11 @@ class GameStore {
     try {
       // « master » débloque TOUT (playerProgress renvoie le niveau maximum,
       // donc tous les modules). Le mémoriser en ferait un accès total
-      // permanent et INVISIBLE : rien à l'écran ne l'expliquerait, et
-      // `#boss=off` n'y changerait rien puisque ça ne passe pas par #boss.
-      // C'est exactement ce qui est arrivé le 2026-08-16 en persistant le
-      // pseudo (retour de Yann : « le boss mode est toujours activé »).
-      // Il redevient donc ce qu'il était : un contournement de SESSION.
+      // permanent et INVISIBLE : rien à l'écran ne l'expliquerait. C'est
+      // exactement ce qui est arrivé le 2026-08-16 en persistant le pseudo
+      // (retour de Yann : « le boss mode est toujours activé »). Il reste donc
+      // un contournement de SESSION — et c'est le SEUL depuis que le
+      // contournement par URL a été retiré (2026-09-14).
       if (this.pseudo.toLowerCase() === 'master') localStorage.removeItem(KEY_PSEUDO);
       else localStorage.setItem(KEY_PSEUDO, this.pseudo);
     } catch {
