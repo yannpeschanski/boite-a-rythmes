@@ -187,7 +187,11 @@ ouverte ».
 
 **Ce qui en survit, et qui n'est pas une question de goût : A1′.** Mesuré dans le
 DOM rendu, toujours vrai — une ligne de batterie fait **99 px dont 34 pour les
-cases** (en-tête 28, cases 34, barre de pastilles 28). La `group-bar` et ses
+cases** (en-tête 28, cases 34, barre de pastilles 28). ⚠️ **Re-mesuré le même
+jour avec l'émulation TACTILE : 121 px, donc 28 %** — l'écartement `coarse` de
+`.tap44` ajoute 22 px par ligne, et le « 99 » d'août était la mesure souris. Sur
+l'appareil qui compte, le tour de taille est plus lourd que ce que l'audit
+annonçait ; l'onglet Rythme fait alors 1 792 px de haut, où les cases pèsent 9 %. La `group-bar` et ses
 chips *Séquence / Timbre* sont encore là, une par ligne
 (`DrumRowView.svelte`, `SynthRowView.svelte`). L'antidote nommé par l'audit
 (`docs/plan/03`, « les cinq familles du marché ») est le **panneau sérigraphié** :
