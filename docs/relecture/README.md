@@ -98,8 +98,13 @@ GRAMMAIRE, et le sous-titre de l'accueil trahit le symptôme), quatre options
 PLATEAU / MANETTE), le coût chiffré, et deux questions qui se posent quelle que
 soit la réponse.
 
-⚠️ **Rien n'est renommé** : c'est un constat sur ce que le produit EST, donc il
-s'arbitre avant de se coder. Le périmètre du diff est chiffré dans la carte C1 —
+✅ **Répondu le 2026-09-14 : on garde « Mode Live »** (*« gardons mode live »*).
+L'option retenue est O2, sur l'argument de familiarité. Q1 tombe par
+conséquence ; **Q2 (le sous-titre de l'accueil) reste ouverte**, elle ne
+dépendait pas du nom. La fiche est gardée comme trace du *pourquoi*.
+
+⚠️ **Rien n'a été renommé** : c'était un constat sur ce que le produit EST, donc
+il s'arbitrait avant de se coder. Le périmètre du diff est chiffré dans la carte C1 —
 **11 chaînes vues par le joueur, 333 identifiants inchangés** — pour que « oui »
 et « non » se décident sur un nombre.
 
