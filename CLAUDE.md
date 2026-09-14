@@ -526,6 +526,18 @@ appareil, un message, un bouton.
 ⚠️ **Ce qui est VERROUILLÉ ne s'affiche pas.** Un accueil où deux entrées sur
 trois sont barrées présente le jeu par ce qu'on ne peut PAS faire. Splash, barre
 de navigation et onglets de l'Atelier masquent ce qui n'est pas ouvert.
+⚠️ **Et une barre qui tombe à UNE entrée ne s'affiche pas non plus** — barre
+d'onglets de l'Atelier, barre de bascule du Mode jeu. Un onglet seul ne sépare
+rien : il se lit comme un onglet, donc comme la promesse qu'il y en aura
+d'autres — le dernier indice de ce qui reste fermé, et il ne dit même pas quoi.
+Un onglet qui APPARAÎT à l'acte 3 dit la même chose, au moment où c'est vrai.
+⚠️ **Le catalogue non plus, et ça vaut pour un CAHIER** : cinq lignes disaient
+« pas le preset chargé depuis le menu » aux actes 3 à 5, où le catalogue est
+fermé. Un cahier dit une PROPRIÉTÉ, jamais où cliquer — ce qu'on refuse est la
+provenance, et ça se dit sans l'adresse. Tenu par `tests/commande.test.ts` (avec
+le compte de la population) et par `verrous-masques.cjs`, qui cherche dans le
+menu Fichier les **libellés** de presets : « morceau » est partout dans le
+récit, un libellé de preset n'est nulle part ailleurs.
 ⚠️ **Un module fermé ne se NOMME pas non plus** — ni dans une entrée de menu, ni
 dans un conseil (« passe au Synthé »), ni dans une section vide (« depuis
 l'onglet Production »), ni dans un TOTAL (« 78 niveaux » comptait un réservoir
@@ -715,6 +727,27 @@ modules.** `src/model/carriere.ts` porte les huit actes ;
 - `moduleUnlocked` est un **OU** entre l'acte et le seuil de niveau, ce dernier lu
   sur le **plancher** — retirer le second membre priverait de leurs modules ceux
   qui jouent hors carrière.
+
+⚠️ **Un module s'ouvre à l'ÉTAPE qui le prête, pas à la frontière de son acte**
+(`ETAPE_DU_MODULE`, dérivé des `modulesRequis` de `ACTES`). Sinon la porte que
+le récit vient d'ouvrir se referme à l'écran suivant : entre la scène de l'acte 6
+et la fin de l'acte, l'écran « LE CATALOGUE » reprenait le Mode Live pour une
+étape. Se lit sur le curseur PERSISTÉ, qui ne recule jamais.
+
+⚠️ **Le Mode Live s'ouvre à l'acte 6, et le 7 n'ouvre plus rien** (2026-09-14).
+Sa scène l'empruntait déjà : l'entrée apparaissait, servait deux fois, puis
+disparaissait jusqu'à l'épilogue — ce qui se lit comme une PANNE, et contredit
+« une porte déjà ouverte ne se referme jamais ». On ne découvre pas sa console
+sur scène ; le dernier acte ne paie aucune dette mécanique, comme les actes 0, 2
+et 5.
+
+⚠️ **Le CATALOGUE des 34 morceaux est fermé jusqu'à la fin de l'acte 5**
+(`catalogueOuvert`, `model/unlocks.ts` — une bibliothèque, pas un module : aucun
+écran à ouvrir, donc pas une cinquième entrée de `LockedModule`). Deux défauts
+d'un coup : il posait des lignes de synthé **audibles** dans un onglet qui
+n'existe pas encore, et il offrait tout faits les genres que l'acte 5 demande de
+produire. Le plancher reste (seuil de la Production) : qui les avait hors
+carrière les garde.
 
 ⚠️ **Un seul contournement, et il est le pseudo « master »** (arbitré le
 2026-09-14). Le contournement par URL `#boss` et le champ `UnlockContext.bypass`

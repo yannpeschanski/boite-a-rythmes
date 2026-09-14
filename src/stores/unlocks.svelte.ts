@@ -10,7 +10,7 @@
 // La règle de déblocage elle-même vit dans `model/unlocks.ts` (pur, testé) ;
 // ce module n'ajoute que la réactivité et la persistance.
 import { game } from './game.svelte';
-import { moduleUnlocked, type LockedModule, type UnlockContext } from '../model/unlocks';
+import { catalogueOuvert, moduleUnlocked, type LockedModule, type UnlockContext } from '../model/unlocks';
 
 class Unlocks {
   /** Un rythme partagé a été chargé au démarrage — ouvre l'Atelier, rien d'autre. */
@@ -26,6 +26,11 @@ class Unlocks {
       plancher: game.playerProgress.plancher,
       // Voie principale : c'est le RÉCIT qui ouvre les modules (model/carriere.ts).
       acte: game.progresCarriere.acte,
+      /* L'étape ATTEINTE dans cet acte : le module que l'acte ouvre l'est dès
+         l'étape qui le prête, pas à la frontière (voir `UnlockContext.etape`).
+         Le curseur PERSISTÉ, pas `etapeActive` — celui-ci recule quand on
+         relit un acte, et un verrou qui revient se lit comme une panne. */
+      etape: game.progresCarriere.etape,
       sharedPattern: this.sharedPattern,
       /* Ce que l'ÉTAPE ouverte réclame — commande ou scène (`game.modulesRequis`).
          Une seule source pour les deux : lu ici sur la seule commande, une
@@ -36,6 +41,11 @@ class Unlocks {
 
   has(name: LockedModule): boolean {
     return moduleUnlocked(name, this.context);
+  }
+
+  /** Le catalogue des 34 morceaux (menu Fichier) — voir `catalogueOuvert`. */
+  get catalogue(): boolean {
+    return catalogueOuvert(this.context);
   }
 
   /**

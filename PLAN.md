@@ -48,6 +48,80 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le Live s'ouvre à l'acte 6, le catalogue à la fin du 5, et deux barres à une entrée disparaissent (2026-09-14)
+
+> *« Q1 : réponse A […] Q2 : je propose de verrouiller les presets et de les
+> débloquer à la fin de l'acte 5, ça fait d'une pierre deux coups. Q3 : tu peux
+> virer l'onglet rythme au début […] ne pas oublier dans la barre horizontale
+> d'adapter la section Mode. »*
+
+Les trois questions restées ouvertes de `docs/relecture/masquer-le-verrouille.html`,
+tranchées et appliquées.
+
+**Q1 — le Mode Live passe de l'acte 7 à l'acte 6.** Il s'ouvrait à l'épilogue
+alors que la scène de l'acte 6 et les deux de l'acte 7 l'empruntaient
+(`modulesRequis`) : l'entrée apparaissait, servait, disparaissait, revenait.
+⚠️ **Et déplacer l'acte ne suffisait pas** : un module s'ouvrait à la FRONTIÈRE
+de son acte, or il reste un écran de récit après la scène (« LE CATALOGUE ») —
+la même disparition, en plus court. D'où `ETAPE_DU_MODULE` (dérivé des
+`modulesRequis` de `ACTES`, comme `ACTE_DU_MODULE`) et un troisième membre dans
+`moduleUnlocked` : dans l'acte qui l'ouvre, le module l'est dès l'étape qui le
+prête. Lu sur le curseur PERSISTÉ — `etapeActive` recule quand on relit un acte.
+Mesuré en jouant : `parcours-carriere.cjs` affiche `live` sur l'acte 7 et
+l'épilogue, `verrous-masques.cjs` ne trouve aucune fuite.
+
+**Q2 — le catalogue des 34 morceaux ferme jusqu'à la fin de l'acte 5.** Une
+bibliothèque, pas un module (aucun écran ne s'ouvre) : `catalogueOuvert` vit à
+côté de `moduleUnlocked` plutôt que d'ajouter une cinquième entrée à
+`LockedModule`, qui aurait demandé un acte, un seuil et un cadenas à afficher.
+D'une pierre deux coups, et c'est le mot de Yann : charger « Boom bap 90s » à
+l'acte 2 posait une basse, une mélodie et une nappe **audibles** dans un onglet
+qui n'existe pas encore ; et l'acte des styles demande de produire un genre que
+le menu offrait tout fait. Le verrou pendant une commande et `pasUnPresetCharge`
+restent — ils tiennent le plancher et le preset chargé d'avance. Mesuré : 0
+catégorie de morceaux dans le menu Fichier aux actes 2 à 5 (menu à 90 px), 5 aux
+actes 6+ (422 px). La case « Garder le synthé et le tempo » suit, elle n'a rien
+à quoi s'appliquer sans catalogue.
+
+**Q3 — deux barres à une entrée.** La barre d'onglets de l'Atelier tombait à
+« 🥁 Rythme » seul aux actes 2-3, et la barre de bascule du Mode jeu à
+« 🎮 Jouer » seul aux actes 0-1 : une bascule vers l'écran où l'on est déjà.
+Toutes deux disparaissent sous deux entrées. Mesuré par acte (390 × 844,
+pointeur tactile) : onglets absents aux actes 2-3, deux à l'acte 4, trois à
+partir du 5 ; barre de bascule absente à l'acte 1, deux entrées à partir du 2,
+trois à partir du 7. Le menu « Mode » de la barre de menus, lui, n'avait rien à
+adapter : il masque déjà le Mode Live fermé et garde toujours deux destinations.
+
+⚠️ **Et l'AIDE suit les modules** (*« attention à ce que l'aide soit bien
+adaptée aux modules disponibles »*). Le conseil 💡 l'était déjà — chaque groupe
+de `PRODUCTION_GROUPS` porte son module, et le conseil qui envoyait au Synthé
+est filtré depuis. Ce que le catalogue fermé vient de casser, c'est ailleurs :
+**cinq lignes de cahier disaient « pas le preset chargé depuis le menu »**, aux
+actes 3 à 5 — elles désignaient une porte que le joueur ne voit plus. Ce qu'on
+refuse est la PROVENANCE, et ça se dit sans l'adresse : « Ton morceau — celui
+que tu as fait, pas un tout prêt ». Deux mesures pour que ça ne se reperde pas :
+un test (aucun libellé de cahier ne nomme un menu, avec le compte de la
+population, sinon il passe au vert en ne mesurant plus rien) et
+`verrous-masques.cjs`, qui lit maintenant le menu Fichier à la recherche des
+**libellés** de presets — « morceau » est partout dans le récit, un libellé de
+preset n'est nulle part ailleurs. Sonde vérifiée non vide : en forçant la
+vérification quand le catalogue est ouvert, elle voit ses 39 libellés.
+
+⚠️ **Piège repayé** : le premier passage du script a annoncé « PARCOURS BLOQUÉ à
+l'acte 5 » et « modules — » partout. Ce n'est pas une régression, c'est le HMR
+de Vite sur un serveur qui tournait pendant les éditions — trait pour trait ce
+que `CLAUDE.md` décrit. Redémarré, le parcours passe et ne trouve aucune fuite.
+
+⚠️ **Ce que ça n'a PAS fait** : donner autre chose à ouvrir à l'acte 7. Il ne
+paie plus aucune dette mécanique — comme les actes 0, 2 et 5 — et sa récompense
+est le concert puis l'épilogue. Question posée par Yann, laissée ouverte.
+
+**Vérifié** : `npm run check` 0 erreur (288 fichiers), **745 tests**, les deux
+builds (autonome 875 ko, 292 ko gzip), `parcours-carriere.cjs` sur un serveur de
+dev fraîchement démarré (carrière entière, aucune erreur console),
+`verrous-masques.cjs` (aucune fuite), et une mesure par acte des trois écrans
+touchés.
+
 ### ✅ L'arbitrage design A/B/C est fermé — il décrivait un écran disparu (2026-09-14)
 
 > *« tu peux supprimer ce point obsolète »*

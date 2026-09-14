@@ -13,7 +13,7 @@
 // tests/unlocks.test.ts, qui vérifie notamment le piège du seuil de
 // l'Atelier ci-dessous.
 import { LEVELS } from './presets/levels';
-import { ACTE_DU_MODULE, acteParId } from './carriere';
+import { ACTE_DU_MODULE, ETAPE_DU_MODULE, acteParId } from './carriere';
 
 export type LockedModule = 'atelier' | 'synth' | 'production' | 'live';
 
@@ -94,6 +94,17 @@ export interface UnlockContext {
    */
   acte?: number;
   /**
+   * L'ÉTAPE atteinte DANS `acte` (`PlayerProgress.carriere.etape`) — même
+   * curseur, même sémantique : il ne recule jamais.
+   *
+   * Sert une seule règle, celle de `ETAPE_DU_MODULE` : le module que l'acte
+   * COURANT ouvre est déjà ouvert dès l'étape qui le prête, au lieu d'attendre
+   * la frontière de l'acte. Sans ça l'entrée disparaissait entre l'étape qui
+   * s'en sert et la fin de l'acte — une porte que le récit vient d'ouvrir et
+   * qui se referme à l'écran suivant.
+   */
+  etape?: number;
+  /**
    * Les modules qu'une commande EN COURS réclame — voir
    * `EtapeCommande.modulesRequis`. Ouverts le temps de la livraison, et rien
    * de plus : une commande qui exige une basse ouvre le Synthé, sinon elle
@@ -126,7 +137,40 @@ export function moduleUnlocked(name: LockedModule, cx: UnlockContext): boolean {
   if (name === 'atelier' && cx.sharedPattern) return true;
   if (cx.modulesRequis?.includes(name)) return true;
   if ((cx.acte ?? 0) > ACTE_DU_MODULE[name]) return true;
+  // Dans l'acte qui l'ouvre : dès l'étape qui le prête — voir `cx.etape`.
+  if ((cx.acte ?? 0) === ACTE_DU_MODULE[name] && (cx.etape ?? 0) >= ETAPE_DU_MODULE[name]) return true;
   return (cx.plancher ?? cx.level) >= MODULE_UNLOCK_LEVEL[name];
+}
+
+/* ⚠️ LE CATALOGUE DES 34 MORCEAUX — verrouillé jusqu'à la fin de l'acte 5.
+ *
+ * Ce n'est pas un module (aucun écran ne s'ouvre), c'est une BIBLIOTHÈQUE :
+ * d'où une règle à part plutôt qu'une cinquième entrée dans `LockedModule`,
+ * qui aurait demandé un acte, un seuil et un cadenas à afficher.
+ *
+ * Arbitré le 2026-09-14, et ça fait d'une pierre deux coups :
+ *  - **le son qu'on ne peut pas voir.** Dès l'acte 2, charger « Boom bap 90s »
+ *    posait une basse, une mélodie et une nappe : elles SONNENT, mais l'onglet
+ *    qui les montre n'existe pas encore. Le joueur entendait trois lignes qu'il
+ *    ne pouvait ni voir ni modifier ;
+ *  - **le menu déroulant.** L'acte 5 demande de produire DANS un genre : le
+ *    catalogue en offre 34 tout faits. Le verrou pendant une commande et
+ *    `pasUnPresetCharge` tenaient déjà la triche ; fermer le catalogue tant que
+ *    l'acte des styles n'est pas passé retire la tentation au lieu de la punir.
+ *
+ * Il s'ouvre donc quand l'acte 5 est FRANCHI — le joueur a alors les trois
+ * onglets, il a appris à reconnaître un genre, et le catalogue devient ce qu'il
+ * est vraiment : une collection de références à étudier.
+ *
+ * Le plancher, lui, reste : qui avait déjà les 34 morceaux hors carrière les
+ * garde (« une porte déjà ouverte ne se referme jamais »). C'est le seuil de la
+ * Production, le module de la même époque du récit.
+ */
+export const ACTE_DU_CATALOGUE = 5;
+
+export function catalogueOuvert(cx: UnlockContext): boolean {
+  if ((cx.acte ?? 0) > ACTE_DU_CATALOGUE) return true;
+  return (cx.plancher ?? cx.level) >= MODULE_UNLOCK_LEVEL.production;
 }
 
 /** L'acte qui ouvre le module, pour l'afficher sur le verrou. */

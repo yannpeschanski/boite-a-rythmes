@@ -454,7 +454,7 @@ export interface Acte {
   competence: CompetenceId;
   /** Le titre décerné, tel qu'il s'écrit à la fin de l'acte. */
   competenceLabel: string;
-  /** Le module que l'acte ouvre — `null` pour les actes 0, 2, 5 et 6, qui ne
+  /** Le module que l'acte ouvre — `null` pour les actes 0, 2, 5 et 7, qui ne
    *  paient aucune dette mécanique et sont donc bon marché à écrire. */
   module: LockedModule | null;
   /** Une ligne pour la liste des actes. */
@@ -1292,7 +1292,7 @@ export const ACTES: Acte[] = [
         cahier: [
           ...dansLaSection(LA_PHRASE, [
             AVOIR_PRODUIT,
-            pasUnPresetCharge('Ta phrase — pas un preset chargé depuis le menu'),
+            pasUnPresetCharge('Ta phrase — celle que tu as écrite, pas une toute prête'),
             unePhrase('melody', 4, 3, 'Une vraie phrase : quatre notes au moins, trois hauteurs différentes'),
             seReposeSurLaTonique('melody', 'Elle se repose : la dernière note est la tonique (degré 1)'),
             lignesPresentes(['kick', 'snare'], 'De quoi tenir le temps dessous'),
@@ -1465,7 +1465,7 @@ export const ACTES: Acte[] = [
         cahier: [
           ...dansLaSection(LE_MORCEAU, [
             AVOIR_PRODUIT,
-            pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+            pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
             dansLeStyleFiche(FICHE_TECHNO, 'Un morceau techno — c’est un club, pas un salon'),
             lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes qui tiennent le morceau'),
             ligneSynthPresente('bass', 'Une basse — sans elle il n’y a rien à faire danser'),
@@ -1782,7 +1782,7 @@ export const ACTES: Acte[] = [
         serie: 'club',
         cahier: [
           AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
           dansLeStyleFiche(FICHE_GARAGE, 'Ça doit boiter comme le garage — le genre, pas la copie'),
           ligneSynthPresente('bass', 'Une basse — un club sans basse est une salle d’attente'),
         ],
@@ -1862,7 +1862,7 @@ export const ACTES: Acte[] = [
         serie: 'latino',
         cahier: [
           AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
           dansLeStyleFiche(FICHE_DEMBOW, 'Ça doit sonner dembow — le genre, pas la copie'),
           ligneSynthPresente('bass', 'Une basse — c’est elle qui porte le riddim'),
         ],
@@ -1917,7 +1917,7 @@ export const ACTES: Acte[] = [
          * dit qu'elle se fait sans consigne (« tu vois, maintenant »). */
         cahier: [
           AVOIR_PRODUIT,
-          pasUnPresetCharge('Ton morceau — pas le preset chargé depuis le menu'),
+          pasUnPresetCharge('Ton morceau — celui que tu as fait, pas un tout prêt'),
           ...dansLaSection(ZM_GENRE, [
             dansLeStyleFiche(FICHE_DANCEHALL, 'Ça doit sonner dancehall — le genre, pas la copie'),
           ]),
@@ -1967,7 +1967,17 @@ export const ACTES: Acte[] = [
     jours: JOURS[6],
     competence: 'creation',
     competenceLabel: 'CRÉATION',
-    module: null,
+    /* ⚠️ C'EST CET ACTE QUI OUVRE LE MODE LIVE, et plus l'épilogue — arbitré
+     * le 2026-09-14 (« réponse A »). Sa scène y emmenait déjà, `modulesRequis`
+     * le prêtant le temps de l'étape : l'entrée apparaissait à la scène de
+     * l'acte 6, resservait à celle de l'acte 7, puis disparaissait entre les
+     * deux. Une entrée qui apparaît, sert, puis s'en va se lit comme une
+     * PANNE — c'est le reproche qui avait fait masquer les cadenas, et la
+     * règle du projet dit déjà « une porte déjà ouverte ne se referme
+     * jamais ». Conséquence de récit, et elle est juste : le concert de
+     * l'acte 7 se joue dans un module déjà à soi — on ne découvre pas sa
+     * console sur scène. */
+    module: 'live',
     resume: 'Une référence libre dans le catalogue. La tienne.',
     etapes: [
       /* ⚠️ L'acte où le cahier des charges ne demande RIEN À PERSONNE — et c'est
@@ -2463,9 +2473,11 @@ export const ACTES: Acte[] = [
        * un. Monter les trois d'un coup n'aurait aucun sens — une architecture
        * décrit UN morceau.
        *
-       * Elle n'ouvre PAS le Mode Live pour de bon : `modulesRequis` le prête le
-       * temps de la scène, comme l'acte 3 prête le Synthé à sa commande. C'est
-       * l'épilogue qui l'ouvre, et cet ordre-là ne bouge pas. */
+       * `modulesRequis` prête le Mode Live le temps de la scène, comme l'acte 3
+       * prête le Synthé à sa commande — et depuis le 2026-09-14 c'est l'ACTE
+       * qui l'ouvre pour de bon derrière (`module: 'live'` ci-dessus). Le prêt
+       * reste nécessaire : il couvre la scène elle-même, l'acte n'étant pas
+       * encore franchi. */
       {
         kind: 'scene',
         entete: 'NEUF BOUCLES, UN DISQUE',
@@ -2515,7 +2527,9 @@ export const ACTES: Acte[] = [
     jours: JOURS[7],
     competence: 'scene',
     competenceLabel: 'SCÈNE',
-    module: 'live',
+    /* N'ouvre plus le Mode Live : l'acte 6 l'a fait. Le dernier acte ne paie
+     * aucune dette mécanique — sa récompense est le concert et l'épilogue. */
+    module: null,
     resume: 'La salle chante un jingle de lessive refusé par l’agence.',
     etapes: [
       /* ⚠️ L'ACTE SE JOUE EN MODE LIVE — refait le 2026-09-09, après le
@@ -2865,6 +2879,30 @@ export const LONGUEUR_EPILOGUE = EPILOGUE.length;
 export const ACTE_DU_MODULE: Record<LockedModule, ActeId> = (() => {
   const out = {} as Record<LockedModule, ActeId>;
   for (const a of ACTES) if (a.module) out[a.module] = a.id;
+  return out;
+})();
+
+/* ⚠️ L'ÉTAPE, dans cet acte, à partir de laquelle le module est ouvert — celle
+ * qui le PRÊTE (`modulesRequis`), et `Infinity` si aucune ne le fait.
+ *
+ * Sans elle, un module s'ouvrait à la FRONTIÈRE de son acte alors que le récit
+ * l'avait déjà fait franchir plus tôt : entre la scène de l'acte 6 (qui prête
+ * le Mode Live) et la fin de l'acte, l'écran de récit « LE CATALOGUE » le
+ * reprenait pour une étape — l'entrée disparaissait puis revenait. C'est la
+ * version courte du défaut que l'arbitrage du 2026-09-14 vient de corriger, et
+ * la même règle : une porte que le RÉCIT vient d'ouvrir ne se referme pas à
+ * l'étape suivante. Vaut aussi pour le Synthé de l'acte 3 et la Production de
+ * l'acte 4, qui prêtent leur module à une commande au milieu de leur acte.
+ *
+ * Dérivée de `ACTES`, comme `ACTE_DU_MODULE` : deux listes qui doivent rester
+ * d'accord finissent toujours par ne plus l'être. */
+export const ETAPE_DU_MODULE: Record<LockedModule, number> = (() => {
+  const out = {} as Record<LockedModule, number>;
+  for (const a of ACTES) {
+    if (!a.module) continue;
+    const i = a.etapes.findIndex((e) => (e.kind === 'commande' || e.kind === 'scene') && e.modulesRequis?.includes(a.module!));
+    out[a.module] = i < 0 ? Infinity : i;
+  }
   return out;
 })();
 

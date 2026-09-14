@@ -4,21 +4,27 @@
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
 > Dernière mise à jour : 2026-09-14 — **point d'étape : rien n'est en cours.**
-> `main` est vert et déployé (run 388), la branche de travail lui est identique,
-> aucune pull request n'est ouverte. Vérifié ce jour : **0 erreur de types sur
-> 288 fichiers, 741 tests, les deux builds** (l'autonome fait 874 ko, 292 ko
-> gzip). Le chantier du Mode Live est **appliqué en entier** — treize livraisons
-> de #169 à #181 — et ce qui reste tient en quatre points, dont **trois se
+> `main` est vert et déployé. Vérifié ce jour : **0 erreur de types sur
+> 288 fichiers, 745 tests, les deux builds** (l'autonome fait 875 ko, 292 ko
+> gzip), plus `parcours-carriere.cjs` et `verrous-masques.cjs`. Le chantier du Mode Live est **appliqué en entier** — treize livraisons
+> de #169 à #181 — et ce qui reste tient en trois points, dont **deux se
 > décident en JOUANT, pas en codant** :
 >
 > 1. **le loquet 🎲** — la dernière des 25 cartes, que Yann voulait essayer avant
 >    de juger : c'est en ligne depuis le 2026-09-13, donc jouable maintenant ;
 > 2. **l'essai sur un VRAI téléphone en paysage** — jamais fait ; le Mode Live
 >    n'est mesuré qu'en 844 × 390 émulé, et une mesure émulée n'est pas une main ;
-> 3. **les trois questions de `docs/relecture/masquer-le-verrouille.html`**,
->    rappelées plus bas ;
-> 4. **les deux creux de courbe mesurés** (neuf exercices sans grille aux actes
+> 3. **les deux creux de courbe mesurés** (neuf exercices sans grille aux actes
 >    3-4, l'acte 5 qui serpente) — voir « La COURBE de difficulté ».
+>
+> ✅ **Les trois questions de `masquer-le-verrouille.html` sont tranchées et
+> appliquées** (2026-09-14) : le Mode Live s'ouvre à l'acte 6 et n'y revient
+> plus (réponse A), le catalogue des 34 morceaux est fermé jusqu'à la fin de
+> l'acte 5 (d'une pierre deux coups : les lignes de synthé qu'on entend sans
+> les voir, et le genre offert tout fait à l'acte des styles), et deux barres
+> tombées à une entrée disparaissent. Détail dans `PLAN.md`, première entrée.
+> **Reste ouverte, posée par Yann : qu'est-ce qu'on gagne à finir l'acte 7 ?**
+> Il n'ouvre plus aucun module — sa récompense est le concert et l'épilogue.
 >
 > Les deux dernières livraisons : **#180** retire les préversions par pull
 > request (le coût n'était pas le déploiement mais la notification) et **#181**
@@ -70,7 +76,8 @@
 > les préversions ») : elles commentaient chaque PR, donc envoyaient un mail à
 > chaque fois. Rien ne doit plus écrire sur une pull request.
 >
-> ⚠️ **Tour d'horizon des verrous (2026-09-08)** — « masquer ce qui est
+> ⚠️ **Tour d'horizon des verrous (2026-09-08 — ses trois questions ouvertes
+> sont tranchées depuis, voir ci-dessus)** — « masquer ce qui est
 > verrouillé » : quatre écrans nommaient encore un module fermé (le dernier 🔒
 > du jeu dans le menu Mode, le conseil « passe au Synthé », la banque de
 > séquences, et « huit actes · 78 niveaux » sur l'accueil). Corrigés et

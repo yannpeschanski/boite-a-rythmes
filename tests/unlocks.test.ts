@@ -7,7 +7,9 @@ import {
   unlockActeFor,
   libelleVerrou,
   verrouCourt,
+  catalogueOuvert,
 } from '../src/model/unlocks';
+import { ETAPE_DU_MODULE } from '../src/model/carriere';
 import { LEVELS } from '../src/model/presets/levels';
 
 // Un joueur qui n'a jamais rien fait : `PlayerProgress` vaut { level: 1 },
@@ -132,29 +134,75 @@ describe('ce que le verrou dit', () => {
   });
 });
 
-/* ⚠️ LA SCÈNE OUVRE LE MODE LIVE LE TEMPS DU CONCERT.
+/* ⚠️ LA SCÈNE OUVRE LE MODE LIVE LE TEMPS DE L'ÉTAPE, ET L'ACTE LE GARDE.
  *
- * L'acte 7 EST le concert, et son module (`live`) ne s'ouvrait qu'une fois
- * l'acte FRANCHI : une étape qui envoie sur scène pendant l'acte trouvait donc
- * le Mode Live cadenassé. C'est le cul-de-sac déjà payé à l'acte 3, où la
- * commande réclamait une basse que le Synthé verrouillé ne laissait pas écrire.
+ * Une étape qui envoie sur scène pendant son acte trouvait le module cadenassé
+ * — le cul-de-sac déjà payé à l'acte 3, où la commande réclamait une basse que
+ * le Synthé verrouillé ne laissait pas écrire. Le câblage passe par
+ * `game.modulesRequis`, qui fusionne ce que réclament la commande ET la scène.
  *
- * Le câblage passe par `game.modulesRequis`, qui fusionne ce que réclament la
- * commande ET la scène : lu sur la seule commande, la scène restait dehors.
+ * ⚠️ Depuis le 2026-09-14, le prêt n'est plus seul : l'acte 6 OUVRE le Mode
+ * Live, et il est ouvert dès l'ÉTAPE qui le prête (`ETAPE_DU_MODULE`) au lieu
+ * d'attendre la frontière de l'acte. Sans ça l'entrée disparaissait sur
+ * l'écran de récit qui suit la scène — une porte que le récit vient d'ouvrir
+ * et qui se referme à l'écran suivant.
  */
-describe('la scène ouvre le Mode Live pendant l’acte, pas après', () => {
-  // L'acte 7 en cours : le joueur y est, il ne l'a pas franchi.
-  const PENDANT_ACTE_7 = { level: 1, plancher: 1, acte: 7 };
+describe('la scène ouvre le Mode Live, et l’acte le garde ouvert', () => {
+  // L'acte 6 en cours, tout au début : le joueur y est, il n'a rien franchi.
+  const DEBUT_ACTE_6 = { level: 1, plancher: 1, acte: 6, etape: 0 };
+  const SCENE = ETAPE_DU_MODULE.live;
 
-  it('sans scène ouverte, le Mode Live reste fermé pendant l’acte', () => {
-    expect(moduleUnlocked('live', PENDANT_ACTE_7)).toBe(false);
+  it('avant l’étape qui le prête, le Mode Live reste fermé', () => {
+    expect(SCENE).toBeGreaterThan(0);
+    expect(moduleUnlocked('live', DEBUT_ACTE_6)).toBe(false);
   });
 
   it('⚠️ la scène ouverte l’ouvre, et rien d’autre', () => {
-    const cx = { ...PENDANT_ACTE_7, modulesRequis: ['live' as const] };
+    const cx = { ...DEBUT_ACTE_6, modulesRequis: ['live' as const] };
     expect(moduleUnlocked('live', cx)).toBe(true);
     // Et pas les autres : ce qu'une étape ouvre, elle l'ouvre seule.
-    expect(moduleUnlocked('production', cx)).toBe(true); // ouvert par l'acte 5, franchi
-    expect(moduleUnlocked('live', PENDANT_ACTE_7)).toBe(false);
+    expect(moduleUnlocked('production', cx)).toBe(true); // ouvert par l'acte 4, franchi
+    expect(moduleUnlocked('live', DEBUT_ACTE_6)).toBe(false);
+  });
+
+  /* ⚠️ Le défaut que l'arbitrage corrige, dans sa version courte : entre la
+   * scène et la fin de l'acte il reste un écran de récit (« LE CATALOGUE »).
+   * Sans la règle d'étape, le Mode Live y disparaissait pour revenir juste
+   * après — exactement ce qu'on vient de retirer à l'échelle de deux actes. */
+  it('⚠️ et il ne se REFERME pas à l’étape suivante', () => {
+    const surLaScene = { ...DEBUT_ACTE_6, etape: SCENE };
+    const ecranSuivant = { ...DEBUT_ACTE_6, etape: SCENE + 1 };
+    // Sans même le prêt : c'est l'acte qui tient, maintenant.
+    expect(moduleUnlocked('live', surLaScene)).toBe(true);
+    expect(moduleUnlocked('live', ecranSuivant)).toBe(true);
+    // Et il reste ouvert pour le concert de l'acte 7, puis pour toujours.
+    expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 7, etape: 0 })).toBe(true);
+  });
+});
+
+/* ⚠️ LE CATALOGUE DES 34 MORCEAUX — ni un module, ni un son de plus.
+ *
+ * Fermé jusqu'à la fin de l'acte 5 (2026-09-14). Deux défauts d'un coup : il
+ * posait des lignes de synthé AUDIBLES dans un onglet qui n'existe pas encore,
+ * et il offrait tout faits les genres que l'acte 5 demande de produire.
+ */
+describe('le catalogue des morceaux suit le récit', () => {
+  const neuf = (acte: number) => ({ level: 1, plancher: 1, acte, etape: 0 });
+
+  it('reste fermé tant que l’acte des styles n’est pas passé', () => {
+    for (const a of [0, 1, 2, 3, 4, 5]) expect(catalogueOuvert(neuf(a))).toBe(false);
+  });
+
+  it('s’ouvre l’acte 5 franchi, et ne se referme jamais', () => {
+    for (const a of [6, 7, 8]) expect(catalogueOuvert(neuf(a))).toBe(true);
+  });
+
+  /* ⚠️ Une porte déjà ouverte ne se referme jamais : qui avait les 34 morceaux
+   * hors carrière les garde. C'est le seuil de la Production, le module de la
+   * même époque du récit — et il se lit sur le PLANCHER, jamais sur `level`,
+   * que la carrière fait monter en citant des niveaux du réservoir. */
+  it('reste ouvert pour un vétéran, et le plancher seul en décide', () => {
+    expect(catalogueOuvert({ level: 1, plancher: MODULE_UNLOCK_LEVEL.production, acte: 0 })).toBe(true);
+    expect(catalogueOuvert({ level: LEVELS.length, plancher: 1, acte: 0 })).toBe(false);
   });
 });
