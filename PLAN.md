@@ -48,6 +48,55 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le chantier du Mode Live est CLOS — les deux derniers points se jugeaient en jouant (2026-09-14)
+
+> *« Le loquet 🎲 — validé. L'essai sur un vrai téléphone en paysage — mode
+> live ok. »*
+
+Les deux seuls points qui restaient du chantier du Mode Live ne se codaient pas :
+ils attendaient une écoute et une main. Les deux sont tombés le même jour, et
+aucun n'a rien réclamé.
+
+**Le loquet 🎲** était la dernière des 25 cartes de l'audit d'assemblage —
+tranchée « il faut tester pour juger », en ligne depuis le 2026-09-13. Validé
+tel quel.
+
+**L'essai sur un VRAI téléphone en paysage** était le **dernier angle mort de
+mesure du projet** : tout le Mode Live n'avait jamais été vu qu'émulé en
+844 × 390 avec pointeur tactile, et une mesure émulée n'est pas une main. Elle
+disait vrai — rien à redire sur l'appareil. ⚠️ Ce que ça vaut : les six
+commandes sous 44 px (exceptions revendiquées), la bande à 44 px, ses pastilles
+à 56 et ses huit cases à 52,7 tiennent au doigt, pas seulement au pixel.
+
+Docs seulement — `CLAUDE.md` (le chantier n'a plus rien d'ouvert), `REPRISE.md`
+(six passages qui annonçaient encore ces deux attentes). ⚠️ Ce qui RESTE en
+réserve est inchangé et ne s'engage toujours pas sans qu'on l'entende manquer :
+**l'automation d'axe par section**. Et l'unique angle mort de mesure qui
+subsiste est ailleurs — un parcours complet à la souris/au doigt, le script
+pilotant le store sans cliquer.
+
+⚠️ **Et les deux « creux de courbe » ont été RE-MESURÉS le même jour : ils
+décrivaient un jeu qui n'existe plus.** Ils dataient du 2026-08-31, avant la
+refonte de l'acte 2 en grilles écrites, avant les arrangements 75-78 de l'acte 3
+et avant le remplacement des exercices de l'acte 4 par la chaîne d'envois. Ce
+que la mesure d'aujourd'hui donne, dans l'ordre où la carrière joue ses **27**
+exercices :
+
+- « neuf d'affilée sans aucune grille » → le plus long trou fait **trois** (les
+  `melodie` 42-43-44), aussitôt suivi des quatre arrangements (9, 14, 26, 30
+  coups) ;
+- « l'acte 5 serpente sur dix exercices » → l'acte 5 en compte **deux** ;
+- « ~28 exercices générés » → **17 des 27 portent une cible écrite**, et 5 des
+  10 restants ne peuvent pas en avoir par construction (trois verbes de
+  paramètre, `style`, un preset). Restent 5 niveaux qui pourraient s'écrire.
+
+La courbe en coups par exercice : 4, 5, 13, —, 22, 23, 25, 25, 24, 26, —, 26,
+—, 24, —, 26, 26, —, —, —, 9, 14, 26, 30, —, —, —. Le seul creux qui SUBSISTE
+est la FIN : les trois derniers exercices (`style` 58, preset garage 16, `jouer`
+38) n'ont pas de cible écrite. C'est cohérent avec ce qu'ils enseignent, et
+c'est une question d'arbitrage, pas un défaut — d'où une question posée plutôt
+qu'un correctif.
+
 ### ✅ Le Live s'ouvre à l'acte 6, le catalogue à la fin du 5, et deux barres à une entrée disparaissent (2026-09-14)
 
 > *« Q1 : réponse A […] Q2 : je propose de verrouiller les presets et de les

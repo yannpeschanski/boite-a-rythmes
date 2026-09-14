@@ -208,10 +208,12 @@ RÈGLE, `scripts/parcours-carriere.cjs` la trajectoire.
 
 ## Le Mode Live — les PARTIES et les MONTAGES
 
-⚠️ **Tout ce qui suit est MERGÉ et en ligne** — 25 cartes tranchées, livrées de
-#167 à #181. Reste ouvert : le loquet 🎲, que Yann veut **essayer avant de
-juger**, donc en jouant sur le site. Fiches `docs/relecture/assemblage.html` et
-`assemblage-2.html` ; audits `docs/plan/07` et `08`.
+⚠️ **Tout ce qui suit est MERGÉ, en ligne et JOUÉ** — 25 cartes tranchées,
+livrées de #167 à #181, **plus rien d'ouvert** : le loquet 🎲 est validé et le
+mode a tourné sur un vrai téléphone en paysage (2026-09-14). Le dernier angle
+mort de mesure du projet est donc fermé — ce qui restait ne se codait pas, ça
+s'écoutait. Fiches `docs/relecture/assemblage.html` et `assemblage-2.html` ;
+audits `docs/plan/07` et `08`.
 
 ⚠️ **Le cadrage est tranché, et il est le mainstream de la catégorie** : on
 PRÉPARE de la matière, on JOUE la structure. Beaucoup de grooveboxes n'ont pas
