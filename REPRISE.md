@@ -8,7 +8,7 @@
 > aucune pull request n'est ouverte. Vérifié ce jour : **0 erreur de types sur
 > 288 fichiers, 741 tests, les deux builds** (l'autonome fait 874 ko, 292 ko
 > gzip). Le chantier du Mode Live est **appliqué en entier** — treize livraisons
-> de #169 à #181 — et ce qui reste tient en cinq points, dont **trois se
+> de #169 à #181 — et ce qui reste tient en quatre points, dont **trois se
 > décident en JOUANT, pas en codant** :
 >
 > 1. **le loquet 🎲** — la dernière des 25 cartes, que Yann voulait essayer avant
@@ -17,9 +17,7 @@
 >    n'est mesuré qu'en 844 × 390 émulé, et une mesure émulée n'est pas une main ;
 > 3. **les trois questions de `docs/relecture/masquer-le-verrouille.html`**,
 >    rappelées plus bas ;
-> 4. **l'arbitrage design A/B/C** (`docs/plan/04`), ouvert depuis août — la plus
->    ancienne décision en attente, et elle conditionne toute passe d'UI ;
-> 5. **les deux creux de courbe mesurés** (neuf exercices sans grille aux actes
+> 4. **les deux creux de courbe mesurés** (neuf exercices sans grille aux actes
 >    3-4, l'acte 5 qui serpente) — voir « La COURBE de difficulté ».
 >
 > Les deux dernières livraisons : **#180** retire les préversions par pull
@@ -783,10 +781,17 @@ Aucune n'est engagée — demander avant de plonger.
   10 % du temps c'était la bonne réponse. Corrigé (`HORS_EPOQUE`), et le test
   existe maintenant. À retenir : « voulu mais jamais vérifié » veut dire « pas
   fait ».
-- L'arbitrage design A/B/C (`docs/plan/04-maquettes-et-moodboards.md`,
-  « XP est le cadre, l'instrument est
-  sombre ») est resté en attente depuis août — c'est la plus ancienne décision
-  ouverte, et elle conditionne toute passe d'UI.
+- ~~L'arbitrage design A/B/C~~ (`docs/plan/04-maquettes-et-moodboards.md`) —
+  **fermé le 2026-09-14 : la question a été réglée par la migration Winamp 2.x**
+  du 18 août, qui est postérieure aux trois maquettes. Bliss, les barres Luna et
+  le thème `noir` sont retirés, l'appli ne parle plus qu'une langue visuelle :
+  l'énoncé A/B/C décrit un écran qui n'existe plus. **Ce qui en survit est A1′**,
+  mesuré dans le DOM et toujours vrai : une ligne de batterie fait 99 px dont
+  **34 seulement pour les cases** (en-tête 28, cases 34, barre de pastilles 28).
+  Les chips *Séquence / Timbre* sont encore là, une barre par ligne
+  (`DrumRowView.svelte`, `SynthRowView.svelte`) ; l'antidote nommé par l'audit
+  est le panneau sérigraphié — étiquettes à même la surface, réglages en
+  surcouches.
 - ~~**Le Mode Live reste à l'acte 7**, jamais essayé en paysage~~ — **traité.**
   Le concert s'y joue maintenant (`EtapeScene`), et le mode a été mesuré en
   844 × 390 avec pointeur tactile : une seule commande sous 44 px de zone

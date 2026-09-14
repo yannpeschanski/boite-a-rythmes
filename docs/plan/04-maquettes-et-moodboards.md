@@ -487,3 +487,9 @@ actives émettrices ; (3) barre de titre réduite à un chevron de repli, le gag
 l'instrument est sombre*.
 
 **Rien n'est engagé tant que Yann n'a pas tranché entre A, B et C.**
+
+> ⚠️ **Classé le 2026-09-14** (seule ligne ajoutée à cette archive). La question
+> a été réglée par le choix de la peau **Winamp 2.x** du 18 août — postérieur à
+> ces trois maquettes, et appliqué : l'énoncé ci-dessus décrit un fond beige et
+> un cadre Luna qui n'existent plus. Ce qui en survit est **A1′** (99 px par
+> ligne pour 34 px de cases), repris comme piste dans `REPRISE.md`.
