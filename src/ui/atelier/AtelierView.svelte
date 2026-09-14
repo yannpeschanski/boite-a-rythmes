@@ -104,6 +104,13 @@
   // pendant que Lecture/Stop/Break restent dans la barre sticky au-dessus,
   // donc joignables quel que soit l'onglet actif.
   let activeTab = $state<'rythme' | 'synthe' | 'effets'>('rythme');
+  // Les onglets OUVERTS — dérivés une fois : la barre les affiche, et c'est
+  // leur nombre qui décide si elle s'affiche du tout (voir plus bas).
+  const onglets = $derived([
+    { id: 'rythme', label: '🥁 Rythme' },
+    ...(unlocks.has('synth') ? [{ id: 'synthe', label: '🎹 Synthé' }] : []),
+    ...(unlocks.has('production') ? [{ id: 'effets', label: '🎚 Production' }] : []),
+  ]);
   let tipExpanded = $state(false);
   let playhead = $state<Record<DrumRowName, number>>({ kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 });
   let synthPlayhead = $state<Record<SynthRowName, number>>({ bass: -1, pad: -1, melody: -1 });
@@ -647,15 +654,15 @@
     <!-- Un onglet verrouillé n'est plus affiché du tout (arbitrage de Yann
          après une partie complète). L'onglet Rythme reste seul tant que le
          récit n'a rien ouvert d'autre : moins d'écran, et rien qui présente le
-         jeu par ce qu'on ne peut pas faire. -->
-    <XpTabs
-      tabs={[
-        { id: 'rythme', label: '🥁 Rythme' },
-        ...(unlocks.has('synth') ? [{ id: 'synthe', label: '🎹 Synthé' }] : []),
-        ...(unlocks.has('production') ? [{ id: 'effets', label: '🎚 Production' }] : []),
-      ]}
-      bind:active={activeTab}
-    />
+         jeu par ce qu'on ne peut pas faire.
+         ⚠️ Et à UN seul onglet, la barre disparaît complètement (2026-09-14) :
+         un onglet seul ne sépare rien, il se lit comme un onglet, donc comme
+         la promesse qu'il y en aura d'autres — c'était le dernier indice de ce
+         qui reste fermé, et il ne nommait même pas quoi. Un onglet qui
+         APPARAÎT à l'acte 3 dit la même chose au bon moment. -->
+    {#if onglets.length > 1}
+      <XpTabs tabs={onglets} bind:active={activeTab} />
+    {/if}
   </div>
 
 

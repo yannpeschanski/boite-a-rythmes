@@ -62,8 +62,12 @@ describe('Mode carrière — la charpente en huit actes', () => {
   });
 
   it('ouvre les quatre modules aux actes que dit le récit', () => {
-    // HISTOIRE.md, « Ce que le récit ouvre, acte par acte ».
-    expect(ACTE_DU_MODULE).toEqual({ atelier: 1, synth: 3, production: 4, live: 7 });
+    /* HISTOIRE.md, « Ce que le récit ouvre, acte par acte » — sauf le Mode
+     * Live, passé de 7 à 6 le 2026-09-14 : sa scène l'empruntait à l'acte 6
+     * puis le rendait, si bien que l'entrée apparaissait, servait deux fois et
+     * disparaissait jusqu'à l'épilogue. « Une porte déjà ouverte ne se referme
+     * jamais » — et on ne découvre pas sa console sur scène. */
+    expect(ACTE_DU_MODULE).toEqual({ atelier: 1, synth: 3, production: 4, live: 6 });
     // Et chaque module verrouillé est bien ouvert par un acte : un module qui
     // n'apparaîtrait nulle part dans le récit ne s'ouvrirait plus jamais par lui.
     for (const m of LOCKED_MODULES) expect(ACTE_DU_MODULE[m]).toBeTypeOf('number');
@@ -1479,9 +1483,11 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     // Couplet = A, refrain = B, pont = C : les lettres que le montage cite.
     expect(montees.map((b) => b.partie)).toEqual(['A', 'B', 'C']);
     expect(scene.montage).toBe('COUPLET / REFRAIN');
-    // Elle emprunte le Mode Live le temps de la scène — l'épilogue l'ouvre.
+    /* Elle emprunte le Mode Live le temps de la scène — et depuis le
+     * 2026-09-14 c'est l'acte qui l'ouvre derrière, pas l'épilogue. Le prêt
+     * reste nécessaire : sur la scène elle-même, l'acte n'est pas franchi. */
     expect(scene.modulesRequis).toContain('live');
-    expect(acte6().module, 'l’acte 6 n’ouvre aucun module pour de bon').toBeNull();
+    expect(acte6().module, 'l’acte 6 ouvre le Mode Live').toBe('live');
   });
 
   /* ⚠️ Le cahier de FB-015 ne demande AUCUN style et aucun client : il constate
@@ -1634,15 +1640,17 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
  *
  * Il ferme aussi la boucle du récit : Sol dit le nom du joueur au micro.
  */
-describe('L’acte 7 joue, et ouvre le Mode Live', () => {
+describe('L’acte 7 joue, et n’ouvre plus rien', () => {
   const acte7 = () => ACTES[7];
 
-  it('est jouable, et le Mode Live s’ouvre en sortant', () => {
+  it('est jouable, et arrive dans un Mode Live DÉJÀ ouvert', () => {
     expect(acteAVenir(acte7())).toBe(false);
-    expect(acte7().module).toBe('live');
-    // Le module s'ouvre une fois l'acte DERRIÈRE soi — donc au terme de la
-    // carrière, `progresCarriere.acte` valant alors NB_ACTES.
-    expect(moduleUnlocked('live', { level: 1, acte: 7 })).toBe(false);
+    /* ⚠️ Il n'ouvre plus le Mode Live : l'acte 6 l'a fait (2026-09-14).
+     * Le dernier acte ne paie aucune dette mécanique — sa récompense est le
+     * concert et l'épilogue, comme les actes 0, 2 et 5 n'en paient aucune. */
+    expect(acte7().module).toBeNull();
+    // On monte sur scène dans un module qui est déjà à soi, et il le reste.
+    expect(moduleUnlocked('live', { level: 1, acte: 7 })).toBe(true);
     expect(moduleUnlocked('live', { level: 1, acte: NB_ACTES })).toBe(true);
   });
 

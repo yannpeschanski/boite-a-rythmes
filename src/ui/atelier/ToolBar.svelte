@@ -144,17 +144,22 @@
         <button onclick={() => choose(onImport)}>Ouvrir…</button>
         <button onclick={() => choose(onExport)}>Enregistrer sous…</button>
         <button onclick={() => choose(share)}>Partager par lien</button>
-        <button
-          class="opt"
-          onclick={(e) => {
-            // Ne referme PAS le menu : c'est une option du chargement à venir,
-            // pas une action — la refermer obligerait à rouvrir pour choisir.
-            e.stopPropagation();
-            keepSynthAndTempo = !keepSynthAndTempo;
-          }}>{keepSynthAndTempo ? '☑' : '☐'} Garder {unlocks.has('synth')
-            ? 'le synthé et le tempo actuels'
-            : 'le tempo actuel'}</button
-        >
+        <!-- L'option ne sert QUE le chargement d'un morceau : elle suit le
+             catalogue. Une case à cocher qui ne s'applique à rien est une
+             ligne de plus à lire dans un menu qui en compte déjà six. -->
+        {#if unlocks.catalogue}
+          <button
+            class="opt"
+            onclick={(e) => {
+              // Ne referme PAS le menu : c'est une option du chargement à venir,
+              // pas une action — la refermer obligerait à rouvrir pour choisir.
+              e.stopPropagation();
+              keepSynthAndTempo = !keepSynthAndTempo;
+            }}>{keepSynthAndTempo ? '☑' : '☐'} Garder {unlocks.has('synth')
+              ? 'le synthé et le tempo actuels'
+              : 'le tempo actuel'}</button
+          >
+        {/if}
         <!-- ⚠️ Les morceaux sont VERROUILLÉS pendant une commande. Sans ça,
              une commande de style se satisfait en trois clics : ouvrir le
              menu, charger le genre demandé, livrer — mesuré avant le
@@ -162,20 +167,29 @@
              (`pasUnPresetCharge`, qui tient le cas du preset chargé AVANT
              d'ouvrir la commande). Les entrées restent affichées, grisées :
              une liste qui disparaît se lit comme une panne. -->
-        {#if game.commandeEnCours}
-          <div class="empty">
-            Morceaux verrouillés pendant une commande — c’est ton morceau qu’on attend.
-          </div>
-        {/if}
-        {#each PRESET_CATEGORIES as cat (cat)}
-          <div class="sep">{cat}</div>
-          {#each byCat(cat) as p (p.id)}
-            <button
-              disabled={!!game.commandeEnCours}
-              onclick={() => choose(() => onLoadPreset?.(p, keepSynthAndTempo))}>{p.label}</button
-            >
+        <!-- ⚠️ Et le CATALOGUE lui-même ne s'affiche pas tant que l'acte 5
+             n'est pas passé (`unlocks.catalogue`) : ce qui est verrouillé ne se
+             montre pas, et un catalogue grisé nommerait 34 morceaux qu'on ne
+             peut pas ouvrir. Deux raisons, une seule règle — il posait des
+             lignes de synthé audibles dans un onglet qui n'existe pas encore,
+             et il offrait tout faits les genres que l'acte 5 demande de
+             produire. Voir `catalogueOuvert` (model/unlocks.ts). -->
+        {#if unlocks.catalogue}
+          {#if game.commandeEnCours}
+            <div class="empty">
+              Morceaux verrouillés pendant une commande — c’est ton morceau qu’on attend.
+            </div>
+          {/if}
+          {#each PRESET_CATEGORIES as cat (cat)}
+            <div class="sep">{cat}</div>
+            {#each byCat(cat) as p (p.id)}
+              <button
+                disabled={!!game.commandeEnCours}
+                onclick={() => choose(() => onLoadPreset?.(p, keepSynthAndTempo))}>{p.label}</button
+              >
+            {/each}
           {/each}
-        {/each}
+        {/if}
         <!-- ⚠️ La banque ne se range QUE depuis l'onglet Production. Tant qu'il
              est fermé, cette section était vide et sa seule phrase nommait
              l'onglet fermé : elle annonçait une fonctionnalité au lieu de la

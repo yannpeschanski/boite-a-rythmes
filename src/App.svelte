@@ -149,15 +149,23 @@
   {#if view === 'atelier'}
     <AtelierView onSwitchView={(v) => (view = v)} />
   {:else}
-    <nav class="switcher">
-      {#if unlocks.has('atelier')}
-        <button onclick={() => enter('atelier', 'atelier')}>🥁 Atelier</button>
-      {/if}
-      <button class="on" onclick={() => enter('game')}>🎮 Jouer</button>
-      {#if unlocks.has('live')}
-        <button onclick={() => enter('live', 'live')}>🎛 Mode Live</button>
-      {/if}
-    </nav>
+    <!-- ⚠️ Une barre de bascule à UNE entrée ne bascule vers rien — et cette
+         entrée est celle de l'écran où on se trouve déjà. Tant que le récit
+         n'a rien ouvert (actes 0 et 1), elle disparaît : même règle que la
+         barre d'onglets de l'Atelier, et même raison — c'est un indice de ce
+         qui reste fermé, sans dire quoi. Elle revient d'elle-même avec
+         l'Atelier, qui est la première porte que le récit ouvre. -->
+    {#if unlocks.has('atelier') || unlocks.has('live')}
+      <nav class="switcher">
+        {#if unlocks.has('atelier')}
+          <button onclick={() => enter('atelier', 'atelier')}>🥁 Atelier</button>
+        {/if}
+        <button class="on" onclick={() => enter('game')}>🎮 Jouer</button>
+        {#if unlocks.has('live')}
+          <button onclick={() => enter('live', 'live')}>🎛 Mode Live</button>
+        {/if}
+      </nav>
+    {/if}
     <GameView
       onGoAtelier={() => (view = 'atelier')}
       onGoScene={() => {
