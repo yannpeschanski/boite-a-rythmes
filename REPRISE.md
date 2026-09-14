@@ -3,7 +3,31 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-10 — **une scène dit ce qu'on y fait**. Retour
+> Dernière mise à jour : 2026-09-14 — **point d'étape : rien n'est en cours.**
+> `main` est vert et déployé (run 388), la branche de travail lui est identique,
+> aucune pull request n'est ouverte. Vérifié ce jour : **0 erreur de types sur
+> 288 fichiers, 741 tests, les deux builds** (l'autonome fait 874 ko, 292 ko
+> gzip). Le chantier du Mode Live est **appliqué en entier** — treize livraisons
+> de #169 à #181 — et ce qui reste tient en cinq points, dont **trois se
+> décident en JOUANT, pas en codant** :
+>
+> 1. **le loquet 🎲** — la dernière des 25 cartes, que Yann voulait essayer avant
+>    de juger : c'est en ligne depuis le 2026-09-13, donc jouable maintenant ;
+> 2. **l'essai sur un VRAI téléphone en paysage** — jamais fait ; le Mode Live
+>    n'est mesuré qu'en 844 × 390 émulé, et une mesure émulée n'est pas une main ;
+> 3. **les trois questions de `docs/relecture/masquer-le-verrouille.html`**,
+>    rappelées plus bas ;
+> 4. **l'arbitrage design A/B/C** (`docs/plan/04`), ouvert depuis août — la plus
+>    ancienne décision en attente, et elle conditionne toute passe d'UI ;
+> 5. **les deux creux de courbe mesurés** (neuf exercices sans grille aux actes
+>    3-4, l'acte 5 qui serpente) — voir « La COURBE de difficulté ».
+>
+> Les deux dernières livraisons : **#180** retire les préversions par pull
+> request (le coût n'était pas le déploiement mais la notification) et **#181**
+> retire du moteur le chemin de forçage des rafales de ligne (*« à supprimer »*),
+> avec l'empreinte du `rng` prouvée inchangée sur 25 010 événements.
+>
+> Avant cela, le 2026-09-10 : **une scène dit ce qu'on y fait**. Retour
 > de jeu sur le dernier acte (*« je n'ai pas compris ce qu'il se passait »*,
 > *« en quoi consiste le niveau ? »*) : une scène est le seul écran sans cahier
 > ni cible, donc le seul où rien ne porte la consigne à sa place — on sortait du
@@ -41,8 +65,10 @@
 > (`docs/relecture/assemblage.html`, `assemblage-2.html`).
 >
 > ⚠️ **Il ne reste qu'une chose à décider, et elle se décide en JOUANT** : le
-> loquet 🎲 (« il faut tester pour juger ») — sur le site en ligne, une fois
-> mergé. ⚠️ **Les préversions par PR sont RETIRÉES** (2026-09-11, « arrête avec
+> loquet 🎲 (« il faut tester pour juger ») — **mergé et déployé depuis le
+> 2026-09-13**, donc plus rien ne le retient.
+>
+> ⚠️ **Les préversions par PR sont RETIRÉES** (2026-09-11, « arrête avec
 > les préversions ») : elles commentaient chaque PR, donc envoyaient un mail à
 > chaque fois. Rien ne doit plus écrire sur une pull request.
 >
@@ -53,9 +79,9 @@
 > **mesurés** par `scripts/verrous-masques.cjs`, qui joue la carrière et relit
 > neuf écrans par acte. Trois questions restent à trancher dans
 > `docs/relecture/masquer-le-verrouille.html` — dont **le Mode Live qui s'ouvre
-> pour la scène de l'acte 6 puis se referme jusqu'à l'épilogue** (l'acte 7 en
-> fait maintenant TROIS scènes : la question est plus visible, toujours pas
-> tranchée).
+> pour la scène de l'acte 6 puis se referme jusqu'à l'épilogue** (le jeu compte
+> maintenant TROIS scènes — une à l'acte 6, deux à l'acte 7 : la question est
+> plus visible, toujours pas tranchée).
 >
 > ⚠️ **Ce qui reste ouvert du Mode Live** : le nom (« mode live » jugé
 > peut-être abusif — laissé tel quel sur recommandation, *« on pourra changer
@@ -67,7 +93,8 @@
 <https://boite-a-rythmes.vercel.app>. Quatre modules : **Atelier** (composition),
 **Synthé**, **Production**, **Mode Live**, plus le **Mode jeu**.
 
-`main` est vert, 689 tests, 0 erreur de types, les deux builds passent.
+`main` est vert, 741 tests, 0 erreur de types (288 fichiers), les deux builds
+passent.
 
 Le gros du travail récent porte sur le **Mode jeu**, dont le Mode carrière est
 devenu l'écran d'entrée : les huit actes de `HISTOIRE.md` sont écrits, plus
@@ -159,24 +186,32 @@ le morceau depuis son début**.
 
 ### Ce qui reste
 
-⚠️ Deux points arbitrés mais **pas encore faits** : sauvegarder un morceau monté
-en JSON — **et les boutons en font partie**, Yann : « c'est un des intérêts » —
-et le rangement banque / lettres. Plus l'enregistreur lui-même (256 Mo de pic à
-dix minutes, WAV et pas MP3), maintenant qu'il est la seule sortie audio.
+⚠️ **Plus rien de technique.** Les trois points qui restaient sont livrés par
+**#169** : le morceau se sauvegarde en JSON, « → A » relie enfin la banque aux
+lettres, et le magnétophone accumule de l'Int16 par paliers de 30 s — dix
+minutes de prise passent de 256 Mo de pic à ~57 Mo, plafonnées par
+`MINUTES_MAX_CAPTURE`. La question « les boutons font-ils partie du morceau ? »
+a été tranchée deux fois : oui d'abord, puis **non** le 2026-09-09, à l'usage —
+c'est ce « non » qui tient, et plus rien ne touche aux assignations réglées à la
+main.
+
+Ce qui reste ne se code pas, ça **s'écoute** : le loquet 🎲 et l'essai sur un
+vrai téléphone en paysage.
 
 ### Ce qui suit ensuite
 
-1. **⏺ REC** est devenu LA sortie audio : 256 Mo de pic à dix minutes, WAV et
-   pas MP3. Deux sorties connues (tampon pré-alloué, encodage au fil de l'eau).
-2. ~~**Sauvegarder un morceau en JSON**~~ — fait. La question « les boutons
-   font-ils partie du morceau ? » a été tranchée deux fois : oui d'abord, puis
-   **non** le 2026-09-09, à l'usage.
-3. **Ranger la banque et les lettres** — deux vocabulaires qui s'ignorent.
-4. Après écoute seulement : le fill recalé sur la section, l'automation.
+Après écoute seulement, et rien avant : **l'automation d'axe par section**,
+délibérément remplacée par un escalier de sections tant que personne n'a entendu
+que ça manque. (Le fill recalé sur la section est fait — première tranche de
+l'audit du Mode Live.)
 
 ---
 
-## Le chantier en cours — le jeu devient une suite de CAHIERS DES CHARGES
+## Le chantier des CAHIERS DES CHARGES — **terminé**
+
+⚠️ Toutes ses tranches sont livrées — les deux tableaux ci-dessous sont verts
+de bout en bout. La section est gardée pour le *pourquoi* et pour la trace des
+arbitrages ; ce n'est plus un chantier en cours.
 
 Relecture complète de Yann le 2026-09-01 (75 cases annotées, une par exercice et
 par acte). Elle dit une seule chose : **« il faut que tout soit en atelier avec
@@ -499,11 +534,11 @@ fin de la liste.
 
 ## Ce qui est vérifié, et ce qui ne l'est pas
 
-**Vérifié** — types, 423 tests (les tests aléatoires affirment ce qui est vrai à
-chaque tirage et répètent 60 fois), les deux builds, et un parcours Playwright
-par acte en 390×840. Les huit grilles écrites de l'acte 1 ont en plus été
-mesurées dans l'appli en marche : elles sont posées au bit près, rafales
-comprises.
+**Vérifié** — types (288 fichiers, 0 erreur), **741 tests** (les tests aléatoires
+affirment ce qui est vrai à chaque tirage et répètent 60 fois), les deux builds,
+et un parcours Playwright par acte en 390×840. Les huit grilles écrites de
+l'acte 1 ont en plus été mesurées dans l'appli en marche : elles sont posées au
+bit près, rafales comprises.
 
 **La chaîne des actes est saine.** `scripts/parcours-carriere.cjs` joue la
 carrière entière depuis un joueur neuf : les huit actes s'enchaînent, les cinq
@@ -520,11 +555,14 @@ dans un terminal, puis `node scripts/parcours-carriere.cjs`). Même raison pour
 de poser l'objet attendu.
 
 **Pas encore vérifié :** un vrai parcours à la souris/au doigt de bout en bout
-(le script pilote le store, il ne clique pas). Et le Mode Live n'a pas été
-retouché de la session — mais il a été **audité** le 2026-09-02 :
-[`docs/plan/05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md). Cinq
-tranches proposées, aucune engagée ; les quatre premières sont indépendantes.
-Le mode n'a **toujours jamais tourné sur un vrai téléphone**.
+(le script pilote le store, il ne clique pas). Et le Mode Live n'a **toujours
+jamais tourné sur un vrai téléphone** — c'est le dernier angle mort de mesure du
+projet, tout le reste étant émulé en 844 × 390.
+
+⚠️ Le paragraphe qui suit est **historique** : il date de l'audit du 2026-09-02
+([`docs/plan/05-audit-mode-live.md`](docs/plan/05-audit-mode-live.md), cinq
+tranches proposées) et ses constats ont été traités depuis. Le garder pour le
+*pourquoi* ; pour l'état réel, lire l'en-tête.
 
 Puis un second audit le même jour, sur le **macro-séquenceur** demandé par
 Yann (« 8 cycles de A puis 8 cycles de B ») :
@@ -554,12 +592,13 @@ séquenceur qui porte les mutes et dit l'état réel, le catalogue trié
 (31 → 20 entrées, 19 variantes → 2), et la bande d'architecture avec ses trois
 modèles. 521 tests.
 
-⚠️ **Ce qui reste sur le Mode Live** : l'éditeur d'architecture dans l'Atelier
-(on ne peut aujourd'hui que charger un modèle et déposer des séquences depuis
-l'overlay ⚙ du Live — ni ajouter, ni retirer, ni renommer une section), et
-l'automation d'axe par section, délibérément remplacée par un escalier de
-sections tant que personne n'a entendu que ça manque. Et **toujours aucun essai
-sur un vrai téléphone**.
+⚠️ **Ce qui restait sur le Mode Live est fait, sauf une chose.** L'éditeur
+d'architecture existe (`MontagePanel`, Atelier → Production, #173) : ajouter,
+dupliquer, déplacer, retirer une scène, changer sa lettre, ses tours et les
+lignes qui sonnent, ou partir d'une page blanche. Ne reste que **l'automation
+d'axe par section**, délibérément remplacée par un escalier de sections tant que
+personne n'a entendu que ça manque — et **toujours aucun essai sur un vrai
+téléphone**.
 
 ## Les pièges qui ont coûté du temps
 
