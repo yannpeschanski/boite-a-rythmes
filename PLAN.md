@@ -48,6 +48,33 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'arbitrage design A/B/C est fermé — il décrivait un écran disparu (2026-09-14)
+
+> *« tu peux supprimer ce point obsolète »*
+
+⚠️ **Une décision en attente peut être réglée par une autre décision, et rester
+écrite comme ouverte.** Les trois maquettes A (XP resserré) / B (cadre XP +
+instrument sombre) / C (rupture) datent du **17 août** ; le choix de la peau
+**Winamp 2.x** date du **18**, il est postérieur, et il est appliqué. Bliss, les
+barres Luna et le thème `noir` du Mode jeu sont retirés — l'appli ne parle plus
+qu'une langue visuelle. L'énoncé A/B/C parle d'un fond beige et d'un cadre Luna
+qui n'existent plus : il ne pouvait plus être tranché, seulement classé. Il est
+resté en tête de `REPRISE.md` pendant un mois comme « la plus ancienne décision
+ouverte ».
+
+**Ce qui en survit, et qui n'est pas une question de goût : A1′.** Mesuré dans le
+DOM rendu, toujours vrai — une ligne de batterie fait **99 px dont 34 pour les
+cases** (en-tête 28, cases 34, barre de pastilles 28). La `group-bar` et ses
+chips *Séquence / Timbre* sont encore là, une par ligne
+(`DrumRowView.svelte`, `SynthRowView.svelte`). L'antidote nommé par l'audit
+(`docs/plan/03`, « les cinq familles du marché ») est le **panneau sérigraphié** :
+étiquettes à même la surface, réglages en surcouches. Gardé comme piste dans
+`REPRISE.md`, sous son vrai nom.
+
+L'archive `docs/plan/04` n'est pas réécrite — c'est une archive ; sa dernière
+ligne (« rien n'est engagé tant que Yann n'a pas tranché ») reçoit un renvoi
+daté, pour qu'elle ne relance pas la question à la prochaine lecture.
+
 ### ✅ Reprendre une partie sans retaper son nom (2026-09-14)
 
 > *« Peut-on aussi montrer après avoir cliqué sur Jouer les différents noms
