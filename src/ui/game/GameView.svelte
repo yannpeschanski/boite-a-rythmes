@@ -599,6 +599,40 @@
       ? Math.floor(playhead.kick / Math.max(1, game.subdiv.kick))
       : -1,
   );
+
+  /* LES PARTIES ENREGISTRÉES, telles qu'on peut les reprendre.
+   *
+   * `game.progress` est un Record indexé par pseudo, et `load()` le lit au
+   * démarrage — AVANT qu'un pseudo soit choisi. La liste existait donc déjà
+   * en mémoire, sans écran pour la dire.
+   *
+   * ⚠️ « master » est exclu : il ne persiste rien (`setPseudo` efface sa clé
+   * pour ne pas devenir un accès total invisible), donc une entrée à son nom
+   * ne serait qu'un mirage — et la proposer inviterait à s'en servir.
+   *
+   * ⚠️ On lit `carriere`, pas `level` : c'est le RÉCIT qui dit où l'on
+   * reprend. `level` décrit le réservoir, que la carrière cite dans le
+   * désordre — il ne situe personne.
+   *
+   * Le repli `?? { acte: 0, etape: 0 }` couvre les sauvegardes d'avant le
+   * double curseur : elles reprennent au début, ce qui est vrai.
+   */
+  const reprises = $derived.by(() =>
+    Object.entries(game.progress)
+      .filter(([nom]) => nom.toLowerCase() !== 'master')
+      .map(([nom, p]) => {
+        const acte = p.carriere?.acte ?? 0;
+        const etape = p.carriere?.etape ?? 0;
+        const a = acteParId(acte);
+        const e = a.etapes[etape];
+        // Toutes les étapes n'ont pas d'entête — un exercice cite un niveau.
+        // Pas de libellé inventé : on dit l'acte, et l'entête quand elle existe.
+        const entete = e && 'entete' in e ? e.entete : null;
+        return { pseudo: nom, acte, ou: `ACTE ${acte} — ${a.titre}${entete ? ` · ${entete}` : ''}` };
+      })
+      // Le plus avancé d'abord : on vient ici pour REPRENDRE.
+      .sort((x, y) => y.acte - x.acte || x.pseudo.localeCompare(y.pseudo, 'fr')),
+  );
 </script>
 
 <!-- ÉTAPE 5 : data-theme="noir" retiré. Le Mode jeu avait son propre
@@ -613,7 +647,35 @@
         disques qui a cinq mois devant lui. Huit actes, des exercices courts, et l’Atelier qui
         s’ouvre en chemin.
       </p>
-      <p class="lead">Choisis un pseudo — c’est là que ta progression sera rangée.</p>
+      <!-- ⚠️ Les parties enregistrées viennent AVANT le champ, et pas par
+           politesse : cet écran ne s'affiche qu'à deux moments — un joueur
+           tout neuf (la liste est alors vide, donc rien ne bouge) et un clic
+           sur « Changer de joueur ». Dans le second cas, on vient précisément
+           pour en reprendre une. La progression était déjà rangée par pseudo
+           (`game.progress`) : il ne manquait que de la MONTRER — retaper son
+           nom à l'identique était le seul chemin vers sa propre partie. -->
+      {#if reprises.length}
+        <p class="lead">Reprendre une partie :</p>
+        <ul class="reprises">
+          {#each reprises as r (r.pseudo)}
+            <li>
+              <button
+                class="reprise tap44-y"
+                onclick={() => {
+                  game.setPseudo(r.pseudo);
+                  ecran = 'carriere';
+                }}
+              >
+                <span class="qui">{r.pseudo}</span>
+                <span class="ou">{r.ou}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <p class="lead">Ou commence une nouvelle partie :</p>
+      {:else}
+        <p class="lead">Choisis un pseudo — c’est là que ta progression sera rangée.</p>
+      {/if}
       <form
         class="pseudo-form"
         onsubmit={(e) => {
@@ -1758,6 +1820,42 @@
   .pseudo-form {
     display: flex;
     gap: 6px;
+  }
+  .reprises {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .reprise {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 6px 8px;
+    font-family: var(--xp-font);
+    text-align: left;
+    border: 1px solid var(--xp-line);
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
+    box-shadow: var(--xp-bevel-out);
+    cursor: pointer;
+  }
+  .reprise:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .reprise .qui {
+    font-size: var(--xp-size-body);
+  }
+  /* Ambre et non vert : le vert dit « allumé / fait », et un point de reprise
+     n'est pas un état accompli (CLAUDE.md, les tokens de couleur). */
+  .reprise .ou {
+    font-size: 9px;
+    color: var(--xp-accent-amber);
+    letter-spacing: var(--xp-ls-1);
   }
   input {
     flex: 1;

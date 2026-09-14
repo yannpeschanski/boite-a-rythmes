@@ -48,6 +48,52 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Reprendre une partie sans retaper son nom (2026-09-14)
+
+> *« Peut-on aussi montrer après avoir cliqué sur Jouer les différents noms
+> sauvegardés avec le numéro de l'acte et le niveau où on reprend ? pour pouvoir
+> reprendre une partie sans réécrire le pseudo »*
+
+⚠️ **Troisième instance d'une règle qui existait déjà** — « une capacité qu'aucun
+mot ne nomme n'existe pas ». Reprendre une partie marchait depuis toujours : il
+suffisait de retaper son pseudo **à l'identique**. `game.progress` est un Record
+indexé par pseudo, et `load()` le lit au démarrage, AVANT qu'un pseudo soit
+choisi — la liste était donc en mémoire, sans écran pour la dire. Il n'a rien
+fallu ajouter au modèle.
+
+**L'écran des pseudos porte la liste, et elle passe AVANT le champ.** Pas par
+politesse : cet écran ne s'affiche qu'à deux moments — un joueur tout neuf (la
+liste est vide, donc rien ne bouge, vérifié) et un clic sur « Changer de
+joueur », où l'on vient précisément pour en reprendre une.
+
+Trois décisions dans le dérivé :
+
+- ⚠️ **« master » est exclu.** Il ne persiste rien (`setPseudo` efface sa clé
+  pour ne pas devenir un accès total invisible) : une entrée à son nom serait un
+  mirage, et la proposer inviterait à s'en servir.
+- ⚠️ **On lit `carriere`, pas `level`.** C'est le RÉCIT qui dit où l'on reprend ;
+  `level` décrit le réservoir, que la carrière cite dans le désordre — il ne
+  situe personne.
+- **Pas de libellé inventé** : toutes les étapes n'ont pas d'`entete` (un
+  exercice cite un niveau), donc on dit l'acte, et l'entête quand elle existe.
+  Le repli `?? { acte: 0, etape: 0 }` couvre les sauvegardes d'avant le double
+  curseur — elles reprennent au début, ce qui est vrai.
+
+**Mesuré** en 390 × 844, pointeur grossier : trois entrées, « master » absent, le
+plus avancé en premier, une sauvegarde sans `carriere` affichée sans casser. La
+zone touchable fait **44 px pour 41 px dessinés** — `.tap44-y` fait son travail,
+et c'est `elementFromPoint` qui le dit, pas `getBoundingClientRect` qui ne voit
+pas le pseudo-élément. Le clic sur « zoe » rouvre bien l'acte 3. Zéro erreur
+console.
+
+L'ambre plutôt que le vert pour le point de reprise : le vert dit « allumé /
+fait », et un point de reprise n'est pas un état accompli.
+
+**Reste à voir** : l'intro de cet écran dit encore « Huit actes », c'est-à-dire un
+TOTAL — ce que la règle des verrous interdit ailleurs. Pré-existant, pas touché.
+
+---
+
 ### ✅ L'accueil se tait, et il ne reste qu'un contournement (2026-09-14)
 
 > *« Vire le sous-titre "manette paysage", il sera indiqué si le téléphone est
