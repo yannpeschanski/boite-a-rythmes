@@ -48,6 +48,48 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le nom du Mode Live : fiche, puis réponse — on garde (2026-09-14)
+
+> *« Le nom "mode live" est peut-être abusif, qu'est-ce que tu en penses »* →
+> fiche de onze cartes → *« gardons mode live »*.
+
+Un constat sur ce que le produit EST : fiche annotable
+(`docs/relecture/nom-du-mode-live.html`), pas de code.
+
+⚠️ **La mesure a retourné mon avis de départ.** Je pensais le nom simplement
+perfectible ; il est **exact sur le fond** — le mode n'existe qu'en temps réel
+(le rendu hors ligne a été refusé), sa seule sortie audio est une PRISE, et le
+récit y monte littéralement sur scène à l'acte 7. Un nom abusif promet ce que la
+chose ne fait pas ; celui-ci tient.
+
+⚠️ **Le défaut réel est de GRAMMAIRE, et il se lit sur une ligne.** Les trois
+entrées de l'accueil : « Atelier » (nom français, « Composer librement »),
+« Jouer » (verbe français, « Une carrière, acte par acte »), « Mode Live »
+(adjectif anglais, seul préfixé, « Manette paysage »). Les deux premiers
+sous-titres disent ce qu'on FAIT, le troisième ce à quoi ça RESSEMBLE — l'écran
+avait déjà senti que le nom ne se suffisait pas et compensait en décrivant le
+meuble.
+
+**Réponse de Yann : on garde.** L'argument qui l'emporte est la FAMILIARITÉ —
+« Live » est compris d'emblée dans cette catégorie, « Direct » demande une
+traduction. La fiche l'avait écrit comme tel plutôt qu'en épouvantail, et c'est
+lui qui a gagné. La piste recommandée (« LE DIRECT », 35 occurrences de « en
+direct » déjà dans le code) et le coût chiffré (**11 chaînes vues par le joueur,
+333 identifiants inchangés**) restent écrits dans la fiche.
+
+⚠️ **Une question close deux fois sur « on verra plus tard » n'est pas close.**
+C'était le cas ici : posée deux fois, ajournée deux fois. La différence que fait
+la fiche n'est pas la réponse, c'est qu'elle passe dans « Décisions actées, à ne
+pas rouvrir » de `REPRISE.md` — et que la fiche porte un bandeau ✅ pour qui
+l'ouvrirait ensuite.
+
+**Reste ouvert, et indépendant du nom** : la carte Q2, le sous-titre
+« Manette paysage », qui décrit le meuble là où ses voisins décrivent le métier —
+avec la contrainte de ne pas perdre l'avertissement « horizontale », dont c'est
+le seul porteur sur l'accueil.
+
+---
+
 ### ✅ Les documents rattrapent le code (2026-09-14)
 
 > *« Fais moi un point d'étape complet »* — et le point d'étape a trouvé que les

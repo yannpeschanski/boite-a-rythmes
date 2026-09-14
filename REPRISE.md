@@ -83,9 +83,12 @@
 > maintenant TROIS scènes — une à l'acte 6, deux à l'acte 7 : la question est
 > plus visible, toujours pas tranchée).
 >
-> ⚠️ **Ce qui reste ouvert du Mode Live** : le nom (« mode live » jugé
-> peut-être abusif — laissé tel quel sur recommandation, *« on pourra changer
-> plus tard »*), et l'essai sur un vrai téléphone en paysage.
+> ✅ **Le NOM est tranché : on garde « Mode Live »** (2026-09-14, *« gardons
+> mode live »*), après fiche — `docs/relecture/nom-du-mode-live.html`. La
+> question avait été posée deux fois et close deux fois sur « on verra plus
+> tard » ; elle est désormais **fermée**, pas ajournée. Ce qui reste ouvert du
+> Mode Live : l'essai sur un vrai téléphone en paysage, et le sous-titre de
+> l'accueil (carte Q2 de la fiche, indépendante du nom).
 
 ## Où en est le projet
 
@@ -632,6 +635,14 @@ téléphone**.
 - **Une porte déjà ouverte ne se referme jamais** (Yann, 2026-08-26) — d'où le
   plancher gelé, et son repli sur `level` pour les sauvegardes d'avant.
 - **Une commande vérifie un cahier des charges, jamais une cible.**
+- **Le mode s'appelle « Mode Live », et ça ne se rouvre pas** (Yann,
+  2026-09-14). La fiche a montré que le nom est exact sur le fond — le mode
+  n'existe qu'en temps réel, sa seule sortie est une prise — et que son défaut
+  n'est que de grammaire. L'argument qui l'emporte est la **familiarité** :
+  « Live » est compris d'emblée dans cette catégorie. Les onze chaînes et la
+  piste « LE DIRECT » restent décrites dans
+  `docs/relecture/nom-du-mode-live.html` si la question devait un jour se
+  reposer — mais c'est une réponse, pas un ajournement.
 
 ## Où lire quoi
 
