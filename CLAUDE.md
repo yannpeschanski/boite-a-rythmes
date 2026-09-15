@@ -132,6 +132,17 @@ que le navigateur — le manuel gagne toujours. Corollaire : un `AudioContext`
 la même route ; les sons système s'endorment pour ça, et leur `chime` **attend**
 la reprise avant de programmer.
 
+⚠️ **Un retard ne se signale QUE là où on DÉCLENCHE, et le conseil dépend de sa
+CAUSE.** Écouter une boucle n'est pas impacté (un retard constant ne s'entend
+pas) et ce qui se MESURE est déjà corrigé par le calibrage — n'avertir que sur
+les surfaces d'instrument. Et `latenceVerdict.ts` tranche la cause avant de
+conseiller : tampon du navigateur élevé → **ne pas** parler de sortie (le
+haut-parleur est déjà à 190 ms, débrancher son casque ne donnerait rien), c'est
+un autre navigateur qu'il faut ; tampon bas mais mesure haute → c'est la route
+(Bluetooth), et là seulement le filaire règle le problème. Seuil à 40 ms, pas
+100 : au-delà de 30 on entend le décalage (Wessel & Wright, déjà cité dans
+`AudioEngine.ts`). `tests/latence-verdict.test.ts` tient les deux cas mesurés.
+
 ⚠️ **Un chiffre DÉCLARÉ par le navigateur n'est pas une mesure.** Sur un même
 téléphone, à la même minute : Chrome annonce `baseLatency` 171 ms et
 `outputLatency` 416 ms, Firefox 0 et 22 — et le doigt→oreille mesuré vaut 180 ms

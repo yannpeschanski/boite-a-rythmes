@@ -39,6 +39,14 @@ class Sortie {
    * ne fonctionne pas sur Firefox » sans autre indice (2026-09-15). */
   bloquee = $state(false);
 
+  /* Le tampon déclaré par le navigateur, en ms, ou `null` s'il se tait.
+   *
+   * Poussé par le moteur (crochet statique `AudioEngine.onLatenceSortie`),
+   * branché une seule fois dans `App.svelte`. Sert au verdict de latence
+   * (`ui/latenceVerdict.ts`) : c'est ce qui permet de nommer la cause d'un
+   * retard sans demander au joueur de calibrer d'abord. */
+  baseMs = $state<number | null>(null);
+
   charger(): void {
     let brut: string | null = null;
     try {

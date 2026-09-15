@@ -22,6 +22,7 @@
   import { medianeDesEcarts } from '../model/exercises';
   import { latence } from './latence.svelte';
   import CalibrageLatence from './xp/CalibrageLatence.svelte';
+  import AvisLatence from './xp/AvisLatence.svelte';
 
   /* ⚠️ Une sortie ÉCRITE, obligatoire depuis que l'écran s'ouvre par le menu
      Aide : atteint par l'adresse, le bouton « précédent » du navigateur
@@ -303,6 +304,9 @@
   {/if}
 
   <h2>Chaîne doigt → oreille</h2>
+  <!-- L'avis tel que le joueur le voit sur les surfaces d'instrument. Ici c'est
+       aussi le seul endroit où on peut le RELIRE après coup, une fois écarté. -->
+  <AvisLatence />
   <p class="aide">
     Tape une dizaine de fois sur la zone ci-dessous, puis lance la mesure à
     l’oreille. Un chiffre déclaré par le navigateur ne prouve rien — c’est
