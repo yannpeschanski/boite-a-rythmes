@@ -511,6 +511,34 @@ export class AudioEngine {
     AudioEngine.onSortieRefusee?.(refusee);
   }
 
+  /* Un instantané de la SORTIE, pour l'écran de diagnostic (`#diag`).
+   *
+   * ⚠️ Existe parce qu'un défaut peut être SILENCIEUX SANS ÊTRE UNE EXCEPTION :
+   * une horloge audio qui n'avance pas ne lève rien, ne s'affiche nulle part,
+   * et se présente exactement comme « on appuie sur lecture et il ne se passe
+   * rien » (Firefox, 2026-09-15). Le capteur de pannes ne voit que ce qui
+   * lève ; ceci voit ce qui dort.
+   *
+   * Aucune dépendance à Svelte ni au DOM : ça reste du moteur. */
+  diagnostic(): Record<string, string | number | boolean | null> {
+    const ctx = this.ctx;
+    const ms = (v: number | undefined) =>
+      typeof v === 'number' ? Math.round(v * 1000) : null;
+    return {
+      contexte: ctx ? ctx.state : 'aucun',
+      horloge: ctx ? Math.round(ctx.currentTime * 1000) / 1000 : 0,
+      echantillonnage: ctx ? ctx.sampleRate : 0,
+      baseLatencyMs: ctx ? ms(ctx.baseLatency) : null,
+      outputLatencyMs: ctx ? ms(ctx.outputLatency) : null,
+      tamponDemande: this.tamponDemande,
+      graphe: this.graph !== null,
+      kit: this.kit !== null,
+      joue: this.isPlaying,
+      minuterie: this.schedulerTimer !== null,
+      sortieRefusee: this.sortieRefusee,
+    };
+  }
+
   /* La sortie a-t-elle refusé de reprendre ? Pour l'interface : un moteur qui
      ne démarre pas doit pouvoir le DIRE. */
   sortieBloquee(): boolean {
