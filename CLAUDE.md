@@ -132,6 +132,16 @@ que le navigateur — le manuel gagne toujours. Corollaire : un `AudioContext`
 la même route ; les sons système s'endorment pour ça, et leur `chime` **attend**
 la reprise avant de programmer.
 
+⚠️ **Un chiffre DÉCLARÉ par le navigateur n'est pas une mesure.** Sur un même
+téléphone, à la même minute : Chrome annonce `baseLatency` 171 ms et
+`outputLatency` 416 ms, Firefox 0 et 22 — et le doigt→oreille mesuré vaut 180 ms
+d'un côté, 30 ms de l'autre **sur le haut-parleur**. Donc `outputLatency` ne peut
+pas piloter une décision (c'est ce que fait encore `tampon.ts`, et il se
+déclenche là où il est sans effet), et `latencyHint` n'a eu AUCUN effet sur cet
+appareil : le tampon de Chrome y valait 171 ms, contexte nu comme contexte
+`interactive`. Ce qui compte se mesure à l'oreille — `#diag` décompose la chaîne
+et pose le total avoué à côté du total mesuré, et leur écart est le chiffre utile.
+
 ⚠️ **Deux latences, deux traitements.** DÉCLENCHER un son (pads du Mode Live,
 aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où
 `latencyHint: 'interactive'` dans `ensureAudio`. MESURER un placement (Mode jeu,

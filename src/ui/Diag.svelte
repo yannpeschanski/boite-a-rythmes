@@ -19,6 +19,9 @@
   import { onDestroy } from 'svelte';
   import { AudioEngine } from '../engine/AudioEngine';
   import { defaultState } from '../model/defaults';
+  import { medianeDesEcarts } from '../model/exercises';
+  import { latence } from './latence.svelte';
+  import CalibrageLatence from './xp/CalibrageLatence.svelte';
 
   /* ⚠️ Une sortie ÉCRITE, obligatoire depuis que l'écran s'ouvre par le menu
      Aide : atteint par l'adresse, le bouton « précédent » du navigateur
@@ -109,6 +112,66 @@
     return valeur === false;
   }
 
+  /* ── LA CHAÎNE DOIGT → OREILLE ─────────────────────────────────────────────
+   *
+   * Demandé après une journée passée sur des chiffres DÉCLARÉS qui se
+   * contredisent : sur le même téléphone, à la même minute, Chrome annonce
+   * 171 ms de tampon et 416 ms au total, Firefox annonce 0 et 22 — et le
+   * ressenti est du même ordre dans les deux. Un chiffre déclaré ne prouve
+   * rien ; il faut la chaîne entière, étage par étage, et le total mesuré À
+   * L'OREILLE à côté.
+   *
+   * Ce qu'on peut voir depuis une page, et ce qu'on ne peut pas :
+   *   - le doigt → la dalle → le système : INVISIBLE, aucune API ne l'expose ;
+   *   - la file d'événements → notre code : mesurable, et jamais mesuré jusqu'ici
+   *     (`performance.now() - event.timeStamp`) ;
+   *   - l'avance de programmation : une constante du moteur ;
+   *   - le tampon du navigateur et la route : déclarés, donc à prendre avec des
+   *     pincettes — c'est tout le sujet ;
+   *   - le total réel : seulement à l'oreille, par le calibrage.
+   *
+   * L'écart entre le total avoué et le total mesuré est le chiffre le plus
+   * utile de cet écran : c'est ce que le navigateur ne dit pas. */
+  let retards = $state<number[]>([]);
+  const retardMedian = $derived(medianeDesEcarts(retards));
+
+  function taper(e: PointerEvent): void {
+    // `timeStamp` est l'instant où le système a produit l'événement, sur la même
+    // horloge que `performance.now()` : leur écart est le temps que l'événement
+    // a passé dans la file avant que notre gestionnaire ne tourne.
+    if (!(e.timeStamp > 0)) return;
+    retards = [...retards, Math.round(Math.max(0, performance.now() - e.timeStamp))];
+  }
+
+  let calibrage = $state(false);
+
+  const nb = (v: string | number | boolean | null): number => (typeof v === 'number' ? v : 0);
+  /* Ce que le navigateur AVOUE : la file d'événements mesurée ici, plus
+     l'avance de programmation, plus la latence de sortie qu'il déclare
+     (`outputLatency` contient déjà `baseLatency`). */
+  const totalAvoue = $derived(
+    retardMedian + nb(etat.avanceDeclenchementMs) + nb(etat.outputLatencyMs),
+  );
+
+  /* ⚠️ Les lignes du premier tableau sont ÉNUMÉRÉES, pas déduites de l'objet.
+     Déduites, les compteurs ajoutés pour les sections d'après y apparaissaient
+     aussi — en double, et sous leur nom de code. Un écran de diagnostic qui
+     affiche deux fois la même chose rend le diagnostic moins lisible, ce qui est
+     exactement son contraire. */
+  const LIGNES_ETAT = [
+    'contexte',
+    'horloge',
+    'echantillonnage',
+    'baseLatencyMs',
+    'outputLatencyMs',
+    'tamponDemande',
+    'graphe',
+    'kit',
+    'joue',
+    'minuterie',
+    'sortieRefusee',
+  ];
+
   const LIBELLES: Record<string, string> = {
     contexte: 'état du contexte',
     horloge: 'horloge audio',
@@ -162,7 +225,7 @@
   <h2>Ce que le moteur voit</h2>
   <table>
     <tbody>
-      {#each Object.entries(etat) as [cle, valeur] (cle)}
+      {#each LIGNES_ETAT.map((c) => [c, etat[c]] as const) as [cle, valeur] (cle)}
         <tr>
           <th>{LIBELLES[cle] ?? cle}</th>
           <td class:alerte={estAlerte(cle, valeur)}
@@ -170,6 +233,66 @@
           >
         </tr>
       {/each}
+    </tbody>
+  </table>
+
+  <h2>Chaîne doigt → oreille</h2>
+  <p class="aide">
+    Tape une dizaine de fois sur la zone ci-dessous, puis lance la mesure à
+    l’oreille. Un chiffre déclaré par le navigateur ne prouve rien — c’est
+    l’écart entre les deux totaux qui compte.
+  </p>
+  <button class="pad" onpointerdown={taper} aria-label="Zone de frappe">
+    {retards.length === 0 ? 'TAPE ICI' : `${retards.length} frappe${retards.length > 1 ? 's' : ''}`}
+  </button>
+  <div class="essais">
+    <button class="tap44" onclick={() => (retards = [])}>Remettre à zéro</button>
+    <button class="tap44" onclick={() => (calibrage = true)}>🎧 Mesurer à l’oreille</button>
+  </div>
+  <table>
+    <tbody>
+      <tr><th>doigt → dalle → système</th><td class="inconnu">invisible depuis une page</td></tr>
+      <tr>
+        <th>file d’événements → notre code</th>
+        <td class:alerte={retards.length > 0 && retardMedian > 30}
+          >{retards.length ? `${retardMedian} ms` : '—'}</td
+        >
+      </tr>
+      <tr><th>avance de programmation</th><td>{nb(etat.avanceDeclenchementMs)} ms</td></tr>
+      <tr><th>tampon du navigateur (déclaré)</th><td>{etat.baseLatencyMs ?? 'non déclaré'} ms</td></tr>
+      <tr><th>sortie totale (déclarée)</th><td>{etat.outputLatencyMs ?? 'non déclaré'} ms</td></tr>
+      <tr><th>total AVOUÉ</th><td>{totalAvoue} ms</td></tr>
+      <tr>
+        <th>mesuré à l’oreille (calibrage)</th>
+        <td class:alerte={latence.ms > 50}>{latence.ms === 0 ? 'non mesuré' : `${latence.ms} ms`}</td>
+      </tr>
+      <tr>
+        <th>ce que le navigateur n’avoue pas</th>
+        <td class:alerte={latence.ms !== 0 && latence.ms - totalAvoue > 30}
+          >{latence.ms === 0 ? '—' : `${latence.ms - totalAvoue} ms`}</td
+        >
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Régularité du scheduler</h2>
+  <p class="aide">
+    Mesurée pendant la lecture (essai 7), et remise à zéro à chaque départ. Un
+    « ça rame » se lit ici, jamais dans un chiffre de latence : tant que le retard
+    du fil principal reste sous l’horizon de programmation (250 ms), rien ne
+    s’entend.
+  </p>
+  <table>
+    <tbody>
+      <tr><th>réveils du scheduler</th><td>{nb(etat.ticks)}</td></tr>
+      <tr>
+        <th>retard maximal d’un réveil</th>
+        <td class:alerte={nb(etat.retardTickMaxMs) > 100}>{nb(etat.retardTickMaxMs)} ms</td>
+      </tr>
+      <tr>
+        <th>réveils au-delà de l’horizon</th>
+        <td class:alerte={nb(etat.ticksHorsHorizon) > 0}>{nb(etat.ticksHorsHorizon)}</td>
+      </tr>
     </tbody>
   </table>
 
@@ -187,6 +310,14 @@
   <p class="aide">
     Navigateur : <code>{navigator.userAgent}</code>
   </p>
+
+  <!-- ⚠️ RÉUTILISÉ, jamais réécrit : ce panneau est la seule mesure
+       doigt → oreille du projet, et il a déjà coûté une correction de signe et
+       une refonte du métronome. Deux mesures qui doivent rester d'accord
+       finissent par ne plus l'être (CLAUDE.md). -->
+  {#if calibrage}
+    <CalibrageLatence {engine} onClose={() => (calibrage = false)} />
+  {/if}
 </div>
 
 <style>
@@ -203,6 +334,27 @@
     text-transform: uppercase;
     color: var(--xp-accent-amber);
     margin: 14px 0 6px;
+  }
+  .pad {
+    display: block;
+    width: 100%;
+    min-height: 88px;
+    margin-bottom: 8px;
+    border: 1px solid var(--xp-line);
+    border-radius: 4px;
+    background: var(--xp-lcd-bg);
+    color: var(--xp-lcd);
+    box-shadow: var(--xp-bevel-in);
+    font-family: inherit;
+    font-size: var(--xp-size-btn);
+    letter-spacing: var(--xp-ls-btn);
+    text-transform: uppercase;
+    /* Un pad de mesure ne doit pas déclencher le zoom ou le défilement sous le
+       doigt : ça décalerait l'instant qu'on mesure. */
+    touch-action: none;
+  }
+  td.inconnu {
+    color: var(--xp-muted);
   }
   .retour {
     padding: 8px 12px;

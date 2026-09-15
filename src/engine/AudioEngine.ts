@@ -230,6 +230,18 @@ export class AudioEngine {
   /* La sortie a-t-elle refusé de reprendre ? Lu par l'interface : un moteur
      qui ne démarre pas doit pouvoir le DIRE (voir `reprendreSortie`). */
   private sortieRefusee = false;
+  /* RÉGULARITÉ DU SCHEDULER — pour l'écran de diagnostic.
+   *
+   * ⚠️ Mesure le FIL PRINCIPAL, pas la sortie audio : le scheduler est un
+   * `setInterval` de 25 ms qui programme 250 ms à l'avance. Tant que son retard
+   * reste sous l'horizon, rien ne s'entend — c'est toute la raison du lookahead.
+   * Au-delà, des notes se programment dans le passé et `depart.ts` les rattrape
+   * à la volée. Un « ça rame » se lit donc ici, et jamais dans un chiffre de
+   * latence. */
+  private dernierTickMs: number | null = null;
+  private ticks = 0;
+  private retardTickMaxMs = 0;
+  private ticksHorsHorizon = 0;
   private cursors: Cursors = AudioEngine.freshCursors();
   private synthCursors: SynthCursors = AudioEngine.freshSynthCursors();
   private currentBar = 0;
@@ -577,6 +589,10 @@ export class AudioEngine {
       joue: this.isPlaying,
       minuterie: this.schedulerTimer !== null,
       sortieRefusee: this.sortieRefusee,
+      avanceDeclenchementMs: Math.round(AVANCE_DECLENCHEMENT * 1000),
+      ticks: this.ticks,
+      retardTickMaxMs: this.retardTickMaxMs,
+      ticksHorsHorizon: this.ticksHorsHorizon,
     };
   }
 
@@ -604,6 +620,12 @@ export class AudioEngine {
     await this.reprendre(ctx);
     if (this.isPlaying) return;
     this.isPlaying = true;
+    // La régularité se mesure PAR LECTURE : cumuler d'une lecture à l'autre
+    // ferait porter à celle-ci le retard d'une autre.
+    this.dernierTickMs = null;
+    this.ticks = 0;
+    this.retardTickMaxMs = 0;
+    this.ticksHorsHorizon = 0;
     this.currentBar = 0;
     this.sectionStartBar = 0;
     this.pendingSwap = null;
@@ -1147,6 +1169,19 @@ export class AudioEngine {
     const graph = this.graph;
     const kit = this.kit;
     if (!ctx || !graph || !kit || !this.isPlaying) return;
+    /* Deux compteurs, trois lignes, aucun coût : l'écart entre deux réveils du
+       fil principal et celui de ses dépassements. `performance.now()` et non
+       l'horloge audio — c'est le retard du FIL qu'on mesure, pas celui du son. */
+    const murMs = performance.now();
+    if (this.dernierTickMs !== null) {
+      const retard = murMs - this.dernierTickMs - LOOKAHEAD;
+      if (retard > this.retardTickMaxMs) this.retardTickMaxMs = Math.round(retard);
+      // Au-delà de l'horizon de programmation, le retard cesse d'être absorbé
+      // et devient audible : c'est le seuil qui compte, pas une moyenne.
+      if (retard > SCHEDULE_AHEAD * 1000) this.ticksHorsHorizon++;
+    }
+    this.dernierTickMs = murMs;
+    this.ticks++;
     const now = ctx.currentTime;
     const barDur = barDuration(this.getState().tempo);
 
