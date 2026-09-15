@@ -18,6 +18,11 @@
 
   let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
 
+  /* La première panne JS de la session, ou `null`. Voir le capteur dans
+     `onMount` — c'est ce qui rend une erreur du moteur lisible sans console. */
+  let panne = $state<string | null>(null);
+  let nettoyer: (() => void) | null = null;
+
   onMount(() => {
     game.load();
     // Le décalage d'entrée vaut pour TOUS les modes (Mode jeu, pad d'écriture
@@ -32,6 +37,35 @@
     // que les trois vues construisent chacune leur moteur et qu'il n'y a qu'une
     // sortie : trois branchements, ce serait trois occasions d'en oublier un.
     AudioEngine.onSortieRefusee = (refusee) => (sortie.bloquee = refusee);
+    /* ⚠️ UNE PANNE DU MOTEUR NE DOIT PAS ÊTRE SILENCIEUSE — et elle l'était.
+     *
+     * Retour de jeu du 2026-09-15 : sur Firefox, « on appuie sur lecture et il
+     * ne se passe rien », sans un mot à l'écran. Les deux chemins par lesquels
+     * une exception du moteur se perd :
+     *   - `togglePlay` fait `await engine.start()` sans `catch` — un rejet part
+     *     en `unhandledrejection`, visible dans une console que personne n'a
+     *     sur un téléphone ;
+     *   - le scheduler tourne dans un `setInterval` — une exception par tick
+     *     part en `error`, au même endroit invisible.
+     * Deux écouteurs globaux, une seule ligne à l'écran, et le diagnostic
+     * devient un aller-retour au lieu de six.
+     *
+     * On garde la PREMIÈRE panne : c'est celle qui explique, les suivantes n'en
+     * sont souvent que l'écho (un tick qui échoue échoue 40 fois par seconde). */
+    const noter = (quoi: string) => {
+      if (!panne && quoi) panne = quoi.slice(0, 180);
+    };
+    const surErreur = (e: ErrorEvent) => noter(e.message || String(e.error ?? ''));
+    const surRejet = (e: PromiseRejectionEvent) => {
+      const r = e.reason as { message?: string } | undefined;
+      noter(r?.message ?? String(r ?? ''));
+    };
+    window.addEventListener('error', surErreur);
+    window.addEventListener('unhandledrejection', surRejet);
+    nettoyer = () => {
+      window.removeEventListener('error', surErreur);
+      window.removeEventListener('unhandledrejection', surRejet);
+    };
     // Rythme partagé par URL : on entre directement dans l'Atelier. Le lien
     // vaut intention, il ouvre l'Atelier même verrouillé (voir model/unlocks).
     if (loadFromHash()) {
@@ -43,6 +77,8 @@
     // par l'écran d'accueil.
     if (location.hash === '#mode-live' && unlocks.has('live')) view = 'live';
   });
+
+  onDestroy(() => nettoyer?.());
 
   /* ⚠️ Plus d'écouteur `hashchange` : il n'existait que pour #boss, dont la
      bascule devait prendre effet sans rechargement. Le contournement retiré,
@@ -189,6 +225,11 @@
   <p class="sortie-bloquee" role="status">
     ⚠ Le navigateur a refusé d’ouvrir le son. Appuie de nouveau sur ▶.
   </p>
+{:else if panne}
+  <!-- Le message BRUT, pas une reformulation : c'est lui qu'on veut pouvoir
+       lire à voix haute depuis un téléphone, et le reformuler le rendrait
+       inutile. -->
+  <p class="sortie-bloquee" role="status">⚠ Le son a échoué — {panne}</p>
 {/if}
 
 <style>

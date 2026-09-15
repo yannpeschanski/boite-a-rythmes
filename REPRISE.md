@@ -3,8 +3,15 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-15 — **l'appli était muette sur Firefox, c'est
-> corrigé.** Vérifié ce jour : **0 erreur de types sur 289 fichiers, 750 tests,
+> Dernière mise à jour : 2026-09-15 — ⚠️ **Firefox ne joue TOUJOURS PAS, et on
+> attend un message d'erreur.** Une première cause a été corrigée (#194, reprise
+> hors de la tâche du geste) — elle était réelle et prouvée au banc, mais elle
+> n'était pas la seule. Ce qu'on sait depuis : les voix du récit sonnent (elles
+> ont leur propre `AudioContext`, sans `buildGraph`), la lecture ne démarre pas,
+> le visuel reste vide. Le moteur casse donc quelque part, en silence — d'où le
+> capteur de pannes livré ensuite. **Prochain pas : lire le message affiché sur
+> le téléphone de Yann**, et savoir si un aperçu (clic sur une case de la grille)
+> sonne, ce qui sépare `buildGraph` du scheduler.** Vérifié ce jour : **0 erreur de types sur 289 fichiers, 750 tests,
 > les deux builds** (l'autonome fait 876 ko, 293 ko gzip).
 >
 > ⚠️ **CE QUI EST EN COURS, ET CE QUI EST EN PAUSE.**
