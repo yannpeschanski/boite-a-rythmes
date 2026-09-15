@@ -3,8 +3,14 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-15 — ⚠️ **Firefox ne joue TOUJOURS PAS, et on
-> attend un message d'erreur.** Une première cause a été corrigée (#194, reprise
+> Dernière mise à jour : 2026-09-15 — ✅ **TROUVÉ : une boucle audio interdite
+> (`mixBus → liveReverbSend → reverb → mixBus`) rendait l'appli entièrement muette
+> sous Firefox.** Gecko coupe un cycle sans `DelayNode` en entier, Chrome coupe
+> la seule arête fautive. Correctif d'une ligne, sans effet à l'oreille (mesuré),
+> et `tests/graphe-boucles.test.ts` interdit le retour. **Reste à confirmer sur
+> le téléphone de Yann.** Ce qui suit décrit l'enquête, gardé pour la méthode.
+>
+> ⚠️ *(Historique)* **Firefox ne jouait pas, et on attendait un message d'erreur.** Une première cause a été corrigée (#194, reprise
 > hors de la tâche du geste) — elle était réelle et prouvée au banc, mais elle
 > n'était pas la seule. Ce qu'on sait depuis : les voix du récit sonnent (elles
 > ont leur propre `AudioContext`, sans `buildGraph`), la lecture ne démarre pas,
