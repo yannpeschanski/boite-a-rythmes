@@ -48,6 +48,35 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une panne du moteur arrive à l'écran (2026-09-15)
+
+**La correction précédente n'a pas suffi, et c'est le diagnostic qui manquait.**
+Sur Firefox, après #194 : *« les sons contextuels fonctionnent (la machine à
+écrire du Mode carrière), mais quand on appuie sur lecture dans l'Atelier, ça ne
+joue rien — et le visuel reste vide »*.
+
+**Ce que ce partage apprend.** Les voix du récit passent par
+`ui/xp/systemSounds.ts`, qui ouvre **son propre** `AudioContext` sans
+`buildGraph` : elles prouvent que Web Audio marche, et rien du moteur. La panne
+est donc dans le moteur — et `buildGraph` a été relu ligne à ligne sans qu'aucune
+construction Gecko-illégale n'apparaisse (pas de `cancelAndHoldAtTime`, pas de
+`.detune` sur un `AudioBufferSourceNode`, tampons au `sampleRate` du contexte,
+`fftSize` et bornes d'analyseur dans les clous). Deviner une deuxième fois
+coûterait un aller-retour de plus.
+
+**Deux écouteurs globaux, une ligne à l'écran.** `togglePlay` fait
+`await engine.start()` sans `catch` — un rejet part en `unhandledrejection` ; le
+scheduler tourne dans un `setInterval` — une exception part en `error`. Les deux
+finissent dans une console que personne n'a sur un téléphone. `App.svelte` les
+capte et affiche le message **brut** (le reformuler le rendrait inutile), en
+gardant la PREMIÈRE panne : un tick qui échoue échoue 40 fois par seconde.
+
+Vérifié au navigateur (`scratchpad/verif-panne.cjs`) : un rejet non attrapé et
+une exception de timer arrivent tous deux à l'écran, et rien ne s'affiche au
+repos.
+
+Fichiers : `App.svelte`. 750 tests, 0 erreur de types, les deux builds.
+
 ### ✅ L'appli était muette sur Firefox — une reprise de sortie posée hors de la tâche du geste (2026-09-15)
 
 **Trouvé en jouant, sur un navigateur qu'on ne mesurait pas.** Rapport de Yann :
