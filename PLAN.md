@@ -48,6 +48,37 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Sonder les tampons : ce que le navigateur accorde vraiment (2026-09-15)
+
+Mesuré au calibrage, sur le **haut-parleur**, sans Bluetooth : **Chrome +190 ms**
+(il en déclare 128), **Firefox −32 ms** — et ce −32 est l'anticipation du joueur
+sur une pulsation régulière, donc un retard réel nul. Le défaut ouvert le matin
+comme « un problème de casque Bluetooth » existe donc **sans casque du tout**.
+
+⚠️ **Et la détection automatique de `tampon.ts` est RÉHABILITÉE.** Je la disais
+branchée sur un cadran faux et proposais de la retirer ; les deux mesures disent
+l'inverse : sur le haut-parleur, `outputLatency` prédit correctement la réalité
+dans les deux navigateurs (128 déclarés pour 190 réels, 0 pour ~0). Elle se
+déclenche sur Chrome parce que la sortie **est** lente — sa raison d'être. Elle
+n'est aveugle que sur Firefox + Bluetooth (22 ms déclarés pour ~180 réels), où
+elle ne fait rien mais ne nuit pas. **Ne pas la retirer.**
+
+**La cause est chez Chrome, et elle est documentée** (ticket Chromium 40103372,
+revue « Fix Web Audio glitches on Pixel devices ») : le backend AAudio n'utilise
+`AAUDIO_PERFORMANCE_MODE_LOW_LATENCY` que si la taille de rafale de l'appareil
+tombe juste avec le quantum de rendu de 128 échantillons de Web Audio ; sinon il
+retombe sur le mode sans basse latence. Et `latencyHint` n'est qu'un vœu que le
+navigateur peut ignorer.
+
+Restaient deux boutons qu'une page peut tourner et qu'on n'avait pas essayés : un
+hint **numérique** (on n'avait testé que la catégorie) et un **taux
+d'échantillonnage imposé** (hors du taux natif, le rééchantillonnage interdit le
+chemin rapide). D'où « Sonder les tampons » : sept configurations, une seule
+pression, le tampon obtenu pour chacune, aucun son. Si toutes les lignes rendent
+le même chiffre, aucune demande ne sert sur cet appareil et le sujet est clos
+côté code. Vérifié sur Chromium de bureau, où la sonde détecte bien une demande
+honorée (hint 0,02 s → 20 ms contre 10 par défaut).
+
 ### ✅ Le diagnostic mesure la chaîne doigt → oreille (2026-09-15)
 
 *« Il faudrait que tu refasses un bon diagnostic de vitesse depuis la touche

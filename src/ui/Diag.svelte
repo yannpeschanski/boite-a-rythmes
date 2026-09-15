@@ -145,6 +145,55 @@
 
   let calibrage = $state(false);
 
+  /* ── SONDAGE DES TAMPONS ───────────────────────────────────────────────────
+   *
+   * ⚠️ `latencyHint` est un VŒU, pas une garantie : le navigateur peut l'ignorer,
+   * et sur Android Chrome l'ignore quand la taille de rafale de l'appareil ne
+   * tombe pas juste avec le quantum de rendu de 128 échantillons de Web Audio —
+   * il retombe alors sur le mode sans basse latence (ticket Chromium 40103372).
+   * Mesuré sur le téléphone de Yann : 171 ms de tampon, contexte nu comme
+   * contexte `interactive`.
+   *
+   * Restent deux boutons qu'une page peut tourner, et qu'on n'avait pas
+   * essayés : un hint NUMÉRIQUE (plus précis qu'une catégorie) et un taux
+   * d'échantillonnage IMPOSÉ (hors du taux natif, le navigateur doit
+   * rééchantillonner, ce qui interdit le chemin rapide). Une seule pression les
+   * essaie tous et rend le tampon obtenu — aucun son, juste des chiffres.
+   *
+   * Chaque contexte est refermé aussitôt lu : en laisser six ouverts changerait
+   * ce qu'on mesure. */
+  const CONFIGS: { nom: string; opts?: AudioContextOptions }[] = [
+    { nom: 'par défaut', opts: undefined },
+    { nom: "categorie 'interactive'", opts: { latencyHint: 'interactive' } },
+    { nom: 'hint 0,02 s', opts: { latencyHint: 0.02 } },
+    { nom: 'hint 0,01 s', opts: { latencyHint: 0.01 } },
+    { nom: 'hint 0,005 s', opts: { latencyHint: 0.005 } },
+    { nom: 'hint 0,005 s + 48 kHz', opts: { latencyHint: 0.005, sampleRate: 48000 } },
+    { nom: 'hint 0,005 s + 44,1 kHz', opts: { latencyHint: 0.005, sampleRate: 44100 } },
+  ];
+
+  let tampons = $state<string[]>([]);
+
+  async function sonderTampons(): Promise<void> {
+    tampons = [];
+    for (const { nom, opts } of CONFIGS) {
+      try {
+        const c = opts ? new AudioContext(opts) : new AudioContext();
+        const base = typeof c.baseLatency === 'number' ? Math.round(c.baseLatency * 1000) : null;
+        const sortie = typeof c.outputLatency === 'number' ? Math.round(c.outputLatency * 1000) : null;
+        tampons = [
+          ...tampons,
+          `${nom} — ${c.sampleRate} Hz, tampon ${base === null ? 'non déclaré' : base + ' ms'}` +
+            (sortie ? `, sortie ${sortie} ms` : ''),
+        ];
+        await c.close();
+      } catch (e) {
+        const err = e as { name?: string; message?: string };
+        tampons = [...tampons, `${nom} — refusé : ${err?.name ?? ''} ${err?.message ?? String(e)}`];
+      }
+    }
+  }
+
   const nb = (v: string | number | boolean | null): number => (typeof v === 'number' ? v : 0);
   /* Ce que le navigateur AVOUE : la file d'événements mesurée ici, plus
      l'avance de programmation, plus la latence de sortie qu'il déclare
@@ -235,6 +284,23 @@
       {/each}
     </tbody>
   </table>
+
+  <h2>Tampons disponibles</h2>
+  <p class="aide">
+    Ce que le navigateur accorde vraiment selon ce qu’on lui demande.
+    <code>latencyHint</code> est un vœu, pas une garantie : si toutes les lignes
+    affichent le même tampon, aucune demande ne sert à rien sur cet appareil.
+  </p>
+  <div class="essais">
+    <button class="tap44" onclick={sonderTampons}>Sonder les tampons</button>
+  </div>
+  {#if tampons.length}
+    <ol class="journal">
+      {#each tampons as ligne, i (i)}
+        <li>{ligne}</li>
+      {/each}
+    </ol>
+  {/if}
 
   <h2>Chaîne doigt → oreille</h2>
   <p class="aide">
