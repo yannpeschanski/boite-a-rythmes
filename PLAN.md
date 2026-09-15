@@ -48,6 +48,32 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une sonde de chaîne : le `latencyHint` est innocenté (2026-09-15)
+
+**Première mesure venue du téléphone de Yann, sous Firefox** : essai 1 (bip sur
+un contexte nu) ENTENDU, essai 2 (même bip, contexte avec `latencyHint`)
+ENTENDU, essai 3 (aperçu de kick) et 4 (lecture) MUETS.
+
+Deux conclusions. Le `latencyHint` n'y est pour rien — c'était l'une des deux
+hypothèses, elle tombe. Et le son se perd **dans le moteur**, entre l'oscillateur
+et la sortie.
+
+Mais un aperçu de kick traverse d'un coup la voix, le bus de ligne, la
+saturation, le bitcrush, la compression, le filtre live, le limiteur, le soft
+clip, le petit haut-parleur et le gain final : muet, il ne dit pas LEQUEL. D'où
+`AudioEngine.sondeSortie(point)`, qui injecte **le même bip** à trois endroits —
+`'destination'` (hors du graphe : teste le contexte seul), `'mixBus'` (chaîne
+finale), `'kick'` (bus de ligne, effets globaux compris). Le premier qui se tait
+nomme l'étage. L'écran passe ainsi à sept essais.
+
+⚠️ **L'instrument a été vérifié AVANT d'être livré**, parce qu'une sonde muette
+enverrait le diagnostic sur une fausse piste : pic de l'analyseur (branché sur
+`finalGain`, donc sur ce qu'on entend) à 180 / 174 / 188 sur les trois chemins,
+contre **0 au repos**. ⚠️ La première mesure, elle, ne valait rien : une lecture
+unique 250 ms après le déclenchement est amortie par le lissage de 0,72 et
+porte la traîne de l'essai précédent. Il faut échantillonner pendant toute la
+durée du son et garder le pic, avec un silence de repos entre deux essais.
+
 ### ✅ Le diagnostic s'ouvre depuis le menu Aide (2026-09-15)
 
 *« Je n'ai pas accès au diag sur firefox ! »* — et c'est la règle du projet
