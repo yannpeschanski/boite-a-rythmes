@@ -152,6 +152,17 @@ le repos est un **trajet**, pas un réglage : 0 échantillon d'écart. Le fondu 
 en prime le claquement quand on bascule en lecture. Même précaution pour tout
 futur `liveFilter`.
 
+⚠️ **Une reprise de sortie appartient à la TÂCHE DU GESTE, et un refus ne
+rejette pas.** Chrome juge l'autoplay sur l'activation COLLANTE, Firefox et
+WebKit sur la TRANSITOIRE : un `resume()` posé après un `await` (`close()`, un
+worklet) y est refusé — et le refus laisse la promesse PENDANTE, donc fige sans
+erreur tout ce qui suit (l'appli était muette sur Firefox, et seulement au
+casque : seule une sortie lente déclenche la réouverture). D'où `adapterTampon`
+SYNCHRONE, la reprise unique en tête de `start()`, et `reprendreSortie` qui court
+contre une montre et rend la VÉRITÉ — que `AudioEngine.onSortieRefusee` porte à
+l'écran, parce qu'un refus de la plateforme ne doit jamais être silencieux.
+`tests/reprise-geste.test.ts` tient les deux moitiés.
+
 **L'analyseur de spectre** est un `AnalyserNode` branché en tap sur `finalGain`
 dans `buildGraph`, donc sur ce qu'on entend, limiteur compris. `getSpectrum(out)`
 **remplit un tableau fourni par l'appelant** — le visualiseur tourne à 60 Hz. La

@@ -48,6 +48,58 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'appli était muette sur Firefox — une reprise de sortie posée hors de la tâche du geste (2026-09-15)
+
+**Trouvé en jouant, sur un navigateur qu'on ne mesurait pas.** Rapport de Yann :
+*« test sur firefox : le son de la boite à rythme ne fonctionne pas ! »*. Aucune
+erreur, aucune console, rien — le symptôme était le silence.
+
+**La cause.** `start()` reprenait le contexte APRÈS `await this.adapterTampon()`,
+qui attendait lui-même `close()` avant de rouvrir et de reprendre. Deux `await`
+séparaient donc la reprise du clic. Chrome juge l'autoplay sur l'activation
+**collante** (la page a été touchée une fois, `resume()` passe pour toujours) ;
+Firefox et WebKit sur l'activation **transitoire**, perdue dès qu'on sort de la
+tâche du geste. Et un refus d'autoplay **ne rejette pas** : la promesse reste
+PENDANTE. `start()` ne rendait jamais la main, le scheduler ne démarrait pas.
+
+**Pourquoi Chrome ne l'a jamais montré, et pourquoi le Bluetooth était dedans.**
+Le chemin de fermeture/réouverture ne s'emprunte que si le tampon voulu a changé,
+c'est-à-dire sur une sortie déclarée LENTE (`engine/tampon.ts`) — le casque, pas
+le haut-parleur. Il faut en plus que le contexte existe déjà sans que la lecture
+ait commencé : un aperçu, un pad, une voix du récit. C'est le cas courant du Mode
+Live et du Mode jeu.
+
+**La mesure, avant / après.** Firefox n'est pas installable dans l'environnement
+de travail (proxy), donc le refus est simulé dans Chromium — tout paraît
+suspendu, aucune reprise ne revient (`scratchpad/preuve-firefox.cjs`, repris dans
+le test) :
+
+| code | résultat |
+|---|---|
+| d'origine | **FIGÉ** — `start()` ne rend jamais la main |
+| corrigé | rend la main en 1 517 ms, la lecture démarre, le refus est DIT |
+
+**Ce qui change.** `adapterTampon` devient SYNCHRONE (elle ne réclame plus
+`close()`, qui n'est plus attendu : le contexte neuf ne partage rien avec
+l'ancien) et ne reprend plus elle-même ; `start()` porte la seule reprise, en
+premier `await` de la tâche du geste. `reprendreSortie` court contre une montre
+(`DELAI_REPRISE`, 1,5 s) et **rend la vérité** au lieu de figer. Même correction
+dans `startCapture`, où la reprise passait après le chargement du worklet — ⏺ REC
+sur une page fraîche aurait capturé un silence.
+
+**Et le refus n'est plus silencieux** — même règle que `game.persistanceRefusee`.
+`AudioEngine.onSortieRefusee` est un crochet **statique** (les trois vues
+construisent chacune leur moteur, mais il n'y a qu'une sortie : trois
+branchements, ce seraient trois occasions d'en oublier un), branché une fois dans
+`App.svelte`, qui affiche un bandeau ambre disant le geste qui répare.
+
+Fichiers : `engine/AudioEngine.ts`, `ui/sortie.svelte.ts`, `App.svelte`,
+`tests/reprise-geste.test.ts`. 750 tests, 0 erreur de types, les deux builds.
+
+⚠️ **Écart de portée assumé** : ce chantier a INTERROMPU l'enquête sur la latence
+Bluetooth (« tout arrêter et réparer ce bug »). L'état de cette enquête est dans
+`REPRISE.md`.
+
 ### ✅ Le chantier du Mode Live est CLOS — les deux derniers points se jugeaient en jouant (2026-09-14)
 
 > *« Le loquet 🎲 — validé. L'essai sur un vrai téléphone en paysage — mode

@@ -31,6 +31,14 @@ export const LIBELLES: Record<PreferenceTampon, string> = {
 class Sortie {
   preference = $state<PreferenceTampon>('auto');
 
+  /* La sortie a été REFUSÉE par le navigateur (politique d'autoplay).
+   *
+   * Posé par le moteur via son crochet statique, branché dans `App.svelte`.
+   * Même règle que `game.persistanceRefusee` : un refus de la plateforme ne
+   * doit jamais être silencieux — celui-ci l'a été, et il a coûté un « l'appli
+   * ne fonctionne pas sur Firefox » sans autre indice (2026-09-15). */
+  bloquee = $state(false);
+
   charger(): void {
     let brut: string | null = null;
     try {
