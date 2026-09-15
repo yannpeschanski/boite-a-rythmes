@@ -48,6 +48,32 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le diagnostic s'ouvre depuis le menu Aide (2026-09-15)
+
+*« Je n'ai pas accès au diag sur firefox ! »* — et c'est la règle du projet
+appliquée à un outil : **ce qui n'est pas ÉCRIT n'existe pas**. L'écran n'était
+atteignable qu'en tapant `#diag` dans la barre d'adresse, or le fragment n'est lu
+qu'au CHARGEMENT (`onMount`) : le taper sur une page déjà ouverte ne fait
+strictement rien, sans un mot. Quatrième fois que ce projet paie un chemin non
+écrit.
+
+Il s'ouvre donc depuis **Aide → 🩺 Diagnostic audio** — le menu où l'on va
+justement chercher quand quelque chose ne marche pas, à côté de « Signaler un
+bug ». `onSwitchView` portait déjà la bascule d'écran de la barre de menus, il
+gagne une destination.
+
+⚠️ Et **une sortie ÉCRITE** avec : atteint par l'adresse, le bouton « précédent »
+du navigateur suffisait ; atteint depuis l'appli, il n'y avait plus rien pour
+revenir. Même règle que le « ◂ REDESCENDRE » des scènes du récit.
+
+⚠️ Piège de harnais rencontré en vérifiant : aller de `/` à `/#r=…` est une
+navigation dans le MÊME document — `onMount` ne rejoue pas, le fragment n'est
+jamais lu, et le test accuse à tort le lien de partage. Ouvrir une page NEUVE.
+
+Vérifié au navigateur : menu Aide → écran de diagnostic → ◂ Retour → Atelier,
+sans erreur. Fichiers : `ui/Diag.svelte`, `ui/atelier/ToolBar.svelte`,
+`AtelierView.svelte`, `MontagePanel.svelte`, `App.svelte`.
+
 ### ✅ Un écran de diagnostic, parce que le défaut ne LÈVE pas (2026-09-15)
 
 Le capteur de pannes n'a rien affiché et Firefox ne joue toujours pas. Donc la

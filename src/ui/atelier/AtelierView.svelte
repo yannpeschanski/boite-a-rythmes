@@ -40,7 +40,7 @@
   // Bascule d'écran remontée à App.svelte : depuis l'audit A1, l'Atelier n'a
   // plus de barre de navigation au-dessus de lui, c'est le menu « Mode » de
   // la ToolBar qui en tient lieu.
-  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live') => void } = $props();
+  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live' | 'diag') => void } = $props();
 
   /* ---- La commande en cours -------------------------------------------
    *

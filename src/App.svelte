@@ -121,7 +121,7 @@
 </script>
 
 {#if view === 'diag'}
-  <Diag />
+  <Diag onExit={() => (view = 'atelier')} />
 {:else if view === 'live'}
   <!-- ⚠️ D'où l'on vient décide où l'on retourne. Le Mode Live rendait TOUJOURS
        la main à l'Atelier ; monter sur scène pendant le concert et redescendre
