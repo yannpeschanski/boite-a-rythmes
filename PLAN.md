@@ -48,6 +48,52 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'appli dit son propre retard, et nomme la bonne cause (2026-09-15)
+
+Le sondage a clos la question technique : sur ce téléphone, **aucune demande n'a
+d'effet** — les sept configurations rendent 128 ms, et imposer 44,1 kHz coûte
+12 ms de plus (rééchantillonnage, l'appareil est natif 48 kHz). Il ne restait
+donc qu'à le DIRE.
+
+**Où, et surtout où PAS.** Seulement sur les surfaces d'INSTRUMENT, c'est-à-dire
+là où l'on déclenche un son au doigt — le module Synthé de l'Atelier pour
+commencer. Écouter une boucle n'est pas impacté (un retard constant ne s'entend
+pas) et ce qui se MESURE — les quatre niveaux `jouer`, le pad d'écriture — est
+déjà corrigé par le calibrage : y afficher « change de navigateur » serait faux.
+
+⚠️ **Et le conseil dépend de la CAUSE, sinon il est faux.** Arbitrage de Yann :
+« ne pas conseiller le filaire, ça ne changerait rien ». Il a raison pour son
+cas — le retard est dans le tampon de Chrome, dont le haut-parleur mesure déjà
+190 ms. Mais l'inverse existe aussi (Firefox + Bluetooth : 0 ms déclaré pour 180
+réels), et là le filaire règle tout. `verdictLatence` tranche donc avant de
+conseiller : tampon ≥ 30 ms → le navigateur est en cause, **aucun** mot sur la
+sortie ; tampon bas et mesure haute → la route ; tampon non déclaré (WebKit) →
+on ne devine pas, on le dit.
+
+⚠️ **Le seuil est 40 ms, pas 100.** Wessel & Wright, déjà cité dans
+`AudioEngine.ts` : au-delà de 30 ms on entend le décalage et on ralentit pour
+compenser. À 100 on aurait laissé passer sans un mot des appareils où jouer au
+doigt est déjà faux.
+
+⚠️ **Rien n'est posé dans le Mode Live pour l'instant**, alors que c'est la
+surface la plus touchée : sa disposition est mesurée au pixel en 844 × 390
+(bandeau 6→22, transport 26→80, bande 84→128) et un bandeau en flux la
+décalerait. À traiter en SUPERPOSITION, avec mesure avant/après.
+
+**Correction de périmètre, au passage** : les niveaux chronométrés que la
+carrière cite ne sont pas trois mais **quatre** — 64, 65, 66 à l'acte 0 et le
+**38 à l'acte 7**, la balance du concert.
+
+Le tampon déclaré remonte du moteur par un crochet statique
+(`AudioEngine.onLatenceSortie`, même raison que `onSortieRefusee` : trois vues,
+une seule sortie), relu à chaque tick parce qu'il vaut souvent 0 juste après la
+création du contexte. Vérifié au navigateur sur les quatre cas — Chrome mesuré,
+Firefox + Bluetooth, sortie rapide (aucun avis), WebKit muet.
+
+⚠️ **Non vérifié à l'écran** : le rendu de l'avis EN PLACE dans le module Synthé.
+Le module est verrouillé pour un joueur neuf et le harnais n'a pas su l'ouvrir ;
+le composant lui-même est rendu et photographié depuis `#diag`.
+
 ### ✅ Sonder les tampons : ce que le navigateur accorde vraiment (2026-09-15)
 
 Mesuré au calibrage, sur le **haut-parleur**, sans Bluetooth : **Chrome +190 ms**

@@ -454,6 +454,8 @@ export class AudioEngine {
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);
+    this.derniereBaseMs = null; // contexte neuf : le tampon peut avoir changé
+    this.noterLatenceSortie();
   }
 
   /* Rouvre la sortie si le tampon voulu n'est plus celui du contexte en place.
@@ -607,6 +609,29 @@ export class AudioEngine {
      branchement dans les trois vues — et le défaut de câblage habituel du
      projet, c'est l'oubli du troisième. Branché une fois dans `App.svelte`. */
   static onSortieRefusee: ((refusee: boolean) => void) | null = null;
+
+  /* Le TAMPON du navigateur, poussé vers l'interface dès qu'il est connu.
+   *
+   * ⚠️ Statique pour la même raison que le crochet ci-dessus : trois vues, trois
+   * moteurs, une seule sortie. Et poussé plutôt que lu, parce que le moteur
+   * n'importe rien de Svelte.
+   *
+   * C'est le chiffre qui permet de nommer la CAUSE d'un retard sans rituel de
+   * calibrage (`ui/latenceVerdict.ts`) : élevé, c'est le navigateur ; bas avec
+   * une mesure haute, c'est la route. Relu à chaque tick parce qu'il vaut
+   * souvent 0 juste après la création du contexte — même piège que
+   * `outputLatency`. */
+  static onLatenceSortie: ((baseMs: number | null) => void) | null = null;
+  private derniereBaseMs: number | null = null;
+
+  private noterLatenceSortie(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const base = typeof ctx.baseLatency === 'number' ? Math.round(ctx.baseLatency * 1000) : null;
+    if (base === this.derniereBaseMs) return;
+    this.derniereBaseMs = base;
+    AudioEngine.onLatenceSortie?.(base);
+  }
 
   async start(): Promise<void> {
     // ⚠️ L'ORDRE EST LA CORRECTION (voir adapterTampon) : la bascule de tampon
@@ -1200,6 +1225,7 @@ export class AudioEngine {
     // qu'on la voit vraiment. Une comparaison de nombre, 40 fois par seconde ;
     // ce qu'elle observe ne s'applique qu'au prochain ▶ (voir adapterTampon).
     noterSortie(ctx.outputLatency);
+    this.noterLatenceSortie();
 
     if (this.nextBarTime !== null && now >= this.nextBarTime) {
       const justStartedBarTime = this.nextBarTime; // avant incrément : début de la mesure qui démarre tout juste

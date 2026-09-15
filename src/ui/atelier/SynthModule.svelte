@@ -9,6 +9,7 @@
   import { randomizeSynth, randomizePad, randomizePitchedLine } from '../../engine/generators';
   import type { SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
+  import AvisLatence from '../xp/AvisLatence.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
   import SynthRowView from '../sequencer/SynthRowView.svelte';
 
@@ -58,6 +59,11 @@
 </script>
 
 <XpWindow title="Synthé — Basse / Nappe / Mélodie" icon="🎹" accent="violet">
+  <!-- ⚠️ ICI et pas ailleurs dans l'Atelier : c'est la seule surface où l'on
+       DÉCLENCHE une note au doigt (les claviers de degrés, les aperçus). Le
+       séquenceur de batterie s'écrit au clic, et écouter une boucle n'est pas
+       impacté — un retard constant ne s'entend que quand on joue. -->
+  <AvisLatence />
   {#each [['bass', 'Basse'], ['pad', 'Nappe'], ['melody', 'Mélodie']] as [name, label] (name)}
     <div class="line-block">
       <button class="xp-btn tiny" onclick={() => randomLine(name as SynthRowName)} title="Remplir cette ligne seulement">🎲</button>

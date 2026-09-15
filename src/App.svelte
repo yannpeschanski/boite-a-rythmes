@@ -38,6 +38,7 @@
     // que les trois vues construisent chacune leur moteur et qu'il n'y a qu'une
     // sortie : trois branchements, ce serait trois occasions d'en oublier un.
     AudioEngine.onSortieRefusee = (refusee) => (sortie.bloquee = refusee);
+    AudioEngine.onLatenceSortie = (baseMs) => (sortie.baseMs = baseMs);
     /* ⚠️ UNE PANNE DU MOTEUR NE DOIT PAS ÊTRE SILENCIEUSE — et elle l'était.
      *
      * Retour de jeu du 2026-09-15 : sur Firefox, « on appuie sur lecture et il
