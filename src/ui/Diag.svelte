@@ -22,6 +22,12 @@
   import { AudioEngine } from '../engine/AudioEngine';
   import { defaultState } from '../model/defaults';
 
+  /* ⚠️ Une sortie ÉCRITE, obligatoire depuis que l'écran s'ouvre par le menu
+     Aide : atteint par l'adresse, le bouton « précédent » du navigateur
+     suffisait ; atteint depuis l'appli, il n'y a plus rien pour revenir. Même
+     règle que le « ◂ REDESCENDRE » des scènes du récit. */
+  let { onExit }: { onExit?: () => void } = $props();
+
   const engine = new AudioEngine(() => defaultState());
 
   let journal = $state<string[]>([]);
@@ -121,6 +127,9 @@
 </script>
 
 <div class="diag">
+  {#if onExit}
+    <button class="retour tap44" onclick={() => { engine.stop(); onExit?.(); }}>◂ Retour</button>
+  {/if}
   <h1>Diagnostic audio</h1>
   <p class="aide">
     Appuie sur les quatre essais <strong>dans l’ordre</strong>, et note lesquels tu
@@ -186,6 +195,19 @@
     text-transform: uppercase;
     color: var(--xp-accent-amber);
     margin: 14px 0 6px;
+  }
+  .retour {
+    padding: 8px 12px;
+    border: 1px solid var(--xp-line);
+    border-radius: 3px;
+    background: var(--xp-btn-face);
+    color: var(--xp-text);
+    box-shadow: var(--xp-bevel-out);
+    font-family: inherit;
+    font-size: var(--xp-size-btn);
+    letter-spacing: var(--xp-ls-btn);
+    text-transform: uppercase;
+    font-weight: 700;
   }
   .aide {
     margin: 0 0 10px;

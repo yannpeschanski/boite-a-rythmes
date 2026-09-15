@@ -26,7 +26,7 @@
     onReset: () => void;
     // Bascule d'écran, remontée depuis App.svelte : la barre de navigation
     // séparée a disparu de l'Atelier (audit A1), son rôle vit ici.
-    onSwitchView?: (v: 'atelier' | 'game' | 'live') => void;
+    onSwitchView?: (v: 'atelier' | 'game' | 'live' | 'diag') => void;
     // Chargements : la barre de menus ne fait que déclencher, l'état (morceau
     // courant, rafraîchissement du mix) reste chez AtelierView — ce composant
     // n'écrit jamais dans `pattern`.
@@ -266,6 +266,14 @@
     {#if openMenu === 'help'}
       <div class="dropdown">
         <button onclick={() => choose(reportFeedback)}>✉️ Signaler un bug / une idée</button>
+        <!-- ⚠️ L'écran de diagnostic était atteignable UNIQUEMENT en tapant
+             `#diag` dans la barre d'adresse — et le fragment n'est lu qu'au
+             CHARGEMENT, donc le taper sur une page déjà ouverte ne fait rien.
+             Retour de Yann : « je n'ai pas accès au diag ». C'est la règle du
+             projet appliquée à un outil : ce qui n'est pas ÉCRIT n'existe pas.
+             Sa place est « Aide » — c'est là qu'on cherche quand quelque chose
+             ne marche pas, à côté de « Signaler un bug ». -->
+        <button onclick={() => choose(() => onSwitchView?.('diag'))}>🩺 Diagnostic audio</button>
         <!-- Le marqueur d'accès total vivait dans la barre elle-même, sur une
              ligne à lui. Il en sort : c'était du chrome PERMANENT pour une
              information qu'on consulte une fois, quand le doute survient. Le

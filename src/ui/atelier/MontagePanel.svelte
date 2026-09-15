@@ -43,7 +43,7 @@
      menus (Mode → Mode Live), c'est-à-dire à l'autre bout de l'écran et sous
      un menu déroulant. « Il faut un bouton plus évident pour nous emmener sur
      le mode live à la fin de cette partie de montage des morceaux. » */
-  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live') => void } = $props();
+  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live' | 'diag') => void } = $props();
 
   const sections = $derived(architecture.sections);
 
