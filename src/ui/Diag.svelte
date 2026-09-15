@@ -43,10 +43,22 @@
     etat = engine.diagnostic();
   }
 
-  /* 1. Le chemin NU : pas de latencyHint, pas de graphe, deux nœuds. Si celui-ci
-        échoue, ce n'est pas l'appli, c'est Web Audio sur cet appareil. */
-  function bipNu(): void {
-    const ctx = new AudioContext();
+  /* Un bip de deux nœuds sur un contexte NEUF, avec ou sans `latencyHint`.
+   *
+   * ⚠️ LES DEUX VARIANTES EXISTENT POUR SÉPARER DEUX CAUSES (2026-09-15).
+   * Sur Firefox, le moteur tourne — horloge qui avance, tête de lecture qui
+   * défile, aucune erreur — et ne sort aucun son. C'est la signature d'un flux
+   * de sortie qui n'a pas pu s'ouvrir : Gecko fait alors tourner le graphe sur
+   * une horloge SYSTÈME, et tout paraît normal.
+   *
+   * Deux raisons possibles, et une seule différence entre le chemin qui sonne
+   * (les sons du récit) et celui qui ne sonne pas (le moteur) :
+   *   - le `latencyHint`, que les sons système ne demandent pas ;
+   *   - le fait d'être le DEUXIÈME contexte ouvert de la page.
+   * Le bouton nu et le bouton « interactif » tranchent le premier point ;
+   * l'ordre dans lequel on les appuie tranche le second. */
+  function bip(hint: AudioContextLatencyCategory | null): void {
+    const ctx = hint ? new AudioContext({ latencyHint: hint }) : new AudioContext();
     void ctx.resume();
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
@@ -58,7 +70,10 @@
     g.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.45);
-    noter(`   (contexte nu : ${ctx.state}, horloge ${ctx.currentTime.toFixed(3)})`);
+    noter(
+      `   (contexte ${hint ?? 'nu'} : ${ctx.state}, échantillonnage ${ctx.sampleRate}, ` +
+        `baseLatency ${ctx.baseLatency != null ? Math.round(ctx.baseLatency * 1000) + ' ms' : 'non déclaré'})`,
+    );
   }
 
   let minuterie: ReturnType<typeof setInterval> | null = null;
@@ -71,7 +86,7 @@
   });
 
   async function lecture(): Promise<void> {
-    await essai('3. LECTURE (graphe + scheduler)', () => engine.start());
+    await essai('4. LECTURE (graphe + scheduler)', () => engine.start());
     suivre();
   }
 
@@ -108,18 +123,22 @@
 <div class="diag">
   <h1>Diagnostic audio</h1>
   <p class="aide">
-    Appuie sur les trois essais <strong>dans l’ordre</strong>. Le premier qui échoue nomme
-    l’étage en cause. Envoie une capture de cet écran.
+    Appuie sur les quatre essais <strong>dans l’ordre</strong>, et note lesquels tu
+    ENTENDS — un essai peut réussir sans erreur et rester muet, c’est justement ce
+    qu’on cherche. Envoie une capture de cet écran.
   </p>
 
   <div class="essais">
-    <button class="tap44" onclick={() => essai('1. BIP NU (sans le moteur)', bipNu)}
+    <button class="tap44" onclick={() => essai('1. BIP NU (contexte sans latencyHint)', () => bip(null))}
       >1 · BIP NU</button
     >
-    <button class="tap44" onclick={() => essai('2. APERÇU (graphe, sans scheduler)', () => engine.preview('kick', 1))}
-      >2 · APERÇU KICK</button
+    <button class="tap44" onclick={() => essai('2. BIP INTERACTIF (contexte avec latencyHint)', () => bip('interactive'))}
+      >2 · BIP INTERACTIF</button
     >
-    <button class="tap44" onclick={lecture}>3 · LECTURE</button>
+    <button class="tap44" onclick={() => essai('3. APERÇU (graphe du moteur, sans scheduler)', () => engine.preview('kick', 1))}
+      >3 · APERÇU KICK</button
+    >
+    <button class="tap44" onclick={lecture}>4 · LECTURE</button>
     <button class="tap44" onclick={() => essai('STOP', () => engine.stop())}>■ STOP</button>
   </div>
 
