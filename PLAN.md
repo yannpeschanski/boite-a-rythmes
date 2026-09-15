@@ -48,6 +48,43 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le diagnostic mesure la chaîne doigt → oreille (2026-09-15)
+
+*« Il faudrait que tu refasses un bon diagnostic de vitesse depuis la touche
+jusqu'à l'oreille. »* Demandé après une journée passée sur des chiffres DÉCLARÉS
+qui se contredisent — même téléphone, même minute : Chrome 171/416 ms, Firefox
+0/22, et un doigt→oreille mesuré de 180 ms contre 30 **sur le haut-parleur**.
+
+L'écran décompose donc la chaîne, étage par étage, en disant pour chacun d'où
+vient le chiffre :
+
+| étage | source |
+|---|---|
+| doigt → dalle → système | **invisible** depuis une page, aucune API |
+| file d'événements → notre code | **mesuré ici** (`performance.now() − event.timeStamp`, médiane d'une dizaine de frappes) — jamais mesuré jusqu'ici |
+| avance de programmation | constante du moteur (8 ms) |
+| tampon du navigateur / sortie totale | **déclarés**, donc suspects |
+| total à l'oreille | le **calibrage**, seule mesure réelle |
+| **ce que le navigateur n'avoue pas** | mesuré − avoué |
+
+⚠️ **Le calibrage est RÉUTILISÉ, pas réécrit** : `CalibrageLatence` est la seule
+mesure doigt→oreille du projet, et elle a déjà coûté une correction de signe et
+une refonte du métronome. Deux mesures qui doivent rester d'accord finissent par
+ne plus l'être.
+
+⚠️ **Et la RÉGULARITÉ est un autre axe que la latence** — « ça a l'air de ramer »
+ne se lit dans aucun chiffre de retard. Trois compteurs sur le scheduler
+(réveils, retard maximal d'un réveil, réveils au-delà de l'horizon de 250 ms),
+remis à zéro à chaque lecture : tant que le retard du fil principal reste sous
+l'horizon, il est absorbé et rien ne s'entend — c'est toute la raison du
+lookahead.
+
+Vérifié au navigateur : 10 frappes → médiane 14 ms, total avoué 54 ms, 97 réveils
+avec 5 ms de retard maximal et 0 dépassement. ⚠️ Défaut corrigé avant livraison :
+le premier tableau déduisait ses lignes de l'objet d'état, donc les nouveaux
+compteurs y apparaissaient **en double et sous leur nom de code** — il les
+énumère désormais.
+
 ### ✅ TROUVÉ — une boucle audio interdite rendait l'appli muette sous Firefox (2026-09-15)
 
 La sonde a nommé l'étage en un essai. Relevé de Yann : **1, 2 et 3 entendus, 4 et
