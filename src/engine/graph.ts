@@ -225,7 +225,28 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
   const reverb = ctx.createConvolver();
   reverb.buffer = buildReverbImpulse(ctx, state.synthGlobal.reverbSize / 100);
   reverb.normalize = true;
-  reverb.connect(mixBus);
+  /* ⚠️ LA RÉVERBE SORT SUR `liveFilter`, PAS SUR `mixBus` — et c'est la
+   * correction du 2026-09-15, la plus chère du projet : l'appli entière était
+   * MUETTE sous Firefox.
+   *
+   * `liveReverbSend` (l'envoi de réverbe global du Mode Live) part du mix ;
+   * avec `reverb.connect(mixBus)`, le graphe portait donc un CYCLE :
+   *
+   *     mixBus → liveReverbSend → reverb → mixBus
+   *
+   * La spécification Web Audio n'autorise un cycle que s'il traverse un
+   * `DelayNode` — c'est lui qui rend la récursion calculable bloc par bloc ;
+   * sinon l'implémentation DOIT le couper. Chrome coupe au plus juste et rien
+   * ne s'entendait ; Gecko coupe le cycle ENTIER, `mixBus` compris, par où tout
+   * le son transite. Aucune erreur, aucune exception : juste le silence.
+   * (La boucle de feedback du delay, elle, est légale : elle contient un
+   * `DelayNode`.)
+   *
+   * Brancher la réverbe sur `liveFilter` ne change RIEN à ce qu'on entend —
+   * `mixBus.connect(liveFilter)` était déjà le chemin, donc la traîne traverse
+   * exactement les mêmes étages qu'avant — et le cycle disparaît.
+   * `tests/graphe-boucles.test.ts` interdit qu'il revienne. */
+  reverb.connect(liveFilter);
   liveReverbSend.connect(reverb);
   const delayNode = ctx.createDelay(2.0);
   delayNode.delayTime.setValueAtTime(delayTimeSeconds(state), now);

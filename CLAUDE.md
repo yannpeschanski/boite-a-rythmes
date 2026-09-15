@@ -163,6 +163,17 @@ contre une montre et rend la VÉRITÉ — que `AudioEngine.onSortieRefusee` port
 l'écran, parce qu'un refus de la plateforme ne doit jamais être silencieux.
 `tests/reprise-geste.test.ts` tient les deux moitiés.
 
+⚠️ **Aucune BOUCLE dans le graphe sans `DelayNode` — c'est la spec, et les
+navigateurs n'en tirent pas les mêmes conséquences.** Un cycle sans délai DOIT
+être coupé : Chrome coupe l'arête fautive, Gecko coupe le cycle ENTIER. Comme
+`mixBus → liveReverbSend → reverb → mixBus` passait par le bus où tout transite,
+l'appli était **intégralement muette sous Firefox**, sans une erreur, avec un
+Chrome parfaitement normal. La réverbe sort donc sur `liveFilter` — même chemin
+en aval, donc rien ne change à l'oreille (mesuré). `tests/graphe-boucles.test.ts`
+construit le vrai graphe sur un contexte feint qui n'enregistre que les
+branchements, et refuse tout cycle sans délai : aucun test de notes ne regarde la
+FORME du graphe.
+
 **L'analyseur de spectre** est un `AnalyserNode` branché en tap sur `finalGain`
 dans `buildGraph`, donc sur ce qu'on entend, limiteur compris. `getSpectrum(out)`
 **remplit un tableau fourni par l'appelant** — le visualiseur tourne à 60 Hz. La

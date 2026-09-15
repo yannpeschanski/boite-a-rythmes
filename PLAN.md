@@ -48,6 +48,41 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ TROUVÉ — une boucle audio interdite rendait l'appli muette sous Firefox (2026-09-15)
+
+La sonde a nommé l'étage en un essai. Relevé de Yann : **1, 2 et 3 entendus, 4 et
+au-delà muets** — donc le contexte du moteur sort bien du son (essai 3, injecté
+hors du graphe), et le son meurt entre `mixBus` et la sortie.
+
+**La cause, à cet endroit précis :**
+
+    mixBus → liveReverbSend → reverb → mixBus
+
+`liveReverbSend` est l'envoi de réverbe global du Mode Live : il part du mix, et
+la réverbe y revenait. La spécification Web Audio n'autorise un cycle que s'il
+traverse un `DelayNode` — c'est lui qui rend la récursion calculable bloc par
+bloc — et impose sinon de le COUPER. **Chrome coupe l'arête fautive, Gecko coupe
+le cycle entier** : `mixBus` étant le bus par où tout transite, Firefox ne rendait
+plus rien. Aucune erreur, aucune exception, une console vide et un Chrome normal.
+(La boucle de feedback du delay est légale : elle contient un `DelayNode`.)
+
+**Le correctif est d'une ligne** : la réverbe sort sur `liveFilter` au lieu de
+`mixBus`. `mixBus.connect(liveFilter)` était déjà le chemin, donc la traîne
+traverse exactement les mêmes étages — et le cycle disparaît.
+
+**Mesuré avant/après, dans Chromium** : traîne de l'envoi global du Live à 41
+avant, 33 après (l'écart vient de l'impulsion de réverbe tirée au hasard), et 0
+sans envoi dans les deux cas. Les sondes rendent les mêmes énergies qu'avant.
+Autrement dit : **rien ne change à l'oreille là où ça marchait déjà**.
+
+⚠️ **Pourquoi 750 tests ne pouvaient pas le voir** : ils jouent des NOTES et
+comparent des instants, jamais la FORME du graphe.
+`tests/graphe-boucles.test.ts` construit le vrai graphe sur un contexte feint qui
+n'enregistre qu'une chose — qui est branché sur qui — puis cherche un cycle
+dedans. Il a été écrit AVANT le correctif et l'a bien fait échouer, en nommant le
+cycle. Son second cas est le garde-fou du garde-fou : la boucle du delay doit
+rester détectée, sinon le premier test passerait pour une mauvaise raison.
+
 ### ✅ Une sonde de chaîne : le `latencyHint` est innocenté (2026-09-15)
 
 **Première mesure venue du téléphone de Yann, sous Firefox** : essai 1 (bip sur
