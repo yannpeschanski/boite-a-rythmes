@@ -3,10 +3,38 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-14 — **point d'étape : rien n'est en cours.**
-> `main` est vert et déployé. Vérifié ce jour : **0 erreur de types sur
-> 288 fichiers, 745 tests, les deux builds** (l'autonome fait 875 ko, 292 ko
-> gzip), plus `parcours-carriere.cjs` et `verrous-masques.cjs`.
+> Dernière mise à jour : 2026-09-15 — **l'appli était muette sur Firefox, c'est
+> corrigé.** Vérifié ce jour : **0 erreur de types sur 289 fichiers, 750 tests,
+> les deux builds** (l'autonome fait 876 ko, 293 ko gzip).
+>
+> ⚠️ **CE QUI EST EN COURS, ET CE QUI EST EN PAUSE.**
+>
+> **Corrigé (PLAN.md, première entrée) :** une reprise de sortie était posée hors
+> de la tâche du geste — `start()` reprenait le contexte après avoir attendu
+> `close()`. Chrome l'acceptait (activation collante), Firefox la refusait
+> (activation transitoire), et un refus d'autoplay ne rejette pas : il laisse la
+> promesse pendante. L'appli restait muette, sans une erreur. Le chemin ne
+> s'emprunte que sur une sortie LENTE, donc **au casque Bluetooth seulement**.
+>
+> **En pause : l'enquête sur la latence Bluetooth.** Ce qui est MESURÉ, sur le
+> téléphone de Yann :
+>
+> | configuration | ressenti |
+> |---|---|
+> | appli native (« Piano Lite »), casque BT | instantané |
+> | piano web dans Chrome, haut-parleur du téléphone | instantané |
+> | piano web dans Chrome, casque BT | **~70 ms** |
+>
+> Le haut-parleur disculpe donc le navigateur : le plancher de Web Audio est bon
+> sur cet appareil, tout le retard vit sur la route Bluetooth. Reste à décomposer
+> les 70 ms (`baseLatency` = ce que Chrome s'accorde, `outputLatency` = le total
+> déclaré), et à trancher l'arbitrage du 2026-08-26 : **on ajoute délibérément
+> ~40 ms en Bluetooth** (`engine/tampon.ts` bascule sur `'playback'`) pour tuer
+> les crachotements, et c'est exactement ce dont Yann se plaint aujourd'hui. Le
+> réglage manuel qui l'annule (`🎧 Sortie audio : Réactif`) existe déjà, mais il
+> est enterré dans le menu de la barre d'outils de l'Atelier — absent du Mode
+> Live et du Mode jeu, là où on joue. Deux livrables prévus, non commencés : une
+> page de mesure autonome (`public/latence.html`) et la remontée du réglage.
 >
 > ⚠️ **Le chantier du Mode Live est CLOS** — treize livraisons de #169 à #181, et
 > ses deux derniers points sont tombés **en jouant**, le 2026-09-14 : le

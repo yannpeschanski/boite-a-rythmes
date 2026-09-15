@@ -174,6 +174,50 @@ export type PadMode = 'normal' | 'arpege' | 'bourdon';
  * normale, et l'arbitrage ci-dessus est intact pour elle. */
 export const TAMPON_SORTIE: AudioContextLatencyCategory = 'interactive';
 
+/* Délai de garde d'une reprise de sortie, en secondes.
+
+   Ce n'est PAS une marge de confort : c'est le temps au bout duquel on cesse
+   d'attendre une promesse qui ne reviendra pas. 1,5 s est très au-delà de ce
+   que coûte une reprise réelle (quelques dizaines de ms, même en Bluetooth) et
+   très en deçà de ce qu'un joueur accepterait de fixer un bouton ▶ inerte. */
+export const DELAI_REPRISE = 1.5; // s
+
+/* Reprend la sortie SANS JAMAIS SE FIGER DESSUS.
+
+   ⚠️ UN REFUS D'AUTOPLAY NE REJETTE PAS — il laisse la promesse PENDANTE.
+   C'est le défaut du 2026-09-15 (« l'appli ne fonctionne pas sur Firefox ») :
+   un `await ctx.resume()` nu, refusé, n'échoue pas, il ne revient pas. Tout ce
+   qui suit dans la fonction appelante n'est jamais exécuté — ici le démarrage
+   du scheduler. Muet, et sans une ligne dans la console.
+
+   D'où la course contre une montre : on rend la main quoi qu'il arrive, et on
+   rend surtout la VÉRITÉ — la sortie joue, ou elle ne joue pas. C'est la même
+   règle que le refus de stockage (`game.persistanceRefusee`) : un refus de la
+   plateforme ne doit jamais être silencieux.
+
+   Le paramètre est une forme minimale, pas un `AudioContext` : c'est ce qui
+   rend la règle testable sans navigateur. */
+export async function reprendreSortie(
+  ctx: { readonly state: string; resume(): Promise<void> },
+  delaiMs = DELAI_REPRISE * 1000,
+): Promise<boolean> {
+  let montre: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      Promise.resolve(ctx.resume()),
+      new Promise<void>((ok) => {
+        montre = setTimeout(ok, delaiMs);
+      }),
+    ]);
+  } catch {
+    /* Rejet explicite (ce que fait Chrome quand il refuse) : c'est un refus,
+       pas un plantage — la lecture continue et l'état dira la vérité. */
+  } finally {
+    clearTimeout(montre);
+  }
+  return ctx.state === 'running';
+}
+
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private graph: GraphNodes | null = null;
@@ -183,6 +227,9 @@ export class AudioEngine {
   /* Le tampon demandé au contexte COURANT — comparé à `tamponCourant()` pour
      savoir s'il faut rouvrir la sortie (voir adapterTampon). */
   private tamponDemande: AudioContextLatencyCategory = TAMPON_SORTIE;
+  /* La sortie a-t-elle refusé de reprendre ? Lu par l'interface : un moteur
+     qui ne démarre pas doit pouvoir le DIRE (voir `reprendreSortie`). */
+  private sortieRefusee = false;
   private cursors: Cursors = AudioEngine.freshCursors();
   private synthCursors: SynthCursors = AudioEngine.freshSynthCursors();
   private currentBar = 0;
@@ -403,6 +450,23 @@ export class AudioEngine {
    * tampon veut dire fermer le contexte et le rouvrir, donc couper le son. Au
    * STOP suivant l'affaire est réglée pour toutes les lectures d'après.
    *
+   * ⚠️ **SYNCHRONE, et ce n'est pas un détail de style** (2026-09-15, « l'appli
+   * ne fonctionne pas sur Firefox »). Cette fonction attendait `close()` puis
+   * reprenait elle-même le contexte neuf — donc APRÈS deux `await`. Chrome
+   * l'acceptait, parce qu'il juge l'autoplay sur l'activation COLLANTE : une
+   * fois la page touchée, `resume()` passe pour toujours. Firefox et WebKit
+   * jugent sur l'activation TRANSITOIRE, perdue dès qu'on sort de la tâche du
+   * geste — la reprise était donc refusée, et un refus laisse la promesse
+   * PENDANTE (voir `reprendreSortie`) : `start()` ne rendait jamais la main.
+   * Rien ne démarrait, sans une erreur.
+   *
+   * La reprise appartient donc à `start()`, en PREMIER `await` de la tâche du
+   * geste. Ici, tout doit rester synchrone.
+   *
+   * ⚠️ Ce chemin ne s'emprunte que si le tampon voulu a changé, c'est-à-dire
+   * sur une sortie déclarée LENTE : le défaut ne se voyait qu'au casque
+   * Bluetooth, jamais au haut-parleur.
+   *
    * `outputLatency` vaut souvent 0 juste après la création du contexte — le
    * flux n'est pas encore ouvert. On le relit donc ici (après la reprise) ET à
    * chaque tick : la première lecture d'une session en Bluetooth déclare
@@ -410,7 +474,7 @@ export class AudioEngine {
    * compte. Pas de bascule à chaud : elle ferait un trou au milieu du morceau
    * pour supprimer un crachotement.
    */
-  private async adapterTampon(): Promise<void> {
+  private adapterTampon(): void {
     const ctx = this.ctx;
     // ⚠️ `liveRecorder` fait partie de la garde : `startLiveRecording` branche
     // son tap sur `graph.finalGain` AVANT d'appeler start(). Rouvrir la sortie
@@ -419,7 +483,10 @@ export class AudioEngine {
     if (!ctx || this.isPlaying || this.liveRecorder) return;
     noterSortie(ctx.outputLatency);
     if (tamponCourant() === this.tamponDemande) return;
-    await ctx.close();
+    // ⚠️ `close()` n'est PAS attendu, et rien ici n'en dépend : le contexte
+    // neuf ne partage rien avec l'ancien, et attendre la fermeture coûterait
+    // l'activation du geste. Le navigateur libère la sortie quand il a fini.
+    void ctx.close();
     this.ctx = null;
     this.graph = null;
     this.kit = null;
@@ -429,17 +496,44 @@ export class AudioEngine {
     this.liveSatBucket = null;
     this.liveCrushBucket = null;
     this.ensureAudio();
-    if (this.ctx!.state === 'suspended') await this.ctx!.resume();
+    // Pas de reprise ici : c'est `start()` qui reprend, dans la tâche du geste.
   }
 
+  /* La seule porte de reprise du moteur — quatre appelants, une seule règle.
+   *
+   * Écrit l'aveu à CHAQUE passage, dans les deux sens : une sortie qui joue
+   * efface un refus précédent. Sans ça, un refus resté vrai après coup ferait
+   * dire à l'écran que le son est bloqué alors qu'il sort. */
+  private async reprendre(ctx: AudioContext): Promise<void> {
+    const refusee = ctx.state === 'suspended' ? !(await reprendreSortie(ctx)) : false;
+    if (refusee === this.sortieRefusee) return;
+    this.sortieRefusee = refusee;
+    AudioEngine.onSortieRefusee?.(refusee);
+  }
+
+  /* La sortie a-t-elle refusé de reprendre ? Pour l'interface : un moteur qui
+     ne démarre pas doit pouvoir le DIRE. */
+  sortieBloquee(): boolean {
+    return this.sortieRefusee;
+  }
+
+  /* ⚠️ STATIQUE, et c'est le point : chaque vue construit SON moteur, mais il
+     n'y a qu'UNE sortie audio. Un crochet d'instance demanderait le même
+     branchement dans les trois vues — et le défaut de câblage habituel du
+     projet, c'est l'oubli du troisième. Branché une fois dans `App.svelte`. */
+  static onSortieRefusee: ((refusee: boolean) => void) | null = null;
+
   async start(): Promise<void> {
+    // ⚠️ L'ORDRE EST LA CORRECTION (voir adapterTampon) : la bascule de tampon
+    // d'abord, SYNCHRONE, puis une SEULE reprise — le premier `await` de la
+    // tâche du geste. Un `resume()` posé après un autre `await` est refusé
+    // partout où l'autoplay se juge sur l'activation transitoire, et un refus
+    // ne rejette pas : il fige.
+    this.adapterTampon();
     this.ensureAudio();
-    if (this.ctx!.state === 'suspended') await this.ctx!.resume(); // autoplay policy : resume sur geste utilisateur
-    if (this.isPlaying) return;
-    // Avant de poser les curseurs : adapterTampon peut remplacer le contexte,
-    // donc `ctx` ne doit pas être capturé plus haut.
-    await this.adapterTampon();
     const ctx = this.ctx!;
+    await this.reprendre(ctx);
+    if (this.isPlaying) return;
     this.isPlaying = true;
     this.currentBar = 0;
     this.sectionStartBar = 0;
@@ -1131,7 +1225,7 @@ export class AudioEngine {
     // ⚠️ AWAIT, pas `void`. Un AudioContext fraîchement créé démarre suspendu :
     // `currentTime` n'avance pas, et une salve programmée avant la reprise part
     // sur une horloge figée. C'est silencieux et incompréhensible côté joueur.
-    if (ctx.state === 'suspended') await ctx.resume();
+    await this.reprendre(ctx);
     const intervalle = 60 / Math.max(20, bpm);
     // `apresQuoi` (sur l'horloge du son entendu) enchaîne une salve sur la
     // précédente sans rupture de phase : le calibrage a besoin d'un métronome
@@ -1184,6 +1278,12 @@ export class AudioEngine {
     if (this.liveRecorder) return;
     this.ensureAudio();
     if (!this.ctx || !this.graph) return;
+    /* ⚠️ LA REPRISE PASSE AVANT LE CHARGEMENT DU WORKLET, et c'est la même
+     * règle qu'à `start()` : après cet `await`, l'activation du geste est
+     * perdue et la reprise est refusée là où l'autoplay se juge dessus (voir
+     * `reprendreSortie`). La sortie resterait suspendue — une capture
+     * silencieuse, sur le seul bouton qui sorte un morceau de l'appli. */
+    await this.reprendre(this.ctx);
     const recorder = new LiveRecorder();
     await recorder.start(this.ctx, this.graph.finalGain);
     this.liveRecorder = recorder;
@@ -1212,7 +1312,7 @@ export class AudioEngine {
   async countIn(onTick?: (beat: number) => void): Promise<void> {
     this.ensureAudio();
     const ctx = this.ctx!;
-    if (ctx.state === 'suspended') await ctx.resume();
+    await this.reprendre(ctx);
     const beatDur = 60 / this.getState().tempo;
     const startAt = ctx.currentTime + 0.05;
     for (let beat = 0; beat < 4; beat++) {
@@ -1238,7 +1338,7 @@ export class AudioEngine {
     this.stop();
     this.ensureAudio();
     const ctx = this.ctx!;
-    if (ctx.state === 'suspended') await ctx.resume();
+    await this.reprendre(ctx);
     this.liveRecorder = new LiveRecorder();
     await this.liveRecorder.start(ctx, this.graph!.finalGain);
     await this.start();

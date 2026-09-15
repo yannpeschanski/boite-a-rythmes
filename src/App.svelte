@@ -7,6 +7,7 @@
   import AtelierView from './ui/atelier/AtelierView.svelte';
   import GameView from './ui/game/GameView.svelte';
   import LiveView from './ui/live/LiveView.svelte';
+  import { AudioEngine } from './engine/AudioEngine';
   import { game } from './stores/game.svelte';
   import { latence } from './ui/latence.svelte';
   import { sortie } from './ui/sortie.svelte';
@@ -27,6 +28,10 @@
     // propriété de l'appareil, et il doit être posé AVANT le premier
     // AudioContext — celui-ci naît au premier son, donc après ce onMount.
     sortie.charger();
+    // ⚠️ LE SEUL BRANCHEMENT de l'aveu de sortie. Le crochet est statique parce
+    // que les trois vues construisent chacune leur moteur et qu'il n'y a qu'une
+    // sortie : trois branchements, ce serait trois occasions d'en oublier un.
+    AudioEngine.onSortieRefusee = (refusee) => (sortie.bloquee = refusee);
     // Rythme partagé par URL : on entre directement dans l'Atelier. Le lien
     // vaut intention, il ouvre l'Atelier même verrouillé (voir model/unlocks).
     if (loadFromHash()) {
@@ -176,7 +181,33 @@
   {/if}
 {/if}
 
+<!-- ⚠️ Un refus de sortie était SILENCIEUX : le bouton ▶ s'allumait, rien ne
+     sortait, et la console restait vide (voir `reprendreSortie`). Le bandeau
+     vit ici, hors des trois vues, parce que la sortie est unique — et il dit le
+     geste qui répare, pas la cause, qui n'apprend rien au joueur. -->
+{#if sortie.bloquee}
+  <p class="sortie-bloquee" role="status">
+    ⚠ Le navigateur a refusé d’ouvrir le son. Appuie de nouveau sur ▶.
+  </p>
+{/if}
+
 <style>
+  /* Amber, jamais `--xp-lcd-dim` : ce vert-là est fait pour un segment sur fond
+     d'afficheur noir, il tombe à 1,5:1 sur du chrome (CLAUDE.md). */
+  .sortie-bloquee {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    margin: 0;
+    padding: 6px 10px;
+    padding-top: calc(6px + env(safe-area-inset-top, 0px));
+    text-align: center;
+    background: var(--xp-accent-amber-soft);
+    color: var(--xp-accent-amber);
+    border-bottom: 1px solid var(--xp-line);
+    font-size: var(--xp-size-body);
+  }
+
   .splash {
     text-align: center;
     padding: 48px 12px;
