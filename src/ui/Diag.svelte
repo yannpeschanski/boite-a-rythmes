@@ -7,13 +7,11 @@
    * aucun des deux instruments précédents ne pouvait la voir. Il n'y a pas de
    * console sur un téléphone : l'état doit s'AFFICHER.
    *
-   * Trois essais, du plus nu au plus complet, pour couper le problème en deux à
-   * chaque étape :
-   *   1. un bip sur un `AudioContext` NU — c'est le chemin des sons du récit
-   *      (`ui/xp/systemSounds.ts`), celui dont on sait déjà qu'il marche ;
-   *   2. un APERÇU du moteur — construit le graphe complet, sans scheduler ;
-   *   3. la LECTURE — graphe + scheduler.
-   * Le premier qui échoue nomme l'étage.
+   * Une SUITE d'essais, du plus nu au plus complet : le premier qui se tait
+   * nomme l'étage. Mesuré le 2026-09-15 — 1 et 2 s'entendent, 3 et 4 non — donc
+   * le `latencyHint` est hors de cause et le son se perd dans le moteur. D'où
+   * les sondes 3 à 5, qui injectent le MÊME bip à trois points du graphe et en
+   * font une recherche dichotomique.
    *
    * Tout est enveloppé : ce qui lève s'écrit, et ce qui dort se lit dans le
    * tableau d'état, rafraîchi cinq fois par seconde.
@@ -92,7 +90,7 @@
   });
 
   async function lecture(): Promise<void> {
-    await essai('4. LECTURE (graphe + scheduler)', () => engine.start());
+    await essai('7. LECTURE (graphe + scheduler)', () => engine.start());
     suivre();
   }
 
@@ -132,9 +130,10 @@
   {/if}
   <h1>Diagnostic audio</h1>
   <p class="aide">
-    Appuie sur les quatre essais <strong>dans l’ordre</strong>, et note lesquels tu
+    Appuie sur les essais <strong>dans l’ordre</strong>, et note lesquels tu
     ENTENDS — un essai peut réussir sans erreur et rester muet, c’est justement ce
-    qu’on cherche. Envoie une capture de cet écran.
+    qu’on cherche. Les essais 3 à 5 jouent le <em>même</em> bip, injecté de plus en
+    plus loin dans le moteur : le premier qui se tait nomme l’étage fautif.
   </p>
 
   <div class="essais">
@@ -144,10 +143,19 @@
     <button class="tap44" onclick={() => essai('2. BIP INTERACTIF (contexte avec latencyHint)', () => bip('interactive'))}
       >2 · BIP INTERACTIF</button
     >
-    <button class="tap44" onclick={() => essai('3. APERÇU (graphe du moteur, sans scheduler)', () => engine.preview('kick', 1))}
-      >3 · APERÇU KICK</button
+    <button class="tap44" onclick={() => essai('3. SONDE — sortie directe (hors graphe)', () => engine.sondeSortie('destination'))}
+      >3 · SONDE SORTIE</button
     >
-    <button class="tap44" onclick={lecture}>4 · LECTURE</button>
+    <button class="tap44" onclick={() => essai('4. SONDE — entrée du mix (chaîne finale)', () => engine.sondeSortie('mixBus'))}
+      >4 · SONDE MIX</button
+    >
+    <button class="tap44" onclick={() => essai('5. SONDE — bus de la ligne kick (effets globaux compris)', () => engine.sondeSortie('kick'))}
+      >5 · SONDE LIGNE</button
+    >
+    <button class="tap44" onclick={() => essai('6. APERÇU KICK (la voix complète)', () => engine.preview('kick', 1))}
+      >6 · APERÇU KICK</button
+    >
+    <button class="tap44" onclick={lecture}>7 · LECTURE</button>
     <button class="tap44" onclick={() => essai('STOP', () => engine.stop())}>■ STOP</button>
   </div>
 

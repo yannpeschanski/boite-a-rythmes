@@ -511,6 +511,47 @@ export class AudioEngine {
     AudioEngine.onSortieRefusee?.(refusee);
   }
 
+  /* SONDE DE CHAÎNE — une sinusoïde injectée à un point PRÉCIS du graphe.
+   *
+   * ⚠️ Existe pour trouver l'étage qui avale le son (Firefox, 2026-09-15 : un
+   * bip nu s'entend, le même son passé par le moteur non). Un aperçu de kick
+   * traverse d'un coup la voix, le bus de ligne, les effets globaux et la
+   * chaîne finale : quand il est muet, il ne dit pas LEQUEL. Trois points
+   * d'injection en font une recherche dichotomique :
+   *
+   *   'destination' — hors du graphe : teste le CONTEXTE seul ;
+   *   'mixBus'      — entrée de la chaîne finale (filtre, limiteur, soft clip,
+   *                   petit haut-parleur, gain final) ;
+   *   'kick'        — bus de la ligne, donc en plus saturation, bitcrush,
+   *                   compression et gain de compensation.
+   *
+   * Le premier qui se tait nomme l'étage. Même son, même gain, même durée que
+   * le bip du diagnostic : seule la destination change. */
+  sondeSortie(point: 'destination' | 'mixBus' | 'kick'): void {
+    this.ensureAudio();
+    const ctx = this.ctx!;
+    void ctx.resume();
+    const graph = this.graph!;
+    const cible: AudioNode =
+      point === 'destination'
+        ? ctx.destination
+        : point === 'mixBus'
+          ? graph.mixBus
+          : graph.drumLineGain.kick;
+    const osc = ctx.createOscillator();
+    const vol = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    const t = ctx.currentTime + AVANCE_DECLENCHEMENT;
+    vol.gain.setValueAtTime(0.0001, t);
+    vol.gain.exponentialRampToValueAtTime(0.3, t + 0.01);
+    vol.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    osc.connect(vol);
+    vol.connect(cible);
+    osc.start(t);
+    osc.stop(t + 0.45);
+  }
+
   /* Un instantané de la SORTIE, pour l'écran de diagnostic (`#diag`).
    *
    * ⚠️ Existe parce qu'un défaut peut être SILENCIEUX SANS ÊTRE UNE EXCEPTION :
