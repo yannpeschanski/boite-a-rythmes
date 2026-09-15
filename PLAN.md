@@ -48,6 +48,34 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un écran de diagnostic, parce que le défaut ne LÈVE pas (2026-09-15)
+
+Le capteur de pannes n'a rien affiché et Firefox ne joue toujours pas. Donc la
+cause **n'est pas une exception** — et ni le bandeau, ni la console (absente d'un
+téléphone) ne peuvent la voir. Un état qui dort ne se rapporte pas, il s'affiche.
+
+`#diag` (`ui/Diag.svelte`, hors de l'appli, atteint seulement en tapant
+l'adresse) pose **trois essais du plus nu au plus complet**, pour couper le
+problème en deux à chaque étape : un bip sur un `AudioContext` NU (le chemin des
+sons du récit, dont on sait qu'il marche), un APERÇU du moteur (graphe complet,
+sans scheduler), puis la LECTURE (graphe + scheduler). Le premier qui échoue
+nomme l'étage. À côté, `AudioEngine.diagnostic()` affiche ce que le moteur voit —
+état du contexte, **horloge audio**, `baseLatency`, `outputLatency`, graphe, kit,
+scheduler armé, sortie refusée — rafraîchi cinq fois par seconde.
+
+⚠️ Ce n'est pas un contournement de verrou : aucun module ouvert, aucune
+progression touchée.
+
+⚠️ Défaut corrigé dans l'écran lui-même avant livraison : l'alerte se décidait
+par une règle unique (« faux = ambre »), qui peignait en alerte
+`sortie refusée : false` — la bonne valeur. Sur un écran dont le seul travail est
+de dire où ça casse, c'est le pire des défauts. `estAlerte` décide ligne par
+ligne, et la ligne qui compte est l'**horloge à zéro pendant une lecture** :
+scheduler qui tourne, temps audio qui n'avance pas.
+
+Fichiers : `ui/Diag.svelte`, `App.svelte`, `engine/AudioEngine.ts`. 750 tests,
+0 erreur de types, les deux builds.
+
 ### ✅ Une panne du moteur arrive à l'écran (2026-09-15)
 
 **La correction précédente n'a pas suffi, et c'est le diagnostic qui manquait.**

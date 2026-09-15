@@ -7,6 +7,7 @@
   import AtelierView from './ui/atelier/AtelierView.svelte';
   import GameView from './ui/game/GameView.svelte';
   import LiveView from './ui/live/LiveView.svelte';
+  import Diag from './ui/Diag.svelte';
   import { AudioEngine } from './engine/AudioEngine';
   import { game } from './stores/game.svelte';
   import { latence } from './ui/latence.svelte';
@@ -16,7 +17,7 @@
   import { unlocks } from './stores/unlocks.svelte';
   import { type LockedModule } from './model/unlocks';
 
-  let view = $state<'splash' | 'atelier' | 'game' | 'live'>('splash');
+  let view = $state<'splash' | 'atelier' | 'game' | 'live' | 'diag'>('splash');
 
   /* La première panne JS de la session, ou `null`. Voir le capteur dans
      `onMount` — c'est ce qui rend une erreur du moteur lisible sans console. */
@@ -76,6 +77,11 @@
     // ci-dessous, pas à sa place) — pratique pour y revenir sans repasser
     // par l'écran d'accueil.
     if (location.hash === '#mode-live' && unlocks.has('live')) view = 'live';
+    /* ⚠️ `#diag` n'est PAS un contournement de verrou (voir « un seul
+       contournement, et il est le pseudo master ») : il n'ouvre aucun module et
+       ne touche à aucune progression. C'est un banc d'essai de la SORTIE AUDIO,
+       atteint seulement si on tape l'adresse — donc si on me l'a donnée. */
+    if (location.hash === '#diag') view = 'diag';
   });
 
   onDestroy(() => nettoyer?.());
@@ -114,7 +120,9 @@
   }
 </script>
 
-{#if view === 'live'}
+{#if view === 'diag'}
+  <Diag />
+{:else if view === 'live'}
   <!-- ⚠️ D'où l'on vient décide où l'on retourne. Le Mode Live rendait TOUJOURS
        la main à l'Atelier ; monter sur scène pendant le concert et redescendre
        dans l'Atelier ferait sortir du récit au milieu de l'acte 7. -->
