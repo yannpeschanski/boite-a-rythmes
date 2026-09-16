@@ -21,6 +21,7 @@
   import CalibrageLatence from '../xp/CalibrageLatence.svelte';
   import XpWindow from '../xp/XpWindow.svelte';
   import CarriereView from './CarriereView.svelte';
+  import RappelCalibrage from '../xp/RappelCalibrage.svelte';
 
   let {
     onGoAtelier,
@@ -1341,6 +1342,14 @@
              déclare la latence d'entrée d'une dalle tactile. -->
         <CalibrageLatence {engine} onClose={() => (calibrage = false)} />
       {:else if ex === 'jouer'}
+        <!-- ⚠️ Le rappel de calibrage ne vit QUE sur les verbes qui MESURENT une
+             frappe — les quatre niveaux chronométrés que la carrière cite (64,
+             65, 66 à l'acte 0, et le 38 à la balance de l'acte 7). Ailleurs, un
+             retard ne change pas la note ; ici il la fausse entièrement tant que
+             l'appareil n'est pas mesuré. Et surtout : pas un mot sur le
+             navigateur, contrairement à `AvisLatence` — ce qui se mesure se
+             corrige, il n'y a rien à fuir. -->
+        <RappelCalibrage onCalibrer={ouvrirCalibrage} />
         <!-- UN SEUL des deux canaux, jamais les deux (voir jouerIndice) :
              montrer la grille pendant que le kick sonne ne demanderait que de
              suivre un point lumineux. À l'oreille le guide reste vide ; à vue

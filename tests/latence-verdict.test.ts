@@ -9,6 +9,7 @@ import { describe, it, expect } from 'vitest';
 import {
   verdictLatence,
   messageLatence,
+  messageLatenceCourt,
   SEUIL_SENSIBLE,
   SEUIL_LOURD,
 } from '../src/ui/latenceVerdict';
@@ -82,5 +83,30 @@ describe('les paliers', () => {
     expect(verdictLatence(SEUIL_SENSIBLE, null).palier).toBe('sensible');
     expect(verdictLatence(SEUIL_SENSIBLE - 1, null).palier).toBe('jouable');
     expect(verdictLatence(SEUIL_LOURD, null).palier).toBe('lourde');
+  });
+});
+
+describe('la forme courte du Mode Live', () => {
+  it('dit la MÊME cause que la longue, en moins de mots', () => {
+    // Deux messages qui donnent des conseils différents, ce sont deux vérités à
+    // garder d'accord — celui-ci ne fait que raccourcir.
+    const chrome = verdictLatence(128, 115);
+    expect(messageLatenceCourt(chrome)).toMatch(/navigateur/i);
+    expect(messageLatenceCourt(chrome)).not.toMatch(/bluetooth|filaire/i);
+    const bt = verdictLatence(0, 180);
+    expect(messageLatenceCourt(bt)).toMatch(/bluetooth/i);
+    expect(messageLatenceCourt(bt)).not.toMatch(/navigateur/i);
+  });
+
+  it('tient sur une ligne — la bande du Live fait 844 px', () => {
+    // Mesuré : au-delà d'environ 60 signes en chasse fixe, l'avis passe à deux
+    // lignes et recouvre le transport, qui commence à 26 px.
+    for (const v of [verdictLatence(128, 115), verdictLatence(0, 180), verdictLatence(null, 150)]) {
+      expect(messageLatenceCourt(v)!.length).toBeLessThanOrEqual(60);
+    }
+  });
+
+  it('se tait quand la longue se tait', () => {
+    expect(messageLatenceCourt(verdictLatence(5, 0))).toBeNull();
   });
 });

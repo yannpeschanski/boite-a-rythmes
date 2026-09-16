@@ -143,6 +143,15 @@ un autre navigateur qu'il faut ; tampon bas mais mesure haute → c'est la route
 100 : au-delà de 30 on entend le décalage (Wessel & Wright, déjà cité dans
 `AudioEngine.ts`). `tests/latence-verdict.test.ts` tient les deux cas mesurés.
 
+⚠️ **Deux avis de latence, jamais le même conseil.** `AvisLatence` va où l'on
+DÉCLENCHE (Synthé, Mode Live) et nomme la cause ; `RappelCalibrage` va où l'on
+MESURE (les quatre niveaux `jouer`) et ne parle **pas** du navigateur — ce qui se
+mesure se corrige, il n'y a rien à fuir. ⚠️ Dans le Live, l'avis vit dans
+`.live-root` et non dans `.live`, qui est une grille où un enfant de plus décale
+les rangées (mesuré : 6→22, 26→80, 132→384, identiques avec et sans), et il
+emploie `messageLatenceCourt` — la forme longue descendait à 39 px et mordait sur
+le transport, qui commence à 26.
+
 ⚠️ **Un chiffre DÉCLARÉ par le navigateur n'est pas une mesure.** Sur un même
 téléphone, à la même minute : Chrome annonce `baseLatency` 171 ms et
 `outputLatency` 416 ms, Firefox 0 et 22 — et le doigt→oreille mesuré vaut 180 ms
