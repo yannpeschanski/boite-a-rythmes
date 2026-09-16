@@ -249,9 +249,25 @@ export function tempoEntre(min: number, max: number, libelle: string): CritereSt
 export function avecSwing(
   min: number,
   libelle: string,
-  opts: { essentiel?: boolean } = {},
+  opts: { essentiel?: boolean; max?: number } = {},
 ): CritereStyle {
-  return { id: 'swing', libelle, essentiel: opts.essentiel, verifie: (e) => e.swing >= min };
+  /* ⚠️ UN PLAFOND, parce qu'un plancher seul se satisfait en poussant le
+   * curseur à fond — la règle que les cahiers de mixage appliquent déjà
+   * (`reverbDosee`, `filtreQuiCoupe`). Ici ce n'est pas qu'une question de
+   * cahier : le scheduler retarde le pas IMPAIR de `swing / 100` de pas
+   * (`scheduler.ts`), donc 50 est le triolet EXACT et 75 colle le contretemps
+   * à 75 % du chemin vers le pas suivant — le contretemps s'écrase sur la
+   * frappe d'après, et on n'entend plus un balancement mais un flam.
+   * Retour de Yann (2026-09-16) : *« le shuffle avec un swing très élevé, pas
+   * sûr que ça ressemble à quelque chose »*. Le curseur garde sa course
+   * (0-75, `serialize.ts`) : c'est le CRITÈRE qui borne, pas l'outil. */
+  const max = opts.max ?? Infinity;
+  return {
+    id: 'swing',
+    libelle,
+    essentiel: opts.essentiel,
+    verifie: (e) => e.swing >= min && e.swing <= max,
+  };
 }
 
 /* La boucle TRAÎNE — tout arrive un peu après le temps.
@@ -478,8 +494,10 @@ const GARAGE: FicheStyle = {
   label: 'UK Garage / 2-step',
   chapeau: [
     'Londres, fin des années 90. Le tempo du club, mais rien n’y',
-    'tombe droit : le shuffle — le curseur Swing — est ÉNORME,',
-    'les croches boitent, et le charley laisse des trous pour',
+    'tombe droit : le shuffle — le curseur Swing — est FRANC,',
+    'quelque part entre 30 et 55 ; au-delà le contretemps se colle',
+    'à la frappe suivante et on n’entend plus qu’un défaut.',
+    'Les croches boitent, le charley laisse des trous pour',
     'qu’on l’entende boiter. Le kick sort des temps,',
     'la claire tient bon sur 2 et 4.',
   ],
@@ -492,7 +510,15 @@ const GARAGE: FicheStyle = {
      * catalogue contient même un preset « Shuffle » qui, lui, est à 15. Un
      * critère ESSENTIEL — donc bloquant — désignait ainsi un geste qu'aucun
      * écran ne reliait à un bouton. */
-    avecSwing(30, 'Un shuffle ÉNORME — le curseur Swing, poussé loin', { essentiel: true }),
+    /* ⚠️ Une FOURCHETTE, pas un plancher — le relevé la borne des deux côtés :
+     * le preset `garage` est à 45, le triolet exact tombe à 50, et au-delà de
+     * 55 le contretemps se colle à la frappe suivante (voir `avecSwing`). Le
+     * libellé dit la zone, parce qu'une fiche est aussi le RETOUR : « poussé
+     * loin » envoyait le curseur à 75, où le genre ne s'entend plus. */
+    avecSwing(30, 'Un shuffle FRANC — le curseur Swing entre 30 et 55', {
+      essentiel: true,
+      max: 55,
+    }),
     surLesTemps('kick-garage', ['kick'], [0, 1.5], 'Le kick sur le 1, puis entre les temps'),
     surLesTemps('backbeat-24', ['snare', 'clap'], [1, 3], 'La claire tient les temps 2 et 4'),
     tempoEntre(124, 136, 'Entre 124 et 136 — le tempo du club'),

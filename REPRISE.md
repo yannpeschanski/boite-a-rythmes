@@ -3,7 +3,37 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-15 — ✅ **TROUVÉ : une boucle audio interdite
+> Dernière mise à jour : 2026-09-16 — ✅ **Retour de jeu : dix défauts corrigés,
+> cinq choix en fiche.** Une partie complète de Yann, dix-sept points. Trois ne
+> se voyaient qu'en JOUANT : la **discographie ne s'ouvrait plus** (liste keyée
+> sur l'acte seul alors que la clé est `(acte, série)` — 17 productions en fin de
+> carrière, donc `each_key_duplicate`), **recharger la page renvoyait au premier
+> écran du jeu** (le curseur volatil était posé par le formulaire de pseudo, que
+> le rechargement ne repasse pas), et la **conclusion était inatteignable après
+> une relecture** (`enRelecture` ne s'éteignait jamais, donc l'acte 7 tournait en
+> boucle). Plus : le carnet reprend à l'étape, la banque de séquences est rangée
+> par profil, un profil se supprime, le panneau Groove attend la commande de
+> Kelvin, les arrangements 75-76 ne redescendent plus au backbeat plat, le
+> shuffle du garage a un plafond (30-55 : à 75 le contretemps se colle à la
+> frappe suivante), et les claviers du Mode jeu sonnent et parlent la langue de
+> l'Atelier.
+>
+> ⚠️ **CE QUI ATTEND UNE RÉPONSE : `docs/relecture/retour-carriere.html`,
+> section 2 — cinq cartes.** La plus lourde est **A1, les actes 6 et 7** : Yann
+> propose que l'acte 6 prépare sans montrer le Mode Live et que l'acte 7 joue les
+> trois morceaux puis le jingle, le mode s'ouvrant à la sortie. **Ça défait
+> l'arbitrage du 2026-09-14** (« réponse A », le Live s'ouvre à l'acte 6, « on ne
+> découvre pas sa console sur scène ») — la carte le dit, avec l'argument qu'on
+> perd et celui qu'on gagne, et je la recommande quand même : mesuré, la scène de
+> l'acte 6 monte UN seul des trois morceaux, et le set de l'acte 7 démarre sur
+> deux scènes de A, donc relance le morceau qu'on vient de jouer. Les quatre
+> autres cartes : les contraintes « plus fourni / moins fourni » (A2, reco :
+> retirer le compte), les réglages spéciaux du dernier morceau — la polyrythmie
+> 16/12 (A3, reco : l'exiger sur « celui que personne n'attend »), la course du
+> curseur Swing (A4, reco : ne rien changer), et ce qui coince en abandonnant un
+> cahier (A5, reco : un outil hors du jeu). **Rien de tout ça n'est codé.**
+>
+> ⚠️ *(Historique)* ✅ **TROUVÉ : une boucle audio interdite
 > (`mixBus → liveReverbSend → reverb → mixBus`) rendait l'appli entièrement muette
 > sous Firefox.** Gecko coupe un cycle sans `DelayNode` en entier, Chrome coupe
 > la seule arête fautive. Correctif d'une ligne, sans effet à l'oreille (mesuré),
