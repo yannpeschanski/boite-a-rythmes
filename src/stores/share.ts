@@ -47,13 +47,27 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function scheduleAutosave(): void {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(KEY_AUTOSAVE, pattern.toJson());
-    } catch {
-      /* quota plein : on continue sans persistance */
-    }
-  }, 1000);
+  saveTimer = setTimeout(enregistrerAutosave, 1000);
+}
+
+/* Enregistrer TOUT DE SUITE, sans attendre la seconde de débounce.
+ *
+ * ⚠️ Sert quand le JEU vient de poser un morceau sur l'établi — le départ
+ * d'une commande, notamment. Sans ça, un rechargement dans la seconde qui suit
+ * restaurait la session PRÉCÉDENTE par-dessus ce départ : on ouvrait un cahier
+ * neuf avec une ancienne composition dedans, donc avec des cases cochées sans
+ * qu'on ait rien touché — exactement ce que les cahiers interdisent. Le
+ * débounce est là pour les frappes au clavier, pas pour un geste unique. */
+export function enregistrerAutosave(): void {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  try {
+    localStorage.setItem(KEY_AUTOSAVE, pattern.toJson());
+  } catch {
+    /* quota plein : on continue sans persistance */
+  }
 }
 
 /* ⚠️ La session précédente se lit UNE fois, à l'ENTRÉE dans l'Atelier, et se

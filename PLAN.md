@@ -48,6 +48,89 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un rechargement ne coûte plus la session (2026-09-16)
+
+*« Lorsqu'on réactualise la page, ce qui arrive par erreur parfois, on puisse
+tester sur la même page et ne pas perdre tout ce qu'on était en train de
+faire. »* Beaucoup survivait déjà — progression, besace, discographie, banque,
+parties A/B/C, chaîne du Live, boutons de scène, calibrage, tampon de sortie.
+Trois choses, non, et ce sont celles qui comptent.
+
+**1. LA VUE.** On repartait de l'accueil : deux clics pour revenir. Elle est
+restaurée **après** `game.load()` et **après** les trois hash, et l'ordre est
+le sujet — les verrous ne sont lisibles qu'une fois la progression chargée
+(restaurer à l'initialisation ferait monter l'Atelier tous onglets fermés, puis
+se corriger sous les yeux), et `#r=` / `#mode-live` / `#diag` sont des
+intentions explicites qui gagnent contre une reprise.
+
+**2. LE TRAVAIL DE L'ATELIER.** Il était bien enregistré depuis toujours, mais
+derrière un bandeau « Restaurer » qu'il fallait cliquer. Il se réapplique
+maintenant tout seul — et le bandeau disparaît de lui-même, puisque
+`autosaveDiffere` ne trouve plus de différence. Hors péremption, rien ne
+change : le bandeau PROPOSE, « Ignorer » masque sans détruire.
+
+**3. LA COMMANDE OUVERTE.** On retrouvait son morceau dans un Atelier sans
+check-list et sans bouton de livraison. `reprendreCommande` repose le CURSEUR
+et rien d'autre : appeler `ouvrirCommande` aurait reposé le DÉPART, c'est-à-dire
+effacé exactement le travail qu'on cherche à retrouver.
+
+**⚠️ LE CAS D'INTÉGRITÉ, et c'est le seul que la reprise ouvrait.** L'autosave
+n'enregistre que des MODIFICATIONS, jamais l'état sur lequel l'Atelier s'ouvre
+(règle du 2026-09-16, gardée). Juste après `ouvrirCommande`, le stockage portait
+donc encore la session PRÉCÉDENTE : un rechargement dans la seconde restaurait
+une ancienne composition dans un cahier neuf — des cases cochées avant le
+moindre geste, ce que `tests/transformer.test.ts` interdit. D'où
+`enregistrerAutosave()`, qui écrit le départ sans attendre le débounce. Le test
+porte sa **contre-épreuve** : la composition d'avant cochait bien quelque chose,
+sinon le test passerait pour une raison qui n'a rien à voir.
+
+**LA PÉREMPTION est le réglage, pas un détail.** Deux heures : la durée d'une
+séance, pas celle d'une absence. Sans elle, le jeu rouvrirait silencieusement
+une composition d'il y a un mois et personne ne reverrait jamais l'accueil —
+qui est un écran de CHOIX, et le geste par lequel le navigateur nous accorde le
+son. Chaque écriture rafraîchit l'horodatage : tant qu'on travaille, ça ne
+périme pas.
+
+**CE QUI NE SE RESTAURE PAS, et pourquoi.** Un module fermé (une session jouée
+avec « master » ne doit pas ouvrir le Live à quelqu'un qui ne l'a pas). Un Live
+emprunté par une SCÈNE : `retourDeScene` est volatil comme `sceneEnCours`, donc
+restaurer le Live donnerait la surface GÉNÉRIQUE — sans bandeau d'acte, sans
+consigne, et dont la sortie retombe dans l'Atelier, c'est-à-dire hors du récit
+au milieu de l'acte 7 ; on note « Mode jeu » à la place, et la carrière
+réaffiche la scène avec son « ▶ LANCER ». Et la GRILLE d'un exercice : la cible
+est tirée au sort à chaque `startLevel`, la restaurer demanderait de
+l'enregistrer avec — on retrouve l'exercice, pas les cases posées. Enfin
+`clearPseudo` OUBLIE la reprise : changer de joueur n'est pas un rechargement,
+et le joueur suivant ne doit pas atterrir dans le cahier du précédent.
+
+**MESURÉ AU NAVIGATEUR** (390 × 844, serveur de dev vierge, vrais
+`page.reload()`) : l'Atelier revient avec son tempo et ses cases (137 BPM, kick
+posé) sans bandeau ; une commande revient avec son cahier (« ZIK'MOBILE —
+HIP-HOP AUTHENTIQUE », 1/4) et son morceau à 128 ; un exercice en cours revient
+sur son écran, même étape, même niveau ; une session vieillie de trois heures
+repart de l'accueil ; une vue « live » enregistrée alors que le module est fermé
+repart de l'accueil aussi. 0 erreur console. 803 tests (15 neufs), 0 erreur de
+types, les deux builds, carrière rejouée jusqu'à l'épilogue avec les quatre
+modules.
+
+⚠️ **Deux sondes fausses avant la bonne mesure, notées pour la prochaine fois** :
+le kick a une subdivision de **4** par défaut, donc écrire le pas 5 ne
+s'enregistre pas (`serialize` ne garde que `subdiv` pas) — la restauration
+marchait, la sonde regardait une case qui n'existe pas ; et les libellés sont
+rendus en CAPITALES par le CSS, donc `/Livrer à/` ne matche pas `innerText`.
+⚠️ Et la colonne « modules » de `parcours-carriere.cjs` affichait « — » : le
+piège d'instance déjà documenté, **vérifié en remisant le diff** — il le faisait
+aussi sans lui. Un serveur de dev qui a vu passer un seul HMR suffit à le
+déclencher.
+
+**Fichiers** — `stores/session.svelte.ts` (neuf), `stores/share.ts`
+(`enregistrerAutosave`), `stores/game.svelte.ts` (`reprendreCommande`, le départ
+enregistré tout de suite, `clearPseudo` qui oublie), `App.svelte` (restauration
+et notation de la vue et de la commande), `ui/atelier/AtelierView.svelte`
+(onglet retenu et vérifié, travail réappliqué),
+`ui/game/GameView.svelte` (écran retenu, gardé sur le genre de l'étape),
+`tests/reprise-session.test.ts` (15 tests).
+
 ### ✅ Retour de jeu du 16 septembre — dix défauts, et cinq choix en fiche (2026-09-16)
 
 Une partie complète de Yann, dix-sept points. Dix étaient des **défauts** :
