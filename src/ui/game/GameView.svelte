@@ -9,7 +9,7 @@
   import { repereDeNiveau, acteParId } from '../../model/carriere';
   import { analyserLigne } from '../../model/locuteurs';
   import { noteNameForScaleDegree } from '../../model/presets/scales';
-  import { scaleFor } from '../../engine/harmony';
+  import { chordsFor, scaleFor } from '../../engine/harmony';
   import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
   import {
@@ -563,6 +563,29 @@
       noteNameForScaleDegree(scaleFor(st), st.synthGlobal.rootMidi, d),
     );
   });
+
+  /* Et pour la NAPPE, le nom de la FONDAMENTALE de chaque accord plus son
+     chiffrage — même service que `nomsDegres`, même source que le pad de
+     l'Atelier (`NotePad.nomsAccords`). « I » ne dit rien à qui ne lit pas le
+     chiffrage, « Do » si. La case de la nappe porte un index d'accord, pas un
+     degré : la touche `d` écrit l'accord `d − 1`. */
+  const nomsAccords = $derived.by(() => {
+    const st = game.buildState('target');
+    return chordsFor(st).map((c) => ({
+      nom: noteNameForScaleDegree(scaleFor(st), st.synthGlobal.rootMidi, c.root),
+      chiffre: c.roman,
+    }));
+  });
+
+  /* Ce que la touche `d` écrit sur la ligne visée, dit en deux lignes comme
+     dans l'Atelier : le nom au-dessus, le repère de la grille dessous. */
+  function libelleTouche(ligne: string, d: number): { nom: string; deg: string } {
+    if (ligne === 'pad') {
+      const a = nomsAccords[d - 1];
+      return { nom: a?.nom ?? String(d), deg: a?.chiffre ?? String(d) };
+    }
+    return { nom: nomsDegres[d - 1] ?? String(d), deg: String(d) };
+  }
 
   /* ⚠️ LE SON À LA TOUCHE — *« c'est dommage de ne pas entendre le son à la
    * touche »* (Yann, 2026-09-16). Le clavier de l'Atelier joue la note qu'il
@@ -1319,17 +1342,22 @@
             <!-- ⚠️ Le clavier suit la LIGNE visée : la nappe joue des accords et
                  il n'y en a que quatre. Une cinquième touche y proposerait un
                  accord qui n'existe pas. -->
-            <!-- ⚠️ Le son à la touche ici AUSSI : c'est le même clavier que
-                 l'exercice de mélodie, et un degré qu'on pose sans l'entendre
-                 se vise au hasard. La nappe sonne son ACCORD (voir
-                 `entendreDegre`). Les noms de note, eux, restent à la mélodie
-                 seule : sur une nappe une touche est un accord, pas un degré,
-                 et « Do » y désignerait sa fondamentale. -->
+            <!-- ⚠️ Le son à la touche ici AUSSI, et les mêmes libellés : c'est
+                 le même clavier que l'exercice de mélodie, et un degré qu'on
+                 pose sans l'entendre se vise au hasard. La NAPPE suit la même
+                 règle que dans l'Atelier — sa touche sonne un ACCORD et porte
+                 le nom de sa fondamentale au-dessus de son chiffrage
+                 (« Fa / IV »), parce que sa case porte un index d'accord et
+                 pas un degré. Un seul `libelleTouche` pour les deux claviers :
+                 deux libellés qui doivent rester d'accord finissent par ne
+                 plus l'être. -->
             {#each Array.from({ length: game.arrDegreMax(sel.ligne) }, (_, i) => i + 1) as d (d)}
+              {@const lib = libelleTouche(sel.ligne, d)}
               <button
                 class="mel-touche tap44-y"
                 class:actif={game.arrGuess[sel.ligne]?.[sel.pas] === d}
                 disabled={game.solved || game.revealed}
+                title="{lib.nom} ({lib.deg})"
                 onpointerdown={(e) => {
                   e.preventDefault();
                   if (game.solved || game.revealed) return;
@@ -1338,7 +1366,8 @@
                   echec = false;
                 }}
               >
-                {d}
+                <span class="nom">{lib.nom}</span>
+                <span class="deg">{lib.deg}</span>
               </button>
             {/each}
             <button
@@ -1347,7 +1376,8 @@
               aria-label="Effacer la note visée"
               onclick={() => game.arrPoserNote(game.arrGuess[sel.ligne][sel.pas])}
             >
-              ⌫
+              <span class="nom">∅</span>
+              <span class="deg">vide</span>
             </button>
           </div>
         {/if}
@@ -1415,11 +1445,12 @@
              fois. -->
         <div class="mel-clavier">
           {#each clavier as d (d)}
+            {@const lib = libelleTouche(lvl.melodie.ligne, d)}
             <button
               class="mel-touche tap44-y"
               class:actif={game.melodieGuess[melSel] === d}
               disabled={game.solved || game.revealed}
-              title="{nomsDegres[d - 1]} (degré {d})"
+              title="{lib.nom} (degré {lib.deg})"
               onpointerdown={(e) => {
                 e.preventDefault();
                 if (game.solved || game.revealed) return;
@@ -1427,8 +1458,8 @@
                 ecrireDegre(d);
               }}
             >
-              <span class="nom">{nomsDegres[d - 1]}</span>
-              <span class="deg">{d}</span>
+              <span class="nom">{lib.nom}</span>
+              <span class="deg">{lib.deg}</span>
             </button>
           {/each}
           <button

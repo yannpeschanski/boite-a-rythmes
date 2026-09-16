@@ -1607,7 +1607,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * la mélodie ») : l'exercice le fait entendre avant que le cahier l'exige. */
   mkLevel(75, 'Deux lignes à la fois', {
     exercise: 'arrangement',
-    preamble: "Pour la première fois, une batterie ET une ligne de synthé dans le même exercice. Le kick tient les quatre temps, la claire répond sur 2 et 4 — tu sais faire. Ce qui est neuf, c'est la BASSE par-dessus : quatre notes à retrouver en hauteur, comme aux exercices précédents, mais cette fois il faut les entendre à travers la batterie. Choisis une case de la ligne, appuie sur un degré.",
+    preamble: "Pour la première fois, une batterie ET une ligne de synthé dans le même exercice. La batterie, tu sais faire : un kick qui sort du temps, la claire sur 2 et 4, le charley qui tient la pulsation. Ce qui est neuf, c'est la BASSE par-dessus : quatre notes à retrouver en hauteur, comme aux exercices précédents, mais cette fois il faut les entendre à travers la batterie. Choisis une case de la ligne, appuie sur un degré.",
     tempoOptions: [84, 90],
     /* ⚠️ Le SON fait partie du niveau (voir `model/sons.ts`) : une basse RONDE
      * au release long, parce que c'est elle la nouveauté de l'exercice et
@@ -1616,20 +1616,37 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       bass: { voix: 'round', retouches: { release: 0.42 }, reverb: 0.08, volume: 1.05 },
       kick: { tone: 22, decay: 6 },
       snare: { reverb: 0.12 },
+      /* Le charley est un REPÈRE, pas un sujet : au volume d'usine ses huit
+         croches couvrent la basse, qui est ce qu'on demande d'entendre. Mêmes
+         valeurs qu'au niveau 77, une seule définition de ce rôle. */
+      hat: { filtre: 9000, volume: 0.6 },
     },
     arrangement: {
       subdiv: 8,
       degreMax: 5,
+      /* ⚠️ LA BATTERIE NE REVIENT PAS AU PLUS SIMPLE — *« les rythmes
+       * kick/snare sont un peu trop faciles. On peut ajouter une ligne simple
+       * de Hat aussi »* (Yann, 2026-09-16).
+       *
+       * Elle était `1 0 1 0 1 0 1 0` sur le kick, sans charley : quatre temps
+       * à plat et deux lignes seulement, c'est-à-dire une grille remise au
+       * propre — exactement la SCIE payée à l'acte 1, un acte plus loin. Le
+       * kick sort donc du temps (1, 2 et demi, 3) comme depuis le niveau 7, et
+       * le charley pose la pulsation contre laquelle la basse s'entend : ce
+       * qu'il ajoute n'est pas une difficulté de lecture mais un repère, et
+       * c'est la ligne la plus simple qui existe. La nouveauté de l'exercice
+       * reste la BASSE. */
       lignes: [
-        { nom: 'kick',  nature: 'drum',   pas: [1, 0, 1, 0, 1, 0, 1, 0] },
+        { nom: 'kick',  nature: 'drum',   pas: [1, 0, 0, 1, 1, 0, 0, 0] },
         { nom: 'snare', nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'hat',   nature: 'drum',   pas: [1, 1, 1, 1, 1, 1, 1, 1] },
         { nom: 'bass',  nature: 'degres', pas: [1, 0, 0, 5, 0, 0, 3, 0] },
       ],
     } }),
 
   mkLevel(76, 'La basse et la mélodie', {
     exercise: 'arrangement',
-    preamble: "Deux lignes de synthé maintenant, et elles ne disent pas la même chose : la basse tient le bas, rare et grave ; la mélodie bouge au-dessus, plus dense. Elles se répondent — c'est ce qu'on appelle un arrangement. La tonique du premier pas t'est donnée sur chacune : c'est le repère contre lequel le reste se situe.",
+    preamble: "Deux lignes de synthé maintenant, et elles ne disent pas la même chose : la basse tient le bas, rare et grave ; la mélodie bouge au-dessus, plus dense. Elles se répondent — c'est ce qu'on appelle un arrangement. La tonique du premier pas t'est donnée sur chacune : c'est le repère contre lequel le reste se situe. Le charley laisse deux trous : la mélodie y passe.",
     tempoOptions: [84, 90],
     /* Les deux lignes se SÉPARENT par le son autant que par le registre : la
      * basse tient (release long, pas d'écho), la mélodie pique et s'en va
@@ -1640,13 +1657,20 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       melody: { voix: 'housepluck', retouches: { release: 0.07 }, delay: 0.3, reverb: 0.22 },
       kick: { tone: 22, decay: 6 },
       snare: { reverb: 0.12 },
+      hat: { filtre: 9000, volume: 0.6 },
     },
     arrangement: {
       subdiv: 8,
       degreMax: 5,
+      /* ⚠️ Même correction qu'au 75, et le charley y RESPIRE : deux trous, à
+       * l'endroit où la mélodie passe. C'est la leçon de `dePlacePourLaVoix`
+       * (acte 2) rejouée là où elle s'entend, et ça garde l'axe de l'acte
+       * intact — ce qui monte d'un niveau à l'autre est le nombre de VOIX, pas
+       * de cases. */
       lignes: [
-        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 1, 0, 1, 0, 1, 0] },
+        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 0, 1, 1, 0, 0, 0] },
         { nom: 'snare',  nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'hat',    nature: 'drum',   pas: [1, 1, 0, 1, 1, 1, 0, 1] },
         { nom: 'bass',   nature: 'degres', pas: [1, 0, 0, 0, 5, 0, 0, 0] },
         { nom: 'melody', nature: 'degres', pas: [3, 0, 5, 4, 3, 0, 2, 1] },
       ],
