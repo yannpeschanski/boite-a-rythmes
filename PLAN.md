@@ -48,6 +48,42 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une seule définition de « sortie lente » (2026-09-16)
+
+Trouvé en répondant à « est-ce que le calibrage est automatique ? » : le pad
+d'écriture du Synthé avait **déjà** son avertissement de sortie lente
+(`casqueLent`, `NotePad.svelte`) — seuil de 60 ms sur `outputLatency` — pendant
+que l'avis livré la veille en utilisait un autre, 40 ms sur `baseLatency`. Deux
+vérités qui doivent rester d'accord finissent par ne plus l'être. Unifié sur
+`verdictLatence` à la demande de Yann.
+
+⚠️ **Le seuil BAISSE (60 → 40) et ce n'est pas un relâchement** : il change de
+source en même temps. 60 se justifiait contre `outputLatency`, que Chrome
+sur-déclare du double (mesuré : 257 ms annoncés pour 115 réels) ; 40 se lit sur
+`baseLatency`, honnête (128 pour 115).
+
+⚠️ **Et un piège de câblage documenté DISPARAÎT avec la source.** Le pad tenait
+son chiffre dans un `$state` rafraîchi à la main, parce qu'un `$derived` appelant
+`latenceSortieMs()` ne dépendait d'aucune rune : il se calculait une fois, avant
+même l'existence du contexte audio, et ne bougeait plus (l'avertissement ne
+s'affichait pas avec un `outputLatency` forcé à 180 ms). `sortie.baseMs` EST une
+rune, poussée par le moteur : plus rien à rafraîchir, et les deux appels à
+`rafraichirRetard()` disparaissent.
+
+La prop `latenceSortieMs` ne servait plus qu'à ça : retirée de toute la chaîne
+(`AtelierView` → `SynthModule` → `SynthRowView` → `NotePad`), parce qu'un
+câblage que plus rien n'atteint est du code que la prochaine lecture croira
+vivant. La méthode du moteur reste : `CalibrageLatence` l'affiche pour dire ce
+que le navigateur DÉCLARE, à côté de ce qu'on mesure.
+
+Vérifié au navigateur : le pad annonce 128 ms sans rafraîchissement manuel, et
+l'avertissement disparaît dès qu'un calibrage existe.
+
+⚠️ **Constat à trancher** : sur l'onglet Synthé, pad ouvert, l'avis du module et
+l'avertissement du pad s'affichent **en même temps**. Ils disent deux choses
+différentes (déclencher ≠ écrire) et sont tous deux vrais, mais ça fait deux
+encadrés ambre sur le même écran.
+
 ### ✅ L'avis de latence atteint le Mode Live et les niveaux chronométrés (2026-09-16)
 
 Arbitrage de Yann : « go pour 1, 2 & 3 » — le seuil de **40 ms est confirmé**

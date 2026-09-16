@@ -150,7 +150,12 @@ mesure se corrige, il n'y a rien à fuir. ⚠️ Dans le Live, l'avis vit dans
 `.live-root` et non dans `.live`, qui est une grille où un enfant de plus décale
 les rangées (mesuré : 6→22, 26→80, 132→384, identiques avec et sans), et il
 emploie `messageLatenceCourt` — la forme longue descendait à 39 px et mordait sur
-le transport, qui commence à 26.
+le transport, qui commence à 26. ⚠️ **Le pad d'écriture est sur la MÊME
+définition** depuis le 2026-09-16 : il avait la sienne (60 ms sur
+`outputLatency`), et son seuil est passé à 40 **parce qu'il a changé de source** —
+`outputLatency` sur-déclare du double (257 annoncés pour 115 réels), `baseLatency`
+dit à peu près vrai (128). Ne pas restaurer 60 sans remettre l'ancienne source
+avec.
 
 ⚠️ **Un chiffre DÉCLARÉ par le navigateur n'est pas une mesure.** Sur un même
 téléphone, à la même minute : Chrome annonce `baseLatency` 171 ms et
