@@ -2906,6 +2906,31 @@ export const ETAPE_DU_MODULE: Record<LockedModule, number> = (() => {
   return out;
 })();
 
+/* ⚠️ LE GROOVE — l'acte et l'étape où le récit le DEMANDE.
+ *
+ * *« Verrouille la partie Groove, on la débloque à l'issue de l'acte 1 »*
+ * (Yann, 2026-09-16). Le panneau « Groove & variation humaine » — swing,
+ * traîne, rafales spontanées, ghost notes, vélocité aléatoire, intensité du
+ * fill — s'affichait dès la première visite de l'Atelier, c'est-à-dire sur
+ * l'écran de la sonnerie, juste après un acte qui n'a enseigné que kick,
+ * caisse et charley. Six curseurs dont rien n'a parlé, sur le premier écran
+ * d'outil du jeu.
+ *
+ * Ce n'est pas un cinquième `LockedModule` : aucun écran ne s'ouvre, rien à
+ * cadenasser — donc une règle nommée, comme `catalogueOuvert`. Et ce qui est
+ * verrouillé ne s'affiche pas (CLAUDE.md) : le panneau est simplement absent.
+ *
+ * L'ÉTAPE est dérivée, pas écrite : c'est la commande de Kelvin, la première
+ * chose du jeu qui EXIGE de l'aléa (`deLAlea`). La verrouiller jusqu'à la
+ * frontière de l'acte 2 rendrait donc sa propre commande insatisfiable — le
+ * cul-de-sac déjà payé par le Synthé à l'acte 3. Et une fois ouverte, elle ne
+ * se referme pas : même règle que `ETAPE_DU_MODULE`. */
+export const ACTE_DU_GROOVE = 2;
+export const ETAPE_DU_GROOVE: number = (() => {
+  const i = ACTES[ACTE_DU_GROOVE].etapes.findIndex((e) => e.kind === 'commande');
+  return i < 0 ? Infinity : i;
+})();
+
 export function acteParId(id: number): Acte {
   return ACTES[Math.max(0, Math.min(NB_ACTES - 1, Math.round(id)))];
 }

@@ -10,7 +10,13 @@
 // La règle de déblocage elle-même vit dans `model/unlocks.ts` (pur, testé) ;
 // ce module n'ajoute que la réactivité et la persistance.
 import { game } from './game.svelte';
-import { catalogueOuvert, moduleUnlocked, type LockedModule, type UnlockContext } from '../model/unlocks';
+import {
+  catalogueOuvert,
+  grooveOuvert,
+  moduleUnlocked,
+  type LockedModule,
+  type UnlockContext,
+} from '../model/unlocks';
 
 class Unlocks {
   /** Un rythme partagé a été chargé au démarrage — ouvre l'Atelier, rien d'autre. */
@@ -46,6 +52,11 @@ class Unlocks {
   /** Le catalogue des 34 morceaux (menu Fichier) — voir `catalogueOuvert`. */
   get catalogue(): boolean {
     return catalogueOuvert(this.context);
+  }
+
+  /** Le panneau « Groove & variation humaine » — voir `grooveOuvert`. */
+  get groove(): boolean {
+    return grooveOuvert(this.context);
   }
 
   /**

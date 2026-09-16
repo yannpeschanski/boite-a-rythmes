@@ -55,8 +55,16 @@ export interface Production {
   quand: string;
 }
 
-/** La clé d'unicité : l'acte, et la série à l'intérieur de l'acte. */
-const cle = (p: Production) => `${p.acte}:${p.serie ?? ''}`;
+/* La clé d'unicité : l'acte, et la série à l'intérieur de l'acte.
+ *
+ * ⚠️ EXPORTÉE, et ce n'est pas de la commodité : la vue keyait sa liste sur le
+ * seul `acte` (`{#each … (p.acte)}`), alors que la clé a deux moitiés depuis le
+ * 2026-09-01. Un acte qui livre plusieurs morceaux — le 5 en livre quatre, le 6
+ * en livre neuf — donnait donc DEUX lignes portant la même clé, ce que Svelte
+ * refuse : ouvrir la discographie levait `each_key_duplicate` et l'écran
+ * tombait. Une clé à deux moitiés n'a qu'une définition, ici. */
+export const cleProduction = (p: Production) => `${p.acte}:${p.serie ?? ''}`;
+const cle = cleProduction;
 
 /**
  * Ranger une production. Remplace celle de la même SÉRIE s'il y en a une, et
