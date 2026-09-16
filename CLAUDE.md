@@ -746,6 +746,14 @@ huit contraintes relationnelles qui lisent `ctx.depart` et répondent **faux**
 sans lui : quatre de DENSITÉ (`plusFourniQue`, `moinsFourniQue`,
 `uneLigneQuiEntre`, `uneLigneQuiSeTait`) et quatre de MÉLODIE (`uneAutrePhrase`,
 `unePhraseQuiMonte`, `unePhraseQuiSEclaircit`, `uneAutreHarmonie`).
+⚠️ **Et le PONT ne compte plus les coups du tout** (2026-09-16) :
+`moinsFourniQue` est retiré, parce que le compte était relatif au couplet que le
+JOUEUR a choisi — un couplet sobre rendait le pont presque vide, donc la consigne
+perdait son sens tout en restant satisfaisable, ce qu'un test de satisfiabilité
+ne peut pas voir. Restent les deux mesures qui décrivent le geste et qui y
+étaient déjà (`uneLigneQuiSeTait`, `unePhraseQuiSEclaircit`). `plusFourniQue`
+reste sur les refrains : dans ce sens-là le compte n'est pas absurde.
+
 ⚠️ **Compter des COUPS ne suffit pas** : un refrain qui s'ouvre en ajoutant un
 shaker n'est pas un refrain, c'est le couplet avec un shaker. Un refrain change
 de phrase et MONTE, un pont change de phrase et S'ÉCLAIRCIT — et l'octave compte
@@ -761,6 +769,16 @@ moins mais elle joue encore » est impossible sur une mélodie d'une seule note,
 « change d'accords » est impossible sans nappe au départ : chaque couplet doit
 donc exiger la matière que son refrain et son pont transformeront.
 `tests/commande.test.ts` le trouve — c'est un cul-de-sac, pas une maladresse.
+
+⚠️ **Le DERNIER morceau exige trois RÉGLAGES, et lui seul** (2026-09-16,
+arbitré contre ma recommandation d'un geste au choix) : une polyrythmie, un
+détune franc (20 cents), du grain (bitcrush du bus). Ce sont des faits mesurables
+et non des goûts, donc l'acte n'impose toujours ni style ni client — et c'est le
+seul morceau où ça se défend, sa réplique d'ouverture étant « prends ce que tu
+n'as jamais osé mettre ». ⚠️ La polyrythmie se mesure **contre le départ** : le
+motif d'usine porte déjà un kick en 4 et un charley en 3, donc sans ça la case
+serait cochée à l'ouverture. Et « deux mesures » n'y figure pas — `unGesteRare`
+l'offre déjà, l'exiger l'afficherait deux fois.
 
 ⚠️ **Les trois morceaux se distinguent par une INTENTION, jamais par un brief.**
 « Aucun brief, aucun client, aucun style imposé » tient : celui qui passe, celui
@@ -832,12 +850,16 @@ le récit vient d'ouvrir se referme à l'écran suivant : entre la scène de l'a
 et la fin de l'acte, l'écran « LE CATALOGUE » reprenait le Mode Live pour une
 étape. Se lit sur le curseur PERSISTÉ, qui ne recule jamais.
 
-⚠️ **Le Mode Live s'ouvre à l'acte 6, et le 7 n'ouvre plus rien** (2026-09-14).
-Sa scène l'empruntait déjà : l'entrée apparaissait, servait deux fois, puis
-disparaissait jusqu'à l'épilogue — ce qui se lit comme une PANNE, et contredit
-« une porte déjà ouverte ne se referme jamais ». On ne découvre pas sa console
-sur scène ; le dernier acte ne paie aucune dette mécanique, comme les actes 0, 2
-et 5.
+⚠️ **Le Mode Live s'ouvre à l'acte 7, au CONCERT** (2026-09-16) — l'acte 6
+PRÉPARE les neuf boucles et ne montre pas la console. Ça renverse l'arbitrage du
+2026-09-14 (« réponse A », le Live à l'acte 6) et le jeu a dit pourquoi : la
+scène de l'acte 6 ne montait qu'UN morceau (une architecture décrit un morceau),
+donc le concert de l'acte 7 recommençait avec le même — le dernier acte était la
+redite de la répétition. Ce qu'on échange : l'argument « on ne découvre pas sa
+console sur scène » contre un acte 7 qui apporte quelque chose. ⚠️ Ce qui est
+GARDÉ de l'arbitrage renversé : le module s'ouvre à l'ÉTAPE qui le prête
+(`ETAPE_DU_MODULE` → la première scène de l'acte 7) et pas à la frontière de
+l'acte, sinon il se refermerait entre le rappel et la dernière réplique.
 
 ⚠️ **Le panneau GROOVE est fermé jusqu'à la COMMANDE de l'acte 2**
 (`grooveOuvert`, `model/unlocks.ts` — une règle nommée, pas un cinquième

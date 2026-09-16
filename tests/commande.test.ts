@@ -519,6 +519,31 @@ async function etatQuiSatisfait(
     st.rows.hat.shiftPct = 10;
     st.rows.kick.shiftPct = 0;
   }
+  /* ⚠️ LES TROIS RÉGLAGES SPÉCIAUX du dernier morceau (2026-09-16), même
+   * discipline : posés seulement s'ils sont demandés, et au plus juste.
+   *
+   * La POLYRYTHMIE se mesure contre le DÉPART, parce que le motif d'usine
+   * porte déjà un kick en 4 et un charley en 3 : on règle donc une subdivision
+   * qui n'est pas celle du départ, et on garde des coups sur les deux lignes —
+   * une polyrythmie entre deux lignes muettes ne s'entend pas. 16 contre 12,
+   * l'exemple de la demande. */
+  if (demande('polyrythmie')) {
+    st.rows.kick.subdiv = 16;
+    st.rows.kick.pattern = new Array(16).fill(0) as never;
+    for (const i of [0, 6, 10]) (st.rows.kick.pattern as number[])[i] = 1;
+    st.rows.kick.rolls = new Array(16).fill(1);
+    st.rows.snare.subdiv = 12;
+    st.rows.snare.pattern = new Array(12).fill(0) as never;
+    for (const i of [1, 4, 7, 10]) (st.rows.snare.pattern as number[])[i] = 1;
+    st.rows.snare.rolls = new Array(12).fill(1);
+    (st.rows.snare.pattern as number[])[4] = 2;
+  }
+  if (demande('detune-20')) {
+    for (const l of ['bass', 'melody', 'pad'] as const) {
+      st.synthRows[l].voice = { ...st.synthRows[l].voice, detuneCents: 22, detuneGain: 0.6 };
+    }
+  }
+  if (demande('grain')) st.globalBitcrush = 0.22;
   // Un seul des trois boutons d'aléa suffit — au seuil mesuré, pas à fond.
   if (demande('alea')) st.ghostDensity = ALEA_MINI.ghostDensity;
   /* ⚠️ Les COUCHES DU SYNTHÉ de l'acte 3 (2026-09-01), même discipline : on ne

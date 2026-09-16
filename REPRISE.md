@@ -3,7 +3,28 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-16 — ✅ **Un rechargement ne coûte plus la
+> Dernière mise à jour : 2026-09-16 — ✅ **Les actes 6 et 7 échangent leurs
+> rôles.** L'acte 6 PRÉPARE ses neuf boucles sans jamais montrer le Mode Live (sa
+> scène est devenue un écran de récit, au passé), et c'est l'acte 7 qui OUVRE le
+> mode : son set joue les trois morceaux, son rappel le jingle. Ça défait
+> l'arbitrage du 2026-09-14 (« on ne découvre pas sa console sur scène ») et Yann
+> a tranché pour — mesuré, l'ancienne scène de l'acte 6 ne montait qu'UN des
+> trois morceaux, et le set de l'acte 7 relançait celui qu'on venait de jouer.
+> Deux autres cartes appliquées avec : `moinsFourniQue` est **retirée** (le pont
+> se dit par ce qui SORT, jamais par un compte qui descend — il pouvait coincer
+> un couplet déjà maigre), et le dernier morceau exige **trois réglages
+> spéciaux** (`unePolyrythmie`, `unDetuneFranc`, `duGrain`), la version large que
+> Yann a choisie contre ma reco. Les trois lisent `ctx.depart` : un réglage
+> d'usine ne coche rien.
+>
+> ⚠️ **RESTENT OUVERTES, `docs/relecture/retour-carriere.html` section 2 : deux
+> cartes.** A4 (la course du curseur Swing — reco : ne rien changer, c'est le
+> critère de la fiche qui borne, pas l'outil) et A5 (ce qui coince en abandonnant
+> un cahier — reco : une option « pose-moi à l'acte N étape M » dans
+> `scripts/parcours-carriere.cjs`, zéro surface joueur). **Ni l'une ni l'autre
+> n'est codée.**
+>
+> Avant cela, le même jour : ✅ **Un rechargement ne coûte plus la
 > session.** `stores/session.svelte.ts` retient la VUE, l'onglet de l'Atelier,
 > l'écran du Mode jeu et la COMMANDE ouverte ; le travail de l'Atelier se
 > réapplique tout seul. Une PÉREMPTION de deux heures fait la différence entre
@@ -13,9 +34,6 @@
 > exercice (la cible est tirée au sort). Un cas d'intégrité fermé au passage :
 > `ouvrirCommande` écrit le départ dans l'autosave tout de suite, sinon un
 > rechargement dans la seconde cochait des cases sans le moindre geste.
->
-> ⚠️ **CE QUI ATTEND TOUJOURS UNE RÉPONSE : `docs/relecture/retour-carriere.html`,
-> section 2** — les cinq cartes décrites ci-dessous, dont A1 (les actes 6 et 7).
 >
 > Avant cela, le même jour : ✅ **Retour de jeu : dix défauts corrigés,
 > cinq choix en fiche.** Une partie complète de Yann, dix-sept points. Trois ne
@@ -32,8 +50,8 @@
 > frappe suivante), et les claviers du Mode jeu sonnent et parlent la langue de
 > l'Atelier.
 >
-> ⚠️ **CE QUI ATTEND UNE RÉPONSE : `docs/relecture/retour-carriere.html`,
-> section 2 — cinq cartes.** La plus lourde est **A1, les actes 6 et 7** : Yann
+> *(Répondu depuis — A1, A2 et A3 sont livrées ; A4 et A5 restent.)*
+> **`docs/relecture/retour-carriere.html`, section 2 — cinq cartes.** La plus lourde est **A1, les actes 6 et 7** : Yann
 > propose que l'acte 6 prépare sans montrer le Mode Live et que l'acte 7 joue les
 > trois morceaux puis le jingle, le mode s'ouvrant à la sortie. **Ça défait
 > l'arbitrage du 2026-09-14** (« réponse A », le Live s'ouvre à l'acte 6, « on ne
@@ -45,7 +63,7 @@
 > retirer le compte), les réglages spéciaux du dernier morceau — la polyrythmie
 > 16/12 (A3, reco : l'exiger sur « celui que personne n'attend »), la course du
 > curseur Swing (A4, reco : ne rien changer), et ce qui coince en abandonnant un
-> cahier (A5, reco : un outil hors du jeu). **Rien de tout ça n'est codé.**
+> cahier (A5, reco : un outil hors du jeu).
 >
 > ⚠️ *(Historique)* ✅ **TROUVÉ : une boucle audio interdite
 > (`mixBus → liveReverbSend → reverb → mixBus`) rendait l'appli entièrement muette
