@@ -71,6 +71,8 @@ import { appliquerSons } from '../model/sons';
 import type { LockedModule } from '../model/unlocks';
 import { pattern } from './pattern.svelte';
 import { sequenceBank } from './bank.svelte';
+import { oublierSession } from './session.svelte';
+import { enregistrerAutosave } from './share';
 import { architecture } from './architecture.svelte';
 import { parties } from './parties.svelte';
 import type { PartieId } from '../model/parties';
@@ -833,6 +835,11 @@ class GameStore {
      * n'a pas — et c'est vérifié par un test, pas par la vigilance. */
     history.push();
     pattern.replace(this.departCommande());
+    /* ⚠️ Le DÉPART s'enregistre tout de suite — voir `enregistrerAutosave`. Un
+     * rechargement dans la seconde qui suit aurait restauré la session d'avant
+     * par-dessus, donc ouvert ce cahier neuf sur une ancienne composition :
+     * des cases cochées sans qu'on ait rien touché. */
+    enregistrerAutosave();
     this.commandeVerdict = null;
     this.commandeAcceptee = null;
   }
@@ -903,6 +910,38 @@ class GameStore {
     this.cyclesEcoutes = 0;
     history.push();
     pattern.replace(this.departCommande());
+    /* ⚠️ Le DÉPART s'enregistre tout de suite — voir `enregistrerAutosave`. Un
+     * rechargement dans la seconde qui suit aurait restauré la session d'avant
+     * par-dessus, donc ouvert ce cahier neuf sur une ancienne composition :
+     * des cases cochées sans qu'on ait rien touché. */
+    enregistrerAutosave();
+    this.commandeVerdict = null;
+    this.commandeAcceptee = null;
+    return true;
+  }
+
+  /* REPRENDRE une commande après un rechargement de page — voir
+   * `stores/session.svelte.ts`.
+   *
+   * ⚠️ NE TOUCHE PAS AU PATTERN, et c'est tout l'intérêt. `ouvrirCommande` et
+   * `repeterCommande` posent le DÉPART du cahier (`departCommande`) : les
+   * appeler ici effacerait exactement le travail qu'on cherche à retrouver.
+   * Ici on ne repose que le CURSEUR de la commande ; le morceau revient par
+   * l'autosave de l'Atelier.
+   *
+   * ⚠️ Les cycles écoutés repartent à zéro : ils ne sont pas enregistrés, et
+   * les inventer gonflerait la note. Un rechargement peut donc coûter une
+   * étoile — c'est le seul prix, et il est dans le bon sens.
+   *
+   * Renvoie `false` si l'étape citée n'est pas (ou plus) une commande : une
+   * session enregistrée avant un remaniement du récit ne doit pas ouvrir un
+   * cahier qui n'existe plus. */
+  reprendreCommande(acte: number, etape: number, repetition: boolean): boolean {
+    const e = acteParId(acte).etapes[etape];
+    if (!e || e.kind !== 'commande') return false;
+    this.commandeEnCours = { acte, etape };
+    this.repetitionCommande = repetition;
+    this.cyclesEcoutes = 0;
     this.commandeVerdict = null;
     this.commandeAcceptee = null;
     return true;
@@ -1237,6 +1276,11 @@ class GameStore {
       /* rien à retirer */
     }
     this.brancherBanque();
+    /* ⚠️ Changer de joueur n'est pas un rechargement : la reprise est oubliée.
+     * Sans ça, le joueur suivant serait renvoyé dans l'écran du précédent —
+     * et, s'il y avait une commande ouverte, dans un cahier qui n'est pas le
+     * sien. */
+    oublierSession();
   }
 
   /* SUPPRIMER UN PROFIL — *« dans le menu des noms de joueurs : il faut

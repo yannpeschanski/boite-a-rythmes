@@ -15,6 +15,7 @@
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
   import { unlocks } from './stores/unlocks.svelte';
+  import { noterSession, sessionReprise, type VueOuverte } from './stores/session.svelte';
   import { type LockedModule } from './model/unlocks';
 
   let view = $state<'splash' | 'atelier' | 'game' | 'live' | 'diag'>('splash');
@@ -83,6 +84,61 @@
        ne touche à aucune progression. C'est un banc d'essai de la SORTIE AUDIO,
        atteint seulement si on tape l'adresse — donc si on me l'a donnée. */
     if (location.hash === '#diag') view = 'diag';
+
+    /* ⚠️ ON REVIENT OÙ ON ÉTAIT — *« lorsqu'on réactualise la page […] ne pas
+     * perdre tout ce qu'on était en train de faire »* (Yann, 2026-09-16). Voir
+     * `stores/session.svelte.ts` pour la péremption : un rechargement reprend,
+     * une visite du lendemain repart de l'accueil.
+     *
+     * ⚠️ APRÈS `game.load()` et APRÈS les trois hash, dans cet ordre et pour
+     * deux raisons. Les verrous ne sont lisibles qu'une fois la progression
+     * chargée — restaurer la vue à l'initialisation ferait monter l'Atelier
+     * avec tous ses onglets fermés, puis se corriger sous les yeux. Et un lien
+     * (`#r=`, `#mode-live`, `#diag`) est une INTENTION explicite : il gagne
+     * contre une reprise. */
+    const reprise = sessionReprise();
+    if (view === 'splash' && reprise?.vue) view = vueAutorisee(reprise.vue);
+
+    /* ⚠️ La COMMANDE ouverte revient avec son cahier, et sans toucher au
+     * morceau (`reprendreCommande`) : sans elle, on retrouvait son travail
+     * dans un Atelier qui n'avait plus ni check-list ni bouton « Livrer ». */
+    const c = reprise?.commande;
+    if (c) game.reprendreCommande(c.acte, c.etape, c.repetition);
+  });
+
+  /* Une vue ne se restaure que si son module est encore OUVERT — une session
+     enregistrée avec le pseudo « master » ne doit pas ouvrir le Mode Live à
+     quelqu'un qui ne l'a pas. L'Atelier reste le repli : c'est la vue que le
+     premier verrou du jeu ouvre. */
+  function vueAutorisee(v: VueOuverte): 'splash' | VueOuverte {
+    if (v === 'live') return unlocks.has('live') ? 'live' : 'splash';
+    if (v === 'atelier') return unlocks.has('atelier') ? 'atelier' : 'splash';
+    return 'game';
+  }
+
+  /* Ce qu'on note, et rien de plus : la VUE, et la commande ouverte. L'accueil
+     ne se note pas (il n'y a rien à reprendre), le diagnostic non plus.
+     ⚠️ UN LIVE EMPRUNTÉ PAR UNE SCÈNE SE NOTE « MODE JEU ». La scène prête le
+     module et le REND (`retourDeScene`), et ce drapeau est volatil comme
+     `sceneEnCours` : restaurer le Live sans lui donnerait la surface GÉNÉRIQUE
+     — sans bandeau d'acte, sans consigne, et dont la sortie retombe dans
+     l'Atelier, c'est-à-dire hors du récit au milieu de l'acte 7. La carrière,
+     elle, réaffiche la scène et son « ▶ LANCER » : c'est le bon endroit pour
+     reprendre. */
+  $effect(() => {
+    if (view === 'live') noterSession({ vue: retourDeScene ? 'game' : 'live' });
+    else if (view === 'atelier' || view === 'game') noterSession({ vue: view });
+  });
+
+  /* ⚠️ La commande est notée ICI plutôt qu'aux cinq endroits du store qui la
+     posent ou la retirent : une règle à cinq domiciles n'est appliquée qu'à
+     un. `null` l'efface, donc abandonner ou livrer ne laisse pas un cahier
+     fantôme pour le prochain chargement. */
+  $effect(() => {
+    const c = game.commandeEnCours;
+    noterSession({
+      commande: c ? { acte: c.acte, etape: c.etape, repetition: game.repetitionCommande } : null,
+    });
   });
 
   onDestroy(() => nettoyer?.());

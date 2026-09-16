@@ -20,6 +20,7 @@
   import SequenceBank from './SequenceBank.svelte';
   import { presetToState } from '../../model/presetAdapter';
   import { sequenceBank } from '../../stores/bank.svelte';
+  import { noterSession, sessionReprise } from '../../stores/session.svelte';
   import PartiesStrip from './PartiesStrip.svelte';
   import MontagePanel from './MontagePanel.svelte';
   import type { SongPresetData } from '../../model/presets/songs';
@@ -103,7 +104,22 @@
   // de traverser les réglages des deux autres pour retrouver le séquenceur),
   // pendant que Lecture/Stop/Break restent dans la barre sticky au-dessus,
   // donc joignables quel que soit l'onglet actif.
-  let activeTab = $state<'rythme' | 'synthe' | 'effets'>('rythme');
+  /* ⚠️ L'ONGLET SE RETIENT, et il se VÉRIFIE. Un rechargement rouvrait
+     toujours Rythme ; reprendre l'onglet coûte une ligne. Mais une session
+     enregistrée peut citer un onglet qui n'est plus ouvert (jouée avec le
+     pseudo « master », ou reprise sur un autre profil) : sans la garde, la
+     chaîne `{:else if activeTab === 'synthe'}` monterait un module fermé, sans
+     onglet pour en sortir. */
+  const ONGLETS_POSSIBLES = ['rythme', 'synthe', 'effets'] as const;
+  type OngletId = (typeof ONGLETS_POSSIBLES)[number];
+  function ongletRepris(): OngletId {
+    const v = sessionReprise()?.onglet;
+    const id = ONGLETS_POSSIBLES.find((o) => o === v);
+    if (!id || id === 'rythme') return 'rythme';
+    return unlocks.has(id === 'synthe' ? 'synth' : 'production') ? id : 'rythme';
+  }
+  let activeTab = $state<OngletId>(ongletRepris());
+  $effect(() => noterSession({ onglet: activeTab }));
   // Les onglets OUVERTS — dérivés une fois : la barre les affiche, et c'est
   // leur nombre qui décide si elle s'affiche du tout (voir plus bas).
   const onglets = $derived([
@@ -236,7 +252,26 @@
     window.addEventListener('input', markProductionTouched);
     window.addEventListener('change', markProductionTouched);
     sessionPrecedente = lireAutosave();
-    canRestore = !!sessionPrecedente && autosaveDiffere(sessionPrecedente);
+    const aRestaurer = !!sessionPrecedente && autosaveDiffere(sessionPrecedente);
+    /* ⚠️ APRÈS UN RECHARGEMENT, LE TRAVAIL REVIENT TOUT SEUL — et le bandeau
+     * ne s'affiche pas, puisqu'il n'a plus rien à proposer. C'est la demande
+     * du 2026-09-16 : un rechargement par erreur ne doit pas coûter une
+     * composition, et il ne doit pas non plus coûter un clic sur un bandeau
+     * qu'on n'a pas encore lu.
+     *
+     * Hors de ce délai (voir `PEREMPTION_MS`), rien ne change : le bandeau
+     * PROPOSE, et « Ignorer » masque sans détruire. Une session d'il y a un
+     * mois ne se réapplique pas dans le dos de personne.
+     *
+     * ⚠️ Un rythme PARTAGÉ gagne toujours : `#r=` est une intention explicite,
+     * et l'écraser par l'autosave viderait le lien de son sens. */
+    if (aRestaurer && sessionReprise() && !unlocks.sharedPattern) {
+      appliquerAutosave(sessionPrecedente!);
+      refreshFx();
+      canRestore = false;
+    } else {
+      canRestore = aRestaurer;
+    }
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);

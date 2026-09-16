@@ -3,7 +3,21 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-16 — ✅ **Retour de jeu : dix défauts corrigés,
+> Dernière mise à jour : 2026-09-16 — ✅ **Un rechargement ne coûte plus la
+> session.** `stores/session.svelte.ts` retient la VUE, l'onglet de l'Atelier,
+> l'écran du Mode jeu et la COMMANDE ouverte ; le travail de l'Atelier se
+> réapplique tout seul. Une PÉREMPTION de deux heures fait la différence entre
+> un rechargement et une visite du lendemain — sans elle personne ne reverrait
+> l'accueil. Ne se restaurent PAS : un module fermé, un Live emprunté par une
+> scène (on revient à la carrière, qui réaffiche la scène), et la grille d'un
+> exercice (la cible est tirée au sort). Un cas d'intégrité fermé au passage :
+> `ouvrirCommande` écrit le départ dans l'autosave tout de suite, sinon un
+> rechargement dans la seconde cochait des cases sans le moindre geste.
+>
+> ⚠️ **CE QUI ATTEND TOUJOURS UNE RÉPONSE : `docs/relecture/retour-carriere.html`,
+> section 2** — les cinq cartes décrites ci-dessous, dont A1 (les actes 6 et 7).
+>
+> Avant cela, le même jour : ✅ **Retour de jeu : dix défauts corrigés,
 > cinq choix en fiche.** Une partie complète de Yann, dix-sept points. Trois ne
 > se voyaient qu'en JOUANT : la **discographie ne s'ouvrait plus** (liste keyée
 > sur l'acte seul alors que la clé est `(acte, série)` — 17 productions en fin de

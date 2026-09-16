@@ -273,6 +273,24 @@ rejouer l'acte 7 en boucle, sans conclusion. Et `ouvrirActe` ne l'allume que
 pour un acte DERRIÈRE le curseur : reprendre le sien n'est pas une relecture,
 il reprend alors à l'étape enregistrée.
 
+⚠️ **UN RECHARGEMENT N'EST PAS UNE NOUVELLE VISITE** — `stores/session.svelte.ts`
+retient la VUE, l'onglet de l'Atelier, l'écran du Mode jeu et la COMMANDE
+ouverte, et le travail de l'Atelier se réapplique tout seul (le bandeau
+« Restaurer » n'a alors rien à proposer). Trois précautions : une PÉREMPTION
+(`PEREMPTION_MS`, deux heures) — sans elle personne ne reverrait l'accueil, qui
+est un écran de choix et le geste par lequel le navigateur accorde le son ; la
+lecture se fait au CHARGEMENT DU MODULE et se garde en mémoire (même leçon que
+`lireAutosave`, les trois vues montent à des moments différents) ; et
+`noterSession` FUSIONNE, chaque vue n'écrivant que son champ.
+⚠️ **Ce qui ne se restaure pas, et pourquoi** : un module fermé (`vueAutorisee`),
+un Live emprunté par une SCÈNE (`retourDeScene` est volatil — on revient à la
+carrière, qui réaffiche la scène et son « ▶ LANCER »), et la GRILLE d'un
+exercice (la cible est tirée au sort, la restaurer demanderait de l'enregistrer
+avec). ⚠️ Et `ouvrirCommande` écrit le DÉPART dans l'autosave **tout de suite**
+(`enregistrerAutosave`) : l'autosave n'enregistrant que des MODIFICATIONS, un
+rechargement dans la seconde restaurait sinon une ancienne composition dans un
+cahier neuf — donc des cases cochées sans le moindre geste.
+
 ⚠️ **Le seuil de niveau se lit sur le PLANCHER, jamais sur `level`.**
 `PlayerProgress.plancher` est le `level` d'AVANT la carrière, gelé une fois pour
 toutes dans `load()` — le seul point garanti d'être avant le premier exercice.

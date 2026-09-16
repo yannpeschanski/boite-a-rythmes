@@ -8,6 +8,7 @@
   import { parametre } from '../../model/parametres';
   import { repereDeNiveau, acteParId } from '../../model/carriere';
   import { analyserLigne } from '../../model/locuteurs';
+  import { noterSession, sessionReprise } from '../../stores/session.svelte';
   import { noteNameForScaleDegree } from '../../model/presets/scales';
   import { chordsFor, scaleFor } from '../../engine/harmony';
   import { PRESETS } from '../../model/presets/songs';
@@ -47,7 +48,21 @@
    * arbitrage du 2026-08-23). La
    * salle de répétition — les 41 niveaux — reste atteignable d'un bouton :
    * « pas de scénario qui enferme l'outil » (HISTOIRE.md). */
-  let ecran = $state<'carriere' | 'exercice'>('carriere');
+  /* ⚠️ L'ÉCRAN SE RETIENT, mais seulement si l'étape est TOUJOURS un exercice.
+     Un rechargement au milieu d'un exercice renvoyait à la carrière, donc à un
+     « Au travail ▸ » de plus. Restaurer sans la garde serait pire : rien ne
+     force cet écran à revenir à la carrière (`continuerCarriere` le fait à la
+     main), donc sur une étape de RÉCIT on afficherait la grille d'un niveau du
+     réservoir comme si c'était l'étape en cours.
+     ⚠️ La GRILLE, elle, ne revient pas : la cible est tirée au sort à chaque
+     `startLevel`, donc la restaurer demanderait d'enregistrer la cible avec.
+     On retrouve l'exercice, pas les cases déjà posées. */
+  let ecran = $state<'carriere' | 'exercice'>(
+    sessionReprise()?.ecranJeu === 'exercice' && game.etapeCourante?.kind === 'exercice'
+      ? 'exercice'
+      : 'carriere',
+  );
+  $effect(() => noterSession({ ecranJeu: ecran }));
 
   // Curseur visuel : consommé à chaque frame contre l'horloge audio, comme
   // dans l'Atelier (AtelierView.svelte) — sans cette boucle, aucune case ne
