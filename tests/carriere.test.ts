@@ -4,6 +4,7 @@ import {
   ACTES,
   NB_ACTES,
   ACTE_DU_MODULE,
+  ETAPE_DU_MODULE,
   acteAVenir,
   acteParId,
   niveauxDeLActe,
@@ -67,7 +68,12 @@ describe('Mode carrière — la charpente en huit actes', () => {
      * puis le rendait, si bien que l'entrée apparaissait, servait deux fois et
      * disparaissait jusqu'à l'épilogue. « Une porte déjà ouverte ne se referme
      * jamais » — et on ne découvre pas sa console sur scène. */
-    expect(ACTE_DU_MODULE).toEqual({ atelier: 1, synth: 3, production: 4, live: 6 });
+    /* ⚠️ `live: 7` depuis le 2026-09-16, et c'est un RENVERSEMENT de
+     * l'arbitrage du 2026-09-14 qui l'avait mis à 6. Ce que le jeu a montré :
+     * l'acte 6 faisait découvrir la console pour n'y jouer qu'un morceau, et
+     * l'acte 7 recommençait avec le même. On prépare à l'acte 6, on joue à
+     * l'acte 7, et le module s'ouvre là — à l'ÉTAPE qui le prête. */
+    expect(ACTE_DU_MODULE).toEqual({ atelier: 1, synth: 3, production: 4, live: 7 });
     // Et chaque module verrouillé est bien ouvert par un acte : un module qui
     // n'apparaîtrait nulle part dans le récit ne s'ouvrirait plus jamais par lui.
     for (const m of LOCKED_MODULES) expect(ACTE_DU_MODULE[m]).toBeTypeOf('number');
@@ -1440,7 +1446,13 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
       expect(ids(refrain), `« ${nom} » refrain`).toContain('phrase-monte:melody');
       expect(ids(refrain), `« ${nom} » refrain`).toContain('plus-fourni');
       expect(ids(pont), `« ${nom} » pont`).toContain('phrase-eclaircit:melody');
-      expect(ids(pont), `« ${nom} » pont`).toContain('moins-fourni');
+      /* ⚠️ ET SURTOUT PAS `moins-fourni` : retiré le 2026-09-16. Le compte
+       * était relatif au couplet que le joueur avait choisi, donc un couplet
+       * sobre rendait le pont presque vide — la consigne restait satisfaisable
+       * et n'avait plus de sens musical. Ce qui décrit le geste reste : une
+       * ligne se tait, la phrase s'éclaircit. */
+      expect(ids(pont), `« ${nom} » pont`).not.toContain('moins-fourni');
+      expect(ids(pont), `« ${nom} » pont`).toContain('ligne-sort');
     }
   });
 
@@ -1462,32 +1474,42 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     }
   });
 
-  /* La scène qui monte le set : les trois boucles deviennent un morceau que le
-   * Mode Live enchaîne. Sans elle, l'acte finirait sur trois fichiers que
-   * personne ne joue — « ce qui n'a pas été porté n'existe pas ». */
-  it('⚠️ et les neuf boucles finissent en SET, pas en neuf fichiers', () => {
-    const scene = acte6().etapes.find((e) => e.kind === 'scene');
-    expect(scene, 'aucune scène ne monte le set').toBeTruthy();
-    if (scene?.kind !== 'scene') return;
+  /* ⚠️ L'ACTE 6 PRÉPARE, IL NE MONTRE PAS LA CONSOLE — 2026-09-16, et ça
+   * renverse l'arbitrage du 2026-09-14 que ce test gardait.
+   *
+   * Ce que le jeu a montré : *« fin de l'acte 6 : on découvre le mode live et
+   * on ne joue qu'un seul des morceaux »*, puis *« acte 7 : on a le mode live
+   * pour le premier morceau (de nouveau) »*. Un seul défaut, vu deux fois — la
+   * scène d'ici montait UN morceau (une architecture décrit un morceau), donc
+   * le concert recommençait avec lui. On prépare ici, on joue là-bas.
+   *
+   * Ce que le test garde, et qui est l'essentiel : les neuf boucles ne se
+   * perdent pas. Elles n'ont jamais eu besoin d'une scène pour exister — c'est
+   * le SET de l'acte 7 qui les range toutes en banque (`depuisLActe: 6`), et
+   * c'est là qu'on les joue. Voir « monte le DISQUE en set » plus bas. */
+  it('⚠️ ne monte AUCUNE scène — la console est pour le 14 juin', () => {
+    expect(acte6().etapes.some((e) => e.kind === 'scene'), 'une scène est revenue').toBe(false);
+    expect(acte6().module, 'l’acte 6 n’ouvre plus le Mode Live').toBeNull();
+    /* ⚠️ Et il ne le NOMME pas non plus : un module fermé ne se nomme pas, pas
+     * même dans une réplique. C'est la règle qui a fait masquer les cadenas. */
+    const texte = acte6()
+      .etapes.flatMap((e) => (e.kind === 'recit' ? [e.entete, ...e.lignes] : []))
+      .join(' ')
+      .toLowerCase();
+    expect(texte, 'l’acte 6 nomme le Mode Live').not.toContain('mode live');
+  });
+
+  /* ⚠️ …mais les neuf boucles doivent toutes ATTERRIR quelque part, et c'est
+   * l'acte 7 qui les reprend. Ce test croise les deux actes : une série livrée
+   * ici et oubliée là-bas serait un morceau produit que personne ne rejoue. */
+  it('⚠️ et ses neuf séries sont TOUTES reprises par le concert', () => {
     const series = acte6().etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
-    // ⚠️ TOUTES les boucles vont dans la banque — sinon six d'entre elles
-    // n'existeraient nulle part dans le Mode Live.
-    expect(scene.bouclesDeLActe?.map((b) => b.serie)).toEqual(series);
-    /* ⚠️ …mais une seule est MONTÉE : une architecture décrit UN morceau. Trois
-     * sections exactement portent une séquence, et ce sont les trois boucles
-     * d'un même morceau — monter le couplet d'un morceau sous le refrain d'un
-     * autre ferait un set qui n'a jamais été écrit. */
-    const montees = (scene.bouclesDeLActe ?? []).filter((b) => b.partie);
-    expect(montees, 'ce n’est pas UN morceau qu’on monte').toHaveLength(3);
-    expect(new Set(montees.map((b) => (b.serie ?? '').split('-')[0])).size).toBe(1);
-    // Couplet = A, refrain = B, pont = C : les lettres que le montage cite.
-    expect(montees.map((b) => b.partie)).toEqual(['A', 'B', 'C']);
-    expect(scene.montage).toBe('COUPLET / REFRAIN');
-    /* Elle emprunte le Mode Live le temps de la scène — et depuis le
-     * 2026-09-14 c'est l'acte qui l'ouvre derrière, pas l'épilogue. Le prêt
-     * reste nécessaire : sur la scène elle-même, l'acte n'est pas franchi. */
-    expect(scene.modulesRequis).toContain('live');
-    expect(acte6().module, 'l’acte 6 ouvre le Mode Live').toBe('live');
+    expect(series).toHaveLength(9);
+    const set = ACTES[7].etapes.find(
+      (e) => e.kind === 'scene' && e.depuisLActe === 6,
+    ) as Extract<Etape, { kind: 'scene' }> | undefined;
+    expect(set, 'aucune scène de l’acte 7 ne reprend l’acte 6').toBeTruthy();
+    expect(set?.bouclesDeLActe?.map((b) => b.serie)).toEqual(series);
   });
 
   /* ⚠️ Le cahier de FB-015 ne demande AUCUN style et aucun client : il constate
@@ -1643,15 +1665,29 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
 describe('L’acte 7 joue, et n’ouvre plus rien', () => {
   const acte7 = () => ACTES[7];
 
-  it('est jouable, et arrive dans un Mode Live DÉJÀ ouvert', () => {
+  it('⚠️ est jouable, et c’est LUI qui ouvre le Mode Live', () => {
     expect(acteAVenir(acte7())).toBe(false);
-    /* ⚠️ Il n'ouvre plus le Mode Live : l'acte 6 l'a fait (2026-09-14).
-     * Le dernier acte ne paie aucune dette mécanique — sa récompense est le
-     * concert et l'épilogue, comme les actes 0, 2 et 5 n'en paient aucune. */
-    expect(acte7().module).toBeNull();
-    // On monte sur scène dans un module qui est déjà à soi, et il le reste.
-    expect(moduleUnlocked('live', { level: 1, acte: 7 })).toBe(true);
+    /* ⚠️ Renversé le 2026-09-16 : l'acte 6 l'ouvrait depuis le 2026-09-14, et
+     * ça faisait découvrir la console pour un seul morceau, que l'acte 7
+     * rejouait. *« Le mode live serait offert à l'issue »* — donc ici. */
+    expect(acte7().module).toBe('live');
+    /* ⚠️ « À l'issue » se lit sur l'ÉTAPE, pas sur la frontière : il s'ouvre à
+     * la première scène qui le prête et ne se referme plus. Attendre la
+     * frontière le refermerait entre le rappel et la dernière réplique —
+     * l'entrée qui apparaît, sert, disparaît puis revient. */
+    const etapeDuSet = acte7().etapes.findIndex(
+      (e) => e.kind === 'scene' && e.modulesRequis?.includes('live'),
+    );
+    expect(etapeDuSet).toBeGreaterThanOrEqual(0);
+    expect(ETAPE_DU_MODULE.live).toBe(etapeDuSet);
+    expect(moduleUnlocked('live', { level: 1, acte: 7, etape: etapeDuSet })).toBe(true);
+    // Et il le reste : jusqu'à la fin de l'acte, et après.
+    expect(moduleUnlocked('live', { level: 1, acte: 7, etape: acte7().etapes.length - 1 })).toBe(true);
     expect(moduleUnlocked('live', { level: 1, acte: NB_ACTES })).toBe(true);
+    /* Avant la scène, il est fermé — c'est le sens de « on prépare à l'acte 6,
+       on joue au 7 » : la console n'existe pas avant le concert. */
+    expect(moduleUnlocked('live', { level: 1, acte: 7, etape: 0 })).toBe(false);
+    expect(moduleUnlocked('live', { level: 1, acte: 6, etape: 99 })).toBe(false);
   });
 
   /* ⚠️ Il ne cite QUE des niveaux « jouer », et c'est le fond de l'acte :

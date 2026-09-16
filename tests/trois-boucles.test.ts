@@ -13,7 +13,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   plusFourniQue,
-  moinsFourniQue,
   uneLigneQuiEntre,
   uneLigneQuiSeTait,
   uneAutrePhrase,
@@ -22,6 +21,9 @@ import {
   uneAutreHarmonie,
   auPlusDeLignes,
   unGesteRare,
+  unePolyrythmie,
+  unDetuneFranc,
+  duGrain,
 } from '../src/model/commande';
 import { ACTES, SERIE_DU_DISQUE, ACTE_DU_DISQUE } from '../src/model/carriere';
 import { defaultState, etatVierge } from '../src/model/defaults';
@@ -69,18 +71,23 @@ describe('un refrain S’OUVRE par rapport au couplet', () => {
   });
 });
 
+/* ⚠️ UN PONT RETOMBE, MAIS ON NE COMPTE PLUS LES COUPS (2026-09-16).
+ *
+ * `moinsFourniQue` est retiré : le compte était relatif au couplet que le
+ * joueur avait choisi, donc un couplet sobre rendait le pont presque vide et la
+ * consigne perdait son sens — tout en restant satisfaisable, ce qu'un test de
+ * satisfiabilité ne peut pas voir. Ce qui reste DÉCRIT le geste : une ligne se
+ * tait complètement, et la phrase s'éclaircit sans disparaître. */
 describe('un pont RETOMBE', () => {
-  it('il en met moins, et une ligne se tait', () => {
+  it('une ligne se tait complètement', () => {
     const depart = couplet();
     const st = couplet();
     st.rows.hat.pattern = new Array(32).fill(0) as never;
-    expect(moinsFourniQue(0.8, 'x').verifie(st, { depart })).toBe(true);
     expect(uneLigneQuiSeTait('x').verifie(st, { depart })).toBe(true);
   });
 
   it('le couplet tel quel n’est pas un pont', () => {
     const depart = couplet();
-    expect(moinsFourniQue(0.8, 'x').verifie(couplet(), { depart })).toBe(false);
     expect(uneLigneQuiSeTait('x').verifie(couplet(), { depart })).toBe(false);
   });
 
@@ -94,17 +101,111 @@ describe('un pont RETOMBE', () => {
   });
 });
 
-describe('sans départ, aucune des quatre ne se coche', () => {
+describe('sans départ, aucune des relationnelles ne se coche', () => {
   it('elles répondent faux', () => {
     const st = couplet();
     for (const c of [
       plusFourniQue(1.2, 'x'),
-      moinsFourniQue(0.8, 'x'),
       uneLigneQuiEntre('x'),
       uneLigneQuiSeTait('x'),
     ]) {
       expect(c.verifie(st, undefined), c.id).toBe(false);
       expect(c.verifie(st, {}), c.id).toBe(false);
+    }
+  });
+});
+
+/* DES RÉGLAGES QU'ON N'OSE PAS — le troisième morceau, et lui seul.
+ *
+ * Demande de Yann (2026-09-16) : *« pour le dernier morceau, demander vraiment
+ * des réglages un peu spéciaux. Une polyphonie 16/12 par exemple. »* Il a
+ * écarté la version « un geste de plus au choix » : les trois sont exigés.
+ *
+ * ⚠️ Ce que ce fichier doit empêcher, et c'est le vrai piège : qu'un de ces
+ * trois soit satisfait PAR LES VALEURS D'USINE. Le motif d'usine porte déjà un
+ * kick en 4 et un charley en 3 — deux subdivisions qui ne se divisent pas.
+ * « Un critère satisfait sans rien toucher est du théâtre. »
+ */
+describe('les réglages spéciaux du dernier morceau EXIGENT un geste', () => {
+  it('⚠️ le kick 4 / charley 3 D’USINE ne fait pas une polyrythmie', () => {
+    /* La preuve que le piège est réel : sur le motif d'usine, les deux
+     * subdivisions ne se divisent effectivement pas. Sans la mesure contre le
+     * départ, la case serait cochée à l'ouverture de la commande. */
+    const usine = defaultState();
+    expect(usine.rows.kick.subdiv).toBe(4);
+    expect(usine.rows.hat.subdiv).toBe(3);
+    expect(4 % 3 === 0 || 3 % 4 === 0, 'elles se divisent, le piège a disparu').toBe(false);
+
+    const st = defaultState();
+    for (const l of ['kick', 'hat'] as const) {
+      for (let i = 0; i < 3; i++) (st.rows[l].pattern as number[])[i] = 1;
+    }
+    expect(unePolyrythmie('x').verifie(st, { depart: defaultState() })).toBe(false);
+  });
+
+  it('⚠️ une subdivision RÉGLÉE en fait une — 16 contre 12', () => {
+    const st = couplet();
+    st.rows.kick.subdiv = 16;
+    st.rows.snare.subdiv = 12;
+    expect(unePolyrythmie('x').verifie(st, { depart: couplet() })).toBe(true);
+  });
+
+  it('… mais seulement si les deux lignes SONNENT', () => {
+    const st = couplet();
+    st.rows.kick.subdiv = 16;
+    st.rows.snare.subdiv = 12;
+    st.rows.snare.muted = true;
+    // Le charley reste en 8, donc il se divise avec le kick en 16.
+    expect(unePolyrythmie('x').verifie(st, { depart: couplet() })).toBe(false);
+  });
+
+  it('sans départ, elle répond faux — comme les relationnelles', () => {
+    const st = couplet();
+    st.rows.kick.subdiv = 16;
+    st.rows.snare.subdiv = 12;
+    expect(unePolyrythmie('x').verifie(st, undefined)).toBe(false);
+  });
+
+  it('⚠️ le détune d’usine est à ZÉRO, donc le seuil vient d’un geste', () => {
+    const st = couplet();
+    st.synthRows.melody.muted = false;
+    st.synthRows.melody.subdivisions = 4;
+    st.synthRows.melody.pattern = [{ degree: 1, octave: 0 }, null, null, null];
+    expect(st.synthRows.melody.voice.detuneCents ?? 0).toBe(0);
+    expect(unDetuneFranc(20, 'x').verifie(st, {})).toBe(false);
+    st.synthRows.melody.voice = { ...st.synthRows.melody.voice, detuneCents: 22 };
+    expect(unDetuneFranc(20, 'x').verifie(st, {})).toBe(true);
+    // Sur une ligne MUETTE, ça ne s'entend pas.
+    st.synthRows.melody.muted = true;
+    expect(unDetuneFranc(20, 'x').verifie(st, {})).toBe(false);
+  });
+
+  it('⚠️ le grain a besoin de quelque chose pour s’entendre', () => {
+    const st = couplet();
+    st.globalBitcrush = 0.22;
+    expect(duGrain(0.2, 'x').verifie(st, {})).toBe(true);
+    // Le bus seul, sur un morceau muet : rien ne sort.
+    const vide = etatVierge();
+    vide.globalBitcrush = 0.22;
+    expect(duGrain(0.2, 'x').verifie(vide, {})).toBe(false);
+    // Et sous le seuil, non.
+    const faible = couplet();
+    faible.globalBitcrush = 0.05;
+    expect(duGrain(0.2, 'x').verifie(faible, {})).toBe(false);
+  });
+
+  /* ⚠️ Ils ne vivent que sur « celui que personne n'attend », et sur son
+   * COUPLET : le refrain et le pont repartent de lui, donc les réglages
+   * voyagent tout seuls. Les redemander les afficherait cochés d'avance. */
+  it('⚠️ et ils ne sont demandés QUE sur le couplet du troisième morceau', () => {
+    const ids = ['polyrythmie', 'detune-20', 'grain'];
+    for (const a of ACTES) {
+      for (const e of a.etapes) {
+        if (e.kind !== 'commande') continue;
+        const presents = e.cahier.map((l) => l.id).filter((i) => ids.includes(i));
+        const attendu = e.serie === 'attend-couplet' ? ids : [];
+        expect(presents.sort(), `« ${e.entete} »`).toEqual([...attendu].sort());
+      }
     }
   });
 });

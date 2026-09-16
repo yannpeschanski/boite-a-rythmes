@@ -147,36 +147,52 @@ describe('ce que le verrou dit', () => {
  * l'écran de récit qui suit la scène — une porte que le récit vient d'ouvrir
  * et qui se referme à l'écran suivant.
  */
-describe('la scène ouvre le Mode Live, et l’acte le garde ouvert', () => {
-  // L'acte 6 en cours, tout au début : le joueur y est, il n'a rien franchi.
-  const DEBUT_ACTE_6 = { level: 1, plancher: 1, acte: 6, etape: 0 };
+/* ⚠️ LE MODE LIVE S'OUVRE AU CONCERT — acte 7, à l'ÉTAPE qui le prête.
+ *
+ * Renversé le 2026-09-16 : il s'ouvrait à l'acte 6 depuis le 2026-09-14, et le
+ * jeu a montré pourquoi c'était faux — on y découvrait la console pour n'y
+ * jouer qu'un morceau, puis l'acte 7 recommençait avec le même. On prépare à
+ * l'acte 6, on joue au 7. Ce que l'arbitrage du 14 protégeait reste protégé,
+ * et c'est tout l'objet de ce fichier : une porte que le récit vient d'ouvrir
+ * ne se referme pas à l'écran suivant. */
+describe('le concert ouvre le Mode Live, et l’acte le garde ouvert', () => {
+  // L'acte 7 en cours, tout au début : le joueur y est, il n'a rien franchi.
+  const DEBUT_ACTE_7 = { level: 1, plancher: 1, acte: 7, etape: 0 };
   const SCENE = ETAPE_DU_MODULE.live;
 
   it('avant l’étape qui le prête, le Mode Live reste fermé', () => {
     expect(SCENE).toBeGreaterThan(0);
-    expect(moduleUnlocked('live', DEBUT_ACTE_6)).toBe(false);
+    expect(moduleUnlocked('live', DEBUT_ACTE_7)).toBe(false);
+  });
+
+  /* ⚠️ Et l'acte 6 TOUT ENTIER le laisse fermé, quelle que soit l'étape : on y
+   * prépare les neuf boucles sans jamais voir la console. C'est la moitié de
+   * l'arbitrage qui se vérifie ici — l'autre est dans `carriere.test.ts`. */
+  it('⚠️ et l’acte 6 le laisse fermé de bout en bout', () => {
+    for (const etape of [0, 5, 10, 20, 99]) {
+      expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 6, etape }), `étape ${etape}`).toBe(false);
+    }
   });
 
   it('⚠️ la scène ouverte l’ouvre, et rien d’autre', () => {
-    const cx = { ...DEBUT_ACTE_6, modulesRequis: ['live' as const] };
+    const cx = { ...DEBUT_ACTE_7, modulesRequis: ['live' as const] };
     expect(moduleUnlocked('live', cx)).toBe(true);
     // Et pas les autres : ce qu'une étape ouvre, elle l'ouvre seule.
     expect(moduleUnlocked('production', cx)).toBe(true); // ouvert par l'acte 4, franchi
-    expect(moduleUnlocked('live', DEBUT_ACTE_6)).toBe(false);
+    expect(moduleUnlocked('live', DEBUT_ACTE_7)).toBe(false);
   });
 
-  /* ⚠️ Le défaut que l'arbitrage corrige, dans sa version courte : entre la
-   * scène et la fin de l'acte il reste un écran de récit (« LE CATALOGUE »).
-   * Sans la règle d'étape, le Mode Live y disparaissait pour revenir juste
-   * après — exactement ce qu'on vient de retirer à l'échelle de deux actes. */
+  /* ⚠️ Le défaut que la règle d'étape corrige : entre la scène et la fin de
+   * l'acte 7 il reste quatre écrans (le rappel, puis les répliques finales).
+   * Sans elle, le Mode Live y disparaîtrait pour revenir à l'épilogue. */
   it('⚠️ et il ne se REFERME pas à l’étape suivante', () => {
-    const surLaScene = { ...DEBUT_ACTE_6, etape: SCENE };
-    const ecranSuivant = { ...DEBUT_ACTE_6, etape: SCENE + 1 };
+    const surLaScene = { ...DEBUT_ACTE_7, etape: SCENE };
+    const ecranSuivant = { ...DEBUT_ACTE_7, etape: SCENE + 1 };
     // Sans même le prêt : c'est l'acte qui tient, maintenant.
     expect(moduleUnlocked('live', surLaScene)).toBe(true);
     expect(moduleUnlocked('live', ecranSuivant)).toBe(true);
-    // Et il reste ouvert pour le concert de l'acte 7, puis pour toujours.
-    expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 7, etape: 0 })).toBe(true);
+    // Et il reste ouvert après la carrière, donc pour toujours.
+    expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 8, etape: 0 })).toBe(true);
   });
 });
 

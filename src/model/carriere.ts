@@ -47,7 +47,9 @@ import {
   aBaisseLeFiltre,
   avoirTouche,
   plusFourniQue,
-  moinsFourniQue,
+  unePolyrythmie,
+  unDetuneFranc,
+  duGrain,
   uneLigneQuiEntre,
   uneLigneQuiSeTait,
   tempoEntre,
@@ -126,12 +128,13 @@ const FB_PRODUCTION = '4 · LA PRODUCTION — pour que ça tienne ailleurs qu’
  * (ce qui s'ouvre, ce qui retombe, la phrase, ailleurs) et non un acte : ces
  * cahiers-là ne récapitulent rien, ils demandent une transformation. */
 const FB_OUVRE = '1 · CE QUI S’OUVRE — le refrain en met plus';
-const FB_RETOMBE = '1 · CE QUI RETOMBE — le pont en met moins';
+const FB_RETOMBE = '1 · CE QUI RETOMBE — le pont ENLÈVE';
 const FB_PHRASE = '2 · LA PHRASE — ce qu’on fredonne';
 const FB_AILLEURS = '3 · AILLEURS — le pont ne reste pas sur les mêmes accords';
 const FB_LENT = '1 · LE TEMPO ET LA PLACE';
 const FB_AUTREMENT = '1 · AUTREMENT — ce que les deux autres n’ont pas';
-const FB_RYTHME_LIBRE = '3 · LE RYTHME — même de travers';
+const FB_RYTHME_LIBRE = '4 · LE RYTHME — même de travers';
+const FB_REGLAGES = '2 · DES RÉGLAGES QU’ON N’OSE PAS';
 
 /* Les deux sections du quinzième — le seul cahier de l'acte 5 qui en ait :
  * un cahier à plat de six lignes ne dit pas qu'il y a un genre à trouver ET
@@ -1967,17 +1970,24 @@ export const ACTES: Acte[] = [
     jours: JOURS[6],
     competence: 'creation',
     competenceLabel: 'CRÉATION',
-    /* ⚠️ C'EST CET ACTE QUI OUVRE LE MODE LIVE, et plus l'épilogue — arbitré
-     * le 2026-09-14 (« réponse A »). Sa scène y emmenait déjà, `modulesRequis`
-     * le prêtant le temps de l'étape : l'entrée apparaissait à la scène de
-     * l'acte 6, resservait à celle de l'acte 7, puis disparaissait entre les
-     * deux. Une entrée qui apparaît, sert, puis s'en va se lit comme une
-     * PANNE — c'est le reproche qui avait fait masquer les cadenas, et la
-     * règle du projet dit déjà « une porte déjà ouverte ne se referme
-     * jamais ». Conséquence de récit, et elle est juste : le concert de
-     * l'acte 7 se joue dans un module déjà à soi — on ne découvre pas sa
-     * console sur scène. */
-    module: 'live',
+    /* ⚠️ CET ACTE PRÉPARE, IL NE MONTRE PLUS LA CONSOLE — arbitré le
+     * 2026-09-16, et ça RENVERSE l'arbitrage du 2026-09-14 (« réponse A », le
+     * Mode Live s'ouvre ici).
+     *
+     * Ce que le jeu a montré : *« fin de l'acte 6 : on découvre le mode live
+     * et on ne joue qu'un seul des morceaux »*, puis *« acte 7 : on a le mode
+     * live pour le premier morceau (de nouveau) »*. Les deux constats sont
+     * exacts et ils sont le même défaut — la scène d'ici montait UN morceau
+     * (une architecture décrit un morceau), donc l'acte 7 recommençait. Le
+     * concert n'était plus la récompense, c'était la redite de la répétition.
+     *
+     * D'où : on PRÉPARE les neuf boucles ici, sans console ; on JOUE les trois
+     * morceaux à l'acte 7. Ce qu'on perd est l'argument « on ne découvre pas
+     * sa console sur scène » ; ce qu'on gagne est un dernier acte qui apporte
+     * quelque chose. Le module s'ouvre donc à l'acte 7, à l'ÉTAPE qui le prête
+     * (`ETAPE_DU_MODULE`) — il ne se referme pas derrière, ce qui était la
+     * raison d'être de l'arbitrage qu'on renverse. */
+    module: null,
     resume: 'Une référence libre dans le catalogue. La tienne.',
     etapes: [
       /* ⚠️ L'acte où le cahier des charges ne demande RIEN À PERSONNE — et c'est
@@ -2239,7 +2249,6 @@ export const ACTES: Acte[] = [
         cahier: [
           avoirTouche('Il faut y avoir touché'),
           ...dansLaSection(FB_RETOMBE, [
-            moinsFourniQue(0.8, 'Ça retombe : nettement moins de coups que le couplet'),
             uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
           ]),
           ...dansLaSection(FB_PHRASE, [
@@ -2344,7 +2353,6 @@ export const ACTES: Acte[] = [
         cahier: [
           avoirTouche('Il faut y avoir touché'),
           ...dansLaSection(FB_RETOMBE, [
-            moinsFourniQue(0.6, 'Presque plus rien — moins des deux tiers du couplet'),
             uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
           ]),
           ...dansLaSection(FB_PHRASE, [
@@ -2390,6 +2398,23 @@ export const ACTES: Acte[] = [
           AVOIR_PRODUIT,
           ...dansLaSection(FB_AUTREMENT, [
             unGesteRare('Au moins un geste que les deux autres morceaux n’ont pas'),
+          ]),
+          /* ⚠️ TROIS RÉGLAGES EXIGÉS, et seulement ici — arbitré le 2026-09-16
+           * (*« pour le dernier morceau, demander vraiment des réglages un peu
+           * spéciaux, une polyphonie 16/12 par exemple »*, option du cahier
+           * large retenue contre ma recommandation d'un geste au choix).
+           *
+           * Ce morceau est le seul où ça se défend : sa réplique d'ouverture
+           * est déjà « prends ce que tu n'as jamais osé mettre », et Sol ajoute
+           * « je ne te dirai pas quoi » — ce que `unGesteRare` continue de
+           * tenir juste au-dessus. Ces trois-là ne disent pas QUOI jouer, ils
+           * disent que la machine doit faire quelque chose d'inhabituel : ce
+           * sont des faits mesurables (une subdivision, des cents, un taux),
+           * jamais un goût. L'acte n'impose toujours ni style ni client. */
+          ...dansLaSection(FB_REGLAGES, [
+            unePolyrythmie('Deux lignes qui ne retombent pas ensemble — règle une subdivision à part'),
+            unDetuneFranc(20, 'Un synthé franchement désaccordé — le détune poussé, ou une voix large'),
+            duGrain(0.2, 'Du grain : le bitcrush du bus, assez pour qu’on l’entende'),
           ]),
           ...dansLaSection(FB_COUCHES, [
             ligneSynthPresente('melody', 'Une mélodie — même tordue, il en faut une'),
@@ -2449,7 +2474,6 @@ export const ACTES: Acte[] = [
         cahier: [
           avoirTouche('Il faut y avoir touché'),
           ...dansLaSection(FB_RETOMBE, [
-            moinsFourniQue(0.8, 'Ça retombe : nettement moins de coups que le couplet'),
             uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
           ]),
           ...dansLaSection(FB_PHRASE, [
@@ -2478,31 +2502,27 @@ export const ACTES: Acte[] = [
        * qui l'ouvre pour de bon derrière (`module: 'live'` ci-dessus). Le prêt
        * reste nécessaire : il couvre la scène elle-même, l'acte n'étant pas
        * encore franchi. */
+      /* ⚠️ CE QUI ÉTAIT UNE SCÈNE EST DEVENU DU RÉCIT (2026-09-16).
+       *
+       * Elle montait le premier morceau et emmenait dans le Mode Live : c'est
+       * ce que « on découvre le mode live et on ne joue qu'un seul des
+       * morceaux » désignait. Les neuf boucles n'ont pas besoin d'elle pour
+       * exister — le SET de l'acte 7 les range TOUTES en banque
+       * (`bouclesDeLActe` + `depuisLActe: 6`), et c'est là qu'on les joue.
+       *
+       * Le texte reste, au passé : le disque est fini, la machine est chargée,
+       * et ce qu'on en fait est pour le 14 juin. Ce qui disparaît est la
+       * console, pas la récompense. */
       {
-        kind: 'scene',
+        kind: 'recit',
+        source: 'cassette',
         entete: 'NEUF BOUCLES, UN DISQUE',
         lignes: [
           'Sol range les neuf boucles dans la machine.',
-          'SOL: Ce soir on joue le premier. Les autres sont là.',
-          'SOL: Couplet, refrain, pont. C’est un morceau, maintenant.',
-          'SOL: Moi je ne le conduis pas. C’est le tien.',
-        ],
-        bouton: 'Monter le set ▸',
-        surScene: 'Ton disque est dans la machine. Lance-le, et fais-le tourner.',
-        modulesRequis: ['live'],
-        // Un morceau, trois sections : couplet = A, refrain = B, pont = C,
-        // c'est-à-dire exactement les lettres que ce montage cite.
-        montage: 'COUPLET / REFRAIN',
-        bouclesDeLActe: [
-          { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', partie: 'A' },
-          { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN', partie: 'B' },
-          { serie: 'passe-pont', nom: 'QUI PASSE — PONT', partie: 'C' },
-          { serie: 'seul-couplet', nom: 'ÉCOUTE SEUL — COUPLET' },
-          { serie: 'seul-refrain', nom: 'ÉCOUTE SEUL — REFRAIN' },
-          { serie: 'seul-pont', nom: 'ÉCOUTE SEUL — PONT' },
-          { serie: 'attend-couplet', nom: 'PERSONNE N’ATTEND — COUPLET' },
-          { serie: 'attend-refrain', nom: 'PERSONNE N’ATTEND — REFRAIN' },
-          { serie: 'attend-pont', nom: 'PERSONNE N’ATTEND — PONT' },
+          'SOL: Trois morceaux. Couplet, refrain, pont.',
+          'SOL: C’est un disque, maintenant.',
+          'SOL: On le jouera le 14. Moi je ne le conduis pas.',
+          'SOL: C’est le tien.',
         ],
       },
       {
@@ -2527,9 +2547,19 @@ export const ACTES: Acte[] = [
     jours: JOURS[7],
     competence: 'scene',
     competenceLabel: 'SCÈNE',
-    /* N'ouvre plus le Mode Live : l'acte 6 l'a fait. Le dernier acte ne paie
-     * aucune dette mécanique — sa récompense est le concert et l'épilogue. */
-    module: null,
+    /* ⚠️ C'EST CET ACTE QUI OUVRE LE MODE LIVE — arbitré le 2026-09-16
+     * (*« le mode live serait offert à l'issue »*), et ça renverse l'arbitrage
+     * du 2026-09-14. Voir le commentaire de `module` sur l'acte 6 : ce qu'on
+     * échange est l'argument de la console contre un dernier acte qui apporte
+     * quelque chose.
+     *
+     * ⚠️ « À l'issue » se lit sur l'ÉTAPE, pas sur la frontière de l'acte.
+     * `ETAPE_DU_MODULE` le fait ouvrir à la première scène qui le prête — donc
+     * au concert — et il ne se referme plus ensuite. Attendre la frontière
+     * laisserait le Live fermé entre le rappel et la dernière réplique, c'est-
+     * à-dire une entrée qui apparaît, sert, disparaît puis revient : la PANNE
+     * que l'arbitrage du 14 évitait, et qu'on ne réintroduit pas. */
+    module: 'live',
     resume: 'La salle chante un jingle de lessive refusé par l’agence.',
     etapes: [
       /* ⚠️ L'ACTE SE JOUE EN MODE LIVE — refait le 2026-09-09, après le

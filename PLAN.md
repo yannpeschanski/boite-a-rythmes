@@ -48,6 +48,93 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les actes 6 et 7 échangent leurs rôles — trois arbitrages appliqués (2026-09-16)
+
+Les trois cartes ouvertes de `docs/relecture/retour-carriere.html` sont
+répondues. Deux suivent ma recommandation, une la contredit — et c'est noté dans
+la fiche, qui garde le raisonnement à côté de ce qui a été tranché.
+
+**A1 — L'ACTE 6 PRÉPARE, L'ACTE 7 JOUE.** *« Acte 6 : on prépare les morceaux
+sans montrer le mode live. Acte 7 : il faudrait lire les 3 morceaux puis le
+jingle à la fin. Et d'ailleurs, le mode live serait offert à l'issue. »*
+Appliqué en entier. ⚠️ **Ça renverse l'arbitrage du 2026-09-14** (« réponse A »,
+le Live s'ouvre à l'acte 6, « on ne découvre pas sa console sur scène ») et le
+jeu avait dit pourquoi, en deux constats qui n'en font qu'un : *« fin de l'acte 6 :
+on découvre le mode live et on ne joue qu'un seul des morceaux »* puis *« acte 7 :
+on a le mode live pour le premier morceau (de nouveau) »*. La scène de l'acte 6
+montait UN morceau — une architecture décrit un morceau — donc le concert
+recommençait avec lui.
+
+Ce qui change, et rien de plus : `module` passe de l'acte 6 à l'acte 7, et la
+scène « NEUF BOUCLES, UN DISQUE » devient du RÉCIT, au passé (« on le jouera le
+14 »). Les neuf boucles n'avaient jamais besoin d'elle : c'est le SET de
+l'acte 7 qui les range toutes en banque (`bouclesDeLActe` + `depuisLActe: 6`).
+Le montage de l'acte 7 n'a pas bougé — « A B C · A B′ C′ » énonce déjà les trois
+morceaux, et son INTRO sur A n'est plus une redite puisque l'acte 6 ne joue plus.
+
+⚠️ **Ce qui est GARDÉ de l'arbitrage renversé** : « à l'issue » se lit sur
+l'ÉTAPE, pas sur la frontière. `ETAPE_DU_MODULE` ouvre le Live à la première
+scène de l'acte 7 et il ne se referme plus — attendre la frontière le fermerait
+entre le rappel et la dernière réplique, c'est-à-dire l'entrée qui apparaît,
+sert, disparaît puis revient. C'est exactement le défaut que le 14 septembre
+corrigeait, et on ne le réintroduit pas.
+
+**A2 — LE PONT NE COMPTE PLUS LES COUPS.** *« Il faut que ça joue plus / il faut
+que ça joue moins, j'aime pas trop car parfois, ça peut nous coincer. »*
+`moinsFourniQue` a quitté les trois cahiers de pont ET le module : le compte
+était relatif au couplet que le joueur avait choisi, donc un couplet sobre
+rendait le pont presque vide (0,8 × peu, et 0,6 sur un des trois morceaux). La
+consigne perdait son sens musical **tout en restant satisfaisable** — un cas
+qu'un test de satisfiabilité ne peut pas voir. Restent les deux mesures qui
+décrivent le geste, et qui y étaient déjà : `uneLigneQuiSeTait` et
+`unePhraseQuiSEclaircit`. L'intitulé suit (« CE QUI RETOMBE — le pont ENLÈVE »).
+⚠️ `plusFourniQue` reste sur les refrains, et c'est délibéré : dans ce sens-là le
+compte n'a jamais été absurde.
+
+**A3 — TROIS RÉGLAGES EXIGÉS SUR LE DERNIER MORCEAU**, l'option du cahier large
+retenue **contre ma recommandation** d'un geste de plus au choix. Le couplet de
+« celui que personne n'attend » porte une section « DES RÉGLAGES QU'ON N'OSE
+PAS » : `unePolyrythmie`, `unDetuneFranc(20)`, `duGrain(0.2)`. Ce sont des faits
+mesurables (une subdivision, des cents, un taux), jamais un goût — l'acte
+n'impose toujours ni style ni client. `unGesteRare` reste juste au-dessus : « je
+ne te dirai pas quoi » est la réplique de l'acte.
+
+⚠️ **Le piège de cette carte, et il était réel** : le motif d'usine porte un kick
+en **4** et un charley en **3** (`defaults.ts`), deux subdivisions qui ne se
+divisent pas. « Une polyrythmie » aurait donc été cochée à l'ouverture de la
+commande, sans un geste — le théâtre que les cahiers interdisent. Elle se mesure
+contre le DÉPART. Le test porte la démonstration du piège avant de vérifier la
+règle. Et « deux mesures » ne figure PAS dans les trois, alors qu'elle était dans
+la proposition : `unGesteRare` l'offre déjà comme l'un de ses cinq choix.
+
+**CE QUE LES SCRIPTS ONT TROUVÉ, et que les tests n'auraient pas vu.**
+`tests/commande.test.ts` vérifie qu'un cahier est satisfaisable *en mémoire*, et
+il est passé du premier coup. `scripts/parcours-carriere.cjs`, qui JOUE, s'est
+bloqué net : *« CELUI QUE PERSONNE N'ATTEND — LE COUPLET → refusée »*, les trois
+lignes nommées. Il fallait lui apprendre les trois gestes — comme à
+`verrous-masques.cjs`, bloqué au même endroit. Une fixture ne joue pas le jeu,
+une troisième fois.
+
+**MESURÉ, serveur de dev vierge.** La carrière rejouée de bout en bout :
+l'acte 6 traverse ses neuf commandes avec « atelier, synth, production » et
+**aucune scène** ; l'acte 7 ouvre le Live à son SET, y monte **9/9 boucles en
+banque** et trois morceaux sur A/B/C ; le rappel joue le jingle ; l'épilogue a
+les quatre modules et 17 productions. `verrous-masques.cjs` : **aucune fuite** —
+le Live n'est nommé nulle part tant qu'il est fermé, acte 6 compris, ce qui était
+le risque de l'opération. 812 tests (7 neufs), 0 erreur de types, les deux
+builds, 0 erreur console.
+
+**Fichiers** — `model/commande.ts` (`unePolyrythmie`, `unDetuneFranc`,
+`duGrain` ; `moinsFourniQue` retiré), `model/carriere.ts` (actes 6 et 7, les
+trois ponts, le troisième couplet, `FB_REGLAGES`), `tests/carriere.test.ts`,
+`tests/unlocks.test.ts`, `tests/trois-boucles.test.ts`, `tests/commande.test.ts`,
+`scripts/parcours-carriere.cjs`, `scripts/verrous-masques.cjs`,
+`docs/relecture/retour-carriere.html` (les trois cartes répondues).
+
+**Restent ouvertes** : A4 (la course du curseur Swing, reco « ne rien changer »)
+et A5 (ce qui coince en abandonnant un cahier, reco « une option de pose dans le
+script »).
+
 ### ✅ Un rechargement ne coûte plus la session (2026-09-16)
 
 *« Lorsqu'on réactualise la page, ce qui arrive par erreur parfois, on puisse

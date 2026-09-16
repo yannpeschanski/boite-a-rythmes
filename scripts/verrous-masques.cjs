@@ -404,6 +404,32 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
         // UN GESTE QUE LES AUTRES N'ONT PAS : le seul des cinq qui n'exige
         // aucune ligne vivante — un balancement franc.
         if (exige('geste-rare')) st.swing = 25;
+        /* ⚠️ LES TROIS RÉGLAGES SPÉCIAUX du dernier morceau (2026-09-16). Ce
+         * script est ce qui a prouvé qu'ils étaient ATTEIGNABLES dans la vraie
+         * application : à leur ajout, il s'est bloqué net sur « CELUI QUE
+         * PERSONNE N'ATTEND — LE COUPLET » en nommant les trois lignes
+         * manquantes. Une fixture ne joue pas le jeu.
+         *
+         * La POLYRYTHMIE se mesure contre le DÉPART (le motif d'usine porte
+         * déjà un kick en 4 et un charley en 3) : on règle donc deux
+         * subdivisions, 16 contre 12 — l'exemple de la demande — et on garde
+         * des coups sur les deux lignes. */
+        if (exige('polyrythmie')) {
+          st.rows.kick.subdiv = 16;
+          for (let i = 0; i < st.rows.kick.pattern.length; i++) st.rows.kick.pattern[i] = 0;
+          for (const i of [0, 6, 10]) st.rows.kick.pattern[i] = 1;
+          st.rows.snare.subdiv = 12;
+          for (let i = 0; i < st.rows.snare.pattern.length; i++) st.rows.snare.pattern[i] = 0;
+          for (const i of [1, 4, 7, 10]) st.rows.snare.pattern[i] = 1;
+        }
+        const detune = e.cahier.find((c) => c.id.startsWith('detune-'));
+        if (detune) {
+          const cents = Number(detune.id.slice(7)) + 2;
+          for (const l of ['bass', 'melody', 'pad']) {
+            st.synthRows[l].voice = { ...st.synthRows[l].voice, detuneCents: cents, detuneGain: 0.6 };
+          }
+        }
+        if (exige('grain')) st.globalBitcrush = 0.25;
         // « Une note n'est pas un son » : une voix choisie sur chaque ligne
         // citée, n'importe laquelle sauf celle d'usine.
         const VOIX = { bass: 'round', pad: 'rhodes', melody: 'soft' };

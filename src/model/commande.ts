@@ -571,12 +571,109 @@ export function plusFourniQue(part: number, libelle: string): Contrainte {
   };
 }
 
-/* Le PONT retombe : il en met moins. */
-export function moinsFourniQue(part: number, libelle: string): Contrainte {
+/* ⚠️ `moinsFourniQue` A ÉTÉ RETIRÉ le 2026-09-16, et il ne doit pas revenir.
+ *
+ * Retour de Yann : *« il faut que ça joue plus / il faut que ça joue moins,
+ * j'aime pas trop car parfois, ça peut nous coincer — on peut avoir mis très
+ * peu de notes en mélodie pour un couplet »*. Le compte était RELATIF au
+ * couplet que le joueur a choisi : un couplet volontairement sobre rendait le
+ * pont presque vide (0,8 × peu, et 0,6 sur un des trois morceaux), donc la
+ * consigne perdait son sens musical tout en restant satisfaisable — un cas que
+ * `tests/commande.test.ts` ne pouvait pas voir, puisqu'il vérifie qu'un cahier
+ * est satisfaisable, pas qu'il veut dire quelque chose.
+ *
+ * Ce qui le remplace était DÉJÀ dans les trois cahiers de pont, et décrit le
+ * geste au lieu de le compter : `uneLigneQuiSeTait` (une ligne du couplet se
+ * tait complètement) et `unePhraseQuiSEclaircit` (elle joue moins, mais elle
+ * joue encore). Le pont retombe toujours ; on ne compte plus les coups.
+ *
+ * ⚠️ `plusFourniQue` RESTE sur les trois refrains, et ce n'est pas une
+ * inattention : dans ce sens-là le compte n'a jamais été absurde — un couplet
+ * sobre laisse toute la place pour ajouter. C'est la moitié « moins » qui
+ * coinçait.
+ */
+
+/* ---------------------------------------------------------------------------
+ * DES RÉGLAGES QU'ON N'OSE PAS — le troisième morceau de l'acte 6
+ *
+ * ⚠️ Demande de Yann (2026-09-16) : *« pour le dernier morceau, demander
+ * vraiment des réglages un peu spéciaux. Une polyphonie 16/12 par exemple. »*
+ * Il a écarté la version « un geste de plus au choix » : ces trois-là sont
+ * EXIGÉS, sur le seul morceau où ça se défend — « celui que personne
+ * n'attend », dont la réplique d'ouverture est déjà *« prends ce que tu n'as
+ * jamais osé mettre »*.
+ *
+ * ⚠️ Ce sont des RÉGLAGES, pas des goûts : une subdivision, un désaccord en
+ * cents, un taux de bitcrush. Le cahier de l'acte 6 n'exige toujours aucun
+ * style, aucun client et aucune ressemblance — la règle « la sévérité décroît
+ * avec le récit » porte sur ce qu'on JUGE, pas sur le nombre de boutons qu'on
+ * demande d'avoir touchés.
+ *
+ * ⚠️ Et « deux mesures » ne figure PAS dans la liste, alors qu'elle était dans
+ * la proposition : `unGesteRare` l'offre déjà comme l'un de ses cinq choix, et
+ * exiger ce qu'on propose par ailleurs afficherait la même chose deux fois,
+ * une fois cochée d'avance.
+ * ------------------------------------------------------------------------- */
+
+/* UNE POLYRYTHMIE — deux lignes qui ne retombent pas ensemble.
+ *
+ * ⚠️ Elle se mesure CONTRE le départ, et c'est indispensable : le motif d'usine
+ * porte déjà un kick en 4 et un charley en 3 (`defaults.ts`), donc « deux
+ * subdivisions qui ne se divisent pas » serait vrai dès que ces deux lignes
+ * sonnent — un critère satisfait par les valeurs d'usine est du théâtre. On
+ * exige donc qu'une des deux subdivisions ait été RÉGLÉE.
+ *
+ * Sur la batterie seule : c'est là que l'Atelier montre la subdivision par
+ * ligne, et c'est ce que « 16/12 » désigne. Une ligne de synthé répartit ses
+ * notes sur `cycleBars`, ce qui n'est pas le même objet. */
+export function unePolyrythmie(libelle: string): Contrainte {
   return {
-    id: 'moins-fourni',
+    id: 'polyrythmie',
     libelle,
-    verifie: (e, ctx) => !!ctx?.depart && coupsDe(e) <= Math.floor(coupsDe(ctx.depart) * part),
+    verifie: (e, ctx) => {
+      if (!ctx?.depart) return false;
+      const vivantes = LIGNES_MIX.filter((l) => ligneVivante(e, l));
+      for (let i = 0; i < vivantes.length; i++) {
+        for (let j = i + 1; j < vivantes.length; j++) {
+          const a = e.rows[vivantes[i]].subdiv;
+          const b = e.rows[vivantes[j]].subdiv;
+          if (a === b || a % b === 0 || b % a === 0) continue;
+          const regle =
+            a !== ctx.depart.rows[vivantes[i]].subdiv || b !== ctx.depart.rows[vivantes[j]].subdiv;
+          if (regle) return true;
+        }
+      }
+      return false;
+    },
+  };
+}
+
+/* UN DÉSACCORD FRANC — `detuneCents` sur une ligne de synthé qui SONNE.
+ *
+ * La voix d'usine est à 0 (`presets/voices.ts`) : n'importe quelle valeur au
+ * seuil vient donc d'un geste, curseur ou voix choisie (« Large (détune) » est
+ * à 20). Sur une ligne muette, ça ne s'entend pas — même règle que partout
+ * ailleurs dans ce fichier. */
+export function unDetuneFranc(cents: number, libelle: string): Contrainte {
+  return {
+    id: `detune-${cents}`,
+    libelle,
+    verifie: (e) =>
+      LIGNES_SYNTH.some(
+        (l) => synthVivante(e, l) && (e.synthRows[l].voice.detuneCents ?? 0) >= cents,
+      ),
+  };
+}
+
+/* DU GRAIN — le bitcrush du bus, et quelque chose pour l'entendre.
+ *
+ * ⚠️ Un effet de BUS ne se vérifie pas seul : posé sur un morceau muet il ne
+ * produit rien. D'où la seconde moitié — au moins une ligne vivante. */
+export function duGrain(min: number, libelle: string): Contrainte {
+  return {
+    id: 'grain',
+    libelle,
+    verifie: (e) => e.globalBitcrush >= min && LIGNES_TOUTES.some((l) => vivante(e, l)),
   };
 }
 
