@@ -30,14 +30,29 @@
    */
   import { sortie } from '../sortie.svelte';
   import { latence } from '../latence.svelte';
-  import { verdictLatence, messageLatence } from '../latenceVerdict';
+  import { verdictLatence, messageLatence, messageLatenceCourt } from '../latenceVerdict';
+
+  /* ⚠️ `flottant` existe pour le Mode Live, et c'est une contrainte de MISE EN
+     PAGE, pas de style : la surface du Live est une grille dont les rangées sont
+     mesurées au pixel en 844 × 390 (bandeau 6→22, transport 26→80, bande
+     84→128), et son propre commentaire prévient qu'« un enfant en plus décale
+     l'auto-placement des rangées suivantes ». L'avis y vit donc hors du flux,
+     dans `.live-root`, et ne déplace rien. */
+  let { flottant = false }: { flottant?: boolean } = $props();
 
   const verdict = $derived(verdictLatence(sortie.baseMs, latence.ms || null));
-  const message = $derived(messageLatence(verdict));
+  const message = $derived(
+    flottant ? messageLatenceCourt(verdict) : messageLatence(verdict),
+  );
 </script>
 
 {#if message && !ecarte}
-  <p class="avis" class:lourde={verdict.palier === 'lourde'} role="status">
+  <p
+    class="avis"
+    class:lourde={verdict.palier === 'lourde'}
+    class:flottant
+    role="status"
+  >
     <span>⚠ {message}</span>
     <button class="tap44" onclick={() => (ecarte = true)} aria-label="Masquer l’avis">✕</button>
   </p>
@@ -57,6 +72,21 @@
     color: var(--xp-accent-amber);
     font-size: var(--xp-size-small);
     line-height: 1.35;
+  }
+  .avis.flottant {
+    position: absolute;
+    top: calc(4px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    translate: -50%;
+    width: max-content;
+    max-width: min(92%, 620px);
+    /* Serré pour tenir SUR UNE LIGNE au-dessus du seul bandeau (6→22) : plus
+       bas, l'avis recouvrirait le transport, qui commence à 26. */
+    padding: 2px 6px;
+    white-space: nowrap;
+    margin: 0;
+    z-index: 20;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
   }
   .avis.lourde {
     border-color: var(--xp-accent-amber);

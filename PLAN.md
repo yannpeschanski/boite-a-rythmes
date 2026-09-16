@@ -48,6 +48,52 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'avis de latence atteint le Mode Live et les niveaux chronométrés (2026-09-16)
+
+Arbitrage de Yann : « go pour 1, 2 & 3 » — le seuil de **40 ms est confirmé**
+(contre les 100 qu'il proposait), et les deux surfaces manquantes sont traitées.
+Le point 4 (couper le retour sonore de la frappe sur sortie lourde) reste ouvert.
+
+**Le Mode Live — en superposition, et c'est mesuré.** `.live` est une grille dont
+son propre commentaire prévient qu'« un enfant en plus décale l'auto-placement
+des rangées suivantes ». L'avis vit donc dans `.live-root`, hors du flux.
+Mesuré en 844 × 390, avec et sans :
+
+| | sans avis | avec avis |
+|---|---|---|
+| bandeau | 6 → 22 | 6 → 22 |
+| transport | 26 → 80 | 26 → 80 |
+| surface | 132 → 384 | 132 → 384 |
+
+Rien ne bouge d'un pixel. ⚠️ Et le message a dû **raccourcir** : la forme longue
+faisait trois lignes et descendait à 39 px, donc mordait sur le transport qui
+commence à 26. `messageLatenceCourt` tient sur une ligne (l'avis fait 4 → 26) et
+dit la MÊME cause — deux messages qui conseilleraient différemment seraient deux
+vérités à garder d'accord. Le test borne la longueur à 60 signes, mesure faite.
+« sur cet appareil » est tombé pour cette raison : il portait la phrase à 63.
+
+**Les niveaux chronométrés — un rappel, pas une porte.** `RappelCalibrage`
+n'apparaît que sur le verbe `jouer`, et seulement si aucun calibrage n'existe
+encore. ⚠️ **Il ne dit pas un mot du navigateur**, contrairement à `AvisLatence` :
+ici la frappe est MESURÉE, donc le retard se corrige entièrement — il n'y a rien
+à fuir, juste à mesurer. Il disparaît dès qu'un calibrage existe.
+
+⚠️ **Le bouton 🎚 LATENCE existait déjà sur cet écran**, et le préambule du niveau
+64 le cite. Ce qui manquait n'était pas le bouton mais la RAISON de le presser,
+connue d'avance par le tampon déclaré au lieu d'être déduite après coup de
+frappes toutes du même côté. La redondance des deux boutons est assumée — à
+trancher si elle gêne.
+
+Vérifié au navigateur par le chemin d'un joueur NEUF (cinq écrans de récit
+jusqu'au premier exercice) : l'avis s'affiche, disparaît une fois calibré, aucun
+débordement.
+
+⚠️ **Deux pièges de harnais payés** : le pseudo « master » rend le niveau maximum,
+donc place le joueur dans l'ÉPILOGUE, dont l'écran passe avant tout le reste
+tant qu'on n'est pas en relecture — `ouvrirActe` et non `acteActif` seul. Et
+`startLevelById` pose le niveau sans changer d'écran : c'est l'étape qui commande
+la vue.
+
 ### ✅ L'appli dit son propre retard, et nomme la bonne cause (2026-09-15)
 
 Le sondage a clos la question technique : sur ce téléphone, **aucune demande n'a

@@ -43,6 +43,7 @@
   import { DRUM_ROW_NAMES, SYNTH_ROW_NAMES } from '../../model/types';
   import type { DrumRowName, SynthRowName } from '../../model/types';
   import { niveauBarre, CHUTE_CAPUCHON } from '../xp/spectrumBands';
+  import AvisLatence from '../xp/AvisLatence.svelte';
   import {
     actionById,
     axisById,
@@ -1966,6 +1967,12 @@
 </script>
 
 <div class="live-root">
+  <!-- ⚠️ DANS `.live-root`, PAS DANS `.live` : cette dernière est une grille dont
+       les rangées sont mesurées au pixel, et un enfant de plus y décalerait
+       l'auto-placement (voir son propre commentaire). L'avis flotte donc
+       au-dessus, sans rien déplacer — et c'est ici qu'il compte le plus : tout
+       se DÉCLENCHE sur cette surface. -->
+  <AvisLatence flottant />
   {#if isPortrait}
     <div class="rotate-screen">
       <div class="rotate-icon">📱</div>

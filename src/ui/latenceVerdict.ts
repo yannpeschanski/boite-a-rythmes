@@ -91,6 +91,24 @@ export function verdictLatence(
   return { palier, cause, ms };
 }
 
+/* La forme COURTE, pour le Mode Live.
+ *
+ * ⚠️ Elle existe par contrainte de place, et la contrainte est mesurée : la
+ * surface du Live tient en 844 × 390 avec son bandeau à 6→22 et son transport à
+ * 26→80. Le message long y fait trois lignes et mord sur le transport ; celui-ci
+ * tient sur une, au-dessus du seul bandeau. Même verdict, même cause, moins de
+ * mots — jamais un conseil différent. */
+export function messageLatenceCourt(v: VerdictLatence): string | null {
+  if (v.palier === 'jouable') return null;
+  // « sur cet appareil » est tombé à la mesure : il portait la phrase à 63
+  // signes, soit deux lignes et le transport recouvert. La forme courte dit le
+  // chiffre et le remède, rien d'autre.
+  const constat = `Retard de ${v.ms} ms`;
+  if (v.cause === 'navigateur') return `${constat} — essaie un autre navigateur.`;
+  if (v.cause === 'sortie') return `${constat} — c'est le Bluetooth.`;
+  return `${constat} sur cet appareil.`;
+}
+
 /** Ce qu'on écrit à l'écran. Une phrase, jamais un chiffre nu. */
 export function messageLatence(v: VerdictLatence): string | null {
   if (v.palier === 'jouable') return null;
