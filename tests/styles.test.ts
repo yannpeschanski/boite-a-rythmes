@@ -57,6 +57,43 @@ describe('la fiche de style reconnaît son genre, et pas les autres', () => {
 });
 
 /* ---- LA TOLÉRANCE ------------------------------------------------------ */
+/* ⚠️ UN CRITÈRE DE CURSEUR A UN PLAFOND — retour de Yann du 2026-09-16
+ * (*« le shuffle avec un swing très élevé, pas sûr que ça ressemble à quelque
+ * chose »*). Le scheduler retarde le pas impair de `swing / 100` de pas : 50
+ * est le triolet exact, et à 75 le contretemps se colle à la frappe suivante.
+ * Un critère sans plafond se satisfaisait donc en poussant le curseur là où le
+ * genre ne s'entend plus — c'est la règle déjà tenue par les bornes de mixage
+ * (« toute borne d'un cahier a un plafond », CLAUDE.md). */
+describe('le shuffle du garage est une FOURCHETTE, pas un plancher', () => {
+  const garage = ficheStyle('garage')!;
+
+  it('⚠️ le preset du genre passe — 45, sous le triolet', () => {
+    const e = etatDuPreset('garage');
+    expect(e.swing).toBeGreaterThanOrEqual(30);
+    expect(evaluerStyle(e, garage).atteint).toBe(true);
+  });
+
+  it('⚠️ le curseur poussé à FOND ne passe plus, et c’est le critère essentiel qui tombe', () => {
+    const e = etatDuPreset('garage');
+    e.swing = 75; // le maximum du curseur (`serialize.ts`)
+    const v = evaluerStyle(e, garage);
+    expect(v.atteint, 'un swing de 75 passe encore pour du garage').toBe(false);
+    expect(v.essentielManquant?.id, 'ce n’est pas le shuffle qui bloque').toBe('swing');
+  });
+
+  it('une boucle carrée ne passe pas non plus — le plancher tient toujours', () => {
+    const e = etatDuPreset('garage');
+    e.swing = 0;
+    expect(evaluerStyle(e, garage).atteint).toBe(false);
+  });
+
+  it('le libellé DIT la fourchette — une fiche est aussi le retour', () => {
+    const c = garage.criteres.find((x) => x.id === 'swing')!;
+    expect(c.libelle).toMatch(/30/);
+    expect(c.libelle).toMatch(/55/);
+  });
+});
+
 describe('le seuil laisse de la place, mais pas n’importe où', () => {
   const dancehall = ficheStyle('dancehall')!;
 

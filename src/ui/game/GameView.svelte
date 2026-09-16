@@ -8,6 +8,8 @@
   import { parametre } from '../../model/parametres';
   import { repereDeNiveau, acteParId } from '../../model/carriere';
   import { analyserLigne } from '../../model/locuteurs';
+  import { noteNameForScaleDegree } from '../../model/presets/scales';
+  import { chordsFor, scaleFor } from '../../engine/harmony';
   import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
   import {
@@ -542,6 +544,63 @@
      touches. */
   const clavier = $derived(Array.from({ length: lvl.melodie.degreMax }, (_, i) => i + 1));
 
+  /* ⚠️ LE NOM RÉEL DE CHAQUE DEGRÉ, comme sur le clavier de l'Atelier.
+   *
+   * *« La manière de remplir est très différente du clavier. Il faut
+   * s'accorder. En effet, l'idée du mode carrière, c'est de pouvoir
+   * s'approprier les outils. »* (Yann, 2026-09-16). Le pad de l'Atelier écrit
+   * « Do / 1 » sur chaque touche : le nom qu'on cherche en jouant, le chiffre
+   * qui permet de retrouver la case. Ici il n'y avait que le chiffre — donc un
+   * geste qui ressemble à l'outil sans en parler la langue, sur l'acte qui
+   * existe pour y préparer.
+   *
+   * Lu sur l'état que le niveau fait sonner (`buildState`), jamais sur une
+   * liste en dur : un niveau qui change de tonalité rebaptise ses touches,
+   * exactement comme dans le Synthé. */
+  const nomsDegres = $derived.by(() => {
+    const st = game.buildState('target');
+    return [1, 2, 3, 4, 5, 6, 7].map((d) =>
+      noteNameForScaleDegree(scaleFor(st), st.synthGlobal.rootMidi, d),
+    );
+  });
+
+  /* Et pour la NAPPE, le nom de la FONDAMENTALE de chaque accord plus son
+     chiffrage — même service que `nomsDegres`, même source que le pad de
+     l'Atelier (`NotePad.nomsAccords`). « I » ne dit rien à qui ne lit pas le
+     chiffrage, « Do » si. La case de la nappe porte un index d'accord, pas un
+     degré : la touche `d` écrit l'accord `d − 1`. */
+  const nomsAccords = $derived.by(() => {
+    const st = game.buildState('target');
+    return chordsFor(st).map((c) => ({
+      nom: noteNameForScaleDegree(scaleFor(st), st.synthGlobal.rootMidi, c.root),
+      chiffre: c.roman,
+    }));
+  });
+
+  /* Ce que la touche `d` écrit sur la ligne visée, dit en deux lignes comme
+     dans l'Atelier : le nom au-dessus, le repère de la grille dessous. */
+  function libelleTouche(ligne: string, d: number): { nom: string; deg: string } {
+    if (ligne === 'pad') {
+      const a = nomsAccords[d - 1];
+      return { nom: a?.nom ?? String(d), deg: a?.chiffre ?? String(d) };
+    }
+    return { nom: nomsDegres[d - 1] ?? String(d), deg: String(d) };
+  }
+
+  /* ⚠️ LE SON À LA TOUCHE — *« c'est dommage de ne pas entendre le son à la
+   * touche »* (Yann, 2026-09-16). Le clavier de l'Atelier joue la note qu'il
+   * s'apprête à écrire (`NotePad.tap` → `onPreview`) ; celui du Mode jeu
+   * écrivait en silence, dans un exercice où la seule chose à juger est une
+   * hauteur. On reposait une phrase de mémoire sans pouvoir s'accorder.
+   *
+   * Même aiguillage que l'Atelier : la nappe joue un ACCORD (son index vaut
+   * degré − 1), les deux autres lignes un degré. Une nappe passée à
+   * `playDegreePreview` ne sonnerait pas ce que la grille joue. */
+  function entendreDegre(ligne: string, d: number): void {
+    if (ligne === 'pad') engine.playChordPreview(d - 1);
+    else if (ligne === 'bass' || ligne === 'melody') engine.playDegreePreview(ligne, d, 0);
+  }
+
   /* Le pas sélectionné — c'est lui que le clavier écrit. La tonique du premier
      pas étant donnée et verrouillée, on démarre sur le pas suivant : rien à
      faire sur le premier, et une sélection qui n'accepte rien se lit comme un
@@ -569,6 +628,19 @@
     game.poserNote(melSel, d);
     echec = false;
     if (avant !== d) melSel = prochainLibre(melSel);
+  }
+
+  /* ⚠️ EFFACER EST UNE TOUCHE, et elle AVANCE — la même que dans l'Atelier
+     (« ∅ / vide », `NotePad.silence`). Le `⌫` d'ici rejouait le degré déjà
+     posé pour l'annuler et restait sur place : un geste qui n'existe nulle
+     part ailleurs dans l'appli, et qui demandait de savoir ce qu'on avait
+     écrit pour l'effacer. */
+  function effacerPas(): void {
+    if (game.melodieLocked[melSel]) return;
+    const pose = game.melodieGuess[melSel];
+    if (pose) game.poserNote(melSel, pose);
+    echec = false;
+    melSel = prochainLibre(melSel);
   }
 
   /* La sélection suit la grille : un niveau qui change, ou une case qui vient
@@ -618,6 +690,10 @@
    * Le repli `?? { acte: 0, etape: 0 }` couvre les sauvegardes d'avant le
    * double curseur : elles reprennent au début, ce qui est vrai.
    */
+  /* Le profil dont on vient de demander la suppression — la confirmation est
+     écrite dans la liste, pas dans une boîte du navigateur. */
+  let aSupprimer = $state<string | null>(null);
+
   const reprises = $derived.by(() =>
     Object.entries(game.progress)
       .filter(([nom]) => nom.toLowerCase() !== 'master')
@@ -660,16 +736,57 @@
         <ul class="reprises">
           {#each reprises as r (r.pseudo)}
             <li>
-              <button
-                class="reprise tap44-y"
-                onclick={() => {
-                  game.setPseudo(r.pseudo);
-                  ecran = 'carriere';
-                }}
-              >
-                <span class="qui">{r.pseudo}</span>
-                <span class="ou">{r.ou}</span>
-              </button>
+              <!-- ⚠️ SUPPRIMER UN PROFIL — *« il faut pouvoir supprimer les
+                   profils »* (Yann, 2026-09-16). Une liste de parties qui ne
+                   sait que grandir finit par présenter le jeu par les essais
+                   des autres : trois « test », deux « aaa », et sa propre
+                   partie quelque part dedans.
+                   Deux gestes, pas un : un profil porte des heures de travail
+                   et quatre jeux de données (progression, besace,
+                   discographie, banque). D'où la confirmation ÉCRITE plutôt
+                   qu'un `confirm()` du navigateur — le seul élément clair de
+                   l'écran serait une boîte système.
+                   ⚠️ Et elle REMPLACE la ligne au lieu de s'y ajouter : posée
+                   à côté, elle rognait la partie à 104 px de large (mesuré) et
+                   ses deux boutons tombaient à 18 px de haut. Une ligne, une
+                   question. -->
+              {#if aSupprimer === r.pseudo}
+                <span class="confirme">
+                  <span class="avert">Effacer la partie de {r.pseudo} ?</span>
+                  <span class="confirme-actions">
+                    <button
+                      class="xp-btn tap44-y"
+                      onclick={() => {
+                        game.supprimerJoueur(r.pseudo);
+                        aSupprimer = null;
+                      }}
+                    >
+                      Oui, effacer
+                    </button>
+                    <button class="xp-btn tap44-y" onclick={() => (aSupprimer = null)}>
+                      Annuler
+                    </button>
+                  </span>
+                </span>
+              {:else}
+                <button
+                  class="reprise tap44-y"
+                  onclick={() => {
+                    game.setPseudo(r.pseudo);
+                    ecran = 'carriere';
+                  }}
+                >
+                  <span class="qui">{r.pseudo}</span>
+                  <span class="ou">{r.ou}</span>
+                </button>
+                <button
+                  class="xp-btn supprime tap44-y"
+                  title="Supprimer la partie de {r.pseudo}"
+                  onclick={() => (aSupprimer = r.pseudo)}
+                >
+                  ✕
+                </button>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -1225,14 +1342,32 @@
             <!-- ⚠️ Le clavier suit la LIGNE visée : la nappe joue des accords et
                  il n'y en a que quatre. Une cinquième touche y proposerait un
                  accord qui n'existe pas. -->
+            <!-- ⚠️ Le son à la touche ici AUSSI, et les mêmes libellés : c'est
+                 le même clavier que l'exercice de mélodie, et un degré qu'on
+                 pose sans l'entendre se vise au hasard. La NAPPE suit la même
+                 règle que dans l'Atelier — sa touche sonne un ACCORD et porte
+                 le nom de sa fondamentale au-dessus de son chiffrage
+                 (« Fa / IV »), parce que sa case porte un index d'accord et
+                 pas un degré. Un seul `libelleTouche` pour les deux claviers :
+                 deux libellés qui doivent rester d'accord finissent par ne
+                 plus l'être. -->
             {#each Array.from({ length: game.arrDegreMax(sel.ligne) }, (_, i) => i + 1) as d (d)}
+              {@const lib = libelleTouche(sel.ligne, d)}
               <button
                 class="mel-touche tap44-y"
                 class:actif={game.arrGuess[sel.ligne]?.[sel.pas] === d}
                 disabled={game.solved || game.revealed}
-                onclick={() => { game.arrPoserNote(d); echec = false; }}
+                title="{lib.nom} ({lib.deg})"
+                onpointerdown={(e) => {
+                  e.preventDefault();
+                  if (game.solved || game.revealed) return;
+                  entendreDegre(sel.ligne, d);
+                  game.arrPoserNote(d);
+                  echec = false;
+                }}
               >
-                {d}
+                <span class="nom">{lib.nom}</span>
+                <span class="deg">{lib.deg}</span>
               </button>
             {/each}
             <button
@@ -1241,7 +1376,8 @@
               aria-label="Effacer la note visée"
               onclick={() => game.arrPoserNote(game.arrGuess[sel.ligne][sel.pas])}
             >
-              ⌫
+              <span class="nom">∅</span>
+              <span class="deg">vide</span>
             </button>
           </div>
         {/if}
@@ -1297,27 +1433,47 @@
             {/each}
           </div>
         {/each}
-        <!-- Le clavier : les degrés dans l'ordre, grave à gauche, comme un
-             instrument. `⌫` efface la case choisie — sans lui, retirer une
-             note demanderait de retrouver quel degré on y avait posé. -->
+        <!-- ⚠️ LE CLAVIER PARLE LA LANGUE DE CELUI DE L'ATELIER (2026-09-16).
+             Trois écarts corrigés, et les trois se voient en jouant : la
+             touche porte le NOM de la note au-dessus de son degré (« Do / 1 »,
+             comme `NotePad`), elle SONNE quand on appuie, et effacer est une
+             touche « ∅ vide » qui efface ET avance au lieu d'un `⌫` qui
+             rejouait le degré posé pour l'annuler.
+             `onpointerdown` + `preventDefault` comme dans l'Atelier : sur un
+             écran tactile, attendre le `click` ajoute ~120 ms entre le doigt
+             et le son, et le clic fantôme qui suit jouerait la note deux
+             fois. -->
         <div class="mel-clavier">
           {#each clavier as d (d)}
+            {@const lib = libelleTouche(lvl.melodie.ligne, d)}
             <button
               class="mel-touche tap44-y"
               class:actif={game.melodieGuess[melSel] === d}
               disabled={game.solved || game.revealed}
-              onclick={() => ecrireDegre(d)}
+              title="{lib.nom} (degré {lib.deg})"
+              onpointerdown={(e) => {
+                e.preventDefault();
+                if (game.solved || game.revealed) return;
+                entendreDegre(lvl.melodie.ligne, d);
+                ecrireDegre(d);
+              }}
             >
-              {d}
+              <span class="nom">{lib.nom}</span>
+              <span class="deg">{lib.deg}</span>
             </button>
           {/each}
           <button
             class="mel-touche efface tap44-y"
-            disabled={game.solved || game.revealed || !game.melodieGuess[melSel]}
-            aria-label="Effacer la note du pas {melSel + 1}"
-            onclick={() => ecrireDegre(game.melodieGuess[melSel])}
+            disabled={game.solved || game.revealed}
+            aria-label="Effacer la note du pas {melSel + 1} et avancer"
+            onpointerdown={(e) => {
+              e.preventDefault();
+              if (game.solved || game.revealed) return;
+              effacerPas();
+            }}
           >
-            ⌫
+            <span class="nom">∅</span>
+            <span class="deg">vide</span>
           </button>
         </div>
         {@const posees = game.melodieGuess.filter((v) => v > 0).length}
@@ -1574,14 +1730,23 @@
     grid-template-columns: repeat(var(--cols, 8), 1fr);
     gap: 3px;
   }
+  /* ⚠️ UNE CASE POSÉE N'EST PAS UNE CASE VALIDÉE — *« les touches sont vertes
+     ce qui ne facilitent pas la lecture quand elles sont validées »* (Yann,
+     2026-09-16). Les deux étaient du même vert plein : impossible de lire, sur
+     une grille à moitié juste, ce qui était acquis et ce qui restait à
+     corriger — donc impossible de savoir où reprendre.
+     La grammaire du projet tranche : le VERT dit « allumé / fait » (CLAUDE.md),
+     donc il appartient à la case verrouillée. Une note qu'on vient de poser
+     n'est pas un état acquis, c'est une proposition : ambre sur le chrome,
+     comme partout ailleurs dans l'appli. */
   .mel-case {
     aspect-ratio: 1;
     min-height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--xp-lcd);
-    color: var(--xp-lcd-bg);
+    background: var(--xp-btn-face);
+    color: var(--xp-accent-amber);
     border: 1px solid var(--xp-line);
     box-shadow: var(--xp-bevel-out);
     border-radius: 2px;
@@ -1606,9 +1771,14 @@
   .mel-case.playing {
     border-color: var(--xp-accent-amber);
   }
+  /* Validée : verte et pleine, comme le ✓ d'une case de batterie verrouillée.
+     Plus d'`opacity` — un vert délavé se lisait comme un vert un peu moins
+     vert, ce qui ne dit rien. */
   .mel-case.verrou {
     cursor: default;
-    opacity: 0.85;
+    background: var(--xp-lcd);
+    color: var(--xp-lcd-bg);
+    box-shadow: var(--xp-bevel-in);
   }
   .mel-case.revelee {
     background: #123018;
@@ -1743,10 +1913,20 @@
     gap: 4px;
     margin-bottom: 8px;
   }
+  /* Deux lignes par touche — le NOM au-dessus, le DEGRÉ dessous : exactement
+     la touche du pad de l'Atelier (`NotePad`, `.key .nom` / `.key .deg`).
+     44 px de haut : c'est la cible tactile de référence du projet, et une
+     touche à deux lignes n'a plus de raison de descendre à 40. */
   .mel-touche {
     flex: 1 1 0;
     min-width: 38px;
-    min-height: 40px;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 2px 0;
     background: var(--xp-btn-face);
     color: var(--xp-text);
     border: 1px solid var(--xp-line);
@@ -1756,13 +1936,36 @@
     font: inherit;
     font-size: var(--xp-size-body);
     font-weight: 700;
+    touch-action: manipulation;
+  }
+  .mel-touche:active {
+    box-shadow: var(--xp-bevel-in);
+  }
+  .mel-touche .nom {
+    display: block;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+  /* Le degré s'efface sans disparaître : c'est le nom qu'on cherche en
+     jouant, le chiffre sert à retrouver la case de la grille — même
+     hiérarchie que dans l'Atelier. */
+  .mel-touche .deg {
+    display: block;
+    font-size: 9px;
+    font-weight: 400;
+    color: var(--xp-muted);
+    font-variant-numeric: tabular-nums;
   }
   .mel-touche.actif {
     color: var(--xp-lcd);
     border-color: var(--xp-lcd-dim);
   }
+  .mel-touche.actif .deg {
+    color: var(--xp-lcd);
+  }
+  /* « vide » est un mot, pas un chiffre : 44 px ne le contiennent pas. */
   .mel-touche.efface {
-    flex: 0 0 44px;
+    flex: 0 0 56px;
     color: var(--xp-muted);
     font-weight: 400;
   }
@@ -1838,8 +2041,51 @@
     flex-direction: column;
     gap: 4px;
   }
+  /* La ligne porte la partie ET son ✕ : la partie prend la place qui reste,
+     la croix garde la sienne. */
+  .reprises li {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  /* ⚠️ 44 px de LARGE, pas seulement de haut : `.tap44-y` ne monte que la
+     hauteur, et une croix mesurée à 24 px de large reste une croix qu'on
+     rate. La cible est la boîte elle-même — la rangée n'est pas serrée, mais
+     un pseudo-élément de `.tap44` déborderait sur la ligne voisine. */
+  .supprime {
+    flex: 0 0 44px;
+    color: var(--xp-accent-amber);
+  }
+  /* La confirmation PREND la ligne : un « Effacer X ? » qui s'ouvrirait
+     ailleurs ne dirait pas de quelle partie il parle, et posé à côté d'elle il
+     l'écrasait. */
+  .confirme {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px 8px;
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-in);
+    background: var(--xp-face-dark);
+  }
+  .confirme .avert {
+    font-size: 9px;
+    letter-spacing: var(--xp-ls-1);
+    color: var(--xp-accent-amber);
+  }
+  .confirme-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .confirme-actions button {
+    flex: 1;
+  }
   .reprise {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;

@@ -252,6 +252,27 @@ lui-même, en silence. D'où le premier passage sauté, et la session retrouvée
 `localStorage` porte déjà la visite en cours. « Ignorer » masque sans détruire :
 un clic de trop ne coûte pas une composition.
 
+⚠️ **Les QUATRE données du joueur sont rangées par pseudo — progression,
+besace, discographie, banque de séquences.** La banque ne l'était pas, et l'acte 6
+y range neuf boucles : elles débordaient d'une partie sur l'autre. Le profil lui
+arrive par un SETTER (`game` importe `bank`, pas l'inverse), et `supprimerJoueur`
+efface les quatre ensemble — n'en oublier qu'une laisse un profil qui ressuscite
+en retapant son nom.
+
+⚠️ **Le curseur VOLATIL se replace dans `load()`, pas dans le formulaire de
+pseudo.** Le pseudo est mémorisé : un rechargement ne repasse pas par
+`setPseudo`, donc la progression revenait et `acteActif`/`etapeActive` restaient
+à 0/0 — le joueur atterrissait sur le premier écran du jeu sous un carnet qui
+affichait « ACTE 3 EN COURS ». Une règle à deux domiciles n'est appliquée qu'à
+un, et c'était celui qu'on ne repasse pas en revenant.
+
+⚠️ **`enRelecture` s'éteint à la fin du DERNIER acte.** Il masque l'épilogue, ce
+qui est juste tant qu'on relit ; rien ne l'éteignait, et l'acte 7 finit en
+reposant le curseur volatil sur lui-même — un clic dans le carnet suffisait à
+rejouer l'acte 7 en boucle, sans conclusion. Et `ouvrirActe` ne l'allume que
+pour un acte DERRIÈRE le curseur : reprendre le sien n'est pas une relecture,
+il reprend alors à l'étape enregistrée.
+
 ⚠️ **Le seuil de niveau se lit sur le PLANCHER, jamais sur `level`.**
 `PlayerProgress.plancher` est le `level` d'AVANT la carrière, gelé une fois pour
 toutes dans `load()` — le seul point garanti d'être avant le premier exercice.
@@ -800,6 +821,15 @@ disparaissait jusqu'à l'épilogue — ce qui se lit comme une PANNE, et contred
 sur scène ; le dernier acte ne paie aucune dette mécanique, comme les actes 0, 2
 et 5.
 
+⚠️ **Le panneau GROOVE est fermé jusqu'à la COMMANDE de l'acte 2**
+(`grooveOuvert`, `model/unlocks.ts` — une règle nommée, pas un cinquième
+`LockedModule` : aucun écran à ouvrir, donc rien à cadenasser, et ce qui est
+verrouillé ne s'affiche pas). Ses six curseurs s'affichaient sur le premier
+écran d'outil du jeu, celui de la sonnerie, sans qu'aucun ait été nommé. Le
+verrou tombe à la commande de Kelvin et jamais à la frontière de l'acte : elle
+exige de l'aléa, donc la fermer jusque-là rendrait l'acte du groove
+insatisfiable. L'étape est DÉRIVÉE des `ACTES`, comme `ETAPE_DU_MODULE`.
+
 ⚠️ **Le CATALOGUE des 34 morceaux est fermé jusqu'à la fin de l'acte 5**
 (`catalogueOuvert`, `model/unlocks.ts` — une bibliothèque, pas un module : aucun
 écran à ouvrir, donc pas une cinquième entrée de `LockedModule`). Deux défauts
@@ -921,6 +951,16 @@ mettent les numéros 1-8 sous la seconde rangée de cases.
 devait retrouver une note que la conception considère acquise. Corollaire de
 câblage : un `$effect` qui recale la sélection doit se garder du **premier
 rendu**, sinon il la ramène sur le pas verrouillé et le clavier n'écrit nulle part.
+
+⚠️ **Les claviers du Mode jeu parlent la langue de celui de l'Atelier.** Un
+seul `libelleTouche` sert la mélodie et l'arrangement : le NOM de la note
+au-dessus de son degré (« Do / 1 »), la nappe sur sa propre règle (« Fa / IV »,
+sa case portant un index d'accord), une touche « ∅ vide » qui efface ET avance,
+et la touche SONNE (`onpointerdown` + `preventDefault`, sinon le `click` ajoute
+~120 ms et le clic fantôme joue deux fois). *« L'idée du mode carrière, c'est de
+pouvoir s'approprier les outils. »* ⚠️ Et une case POSÉE n'est pas une case
+VALIDÉE : le vert dit « fait » donc il appartient au verrou, une note qu'on
+vient de poser est ambre.
 
 ⚠️ **`arrangement` repose PLUSIEURS lignes de deux natures à la fois** — une
 batterie qu'on allume au clic, un synthé en degrés qu'un clavier écrit, sur la
@@ -1112,6 +1152,13 @@ niveau qui isole une nouveauté en retire délibérément d'autres (le 8 repose 
 claire pour qu'on n'entende que la rafale), donc compter les variantes ferait
 échouer le test sur une décision juste.
 
+⚠️ **La règle de la SCIE vaut aussi hors de l'acte 1.** Les arrangements 75 et
+76 revenaient à `1 0 1 0 1 0 1 0` au kick, sans charley : une grille remise au
+propre pour isoler la basse, c'est-à-dire la scie de l'acte 1 un acte plus loin.
+Le kick y sort du temps comme depuis le niveau 7 et le charley entre (simple au
+75, TROUÉ au 76 — `dePlacePourLaVoix` là où il s'entend). L'axe de l'acte ne
+bouge pas pour autant : ce qui monte reste le nombre de VOIX.
+
 ⚠️ **L'acte 2 porte TROIS arbitrages successifs — ne pas restaurer l'un en
 croyant corriger l'autre.** Ses cinq grilles générées ont été retirées (elles
 posaient des rafales et des rim shots sans rapport avec le groove) ; puis les
@@ -1218,6 +1265,15 @@ Décrire le CARACTÈRE d'une ligne présente reste permis (« ce charley ne s'ou
 jamais » est le seul critère qui sépare la techno de la house). Une fiche se
 **calibre** : le preset du genre doit la satisfaire entièrement, les 33 autres
 échouer, et le plus proche rester à au moins **deux critères**.
+
+⚠️ **Un critère de CURSEUR a un plafond, pas seulement un plancher.** Le
+scheduler retarde le pas impair de `swing / 100` de pas : 50 est le triolet
+EXACT et 75 colle le contretemps à la frappe suivante — un flam, pas un
+balancement. Le shuffle du garage est donc une fourchette 30-55 (son preset est
+à 45) et son libellé dit la zone, une fiche servant aussi de RETOUR. Même règle
+que les bornes de mixage : un plancher seul se satisfait en poussant le curseur
+à fond. Le curseur garde sa course 0-75 — c'est le critère qui borne, pas
+l'outil.
 
 ⚠️ **Une fiche ne peut pas décrire un genre dont le voisin partage tout sauf un
 nombre.** Mesuré deux fois de suite : la fiche du boom bap acceptait le drunk
@@ -1339,6 +1395,12 @@ bien qu'effacer celle-ci rend celle-là insatisfiable. Une interdiction punirait
 l'essai, ce que l'Atelier n'a pas à faire. Corollaire d'écriture : un envoi
 n'exige QUE la couche qu'il ajoute — redemander la précédente l'afficherait
 comme une case cochée d'avance.
+
+⚠️ **La clé d'une production est `(acte, SÉRIE)`, et `cleProduction` en est la
+seule définition.** La vue keyait sa liste sur l'acte seul : les actes 5 et 6
+livrant plusieurs morceaux (17 productions en fin de carrière), ouvrir la
+discographie levait `each_key_duplicate` et l'écran tombait. Même piège sur
+l'identifiant de lecture — deux boutons du même acte le partageaient.
 
 ⚠️ **Une RÉACTION à la livraison cite un fait de l'état, et son seuil se calibre
 sur les 34 presets.** `src/model/reactions.ts` lit le MORCEAU, là où les roasts de

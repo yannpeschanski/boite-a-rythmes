@@ -998,13 +998,27 @@ class GameStore {
     return true;
   }
 
-  /** Ouvrir (ou relire) un acte depuis son début. */
+  /* Ouvrir un acte depuis le carnet.
+   *
+   * ⚠️ UN ACTE FAIT SE RELIT DEPUIS LE DÉBUT ; L'ACTE EN COURS SE REPREND OÙ
+   * ON S'EST ARRÊTÉ — *« il faut pouvoir reprendre au niveau où on s'est
+   * arrêtés et pas uniquement à l'acte »* (Yann, 2026-09-16). Le carnet
+   * repartait de l'étape 0 dans les deux cas : la seule ligne qui dit
+   * « REPRENDRE » renvoyait au premier écran de récit, c'est-à-dire cinq
+   * « Suite ▸ » avant de retrouver son exercice. Le bouton ↺ de la barre le
+   * faisait déjà bien (`reprendreCarriere`) — la règle avait deux domiciles et
+   * n'était appliquée qu'à un.
+   *
+   * ⚠️ Et `enRelecture` ne s'allume que pour un acte DERRIÈRE le curseur :
+   * reprendre le sien n'est pas une relecture, et ce drapeau masque
+   * l'épilogue. */
   ouvrirActe(id: number): void {
     if (!this.acteOuvert(id)) return;
-    // Le joueur regarde un acte : ce qu'il voit n'est plus la fin du jeu.
-    this.enRelecture = true;
+    const p = this.progresCarriere;
+    this.enRelecture = id < p.acte;
     this.acteActif = id;
-    this.etapeActive = 0;
+    this.etapeActive =
+      id === p.acte ? Math.min(p.etape, Math.max(0, this.acteCourant.etapes.length - 1)) : 0;
     this.demarrerEtape();
   }
 
@@ -1049,6 +1063,22 @@ class GameStore {
     this.acteActif = Math.min(NB_ACTES - 1, acte.id + 1);
     this.etapeActive = 0;
     this.memoriserCarriere(acte.id + 1, 0);
+    /* ⚠️ LA FIN DU DERNIER ACTE SORT DE LA RELECTURE — sinon il n'y a pas de
+     * conclusion, et c'est le défaut rapporté par Yann (« on n'arrive même pas
+     * à la conclusion »).
+     *
+     * `enRelecture` dit « le joueur regarde un acte, pas la fin » : il masque
+     * l'épilogue, ce qui est juste tant qu'on relit. Mais rien ne l'éteignait,
+     * et le dernier acte se termine en reposant le curseur volatil sur
+     * lui-même (`Math.min(NB_ACTES - 1, 8)` = 7, étape 0). Résultat : qui avait
+     * cliqué UNE fois dans le carnet — donc quiconque relit, donc quiconque
+     * teste — rejouait l'acte 7 en boucle, l'épilogue restant masqué. Le seul
+     * chemin qui restait était le bouton « Revenir à la fin », qu'il fallait
+     * connaître.
+     *
+     * Le curseur ENREGISTRÉ, lui, ne bouge toujours pas : relire ne referme
+     * rien. C'est seulement l'écran qui redevient la fin du jeu. */
+    if (acte.id >= NB_ACTES - 1) this.enRelecture = false;
     this.demarrerEtape();
     this.acteTermineAAnnoncer = acte;
     return acte;
@@ -1127,6 +1157,51 @@ class GameStore {
     // En dernier : `gelerPlancher` a besoin du pseudo, qui vient d'être
     // restauré ci-dessus (ou posé par `setPseudo`, qui appelle `load`).
     this.gelerPlancher();
+    this.brancherBanque();
+    if (this.pseudo) this.seReplacer();
+  }
+
+  /* ⚠️ SE REPLACER OÙ LE JOUEUR S'EST ARRÊTÉ — et c'était le défaut le plus
+   * cher du retour du 2026-09-16 (*« il faut pouvoir reprendre au niveau où on
+   * s'est arrêtés »*).
+   *
+   * Le curseur VOLATIL (`acteActif` / `etapeActive`) était posé par
+   * `setPseudo`, c'est-à-dire par le FORMULAIRE. Or le pseudo est mémorisé
+   * depuis le 2026-08-16 : à chaque rechargement, `load()` restaure le nom, la
+   * progression, les modules… et laisse le curseur volatil à `0 / 0`. Le
+   * joueur revenait donc sur le TOUT PREMIER écran du jeu, pendant que son
+   * carnet affichait « ACTE 3 — EN COURS » juste en dessous. Mesuré à l'écran,
+   * pas déduit. Le seul chemin de retour était le bouton ↺ de la barre, qu'il
+   * fallait connaître.
+   *
+   * Vit ici et plus dans `setPseudo` : une règle à deux domiciles n'est
+   * appliquée qu'à un seul, et c'est exactement ce qui s'est passé — le
+   * domicile qui l'avait était celui qu'on ne repasse pas en revenant. */
+  private seReplacer(): void {
+    const prog = this.playerProgress;
+    /* Le niveau du réservoir reste chargé — la salle de répétition s'ouvre
+     * dessus — mais l'écran d'entrée du Mode jeu est la carrière.
+     * ⚠️ Par ID, pas par position (même raison que `startLevelById`) ; le repli
+     * sur le premier niveau vaut pour une progression qui cite un id disparu. */
+    const iNiveau = LEVELS.findIndex((l) => l.id === prog.level);
+    this.startLevel(iNiveau >= 0 ? iNiveau : 0);
+    const p = this.progresCarriere;
+    this.acteActif = Math.min(p.acte, NB_ACTES - 1);
+    this.etapeActive = acteAVenir(this.acteCourant) ? 0 : p.etape;
+    this.acteTermineAAnnoncer = null;
+    this.enCarriere = false;
+  }
+
+  /* ⚠️ La BANQUE DE SÉQUENCES suit le joueur — *« les séquences sauvegardées
+   * doivent être associées au nom du profil »* (2026-09-16). Elle est le seul
+   * store qui ne pouvait pas lire `game` (il l'importe déjà, pour y ranger les
+   * boucles livrées) : c'est donc d'ici qu'on lui pousse le profil, aux trois
+   * moments où il change — chargement, choix d'un joueur, sortie.
+   *
+   * « master » ne persiste rien (voir `setPseudo`) : il joue sur le seau sans
+   * profil plutôt que d'écrire une banque sous un nom qui n'existe pas. */
+  private brancherBanque(): void {
+    sequenceBank.setProfil(this.pseudo.toLowerCase() === 'master' ? '' : this.pseudo);
   }
 
   setPseudo(name: string): void {
@@ -1144,20 +1219,10 @@ class GameStore {
     } catch {
       /* stockage refusé : le pseudo vaut pour la session */
     }
+    // `load` restaure la progression ET replace le curseur volatil — voir
+    // `seReplacer`. Le faire ici EN PLUS était le doublon qui masquait le
+    // défaut : le formulaire replaçait, le rechargement non.
     this.load();
-    const prog = this.playerProgress;
-    // Le niveau du réservoir reste chargé — la salle de répétition s'ouvre
-    // dessus — mais l'écran d'entrée du Mode jeu est désormais la carrière :
-    // c'est elle qui donne le pourquoi, les niveaux donnent le comment.
-    /* ⚠️ Par ID, pas par position — même raison que `startLevelById`. Le repli
-     * sur le premier niveau vaut pour une progression qui cite un id disparu. */
-    const iNiveau = LEVELS.findIndex((l) => l.id === prog.level);
-    this.startLevel(iNiveau >= 0 ? iNiveau : 0);
-    const p = this.progresCarriere;
-    this.acteActif = Math.min(p.acte, NB_ACTES - 1);
-    this.etapeActive = acteAVenir(this.acteCourant) ? 0 : p.etape;
-    this.acteTermineAAnnoncer = null;
-    this.enCarriere = false;
   }
 
   // Repasser par le formulaire de pseudo. Nécessaire depuis que le pseudo est
@@ -1171,6 +1236,34 @@ class GameStore {
     } catch {
       /* rien à retirer */
     }
+    this.brancherBanque();
+  }
+
+  /* SUPPRIMER UN PROFIL — *« dans le menu des noms de joueurs : il faut
+   * pouvoir supprimer les profils »* (Yann, 2026-09-16).
+   *
+   * ⚠️ Les QUATRE données du joueur partent ensemble : progression, besace,
+   * discographie, banque de séquences. Elles vivent sous quatre clés
+   * différentes (voir les `KEY_*` en tête de fichier, et `stores/bank`) — n'en
+   * oublier qu'une laisserait un profil à moitié mort, qui ressusciterait en
+   * retapant son nom avec les morceaux de l'ancien.
+   *
+   * ⚠️ Et le pseudo ACTIF est lâché si c'est celui qu'on supprime : le garder
+   * ferait travailler le joueur dans un profil qui n'existe plus, et la
+   * première écriture le recréerait. */
+  supprimerJoueur(nom: string): void {
+    if (!nom) return;
+    const { [nom]: _p, ...progress } = this.progress;
+    const { [nom]: _b, ...bags } = this.bags;
+    const { [nom]: _d, ...disques } = this.disques;
+    this.progress = progress;
+    this.bags = bags;
+    this.disques = disques;
+    this.ecrireProgression();
+    if (!writeJson(KEY_BAG, this.bags)) this.persistanceRefusee = true;
+    if (!writeJson(KEY_PROD, this.disques)) this.persistanceRefusee = true;
+    sequenceBank.supprimerProfil(nom);
+    if (this.pseudo === nom) this.clearPseudo();
   }
 
   /* Ouvrir un niveau par son IDENTIFIANT.

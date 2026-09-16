@@ -13,7 +13,13 @@
 // tests/unlocks.test.ts, qui vérifie notamment le piège du seuil de
 // l'Atelier ci-dessous.
 import { LEVELS } from './presets/levels';
-import { ACTE_DU_MODULE, ETAPE_DU_MODULE, acteParId } from './carriere';
+import {
+  ACTE_DU_MODULE,
+  ETAPE_DU_MODULE,
+  ACTE_DU_GROOVE,
+  ETAPE_DU_GROOVE,
+  acteParId,
+} from './carriere';
 
 export type LockedModule = 'atelier' | 'synth' | 'production' | 'live';
 
@@ -171,6 +177,22 @@ export const ACTE_DU_CATALOGUE = 5;
 export function catalogueOuvert(cx: UnlockContext): boolean {
   if ((cx.acte ?? 0) > ACTE_DU_CATALOGUE) return true;
   return (cx.plancher ?? cx.level) >= MODULE_UNLOCK_LEVEL.production;
+}
+
+/* ⚠️ LE PANNEAU GROOVE — fermé tant que le récit ne l'a pas demandé.
+ *
+ * Voir `ACTE_DU_GROOVE` / `ETAPE_DU_GROOVE` (`model/carriere.ts`) pour le
+ * pourquoi et pour le piège : le verrou tombe à la COMMANDE de l'acte 2, pas à
+ * la frontière de l'acte, sinon l'acte du groove exigerait de l'aléa dans un
+ * panneau qu'il cache.
+ *
+ * Le plancher est celui de l'Atelier : qui avait déjà l'Atelier hors carrière
+ * avait ces six curseurs, et une porte déjà ouverte ne se referme jamais. */
+export function grooveOuvert(cx: UnlockContext): boolean {
+  const a = cx.acte ?? 0;
+  if (a > ACTE_DU_GROOVE) return true;
+  if (a === ACTE_DU_GROOVE && (cx.etape ?? 0) >= ETAPE_DU_GROOVE) return true;
+  return (cx.plancher ?? cx.level) >= MODULE_UNLOCK_LEVEL.atelier;
 }
 
 /** L'acte qui ouvre le module, pour l'afficher sur le verrou. */

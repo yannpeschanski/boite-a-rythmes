@@ -48,6 +48,90 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Retour de jeu du 16 septembre — dix défauts, et cinq choix en fiche (2026-09-16)
+
+Une partie complète de Yann, dix-sept points. Dix étaient des **défauts** :
+corrigés, mesurés, verrouillés. Cinq touchent à ce que le jeu EST : ils partent
+en fiche annotable (`docs/relecture/retour-carriere.html`, 15 cartes) parce que
+répondre par du code trancherait à sa place des questions qu'il a posées. Deux
+points n'ont rien coûté : l'abandon d'un cahier, qu'il tranche lui-même dans le
+même message, et le carnet dont les verbes sont retirés.
+
+**Les trois défauts qui se voyaient seulement en JOUANT.**
+
+1. **La discographie ne s'ouvrait plus** — « erreur avec code erreur ». La liste
+   était keyée sur `p.acte` alors que la clé est `(acte, série)` depuis le
+   2026-09-01. `parcours-carriere.cjs` le chiffre : **17 productions** en fin de
+   carrière, dont 4 à l'acte 5 et 9 à l'acte 6, donc autant de clés dupliquées
+   et un `each_key_duplicate` de Svelte. `cleProduction` est exportée et sert
+   aussi à l'identifiant de lecture, que deux boutons du même acte partageaient
+   (■ sur l'un arrêtait l'autre).
+2. **Recharger renvoyait au premier écran du jeu**, et c'est le plus cher des
+   dix. Le curseur volatil était posé par `setPseudo`, c'est-à-dire par le
+   FORMULAIRE ; le pseudo étant mémorisé depuis le 2026-08-16, un rechargement
+   passe par `load()` seul. Capture à l'appui : l'écran affichait « Acte 0 ·
+   1/12 » sous un carnet qui disait « LA MÉLODIE — EN COURS ». `seReplacer()`
+   vit maintenant dans `load()`, et le doublon de `setPseudo` est retiré — c'est
+   lui qui masquait le défaut.
+3. **La conclusion était inatteignable après une relecture.** `enRelecture`
+   masque l'épilogue et rien ne l'éteignait ; le dernier acte se termine en
+   reposant `acteActif` sur lui-même (`Math.min(NB_ACTES - 1, 8)` = 7, étape 0).
+   Un clic dans le carnet suffisait donc à rejouer l'acte 7 en boucle. Trouvé
+   par une sonde de test avant de toucher au code : le chemin normal, lui,
+   atteignait bien l'épilogue.
+
+**Les sept autres.** Le carnet reprend à l'étape enregistrée pour l'acte en
+cours et depuis le début pour un acte fait (et `ouvrirActe` n'allume
+`enRelecture` que pour un acte derrière le curseur) ; les verbes « RELIRE ▸ / 
+REPRENDRE ▸ » de chaque ligne sont retirés, le titre du carnet gardant le mot
+qui NOMME la capacité ; la banque de séquences est rangée par profil, avec
+adoption unique de la banque d'avant les profils ; un profil se supprime avec
+ses quatre jeux de données ; le panneau Groove attend la commande de Kelvin ;
+les arrangements 75 et 76 ne redescendent plus au backbeat plat ; et les deux
+claviers du Mode jeu sonnent, portent le nom de la note, et distinguent une case
+posée d'une case validée.
+
+**Le piège du verrou Groove, et il est instructif.** La demande était « on la
+débloque à l'issue de l'acte 1 » ; la fermer jusqu'à la frontière de l'acte 2
+aurait rendu la commande de Kelvin **insatisfiable** — elle exige `deLAlea`,
+c'est-à-dire trois des six curseurs du panneau. D'où `ETAPE_DU_GROOVE`, dérivée
+des `ACTES` comme `ETAPE_DU_MODULE` : le verrou tombe à l'étape qui le demande.
+Même cul-de-sac que le Synthé de l'acte 3, évité avant d'être payé.
+
+**Le plafond du shuffle.** *« Le shuffle avec un swing très élevé, pas sûr que
+ça ressemble à qqch. »* C'est calculable : `scheduler.ts` retarde le pas impair
+de `swing / 100` de pas, donc **50 est le triolet exact** et 75 colle le
+contretemps aux trois quarts du chemin vers la frappe suivante. Le critère du
+garage devient une fourchette **30-55** (son preset est à 45) ; le curseur garde
+sa course, c'est le critère qui borne. La marge de calibrage ne peut que
+s'améliorer — un plafond fait échouer les autres presets davantage.
+
+**Ce qui est MESURÉ** (390 × 844, pointeur grossier, `newContext({hasTouch})`) :
+clavier de degrés 53,6 × 44 et d'accords 68 × 44, « ∅ vide » à 56, aucun
+débordement ; ✕ des profils à 44 × 41 (il était à 24 de large — `.tap44-y` ne
+monte que la hauteur) ; la confirmation de suppression REMPLACE la ligne au lieu
+de s'y ajouter, où elle rognait la partie à 104 px et ses boutons à 18 px de
+haut ; Groove absent à l'acte 2 étape 0, présent de la commande de Kelvin à la
+fin ; niveau 76 à cinq lignes, 16 px de défilement, rien de coupé.
+`parcours-carriere.cjs` joue la carrière entière jusqu'à l'épilogue sans erreur
+console, `verrous-masques.cjs` ne signale aucune fuite. 788 tests, 0 erreur de
+types, les deux builds.
+
+**Fichiers** — `model/discographie.ts` (`cleProduction`), `model/carriere.ts`
+(`ACTE_DU_GROOVE` / `ETAPE_DU_GROOVE`), `model/unlocks.ts` (`grooveOuvert`),
+`model/styles.ts` (`avecSwing` borné, fiche garage), `model/presets/levels.ts`
+(75, 76), `stores/game.svelte.ts` (`seReplacer`, `supprimerJoueur`,
+`brancherBanque`, `ouvrirActe`, `avancerCarriere`), `stores/bank.svelte.ts`
+(rangée par profil), `stores/unlocks.svelte.ts`, `ui/atelier/AtelierView.svelte`,
+`ui/game/CarriereView.svelte`, `ui/game/GameView.svelte`,
+`tests/retour-carriere.test.ts` (21 tests), `tests/styles.test.ts` (+4),
+`docs/relecture/retour-carriere.html`.
+
+**Écart de portée assumé** : les cinq cartes de la section 2 ne sont PAS codées.
+La plus lourde (A1, les actes 6 et 7) défait un arbitrage du 2026-09-14 — le
+Mode Live s'ouvre à l'acte 6, « on ne découvre pas sa console sur scène ». Elle
+est tenable et je la recommande, mais elle se décide avant de se coder.
+
 ### ✅ Une seule définition de « sortie lente » (2026-09-16)
 
 Trouvé en répondant à « est-ce que le calibrage est automatique ? » : le pad

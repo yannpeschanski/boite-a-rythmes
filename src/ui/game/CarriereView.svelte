@@ -37,7 +37,12 @@
   import { AudioEngine } from '../../engine/AudioEngine';
   import { deserializeState } from '../../model/serialize';
   import { pattern } from '../../stores/pattern.svelte';
-  import { productionDeLActe, productionDeLaSerie, type Production } from '../../model/discographie';
+  import {
+    productionDeLActe,
+    productionDeLaSerie,
+    cleProduction,
+    type Production,
+  } from '../../model/discographie';
   import type { PatternStateV2 } from '../../model/types';
 
   let {
@@ -346,10 +351,18 @@
          morceau, et pas un de plus : l'écouter, ou le reprendre dans
          l'Atelier — sans quoi la liste serait un musée. -->
     <div class="disco">
-      {#each game.productions as p (p.acte)}
+      <!-- ⚠️ La clé est (acte, SÉRIE), jamais l'acte seul — `cleProduction`.
+           Keyée sur `p.acte`, cette liste levait `each_key_duplicate` dès
+           qu'un acte livrait plusieurs morceaux (le 5 en livre quatre, le 6
+           neuf) : ouvrir la discographie affichait un code d'erreur. Le
+           bouton d'écoute partageait le défaut — deux boutons du même acte
+           portaient le même identifiant de lecture, donc ■ sur l'un arrêtait
+           l'autre. -->
+      {#each game.productions as p (cleProduction(p))}
+        {@const idLecture = 'd' + cleProduction(p)}
         <div class="piste">
-          <button class="xp-btn tiny tap44-y" onclick={() => lire('d' + p.acte, deserializeState(p.etat))}>
-            {enLecture === 'd' + p.acte ? '■' : '▶'}
+          <button class="xp-btn tiny tap44-y" onclick={() => lire(idLecture, deserializeState(p.etat))}>
+            {enLecture === idLecture ? '■' : '▶'}
           </button>
           <span class="piste-titre">{p.titre}</span>
           <span class="piste-client">{p.client}</span>
@@ -650,8 +663,15 @@
             <span class="num">{fait ? '✓' : a.id}</span>
             <span class="titre">{a.titre}</span>
             <span class="resume">{a.resume}</span>
+            <!-- ⚠️ Le VERBE de chaque ligne est retiré (*« pas besoin d'écrire
+                 relire ou reprendre, c'est suffisamment intuitif »*, Yann,
+                 2026-09-16). Ce qui reste, et qui suffit : le titre du carnet
+                 nomme la capacité une fois (« CARNET — RELIRE UN ACTE »), la
+                 ligne a son relief de bouton, et le ✓ dit ce qui est fait. Ce
+                 n'est donc pas un retour en arrière sur « une capacité qu'aucun
+                 mot ne nomme n'existe pas » — le mot reste, il n'est plus
+                 répété huit fois. -->
             <span class="comp">{fait ? a.competenceLabel : 'EN COURS'}</span>
-            <span class="verbe">{fait ? 'RELIRE ▸' : 'REPRENDRE ▸'}</span>
           </button>
         </li>
       {/each}
@@ -934,7 +954,7 @@
   .acte {
     display: grid;
     grid-template-columns: 18px 1fr auto;
-    grid-template-areas: 'num titre comp' 'num resume verbe';
+    grid-template-areas: 'num titre comp' 'num resume resume';
     gap: 0 8px;
     width: 100%;
     text-align: left;
@@ -958,14 +978,6 @@
   }
   .acte:active {
     box-shadow: var(--xp-bevel-in);
-  }
-  .verbe {
-    grid-area: verbe;
-    align-self: center;
-    justify-self: end;
-    font-size: var(--xp-size-tag);
-    letter-spacing: var(--xp-ls-tag);
-    color: var(--xp-accent-amber);
   }
   .acte.fait .titre {
     color: var(--xp-lcd-dim);

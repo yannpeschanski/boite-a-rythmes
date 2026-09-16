@@ -113,3 +113,23 @@ et « non » se décident sur un nombre.
 revérifient avec les greps de la carte C1 ; et un renommage, s'il a lieu, se
 termine par `node scripts/verrous-masques.cjs` — le nom du mode est une des
 chaînes que ce script surveille.
+
+## `retour-carriere.html` — le retour de jeu du 16 septembre
+
+Quinze cartes (2026-09-16), après une partie complète. Dix-sept points au
+départ, séparés en deux : **dix défauts corrigés et poussés** (section 1, une
+carte chacun pour pouvoir en renverser un — la discographie qui ne s'ouvrait
+plus, le rechargement qui renvoyait au premier écran, la conclusion
+inatteignable après une relecture…) et **cinq choix qui touchent à ce que le jeu
+EST** (section 2, recommandation en premier) : la forme des actes 6 et 7 sur la
+proposition de Yann, les contraintes « plus fourni / moins fourni », les
+réglages spéciaux du dernier morceau, la course du curseur Swing, et ce qui
+coince en abandonnant un cahier.
+
+⚠️ La carte **A1 défait un arbitrage du 14 septembre** (le Mode Live s'ouvre à
+l'acte 6, « réponse A » de `masquer-le-verrouille.html`) : elle le dit, avec
+l'argument qu'on perd et celui qu'on gagne. Rien n'est codé côté actes 6/7.
+
+Écrite à la main, pas dérivée des données. Les mesures qu'elle cite se
+revérifient avec `node scripts/parcours-carriere.cjs` et
+`node scripts/verrous-masques.cjs` (serveur de dev FRAÎCHEMENT démarré).

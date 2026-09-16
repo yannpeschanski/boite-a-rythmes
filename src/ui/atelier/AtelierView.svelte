@@ -266,8 +266,17 @@
      conseil listait « Gamme & harmonie · Sidechain · Effets de bus » à un
      joueur de l'acte 2, à qui l'application ne montre qu'un seul onglet :
      il énumérait le contenu de deux modules fermés. */
-  const PRODUCTION_GROUPS: { id: string; label: string; module?: LockedModule }[] = [
-    { id: 'drum-groove', label: 'Groove batterie' },
+  /* ⚠️ `groove` à côté de `module` : le panneau Groove n'est pas un module (il
+     n'a pas d'écran à lui) mais il se ferme comme un module depuis le
+     2026-09-16, et un conseil ne nomme que ce qui est OUVERT — sinon il
+     envoyait régler « Groove batterie » dans un bloc absent de l'écran. */
+  const PRODUCTION_GROUPS: {
+    id: string;
+    label: string;
+    module?: LockedModule;
+    groove?: true;
+  }[] = [
+    { id: 'drum-groove', label: 'Groove batterie', groove: true },
     { id: 'drum-sequence', label: 'Séquence (Drum)' },
     { id: 'drum-timbre', label: 'Timbre (Drum)' },
     { id: 'drum-filtre', label: 'Filtre & espace (Drum)' },
@@ -295,7 +304,9 @@
     return isPad ? row.pattern.some((v) => typeof v === 'number' && v >= 0) : row.pattern.some((v) => !!v);
   }
   const productionGroups = $derived(
-    PRODUCTION_GROUPS.filter((g) => !g.module || unlocks.has(g.module)),
+    PRODUCTION_GROUPS.filter(
+      (g) => (!g.module || unlocks.has(g.module)) && (!g.groove || unlocks.groove),
+    ),
   );
   const productionUntouched = $derived(productionGroups.filter((g) => !productionTouched.has(g.id)));
   const productionTip = $derived.by(() => {
@@ -757,6 +768,18 @@
 
   <div class="tab-panel">
     {#if activeTab === 'rythme'}
+      <!-- ⚠️ CE PANNEAU EST FERMÉ tant que le récit ne l'a pas demandé
+           (`grooveOuvert`, `model/unlocks.ts`) — *« verrouille la partie
+           Groove »* (Yann, 2026-09-16). Il s'affichait sur le premier écran
+           d'outil du jeu, celui de la sonnerie de l'acte 1 : six curseurs dont
+           aucun n'avait été nommé, juste après un acte qui n'enseigne que
+           kick, caisse et charley. Il revient à la commande de Kelvin, la
+           première chose du jeu qui EXIGE de l'aléa — et il ne repart plus.
+           Ce qui est verrouillé ne s'affiche pas : pas de cadenas ici.
+           ⚠️ La garde est IMBRIQUÉE, pas ajoutée à la condition d'onglet :
+           posée sur le `{#if}` de la chaîne, un onglet Rythme sans Groove
+           tombait dans le `{:else}` — donc affichait les effets de bus. -->
+      {#if unlocks.groove}
       <XpWindow title="Groove & variation humaine" icon="🎛️" accent="teal">
         <div class="two-col" data-group="drum-groove">
           <XpSlider label="Swing" min={0} max={75} unit="%" bind:value={st.swing} />
@@ -785,6 +808,7 @@
           </label>
         </div>
       </XpWindow>
+      {/if}
     {:else if activeTab === 'synthe'}
       <SynthModule
         playhead={synthPlayhead}

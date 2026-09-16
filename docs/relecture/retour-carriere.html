@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retour de jeu du 16 septembre — ce qui reste à trancher</title>
+<style>
+:root{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+--bg:#0e0e13;--carte:#17171f;--carte2:#1e1e28;--bord:#2c2c3a;--text:#e6e6ef;--doux:#9a9ab0;
+--violet:#7c6cf0;--vert:#39c26a;--ambre:#e8a33d;--rouge:#e2585f;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);}
+header.top{position:sticky;top:0;z-index:5;background:#12121a;border-bottom:1px solid var(--bord);
+padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:16px;margin:0;font-weight:650}
+header.top .sous{color:var(--doux);font-size:12.5px;flex:1 1 240px;min-width:0}
+header.top select,header.top button{font:13px var(--sans);background:var(--carte2);color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:6px 10px;cursor:pointer}
+#compteur{font:12px var(--mono);color:var(--doux)}
+main{max-width:900px;margin:0 auto;padding:22px 18px 80px}
+.intro{background:var(--carte);border:1px solid var(--bord);border-left:3px solid var(--violet);
+border-radius:10px;padding:14px 16px;margin:0 0 26px;font-size:14px}
+.intro p{margin:0 0 8px}.intro p:last-child{margin:0}
+.acquis{background:#12241a;border:1px solid #2b5a3c;border-radius:10px;padding:12px 16px;margin:0 0 26px;font-size:13.5px}
+.acquis b{color:#8ee0a8}
+.acquis ul{margin:6px 0 0;padding-left:20px}.acquis li{margin:0 0 4px}
+section.grp{margin:0 0 34px}
+section.grp>h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--doux);
+margin:0 0 6px;border-bottom:1px solid var(--bord);padding-bottom:6px}
+section.grp>.chapo{color:var(--doux);font-size:13.5px;margin:0 0 14px}
+.fiche{background:var(--carte);border:1px solid var(--bord);border-radius:10px;margin:0 0 14px;overflow:hidden}
+.fiche.hide{display:none}
+.fiche>header{display:flex;gap:10px;align-items:baseline;padding:11px 14px 0}
+.fiche .ref{font:11px var(--mono);color:var(--doux);flex:none}
+.fiche h3{margin:0;font-size:15.5px;font-weight:650}
+.fiche-b{padding:8px 14px 12px;font-size:14px}
+.fiche-b p{margin:0 0 9px}.fiche-b p:last-child{margin:0}
+.fiche-b table{border-collapse:collapse;margin:4px 0 10px;font-size:13px;width:100%}
+.fiche-b th,.fiche-b td{border:1px solid var(--bord);padding:5px 8px;text-align:left}
+.fiche-b th{color:var(--doux);font-weight:600}
+.fiche-b code{font:12.5px var(--mono);background:#101018;padding:1px 4px;border-radius:3px}
+.fiche-b ul{margin:4px 0 10px;padding-left:20px}.fiche-b li{margin:0 0 5px}
+.fiche-b ul.opts{list-style:none;padding:0}
+.fiche-b ul.opts li{border-left:2px solid var(--bord);padding:2px 0 2px 11px;margin:0 0 8px}
+.fiche-b blockquote{margin:6px 0 10px;padding:8px 12px;border-left:3px solid var(--violet);
+background:#12121a;color:var(--doux);font-size:13.5px;font-style:italic}
+figure{margin:8px 0 12px}
+figure img{width:100%;height:auto;display:block;border:1px solid var(--bord);border-radius:6px;background:#000}
+figcaption{font-size:11.5px;color:var(--doux);margin-top:5px}
+.reco{background:var(--vert);color:#06210f;font-size:11px;padding:1px 6px;border-radius:4px;font-weight:700}
+.alerte{color:var(--ambre)}.pour{color:var(--vert)}
+.regle{color:var(--doux);font-style:italic;font-size:13px}
+.annot{display:flex;gap:9px;align-items:flex-start;flex-wrap:wrap;
+padding:9px 14px 11px;border-top:1px solid var(--bord);background:var(--carte2)}
+.prios{display:flex;gap:5px;flex:none}
+.p{font:11px var(--sans);letter-spacing:.04em;font-weight:700;border:1px solid var(--bord);
+background:#101018;color:var(--doux);border-radius:5px;padding:6px 9px;cursor:pointer}
+.fiche.p1 .p1{background:var(--vert);color:#06210f;border-color:var(--vert)}
+.fiche.p2 .p2{background:var(--ambre);color:#2a1a02;border-color:var(--ambre)}
+.fiche.p3 .p3{background:var(--rouge);color:#2a0508;border-color:var(--rouge)}
+.fiche.p1{border-color:var(--vert)}.fiche.p2{border-color:var(--ambre)}.fiche.p3{border-color:var(--rouge)}
+.annot textarea{flex:1 1 240px;min-height:36px;font:14px/1.45 var(--sans);color:var(--text);
+background:#101018;border:1px solid var(--bord);border-radius:6px;padding:7px 9px;resize:vertical}
+.annot textarea:focus{outline:1px solid var(--violet)}
+dialog{background:var(--carte);color:var(--text);border:1px solid var(--bord);border-radius:10px;
+max-width:820px;width:92vw;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog textarea{width:100%;height:52vh;font:12px/1.5 var(--mono);background:#101018;color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:9px}
+dialog .titre{font-weight:650;margin:0 0 8px}
+dialog .actions{display:flex;gap:8px;margin-top:10px}
+dialog button{font:13px var(--sans);background:var(--carte2);color:var(--text);border:1px solid var(--bord);
+border-radius:6px;padding:7px 12px;cursor:pointer}
+</style></head><body>
+<header class="top">
+  <h1>Retour de jeu du 16 septembre</h1>
+  <span class="sous">Neuf points étaient des défauts : corrigés. Cinq sont des choix — ils sont ici. Annote, puis « Exporter mes notes ».</span>
+  <span id="compteur"></span>
+  <select id="filtre" aria-label="filtrer">
+    <option value="tout">tout</option><option value="annote">annoté</option><option value="0">pas encore</option>
+    <option value="1">d'accord</option><option value="2">à discuter</option><option value="3">non</option>
+  </select>
+  <button type="button" id="btn-export">Exporter mes notes</button>
+</header>
+<main>
+<div class="intro">
+<p><b>Ce que j’ai fait du retour.</b> Dix-sept points. Neuf étaient des
+<b>défauts</b> — un écran qui ne s’ouvre plus, un curseur qui ne se replace
+pas, une règle appliquée à un seul endroit : ils sont corrigés et poussés, et
+la section 1 les liste en une ligne chacun pour que tu puisses en renverser un.
+Les <b>cinq autres</b> touchent à ce que le jeu EST — la forme des deux
+derniers actes, ce qu’un cahier des charges a le droit d’exiger, ce qu’on
+demande pour le dernier morceau. Y répondre par du code, ce serait trancher à
+ta place des questions que tu as posées. Elles sont en section 2, une carte
+par décision, recommandation en premier.</p>
+<p><b>Un point que tu as tranché toi-même</b> et que je n’ai donc pas touché :
+abandonner une commande ne fait pas avancer le récit (<i>« bien sûr qu’on ne
+pourra pas passer à la suite après abandon »</i>). La carte A5 ne le remet pas
+en cause — elle dit seulement ce qui t’a coincé pendant le test, et propose la
+sortie qui n’y touche pas.</p>
+</div>
+<section class="grp"><h2>1 · Ce qui était cassé — corrigé et poussé</h2>
+<p class="chapo">Neuf défauts. Tous mesurés, tous verrouillés par un test. Une ligne chacun : dis-moi si l’un te gêne.</p>
+<article class="fiche" data-id="c1">
+  <header><span class="ref">C1</span><h3>La discographie ne s’ouvrait plus — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Mesuré.</b> La liste était keyée sur le seul <code>acte</code> alors que
+la clé est <code>(acte, série)</code> depuis le 1<sup>er</sup> septembre. En fin
+de carrière la discographie compte <b>17 morceaux</b>, dont quatre à l’acte 5 et
+neuf à l’acte 6 : autant de clés dupliquées, et Svelte lève
+<code>each_key_duplicate</code>. C’est ton « erreur avec code erreur ».</p>
+<p><b>Fait.</b> <code>cleProduction</code> est exportée et sert aux deux
+endroits qui en avaient besoin (la liste, et l’identifiant de lecture — deux
+boutons du même acte partageaient le même, donc ■ sur l’un arrêtait l’autre).</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c2">
+  <header><span class="ref">C2</span><h3>Recharger la page renvoyait au premier écran du jeu — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Mesuré, et c’est le plus cher des neuf.</b> Le curseur volatil
+(<code>acteActif</code> / <code>etapeActive</code>) était posé par le
+<b>formulaire</b> de pseudo. Or le pseudo est mémorisé depuis le 16 août : un
+rechargement ne repasse pas par le formulaire. La progression, les modules et le
+carnet revenaient ; le curseur restait à 0/0. Capture à l’appui : l’écran
+affichait <i>« Acte 0 · 1/12 »</i> et, juste dessous, un carnet qui disait
+<i>« LA MÉLODIE — EN COURS »</i>. Le seul chemin de retour était le bouton ↺,
+qu’il fallait connaître.</p>
+<p><b>Fait.</b> Le replacement vit dans <code>load()</code> — un seul domicile.
+C’est très probablement la moitié de ton « il faut pouvoir reprendre au niveau
+où on s’est arrêtés ».</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c3">
+  <header><span class="ref">C3</span><h3>Le carnet repart de l’étape, plus du début de l’acte — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Fait.</b> L’acte <b>en cours</b> reprend à l’étape enregistrée ; un acte
+<b>fait</b> se relit depuis le début — ce que ses deux libellés annonçaient déjà
+sans que le code le fasse. Et les verbes « RELIRE ▸ » / « REPRENDRE ▸ » de
+chaque ligne sont retirés (<i>« c’est suffisamment intuitif »</i>). Le titre du
+carnet, lui, reste : c’est le seul mot de l’écran qui NOMME la capacité, et
+c’est son absence qui t’avait fait dire, le 2 septembre, qu’on ne pouvait pas
+refaire les actes.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c4">
+  <header><span class="ref">C4</span><h3>La conclusion était inatteignable après une relecture — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Mesuré.</b> <code>enRelecture</code> masque l’épilogue — juste, tant qu’on
+relit — mais rien ne l’éteignait, et la fin du dernier acte repose le curseur
+volatil sur lui-même. Donc : quiconque avait cliqué <b>une fois</b> dans le
+carnet rejouait l’acte 7 en boucle. C’est ton « on n’arrive même pas à la
+conclusion ».</p>
+<p><b>Fait.</b> Finir le dernier acte sort de la relecture. Le curseur
+enregistré, lui, ne bouge toujours pas : relire ne referme rien.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c5">
+  <header><span class="ref">C5</span><h3>Les séquences sont rangées par profil — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Fait.</b> La progression, la besace et la discographie l’étaient déjà ; la
+banque, non — et l’acte 6 y range neuf boucles, qui débordaient donc d’une
+partie sur l’autre. La banque d’<b>avant</b> cette mise à jour est adoptée par
+le premier profil qui ouvre le jeu, une fois et sans se dupliquer : tes
+séquences existantes ne disparaissent pas.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c6">
+  <header><span class="ref">C6</span><h3>Un profil se supprime — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Fait.</b> Une croix par ligne, puis une confirmation <b>écrite dans la
+ligne</b> — pas un <code>confirm()</code> du navigateur, qui serait le seul
+élément clair de l’écran. Les quatre jeux de données partent ensemble
+(progression, besace, discographie, banque) : n’en oublier qu’un laisserait un
+profil qui ressuscite en retapant son nom.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c7">
+  <header><span class="ref">C7</span><h3>Le panneau Groove attend que le récit le demande — <span class="reco">corrigé — une question dedans</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Ta demande, et son piège.</b> <i>« Verrouille la partie Groove, on la
+débloque à l’issue de l’acte 1. »</i> Mesuré : le panneau s’affichait bien sur
+le <b>premier écran d’outil du jeu</b> — celui de la sonnerie — avec six
+curseurs dont rien n’avait parlé. Mais le verrouiller jusqu’à la
+<b>frontière</b> de l’acte 2 rendrait la commande de Kelvin insatisfiable : elle
+exige de l’aléa, c’est-à-dire trois de ces six curseurs.</p>
+<p><b>Fait.</b> Il s’ouvre à la <b>commande de Kelvin</b> — la première chose du
+jeu qui le demande — et il ne se referme plus. Mesuré : absent à l’acte 2 étape 0,
+présent de la commande jusqu’à la fin. <b>Si tu voulais dire l’acte 2 et non
+l’acte 1</b>, c’est déjà ce que ça fait ; si tu voulais littéralement « dès la
+sonnerie », dis-le et je descends le seuil.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c8">
+  <header><span class="ref">C8</span><h3>Les niveaux 75 et 76 redescendaient au backbeat le plus plat — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Mesuré.</b> Les deux portaient <code>1 0 1 0 1 0 1 0</code> au kick, la
+claire sur 2 et 4, et <b>aucun charley</b>. C’est-à-dire une grille remise au
+propre : exactement la <b>scie</b> payée à l’acte 1, un acte plus loin.</p>
+<p><b>Fait.</b> Le kick sort du temps comme depuis le niveau 7, et le charley
+entre — simple au 75 (les huit croches, la pulsation contre laquelle la basse
+s’entend), <b>troué</b> au 76 (deux trous, là où la mélodie passe). L’axe de
+l’acte ne bouge pas : ce qui monte reste le nombre de VOIX — 4, puis 5.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c9">
+  <header><span class="ref">C9</span><h3>Le clavier du Mode jeu parle enfin la langue de l’Atelier — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Trois écarts, tes trois remarques.</b> Il n’avait <b>pas de son</b> ; ses
+touches n’affichaient qu’un <b>chiffre</b> là où l’Atelier écrit « Do / 1 » ; et
+effacer passait par un <code>⌫</code> qui rejouait le degré posé pour l’annuler,
+un geste qui n’existe nulle part ailleurs.</p>
+<p><b>Fait.</b> Les deux claviers du Mode jeu (mélodie <i>et</i> arrangement)
+sonnent à la touche, portent le nom de la note sur son degré, et ont la touche
+« ∅ vide » qui efface et avance. La nappe suit sa propre règle, comme dans
+l’Atelier : « Fa / IV », et la touche sonne un accord.</p>
+<p>Et la couleur : une case <b>posée</b> ne se confond plus avec une case
+<b>validée</b>. Le vert dit « fait » dans toute la grammaire de l’appli, donc il
+appartient au verrou ; une note qu’on vient de poser est une proposition, donc
+ambre. C’était ton « les touches sont vertes, ça ne facilite pas la lecture ».</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="c10">
+  <header><span class="ref">C10</span><h3>Le shuffle du garage a un plafond — <span class="reco">corrigé</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Ta remarque.</b> <i>« Club énergie : le shuffle avec un swing très élevé,
+pas sûr que ça ressemble à quelque chose. »</i> Tu as raison, et c’est
+calculable : le scheduler retarde le pas impair de <code>swing / 100</code> de
+pas. Donc <b>50 = le triolet exact</b>, et à <b>75</b> le contretemps tombe aux
+trois quarts du chemin vers la frappe suivante — ce n’est plus un balancement,
+c’est un flam.</p>
+<p><b>Fait.</b> Le critère du garage devient une <b>fourchette 30–55</b> (son
+preset est à 45) au lieu d’un plancher sans plafond, et son libellé dit la zone
+— une fiche de style sert aussi de retour. C’est la règle que les cahiers de
+mixage appliquent déjà : une borne sans plafond se satisfait en poussant le
+curseur à fond, ce que l’acte enseigne justement à ne pas faire.</p>
+<p class="regle">Le curseur, lui, garde sa course 0–75 : c’est le critère qui
+borne, pas l’outil. Voir A4 si tu veux borner l’outil aussi.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+<section class="grp"><h2>2 · Ce qui reste à décider</h2>
+<p class="chapo">Cinq cartes. Chacune a ma recommandation en premier, puis ce que
+ça coûte et les options que je n’ai pas prises. Aucune n’est codée.</p>
+<article class="fiche" data-id="a1">
+  <header><span class="ref">A1</span><h3>Les actes 6 et 7 — ta proposition, et ce qu’elle renverse — <span class="reco">reco : ta proposition</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Ma recommandation : ta proposition, telle quelle.</b> L’acte 6 prépare les
+neuf boucles et ne montre pas le Mode Live ; l’acte 7 joue les trois morceaux
+puis le jingle ; le Mode Live s’ouvre à la sortie de l’acte 7.</p>
+<p><b>Ce que tu as mesuré en jouant, et c’est exact.</b> La scène de l’acte 6
+monte <b>un seul</b> des trois morceaux (couplet / refrain / pont de « celui qui
+passe ») — c’est écrit comme ça, une architecture décrit UN morceau. Puis l’acte 7
+remonte les trois couplets sur « A B C · A B′ C′ », dont les <b>deux premières
+scènes sont sur A</b> : on relance donc le morceau qu’on vient de jouer à la
+répétition. D’où ton « le mode live pour le premier morceau (de nouveau) ».</p>
+<p><b>Ce que ça renverse, et il faut le savoir.</b> Le 14 septembre tu as tranché
+l’inverse (« réponse A ») : le Mode Live s’ouvre à l’acte <b>6</b>, et l’argument
+était <i>« on ne découvre pas sa console sur scène »</i> — plus la règle du dépôt
+« une porte déjà ouverte ne se referme jamais », parce que l’entrée
+apparaissait, servait deux fois, puis disparaissait. Ta nouvelle proposition
+rouvre ce point. Elle est tenable : le module s’ouvrirait à l’<b>étape</b> qui le
+prête (la première scène de l’acte 7) et ne se refermerait plus — la mécanique
+existe déjà (<code>ETAPE_DU_MODULE</code>). Ce qu’on perd est l’argument de la
+console ; ce qu’on gagne est un acte 7 qui n’est plus la redite de l’acte 6.</p>
+<p><b>Trois choses à trancher dans le détail :</b></p>
+<ul class="opts">
+<li><b>La structure de l’acte 6</b> (tu dis « à définir »). Le plus simple, et
+ma reco : <b>on ne change rien</b> — il livre déjà trois morceaux × trois
+boucles, on lui retire seulement sa scène. Ses neuf cahiers restent, l’écran
+« NEUF BOUCLES, UN DISQUE » devient du récit au lieu d’une scène.</li>
+<li><b>« Lire les 3 morceaux » à l’acte 7 : une scène ou trois ?</b> Reco :
+<b>une</b>, avec les trois morceaux sur A, B et C — c’est ce qu’elle fait déjà,
+mais son montage doit commencer <b>ailleurs</b> que sur deux scènes de A.
+Trois scènes séparées feraient trois fois « ▶ LANCER » et casseraient l’idée
+d’un set qu’on enchaîne.</li>
+<li><b>Le jingle reste-t-il un rappel séparé ?</b> Reco : <b>oui</b> — c’est la
+seule scène qui fait entendre « celui que tu as fait » et le texte du rappel en
+dépend.</li>
+</ul>
+<p class="alerte">Coût : les deux scènes, <code>ACTE_DU_MODULE</code>, trois
+tests (<code>carriere</code>, <code>architecture</code>,
+<code>trois-boucles</code>) et une règle de <code>CLAUDE.md</code> à réécrire.
+Une demi-journée, pas plus — mais je ne la commence pas sans ton feu vert,
+puisqu’elle défait un arbitrage de la semaine.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="a2">
+  <header><span class="ref">A2</span><h3>« Il faut que ça joue plus / que ça joue moins » — <span class="reco">reco : retirer le compte</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Ma recommandation : garder le PLUS, remplacer le MOINS par une mesure
+qualitative.</b> Concrètement : le pont n’exige plus « nettement moins de coups
+que le couplet » mais « une ligne du couplet se tait <b>complètement</b> » (déjà
+dans le cahier) plus « la mélodie joue moins <b>mais joue encore</b> » (déjà là
+aussi). On retire le <b>compte</b>, on garde ce qui décrit le geste.</p>
+<p><b>Pourquoi tu as raison.</b> Le compte est <b>relatif à ce que tu as
+choisi</b> : le couplet exige une phrase de quatre notes minimum, donc un
+couplet volontairement sobre rend le pont presque vide (0,8 × peu = très peu ;
+un des trois morceaux descend même à 0,6). Le dépôt connaissait déjà la moitié
+du problème — « elle joue moins mais elle joue encore » est impossible sur une
+mélodie d’une seule note, et c’est pour ça que le couplet exige de la matière.
+Ce que tu ajoutes est l’autre moitié : même satisfaisable, la consigne
+<b>n’a pas de sens musical</b> quand le départ est déjà maigre.</p>
+<p><b>Deux options que je n’ai pas prises :</b></p>
+<ul class="opts">
+<li><b>Un plancher absolu en plus du ratio</b> (« moins que le couplet, mais au
+moins douze coups »). Ça règle l’absurde, ça ajoute un nombre de plus à
+expliquer, et ça peut devenir insatisfaisable dans l’autre sens.</li>
+<li><b>Exiger plus de matière au couplet</b> pour que le ratio ait toujours de
+la place. C’est déplacer la contrainte sur la boucle d’avant — ce que le dépôt
+fait déjà — mais ça rend le couplet plus sévère, or la sévérité DÉCROÎT avec le
+récit et l’acte 6 est celui du « aucun brief ».</li>
+</ul>
+<p class="regle">Note : le refrain, lui, demande bien PLUS (× 1,2). Ta phrase dit
+« pour le refrain il est indiqué de mettre moins de notes » — si tu as vu ça sur
+un refrain et pas sur un pont, c’est un bug et je le cherche ; dis-le moi.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="a3">
+  <header><span class="ref">A3</span><h3>Le dernier morceau — « demander vraiment des réglages un peu spéciaux » — <span class="reco">reco : option 2</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Ma recommandation : l’exiger sur le troisième morceau, « celui que
+personne n’attend », et le mesurer comme une POLYRYTHMIE.</b> C’est le morceau
+dont l’intention est déjà l’étrangeté, et une polyrythmie est <b>déjà
+enseignée</b> (niveau 74, acte 1) — donc on ne demande rien qui n’ait été
+montré.</p>
+<p><b>Ce que ça donne, techniquement.</b> Ta « 16/12 » est exprimable tel quel :
+chaque ligne porte sa propre subdivision. Une contrainte
+<code>unePolyrythmie()</code> dirait « deux lignes qui sonnent dont les
+subdivisions ne se divisent pas » — 16 contre 12, ou 16 contre 6. C’est court,
+pur et testable, comme les autres.</p>
+<p><b>Où l’accrocher — et c’est là que j’ai besoin de toi.</b> Le troisième
+morceau demande aujourd’hui <code>unGesteRare</code> : il propose <b>cinq</b>
+gestes (une ligne décalée, un glissando, la nappe en arpège ou bourdon, un
+balancement franc, une ligne sur deux mesures) et en exige <b>un</b>. Le principe
+était explicite : <i>« nommer le geste serait choisir à la place du joueur »</i>.</p>
+<ul class="opts">
+<li><b>Option 1 — la polyrythmie devient un sixième geste au choix.</b> Rien à
+renverser, mais ton « vraiment » n’est pas tenu : on peut toujours livrer avec
+un glissando.</li>
+<li><b>Option 2 (ma reco) — une ligne EN PLUS, obligatoire, sur le seul
+troisième morceau.</b> « Une polyrythmie : une ligne qui ne retombe pas avec les
+autres. » Le geste rare reste à côté, au choix. C’est le seul endroit du jeu
+où une exigence pointue se défend, parce que c’est le morceau <i>que personne
+n’attend</i> — et ça reste une PROPRIÉTÉ, pas une recette.</li>
+<li><b>Option 3 — un cahier « réglages spéciaux » plus large</b> (polyrythmie,
+détune extrême, bitcrush, deux mesures). Plus proche de ton « des réglages un
+peu spéciaux » au pluriel, mais on retombe sur un menu de cases à cocher, et
+l’acte 6 est celui qui n’impose rien.</li>
+</ul>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="a4">
+  <header><span class="ref">A4</span><h3>Le curseur Swing va jusqu’à 75 — faut-il borner l’outil ? — <span class="reco">reco : ne rien changer</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Ma recommandation : ne rien changer.</b> Le critère du garage est borné
+(C10), ce qui règle ta remarque là où elle se jouait — dans une commande. Borner
+le curseur lui-même est un autre sujet, et je recommande de le laisser.</p>
+<p><b>Le fait.</b> Au-delà de 50 (le triolet), le contretemps dépasse les deux
+tiers du pas ; à 75 il arrive aux trois quarts et s’écrase sur la frappe
+suivante. Personne ne fait ça <b>volontairement</b>… sauf pour un effet, et
+l’Atelier est un outil : composer quelque chose de cassé y est permis, comme y
+composer un amapiano en 2005 (même argument que le catalogue des 34 morceaux).</p>
+<p><b>Ce que je ferais si tu veux quand même agir</b> : garder la course et
+ajouter un repère à <b>50</b> dans l’aide du curseur (« 50 = triolet »), plutôt
+que couper la plage. Un plafond retirerait un réglage que des sauvegardes
+existantes portent peut-être.</p>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="a5">
+  <header><span class="ref">A5</span><h3>Ce qui t’a coincé en abandonnant une commande — <span class="reco">reco : option 1</span></h3></header>
+  <div class="fiche-b">
+
+<p><b>Tu as déjà tranché la règle</b> (<i>« bien sûr qu’on ne pourra pas passer
+à la suite après abandon »</i>) et je ne l’ai pas touchée : « Laisser tomber »
+rend la main sans livrer, garde le travail dans l’Atelier, ne pose aucune
+étoile, et le récit repropose l’étape.</p>
+<p><b>Ce qui reste vrai de ta gêne</b> (<i>« c’est pas bon pour le test en
+cours »</i>) : pour <b>tester</b> la suite du jeu, il n’y a aujourd’hui qu’un
+chemin, le pseudo <code>master</code> — et il envoie directement à l’épilogue,
+donc il ne sert pas à traverser un acte. Concrètement, pendant un test, un
+cahier abandonné est un mur.</p>
+<ul class="opts">
+<li><b>Option 1 (ma reco) — rien dans le jeu, un outil hors du jeu.</b> Le
+script <code>scripts/parcours-carriere.cjs</code> joue déjà la carrière entière
+en acceptant chaque cahier ; je peux lui ajouter une option « pose-moi à
+l’acte N étape M » qui écrit le <code>localStorage</code> et s’arrête. Zéro
+surface ajoutée pour le joueur.</li>
+<li><b>Option 2 — un second contournement dans le jeu.</b> Contre la règle
+« un seul contournement, et c’est le pseudo master », tranchée le 14 septembre
+précisément parce qu’une porte qui persiste peut rester allumée sans qu’on s’en
+aperçoive.</li>
+<li><b>Option 3 — <code>master</code> traverse le récit au lieu d’aller à la
+fin</b> : il rendrait l’acte atteint maximum mais garderait un curseur d’étape
+réel, donc on pourrait relire n’importe quel acte depuis le carnet. Plus utile
+qu’aujourd’hui, et sans nouvelle porte.</li>
+</ul>
+
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+</main>
+<dialog id="dlg">
+  <p class="titre">Mes notes — à copier</p>
+  <textarea id="sortie" readonly></textarea>
+  <div class="actions">
+    <button type="button" id="btn-copier">Copier</button>
+    <button type="button" id="btn-fichier">Télécharger</button>
+    <button type="button" id="btn-reset">Tout effacer</button>
+    <button type="button" id="btn-fermer">Fermer</button>
+  </div>
+</dialog>
+<script>
+(function () {
+  var CLE = 'faceb-fiche-retour-0916';
+  var etat = {};
+  try { etat = JSON.parse(localStorage.getItem(CLE) || '{}') || {}; } catch (e) { etat = {}; }
+  function garder() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {} }
+  var fiches = Array.prototype.slice.call(document.querySelectorAll('.fiche'));
+  var compteur = document.getElementById('compteur');
+  function peindre(f) {
+    var e = etat[f.dataset.id] || {};
+    f.classList.remove('p1', 'p2', 'p3');
+    if (e.p) f.classList.add('p' + e.p);
+    var ta = f.querySelector('textarea');
+    if (ta.value !== (e.note || '')) ta.value = e.note || '';
+    auto(ta);
+  }
+  function auto(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(36, ta.scrollHeight) + 'px'; }
+  function annote(id) { var e = etat[id]; return !!(e && (e.p || (e.note || '').trim())); }
+  function compter() {
+    var n = 0;
+    for (var i = 0; i < fiches.length; i++) if (annote(fiches[i].dataset.id)) n++;
+    compteur.textContent = n + ' / ' + fiches.length;
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('.p') : null;
+    if (!b) return;
+    var f = b.closest('.fiche'), id = f.dataset.id, p = b.dataset.p;
+    var e = etat[id] || (etat[id] = {});
+    if (p === '0') { delete e.p; delete e.note; f.querySelector('textarea').value = ''; }
+    else e.p = e.p === p ? undefined : p;
+    if (!e.p && !(e.note || '').trim()) delete etat[id];
+    garder(); peindre(f); compter(); filtrer();
+  });
+  document.addEventListener('input', function (ev) {
+    var ta = ev.target;
+    if (ta.tagName !== 'TEXTAREA' || !ta.closest('.fiche')) return;
+    var f = ta.closest('.fiche'), id = f.dataset.id;
+    var e = etat[id] || (etat[id] = {});
+    e.note = ta.value;
+    if (!e.p && !e.note.trim()) delete etat[id];
+    auto(ta); garder(); compter();
+  });
+  var filtre = document.getElementById('filtre');
+  function filtrer() {
+    var v = filtre.value;
+    fiches.forEach(function (f) {
+      var e = etat[f.dataset.id] || {};
+      var ok = v === 'tout' || (v === 'annote' && annote(f.dataset.id))
+        || (v === '0' && !annote(f.dataset.id)) || (v === e.p);
+      f.classList.toggle('hide', !ok);
+    });
+    document.querySelectorAll('section.grp').forEach(function (s) {
+      var reste = s.querySelectorAll('.fiche:not(.hide)').length;
+      s.style.display = (reste === 0 && v !== 'tout') ? 'none' : '';
+    });
+  }
+  filtre.addEventListener('change', filtrer);
+  var TITRES = { '1': "D'ACCORD", '2': 'À DISCUTER', '3': 'NON' };
+  function entree(f) {
+    var e = etat[f.dataset.id] || {};
+    var titre = (f.querySelector('h3') || {}).textContent || '';
+    var l = '- [' + f.dataset.id + '] ' + titre;
+    if ((e.note || '').trim()) l += '\n      > ' + e.note.trim().replace(/\n/g, '\n      > ');
+    return l;
+  }
+  function texte() {
+    var lignes = ['# Retour de jeu du 16 septembre — ' + new Date().toLocaleDateString('fr-FR'), ''];
+    ['1', '2', '3'].forEach(function (p) {
+      var d = fiches.filter(function (f) { return (etat[f.dataset.id] || {}).p === p; });
+      if (!d.length) return;
+      lignes.push('## ' + TITRES[p] + ' (' + d.length + ')', '');
+      d.forEach(function (f) { lignes.push(entree(f)); });
+      lignes.push('');
+    });
+    var sansP = fiches.filter(function (f) {
+      var e = etat[f.dataset.id] || {};
+      return !e.p && (e.note || '').trim();
+    });
+    if (sansP.length) {
+      lignes.push('## Notes sans réponse (' + sansP.length + ')', '');
+      sansP.forEach(function (f) { lignes.push(entree(f)); });
+    }
+    if (lignes.length <= 2) lignes.push('(rien d’annoté)');
+    return lignes.join('\n');
+  }
+  var dlg = document.getElementById('dlg'), sortie = document.getElementById('sortie');
+  document.getElementById('btn-export').addEventListener('click', function () {
+    sortie.value = texte();
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    sortie.focus(); sortie.select();
+  });
+  document.getElementById('btn-fermer').addEventListener('click', function () {
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+  });
+  document.getElementById('btn-copier').addEventListener('click', function () {
+    sortie.select();
+    if (navigator.clipboard) navigator.clipboard.writeText(sortie.value).catch(function () {});
+    else document.execCommand('copy');
+  });
+  document.getElementById('btn-fichier').addEventListener('click', function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([sortie.value], { type: 'text/markdown' }));
+    a.download = 'retour-carriere.md'; a.click();
+  });
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    if (!confirm('Effacer toutes les annotations ?')) return;
+    etat = {}; garder(); fiches.forEach(peindre); compter(); filtrer();
+  });
+  fiches.forEach(peindre); compter(); filtrer();
+})();
+</script></body></html>
