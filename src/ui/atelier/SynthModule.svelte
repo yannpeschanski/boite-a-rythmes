@@ -21,7 +21,6 @@
     onPreviewDegree,
     onPreviewChord,
     onCalibrer,
-    latenceSortieMs,
     onFxChanged,
   }: {
     playhead: Record<SynthRowName, number>;
@@ -33,7 +32,6 @@
     onPreviewDegree?: (name: 'bass' | 'melody', degree: number, octave: number) => void;
     onPreviewChord?: (chordIdx: number) => void;
     onCalibrer?: () => void;
-    latenceSortieMs?: () => number;
     onFxChanged?: () => void;
   } = $props();
 
@@ -77,7 +75,6 @@
         {onPreviewDegree}
         {onPreviewChord}
         {onCalibrer}
-        {latenceSortieMs}
         onChanged={onFxChanged}
       />
     </div>

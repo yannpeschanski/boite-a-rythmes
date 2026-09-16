@@ -62,6 +62,8 @@
   import { barDuration } from '../../engine/groove';
   import { quantizeToStep } from '../../engine/quantize';
   import { latence } from '../latence.svelte';
+  import { sortie } from '../sortie.svelte';
+  import { verdictLatence } from '../latenceVerdict';
 
   let {
     name,
@@ -75,7 +77,6 @@
     onChanged,
     onClose,
     onCalibrer,
-    latenceSortieMs,
   }: {
     name: SynthRowName;
     playing?: boolean;
@@ -101,7 +102,6 @@
     onCalibrer?: () => void;
     /** Retard de sortie DÉCLARÉ par le navigateur, en ms. Sert uniquement à
         dire au joueur quand le calibrage devient utile. */
-    latenceSortieMs?: () => number;
   } = $props();
 
   const row = $derived(pattern.state.synthRows[name as SynthRowName]);
@@ -212,7 +212,6 @@
 
   function tap(degree: number, octave: number) {
     onPreview?.(degree, octave);
-    rafraichirRetard();
     const col = quantizedCol();
     write(col, { degree, octave });
     if (!playing) cursor = (safeCursor + 1) % steps;
@@ -220,7 +219,6 @@
 
   function tapAccord(idx: number) {
     onPreviewChord?.(idx);
-    rafraichirRetard();
     const col = quantizedCol();
     write(col, idx);
     if (!playing) cursor = (safeCursor + 1) % steps;
@@ -259,25 +257,26 @@
    * s'affiche dès que le réglage est posé, quel qu'il soit — y compris remis à
    * zéro sciemment.
    */
-  const SEUIL_ALERTE_MS = 60;
-  /* ⚠️ `$state` et non `$derived` — et c'est le piège de câblage habituel du
-   * projet (CLAUDE.md, « suspecter le câblage, pas le calcul »). Un dérivé qui
-   * appelle `latenceSortieMs()` ne dépend d'AUCUNE rune : il se calcule une
-   * fois, à un moment où le contexte audio n'existe même pas encore (il naît au
-   * premier son), et ne se recalcule plus jamais. Mesuré au navigateur avec un
-   * `outputLatency` forcé à 180 ms : l'avertissement ne s'affichait pas.
+  /* ⚠️ UNE SEULE DÉFINITION DE « SORTIE LENTE » DANS TOUTE L'APPLI
+   * (`ui/latenceVerdict.ts`, 2026-09-16). Ce pad avait la sienne — seuil à
+   * 60 ms sur `outputLatency` — pendant que l'avis du Synthé et du Mode Live en
+   * utilisait une autre, à 40 ms sur `baseLatency`. Deux vérités qui doivent
+   * rester d'accord finissent par ne plus l'être.
    *
-   * On rafraîchit donc explicitement là où la valeur peut CHANGER : à
-   * l'ouverture du pad, et après chaque aperçu — c'est l'aperçu qui crée le
-   * contexte audio, donc la première frappe est exactement le moment où le
-   * chiffre passe de 0 à sa vraie valeur. */
-  let retardDeclare = $state(0);
-  const casqueLent = $derived(latence.ms === 0 && retardDeclare >= SEUIL_ALERTE_MS);
-
-  function rafraichirRetard(): void {
-    retardDeclare = latenceSortieMs?.() ?? 0;
-  }
-  rafraichirRetard();
+   * ⚠️ Le seuil BAISSE (60 → 40) et ce n'est pas un relâchement : il change de
+   * source en même temps. 60 se justifiait contre `outputLatency`, que Chrome
+   * sur-déclare du double (mesuré : 257 ms annoncés pour 115 réels) ; 40 se
+   * lit sur `baseLatency`, qui dit à peu près vrai (128 pour 115). Ne pas
+   * « restaurer » 60 sans remettre l'ancienne source avec.
+   *
+   * ⚠️ Et le piège de câblage qui justifiait un `$state` ici a DISPARU avec la
+   * source : `latenceSortieMs()` ne dépendait d'aucune rune, donc un dérivé se
+   * calculait une fois — avant même que le contexte audio existe — et ne se
+   * recalculait plus jamais (mesuré : l'avertissement ne s'affichait pas avec
+   * un `outputLatency` forcé à 180 ms). `sortie.baseMs` EST une rune, poussée
+   * par le moteur à la création du contexte : plus rien à rafraîchir à la main. */
+  const verdict = $derived(verdictLatence(sortie.baseMs, null));
+  const casqueLent = $derived(latence.ms === 0 && verdict.palier !== 'jouable');
 
   function back() {
     cursor = (safeCursor - 1 + steps) % steps;
@@ -398,7 +397,7 @@
 
   {#if casqueLent}
     <p class="alerte">
-      Ton appareil annonce <strong>{retardDeclare}&nbsp;ms</strong> de retard (un casque
+      Ton appareil annonce <strong>{verdict.ms}&nbsp;ms</strong> de retard (un casque
       Bluetooth en ajoute 100 à 200). Joué en mesure avec ce que tu entends, ça s’écrit
       un pas trop loin — <button class="lien" onclick={onCalibrer}>mesure-le une fois</button>
       et les notes retombent juste.
