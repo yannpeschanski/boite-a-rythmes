@@ -98,7 +98,10 @@
      navigation, qui laissait la commande ouverte derrière elle.
      ⚠️ L'Atelier GARDE le travail : on abandonne la livraison, pas le morceau.
      Et aucune étoile n'est posée — un cahier abandonné n'est pas un cahier
-     fait, mais il ne retire pas non plus celles d'une réussite précédente. */
+     fait, mais il ne retire pas non plus celles d'une réussite précédente.
+     ⚠️ Et ÇA PASSE À LA SUITE depuis le 2026-09-17 (voir
+     `abandonnerCommande`) : le bouton le DIT, sinon la seule façon de
+     l'apprendre est de cliquer. */
   function abandonner() {
     game.abandonnerCommande();
     onSwitchView?.('game');
@@ -777,7 +780,16 @@
         <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
           Livrer à {commande.client} ▸
         </button>
-        <button class="xp-btn tap44-y" onclick={abandonner}>Laisser tomber</button>
+        <!-- ⚠️ « (0★) ▸ » dit les deux moitiés de ce que fait ce bouton : la
+             note qu'on perd, et le récit qui avance quand même — même libellé
+             que l'abandon d'un exercice du Mode jeu, qui est la même chose. -->
+        <button
+          class="xp-btn tap44-y"
+          title="Passer à la suite sans livrer. Le cahier reste à refaire dans la salle de répétition."
+          onclick={abandonner}
+        >
+          Laisser tomber (0★) ▸
+        </button>
       </div>
     </div>
   {/if}

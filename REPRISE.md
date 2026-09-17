@@ -3,7 +3,24 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **Le triolet est à 33, pas à 50.**
+> Dernière mise à jour : 2026-09-17 — ✅ **Abandonner fait passer à la suite.**
+> Yann : *« on n'est pas censé passer à la suite, on doit persévérer… mais pour
+> tester, ça facilite énormément de parcourir les niveaux, donc il faut conserver
+> cette fonctionnalité — et ça vaut pour les exercices en atelier »*. C'est un
+> **renversement assumé** de son arbitrage de la veille (carte A5). Le Mode jeu
+> le faisait déjà (`giveUp` puis « Continuer ▸ ») ; le cahier de l'Atelier non —
+> encore une règle à deux domiciles. `abandonnerCommande` avance donc le récit,
+> **sauf en répétition** (même carve-out que `livrerCommande`), et le bouton le
+> DIT : « Laisser tomber (0★) ▸ ».
+> ⚠️ **Le prix est écrit et testé** : ni étoile, ni production — donc un cahier de
+> CHAÎNE qui repart d'une livraison manquante s'ouvre sur un Atelier VIDE et peut
+> devenir insatisfaisable. Pas un mur (l'abandon reste la sortie à chaque étape),
+> mais c'est ce qui fait qu'abandonner ne remplace pas de travailler.
+> ⚠️ `tests/abandon-passe.test.ts` porte la RAISON du choix, pour qu'un
+> renversement futur sache quoi réécrire. **A5 est répondue : plus aucune carte
+> ouverte dans `docs/relecture/retour-carriere.html`.**
+>
+> Avant cela, le même jour : ✅ **Le triolet est à 33, pas à 50.**
 > Yann : *« un swing entre 30 et 55, ça me semble toujours très élevé »* — il
 > avait raison, et `CLAUDE.md` portait le faux chiffre (que je venais de lui
 > répéter). Mesuré en rejouant le scheduler : le contretemps tombe à

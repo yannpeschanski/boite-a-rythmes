@@ -1002,18 +1002,46 @@ class GameStore {
     return true;
   }
 
-  /* Rendre la main sans livrer.
+  /* Rendre la main sans livrer — ET PASSER À LA SUITE.
    *
-   * ⚠️ AUCUNE étoile : une commande abandonnée n'est pas une commande faite, et
-   * `saveEtoilesCommande` ne prend que le maximum — un abandon ne peut donc pas
-   * non plus effacer les étoiles d'une réussite précédente.
+   * ⚠️ UN ABANDON FAIT AVANCER LE RÉCIT, comme un exercice abandonné : c'est
+   * une DÉCISION, prise contre l'intention de conception et assumée comme telle
+   * (Yann, 2026-09-17 : *« on n'est pas censé passer à la suite, on doit
+   * persévérer pour débloquer le niveau — mais pour tester, ça facilite
+   * énormément les choses pour parcourir les niveaux, donc il faut conserver
+   * cette fonctionnalité de cette manière, et ça vaut donc pour les exercices
+   * en atelier »*). Le Mode jeu le faisait déjà (`giveUp` puis
+   * « Continuer ▸ » : *pas de game over dans cette histoire*) ; le cahier de
+   * l'Atelier, non — une règle à deux domiciles n'était appliquée qu'à un.
+   *
+   * Ce que l'abandon ne donne pas, et c'est là qu'il coûte :
+   *
+   * - AUCUNE étoile — `saveEtoilesCommande` ne prend que le maximum, donc un
+   *   abandon n'efface pas non plus celles d'une réussite précédente ;
+   * - AUCUNE production dans la discographie, donc rien à réécouter et rien à
+   *   reprendre : un cahier de chaîne qui repart d'une livraison manquante
+   *   s'ouvre sur `etatVierge()` et peut devenir insatisfaisable. Ce n'est pas
+   *   un cul-de-sac — l'abandon reste la sortie à chaque étape — mais c'est
+   *   pourquoi ça ne remplace pas de faire le travail ;
+   * - le cahier reste à 0★ dans la salle de répétition, où il se refait pour
+   *   de vrai (`repeterCommande`).
    *
    * L'Atelier garde ce qu'on y a fait : c'est un abandon de la LIVRAISON, pas
-   * du travail. Le curseur ne bouge pas, donc la carrière repropose l'étape. */
+   * du travail. Et une RÉPÉTITION ne bouge pas le curseur — même carve-out que
+   * `livrerCommande` : on ne rejoue pas le récit pour autant. */
   abandonnerCommande(): void {
+    const cible = this.commandeEnCours;
+    const repetition = this.repetitionCommande;
     this.commandeEnCours = null;
     this.repetitionCommande = false;
     this.commandeVerdict = null;
+    this.commandeAcceptee = null;
+    if (!cible || repetition) return;
+    // On se replace sur l'étape abandonnée avant d'avancer : le joueur a pu
+    // relire un autre acte entre-temps (même raison que dans `livrerCommande`).
+    this.acteActif = cible.acte;
+    this.etapeActive = cible.etape;
+    this.avancerCarriere();
   }
 
   /* Livrer le morceau qu'on vient de faire.

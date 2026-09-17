@@ -48,6 +48,62 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Abandonner fait passer à la suite — assumé contre la conception (2026-09-17)
+
+**Demande** : *« Lorsqu'on abandonne, on n'est pas censé passer à la suite. On
+doit persévérer pour débloquer le niveau. Mais pour tester actuellement, ça
+facilite énormément les choses pour parcourir les niveaux… Donc il faut
+conserver cette fonctionnalité de cette manière et ça vaut donc pour les
+exercices en atelier. »* C'est un **renversement** de l'arbitrage de la veille
+(*« bien sûr qu'on ne pourra pas passer à la suite après abandon »*, carte A5 de
+`docs/relecture/retour-carriere.html`), et il est pris en connaissance de
+cause : la phrase dit elle-même ce qu'elle coûte.
+
+**Ce qui existait déjà, et n'était appliqué qu'à moitié.** C'était une règle à
+deux domiciles :
+
+| Chemin | Avant | Après |
+|---|---|---|
+| Exercice du Mode jeu | `giveUp()` → 0★, puis « Continuer ▸ » appelle `avancerCarriere()` | inchangé |
+| Cahier de l'Atelier | `abandonnerCommande()` fermait la commande, curseur sur place | avance le récit |
+
+Le commentaire du Mode jeu le disait déjà : *« pas de game over dans cette
+histoire — ce qui se perd, ce sont les étoiles, pas la suite du récit »*. Seul
+le cahier ne le suivait pas.
+
+**Le détail** (`src/stores/game.svelte.ts`) : `abandonnerCommande` capture la
+cible et `repetitionCommande` avant de tout effacer, puis — hors répétition —
+se replace sur l'étape abandonnée et appelle `avancerCarriere()`. Exactement la
+chorégraphie de `livrerCommande`, carve-out compris : refaire un cahier depuis
+la salle de répétition ne bouge pas le curseur, dans un sens comme dans
+l'autre. Il remet aussi `commandeAcceptee` à `null`, sinon l'écran de carrière
+afficherait la réplique d'acceptation d'un client à qui on n'a rien livré.
+
+**Le prix, écrit et testé** : ni étoile (`saveEtoilesCommande` prend le maximum,
+donc un abandon n'efface pas une réussite précédente), ni production dans la
+discographie. Conséquence assumée : un cahier de CHAÎNE qui repart d'une
+livraison manquante (`partirDeLaLivraison`, `partirDeLaSerie`) s'ouvre sur
+`etatVierge()`, donc ses contraintes relationnelles — `uneLigneQuiSeTait` et
+consorts — peuvent devenir insatisfaisables. Ce n'est pas un cul-de-sac parce
+que l'abandon reste la sortie à CHAQUE étape ; c'est ce qui fait qu'abandonner
+ne remplace pas de faire le travail.
+
+**Le bouton le dit** (`AtelierView.svelte`) : « Laisser tomber » devient
+« Laisser tomber (0★) ▸ » — même libellé que l'abandon d'un exercice, et le ▸
+dit que le récit avance. Une capacité qu'aucun mot ne nomme n'existe pas ; une
+capacité que le mot dément est pire.
+
+**Le test** (`tests/abandon-passe.test.ts`, 3 tests) porte la RAISON, pour qu'un
+renversement futur sache quoi réécrire : les **20** cahiers du récit
+s'abandonnent (aucun ne peut retenir le joueur), l'abandon ne note ni n'archive
+rien, et une répétition abandonnée ne bouge pas le curseur. Le compte est
+asserté pour que la population ne devienne pas vide en silence.
+
+**Fichiers** : `src/stores/game.svelte.ts`, `src/ui/atelier/AtelierView.svelte`,
+`tests/abandon-passe.test.ts`, `CLAUDE.md`, `PLAN.md`, `REPRISE.md`,
+`docs/relecture/retour-carriere.html` (A5 répondue — **plus aucune carte
+ouverte**).
+
 ### ✅ Le triolet est à 33, pas à 50 — le garage recentré (2026-09-17)
 
 **Demande** : *« Mais un swing entre 30 et 55 correspond-il vraiment à club

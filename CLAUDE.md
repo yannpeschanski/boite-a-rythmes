@@ -1457,6 +1457,22 @@ la production de sa série. Leur clé
 (`cleCommande`, `c<acte>.<étape>`) ne peut pas collisionner avec un id de
 niveau, et une commande ne fait jamais avancer `level`.
 
+⚠️ **ABANDONNER FAIT PASSER À LA SUITE — décision prise CONTRE l'intention de
+conception, et assumée** (2026-09-17, qui renverse le « bien sûr qu'on ne
+pourra pas passer à la suite après abandon » de la veille) : *« on doit
+persévérer… mais pour tester, ça facilite énormément de parcourir les niveaux,
+donc il faut conserver cette fonctionnalité — et ça vaut pour les exercices en
+atelier »*. Le Mode jeu le faisait déjà (`giveUp` puis « Continuer ▸ » : *pas
+de game over dans cette histoire*), le cahier de l'Atelier non — une règle à
+deux domiciles appliquée à un seul. `abandonnerCommande` avance donc le récit,
+**sauf en répétition** (même carve-out que `livrerCommande`). Le prix : ni
+étoile, ni production — donc un cahier de chaîne qui repart d'une livraison
+manquante s'ouvre sur `etatVierge()` et peut devenir insatisfaisable, ce qui
+n'est pas un mur puisque l'abandon reste la sortie à chaque étape. Le bouton le
+DIT (« Laisser tomber (0★) ▸ »), et `tests/abandon-passe.test.ts` tient les deux
+moitiés en portant la raison, pour qu'un renversement futur sache quoi
+réécrire.
+
 ⚠️ **La note d'une livraison mesure ce qu'on a fait EN PLUS du cahier** —
 `etoilesDeLivraison(enPlus, cycles)` : 3★ pour trois réglages cherchés et deux
 cycles écoutés, 2★ pour deux et un, 1★ sinon, 0★ à l'abandon. Une livraison
