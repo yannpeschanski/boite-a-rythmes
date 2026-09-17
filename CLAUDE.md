@@ -1102,6 +1102,17 @@ troisième seulement si un compteur l'a vu passer, et rien sinon. L'ancien lisai
 de douze verbes, et parlait d'écoutes que les verbes de paramètre ne comptaient
 pas (`ecouterVersion` alimente maintenant `paramEcoutes`).
 
+⚠️ **Un « jouer » se VALIDE TOUT SEUL — dix frappes au-dessus du seuil, et plus
+aucun bouton.** Le seuil ne se devinait pas (il vivait dans un libellé, et le
+`✓ Vérifier` qui jugeait était en tête du transport, avant la consigne) ; le
+compte de dix rend l'automatisme honnête **sans durcir l'exercice**, parce que
+`justesseDesFrappes` ne peut que MONTER quand on ajoute une frappe — il retarde
+la victoire, il ne l'interdit jamais (`tests/exercises.test.ts` tient la
+monotonie, c'est elle qui autorise la règle sur les niveaux 37 et 38).
+`SEUIL_JUSTESSE` / `jouerGagne` (`exercises.ts`) en sont la seule définition. ⚠️
+Et la vue DEMANDE (`jouerPret`) avant d'appeler `verify()` : un appel par frappe
+compterait un essai par coup, donc une étoile au lieu de trois.
+
 ⚠️ **« Jouer » note la MEILLEURE fenêtre consécutive, pas la moyenne du tour.** La
 boucle tourne en rond : moyenner rend les tâtonnements définitifs. La fenêtre doit
 rester *consécutive* — « les meilleures où qu'elles soient » récompenserait le

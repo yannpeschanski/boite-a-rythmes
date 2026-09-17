@@ -12,6 +12,10 @@ import {
   ecartAuClic,
   ecartAuCoup,
   justesseDesFrappes,
+  jouerGagne,
+  coupsPourValider,
+  SEUIL_JUSTESSE,
+  COUPS_POUR_VALIDER,
   medianeDesEcarts,
   PARFAIT_MS,
   TOLERANCE_MS,
@@ -157,6 +161,62 @@ describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au 
 
   it('renvoie 0 si rien n’est attendu — jamais une division par zéro', () => {
     expect(justesseDesFrappes([0, 0], 0)).toBe(0);
+  });
+});
+
+describe('jouerGagne — la validation se déclenche toute seule, et elle ne durcit rien', () => {
+  it('une mesure propre ne valide pas : il faut la TENIR dix frappes', () => {
+    // C'est ce qui rend l'automatisme honnête : sans ce compte, le niveau se
+    // boucle quatre frappes après le précompte et la victoire ressemble à un
+    // accident.
+    expect(jouerGagne(100, 4, 4)).toBe(false);
+    expect(jouerGagne(100, 9, 4)).toBe(false);
+    expect(jouerGagne(100, COUPS_POUR_VALIDER, 4)).toBe(true);
+  });
+
+  it('le seuil est celui que l’écran annonce, et il est franc', () => {
+    expect(SEUIL_JUSTESSE).toBe(70);
+    expect(jouerGagne(SEUIL_JUSTESSE - 1, 20, 4)).toBe(false);
+    expect(jouerGagne(SEUIL_JUSTESSE, 20, 4)).toBe(true);
+  });
+
+  it('un motif plus long que dix coups se juge sur SON compte', () => {
+    // `coupsPourValider` ne descend jamais sous ce que la boucle demande :
+    // valider un motif de douze coups sur dix laisserait deux coups hors de
+    // toute mesure.
+    expect(coupsPourValider(12)).toBe(12);
+    expect(jouerGagne(100, 10, 12)).toBe(false);
+    expect(jouerGagne(100, 12, 12)).toBe(true);
+  });
+
+  it('rien d’attendu ne valide jamais — un niveau pas encore monté n’est pas gagné', () => {
+    expect(jouerGagne(100, 50, 0)).toBe(false);
+  });
+
+  /* ⚠️ LE test de cette famille : c'est lui qui dit que le compte de dix
+   * RETARDE la victoire sans jamais l'interdire. `justesseDesFrappes` retient
+   * la MEILLEURE fenêtre, donc elle ne peut que monter quand on ajoute une
+   * frappe — une mesure propre jouée au quatrième coup est encore là au
+   * dixième. Si cette propriété tombait, le compte deviendrait un durcissement
+   * silencieux des niveaux 37 et 38, dont l'histoire dit qu'ils étaient « tj
+   * trop compliqués ».
+   *
+   * Aléatoire, donc répété : une assertion à un seul tirage est un tirage au
+   * sort (CLAUDE.md).
+   */
+  it('ajouter une frappe ne fait JAMAIS baisser la justesse', () => {
+    for (let n = 0; n < 60; n++) {
+      const attendues = 2 + Math.floor(Math.random() * 6);
+      const ecarts: number[] = [];
+      let avant = justesseDesFrappes(ecarts, attendues);
+      for (let i = 0; i < 24; i++) {
+        // Toute la plage, des frappes parfaites aux frappes hors tolérance.
+        ecarts.push((Math.random() * 2 - 1) * 300);
+        const apres = justesseDesFrappes(ecarts, attendues);
+        expect(apres, `${attendues} attendues, ${ecarts.length} frappes`).toBeGreaterThanOrEqual(avant);
+        avant = apres;
+      }
+    }
   });
 });
 

@@ -16,6 +16,7 @@
   import {
     PARFAIT_MS,
     TOLERANCE_MS,
+    SEUIL_JUSTESSE,
     ecartAuClic,
     medianeDesEcarts,
     type ExerciseKind,
@@ -202,6 +203,14 @@
     const visee = ecart >= 0 ? dernierKickVu : (dernierKickVu + pas) % n;
     const phase = (visee + ecart / dureeDunPas()) / n;
     game.enregistrerFrappe(ecart * 1000, ((phase % 1) + 1) % 1);
+    /* ⚠️ Un « jouer » se valide TOUT SEUL — retour de jeu : « ce n'est pas
+       clair qu'il suffit de dépasser 70 % ». Il n'y a plus de bouton à
+       trouver ; dès que dix frappes tiennent le seuil, le niveau est gagné et
+       la lecture s'arrête (`verify` appelle `stopAll`).
+       ⚠️ On DEMANDE d'abord (`jouerPret`) au lieu de laisser `verify` trancher :
+       `verify` compte un essai à chaque appel, donc un appel par frappe
+       coûterait les étoiles du niveau. */
+    if (game.jouerPret()) verify();
   }
 
   onMount(() => {
@@ -292,11 +301,15 @@
     setTimeout(() => (winFlash = false), 1100);
   }
 
-  // Un raté ne laisse AUCUNE trace pour « intrus » et « jouer » : il n'y a pas
-  // de case à verrouiller, donc rien à l'écran ne dirait que la réponse a été
-  // examinée. Sans ce drapeau, cliquer sur ✓ Vérifier semble ne rien faire.
+  // Un raté ne laisse AUCUNE trace pour « intrus » : il n'y a pas de case à
+  // verrouiller, donc rien à l'écran ne dirait que la réponse a été examinée.
+  // Sans ce drapeau, cliquer sur ✓ Vérifier semble ne rien faire.
+  //
+  // ⚠️ `Partial`, et « jouer » n'y est plus : sa validation est automatique,
+  // donc il n'a plus d'essai RATÉ — un message écrit pour un chemin que rien
+  // n'emprunte est du code que la prochaine lecture croira vivant.
   let echec = $state(false);
-  const MSG_ECHEC: Record<ExerciseKind, string> = {
+  const MSG_ECHEC: Partial<Record<ExerciseKind, string>> = {
     style: 'Ce n’est pas ce genre-là. Réécoute : le tempo, la place de la caisse claire, ce que fait le hi-hat.',
     laverie: 'Ce n’est pas celle-là. Compare les deux haut-parleurs : ce qui compte, c’est ce qui reste.',
     melodie: 'Pas encore. Les notes justes sont verrouillées ✓ — reprends les autres.',
@@ -305,7 +318,6 @@
     reproduire: 'Pas encore. Les cases justes sont verrouillées ✓ — reprends les autres.',
     completer: 'Pas encore. Les cases justes du temps manquant sont verrouillées ✓.',
     intrus: 'Ce n’est pas celle-là. Réécoute les quatre mesures.',
-    jouer: 'Trop loin du temps. Relance la boucle et repose tes frappes.',
     lequel: 'Ce n’est pas celle-là. Réécoute les versions l’une après l’autre.',
     nommer: 'Ce n’est pas ce réglage-là. Réécoute A puis B, et cherche ce qui bouge.',
     regler: 'Pas encore. Compare ta version à la cible et déplace le curseur.',
@@ -1017,10 +1029,14 @@
             </button>
           {/if}
         {/if}
-        {#if ex !== 'melodie' && ex !== 'silence' && ex !== 'style'}
+        {#if ex !== 'melodie' && ex !== 'silence' && ex !== 'style' && ex !== 'jouer'}
           <!-- ⚠️ Pas de « Vérifier » ici pour la mélodie : le transport est
                au-dessus de la grille, et on lirait le bouton de validation
-               avant ce qu'il valide. Il est repris sous le rouleau. -->
+               avant ce qu'il valide. Il est repris sous le rouleau.
+               ⚠️ Et plus aucun pour « jouer » : sa validation est AUTOMATIQUE
+               (voir `frapper`). Le bouton ne pouvait réussir qu'à l'instant
+               même où l'automatisme vient de le faire — donc un bouton qui ne
+               fait jamais rien, et c'est lui qu'on croyait devoir trouver. -->
           <button
             class="xp-btn primary"
             disabled={game.solved || game.revealed || (ex === 'intrus' && game.intrusChoix === null)}
@@ -1593,16 +1609,42 @@
               Écoute d’abord, joue ensuite
             {/if}
           </button>
-          <div class="jauge" role="meter" aria-valuenow={game.justesse()} aria-valuemin="0" aria-valuemax="100">
-            <div class="barre" style:width="{game.justesse()}%"></div>
+          <!-- ⚠️ Le seuil est MARQUÉ sur la jauge, et la barre passe au vert en
+               le franchissant : le vert dit « fait » (CLAUDE.md), donc il dit
+               ici exactement ce que « 70 % suffisent » essayait d'expliquer en
+               mots sous un bouton qu'il fallait trouver. -->
+          <div
+            class="jauge"
+            role="meter"
+            aria-valuenow={game.justesse()}
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="barre" class:atteint={game.justesse() >= SEUIL_JUSTESSE} style:width="{game.justesse()}%"></div>
+            <span class="seuil" style:left="{SEUIL_JUSTESSE}%" aria-hidden="true"></span>
           </div>
           <!-- « 4/2 frappes » se lisait comme une erreur : la boucle tourne, les
                frappes s'accumulent d'un tour à l'autre, dépasser le compte est
-               normal. On dit donc combien il en faut, pas une fraction. -->
+               normal. On dit donc combien il en faut, pas une fraction.
+               ⚠️ Et la RÈGLE est écrite là, sous la jauge qui la mesure : elle
+               vivait dans un « (70 % suffisent) » qui ne disait pas que le
+               niveau se validerait tout seul, ni combien de temps il faut
+               tenir. Deux phrases, toutes deux vraies — celle qui reste à faire
+               quand le seuil est tenu, celle qui énonce la règle sinon. -->
           <p class="chiffres">
-            {game.frappes.length} frappe{game.frappes.length > 1 ? 's' : ''} — il en faut au moins
-            {game.frappesAttendues} — justesse {game.justesse()}&nbsp;%
-            <span class="muted">(70&nbsp;% suffisent)</span>
+            {game.frappes.length} frappe{game.frappes.length > 1 ? 's' : ''} — justesse {game.justesse()}&nbsp;%
+            <br />
+            <span class="muted">
+              {#if game.solved}
+                <!-- Une fois gagné, la règle est du passé : l'écran dit ce qui
+                     vient d'arriver, pas ce qu'il reste à faire. -->
+                Rythme tenu — le niveau s’est validé tout seul.
+              {:else if game.justesse() >= SEUIL_JUSTESSE && game.frappes.length < game.coupsAValider}
+                Tiens ce rythme : encore {game.coupsAValider - game.frappes.length} frappe{game.coupsAValider - game.frappes.length > 1 ? 's' : ''} et le niveau se valide.
+              {:else}
+                Le niveau se valide tout seul dès que {game.coupsAValider} frappes tiennent {SEUIL_JUSTESSE}&nbsp;%.
+              {/if}
+            </span>
             {#if game.frappes.length >= 3}
               <br />
               <!-- Diagnostic, jamais noté : un biais franc et constant, c'est de
@@ -2573,6 +2615,7 @@
     font-weight: 700;
   }
   .jauge {
+    position: relative;
     height: 8px;
     margin-top: 8px;
     border: 1px solid var(--xp-line);
@@ -2581,8 +2624,28 @@
   }
   .barre {
     height: 100%;
-    background: var(--xp-lcd);
+    /* Sous le seuil, la jauge n'annonce pas « fait » : l'ambre est la couleur
+       de ce qui est posé mais pas validé (même règle que les cases de mélodie
+       qu'on vient de poser). */
+    background: var(--xp-accent-amber);
     transition: width 0.12s linear;
+  }
+  .barre.atteint {
+    background: var(--xp-lcd);
+  }
+  /* Le trait du seuil, sur l'afficheur : le seul repère qui dise OÙ est la barre
+     à atteindre.
+     ⚠️ `--xp-lcd-dim` et pas `--xp-lcd` : le trait doit rester lisible DEVANT la
+     barre (à 100 % un trait vert sur du vert n'existe plus) comme sur
+     l'afficheur vide. Le segment ÉTEINT est le seul ton qui tienne les deux —
+     et c'est la surface pour laquelle ce token est fait (CLAUDE.md), un fond
+     d'afficheur noir. */
+  .seuil {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    width: 2px;
+    background: var(--xp-lcd-dim);
   }
   .chiffres {
     font-family: var(--xp-mono);

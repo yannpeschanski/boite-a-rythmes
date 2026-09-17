@@ -89,6 +89,70 @@ describe('« jouer » — un seul canal à la fois', () => {
     }
   });
 
+  /* ---- La validation AUTOMATIQUE ----
+   *
+   * ⚠️ Retour de jeu (2026-09-17) : *« pour les niveaux 1, 2 et 3 où on joue,
+   * ce n'est pas clair qu'il suffit de dépasser 70 % pour valider le niveau »*.
+   * Il n'y a plus de bouton : dix frappes au-dessus du seuil et c'est gagné.
+   * Ces tests tiennent le CÂBLAGE (le calcul est pur, il est dans
+   * `tests/exercises.test.ts`) — et surtout le PRIX, qui est la raison pour
+   * laquelle la vue demande avant d'appeler `verify()`.
+   */
+  it('dix frappes propres valident sans qu’on clique rien', () => {
+    game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
+    for (let i = 0; i < game.coupsAValider - 1; i++) game.enregistrerFrappe(0, 0.1);
+    expect(game.jouerPret(), 'une frappe avant le compte : pas encore').toBe(false);
+    game.enregistrerFrappe(0, 0.1);
+    expect(game.jouerPret()).toBe(true);
+    expect(game.verify()).toBe(true);
+    expect(game.solved).toBe(true);
+  });
+
+  it('elle ne coûte AUCUNE étoile : un « jouer » réussi l’est du premier coup', () => {
+    /* C'est tout le point du `jouerPret()` de la vue. Laisser `verify()`
+     * trancher à chaque frappe compterait un essai par coup joué — dix frappes,
+     * dix essais, une étoile au lieu de trois (`starsForAttempts`) et un roast
+     * qui parle de dizaines de tentatives. */
+    game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
+    for (let i = 0; i < game.coupsAValider; i++) game.enregistrerFrappe(0, 0.1);
+    game.verify();
+    expect(game.attempts).toBe(1);
+    expect(game.lastResult?.stars).toBe(3);
+  });
+
+  it('le compte à tenir ne descend jamais sous ce que la boucle demande', () => {
+    for (const indice of ['ecoute', 'lecture']) {
+      const i = niveauDeVerbe('jouer', indice);
+      for (let n = 0; n < TIRAGES; n++) {
+        game.startLevel(i);
+        expect(game.coupsAValider).toBeGreaterThanOrEqual(game.frappesAttendues);
+        expect(game.coupsAValider).toBeGreaterThanOrEqual(10);
+      }
+    }
+  });
+
+  it('marteler à côté ne valide jamais, même en jouant longtemps', () => {
+    game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
+    for (let i = 0; i < 40; i++) game.enregistrerFrappe(i % 2 ? 300 : -300, 0.5);
+    expect(game.jouerPret()).toBe(false);
+    expect(game.verify()).toBe(false);
+  });
+
+  it('les autres verbes ne se valident pas tout seuls', () => {
+    // Le garde-fou de câblage : `jouerPret` est interrogé après chaque frappe,
+    // et une frappe peut arriver sur n'importe quel niveau chargé.
+    game.startLevel(0); // niveau 1, « reproduire »
+    for (let i = 0; i < 20; i++) game.enregistrerFrappe(0, 0.1);
+    expect(game.jouerPret()).toBe(false);
+  });
+
+  it('un niveau déjà gagné ne se revalide pas', () => {
+    game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
+    for (let i = 0; i < game.coupsAValider; i++) game.enregistrerFrappe(0, 0.1);
+    game.verify();
+    expect(game.jouerPret(), 'sinon chaque frappe de plus rappellerait le carillon').toBe(false);
+  });
+
   it('effacer les frappes remet la justesse à zéro, pas le compte attendu', () => {
     game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
     const attendues = game.frappesAttendues;

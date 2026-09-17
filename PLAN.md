@@ -48,6 +48,77 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Un « jouer » se valide tout seul — dix frappes au-dessus de 70 % (2026-09-17)
+
+**Demande** : *« Pour les niveaux 1, 2 et 3 où on joue, ce n'est pas clair
+qu'il suffit de dépasser 70 % pour valider le niveau. Peut-être que la
+validation peut être automatique dès que la justesse dépasse 70 % pendant 10
+coups d'affilée ? »* Constat d'ERGONOMIE, donc codé (CLAUDE.md).
+
+**Ce qui n'était pas clair, mesuré sur l'écran** : le seuil n'était écrit
+qu'une fois, dans un `(70 % suffisent)` en petit sous la jauge, et le bouton
+qui jugeait (`✓ Vérifier`) vivait dans le TRANSPORT, tout en haut — au-dessus
+du préambule, à cinq blocs du pad et de la jauge. Il fallait deviner qu'un
+bouton posé avant la consigne était celui qui validait ce qu'on venait de
+jouer. Le seuil, lui, était écrit **deux fois** : en dur dans `verify()` et en
+dur dans le libellé.
+
+**Ce qui est livré, et dans cet ordre** :
+
+| Avant | Après |
+|---|---|
+| `✓ Vérifier` en tête du transport | plus de bouton du tout pour `jouer` |
+| `70` en dur dans le store, `70` en dur dans un libellé | `SEUIL_JUSTESSE`, une seule définition |
+| `(70 % suffisent)` | « Le niveau se valide tout seul dès que 10 frappes tiennent 70 %. » |
+| la jauge, sans repère | un trait au seuil, la barre AMBRE en dessous et VERTE au-dessus |
+
+Le bouton est retiré parce qu'il ne pouvait plus réussir qu'à l'instant même où
+l'automatisme vient de le faire — donc un bouton qui ne fait jamais rien, et
+c'était lui qu'on croyait devoir trouver. `MSG_ECHEC` passe en `Partial` et
+perd sa ligne `jouer` : un `jouer` n'a plus d'essai RATÉ, et un message écrit
+pour un chemin que rien n'emprunte est du code que la prochaine lecture croira
+vivant.
+
+**Le compte de dix ne durcit rien, et c'est démontré.** `justesseDesFrappes`
+retient la MEILLEURE fenêtre : elle ne peut que monter quand on ajoute une
+frappe. Une mesure propre jouée au quatrième coup est donc encore là au
+dixième — le compte retarde la victoire de quelques secondes (≈ 2,5 mesures au
+niveau 64, à 76-84 bpm), il ne peut jamais l'interdire.
+`tests/exercises.test.ts` tient cette monotonie sur 60 × 24 frappes tirées au
+hasard : c'est l'assertion qui autorise à donner la règle au VERBE — donc aussi
+aux niveaux 37 et 38 de l'acte 7, dont l'histoire dit qu'ils étaient *« tj trop
+compliqués »*.
+
+**Le piège de câblage, payé par avance** : la vue DEMANDE (`game.jouerPret()`)
+avant d'appeler `verify()`. Laisser `verify()` trancher à chaque frappe
+compterait un essai par coup joué — dix frappes, dix essais, **une** étoile au
+lieu de trois (`starsForAttempts`) et un roast qui parle de dizaines de
+tentatives. Un `jouer` réussi l'est du premier coup par construction : il n'y a
+plus de bouton pour se tromper.
+
+**Le seuil sur la jauge** : le trait est en `--xp-lcd-dim` et non `--xp-lcd`,
+parce qu'à 100 % un trait vert sur du vert n'existe plus — le segment ÉTEINT
+est le seul ton lisible devant la barre COMME sur l'afficheur vide, et c'est la
+surface pour laquelle ce token est fait. La barre sous le seuil est ambre :
+le vert dit « fait ».
+
+**Mesuré** (390 × 844, `pointer: coarse` vérifié avant toute conclusion) :
+aucun débordement de page ni de conteneur, le transport reste à quatre boutons
+de 44 px, le trait tombe à 240,4 px sur une jauge de 344 (69,9 %). Et le chemin
+RÉEL a été joué — pad frappé par la tête de lecture, sans qu'aucun bouton ne
+soit cliqué : 10 frappes, justesse 100 %, 3★, `attempts` à 1.
+
+**Fichiers** : `src/model/exercises.ts` (`SEUIL_JUSTESSE`,
+`COUPS_POUR_VALIDER`, `coupsPourValider`, `jouerGagne`),
+`src/stores/game.svelte.ts` (`verify`, `jouerPret`, `coupsAValider`),
+`src/ui/game/GameView.svelte` (`frapper`, transport, jauge, chiffres),
+`tests/exercises.test.ts`, `tests/jouer.test.ts`.
+
+**Ce qui n'a PAS été touché** : les préambules des cinq niveaux `jouer`. La
+règle est dynamique (le compte dépend de la boucle) et elle vit sous la jauge
+qui la mesure — l'écrire aussi dans cinq préambules en ferait une règle à
+plusieurs domiciles, dont un seul se corrige.
+
 ### ✅ Abandonner fait passer à la suite — assumé contre la conception (2026-09-17)
 
 **Demande** : *« Lorsqu'on abandonne, on n'est pas censé passer à la suite. On
