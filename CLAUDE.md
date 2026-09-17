@@ -752,6 +752,15 @@ les lettres par-dessus l'établi, donc le travail en cours est mis de côté au
 départ et **rendu à l'arrêt, par tous les chemins** (bouton, ⏹, sortie de la
 vue) — et le calque est **relâché**, sinon l'Atelier reste muet sans que rien
 ne le dise. `tests/chaine.test.ts` tient les deux sur un moteur feint.
+⚠️ **Cette écoute S'ARRÊTE à la fin du morceau ; le Mode Live BOUCLE toujours**
+(2026-09-17). Ici on vérifie une FORME — un montage qui reboucle ne dit jamais
+s'il finit bien ; là-bas on JOUE, et un set qui s'arrête tout seul coupe le
+concert. La règle vit donc dans la boucle de frames de l'Atelier, pas dans
+`sectionSuivante`, qui garde son modulo (un test le dit et explique pourquoi).
+⚠️ Et le **NUMÉRO** d'une scène y saute (ou démarre l'écoute là) : c'est le seul
+endroit inerte de la rangée, qui porte déjà six interactifs. 44 × 44 mesurés, et
+ça n'a rien coûté — le champ de nom est plafonné à 24ch, les pixels étaient du
+vide.
 
 ⚠️ **Le rappel du 14 juin se monte en CLUB, pas en BOUCLE** (2026-09-17) : une
 salle qui reprend douze secondes en choeur demande une montée, un break et une

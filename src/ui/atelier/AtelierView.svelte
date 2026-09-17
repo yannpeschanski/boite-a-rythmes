@@ -516,12 +516,40 @@
 
   async function ecouterMontage() {
     if (ecoute) return arreterEcoute();
+    return ecouterDepuis(0);
+  }
+
+  /* ÉCOUTER À PARTIR D'UNE SCÈNE — c'est le clic sur son numéro.
+   *
+   * ⚠️ Un seul chemin pour les DEUX cas : partir de là si c'est à l'arrêt,
+   * sauter là si ça tourne. Deux fonctions auraient fini par diverger sur ce
+   * qui compte ici — la mise de côté du motif, et la remise à zéro de la fin
+   * de morceau.
+   *
+   * Le saut passe par la file du moteur : il tombe donc au début de la
+   * mesure suivante, comme une bascule ordinaire. Sauter au milieu d'une
+   * mesure ferait entrer la scène sur un demi-temps. */
+  async function ecouterDepuis(i: number) {
     const sections = architecture.sections;
-    if (!sections.length) return;
+    if (!sections[i]) return;
+    finDeMorceau = false;
+    if (ecoute) {
+      /* ⚠️ On annule la bascule DÉJÀ programmée, sinon l'avance automatique
+         gagnerait la course et le saut serait avalé sans un mot. */
+      engine.cancelQueuedSwap();
+      basculeEnAttente = true;
+      engine.queueSwapAtNextBar(() => {
+        basculeEnAttente = false;
+        if (!ecoute) return;
+        ecoute = { ...ecoute, scene: i };
+        appliquerSectionAuMoteur(engine, sections[i]);
+      });
+      return;
+    }
     /* Le travail en cours, mis de côté AVANT que la première lettre le
        remplace. C'est la seule chose qui rend ce bouton sans risque. */
-    ecoute = { scene: 0, motifAvant: pattern.toJson() };
-    appliquerSectionAuMoteur(engine, sections[0]);
+    ecoute = { scene: i, motifAvant: pattern.toJson() };
+    appliquerSectionAuMoteur(engine, sections[i]);
     if (!playing) {
       await engine.start();
       playing = true;
@@ -532,6 +560,8 @@
     if (!ecoute) return;
     const { motifAvant } = ecoute;
     ecoute = null;
+    finDeMorceau = false;
+    basculeEnAttente = false;
     engine.stop();
     playing = false;
     engine.cancelQueuedSwap();
@@ -547,14 +577,38 @@
 
   /* Avancer dans la chaîne — appelé à chaque frame par `loop`. On programme la
      bascule pendant la DERNIÈRE mesure de la scène ; le moteur l'applique au
-     début de la suivante, donc pile à la frontière. */
+     début de la suivante, donc pile à la frontière.
+
+     ⚠️ ET ON S'ARRÊTE À LA FIN DU MORCEAU (demandé le 2026-09-17). Ici on
+     ÉCOUTE une forme, on ne joue pas : un montage qui reboucle ne dit jamais
+     s'il finit bien, et il faut couper soi-même pour savoir qu'on est revenu
+     au début. ⚠️ Le Mode Live, lui, BOUCLE toujours — c'est une surface de
+     jeu, on y enchaîne sans fin. `sectionSuivante` garde donc son modulo, et
+     c'est la LECTURE de l'Atelier qui décide de s'arrêter : mettre la règle
+     dans le module partagé l'imposerait aux deux. */
   let basculeEnAttente = false;
+  /* ⚠️ L'arrêt ne se fait PAS dans la file du moteur : `apply()` est appelé au
+     milieu du tick, qui continue ensuite sur `resetCursorsAt`. On lève un
+     drapeau, et la frame suivante coupe — au plus 16 ms après la frontière,
+     c'est-à-dire après la fin du morceau. */
+  let finDeMorceau = false;
   function suivreLaChaine() {
     if (!ecoute || !playing) return;
+    if (finDeMorceau) return arreterEcoute();
     const total = architecture.sections.length;
     if (!total) return arreterEcoute();
     if (basculeEnAttente) return;
     if (!doitBasculer(engine, mesuresDeLaScene(ecoute.scene))) return;
+    /* La DERNIÈRE scène ne boucle pas : elle joue ses mesures, puis on coupe
+       à la frontière — le morceau est fini. */
+    if (ecoute.scene >= total - 1) {
+      basculeEnAttente = true;
+      engine.queueSwapAtNextBar(() => {
+        basculeEnAttente = false;
+        finDeMorceau = true;
+      });
+      return;
+    }
     const cible = sectionSuivante(ecoute.scene, total);
     basculeEnAttente = true;
     engine.queueSwapAtNextBar(() => {
@@ -1019,6 +1073,7 @@
           enEcoute={!!ecoute}
           sceneEnCours={ecoute?.scene ?? -1}
           onEcouter={ecouterMontage}
+          onEcouterDepuis={ecouterDepuis}
         />
       </XpWindow>
       <XpWindow title="Banque de séquences" icon="🗄" accent="teal">

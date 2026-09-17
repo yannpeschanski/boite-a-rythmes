@@ -51,6 +51,7 @@
     enEcoute = false,
     sceneEnCours = -1,
     onEcouter,
+    onEcouterDepuis,
   }: {
     onSwitchView?: (v: 'atelier' | 'game' | 'live' | 'diag') => void;
     /** Vrai pendant que la chaîne tourne — le bouton dit alors « arrêter ». */
@@ -58,6 +59,8 @@
     /** L'index de la scène qu'on entend, ou −1. */
     sceneEnCours?: number;
     onEcouter?: () => void;
+    /** Écouter à partir de CETTE scène — ou y sauter si ça tourne déjà. */
+    onEcouterDepuis?: (i: number) => void;
   } = $props();
 
   const sections = $derived(architecture.sections);
@@ -174,7 +177,8 @@
   <p class="hint">
     Chaque scène dit <strong>quelle lettre</strong> elle joue, <strong>combien de tours</strong> et
     <strong>ce qu'on y entend</strong>. <em>A′</em> se lit « A avec des lignes en moins » — ce n'est
-    pas un motif de plus à composer.
+    pas un motif de plus à composer. Clique le <strong>numéro</strong> d'une scène pour l’écouter à
+    partir de là.
   </p>
 
   {#if manquantes.length}
@@ -196,7 +200,7 @@
     </button>
     <span class="ecoute-note">
       {enEcoute
-        ? `scène ${sceneEnCours + 1} sur ${sections.length}`
+        ? `scène ${sceneEnCours + 1} sur ${sections.length} — le morceau s’arrête à la fin`
         : `tes lettres jouent le temps de l’écoute ; ton rythme revient à l’arrêt`}
     </span>
   </div>
@@ -205,7 +209,19 @@
     {#each lignes as { s, i, mesures, debut } (s.id)}
       <li class="scene" class:prime={s.lignes !== null} class:joue={i === sceneEnCours}>
         <div class="rang nom">
-          <span class="num">{i + 1}</span>
+          <!-- ⚠️ C'EST LE NUMÉRO QUI SAUTE, pas la rangée. La rangée porte déjà
+               le nom, la lettre, les tours et les lignes : y poser un clic
+               ferait un interactif dans un interactif, qui ne se tape pas de
+               façon prévisible (même raison que le mini séquenceur du Live).
+               Le numéro est le seul endroit inerte de la scène, il devient
+               donc le bouton — et il DIT ce qu'il fait par son titre et par
+               le ▶ qui remplace le chiffre pendant la lecture. -->
+          <button
+            class="num"
+            class:actif={i === sceneEnCours}
+            onclick={() => onEcouterDepuis?.(i)}
+            title={enEcoute ? `Sauter à la scène ${i + 1}` : `Écouter à partir de la scène ${i + 1}`}
+          >{i === sceneEnCours ? '▶' : i + 1}</button>
           <input
             class="nom-scene"
             type="text"
@@ -425,11 +441,31 @@
     gap: 10px;
     margin-top: 3px;
   }
+  /* ⚠️ LE NUMÉRO FAIT 44 × 44, et il n'a rien coûté à la rangée. Mesuré
+     d'abord : en bouton nu il faisait 10,8 × 12 px — intouchable au pouce, et
+     j'ai failli le revendiquer comme quatrième exception. La rangée fait 312 px
+     et le champ de nom est plafonné à 24ch (144 px mesurés) : les 44 px ne
+     mordent donc sur rien, ils remplissent du vide. Le CHIFFRE, lui, ne
+     grandit pas — c'est la zone qui grandit, pas le dessin, comme `.tap44`
+     mais sans pseudo-élément (celui du voisin recouvrirait le champ). */
   .num {
     font-size: 9px;
     color: var(--xp-muted);
-    width: 2ch;
-    text-align: right;
+    min-width: 44px;
+    min-height: 44px;
+    text-align: center;
+    background: none;
+    border: 0;
+    padding: 0;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .num:hover,
+  .num:focus-visible {
+    color: var(--xp-accent-amber);
+  }
+  .num.actif {
+    color: var(--xp-accent-amber);
   }
   .nom-scene {
     flex: 1 1 auto;

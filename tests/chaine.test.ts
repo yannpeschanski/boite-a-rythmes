@@ -106,11 +106,19 @@ describe('appliquer une scène pose son CALQUE', () => {
 });
 
 describe('avancer dans la chaîne', () => {
-  it('la scène suivante BOUCLE', () => {
+  /* ⚠️ LE MODULE PARTAGÉ BOUCLE, ET IL DOIT LE RESTER. L'écoute de l'Atelier
+   * s'arrête à la fin du morceau depuis le 2026-09-17 — mais c'est SA décision,
+   * prise dans sa boucle de frames, pas celle du module : le Mode Live est une
+   * surface de JEU, on y enchaîne sans fin, et SUIVANT boucle aussi. Déplacer
+   * la règle ici ferait s'arrêter le concert au bout de sa dernière scène,
+   * c'est-à-dire au milieu du set. */
+  it('⚠️ la scène suivante BOUCLE — l’arrêt en fin de morceau n’est PAS ici', () => {
     expect(sectionSuivante(0, 3)).toBe(1);
     expect(sectionSuivante(2, 3)).toBe(0);
     // Une chaîne vide ne renvoie jamais -1 ni NaN : le montage vient d'être effacé.
     expect(sectionSuivante(0, 0)).toBe(0);
+    // Et une chaîne d'UNE scène boucle sur elle-même, elle ne rend pas -1.
+    expect(sectionSuivante(0, 1)).toBe(0);
   });
 
   /* ⚠️ On bascule pendant la DERNIÈRE mesure, pas après : le moteur applique
