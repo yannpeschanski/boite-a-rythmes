@@ -1,4 +1,10 @@
-/* TROIS BOUCLES, UN MORCEAU — l'acte 6 en couplet / refrain / pont.
+/* COUPLET, REFRAIN, PONT — les boucles de l'acte 6.
+ *
+ * ⚠️ Le titre disait « TROIS BOUCLES, UN MORCEAU » : depuis le crescendo du
+ * 2026-09-17, deux morceaux s'arrêtent au refrain et seul le dernier a un pont.
+ * Ce que ce fichier mesure ne change pas pour autant — les contraintes sont
+ * relationnelles, elles jugent une boucle CONTRE celle d'avant, quel que soit
+ * le nombre de boucles du morceau.
  *
  * Demande de Yann (2026-09-04) : *« pour chacun de ces morceaux, on travaille 3
  * boucles qui permettront de faire ensuite couplet/refrain/pont pour le mode

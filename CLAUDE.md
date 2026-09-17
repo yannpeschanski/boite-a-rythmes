@@ -254,7 +254,7 @@ un clic de trop ne coûte pas une composition.
 
 ⚠️ **Les QUATRE données du joueur sont rangées par pseudo — progression,
 besace, discographie, banque de séquences.** La banque ne l'était pas, et l'acte 6
-y range neuf boucles : elles débordaient d'une partie sur l'autre. Le profil lui
+y range sept boucles : elles débordaient d'une partie sur l'autre. Le profil lui
 arrive par un SETTER (`game` importe `bank`, pas l'inverse), et `supprimerJoueur`
 efface les quatre ensemble — n'en oublier qu'une laisse un profil qui ressuscite
 en retapant son nom.
@@ -363,7 +363,7 @@ c'est le seul mot que la bande affiche en grand ; et retirer la dernière scène
 Monter reste un geste de PRÉPARATION : la surface de scène n'y gagne rien.
 
 ⚠️ **Les PARTIES et la BANQUE ne se confondent pas.** La banque est le matériel
-(l'acte 6 livre neuf boucles), les parties sont le morceau qu'on monte. Ranger
+(l'acte 6 livre sept boucles), les parties sont le morceau qu'on monte. Ranger
 sous A ne touche pas la banque.
 
 ⚠️ **Un geste momentané porte son ALLER *et* son RETOUR, et le retour RELIT le
@@ -710,7 +710,7 @@ faire n'est pas neutre.
 ⚠️ `partie` est **facultatif** sur une boucle, et c'est la distinction entre le
 MATÉRIEL et le MORCEAU : toutes les boucles vont dans la banque de séquences,
 seules celles qui citent une LETTRE entrent dans les PARTIES. Une architecture
-décrit UN morceau — l'acte 6 en livre neuf et n'en monte que trois, les six
+décrit UN morceau — l'acte 6 en livre sept et n'en monte que trois, les quatre
 autres restant à un clic. Une boucle cite une lettre et non un nom de section :
 au concert de l'acte 7, A/B/C sont trois MORCEAUX, aucun n'est « le couplet ».
 ⚠️ Après une scène, **on ne produit plus et on n'est plus noté** — mais une autre
@@ -737,9 +737,14 @@ monté : six commandes sous 44 px (les exceptions revendiquées), aucun
 débordement ; la bande fait 44 px, ses quatre pastilles 56 px et ses huit cases
 52,7 px.
 
-⚠️ **Un MORCEAU, c'est trois boucles qui se répondent, et un DISQUE en compte
-trois.** L'acte 6 livre neuf boucles (trois morceaux × couplet / refrain / pont).
-Les deux boucles qui suivent un couplet ne se jugent pas dans l'absolu — un
+⚠️ **Un morceau tient à DEUX boucles, et l'acte 6 va CRESCENDO — 2, 2, 3**
+(arbitré le 2026-09-17). Il en livrait neuf, trois par morceau ; les deux
+premiers s'arrêtent maintenant au REFRAIN et seul le dernier a un pont, soit
+sept boucles. Un couplet suivi d'un refrain est déjà un morceau : le pont cesse
+d'être une formalité répétée trois fois et devient la seule chose que le disque
+apprenne à sa dernière boucle. Corollaire de mise en scène : **la LEÇON du pont
+descend avec lui** — on n'explique pas un geste deux morceaux avant de le
+demander. Une boucle qui suit un couplet ne se juge pas dans l'absolu — un
 refrain n'a pas de définition, il s'OUVRE par rapport au couplet. D'où
 `partirDeLaSerie` (repartir d'une série NOMMÉE, pas de « la dernière livrée ») et
 huit contraintes relationnelles qui lisent `ctx.depart` et répondent **faux**
@@ -851,7 +856,7 @@ et la fin de l'acte, l'écran « LE CATALOGUE » reprenait le Mode Live pour une
 étape. Se lit sur le curseur PERSISTÉ, qui ne recule jamais.
 
 ⚠️ **Le Mode Live s'ouvre à l'acte 7, au CONCERT** (2026-09-16) — l'acte 6
-PRÉPARE les neuf boucles et ne montre pas la console. Ça renverse l'arbitrage du
+PRÉPARE les sept boucles et ne montre pas la console. Ça renverse l'arbitrage du
 2026-09-14 (« réponse A », le Live à l'acte 6) et le jeu a dit pourquoi : la
 scène de l'acte 6 ne montait qu'UN morceau (une architecture décrit un morceau),
 donc le concert de l'acte 7 recommençait avec le même — le dernier acte était la

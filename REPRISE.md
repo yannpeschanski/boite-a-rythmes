@@ -3,7 +3,21 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-16 — ✅ **Les actes 6 et 7 échangent leurs
+> Dernière mise à jour : 2026-09-17 — ✅ **Le disque de l'acte 6 va crescendo :
+> 2, 2, 3.** Il livrait neuf boucles, trois par morceau — la même forme trois
+> fois. Les deux premiers morceaux s'arrêtent maintenant au REFRAIN, seul « celui
+> que personne n'attend » monte jusqu'au pont : **sept boucles**. Un couplet
+> suivi d'un refrain est déjà un morceau, et le récit le dit. Deux pièges payés :
+> la LEÇON du pont a dû descendre avec lui (sinon on explique un geste que plus
+> rien ne demande pendant deux morceaux), et le commentaire qui justifiait la
+> PHRASE du premier couplet citait son pont — sans pont c'est son refrain qui la
+> porte, la contrainte ne bouge pas mais sa raison écrite devait suivre. Le test
+> du crescendo n'affirme pas « 2, 2, 3 » : il vérifie que la courbe ne redescend
+> jamais et que le maximum est le DERNIER morceau, sinon « 3, 2, 2 » passerait.
+> Rejoué en entier : 19 étapes à l'acte 6, 7/7 boucles au set de l'acte 7,
+> 15 productions, aucune fuite de verrou.
+>
+> Avant cela, le 16 : ✅ **Les actes 6 et 7 échangent leurs
 > rôles.** L'acte 6 PRÉPARE ses neuf boucles sans jamais montrer le Mode Live (sa
 > scène est devenue un écran de récit, au passé), et c'est l'acte 7 qui OUVRE le
 > mode : son set joue les trois morceaux, son rappel le jingle. Ça défait

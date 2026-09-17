@@ -516,9 +516,11 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
      * qu'un morceau livré à l'acte 1 est encore là en septembre, et que ce qui
      * a chacun sa série ne s'écrase pas. */
     log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
-    if (game.productions.length !== 17) log.push('   ⚠️ DIX-SEPT productions attendues');
-    if (game.productions.filter((p) => p.acte === 6).length !== 9)
-      log.push('   ⚠️ l’acte 6 doit ranger NEUF boucles — trois morceaux de trois');
+    if (game.productions.length !== 15) log.push('   ⚠️ QUINZE productions attendues');
+    // ⚠️ SEPT depuis le crescendo du 2026-09-17 : deux morceaux en couplet /
+    // refrain, un seul qui monte jusqu'au pont.
+    if (game.productions.filter((p) => p.acte === 6).length !== 7)
+      log.push('   ⚠️ l’acte 6 doit ranger SEPT boucles — 2 + 2 + 3');
     if (game.productions.filter((p) => p.acte === 5).length !== 4)
       log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
     return log;

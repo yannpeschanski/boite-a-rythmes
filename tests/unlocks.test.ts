@@ -166,7 +166,7 @@ describe('le concert ouvre le Mode Live, et l’acte le garde ouvert', () => {
   });
 
   /* ⚠️ Et l'acte 6 TOUT ENTIER le laisse fermé, quelle que soit l'étape : on y
-   * prépare les neuf boucles sans jamais voir la console. C'est la moitié de
+   * prépare les sept boucles sans jamais voir la console. C'est la moitié de
    * l'arbitrage qui se vérifie ici — l'autre est dans `carriere.test.ts`. */
   it('⚠️ et l’acte 6 le laisse fermé de bout en bout', () => {
     for (const etape of [0, 5, 10, 20, 99]) {
