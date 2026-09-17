@@ -3,7 +3,24 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **Le disque de l'acte 6 va crescendo :
+> Dernière mise à jour : 2026-09-17 — ✅ **L'acte 6 apprivoise le module de
+> montage.** Sixième type d'étape (`EtapeMontage`) : un montage par morceau —
+> COUPLET / REFRAIN, A B B′, RONDO — le même crescendo que les boucles, parce
+> que le rondo est le seul modèle qui demande trois matières. Le jeu RANGE les
+> lettres, le joueur MONTE, et **on monte sans entendre** (une chaîne ne se joue
+> que dans le Mode Live, fermé jusqu'au concert) : les deux ont été posés en
+> question avant de coder. Le rappel du 14 juin passe de BOUCLE à **CLUB**, seul
+> montage à relief qui tienne sur une lettre.
+> ⚠️ Trois défauts trouvés en MESURANT : le nom du modèle était vert (le vert dit
+> « fait »), on atterrissait sur le mauvais onglet, et **trois textes de l'onglet
+> Production nommaient le Mode Live** alors qu'il est fermé — l'étape y envoie
+> désormais à coup sûr.
+> ⚠️ Et `verrous-masques.cjs` avait deux angles morts : il ne relisait que
+> l'onglet ouvert (d'où les trois fuites), et son garde-fou de productions était
+> périmé **et muet** (alertes indentées, filtre en `startsWith`). Corrigés, plus
+> la ligne fautive désormais rapportée.
+>
+> Avant cela, le même jour : ✅ **Le disque de l'acte 6 va crescendo :
 > 2, 2, 3.** Il livrait neuf boucles, trois par morceau — la même forme trois
 > fois. Les deux premiers morceaux s'arrêtent maintenant au REFRAIN, seul « celui
 > que personne n'attend » monte jusqu'au pont : **sept boucles**. Un couplet

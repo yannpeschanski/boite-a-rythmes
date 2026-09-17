@@ -56,6 +56,9 @@
    * motif change, et `rankPresets` (34 presets × 6 permutations) seulement
    * pour les commandes qui demandent un genre. */
   const commande = $derived(game.commande);
+  /* L'étape de MONTAGE en cours — l'autre chose qui peut amener ici depuis le
+     récit. Elle n'a pas de cahier : rien n'est vérifié, donc tout est écrit. */
+  const montage = $derived(game.montage);
   /* La provenance ne vit pas dans l'état livré (voir `pattern.presetCharge`) :
      elle voyage à côté, et le cahier la reçoit ici — en direct comme à la
      livraison, sinon la case se cocherait à l'écran et refuserait au clic. */
@@ -93,6 +96,14 @@
     onSwitchView?.('game');
   }
 
+  /* Revenir du montage. ⚠️ Rien à livrer et rien à abandonner : le montage
+     n'est pas noté, et la chaîne reste telle qu'on l'a laissée — c'est le
+     concert qui la remplacera, et lui seul. */
+  function revenirDuMontage() {
+    game.terminerMontage();
+    onSwitchView?.('game');
+  }
+
 
   const engine = new AudioEngine(() => pattern.snapshot());
 
@@ -118,7 +129,11 @@
     if (!id || id === 'rythme') return 'rythme';
     return unlocks.has(id === 'synthe' ? 'synth' : 'production') ? id : 'rythme';
   }
-  let activeTab = $state<OngletId>(ongletRepris());
+  /* ⚠️ UN MONTAGE ARRIVE SUR PRODUCTION — la consigne NOMME cet onglet, et y
+     atterrir ailleurs ferait du seul geste de l'étape un geste à chercher.
+     C'est la quatrième fois que ce projet paie un pas caché ; ici il coûte une
+     ligne. `ongletRepris()` garde la main dans tous les autres cas. */
+  let activeTab = $state<OngletId>(game.montage ? 'effets' : ongletRepris());
   $effect(() => noterSession({ onglet: activeTab }));
   // Les onglets OUVERTS — dérivés une fois : la barre les affiche, et c'est
   // leur nombre qui décide si elle s'affiche du tout (voir plus bas).
@@ -552,6 +567,24 @@
     </div>
   {/if}
 
+  {#if montage}
+    <!-- ⚠️ LE MONTAGE reste sous les yeux comme le fax d'une commande, et pour
+         la même raison : on entre dans l'Atelier et on oublie ce qu'on venait
+         y faire. Il ne porte AUCUNE case — rien n'est vérifié — donc il porte
+         la consigne en toutes lettres, y compris le nom du modèle à charger,
+         qui vit dans un sélecteur à l'autre bout de l'onglet Production. -->
+    <div class="commande montage">
+      <div class="commande-tete">
+        <span>🎚 {montage.entete}</span>
+        <span class="compte">{montage.modele}</span>
+      </div>
+      <p class="chapeau">{montage.dansLAtelier}</p>
+      <div class="commande-actions">
+        <button class="xp-btn primary tap44-y" onclick={revenirDuMontage}>◂ Revenir au récit</button>
+      </div>
+    </div>
+  {/if}
+
   {#if commande}
     <!-- La commande reste sous les yeux tant qu'elle n'est pas livrée : sans
          ça, on entre dans l'Atelier et on oublie ce qu'on venait y faire. -->
@@ -934,6 +967,12 @@
   }
   .commande-tete .compte {
     color: var(--xp-lcd);
+  }
+  /* ⚠️ Le vert dit « allumé / fait » — c'est ce qui rend lisible le compteur
+     d'un cahier. Le nom d'un MODÈLE n'est pas un état : c'est ce qu'il reste à
+     aller chercher. Ambre, donc, comme tout ce qui nomme sans cocher. */
+  .montage .commande-tete .compte {
+    color: var(--xp-accent-amber);
   }
   /* Livrer et laisser tomber côte à côte : la sortie doit être aussi visible
      que l'entrée, sinon elle n'existe pas. Elles s'empilent sous 320 px. */

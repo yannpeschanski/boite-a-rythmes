@@ -54,9 +54,14 @@
   }
 </script>
 
+<!-- ⚠️ CE TEXTE NE NOMME PAS LE MODE LIVE, et c'est une correction du
+     2026-09-17 : l'onglet Production est ouvert depuis l'acte 4, le Mode Live
+     seulement au concert, et l'étape de montage de l'acte 6 envoie ici — donc
+     la phrase se lisait à coup sûr avec le module encore fermé. Le sujet n'a
+     jamais été la salle où l'on joue : c'est le MONTAGE. -->
 <p class="hint">
-  Une <strong>partie</strong> est une des matières du morceau — A, B, C. Le Mode Live les enchaîne
-  selon un montage (couplet / refrain, AABA, club…) et tu joues les variations par-dessus.
+  Une <strong>partie</strong> est une des matières du morceau — A, B, C. Un <strong>montage</strong>
+  les enchaîne (couplet / refrain, AABA, club…) et tu joues les variations par-dessus.
   Range ici le rythme affiché ; recharge-le pour le retravailler.
 </p>
 

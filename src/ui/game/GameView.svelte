@@ -29,7 +29,8 @@
   let {
     onGoAtelier,
     onGoScene,
-  }: { onGoAtelier?: () => void; onGoScene?: () => void } = $props();
+    onGoMontage,
+  }: { onGoAtelier?: () => void; onGoScene?: () => void; onGoMontage?: () => void } = $props();
 
   // État lu EN DIRECT par le moteur à chaque tick (comme pattern.snapshot()
   // pour l'Atelier), pas figé une fois pour toutes au clic sur ▶ — sinon,
@@ -850,6 +851,11 @@
         // de passer la main au Mode Live, sinon deux moteurs jouent ensemble.
         stopAll();
         onGoScene?.();
+      }}
+      onMontage={() => {
+        // Monter le morceau : même précaution, l'Atelier a son propre moteur.
+        stopAll();
+        onGoMontage?.();
       }}
     />
   {:else}

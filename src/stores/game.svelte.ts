@@ -55,6 +55,7 @@ import {
   type Etape,
   type EtapeCommande,
   type EtapeScene,
+  type EtapeMontage,
   type EtapeRecit,
   EPILOGUE,
   LONGUEUR_EPILOGUE,
@@ -432,6 +433,10 @@ class GameStore {
    * l'étape doit survivre à un changement de vue (on part dans le Mode Live,
    * qui n'est pas le Mode jeu). */
   sceneEnCours = $state<{ acte: number; etape: number } | null>(null);
+  /* ⚠️ VOLATIL comme `sceneEnCours`, et pour la même raison : un rechargement
+   * pendant un montage doit rendre l'écran du RÉCIT (qui réaffiche l'étape et
+   * son bouton), pas un Atelier dont le bandeau aurait disparu. */
+  montageEnCours = $state<{ acte: number; etape: number } | null>(null);
   /** Le verdict du dernier refus, pour que l'écran dise ce qui manque. */
   commandeVerdict = $state<Verdict | null>(null);
   /* Ce que le client dit en acceptant, à afficher UNE fois au retour.
@@ -700,6 +705,13 @@ class GameStore {
     return e && e.kind === 'scene' ? e : null;
   }
 
+  /** L'étape de MONTAGE en cours, ou `null`. Jumelle de `scene`. */
+  get montage(): EtapeMontage | null {
+    const c = this.montageEnCours;
+    const e = c ? acteParId(c.acte).etapes[c.etape] : this.etapeCourante;
+    return e && e.kind === 'montage' ? e : null;
+  }
+
   /* ⚠️ Les modules ouverts par l'ÉTAPE en cours — commande OU scène.
    *
    * `unlocks` ne lisait que la commande. Une scène qui envoie dans le Mode Live
@@ -809,6 +821,49 @@ class GameStore {
   terminerScene(): void {
     const c = this.sceneEnCours;
     this.sceneEnCours = null;
+    if (!c) return;
+    this.acteActif = c.acte;
+    this.etapeActive = c.etape;
+    this.avancerCarriere();
+    this.acteTermineAAnnoncer = null;
+  }
+
+  /* MONTER LE MORCEAU — le jeu RANGE, le joueur MONTE.
+   *
+   * ⚠️ Les lettres sont posées ici parce que le joueur vient de les écrire :
+   * les retrouver une par une dans la discographie serait du transport, pas de
+   * l'apprentissage. Ce qui reste entièrement à faire est la FORME — charger
+   * le modèle que l'étape nomme, changer les tours, couper des lignes.
+   *
+   * ⚠️ Et la chaîne précédente est EFFACÉE : sans ça, le montage du morceau
+   * d'avant reste affiché et se lit comme un travail déjà fait. Même règle
+   * qu'une scène — ne rien faire n'est pas neutre.
+   *
+   * Une boucle qui manque est sautée, un montage ne bloque jamais. */
+  ouvrirMontage(): void {
+    const e = this.etapeCourante;
+    if (e?.kind !== 'montage') return;
+    this.montageEnCours = { acte: this.acteActif, etape: this.etapeActive };
+    const acte = e.depuisLActe ?? this.acteActif;
+    let quelqueChose = false;
+    for (const b of e.boucles) {
+      const p = productionDeLaSerie(this.productions, acte, b.serie);
+      if (!p) continue;
+      parties.poser(b.partie, p.etat, b.nom);
+      quelqueChose = true;
+    }
+    architecture.effacer();
+    /* On entre sur la première lettre : arriver sur la dernière boucle livrée
+       ferait mentir le panneau, qui montre A en tête de chaîne. */
+    if (quelqueChose && parties.remplie('A')) parties.charger('A');
+  }
+
+  /* Revenir du montage. ⚠️ On AVANCE, comme au retour d'une scène : il n'y a
+   * rien à vérifier — monter n'est pas noté — et revenir sans avancer ferait
+   * rejouer le même écran indéfiniment. */
+  terminerMontage(): void {
+    const c = this.montageEnCours;
+    this.montageEnCours = null;
     if (!c) return;
     this.acteActif = c.acte;
     this.etapeActive = c.etape;

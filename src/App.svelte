@@ -125,9 +125,16 @@
      l'Atelier, c'est-à-dire hors du récit au milieu de l'acte 7. La carrière,
      elle, réaffiche la scène et son « ▶ LANCER » : c'est le bon endroit pour
      reprendre. */
+  /* ⚠️ ET UN ATELIER EMPRUNTÉ PAR UN MONTAGE SE NOTE PAREIL, pour la même
+     raison : `montageEnCours` est volatil, donc restaurer l'Atelier rendrait
+     l'établi NU — sans le bandeau qui nomme le modèle à charger et sans le
+     bouton qui ramène au récit. La carrière, elle, réaffiche l'étape et son
+     bouton. Une commande, à l'inverse, se restaure : elle vit dans le store
+     avec son acte et son étape (`reprendreCommande`). */
   $effect(() => {
     if (view === 'live') noterSession({ vue: retourDeScene ? 'game' : 'live' });
-    else if (view === 'atelier' || view === 'game') noterSession({ vue: view });
+    else if (view === 'atelier') noterSession({ vue: game.montage ? 'game' : 'atelier' });
+    else if (view === 'game') noterSession({ vue: view });
   });
 
   /* ⚠️ La commande est notée ICI plutôt qu'aux cinq endroits du store qui la
@@ -278,6 +285,7 @@
         retourDeScene = true;
         view = 'live';
       }}
+      onGoMontage={() => (view = 'atelier')}
     />
   {/if}
 {/if}
