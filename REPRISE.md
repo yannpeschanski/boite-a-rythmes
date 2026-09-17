@@ -3,7 +3,23 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **Une chaîne s'écoute depuis
+> Dernière mise à jour : 2026-09-17 — ✅ **Sauter à une scène, et s'arrêter à
+> la fin du morceau.** Les deux frictions que j'avais signalées en livrant le
+> bouton ÉCOUTER. Le saut est sur le **NUMÉRO** de la scène (la rangée porte
+> déjà six interactifs — un clic dessus ferait un interactif dans un
+> interactif), et un seul chemin sert « partir de là » et « sauter là ».
+> ⚠️ **L'arrêt vit dans l'Atelier, pas dans `ui/chaine.ts`** : le Mode Live
+> BOUCLE toujours, et y mettre la règle couperait le concert au milieu du set.
+> Un test garde l'invariant avec sa raison. ⚠️ Et l'arrêt ne se fait pas dans la
+> file du moteur (le tick continue après `apply()`) : un drapeau, et la frame
+> suivante coupe.
+> ⚠️ **La mesure m'a évité une exception que j'allais revendiquer** : le numéro
+> faisait 10,8 × 12 px, et j'étais prêt à l'écrire comme quatrième exception au
+> 44 px. La rangée fait 312 px et le champ est plafonné à 24ch — les 44 × 44 ne
+> coûtaient rien. Ma sonde était aussi trop indulgente (`e.contains(el)` rendait
+> vrai sur le PARENT) ; resserrée, elle accuse.
+>
+> Avant cela, le même jour : ✅ **Une chaîne s'écoute depuis
 > l'Atelier.** Bouton ▶ ÉCOUTER dans le panneau de montage : c'était l'option
 > que j'avais chiffrée comme du code neuf, et le seul geste musical du jeu sans
 > retour immédiat. ⚠️ **Ce qu'on entend a désormais UNE définition**

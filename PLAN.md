@@ -48,6 +48,56 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Sauter à une scène, et s'arrêter à la fin du morceau (2026-09-17)
+
+**Demande** : *« Ajoute un clic sur une scène pour y sauter et arrête la lecture
+à la fin du morceau. »* Les deux points que j'avais signalés en livrant le
+bouton ÉCOUTER — l'écoute repartait toujours de la scène 1, et elle rebouclait.
+
+**Le saut est sur le NUMÉRO, pas sur la rangée.** La rangée porte déjà le nom,
+trois lettres, deux steppers de tours et les lignes coupées : y poser un clic
+ferait un interactif dans un interactif, qui ne se tape pas de façon prévisible
+(la leçon du mini séquenceur du Live). Le numéro est le seul endroit inerte de
+la scène. Un seul chemin sert les deux cas — partir de là à l'arrêt, sauter là
+en lecture : deux fonctions auraient divergé sur ce qui compte (la mise de côté
+du motif, la remise à zéro de la fin de morceau). Le saut passe par la file du
+moteur, donc il tombe au début de la mesure suivante ; il annule d'abord la
+bascule déjà programmée, sinon l'avance automatique gagnait la course et le
+saut était avalé sans un mot.
+
+⚠️ **L'ARRÊT VIT DANS L'ATELIER, PAS DANS LE MODULE PARTAGÉ.** C'est le point
+de conception de cette livraison : `sectionSuivante` garde son modulo, parce que
+le Mode Live est une surface de JEU où l'on enchaîne sans fin — y mettre la
+règle ferait s'arrêter le concert au bout de sa dernière scène, c'est-à-dire au
+milieu du set. Ici on vérifie une forme, et un montage qui reboucle ne dit
+jamais s'il finit bien. Un test garde l'invariant avec sa raison écrite.
+
+⚠️ **L'arrêt ne se fait pas DANS la file du moteur.** `apply()` est appelé au
+milieu du tick, qui continue ensuite sur `resetCursorsAt` : couper là ferait
+tourner la suite du tick sur un moteur arrêté. On lève un drapeau et la frame
+suivante coupe — au plus 16 ms après la frontière, donc après la fin du morceau.
+La dernière scène joue toutes ses mesures avant que ça s'arrête.
+
+⚠️ **ET LA MESURE M'A ÉVITÉ UNE EXCEPTION QUE JE ALLAIS REVENDIQUER.** Le
+numéro en bouton nu faisait **10,8 × 12 px** — intouchable au pouce. J'étais
+prêt à l'écrire comme quatrième exception au 44 px, en invoquant « la rangée est
+pleine ». Mesuré : la rangée fait 312 px et le champ de nom est plafonné à 24ch
+(144 px réels). Les 44 × 44 ne mordent donc sur rien, ils remplissent du vide —
+il n'y avait pas d'arbitrage à faire, juste une mesure à prendre.
+⚠️ Et ma sonde elle-même était trop indulgente : `e.contains(el)` rendait vrai
+dès qu'on touchait le PARENT, donc un bouton de 11 px passait pour touchable.
+Corrigée, elle accuse — c'est ce qui a rendu le défaut visible.
+
+**Vérifié.** Dans le navigateur : cliquer « 3 » à l'arrêt démarre bien à la
+scène 3 (le chiffre devient ▶, la note dit « scène 3 sur 3 — le morceau
+s'arrête à la fin »), le transport passe de `joue` à `arrêté` tout seul et n'y
+revient pas, le motif du joueur est rendu intact, et un clic pendant la lecture
+saute de la scène 0 à la 2. 44 × 44 mesurés en pointeur grossier, aucun
+débordement, aucune erreur console. 833 tests, carrière rejouée.
+
+**Fichiers** : `src/ui/atelier/{AtelierView,MontagePanel}.svelte`,
+`tests/chaine.test.ts`, `CLAUDE.md`, `REPRISE.md`.
+
 ### ✅ Écouter le montage depuis l'Atelier (2026-09-17)
 
 **Demande** : *« Ajoute un bouton écouter dans le panneau de montage. »* C'est
