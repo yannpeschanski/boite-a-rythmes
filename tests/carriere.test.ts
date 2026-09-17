@@ -1355,11 +1355,13 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
 describe('L’acte 6 ne commande rien, il demande de faire', () => {
   const acte6 = () => ACTES[6];
 
-  /* ⚠️ NEUF commandes depuis le 2026-09-05 : trois morceaux de trois boucles.
-   * *« J'imaginais 3 morceaux, il n'y en a qu'un seul »* (Yann, sur la première
-   * version). Ce qui ne change pas — et c'est le fond de l'acte — c'est
+  /* ⚠️ SEPT commandes depuis le crescendo du 2026-09-17 : deux morceaux de
+   * DEUX boucles, puis un de TROIS (*« il faut y aller crescendo dans les
+   * morceaux »*). Elles étaient neuf depuis le 2026-09-05, quand l'acte est
+   * passé d'un morceau à trois (*« J'imaginais 3 morceaux, il n'y en a qu'un
+   * seul »*). Ce qui ne change pas — et c'est le fond de l'acte — c'est
    * qu'aucune d'elles n'exige un GOÛT : elles demandent un couplet, puis qu'il
-   * s'ouvre, puis qu'il retombe. */
+   * s'ouvre, et une seule fois qu'il retombe. */
   const boucles6 = () =>
     acte6().etapes.filter((e) => e.kind === 'commande') as Array<{
       entete: string;
@@ -1368,8 +1370,9 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
       cahier: Array<{ id: string }>;
     }>;
 
-  /** Les trois boucles groupées par morceau, dans l'ordre du récit. Le morceau
-   *  est le préfixe de la série (« passe », « seul », « attend »). */
+  /** Les boucles groupées par morceau, dans l'ordre du récit — deux, deux,
+   *  trois. Le morceau est le préfixe de la série (« passe », « seul »,
+   *  « attend »). */
   const parMorceau6 = () => {
     const m = new Map<string, ReturnType<typeof boucles6>>();
     for (const c of boucles6()) {
@@ -1379,20 +1382,34 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     return m;
   };
 
-  it('est jouable, et ne travaille qu’à l’Atelier — trois morceaux de trois boucles', () => {
+  it('est jouable, et ne travaille qu’à l’Atelier — trois morceaux, sept boucles', () => {
     expect(acteAVenir(acte6())).toBe(false);
     expect(acte6().etapes.some((e) => e.kind === 'exercice')).toBe(false);
     const cmds = boucles6();
-    expect(cmds).toHaveLength(9);
+    expect(cmds).toHaveLength(7);
     // Une série par boucle, sinon la discographie n'en garderait qu'une.
     const series = cmds.map((c) => c.serie);
-    expect(new Set(series).size, 'deux boucles sous la même série').toBe(9);
+    expect(new Set(series).size, 'deux boucles sous la même série').toBe(7);
     for (const se of series) expect(se, 'une boucle sans série').toBeTruthy();
-    // Trois morceaux, trois boucles chacun.
-    const morceaux = parMorceau6();
-    expect(morceaux.size, 'il ne reste pas trois morceaux').toBe(3);
-    for (const [nom, b] of morceaux)
-      expect(b.length, `le morceau « ${nom} » n’a pas trois boucles`).toBe(3);
+    expect(parMorceau6().size, 'il ne reste pas trois morceaux').toBe(3);
+  });
+
+  /* ⚠️ LE CRESCENDO, et c'est une demande : *« il faut y aller crescendo dans
+   * les morceaux, faire d'abord deux morceaux nécessitant que 2 boucles puis un
+   * dernier morceau avec 3 boucles »* (Yann, 2026-09-17).
+   *
+   * Ce que le test tient, et qui est plus que le compte : la courbe ne
+   * REDESCEND jamais, et la troisième boucle est la DERNIÈRE du disque. Écrit
+   * comme « 2, 2, 3 » en dur, il passerait aussi sur « 3, 2, 2 », qui est
+   * l'inverse de ce qui est demandé. */
+  it('⚠️ va CRESCENDO — deux boucles, deux boucles, puis trois', () => {
+    const tailles = [...parMorceau6().values()].map((b) => b.length);
+    expect(tailles, 'ce n’est plus deux, deux, trois').toEqual([2, 2, 3]);
+    for (let i = 1; i < tailles.length; i++)
+      expect(tailles[i], `le morceau ${i + 1} en demande moins que le précédent`)
+        .toBeGreaterThanOrEqual(tailles[i - 1]);
+    // Et le plus long est le dernier : un disque ne finit pas sur sa boucle facile.
+    expect(Math.max(...tailles)).toBe(tailles[tailles.length - 1]);
   });
 
   /* ⚠️ Les deux boucles qui suivent le couplet se jugent CONTRE lui, jamais
@@ -1440,11 +1457,18 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
   /* ⚠️ Un refrain MONTE, un pont S'ÉCLAIRCIT — et jamais l'inverse. C'est ce
    * qui distingue les deux sections ; les intervertir donnerait deux ponts. */
   it('⚠️ le refrain monte, le pont s’éclaircit', () => {
+    /* ⚠️ UN SEUL PONT depuis le crescendo — et le test l'exige au lieu de le
+     * tolérer : écrit avec un `if (pont)` silencieux, il passerait aussi le
+     * jour où plus aucun morceau n'en aurait, c'est-à-dire là où la leçon du
+     * pont ne s'appliquerait à rien. */
+    const ponts = [...parMorceau6().values()].filter((b) => b.length > 2);
+    expect(ponts, 'il n’y a plus exactement un pont dans l’acte').toHaveLength(1);
     for (const [nom, b] of parMorceau6()) {
       const [, refrain, pont] = b;
       const ids = (c: (typeof b)[number]) => c.cahier.map((l) => l.id);
       expect(ids(refrain), `« ${nom} » refrain`).toContain('phrase-monte:melody');
       expect(ids(refrain), `« ${nom} » refrain`).toContain('plus-fourni');
+      if (!pont) continue;
       expect(ids(pont), `« ${nom} » pont`).toContain('phrase-eclaircit:melody');
       /* ⚠️ ET SURTOUT PAS `moins-fourni` : retiré le 2026-09-16. Le compte
        * était relatif au couplet que le joueur avait choisi, donc un couplet
@@ -1483,7 +1507,7 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
    * scène d'ici montait UN morceau (une architecture décrit un morceau), donc
    * le concert recommençait avec lui. On prépare ici, on joue là-bas.
    *
-   * Ce que le test garde, et qui est l'essentiel : les neuf boucles ne se
+   * Ce que le test garde, et qui est l'essentiel : les sept boucles ne se
    * perdent pas. Elles n'ont jamais eu besoin d'une scène pour exister — c'est
    * le SET de l'acte 7 qui les range toutes en banque (`depuisLActe: 6`), et
    * c'est là qu'on les joue. Voir « monte le DISQUE en set » plus bas. */
@@ -1499,12 +1523,12 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     expect(texte, 'l’acte 6 nomme le Mode Live').not.toContain('mode live');
   });
 
-  /* ⚠️ …mais les neuf boucles doivent toutes ATTERRIR quelque part, et c'est
+  /* ⚠️ …mais les sept boucles doivent toutes ATTERRIR quelque part, et c'est
    * l'acte 7 qui les reprend. Ce test croise les deux actes : une série livrée
    * ici et oubliée là-bas serait un morceau produit que personne ne rejoue. */
-  it('⚠️ et ses neuf séries sont TOUTES reprises par le concert', () => {
+  it('⚠️ et ses sept séries sont TOUTES reprises par le concert', () => {
     const series = acte6().etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
-    expect(series).toHaveLength(9);
+    expect(series).toHaveLength(7);
     const set = ACTES[7].etapes.find(
       (e) => e.kind === 'scene' && e.depuisLActe === 6,
     ) as Extract<Etape, { kind: 'scene' }> | undefined;
@@ -1737,7 +1761,7 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
    *
    * Avant, l'acte n'y montait que pour le RAPPEL : le concert lui-même était un
    * exercice au clavier du Mode jeu, si bien que la répétition de l'acte 6
-   * (« neuf boucles, un disque ») était plus riche que le concert de l'acte 7.
+   * (« sept boucles, un disque ») était plus riche que le concert de l'acte 7.
    * Les deux scènes se distinguent, et ce test garde la distinction : le SET
    * monte le disque, un MORCEAU par lettre ; le RAPPEL pose une boucle. */
   it('⚠️ monte le DISQUE en set — un morceau par lettre', () => {
@@ -1748,7 +1772,7 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
     // Le SET rejoue ce que l'acte 6 a livré — l'acte 7 ne produit rien.
     expect(set.depuisLActe).toBe(6);
     const series6 = ACTES[6].etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
-    expect(set.bouclesDeLActe?.map((b) => b.serie), 'les neuf boucles vont en banque').toEqual(
+    expect(set.bouclesDeLActe?.map((b) => b.serie), 'les sept boucles vont en banque').toEqual(
       series6,
     );
     /* ⚠️ TROIS MORCEAUX, TROIS LETTRES — pas trois sections d'un morceau. Ce

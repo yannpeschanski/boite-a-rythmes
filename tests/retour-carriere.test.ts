@@ -42,12 +42,14 @@ describe('la DISCOGRAPHIE s’ouvre — la clé a DEUX moitiés', () => {
 
   it('… et la liste rangée n’a jamais deux fois la même clé', () => {
     /* C'est EXACTEMENT ce que la vue demande : `{#each … (cleProduction(p))}`.
-     * Le test porte sur les neuf boucles de l'acte 6 plus les quatre genres de
+     * Le test porte sur les sept boucles de l'acte 6 plus les quatre genres de
      * l'acte 5, les deux actes qui livrent plusieurs morceaux. */
     const liste = [
       prod(5, 'hip-hop', 'HIP-HOP'), prod(5, 'club', 'CLUB'), prod(5, 'latino', 'LATINO'),
-      prod(6, 'passe-couplet', 'A'), prod(6, 'passe-refrain', 'B'), prod(6, 'passe-pont', 'C'),
-      prod(6, 'seul-couplet', 'D'), prod(6, 'seul-refrain', 'E'), prod(6, 'seul-pont', 'F'),
+      prod(6, 'passe-couplet', 'A'), prod(6, 'passe-refrain', 'B'),
+      prod(6, 'seul-couplet', 'C'), prod(6, 'seul-refrain', 'D'),
+      prod(6, 'attend-couplet', 'E'), prod(6, 'attend-refrain', 'F'),
+      prod(6, 'attend-pont', 'G'),
     ].reduce(ranger, [] as Production[]);
     const cles = liste.map(cleProduction);
     expect(new Set(cles).size).toBe(cles.length);

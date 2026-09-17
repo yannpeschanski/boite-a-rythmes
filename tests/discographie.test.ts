@@ -213,7 +213,7 @@ describe('un acte qui livre plusieurs genres les garde tous', () => {
 });
 
 describe('chaque production du récit a un nom et un destinataire', () => {
-  it('les huit livraisons sont nommées', () => {
+  it('chaque livraison du récit porte un titre et un destinataire', () => {
     /* Sans titre ni client, la discographie serait une liste de fichiers.
      * C'est le récit qui range les morceaux, pas une date. */
     const prod = ACTES.flatMap((a) =>
@@ -221,17 +221,17 @@ describe('chaque production du récit a un nom et un destinataire', () => {
         .filter((e) => e.kind === 'commande' || e.kind === 'livraison')
         .map((e) => ({ acte: a.id, e: e as { titre: string; client: string } })),
     );
-    /* Quinze : les actes 3 et 4 enchaînent trois envois du même morceau, et
-     * l'acte 5 livre quatre GENRES dont trois en deux temps (2026-09-04).
+    /* ⚠️ VINGT ET UNE — et le compte ne se recalibre pas, il se JUSTIFIE :
+     * les actes 3 et 4 enchaînent trois envois du même morceau, l'acte 5 livre
+     * quatre GENRES dont trois en deux temps, et l'acte 6 livre SEPT boucles
+     * (deux morceaux en couplet / refrain, un en couplet / refrain / pont —
+     * crescendo du 2026-09-17, contre neuf avant).
      * ⚠️ Les trois du Tunnel portent des titres DIFFÉRENTS (LE TUNNEL, V2, V3)
      * alors qu'ils se remplacent l'un l'autre : c'est voulu, c'est le titre qui
-     * dit au joueur laquelle des trois il réécoute. Les quatre de l'acte 5, à
-     * l'inverse, coexistent — elles ont chacune leur SÉRIE. */
-    /* ⚠️ DIX-SEPT depuis le 2026-09-04 : l'acte 6 livre TROIS boucles du même
-     * morceau — couplet, refrain, pont — au lieu d'un seul FB-015. Elles ont
-     * chacune leur série et coexistent, comme les quatre genres de l'acte 5 :
+     * dit au joueur laquelle des trois il réécoute. Les boucles de l'acte 6 et
+     * les genres de l'acte 5, à l'inverse, coexistent — chacun a sa SÉRIE, et
      * un morceau dont il manquerait le refrain ne se joue pas. */
-    expect(prod).toHaveLength(23);
+    expect(prod).toHaveLength(21);
     for (const { acte, e } of prod) {
       expect(e.titre, `acte ${acte} : titre`).toBeTruthy();
       expect(e.client, `acte ${acte} : client`).toBeTruthy();

@@ -48,6 +48,67 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le disque de l'acte 6 va crescendo — 2, 2, 3 (2026-09-17)
+
+**Demande** : *« Il faut y aller crescendo dans les morceaux, faire d'abord deux
+morceaux nécessitant que 2 boucles puis un dernier morceau avec 3 boucles. »*
+
+L'acte livrait **neuf** boucles — trois morceaux × couplet / refrain / pont, la
+même forme trois fois de suite. Il en livre **sept** : « celui qui passe » et
+« celui qu'on écoute seul » s'arrêtent au refrain, « celui que personne
+n'attend » monte jusqu'au pont.
+
+**Ce que ça change au-delà du compte.** Un couplet suivi d'un refrain est déjà
+un morceau, et le disque le DIT maintenant (« Deux qui se répondent, c'est déjà
+un morceau. »). Le pont cesse d'être une formalité répétée trois fois : il est
+la dernière boucle du disque et la seule chose que l'acte apprenne à la fin.
+
+⚠️ **La leçon du pont a suivi sa commande.** Elle vivait devant le pont du
+premier morceau (« C'est l'endroit où on ENLÈVE »). L'y laisser aurait expliqué
+un geste que plus aucune commande ne demandait pendant deux morceaux — la
+réciproque de « un exercice n'enseigne que ce que l'écran a déjà expliqué ».
+Elle est descendue devant la seule commande qui la demande, et sa première
+réplique est passée de « Maintenant le pont » à « Et celui-là, il aura un
+pont ».
+
+⚠️ **Le cul-de-sac de satisfiabilité s'est déplacé, pas refermé.** Le couplet du
+single exige une PHRASE (quatre notes, trois hauteurs) ; la justification écrite
+dans le code était son pont (« elle joue moins mais elle joue encore » est
+impossible sur une seule note). Sans pont, c'est son REFRAIN qui la porte —
+`uneAutrePhrase` et `unePhraseQuiMonte` n'ont rien à changer ni où aller sur une
+note unique. La contrainte ne bouge pas, son commentaire si : un invariant dont
+la raison écrite est fausse est un invariant que la prochaine lecture retirera.
+
+**Ce qui a dû suivre le compte** — chaque endroit où « neuf » était écrit :
+`Section.partie` (le commentaire de `partie` facultatif), `module: null` de
+l'acte 6, le chapeau des trois morceaux, le récit de clôture (« NEUF BOUCLES,
+UN DISQUE » → « SEPT »), la réplique finale du pont (« Fini. Neuf boucles » →
+« Sept »), et le `bouclesDeLActe` du set de l'acte 7.
+
+**Tests.** Le compte est passé de 9 à 7 et de 23 à 21 productions, mais
+⚠️ **le test du crescendo ne s'écrit pas « 2, 2, 3 »** : posé comme ça, il
+passerait aussi sur « 3, 2, 2 », qui est l'inverse de ce qui est demandé. Il
+vérifie donc que la courbe ne redescend jamais ET que le maximum est le
+DERNIER morceau. Même précaution sur « le refrain monte, le pont s'éclaircit » :
+écrit avec un `if (pont)` silencieux, il passerait le jour où aucun morceau
+n'aurait de pont — il exige donc qu'il y en ait exactement un.
+
+**Vérifié en jouant.** `parcours-carriere.cjs` sur un serveur de dev frais
+rejoue la carrière entière : acte 6 à 19 étapes et ses sept commandes acceptées,
+acte 7 ouvrant le Live sur un set de 7/7 boucles en banque (parties ABC), puis
+le rappel, épilogue atteint, 15 productions, aucune erreur console.
+`verrous-masques.cjs` : aucune fuite. Les deux garde-fous du script (17
+productions, neuf boucles) ont signalé le décalage au premier passage — c'est
+leur travail, ils sont recalibrés avec leur raison écrite.
+
+**Fichiers** : `src/model/carriere.ts`, `tests/carriere.test.ts`,
+`tests/trois-boucles.test.ts`, `tests/discographie.test.ts`,
+`tests/unlocks.test.ts`, `tests/retour-carriere.test.ts`,
+`scripts/parcours-carriere.cjs`, `CLAUDE.md`, `REPRISE.md`.
+
+**Restent ouvertes** dans `docs/relecture/retour-carriere.html` : A4 (la course
+du curseur Swing) et A5 (ce qui coince en abandonnant un cahier).
+
 ### ✅ Les actes 6 et 7 échangent leurs rôles — trois arbitrages appliqués (2026-09-16)
 
 Les trois cartes ouvertes de `docs/relecture/retour-carriere.html` sont

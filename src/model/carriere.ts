@@ -327,9 +327,9 @@ export interface EtapeScene {
    *
    * ⚠️ `partie` est FACULTATIF, et c'est la distinction entre le matériel et
    * le morceau : toutes les boucles vont dans la BANQUE, seules celles qui
-   * citent une lettre entrent dans l'ARCHITECTURE. L'acte 6 livre neuf
+   * citent une lettre entrent dans l'ARCHITECTURE. L'acte 6 livre sept
    * boucles pour trois morceaux ; une architecture décrit UN morceau, donc on
-   * en monte un et les six autres restent à un clic dans le sélecteur. Sans
+   * en monte un et les quatre autres restent à un clic dans le sélecteur. Sans
    * ça, elles n'existaient nulle part dans le Mode Live.
    *
    * `morceauDeLActe` reste : une scène qui ne cite pas de boucles emporte un
@@ -1981,7 +1981,7 @@ export const ACTES: Acte[] = [
      * (une architecture décrit un morceau), donc l'acte 7 recommençait. Le
      * concert n'était plus la récompense, c'était la redite de la répétition.
      *
-     * D'où : on PRÉPARE les neuf boucles ici, sans console ; on JOUE les trois
+     * D'où : on PRÉPARE les sept boucles ici, sans console ; on JOUE les trois
      * morceaux à l'acte 7. Ce qu'on perd est l'argument « on ne découvre pas
      * sa console sur scène » ; ce qu'on gagne est un dernier acte qui apporte
      * quelque chose. Le module s'ouvre donc à l'acte 7, à l'ÉTAPE qui le prête
@@ -2064,7 +2064,7 @@ export const ACTES: Acte[] = [
           'Aucun brief. Aucun client. Aucun style imposé.',
         ],
       },
-      /* ⚠️ TROIS MORCEAUX, NEUF BOUCLES — l'acte 6 refait le 2026-09-05.
+      /* ⚠️ TROIS MORCEAUX, SEPT BOUCLES — l'acte 6 refait le 2026-09-05.
        *
        * Retour de Yann sur la première version : *« il n'y a qu'un seul morceau
        * de travaillé. Le travail n'est pas suffisant pour le refrain et le pont,
@@ -2090,11 +2090,24 @@ export const ACTES: Acte[] = [
        * sur ce que la boucle doit FAIRE (un refrain qui s'ouvre franchement, un
        * morceau qui reste bas, un geste que les deux autres n'ont pas) et jamais
        * sur ce qu'elle doit RESSEMBLER. Aucune fiche de style, aucun verrou de
-       * provenance, aucun chapeau de genre dans les neuf cahiers.
+       * provenance, aucun chapeau de genre dans les sept cahiers.
        *
-       * ⚠️ Les trois REFRAINS et les trois PONTS repartent du couplet de LEUR
-       * morceau (`partirDeLaSerie`), jamais de la dernière boucle livrée — et le
-       * pont repart du couplet, pas du refrain : contre le refrain il ne serait
+       * ⚠️ DEUX BOUCLES, DEUX BOUCLES, TROIS — le crescendo du 2026-09-17
+       * (*« il faut y aller crescendo dans les morceaux, faire d'abord deux
+       * morceaux nécessitant que 2 boucles puis un dernier morceau avec 3
+       * boucles »*). Les deux premiers s'arrêtent au REFRAIN ; seul le dernier
+       * a un pont. Ce que ça change de l'acte : un couplet suivi d'un refrain
+       * est déjà un morceau, donc le pont n'est plus une formalité répétée
+       * trois fois mais la seule chose que le disque apprenne à sa dernière
+       * boucle. Ce que ça enlève : neuf cahiers dont deux disaient exactement
+       * ce qu'un troisième dit mieux. ⚠️ Et la LEÇON du pont suit sa
+       * commande — elle vivait devant le pont du premier morceau, elle
+       * descend au troisième, sinon on explique un geste que plus rien ne
+       * demande pendant deux morceaux.
+       *
+       * ⚠️ Les trois REFRAINS et le PONT repartent du couplet de LEUR morceau
+       * (`partirDeLaSerie`), jamais de la dernière boucle livrée — et le pont
+       * repart du couplet, pas du refrain : contre le refrain il ne serait
        * que « le refrain en moins plein », un arrangement et pas une section. */
       {
         kind: 'recit',
@@ -2106,7 +2119,8 @@ export const ACTES: Acte[] = [
           'SOL: Celui qui passe.',
           'SOL: Celui qu’on écoute seul.',
           'SOL: Et celui que personne n’attend.',
-          'SOL: Trois boucles chacun. Couplet, refrain, pont.',
+          'SOL: Les deux premiers : couplet, refrain. Ça tient debout.',
+          'SOL: Le dernier, il aura droit à un pont.',
         ],
       },
 
@@ -2165,11 +2179,11 @@ export const ACTES: Acte[] = [
             deLAlea('Que la machine ne joue pas deux fois pareil'),
           ]),
           ...dansLaSection(FB_COUCHES, [
-            /* ⚠️ Une PHRASE, pas une ligne présente. Le pont de ce morceau
-             * demande qu'elle « joue moins mais joue encore » : sur une mélodie
-             * d'une seule note, c'est impossible — moins que une et plus que
-             * zéro n'existe pas. Le cul-de-sac se paie donc ici, dans la boucle
-             * d'avant, et c'est le test de satisfiabilité qui l'a trouvé. */
+            /* ⚠️ Une PHRASE, pas une ligne présente. Le refrain de ce morceau
+             * demande une AUTRE phrase, et qu'elle monte : sur une mélodie
+             * d'une seule note il n'y a rien à changer et nulle part à aller.
+             * Le cul-de-sac se paie donc ici, dans la boucle d'avant, et c'est
+             * le test de satisfiabilité qui l'a trouvé. */
             unePhrase('melody', 4, 3, 'Une mélodie — c’est elle qu’on fredonne, donc une vraie phrase'),
             ligneSynthPresente('bass', 'Une basse dessous, qui la porte'),
             ligneSynthPresente('pad', 'Et une nappe derrière — on ne l’écoute jamais, on la remarque quand elle part'),
@@ -2189,7 +2203,7 @@ export const ACTES: Acte[] = [
         entete: 'SOL',
         lignes: [
           'SOL: Une boucle, c’est douze secondes.',
-          'SOL: Un morceau, c’est trois boucles qui se répondent.',
+          'SOL: Deux qui se répondent, c’est déjà un morceau.',
           'SOL: Le couplet, tu l’as. Un refrain, ça s’OUVRE.',
           'SOL: Et surtout : la phrase change. Elle va chercher plus haut.',
           'SOL: Un refrain qui rejoue le couplet, ce n’est pas un refrain.',
@@ -2222,55 +2236,14 @@ export const ACTES: Acte[] = [
         titre: 'CELUI QUI PASSE — REFRAIN',
         client: 'FACE B',
       },
-      {
-        kind: 'recit',
-        source: 'lcd',
-        entete: 'SOL',
-        lignes: [
-          'SOL: Maintenant le pont.',
-          'SOL: C’est l’endroit où on ENLÈVE.',
-          'SOL: Trois minutes de refrain, personne ne tient.',
-          'Elle repose le carton du couplet devant toi.',
-          'SOL: Repars de celui-là. Vide-le, et change d’accords.',
-        ],
-      },
-      {
-        kind: 'commande',
-        entete: 'CELUI QUI PASSE — LE PONT',
-        lignes: [
-          'Le couplet, encore — mais dans l’autre sens.',
-          'SOL: Coupe. Laisse de la place.',
-          'SOL: Et pars ailleurs :',
-          'SOL: ce ne sont plus les mêmes accords.',
-        ],
-        bouton: 'Reprendre le couplet ▸',
-        serie: 'passe-pont',
-        partirDeLaSerie: 'passe-couplet',
-        cahier: [
-          avoirTouche('Il faut y avoir touché'),
-          ...dansLaSection(FB_RETOMBE, [
-            uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
-          ]),
-          ...dansLaSection(FB_PHRASE, [
-            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
-            unePhraseQuiSEclaircit('melody', 0.7, 'Elle joue moins — mais elle joue encore'),
-          ]),
-          ...dansLaSection(FB_AILLEURS, [
-            uneAutreHarmonie('La nappe ne pose plus les mêmes accords'),
-          ]),
-        ],
-        accepte: 'SOL: C’est ça. C’est le vide qui fait le reste.',
-        titre: 'CELUI QUI PASSE — PONT',
-        client: 'FACE B',
-      },
 
       /* ===================================================================
        * MORCEAU 2 — CELUI QU'ON ÉCOUTE SEUL. L'intention pèse sur le TEMPO et
        * sur le NOMBRE DE VOIX, jamais sur un genre : « lent » et « pas plein »
        * sont des faits, pas des goûts. Son refrain s'ouvre plus doucement que
-       * celui du single (1,15 contre 1,2) et son pont descend plus bas (0,6
-       * contre 0,8) — c'est la même mécanique réglée autrement, et c'est ce que
-       * l'intention veut dire.
+       * celui du single (1,15 contre 1,2) — c'est la même mécanique réglée
+       * autrement, et c'est ce que l'intention veut dire. Comme le single, il
+       * s'arrête au refrain : deux boucles qui se répondent font un morceau.
        * =================================================================== */
       {
         kind: 'recit',
@@ -2339,34 +2312,11 @@ export const ACTES: Acte[] = [
         titre: 'CELUI QU’ON ÉCOUTE SEUL — REFRAIN',
         client: 'FACE B',
       },
-      {
-        kind: 'commande',
-        entete: 'CELUI QU’ON ÉCOUTE SEUL — LE PONT',
-        lignes: [
-          'Le couplet, encore — et presque plus rien.',
-          'SOL: Là, tu peux vraiment vider.',
-          'SOL: Garde la mélodie. Enlève le reste.',
-        ],
-        bouton: 'Reprendre le couplet ▸',
-        serie: 'seul-pont',
-        partirDeLaSerie: 'seul-couplet',
-        cahier: [
-          avoirTouche('Il faut y avoir touché'),
-          ...dansLaSection(FB_RETOMBE, [
-            uneLigneQuiSeTait('Une ligne du couplet se tait complètement'),
-          ]),
-          ...dansLaSection(FB_PHRASE, [
-            uneAutrePhrase('melody', 'La mélodie n’est plus celle du couplet'),
-            unePhraseQuiSEclaircit('melody', 0.6, 'Elle s’éclaircit — mais elle reste, c’est tout ce qu’il reste'),
-          ]),
-        ],
-        accepte: 'SOL: On dirait qu’il manque quelque chose. C’est fait exprès.',
-        titre: 'CELUI QU’ON ÉCOUTE SEUL — PONT',
-        client: 'FACE B',
-      },
 
       /* ===================================================================
-       * MORCEAU 3 — CELUI QUE PERSONNE N'ATTEND. Son cahier est le seul qui
+       * MORCEAU 3 — CELUI QUE PERSONNE N'ATTEND. Le seul des trois à monter
+       * jusqu'à TROIS boucles, et le seul à avoir un pont : c'est là que le
+       * crescendo de l'acte se voit. Son cahier est aussi le seul qui
        * demande de l'ORIGINALITÉ, et la seule façon de le faire sans la dicter
        * est `unGesteRare` : un geste parmi cinq, tous déjà enseignés et qu'aucun
        * autre cahier n'exige. Nommer le geste transformerait la commande en
@@ -2460,6 +2410,22 @@ export const ACTES: Acte[] = [
         titre: 'CELUI QUE PERSONNE N’ATTEND — REFRAIN',
         client: 'FACE B',
       },
+      /* ⚠️ LA LEÇON DU PONT VIT ICI depuis le crescendo — elle était devant le
+       * pont du premier morceau, qui n'en a plus. Un exercice n'enseigne que ce
+       * que l'écran a déjà expliqué, et la réciproque compte autant : on
+       * n'explique pas un geste deux morceaux avant de le demander. */
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          'SOL: Et celui-là, il aura un pont.',
+          'SOL: C’est l’endroit où on ENLÈVE.',
+          'SOL: Trois minutes de refrain, personne ne tient.',
+          'Elle repose le carton du couplet devant toi.',
+          'SOL: Repars de celui-là. Vide-le, et change d’accords.',
+        ],
+      },
       {
         kind: 'commande',
         entete: 'CELUI QUE PERSONNE N’ATTEND — LE PONT',
@@ -2484,12 +2450,12 @@ export const ACTES: Acte[] = [
             uneAutreHarmonie('La nappe ne pose plus les mêmes accords'),
           ]),
         ],
-        accepte: 'SOL: Fini. Neuf boucles. Trois morceaux. Un disque.',
+        accepte: 'SOL: Fini. Sept boucles. Trois morceaux. Un disque.',
         titre: 'CELUI QUE PERSONNE N’ATTEND — PONT',
         client: 'FACE B',
       },
 
-      /* ⚠️ LA SCÈNE QUI MONTE LE SET. Les NEUF boucles partent dans la banque de
+      /* ⚠️ LA SCÈNE QUI MONTE LE SET. Les SEPT boucles partent dans la banque de
        * séquences ; seules les trois du single portent une `section`, et c'est
        * elles que le modèle POP enchaîne — couplet, refrain, couplet, refrain,
        * pont, refrain. Les six autres sont là, à un clic dans le sélecteur : le
@@ -2506,7 +2472,7 @@ export const ACTES: Acte[] = [
        *
        * Elle montait le premier morceau et emmenait dans le Mode Live : c'est
        * ce que « on découvre le mode live et on ne joue qu'un seul des
-       * morceaux » désignait. Les neuf boucles n'ont pas besoin d'elle pour
+       * morceaux » désignait. Les sept boucles n'ont pas besoin d'elle pour
        * exister — le SET de l'acte 7 les range TOUTES en banque
        * (`bouclesDeLActe` + `depuisLActe: 6`), et c'est là qu'on les joue.
        *
@@ -2516,10 +2482,10 @@ export const ACTES: Acte[] = [
       {
         kind: 'recit',
         source: 'cassette',
-        entete: 'NEUF BOUCLES, UN DISQUE',
+        entete: 'SEPT BOUCLES, UN DISQUE',
         lignes: [
-          'Sol range les neuf boucles dans la machine.',
-          'SOL: Trois morceaux. Couplet, refrain, pont.',
+          'Sol range les sept boucles dans la machine.',
+          'SOL: Trois morceaux. Le dernier a même un pont.',
           'SOL: C’est un disque, maintenant.',
           'SOL: On le jouera le 14. Moi je ne le conduis pas.',
           'SOL: C’est le tien.',
@@ -2642,7 +2608,7 @@ export const ACTES: Acte[] = [
        *
        * Les trois morceaux de l'acte 6 deviennent les trois LETTRES — un
        * morceau par lettre, ce que la scène de l'acte 6 ne pouvait pas faire
-       * (elle monte UN morceau en couplet / refrain / pont). Les neuf boucles
+       * (elle monte UN morceau en couplet / refrain / pont). Les sept boucles
        * vont quand même toutes en banque : les refrains et les ponts restent à
        * un tap sous le pouce, et c'est ce qui fait qu'un set se joue au lieu de
        * se dérouler.
@@ -2668,17 +2634,15 @@ export const ACTES: Acte[] = [
         surScene:
           'Trois morceaux, dans l’ordre. La chaîne avance seule ; ▸ passe à la scène suivante, TENIR la garde.',
         modulesRequis: ['live'],
-        // Le disque de l'acte 6 : un MORCEAU par lettre, et les neuf boucles
+        // Le disque de l'acte 6 : un MORCEAU par lettre, et les sept boucles
         // en banque.
         montage: 'A B C · A B′ C′',
         depuisLActe: 6,
         bouclesDeLActe: [
           { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', partie: 'A' },
           { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN' },
-          { serie: 'passe-pont', nom: 'QUI PASSE — PONT' },
           { serie: 'seul-couplet', nom: 'ÉCOUTE SEUL — COUPLET', partie: 'B' },
           { serie: 'seul-refrain', nom: 'ÉCOUTE SEUL — REFRAIN' },
-          { serie: 'seul-pont', nom: 'ÉCOUTE SEUL — PONT' },
           { serie: 'attend-couplet', nom: 'PERSONNE N’ATTEND — COUPLET', partie: 'C' },
           { serie: 'attend-refrain', nom: 'PERSONNE N’ATTEND — REFRAIN' },
           { serie: 'attend-pont', nom: 'PERSONNE N’ATTEND — PONT' },
