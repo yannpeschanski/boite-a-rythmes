@@ -475,7 +475,10 @@ export const PRESETS: SongPresetData[] = [
     },
     sidechain: { trigger: 'kick', target: 'all', depth: 50, release: 140 }
     },
-  { id:'garage', cat:'Électronique / club', label:'UK Garage / 2-step', tempo:130, swing:45, drag:0,
+  // ⚠️ SWING 33, PAS 45 (2026-09-17) : 45 met le contretemps à 2,63:1, au-delà
+  // du triolet — « ça me semble toujours très élevé », deux fois. Le triolet,
+  // c'est-à-dire le shuffle, tombe à 33 (mesuré : tests/swing-echelle.test.ts).
+  { id:'garage', cat:'Électronique / club', label:'UK Garage / 2-step', tempo:130, swing:33, drag:0,
     globalSaturation:8, globalCompression:20, globalBitcrush:0,
     demo:'Swing très marqué (45%) sur un hat syncopé (pas dense à saturation) pour que le shuffle ait la place de s\u2019entendre',
     history:"Le UK Garage émerge à Londres au milieu des années 90, héritier du garage américain avec un swing prononcé.",

@@ -3,7 +3,24 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **Sauter à une scène, et s'arrêter à
+> Dernière mise à jour : 2026-09-17 — ✅ **Le triolet est à 33, pas à 50.**
+> Yann : *« un swing entre 30 et 55, ça me semble toujours très élevé »* — il
+> avait raison, et `CLAUDE.md` portait le faux chiffre (que je venais de lui
+> répéter). Mesuré en rejouant le scheduler : le contretemps tombe à
+> `(1 + swing/100) / 2` de sa paire, donc 33 = triolet (1,99:1), 45 = 2,63:1,
+> 50 = 3:1, 75 = 7:1. Toute la fourchette du garage était bâtie sur l'erreur :
+> **25-40** maintenant (et non 30-55), preset **33** (et non 45).
+> ⚠️ **Personne ne pouvait le voir : aucun test ne regardait OÙ tombe le
+> contretemps** — `feel-ecrit` vérifie seulement QUE les pas impairs bougent,
+> vrai à n'importe quelle échelle. `tests/swing-echelle.test.ts` verrouille
+> maintenant le triolet, la monotonie, et qu'aucun des 34 presets ne le dépasse.
+> ⚠️ Deux autres chiffres faux au même endroit : le preset `swing` est à 33 (pas
+> 60). Et le test « le libellé dit la fourchette » recopiait 30 et 55 en dur —
+> il balaie désormais la course pour trouver les bornes réelles.
+> ⚠️ **A4 est donc RÉPONDUE par la mesure** : borner l'outil reste inutile, mais
+> c'est la FICHE qui était mal réglée, pas l'intuition de Yann.
+>
+> Avant cela, le même jour : ✅ **Sauter à une scène, et s'arrêter à
 > la fin du morceau.** Les deux frictions que j'avais signalées en livrant le
 > bouton ÉCOUTER. Le saut est sur le **NUMÉRO** de la scène (la rangée porte
 > déjà six interactifs — un clic dessus ferait un interactif dans un

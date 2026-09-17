@@ -254,13 +254,23 @@ export function avecSwing(
   /* ⚠️ UN PLAFOND, parce qu'un plancher seul se satisfait en poussant le
    * curseur à fond — la règle que les cahiers de mixage appliquent déjà
    * (`reverbDosee`, `filtreQuiCoupe`). Ici ce n'est pas qu'une question de
-   * cahier : le scheduler retarde le pas IMPAIR de `swing / 100` de pas
-   * (`scheduler.ts`), donc 50 est le triolet EXACT et 75 colle le contretemps
-   * à 75 % du chemin vers le pas suivant — le contretemps s'écrase sur la
-   * frappe d'après, et on n'entend plus un balancement mais un flam.
-   * Retour de Yann (2026-09-16) : *« le shuffle avec un swing très élevé, pas
-   * sûr que ça ressemble à quelque chose »*. Le curseur garde sa course
-   * (0-75, `serialize.ts`) : c'est le CRITÈRE qui borne, pas l'outil. */
+   * cahier. ⚠️ ET L'ÉCHELLE EST MESURÉE, plus devinée (2026-09-17) : ce
+   * commentaire disait « 50 est le triolet EXACT », et c'était FAUX. Le
+   * scheduler retarde le pas IMPAIR de `swing / 100` de pas
+   * (`scheduler.ts`), donc le contretemps tombe à `(1 + swing/100) / 2` de la
+   * paire — relevé en rejouant le scheduler (`tests/swing-echelle.test.ts`) :
+   *
+   *     swing  0 → 50,0 %  → 1,00:1  droit
+   *     swing 33 → 66,5 %  → 1,99:1  LE TRIOLET, c'est-à-dire le shuffle
+   *     swing 45 → 72,5 %  → 2,63:1  au-delà du triolet
+   *     swing 50 → 75,0 %  → 3,00:1  très dur
+   *     swing 75 → 87,5 %  → 7,01:1  collé à la frappe suivante
+   *
+   * Retour de Yann (2026-09-16, puis 2026-09-17 : *« un swing entre 30 et 55,
+   * ça me semble toujours très élevé »*) — il avait raison deux fois, et la
+   * seconde a trouvé l'erreur de l'échelle. Une fourchette de shuffle se
+   * centre donc sur 33, pas sur 50. Le curseur garde sa course (0-75,
+   * `serialize.ts`) : c'est le CRITÈRE qui borne, pas l'outil. */
   const max = opts.max ?? Infinity;
   return {
     id: 'swing',
@@ -472,19 +482,22 @@ const DILLA: FicheStyle = {
  * ne décrit pas un genre. Même famille, même impasse que le boom bap et le
  * drunk beat.
  *
- * Le garage, lui, se nomme par son SHUFFLE : swing 45 quand 25 des 34 presets
- * sont à 0 et que le reste plafonne à 20. Relevé sur le preset `garage` :
- * tempo 130, swing 45, kick subdiv 8 sur [0, 3, 5], claire sur les temps 2 et
+ * Le garage, lui, se nomme par son SHUFFLE : swing 33 — le triolet exact —
+ * quand 25 des 34 presets sont à 0 et que le reste plafonne à 20. Relevé sur
+ * le preset `garage` :
+ * tempo 130, swing 33, kick subdiv 8 sur [0, 3, 5], claire sur les temps 2 et
  * 4, charley en doubles-croches clairsemé (7 sur 16) — troué exprès, « pour
  * que le shuffle ait la place de s'entendre », dit sa notice.
  *
- * ⚠️ Corrigé le 2026-09-04 : ce commentaire disait « là où le catalogue
- * plafonne à 10 », et c'était faux — le preset `swing` (Funk/soul/jazz) est à
- * 60. Le garage n'est donc PAS seul à balancer fort, et la fiche ne tient pas
- * sur ce seul critère : c'est leur conjonction qui isole le genre (le preset
- * `swing` a le bon tempo, mais son kick tombe sur les temps et son charley
- * joue les huit croches — il échoue sur deux critères, la marge que le
- * calibrage exige).
+ * ⚠️ DEUX CORRECTIONS DE CHIFFRES, et la seconde a dû attendre une mesure.
+ * Le 2026-09-04 : « là où le catalogue plafonne à 10 » était faux. Le
+ * 2026-09-17 : « le preset `swing` est à 60 » l'était aussi — il est à **33**,
+ * c'est-à-dire pile sur le triolet, et c'est le deuxième plus balancé du
+ * catalogue. Le garage n'est donc PAS seul à balancer fort, et depuis que son
+ * preset est lui aussi à 33 les deux sont à ÉGALITÉ sur ce critère : c'est
+ * leur conjonction qui isole le genre, pas le swing seul (le preset `swing` a
+ * le bon tempo, mais son kick tombe sur les temps et son charley joue les huit
+ * croches — il échoue sur deux critères, la marge que le calibrage exige).
  *
  * Il a en plus un mérite de récit : l'acte vient de le faire reproduire
  * (niveau 16, « Londres, 2001 »). On commande un genre qu'on vient d'entendre.
@@ -495,8 +508,9 @@ const GARAGE: FicheStyle = {
   chapeau: [
     'Londres, fin des années 90. Le tempo du club, mais rien n’y',
     'tombe droit : le shuffle — le curseur Swing — est FRANC,',
-    'quelque part entre 30 et 55 ; au-delà le contretemps se colle',
-    'à la frappe suivante et on n’entend plus qu’un défaut.',
+    'autour de 33, là où le contretemps tombe pile sur le triolet.',
+    'Au-delà de 40 il s’écrase sur la frappe suivante,',
+    'et on n’entend plus qu’un défaut.',
     'Les croches boitent, le charley laisse des trous pour',
     'qu’on l’entende boiter. Le kick sort des temps,',
     'la claire tient bon sur 2 et 4.',
@@ -510,14 +524,15 @@ const GARAGE: FicheStyle = {
      * catalogue contient même un preset « Shuffle » qui, lui, est à 15. Un
      * critère ESSENTIEL — donc bloquant — désignait ainsi un geste qu'aucun
      * écran ne reliait à un bouton. */
-    /* ⚠️ Une FOURCHETTE, pas un plancher — le relevé la borne des deux côtés :
-     * le preset `garage` est à 45, le triolet exact tombe à 50, et au-delà de
-     * 55 le contretemps se colle à la frappe suivante (voir `avecSwing`). Le
-     * libellé dit la zone, parce qu'une fiche est aussi le RETOUR : « poussé
-     * loin » envoyait le curseur à 75, où le genre ne s'entend plus. */
-    avecSwing(30, 'Un shuffle FRANC — le curseur Swing entre 30 et 55', {
+    /* ⚠️ UNE FOURCHETTE CENTRÉE SUR LE TRIOLET — 25 à 40, et c'est une
+     * correction du 2026-09-17. Elle disait 30 à 55, sur la foi d'un
+     * commentaire qui plaçait le triolet à 50 : mesuré, il est à 33 (voir
+     * `avecSwing`). La fourchette partait donc juste sous le shuffle et montait
+     * à 3,45:1, où le genre ne s'entend plus — ce que Yann a signalé deux
+     * fois. Le libellé dit la zone, parce qu'une fiche est aussi le RETOUR. */
+    avecSwing(25, 'Un shuffle FRANC — le curseur Swing autour de 33, entre 25 et 40', {
       essentiel: true,
-      max: 55,
+      max: 40,
     }),
     surLesTemps('kick-garage', ['kick'], [0, 1.5], 'Le kick sur le 1, puis entre les temps'),
     surLesTemps('backbeat-24', ['snare', 'clap'], [1, 3], 'La claire tient les temps 2 et 4'),

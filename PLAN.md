@@ -48,6 +48,67 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le triolet est à 33, pas à 50 — le garage recentré (2026-09-17)
+
+**Demande** : *« Mais un swing entre 30 et 55 correspond-il vraiment à club
+énergie ?? ça me semble toujours très élevé. »* C'était une question ; la
+réponse est qu'il avait raison, et que la documentation du projet portait un
+chiffre faux que je venais de lui répéter.
+
+**La mesure**, en rejouant le vrai scheduler (`tests/swing-echelle.test.ts`) :
+
+| swing | contretemps à | ratio | ce que c'est |
+|---|---|---|---|
+| 0 | 50,0 % | 1,00:1 | droit |
+| 25 | 62,5 % | 1,67:1 | entre droit et triolet |
+| **33** | **66,5 %** | **1,99:1** | **le triolet — le shuffle** |
+| 45 | 72,5 % | 2,63:1 | au-delà du triolet |
+| 50 | 75,0 % | 3,00:1 | très dur |
+| 75 | 87,5 % | 7,01:1 | collé à la frappe suivante |
+
+⚠️ **`CLAUDE.md` et `styles.ts` affirmaient « 50 est le triolet EXACT ».** Faux :
+le contretemps tombe à `(1 + swing/100) / 2` de sa paire, donc le triolet (2/3)
+est à 33. Toute la fourchette du garage avait été construite sur cette erreur —
+30-55, c'est-à-dire de « juste sous le shuffle » à 3,45:1, et son preset posé à
+45, déjà au-delà du triolet. **C'est exactement ce que l'oreille de Yann avait
+attrapé, deux fois** (le 16 : « pas sûr que ça ressemble à qqch » ; le 17 :
+« toujours très élevé »).
+
+**Corrigé** : fiche du garage **25-40** centrée sur le triolet, preset **33**,
+chapeau et libellé réécrits (une fiche est aussi le retour, donc elle dit la
+zone juste). La calibration tient sans retouche — le preset satisfait sa fiche,
+les 33 autres échouent, et le plus proche reste à deux critères.
+
+⚠️ **Deux autres chiffres faux trouvés au même endroit** : le commentaire de
+`GARAGE` disait que le preset `swing` est à 60 (il est à **33**, pile sur le
+triolet — deuxième plus balancé du catalogue) et que le reste « plafonne à 20 ».
+Depuis que le garage est aussi à 33, les deux sont à ÉGALITÉ sur ce critère :
+c'est leur conjonction qui isole le genre, pas le swing seul.
+
+⚠️ **POURQUOI PERSONNE NE POUVAIT LE VOIR : aucun test ne regardait OÙ tombe le
+contretemps.** `feel-ecrit.test.ts` vérifie qu'un swing DÉPLACE les pas impairs
+et pas les autres — vrai à n'importe quelle échelle. Le nouveau fichier mesure
+la POSITION, verrouille le triolet à 33, la monotonie de la course, et qu'aucun
+des 34 presets ne dépasse le triolet (un catalogue de genres, pas d'effets).
+
+⚠️ **Et un test qui recopie une borne cesse de protéger.** « Le libellé dit la
+fourchette » écrivait `/30/` et `/55/` en dur : il est tombé sur un changement
+JUSTE, et le réflexe aurait été de le recalibrer à la main. Il BALAIE maintenant
+la course du curseur pour trouver les bornes réelles, et vérifie que les deux
+sont écrites au joueur — sans jamais citer un nombre.
+
+**Deux pièges de sonde payés** : `rolls` à 0 rend une ligne muette (ma première
+mesure n'a produit aucun événement), et le kick est en `subdiv` 4 par défaut.
+Les deux sont déjà dans `CLAUDE.md` ; ils resservent.
+
+**Vérifié** : 838 tests, 0 erreur de type, carrière rejouée — les six commandes
+de l'acte 5 restent acceptées, dont les deux « CLUB ÉNERGIE » que la nouvelle
+fourchette juge. Aucune fuite de verrou.
+
+**Fichiers** : `src/model/styles.ts`, `src/model/presets/songs.ts`,
+`tests/swing-echelle.test.ts` (neuf), `tests/styles.test.ts`, `CLAUDE.md`,
+`REPRISE.md`.
+
 ### ✅ Sauter à une scène, et s'arrêter à la fin du morceau (2026-09-17)
 
 **Demande** : *« Ajoute un clic sur une scène pour y sauter et arrête la lecture
