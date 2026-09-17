@@ -1351,14 +1351,22 @@ jamais » est le seul critère qui sépare la techno de la house). Une fiche se
 **calibre** : le preset du genre doit la satisfaire entièrement, les 33 autres
 échouer, et le plus proche rester à au moins **deux critères**.
 
-⚠️ **Un critère de CURSEUR a un plafond, pas seulement un plancher.** Le
-scheduler retarde le pas impair de `swing / 100` de pas : 50 est le triolet
-EXACT et 75 colle le contretemps à la frappe suivante — un flam, pas un
-balancement. Le shuffle du garage est donc une fourchette 30-55 (son preset est
-à 45) et son libellé dit la zone, une fiche servant aussi de RETOUR. Même règle
-que les bornes de mixage : un plancher seul se satisfait en poussant le curseur
-à fond. Le curseur garde sa course 0-75 — c'est le critère qui borne, pas
-l'outil.
+⚠️ **LE TRIOLET EST À 33, PAS À 50 — et cette règle a porté le faux chiffre
+pendant deux semaines** (corrigé le 2026-09-17). Le scheduler retarde le pas
+impair de `swing / 100` de pas, donc le contretemps tombe à
+`(1 + swing/100) / 2` de sa paire : 33 → 1,99:1 (le triolet, c'est-à-dire le
+shuffle), 45 → 2,63:1, 50 → 3:1, 75 → 7:1 (collé à la frappe suivante).
+`tests/swing-echelle.test.ts` le MESURE en rejouant le scheduler — il n'existait
+pas, et c'est pour ça que personne ne pouvait voir l'erreur. Conséquences déjà
+appliquées : la fiche du garage est **25-40** (et non 30-55) et son preset
+**33** (et non 45) ; aucun des 34 presets ne dépasse le triolet, un test le
+tient. ⚠️ **Un critère de CURSEUR a un plafond, pas seulement un plancher** —
+même règle que les bornes de mixage, un plancher seul se satisfait en poussant
+le curseur à fond — et son libellé dit la zone, une fiche servant aussi de
+RETOUR. Le curseur garde sa course 0-75 : c'est le critère qui borne, pas
+l'outil, parce que l'Atelier est un outil (y composer quelque chose de cassé
+reste permis). ⚠️ Corollaire de méthode : **une échelle ne se documente pas de
+tête** — celle-ci a été signalée DEUX FOIS à l'oreille avant qu'on la mesure.
 
 ⚠️ **Une fiche ne peut pas décrire un genre dont le voisin partage tout sauf un
 nombre.** Mesuré deux fois de suite : la fiche du boom bap acceptait le drunk

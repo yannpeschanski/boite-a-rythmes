@@ -321,18 +321,22 @@ ambre. C’était ton « les touches sont vertes, ça ne facilite pas la lecture
   <div class="fiche-b">
 
 <p><b>Ta remarque.</b> <i>« Club énergie : le shuffle avec un swing très élevé,
-pas sûr que ça ressemble à quelque chose. »</i> Tu as raison, et c’est
-calculable : le scheduler retarde le pas impair de <code>swing / 100</code> de
-pas. Donc <b>50 = le triolet exact</b>, et à <b>75</b> le contretemps tombe aux
-trois quarts du chemin vers la frappe suivante — ce n’est plus un balancement,
-c’est un flam.</p>
-<p><b>Fait.</b> Le critère du garage devient une <b>fourchette 30–55</b> (son
-preset est à 45) au lieu d’un plancher sans plafond, et son libellé dit la zone
-— une fiche de style sert aussi de retour. C’est la règle que les cahiers de
-mixage appliquent déjà : une borne sans plafond se satisfait en poussant le
-curseur à fond, ce que l’acte enseigne justement à ne pas faire.</p>
+pas sûr que ça ressemble à quelque chose. »</i> Tu avais raison — et tu l’as
+redit le 17 (« ça me semble toujours très élevé »), ce qui a fait tomber une
+ERREUR : le scheduler retarde le pas impair de <code>swing / 100</code> de pas,
+donc le contretemps tombe à <code>(1 + swing/100) / 2</code> de sa paire et le
+triolet est à <b>33</b>, pas à 50. Ce chiffre était faux dans
+<code>CLAUDE.md</code> <i>et</i> dans <code>styles.ts</code>.</p>
+<p><b>Premier correctif (le 16), bâti sur le faux chiffre</b> : fourchette
+30–55, preset à 45. Ça bornait bien le critère, mais au mauvais endroit —
+30 est juste sous le shuffle et 55 vaut 3,45:1.</p>
+<p><b>Correctif définitif (le 17)</b> : fourchette <b>25–40</b> centrée sur le
+triolet, preset <b>33</b>, chapeau et libellé réécrits.
+<code>tests/swing-echelle.test.ts</code> mesure l’échelle en rejouant le
+scheduler — il n’existait pas, et c’est pour ça que personne ne pouvait voir
+l’erreur. Voir A4.</p>
 <p class="regle">Le curseur, lui, garde sa course 0–75 : c’est le critère qui
-borne, pas l’outil. Voir A4 si tu veux borner l’outil aussi.</p>
+borne, pas l’outil.</p>
 
   </div>
   <footer class="annot">
@@ -350,7 +354,7 @@ borne, pas l’outil. Voir A4 si tu veux borner l’outil aussi.</p>
 <p class="chapo">Cinq cartes. Chacune a ma recommandation en premier, puis ce que
 ça coûte et les options que je n’ai pas prises.
 <b>A1, A2 et A3 sont répondues le 2026-09-16 et appliquées</b> — leur carte
-garde le raisonnement, et dit ce qui a été tranché. A4 et A5 restent
+garde le raisonnement, et dit ce qui a été tranché. A5 reste (A4 a été répondue par la mesure)
 ouvertes.</p>
 <article class="fiche" data-id="a1">
   <header><span class="ref">A1</span><h3>Les actes 6 et 7 — ta proposition, et ce qu’elle renverse — <span class="reco">RÉPONDU : ta proposition, appliquée</span></h3></header>
@@ -528,21 +532,25 @@ satisfait par les valeurs d’usine est du théâtre.</p>
   </footer>
 </article>
 <article class="fiche" data-id="a4">
-  <header><span class="ref">A4</span><h3>Le curseur Swing va jusqu’à 75 — faut-il borner l’outil ? — <span class="reco">reco : ne rien changer</span></h3></header>
+  <header><span class="ref">A4</span><h3>Le curseur Swing va jusqu’à 75 — faut-il borner l’outil ? — <span class="reco">RÉPONDU : le triolet était mal placé</span></h3></header>
   <div class="fiche-b">
 
-<p><b>Ma recommandation : ne rien changer.</b> Le critère du garage est borné
-(C10), ce qui règle ta remarque là où elle se jouait — dans une commande. Borner
-le curseur lui-même est un autre sujet, et je recommande de le laisser.</p>
-<p><b>Le fait.</b> Au-delà de 50 (le triolet), le contretemps dépasse les deux
-tiers du pas ; à 75 il arrive aux trois quarts et s’écrase sur la frappe
-suivante. Personne ne fait ça <b>volontairement</b>… sauf pour un effet, et
-l’Atelier est un outil : composer quelque chose de cassé y est permis, comme y
-composer un amapiano en 2005 (même argument que le catalogue des 34 morceaux).</p>
-<p><b>Ce que je ferais si tu veux quand même agir</b> : garder la course et
-ajouter un repère à <b>50</b> dans l’aide du curseur (« 50 = triolet »), plutôt
-que couper la plage. Un plafond retirerait un réglage que des sauvegardes
-existantes portent peut-être.</p>
+<p><b>RÉPONDU LE 2026-09-17 — et la question a trouvé une ERREUR.</b>
+« Un swing entre 30 et 55 correspond-il vraiment à club énergie ? » Non. Mesuré
+en rejouant le scheduler, le triolet — c’est-à-dire le shuffle — tombe à
+<b>33</b>, pas à 50 comme l’affirmaient <code>CLAUDE.md</code> et
+<code>styles.ts</code>. La fourchette 30-55 partait donc juste sous le shuffle
+et montait à 3,45:1, et le preset du garage était à 45 (2,63:1), déjà au-delà.</p>
+<p><b>Le relevé</b> : swing 0 → 1,00:1 (droit) · <b>33 → 1,99:1 (le triolet)</b> ·
+45 → 2,63:1 · 50 → 3,00:1 · 75 → 7,01:1 (collé à la frappe suivante).
+<code>tests/swing-echelle.test.ts</code> le mesure et le verrouille — il
+n’existait pas, et c’est pour ça que personne ne pouvait voir l’erreur.</p>
+<p><b>Appliqué</b> : fiche du garage <b>25-40</b>, preset <b>33</b>, chapeau et
+libellé réécrits. La calibration tient sans retouche.</p>
+<p><b>Ce qui reste de ma recommandation initiale</b> : ne pas borner le CURSEUR
+— l’Atelier est un outil, y composer quelque chose de cassé reste permis, comme
+y composer un amapiano en 2005. Mais ce n’était pas le sujet : c’est la FICHE
+qui était mal réglée, pas ton oreille, qui l’a signalé deux fois.</p>
 
   </div>
   <footer class="annot">

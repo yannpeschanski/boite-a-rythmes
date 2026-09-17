@@ -87,10 +87,28 @@ describe('le shuffle du garage est une FOURCHETTE, pas un plancher', () => {
     expect(evaluerStyle(e, garage).atteint).toBe(false);
   });
 
+  /* ⚠️ LE LIBELLÉ SE DÉRIVE DE LA FOURCHETTE, il ne la recopie pas. Écrit en
+   * dur (« 30 », « 55 »), ce test est tombé le jour où la fourchette a été
+   * recentrée sur le triolet (2026-09-17) — et un test qui tombe sur un
+   * changement JUSTE se recalibre à la main, donc il cesse de protéger ce
+   * qu'il croit protéger. Ce qui compte est l'invariant : une fiche est aussi
+   * le RETOUR, donc les DEUX bornes réelles doivent être écrites au joueur. */
   it('le libellé DIT la fourchette — une fiche est aussi le retour', () => {
     const c = garage.criteres.find((x) => x.id === 'swing')!;
-    expect(c.libelle).toMatch(/30/);
-    expect(c.libelle).toMatch(/55/);
+    const e = etatDuPreset('garage');
+    /* On trouve les bornes en balayant le curseur sur toute sa course, donc
+       sans jamais les écrire ici. */
+    const passe = [...Array(76).keys()].filter((v) => {
+      e.swing = v;
+      return c.verifie(e, undefined as never);
+    });
+    expect(passe.length, 'le critère de swing n’accepte rien').toBeGreaterThan(0);
+    const min = passe[0];
+    const max = passe[passe.length - 1];
+    expect(c.libelle, `le plancher (${min}) n’est pas écrit`).toContain(String(min));
+    expect(c.libelle, `le plafond (${max}) n’est pas écrit`).toContain(String(max));
+    // Et la fourchette reste une FOURCHETTE : bornée des deux côtés.
+    expect(max).toBeLessThan(75);
   });
 });
 
