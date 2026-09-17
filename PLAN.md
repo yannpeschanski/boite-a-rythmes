@@ -48,6 +48,57 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Écouter le montage depuis l'Atelier (2026-09-17)
+
+**Demande** : *« Ajoute un bouton écouter dans le panneau de montage. »* C'est
+l'option que j'avais chiffrée comme du code neuf en posant la question de la
+veille, et le seul endroit du jeu où l'on faisait un geste musical sans retour.
+
+**Une seule définition de ce qu'on entend.** Le Mode Live savait déjà enchaîner
+des scènes ; recopier sa boucle dans l'Atelier aurait fait deux façons
+d'entendre le même montage, qui auraient divergé au premier réglage — le projet
+tient « un seul builder de graphe, un seul scheduler, un seul modèle d'état »
+pour exactement cette raison. D'où `src/ui/chaine.ts` :
+`appliquerSectionAuMoteur`, `relacherCalque`, `sectionSuivante`,
+`doitBasculer`. **La frontière est audible / visible** : ce qu'on ENTEND est
+dans le module, ce qu'on VOIT (voyants du Live, pastille allumée, curseurs
+rendus au morceau) reste dans chaque vue. `LiveView` y est passé sans changer
+une note — vérifié par la carrière rejouée, qui joue ses deux scènes.
+
+⚠️ **Ce que ça coûte, et ce qui le rend acceptable.** Il n'y a qu'UN motif dans
+l'appli (le moteur lit `pattern.snapshot()`), donc lire la chaîne CHARGE les
+lettres par-dessus l'établi. Le travail en cours est donc mis de côté au départ
+et rendu à l'arrêt — **par les trois chemins** : le bouton, le ⏹ du transport
+(qui sinon coupait le son en laissant une lettre à la place du rythme, sans que
+rien ne dise où il était passé) et la sortie de la vue. Et le calque est
+**relâché** : sans ça les lignes qu'une scène avait coupées le restaient sur un
+établi qui n'enchaîne plus rien — muet, sans explication.
+
+**Ce que l'écran dit.** Le bouton est AU-DESSUS de la chaîne (c'est elle qu'on
+écoute ; placé en bas il se lirait comme la fin du panneau), il annonce son coût
+en toutes lettres, et la scène qui joue prend un liseré **ambre** — pas vert, le
+vert dit « fait » et une scène en cours n'est ni l'un ni l'autre.
+
+**Deux défauts trouvés en mesurant.** Un `$` parasite dans le libellé
+(« l$'écoute »), reste d'un échappement — invisible à la relecture du diff,
+lisible à l'écran. Et la fixture du premier essai était fausse : le kick est en
+`subdiv` 4 par défaut, donc les cases au-delà de 4 ne se sérialisent jamais et
+le motif mesuré n'était pas celui que je croyais poser. Le piège est déjà dans
+CLAUDE.md ; il resservira.
+
+**Vérifié.** Huit tests de câblage sur un moteur feint (le calque coupe
+exactement ce que la scène ne cite pas ; une scène pleine RELÂCHE au lieu de
+forcer ouvert ; `relacherCalque` rend tout ; le repli sur A ; la bascule pendant
+la DERNIÈRE mesure). Et dans le navigateur : la chaîne avance réellement
+(0 → 1 → 2 → 3 en dix secondes sur un RONDO), la bonne lettre est chargée à
+chaque scène, et le motif du joueur revient **intact** à l'arrêt. Bouton à 44 px
+de zone touchable, aucun débordement, aucune erreur console. Carrière entière
+rejouée et aucune fuite de verrou.
+
+**Fichiers** : `src/ui/chaine.ts` (neuf), `src/ui/live/LiveView.svelte`,
+`src/ui/atelier/{AtelierView,MontagePanel}.svelte`, `tests/chaine.test.ts`
+(neuf), `CLAUDE.md`, `REPRISE.md`.
+
 ### ✅ L'acte 6 apprivoise le module de montage — et le rappel passe en CLUB (2026-09-17)
 
 **Demande** : *« 1er morceau : modèle couplet/refrain ; 2ème morceau : ABB′

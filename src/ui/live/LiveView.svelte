@@ -26,6 +26,7 @@
   import { onMount, onDestroy, untrack } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { architecture } from '../../stores/architecture.svelte';
+  import { appliquerSectionAuMoteur, sectionSuivante, doitBasculer } from '../chaine';
   import { parties } from '../../stores/parties.svelte';
   import { PARTIES, type PartieId } from '../../model/parties';
   import {
@@ -775,30 +776,14 @@
     sectionIndex = i;
     basculeEnAttente = false;
     if (!s) return;
-    /* ⚠️ REPLI SUR A, jamais sur « le motif courant ». Une lettre encore vide
-       est le cas normal quand on vient de charger un montage et qu'on n'a rangé
-       que A : garder le motif courant ferait jouer ce que la bascule
-       précédente avait laissé, c'est-à-dire n'importe quoi. Se replier sur A
-       rend la chaîne audible dès la PREMIÈRE partie rangée, et remplir B
-       l'améliore au lieu de la faire exister. */
-    if (!parties.chargerGardantTempo(s.partie)) {
-      if (s.partie !== 'A') parties.chargerGardantTempo('A');
-    }
-    /* ⚠️ LE MIX SUIT LA BASCULE — arbitré par Yann : « on passe du temps à
-       chercher un son, il ne faut pas l'écraser ». Une lettre porte donc un SON
-       complet, pas seulement des notes. Sans cet appel, le graphe garde le mix
-       de la lettre chargée au démarrage et le refrain jouait ses notes avec le
-       son du couplet (mesuré : envoi réverbe à 0 au lieu de 0,8).
-
-       ⚠️ Deux choses que ça ne touche PAS, et c'est ce qui le rend compatible
-       avec « bouger les paramètres en direct » :
-        - le TEMPO, qui appartient au transport (`chargerGardantTempo`) — le
-          seul point que Yann a explicitement exclu ;
-        - `liveFilter` et `liveReverbSend`, qui sont des nœuds SÉPARÉS que
-          `applyMixSettings` n'écrit jamais. Le pad, l'inclinaison et les faders
-          gardent donc la main pendant qu'une section passe. */
-    engine.refreshMixSettings();
-    /* ⚠️ ET CE QU'IL REPREND, LUI, DOIT CESSER D'ÊTRE AFFICHÉ COMME RÉGLÉ.
+    /* ⚠️ CE QU'ON ENTEND EST DANS `ui/chaine.ts` DEPUIS LE 2026-09-17 — le
+       repli sur A, le mix qui suit la bascule, les réglages rendus au morceau
+       et le calque de lignes. Le panneau de montage de l'Atelier lit la même
+       chaîne depuis son bouton ÉCOUTER : deux copies de cette fonction, ce
+       seraient deux façons d'entendre le même montage, et elles divergeraient
+       au premier réglage. Ce qui reste ici est ce qu'on VOIT. */
+    const calque = appliquerSectionAuMoteur(engine, s);
+    /* ⚠️ ET CE QUE LE MIX REPREND DOIT CESSER D'ÊTRE AFFICHÉ COMME RÉGLÉ.
        Les volumes de ligne du synthé passent par les nœuds du MORCEAU
        (`synthLineGain`), donc `refreshMixSettings` vient de les remettre à ce
        que dit la lettre. Garder la valeur posée à la main afficherait un
@@ -812,8 +797,7 @@
        maintenant la main ensemble.
        ⚠️ `relacherReglagesLive` épargne les deux nœuds DÉDIÉS (filtre, réverbe)
        et les mutes : le pad garde la main pendant qu'une scène passe, et le
-       calque ci-dessous reste seul maître des coupures. */
-    engine.relacherReglagesLive();
+       calque reste seul maître des coupures. */
     volLive = {};
     padMode = engine.padMode;
     /* C'est ICI que « le bourdon tient jusqu'à la fin de la partie en cours »
@@ -823,33 +807,25 @@
     // `relacherReglagesLive` vient de rendre les overrides : plus aucun
     // curseur ne porte sa valeur, ils repartent tous AU MORCEAU.
     axisTouche = {};
-    /* Calque de lignes — c'est ce qui permet à un arc d'intensité de se jouer
-       sur une seule séquence.
-       ⚠️ `null` veut dire TOUTES, donc RELÂCHER le calque, pas « ne rien
-       toucher ». Trouvé en jouant le modèle ARC, pas en relisant le code :
-       la MONTÉE coupait quatre lignes, et le CLIMAX — qui doit tout rouvrir —
-       les laissait coupées, parce qu'on sortait sans rien faire. Relâcher,
-       c'est repasser l'override à `null` (suivre le motif), et non forcer
-       ouvert : une ligne coupée dans l'Atelier reste coupée. */
-    const actives = s.lignes ? new Set<DrumRowName | SynthRowName>(s.lignes) : null;
+    /* Le MIROIR d'affichage du calque — le moteur, lui, l'a déjà reçu. Les
+       lignes absentes du calque rendu sont celles que la scène relâche : on
+       les retire de la carte plutôt que d'y écrire `false`, sinon le mini
+       séquenceur les afficherait comme « ouvertes à la main ». */
     for (const name of [...DRUM_ROW_NAMES, ...SYNTH_ROW_NAMES]) {
-      const valeur = actives === null ? null : !actives.has(name);
-      if (valeur === null) delete liveMute[name];
-      else liveMute[name] = valeur;
-      if (name in st.rows) engine.liveSetMute(name as DrumRowName, valeur);
-      else engine.liveSetSynthMute(name as SynthRowName, valeur);
+      if (name in calque) liveMute[name] = calque[name]!;
+      else delete liveMute[name];
     }
   }
 
-  function sectionSuivante(): number {
-    return archSections.length ? (sectionIndex + 1) % archSections.length : 0;
+  function prochaineSection(): number {
+    return sectionSuivante(sectionIndex, archSections.length);
   }
 
   /** Saute à la section suivante à la prochaine mesure (bouton SUIVANT). */
   function sauterSection() {
     if (!archSections.length) return;
     hapticTick();
-    const cible = sectionSuivante();
+    const cible = prochaineSection();
     basculeEnAttente = true;
     engine.queueSwapAtNextBar(() => appliquerSection(cible));
   }
@@ -859,9 +835,8 @@
      au début de la suivante, qui est exactement la frontière. */
   function suivreArchitecture() {
     if (!playing || !archSections.length || tenirSection || basculeEnAttente) return;
-    if (mesuresCourantes <= 0) return;
-    if (engine.barDansSection >= mesuresCourantes - 1) {
-      const cible = sectionSuivante();
+    if (doitBasculer(engine, mesuresCourantes)) {
+      const cible = prochaineSection();
       basculeEnAttente = true;
       engine.queueSwapAtNextBar(() => appliquerSection(cible));
     }
