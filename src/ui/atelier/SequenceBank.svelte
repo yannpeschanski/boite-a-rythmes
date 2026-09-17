@@ -54,7 +54,7 @@
 <p class="hint">
   La banque est <strong>le matériel</strong> : tout ce que tu as composé, sous des noms libres, sans
   limite de nombre. Les <strong>parties A / B / C</strong>, juste au-dessus, sont le morceau monté
-  <em>maintenant</em> — trois emplacements que le Mode Live enchaîne. Le bouton
+  <em>maintenant</em> — trois emplacements qu’un montage enchaîne. Le bouton
   <strong>→ A</strong> tire du matériel vers une lettre.
 </p>
 

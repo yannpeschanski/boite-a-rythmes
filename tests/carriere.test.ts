@@ -1633,13 +1633,20 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
    * range rien dans la discographie et n'a pas de cahier. Ce que la règle
    * interdit après la dernière livraison, ce sont les COMMANDES et les
    * LIVRAISONS ; interdire aussi de jouer ce qu'on vient de faire était un
-   * effet de bord de la formulation, pas la règle. */
+   * effet de bord de la formulation, pas la règle.
+   *
+   * ⚠️ Et un MONTAGE non plus (2026-09-17) : il ne se note pas, ne range rien
+   * dans la discographie et n'a pas de cahier — il ORDONNE ce qui vient d'être
+   * produit. Même raison que la scène, à laquelle il sert de moitié
+   * « préparation ». */
   it('la dernière d’un acte n’est suivie de rien à PRODUIRE', () => {
     for (const a of ACTES) {
       const idx = a.etapes.flatMap((e, i) => (e.kind === 'commande' ? [i] : []));
       if (!idx.length) continue;
       for (const e of a.etapes.slice(idx[idx.length - 1] + 1)) {
-        expect(['recit', 'scene'], `acte ${a.id} : une étape « ${e.kind} »`).toContain(e.kind);
+        expect(['recit', 'scene', 'montage'], `acte ${a.id} : une étape « ${e.kind} »`).toContain(
+          e.kind,
+        );
       }
     }
   });
@@ -1785,9 +1792,21 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
     for (const b of montees) expect(b.serie).toMatch(/-couplet$/);
     expect(set.montage).toBe('A B C · A B′ C′');
 
-    // Le RAPPEL, lui, tient dans une boucle — « les mains font tout ».
+    /* ⚠️ LE RAPPEL EST MONTÉ EN CLUB depuis le 2026-09-17. Le jingle ne fait
+     * qu'UNE boucle, donc son montage ne peut citer qu'une lettre — et ce
+     * n'est pas une propriété du nom, c'est une propriété de la FORME. Le test
+     * la lit dans le catalogue plutôt que de faire confiance à la chaîne
+     * « CLUB » : un modèle à deux lettres poserait ici une scène sur B, c'est-
+     * à-dire une lettre vide, qui se replie sur A et joue la même chose sans
+     * qu'aucune erreur ne le dise. */
     expect(rappel.morceauDeLActe).toBe(3);
-    expect(rappel.montage).toBe('BOUCLE');
+    expect(rappel.montage).toBe('CLUB');
+    const club = montageParNom(rappel.montage!);
+    expect(club, 'le modèle du rappel n’existe pas').toBeTruthy();
+    expect(
+      new Set(club!.sections.map((x) => x.partie)),
+      'le rappel monte un morceau d’UNE boucle : son modèle ne peut citer qu’une lettre',
+    ).toEqual(new Set(['A']));
   });
 
   /* ⚠️ CE QUI N'A PAS ÉTÉ PORTÉ N'EXISTE PAS. `HISTOIRE.md` écrit ce que le
@@ -1994,13 +2013,15 @@ describe('l’épilogue a un disque à faire entendre', () => {
      *
      * ⚠️ Une SCÈNE le peut, elle : elle ne range rien dans la discographie —
      * l'acte 6 finit en montant ses trois boucles en set, ce qui fait ENTENDRE
-     * le disque au lieu d'en fabriquer un autre. */
+     * le disque au lieu d'en fabriquer un autre. ⚠️ Un MONTAGE aussi, et pour
+     * la même raison : il met en forme ce qui est déjà livré. */
     const acte = ACTES.find((a) => a.id === ACTE_DU_DISQUE)!;
     const derniere = acte.etapes.map((e) => e.kind).lastIndexOf('commande');
     for (const e of acte.etapes.slice(derniere + 1)) {
-      expect(['recit', 'scene'], `une étape « ${e.kind} » suit la dernière commande`).toContain(
-        e.kind,
-      );
+      expect(
+        ['recit', 'scene', 'montage'],
+        `une étape « ${e.kind} » suit la dernière commande`,
+      ).toContain(e.kind);
     }
   });
 });

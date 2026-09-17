@@ -496,15 +496,21 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
      * qu'un morceau livré à l'acte 1 est encore là en septembre, et que ce qui
      * a chacun sa série ne s'écrase pas. */
     log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
-    if (game.productions.length !== 17) log.push('   ⚠️ DIX-SEPT productions attendues');
-    if (game.productions.filter((p) => p.acte === 6).length !== 9)
-      log.push('   ⚠️ l’acte 6 doit ranger NEUF boucles — trois morceaux de trois');
+    if (game.productions.length !== 15) log.push('   ⚠️ QUINZE productions attendues');
+    // ⚠️ SEPT depuis le crescendo du 2026-09-17 : 2 + 2 + 3.
+    if (game.productions.filter((p) => p.acte === 6).length !== 7)
+      log.push('   ⚠️ l’acte 6 doit ranger SEPT boucles — 2 + 2 + 3');
     if (game.productions.filter((p) => p.acte === 5).length !== 4)
       log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
     return { log, snaps };
   });
 
-  const bloques = journal.log.filter((l) => l.startsWith('⚠️'));
+  /* ⚠️ `startsWith` laissait passer les alertes INDENTÉES — celles des compteurs
+     de productions, qui sont poussées avec trois espaces devant. Elles étaient
+     donc écrites, comptées, et jamais montrées : un garde-fou muet pendant que
+     le script annonçait « aucune fuite ». Trouvé le 2026-09-17, sur un compte
+     devenu faux depuis la veille. */
+  const bloques = journal.log.filter((l) => l.trim().startsWith('⚠️'));
   if (bloques.length) console.log(bloques.join('\n'));
 
   /* ---------------------------------------------------------------------
@@ -545,7 +551,16 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
     const fermes = ['synth', 'production', 'live'].filter((m) => !ouverts.includes(m));
     const dire = (ecran, texte) => {
       const vus = [];
-      for (const m of fermes) for (const mot of MOTS[m]) if (texte.includes(mot)) vus.push(`${m} : « ${mot} »`);
+      /* ⚠️ On rapporte la LIGNE, pas seulement le mot. « live : "Mode Live" »
+         dit qu'il y a une fuite et pas où elle est : trouver la phrase
+         demandait alors de relire tout un onglet à la main. */
+      const ligneQuiDit = (mot) => {
+        const l = texte.split('\n').find((x) => x.includes(mot));
+        return l ? ` → « ${l.trim().slice(0, 70)} »` : '';
+      };
+      for (const m of fermes)
+        for (const mot of MOTS[m])
+          if (texte.includes(mot)) vus.push(`${m} : « ${mot} »${ligneQuiDit(mot)}`);
       if (texte.includes('🔒')) vus.push('un CADENAS 🔒');
       const uniques = [...new Set(vus)];
       if (uniques.length) { fuites++; console.log(`  ⚠️ ${ecran} — ${uniques.join(' · ')}`); }
@@ -559,6 +574,19 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
       await atelier.click();
       await page.waitForTimeout(400);
       dire('Atelier', await page.evaluate(() => document.body.innerText));
+      /* ⚠️ ET LES AUTRES ONGLETS — on ne lisait que celui qui s'ouvre par
+         défaut (Rythme), donc la moitié de l'Atelier n'était jamais relue.
+         C'est ce qui a laissé passer deux textes de l'onglet Production qui
+         nommaient le Mode Live (« le Mode Live les enchaîne ») alors qu'il est
+         fermé jusqu'au concert. L'étape de montage de l'acte 6 envoie
+         précisément là : la fuite était garantie, et invisible. */
+      for (const onglet of ['Synthé', 'Production']) {
+        const t = page.locator('button', { hasText: new RegExp(onglet) }).first();
+        if (!(await t.count())) continue;
+        await t.click();
+        await page.waitForTimeout(350);
+        dire(`Atelier · onglet ${onglet}`, await page.evaluate(() => document.body.innerText));
+      }
       for (const menu of ['Mode', 'Fichier', 'Édition', 'Affichage', 'Aide']) {
         const b = page.locator('.menu-btn', { hasText: new RegExp('^' + menu + '$') }).first();
         if (!(await b.count())) continue;

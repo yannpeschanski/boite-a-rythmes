@@ -51,6 +51,7 @@
     onLivraison,
     onCommande,
     onScene,
+    onMontage,
   }: {
     /** Une étape d'exercice commence : la vue de jeu prend la main. */
     onExercice: () => void;
@@ -62,6 +63,8 @@
     onScene: () => void;
     /** Partir travailler sur une commande — l'Atelier devient l'outil. */
     onCommande: () => void;
+    /** Monter le morceau : l'Atelier, onglet Production, lettres déjà rangées. */
+    onMontage: () => void;
   } = $props();
 
   /* ⚠️ Le SEUL endroit du récit où un texte cite le joueur, et c'est la
@@ -158,6 +161,14 @@
     stopLecture();
     game.ouvrirScene();
     onScene();
+  }
+
+  /* Aller monter. Le store range les lettres et efface la chaîne d'avant ; la
+     vue ne fait que naviguer — et coupe ce qu'elle était en train de lire. */
+  function monterLeMorceau() {
+    stopLecture();
+    game.ouvrirMontage();
+    onMontage();
   }
 
   function ouvrir(a: Acte) {
@@ -608,6 +619,30 @@
     <p class="muted scene-note">
       Le Mode Live se joue <b>à l’horizontale</b> — tourne ton téléphone. Tu redescends de
       scène quand tu veux.
+    </p>
+  {:else if etape && etape.kind === 'montage'}
+    <!-- ⚠️ LE MONTAGE — l'autre écran sans cahier ni cible. Comme la scène, il
+         n'a pas de « Suite » : monter fait avancer le récit au retour, et un
+         raccourci ferait sauter le seul moment du jeu où l'on apprend la
+         forme. Ce qu'il DIT est la consigne, puisque rien ne la vérifie. -->
+    <div class="appareil">
+      <div class="entete">ACTE {acte.id} — {acte.titre}</div>
+      <p class="tag-scene">{etape.entete}</p>
+      <RecitLignes lignes={etape.lignes} cle={cleEtape} ton="normal" transformer={texte} />
+    </div>
+    <div class="actions">
+      <button class="xp-btn tap44-y" disabled={!game.peutReculer} onclick={() => game.reculerCarriere()}>
+        ◂ Retour
+      </button>
+      <span class="position">Acte {acte.id} · {position}</span>
+      <button class="xp-btn primary tap44-y" onclick={monterLeMorceau}>{etape.bouton}</button>
+    </div>
+    <!-- ⚠️ Le modèle est NOMMÉ ici aussi : le joueur doit aller le chercher
+         dans un sélecteur, et un nom lu une seule fois sur l'écran d'avant ne
+         se retrouve pas. L'Atelier le répète (`dansLAtelier`). -->
+    <p class="muted scene-note">
+      Ça se passe dans l’<b>Atelier</b>, onglet Production. Le modèle à prendre s’appelle
+      <b>{etape.modele}</b>. Tu reviens ici quand tu veux.
     </p>
   {:else if etape && etape.kind === 'exercice'}
     {@const dite = analyserLigne(etape.commande ?? 'Au travail.')}

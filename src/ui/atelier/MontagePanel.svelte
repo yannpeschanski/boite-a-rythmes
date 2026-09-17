@@ -273,10 +273,14 @@
     onchange={ouvrir}
   />
 </div>
+<!-- ⚠️ CE TEXTE NE NOMME PAS LE MODE LIVE (2026-09-17). La promesse qu'il
+     porte — rien ne touche aux assignations réglées à la main — reste entière
+     sans l'adresse : un module fermé ne se nomme pas, et l'étape de montage de
+     l'acte 6 fait lire ce panneau bien avant le concert. -->
 <p class="hint fichier-aide">
-  Le fichier contient les <strong>parties</strong> et la <strong>chaîne</strong>. Les boutons du Mode
-  Live n'en font pas partie : ceux que tu as réglés restent les tiens, qu'on ouvre un fichier ou
-  qu'on charge un modèle.
+  Le fichier contient les <strong>parties</strong> et la <strong>chaîne</strong>, et rien d’autre :
+  les boutons que tu as réglés pour jouer restent les tiens, qu’on ouvre un fichier ou qu’on charge
+  un modèle.
   {#if compteRendu}<br /><span class="rendu" class:alerte={compteRendu.startsWith('⚠')}>{compteRendu}</span>{/if}
 </p>
 

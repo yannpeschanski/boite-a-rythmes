@@ -727,6 +727,24 @@ qu'elle décrit — mesuré : bandeau 6→22, transport 26→80, bande 84→128)
 consigne et porte **▶ LANCER**, qui EST la consigne. Elle disparaît au premier
 son et ne revient pas. La surface de jeu, elle, ne bouge pas.
 
+⚠️ **Le MONTAGE est le sixième type d'étape, et l'acte 6 y apprivoise le
+module** (2026-09-17) : un montage par morceau, COUPLET / REFRAIN puis A B B′
+puis RONDO — le même crescendo que les boucles, parce que le rondo est le seul
+modèle du catalogue qui demande TROIS matières. **Le jeu RANGE les lettres, le
+joueur MONTE** : refaire à la main ce qu'on vient de livrer est du transport, la
+FORME est ce qui s'apprend. Il ne se note pas, n'ouvre aucun module, efface la
+chaîne d'avant (ne rien faire n'est pas neutre) et **arrive sur l'onglet que sa
+consigne nomme**. ⚠️ Corollaire assumé : **on monte sans entendre** — une chaîne
+ne se joue que dans le Mode Live, fermé jusqu'au concert. ⚠️ Et un modèle ne doit
+jamais réclamer plus de lettres que l'étape n'en range : une lettre vide se
+replie sur A, donc la troisième matière sonnerait comme la première, sans erreur
+et presque juste (`tests/montage-morceau.test.ts`).
+
+⚠️ **Le rappel du 14 juin se monte en CLUB, pas en BOUCLE** (2026-09-17) : une
+salle qui reprend douze secondes en choeur demande une montée, un break et une
+relance. CLUB est le seul montage à relief qui tienne sur UNE lettre — c'est ce
+qui le rend jouable sur un jingle.
+
 ⚠️ Le Mode Live n'existe qu'à l'HORIZONTALE (« tourne ton téléphone » sinon) —
 l'écran qui **ENVOIE** doit le dire : une scène du récit, la sortie du
 `MontagePanel`. ⚠️ Pas l'ACCUEIL, où c'est le joueur qui choisit d'ouvrir le

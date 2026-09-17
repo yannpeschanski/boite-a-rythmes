@@ -59,6 +59,7 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     const { architecture } = await import('/src/stores/architecture.svelte.ts');
     const { parties } = await import('/src/stores/parties.svelte.ts');
     const { PARTIES } = await import('/src/model/parties.ts');
+    const { MONTAGES } = await import('/src/model/architecture.ts');
     const log = [];
     const modules = () => ['atelier', 'synth', 'production', 'live'].filter((m) => unlocks.has(m)).join(',') || '—';
 
@@ -124,6 +125,32 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
         log.push(`   scène « ${e.entete} » → Mode Live ${ouvert ? 'ouvert' : '⚠️ CADENASSÉ'}${set}`);
         log.push(`     → à la lecture, on entend : ${entendu}`);
         if (alerte) log.push(alerte);
+        continue;
+      }
+      /* LE MONTAGE (acte 6) : on ouvre, on regarde ce que le store a rangé, on
+         revient. Rien à réussir — monter n'est pas noté — mais deux choses à
+         vérifier, et ce sont les deux qui se paient à l'oreille :
+           - les LETTRES que l'étape annonce sont réellement rangées (une
+             lettre vide se replie sur A et joue autre chose, sans erreur) ;
+           - le modèle qu'elle NOMME existe (sinon le joueur cherche dans le
+             sélecteur un nom qui n'y est pas).
+         ⚠️ On ne charge PAS le modèle : c'est le geste du joueur, et le script
+         n'a pas à faire semblant de l'avoir fait. La chaîne doit donc être
+         VIDE au retour — c'est ça qu'on mesure. */
+      if (e.kind === 'montage') {
+        game.ouvrirMontage();
+        const attendues = e.boucles.map((b) => b.partie);
+        const rangees = attendues.filter((l) => parties.remplie(l));
+        const chaine = architecture.sections.length;
+        const connu = MONTAGES.some((m) => m.nom === e.modele);
+        game.terminerMontage();
+        log.push(
+          `   montage « ${e.entete} » → lettres ${rangees.join('') || '—'}/${attendues.join('')}` +
+            `, modèle « ${e.modele} » ${connu ? 'au catalogue' : '⚠️ INCONNU'}` +
+            `, chaîne ${chaine === 0 ? 'effacée' : `⚠️ ${chaine} scènes déjà là`}`,
+        );
+        if (rangees.length !== attendues.length)
+          log.push('   ⚠️ une lettre annoncée n’a pas été rangée — elle se repliera sur A');
         continue;
       }
       if (e.kind === 'livraison') {

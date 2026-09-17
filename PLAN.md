@@ -48,6 +48,78 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 6 apprivoise le module de montage — et le rappel passe en CLUB (2026-09-17)
+
+**Demande** : *« 1er morceau : modèle couplet/refrain ; 2ème morceau : ABB′
+ABB′ A′ outro ; 3ème morceau : Rondo. C'est le moment dans le jeu où on
+apprivoise le module de montage de morceau. Par ailleurs, lorsqu'on demande le
+jingle, il faut appliquer le modèle Club. »*
+
+**Deux forks posés avant de coder**, parce qu'aucun n'avait de défaut évident
+et que tous deux décidaient la forme de l'acte. Réponses : *le jeu range les
+lettres, le joueur monte*, et *on monte sans entendre*.
+
+**Le sixième type d'étape.** `EtapeMontage` — ni cahier, ni cible, ni note,
+comme une scène, dont il est la moitié « préparation ». Il pose les lettres
+depuis la discographie, efface la chaîne d'avant et envoie dans l'Atelier ;
+c'est le joueur qui charge le modèle nommé et l'ajuste. Câblage :
+`game.ouvrirMontage()` / `terminerMontage()`, un bandeau dans `AtelierView`, un
+écran dans `CarriereView`, le relais `App` → `GameView`.
+
+⚠️ **Le test qui compte n'est pas le compte d'étapes** : un modèle ne doit
+jamais réclamer plus de lettres que l'étape n'en range. Une section cite une
+lettre, une lettre vide se replie sur A — un RONDO posé sur deux lettres jouerait
+son épisode C comme son refrain, sans erreur, sans voyant, en sonnant presque
+juste. C'est le seul défaut du montage qui ne se voit qu'en écoutant.
+
+⚠️ **L'ordre des trois modèles n'est pas un goût, c'est une contrainte** : le
+rondo est le seul du catalogue à demander trois matières, donc le seul qu'un
+morceau à deux boucles ne peut pas remplir. Le crescendo des formes et celui des
+boucles sont le même.
+
+**Le rappel en CLUB.** Il tenait sur BOUCLE, ce qui était vrai du texte et faux
+de la soirée. CLUB est le seul montage à relief qui ne cite qu'UNE lettre (sept
+scènes sur A, tout venant des calques) — le test le vérifie sur la FORME, pas
+sur la chaîne « CLUB », parce que c'est la propriété qui le rend jouable ici.
+
+**Trois défauts trouvés en mesurant, pas en relisant :**
+
+1. Le nom du modèle s'affichait en VERT dans le bandeau. Le vert dit « fait » ;
+   un modèle à aller chercher n'est pas un état — passé en ambre.
+2. On atterrissait sur l'onglet Rythme alors que la consigne nomme Production.
+   Quatrième fois que ce projet paie un geste à chercher ; ici il coûtait une
+   ligne.
+3. ⚠️ **Trois textes de l'onglet Production nommaient le Mode Live**, fermé
+   jusqu'au concert — et l'étape y envoie désormais à coup sûr. Réécrits sans
+   l'adresse : le sujet de ces phrases n'a jamais été la salle où l'on joue,
+   c'est le montage.
+
+⚠️ **Et le contrôleur de fuites avait deux angles morts**, dont un qui le
+rendait menteur. Il ne relisait que l'onglet OUVERT de l'Atelier (Rythme), donc
+la moitié du module n'était jamais vue — c'est ce qui a laissé passer les trois
+fuites ci-dessus. Et son propre garde-fou de productions était PÉRIMÉ depuis la
+veille (17 et 9 au lieu de 15 et 7) **sans que rien ne s'affiche** : les alertes
+sont poussées avec trois espaces devant et le filtre lisait
+`startsWith('⚠️')`. Un garde-fou muet pendant que le script annonce « aucune
+fuite ». Les deux sont corrigés, et `dire()` rapporte désormais la LIGNE fautive
+et plus seulement le mot — la phrase coupable était coupée en deux par le
+formatage, donc introuvable au `grep`.
+
+**Vérifié en jouant.** Carrière entière rejouée sur un serveur de dev frais :
+acte 6 à 22 étapes, ses sept commandes acceptées et ses trois montages
+(lettres AB, AB, ABC — toutes rangées, chaîne effacée, modèle au catalogue),
+acte 7 sur son set puis son rappel en CLUB, épilogue, 15 productions, aucune
+erreur console. `verrous-masques.cjs` : aucune fuite, onglets compris. Les deux
+écrans neufs mesurés en 390 × 844, pointeur grossier : aucun débordement,
+bandeau à 93,5 px, et la zone touchable du retour fait bien 44 px (32 dessinés
++ le pseudo-élément de `.tap44-y`, invisible à `getBoundingClientRect`).
+
+**Fichiers** : `src/model/carriere.ts`, `src/stores/game.svelte.ts`,
+`src/App.svelte`, `src/ui/game/{CarriereView,GameView}.svelte`,
+`src/ui/atelier/{AtelierView,MontagePanel,PartiesStrip,SequenceBank}.svelte`,
+`tests/montage-morceau.test.ts` (neuf), `tests/carriere.test.ts`,
+`scripts/{parcours-carriere,verrous-masques}.cjs`, `CLAUDE.md`, `REPRISE.md`.
+
 ### ✅ Le disque de l'acte 6 va crescendo — 2, 2, 3 (2026-09-17)
 
 **Demande** : *« Il faut y aller crescendo dans les morceaux, faire d'abord deux

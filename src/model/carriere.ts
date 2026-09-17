@@ -444,7 +444,55 @@ export interface EtapeCommande {
   client: string;
 }
 
-export type Etape = EtapeRecit | EtapeExercice | EtapeLivraison | EtapeCommande | EtapeScene;
+/* ⚠️ LE MONTAGE EST LE SIXIÈME TYPE D'ÉTAPE — on n'y produit rien, on MONTE.
+ *
+ * Demande du 2026-09-17 : *« c'est le moment dans le jeu où on apprivoise le
+ * module de montage de morceau »*. Les boucles d'un morceau viennent d'être
+ * livrées ; l'étape les RANGE sous les lettres et envoie dans l'onglet
+ * Production, où c'est le JOUEUR qui charge le modèle et l'ajuste.
+ *
+ * ⚠️ Le jeu range, le joueur monte (arbitré le 2026-09-17). Ranger à la main
+ * serait refaire son propre travail : les boucles viennent d'être écrites, et
+ * les retrouver une par une dans la discographie est du transport, pas de
+ * l'apprentissage. Ce qui s'apprend est la FORME — le modèle, les tours, les
+ * lettres, les lignes qu'on coupe — et ça reste entièrement à faire.
+ *
+ * ⚠️ Elle ne se NOTE pas et n'ouvre AUCUN module : monter est un geste de
+ * PRÉPARATION, l'Atelier et la Production sont ouverts depuis longtemps, et le
+ * Mode Live reste fermé jusqu'au concert. Corollaire assumé : **une chaîne ne
+ * s'ENTEND que dans le Mode Live**, donc on monte ici sans entendre. C'est
+ * l'arbitrage du 2026-09-17 (« la forme s'entend au concert »), et c'est ce
+ * qui garde au 14 juin sa récompense. */
+export interface EtapeMontage {
+  kind: 'montage';
+  entete: string;
+  lignes: string[];
+  /** Le libellé du bouton qui emmène dans l'onglet Production. */
+  bouton: string;
+  /* ⚠️ Le modèle à charger, par son NOM dans `MONTAGES` — et le jeu ne le
+   * charge pas, il le nomme. Un modèle chargé d'avance ferait de l'étape une
+   * démonstration ; nommé, il est une consigne, et `dansLAtelier` doit le
+   * répéter puisque c'est le seul écran que le joueur aura sous les yeux. */
+  modele: string;
+  /* ⚠️ CE QU'ON FAIT UNE FOIS DANS L'ATELIER — obligatoire, même règle que
+   * `EtapeScene.surScene` : c'est le seul autre écran sans cahier et sans
+   * cible, donc le seul autre qui doive DIRE sa consigne au lieu de la laisser
+   * porter par ce qu'on vérifie. */
+  dansLAtelier: string;
+  /* Les boucles livrées, rangées sous leurs lettres. Une boucle qui manque est
+   * sautée — comme une scène, un montage ne bloque jamais. */
+  boucles: Array<{ serie: string; nom: string; partie: PartieId }>;
+  /** L'acte d'où viennent ces boucles — le sien par défaut. */
+  depuisLActe?: number;
+}
+
+export type Etape =
+  | EtapeRecit
+  | EtapeExercice
+  | EtapeLivraison
+  | EtapeCommande
+  | EtapeScene
+  | EtapeMontage;
 
 export interface Acte {
   id: ActeId;
@@ -2237,6 +2285,34 @@ export const ACTES: Acte[] = [
         client: 'FACE B',
       },
 
+      /* ⚠️ LE PREMIER MONTAGE, et c'est lui qui explique ce qu'est un montage —
+       * les deux suivants n'auront plus qu'à nommer leur forme. Ordre du
+       * 2026-09-17 : COUPLET / REFRAIN, puis A B B′, puis RONDO. Ce n'est pas
+       * un classement arbitraire, c'est le même crescendo que les boucles :
+       * une forme à deux lettres sans calque savant, puis une forme où le
+       * PRIME fait tout le travail, puis la seule qui demande trois matières.
+       * Le joueur ne pouvait apprivoiser le rondo qu'après avoir vu qu'une
+       * lettre peut revenir en sonnant autrement. */
+      {
+        kind: 'montage',
+        entete: 'CELUI QUI PASSE — LE MONTAGE',
+        lignes: [
+          'SOL: Deux boucles, ce n’est pas encore un morceau.',
+          'SOL: Un morceau, c’est un ORDRE.',
+          'Elle pousse la machine vers toi.',
+          'SOL: Ton couplet est en A, ton refrain en B.',
+          'SOL: Prends le modèle et regarde ce qu’il en fait.',
+        ],
+        bouton: 'Monter le morceau ▸',
+        modele: 'COUPLET / REFRAIN',
+        dansLAtelier:
+          'Onglet Production : charge le modèle COUPLET / REFRAIN, puis change ce que tu veux — les tours, les lettres, les lignes qui sonnent.',
+        boucles: [
+          { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', partie: 'A' },
+          { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN', partie: 'B' },
+        ],
+      },
+
       /* ===================================================================
        * MORCEAU 2 — CELUI QU'ON ÉCOUTE SEUL. L'intention pèse sur le TEMPO et
        * sur le NOMBRE DE VOIX, jamais sur un genre : « lent » et « pas plein »
@@ -2311,6 +2387,31 @@ export const ACTES: Acte[] = [
         accepte: 'SOL: Oui. Ça suffit. N’en rajoute pas.',
         titre: 'CELUI QU’ON ÉCOUTE SEUL — REFRAIN',
         client: 'FACE B',
+      },
+
+      /* ⚠️ MÊMES DEUX LETTRES, UNE AUTRE FORME — et c'est tout l'argument de
+       * cette étape. Le morceau d'avant a déjà A et B ; celui-ci n'ajoute
+       * aucune matière et sonne pourtant autrement, parce que le PRIME est un
+       * calque et non une troisième boucle. C'est la leçon que le rondo ne
+       * pourrait pas donner (il a trois matières pour lui). */
+      {
+        kind: 'montage',
+        entete: 'CELUI QU’ON ÉCOUTE SEUL — LE MONTAGE',
+        lignes: [
+          'SOL: Deux lettres encore. Mais pas la même forme.',
+          'SOL: A, B, puis B avec des choses en moins.',
+          'SOL: Deux fois. Et un A qui s’efface à la fin.',
+          'SOL: Le prime, ce n’est pas une boucle de plus.',
+          'SOL: C’est la même, à qui on retire.',
+        ],
+        bouton: 'Monter le morceau ▸',
+        modele: 'A B B′',
+        dansLAtelier:
+          'Onglet Production : charge le modèle A B B′. Les scènes en prime coupent des lignes — ouvre-les et choisis ce qui se tait.',
+        boucles: [
+          { serie: 'seul-couplet', nom: 'ÉCOUTE SEUL — COUPLET', partie: 'A' },
+          { serie: 'seul-refrain', nom: 'ÉCOUTE SEUL — REFRAIN', partie: 'B' },
+        ],
       },
 
       /* ===================================================================
@@ -2453,6 +2554,32 @@ export const ACTES: Acte[] = [
         accepte: 'SOL: Fini. Sept boucles. Trois morceaux. Un disque.',
         titre: 'CELUI QUE PERSONNE N’ATTEND — PONT',
         client: 'FACE B',
+      },
+
+      /* ⚠️ LE RONDO ARRIVE AVEC LA TROISIÈME BOUCLE, et il ne pouvait pas
+       * arriver avant : c'est le seul montage du catalogue qui demande TROIS
+       * matières (`architecture.ts`), donc le seul que les deux premiers
+       * morceaux — deux boucles chacun — ne pouvaient pas remplir. Le
+       * crescendo des boucles et celui des formes sont le même. */
+      {
+        kind: 'montage',
+        entete: 'CELUI QUE PERSONNE N’ATTEND — LE MONTAGE',
+        lignes: [
+          'SOL: Trois boucles, cette fois. Donc trois lettres.',
+          'SOL: Et une forme qui en profite : le rondo.',
+          'SOL: A revient entre chaque, toujours plein.',
+          'SOL: C’est lui qui tient le morceau debout',
+          'SOL: pendant que le reste part ailleurs.',
+        ],
+        bouton: 'Monter le morceau ▸',
+        modele: 'RONDO',
+        dansLAtelier:
+          'Onglet Production : charge le modèle RONDO — A B A C A. Ton couplet est en A, ton refrain en B, ton pont en C.',
+        boucles: [
+          { serie: 'attend-couplet', nom: 'PERSONNE N’ATTEND — COUPLET', partie: 'A' },
+          { serie: 'attend-refrain', nom: 'PERSONNE N’ATTEND — REFRAIN', partie: 'B' },
+          { serie: 'attend-pont', nom: 'PERSONNE N’ATTEND — PONT', partie: 'C' },
+        ],
       },
 
       /* ⚠️ LA SCÈNE QUI MONTE LE SET. Les SEPT boucles partent dans la banque de
@@ -2678,8 +2805,14 @@ export const ACTES: Acte[] = [
        * écran du jeu qui dit « celui que tu as fait » faisait donc entendre
        * autre chose, dès la première mesure.
        *
-       * BOUCLE, « A en boucle — les mains font tout », est aussi ce que le
-       * texte raconte : la salle chante, on n'a rien à enchaîner. */
+       * ⚠️ LE MODÈLE EST CLUB depuis le 2026-09-17 (*« lorsqu'on demande le
+       * jingle, il faut appliquer le modèle Club »*). Il tenait sur BOUCLE —
+       * « A en boucle, les mains font tout » — ce qui était vrai du texte et
+       * faux de la soirée : une salle qui reprend douze secondes en choeur
+       * demande une montée, un break et une relance, pas une boucle plate.
+       * CLUB est le seul montage du catalogue qui tienne sur UNE lettre (sept
+       * scènes, toutes sur A, tout le relief venant des calques), donc le seul
+       * qui puisse faire une forme d'un morceau qui n'en a qu'une. */
       {
         kind: 'scene',
         entete: 'ON RÉCLAME LE JINGLE',
@@ -2691,13 +2824,14 @@ export const ACTES: Acte[] = [
           'SOL: Ils le connaissent mieux que toi.',
         ],
         bouton: 'Monter sur scène ▸',
-        surScene: 'Le jingle tourne en boucle. La salle chante ; toi, tu fais le reste.',
+        surScene:
+          'Une seule boucle, montée en club : ça entre, ça monte, ça casse, ça repart. La salle chante ; toi, tu conduis.',
         // L'acte 3 est celui du jingle de la laverie — sa commande le range
         // dans la discographie sous « JINGLE LAVERIE ».
         morceauDeLActe: 3,
-        // Une seule scène, sur A : le morceau tient dans une boucle et ce sont
-        // les mains qui font le reste.
-        montage: 'BOUCLE',
+        // Une seule LETTRE, sept scènes : le morceau tient dans une boucle, le
+        // relief vient entièrement des calques de CLUB.
+        montage: 'CLUB',
         // Le concert OUVRE le Mode Live : sans ça, l'étape enverrait dans un
         // module cadenassé.
         modulesRequis: ['live'],
