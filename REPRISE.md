@@ -3,7 +3,19 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **L'acte 6 apprivoise le module de
+> Dernière mise à jour : 2026-09-17 — ✅ **Une chaîne s'écoute depuis
+> l'Atelier.** Bouton ▶ ÉCOUTER dans le panneau de montage : c'était l'option
+> que j'avais chiffrée comme du code neuf, et le seul geste musical du jeu sans
+> retour immédiat. ⚠️ **Ce qu'on entend a désormais UNE définition**
+> (`src/ui/chaine.ts`) que le Live et l'Atelier partagent — la frontière est
+> audible / visible, le Live garde ses voyants. ⚠️ Il n'y a qu'un motif dans
+> l'appli, donc lire la chaîne charge les lettres par-dessus l'établi : le
+> travail en cours est mis de côté et **rendu à l'arrêt par les trois chemins**
+> (bouton, ⏹, sortie de vue), et le calque est relâché — sinon l'Atelier reste
+> muet sans rien dire. Mesuré dans le navigateur : la chaîne avance vraiment, la
+> bonne lettre joue, le motif revient intact.
+>
+> Avant cela, le même jour : ✅ **L'acte 6 apprivoise le module de
 > montage.** Sixième type d'étape (`EtapeMontage`) : un montage par morceau —
 > COUPLET / REFRAIN, A B B′, RONDO — le même crescendo que les boucles, parce
 > que le rondo est le seul modèle qui demande trois matières. Le jeu RANGE les

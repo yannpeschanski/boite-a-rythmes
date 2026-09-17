@@ -43,7 +43,22 @@
      menus (Mode → Mode Live), c'est-à-dire à l'autre bout de l'écran et sous
      un menu déroulant. « Il faut un bouton plus évident pour nous emmener sur
      le mode live à la fin de cette partie de montage des morceaux. » */
-  let { onSwitchView }: { onSwitchView?: (v: 'atelier' | 'game' | 'live' | 'diag') => void } = $props();
+  /* ⚠️ ÉCOUTER VIT DANS LE PANNEAU, mais la LECTURE vit dans l'Atelier : c'est
+     lui qui tient le moteur et le transport. Le panneau demande, il ne joue
+     pas — sinon il y aurait deux moteurs dans le même écran. */
+  let {
+    onSwitchView,
+    enEcoute = false,
+    sceneEnCours = -1,
+    onEcouter,
+  }: {
+    onSwitchView?: (v: 'atelier' | 'game' | 'live' | 'diag') => void;
+    /** Vrai pendant que la chaîne tourne — le bouton dit alors « arrêter ». */
+    enEcoute?: boolean;
+    /** L'index de la scène qu'on entend, ou −1. */
+    sceneEnCours?: number;
+    onEcouter?: () => void;
+  } = $props();
 
   const sections = $derived(architecture.sections);
 
@@ -170,9 +185,25 @@
     </p>
   {/if}
 
+  <!-- ⚠️ ÉCOUTER EST AU-DESSUS DE LA CHAÎNE, pas en bas à côté de la sortie
+       vers le Live : c'est la liste qu'on écoute, et un bouton posé après elle
+       se lit comme la fin du panneau. Il dit aussi ce qu'il coûte — les lettres
+       remplacent l'établi le temps de l'écoute — parce qu'un outil qui touche
+       au travail en cours sans le dire n'est pas un outil. -->
+  <div class="ecoute-barre">
+    <button class="xp-btn primary tap44-y" onclick={() => onEcouter?.()} disabled={!sections.length}>
+      {enEcoute ? '⏹ Arrêter' : '▶ Écouter le montage'}
+    </button>
+    <span class="ecoute-note">
+      {enEcoute
+        ? `scène ${sceneEnCours + 1} sur ${sections.length}`
+        : `tes lettres jouent le temps de l’écoute ; ton rythme revient à l’arrêt`}
+    </span>
+  </div>
+
   <ol class="chaine">
     {#each lignes as { s, i, mesures, debut } (s.id)}
-      <li class="scene" class:prime={s.lignes !== null}>
+      <li class="scene" class:prime={s.lignes !== null} class:joue={i === sceneEnCours}>
         <div class="rang nom">
           <span class="num">{i + 1}</span>
           <input
@@ -298,6 +329,27 @@
 {/if}
 
 <style>
+  /* ⚠️ La scène qui JOUE est en ambre, pas en vert : le vert dit « allumé /
+     fait », et une scène en cours n'est ni l'un ni l'autre. Le liseré tient
+     dans la marge pour ne décaler aucune rangée. */
+  .scene.joue {
+    box-shadow: inset 2px 0 0 var(--xp-accent-amber);
+  }
+  .ecoute-barre {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 8px;
+  }
+  .ecoute-note {
+    flex: 1 1 140px;
+    min-width: 0;
+    font-size: var(--xp-size-xs, 8.5px);
+    letter-spacing: var(--xp-ls-xs, 0.08em);
+    text-transform: uppercase;
+    color: var(--xp-accent-amber);
+  }
   .hint,
   .manque {
     font-size: 9px;

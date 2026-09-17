@@ -2,7 +2,15 @@
   import { onMount, onDestroy } from 'svelte';
   import { pattern } from '../../stores/pattern.svelte';
   import { game } from '../../stores/game.svelte';
-  import { cycleDuMotif } from '../../model/architecture';
+  import { cycleDuMotif, mesuresDeSection } from '../../model/architecture';
+  import { architecture } from '../../stores/architecture.svelte';
+  import { deserializeState } from '../../model/serialize';
+  import {
+    appliquerSectionAuMoteur,
+    relacherCalque,
+    sectionSuivante,
+    doitBasculer,
+  } from '../chaine';
   import { evaluerCommande } from '../../model/commande';
   import { AudioEngine } from '../../engine/AudioEngine';
   import type { DrumRowName, DrumStep, SynthRowName } from '../../model/types';
@@ -195,6 +203,7 @@
       }
     }
     breakArmed = engine.breakPending;
+    suivreLaChaine();
     /* ⚠️ L'un des deux axes de la note d'une livraison : a-t-on ÉCOUTÉ son
        travail ? Le moteur compte les mesures depuis ▶ ; on les convertit en
        CYCLES du motif (`cycleDuMotif` — une nappe de quatre mesures ne fait
@@ -289,6 +298,9 @@
     }
   });
   onDestroy(() => {
+    // Même raison qu'au transport : on ne quitte pas l'Atelier en y laissant
+    // une lettre à la place de ce qu'on écrivait.
+    arreterEcoute();
     cancelAnimationFrame(raf);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('input', markProductionTouched);
@@ -463,6 +475,10 @@
   }
 
   async function togglePlay() {
+    /* ⚠️ ARRÊTER LA LECTURE ARRÊTE L'ÉCOUTE — et lui rend son motif. Sans ça,
+       ⏹ coupait le son en laissant la dernière lettre chargée par-dessus
+       l'établi : le travail du joueur avait disparu et rien ne disait où. */
+    if (ecoute) return arreterEcoute();
     if (playing) {
       engine.stop();
       playing = false;
@@ -472,6 +488,83 @@
       await engine.start();
       playing = true;
     }
+  }
+
+  /* ---- ÉCOUTER LE MONTAGE -------------------------------------------------
+   *
+   * Demandé le 2026-09-17. Jusque-là une chaîne ne s'entendait que dans le Mode
+   * Live : on la montait ici en aveugle, et l'étape de montage de l'acte 6 la
+   * fait monter alors que le Live est encore fermé. Un geste musical sans
+   * retour immédiat était le seul du jeu.
+   *
+   * ⚠️ CE QUE ÇA COÛTE, ET CE QUI LE REND ACCEPTABLE. Il n'y a qu'UN motif
+   * dans l'appli — le moteur lit `pattern.snapshot()` — donc lire la chaîne
+   * CHARGE les lettres par-dessus l'établi. Le travail en cours est donc mis de
+   * côté au départ et rendu à l'arrêt, quoi qu'il arrive (bouton, changement
+   * d'onglet, sortie de la vue). Sans ça, écouter son montage effacerait le
+   * rythme qu'on était en train d'écrire — le contraire d'un outil.
+   *
+   * ⚠️ Et ce n'est PAS le Mode Live en petit : aucune surface de jeu, aucun
+   * réglage en direct, rien qui se joue. On ÉCOUTE ce qu'on vient de monter,
+   * c'est tout. Monter reste un geste de préparation. */
+  let ecoute = $state<{ scene: number; motifAvant: string } | null>(null);
+
+  function mesuresDeLaScene(i: number): number {
+    const sec = architecture.sections[i];
+    return sec ? mesuresDeSection(sec, cycleDuMotif(pattern.state)) : 0;
+  }
+
+  async function ecouterMontage() {
+    if (ecoute) return arreterEcoute();
+    const sections = architecture.sections;
+    if (!sections.length) return;
+    /* Le travail en cours, mis de côté AVANT que la première lettre le
+       remplace. C'est la seule chose qui rend ce bouton sans risque. */
+    ecoute = { scene: 0, motifAvant: pattern.toJson() };
+    appliquerSectionAuMoteur(engine, sections[0]);
+    if (!playing) {
+      await engine.start();
+      playing = true;
+    }
+  }
+
+  function arreterEcoute() {
+    if (!ecoute) return;
+    const { motifAvant } = ecoute;
+    ecoute = null;
+    engine.stop();
+    playing = false;
+    engine.cancelQueuedSwap();
+    /* ⚠️ RELÂCHER LE CALQUE, sinon les lignes qu'une scène avait coupées le
+       restent sur un établi qui n'enchaîne plus rien — et rien à l'écran ne
+       dirait pourquoi la caisse claire ne sonne plus. */
+    relacherCalque(engine);
+    pattern.replace(deserializeState(motifAvant));
+    refreshFx();
+    playhead = { kick: -1, snare: -1, hat: -1, clap: -1, shaker: -1 };
+    synthPlayhead = { bass: -1, pad: -1, melody: -1 };
+  }
+
+  /* Avancer dans la chaîne — appelé à chaque frame par `loop`. On programme la
+     bascule pendant la DERNIÈRE mesure de la scène ; le moteur l'applique au
+     début de la suivante, donc pile à la frontière. */
+  let basculeEnAttente = false;
+  function suivreLaChaine() {
+    if (!ecoute || !playing) return;
+    const total = architecture.sections.length;
+    if (!total) return arreterEcoute();
+    if (basculeEnAttente) return;
+    if (!doitBasculer(engine, mesuresDeLaScene(ecoute.scene))) return;
+    const cible = sectionSuivante(ecoute.scene, total);
+    basculeEnAttente = true;
+    engine.queueSwapAtNextBar(() => {
+      basculeEnAttente = false;
+      if (!ecoute) return;
+      const sec = architecture.sections[cible];
+      if (!sec) return;
+      ecoute = { ...ecoute, scene: cible };
+      appliquerSectionAuMoteur(engine, sec);
+    });
   }
 
   // Les réglages de bus (fx, delay, sends, volumes de ligne, limiteurs)
@@ -921,7 +1014,12 @@
            résultat, dans des cases de 60 px : monter est un geste de
            PRÉPARATION, il vit dans l'Atelier. -->
       <XpWindow title="Montage du morceau" icon="⛓" accent="amber">
-        <MontagePanel {onSwitchView} />
+        <MontagePanel
+          {onSwitchView}
+          enEcoute={!!ecoute}
+          sceneEnCours={ecoute?.scene ?? -1}
+          onEcouter={ecouterMontage}
+        />
       </XpWindow>
       <XpWindow title="Banque de séquences" icon="🗄" accent="teal">
         <SequenceBank />

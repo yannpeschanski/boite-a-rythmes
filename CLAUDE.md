@@ -740,6 +740,19 @@ jamais réclamer plus de lettres que l'étape n'en range : une lettre vide se
 replie sur A, donc la troisième matière sonnerait comme la première, sans erreur
 et presque juste (`tests/montage-morceau.test.ts`).
 
+⚠️ **Une chaîne s'ÉCOUTE aussi depuis l'Atelier** (2026-09-17, « ajoute un
+bouton écouter dans le panneau de montage ») — on la montait en aveugle, et
+l'étape de montage de l'acte 6 la fait monter avant que le Live existe.
+⚠️ **Ce qu'on entend vit dans `ui/chaine.ts`, une seule définition** :
+`appliquerSectionAuMoteur` (repli sur A, le mix qui suit, les réglages rendus,
+le calque), `relacherCalque`, `sectionSuivante`, `doitBasculer`. Le Live en
+garde ce qu'on VOIT, jamais ce qu'on entend — deux copies divergeraient au
+premier réglage. ⚠️ Il n'y a qu'UN motif dans l'appli : lire la chaîne charge
+les lettres par-dessus l'établi, donc le travail en cours est mis de côté au
+départ et **rendu à l'arrêt, par tous les chemins** (bouton, ⏹, sortie de la
+vue) — et le calque est **relâché**, sinon l'Atelier reste muet sans que rien
+ne le dise. `tests/chaine.test.ts` tient les deux sur un moteur feint.
+
 ⚠️ **Le rappel du 14 juin se monte en CLUB, pas en BOUCLE** (2026-09-17) : une
 salle qui reprend douze secondes en choeur demande une montée, un break et une
 relance. CLUB est le seul montage à relief qui tienne sur UNE lettre — c'est ce
