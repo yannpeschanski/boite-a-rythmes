@@ -19,6 +19,7 @@
     SEUIL_JUSTESSE,
     ecartAuClic,
     medianeDesEcarts,
+    aUneVersion,
     type ExerciseKind,
   } from '../../model/exercises';
   import { latence } from '../latence.svelte';
@@ -234,8 +235,13 @@
     }
     engine.stop();
     resetPlayhead();
-    if (which === 'target') game.loopPlays++;
-    else game.guessPlays++;
+    /* ⚠️ Les quatre mesures d'`intrus` sont de la MATIÈRE à écouter, pas « ma
+     * version » : comptées dans le `else` jusqu'au 2026-09-19, elles faisaient
+     * dire au roast « et en plus t'as réécouté ta propre version » à un verbe
+     * qui n'en a pas. `guessPlays` ne compte que le bouton « 🎧 Écouter ma
+     * version », donc les seuls verbes de `VERBES_AVEC_VERSION`. */
+    if (which === 'guess') game.guessPlays++;
+    else game.loopPlays++;
     // Avant start() : le tout premier tick doit déjà lire la bonne cible via
     // le getState() ci-dessus, sinon la toute première fenêtre programmée
     // (jusqu'à 0.25s) jouerait encore l'ancienne.
@@ -1014,11 +1020,14 @@
                   ? `🔊 Écouter ${LIBELLE_LIGNE[game.level.melodie.ligne]}`
                   : '🔊 Écouter le rythme à trouver'}
           </button>
-          {#if ex !== 'silence' && ex !== 'style'}
-            <!-- ⚠️ Pas de « ma version » pour le silence : on ne pose rien sur
-                 la grille, on désigne un pas. Le bouton ne jouait donc jamais
-                 que du vide — et un bouton qui ne fait rien se lit comme une
-                 panne, pas comme une absence. -->
+          {#if aUneVersion(ex)}
+            <!-- ⚠️ Pas de « ma version » pour le silence ni pour le style : on
+                 ne pose rien sur la grille, on désigne un pas ou un genre. Le
+                 bouton ne jouait donc jamais que du vide — et un bouton qui ne
+                 fait rien se lit comme une panne, pas comme une absence.
+                 ⚠️ La liste vit dans `VERBES_AVEC_VERSION` (`model/exercises`)
+                 depuis le 2026-09-19 : le roast de fin la lisait AUSSI, en la
+                 devinant, et reprochait ici une réécoute impossible. -->
             <button class="xp-btn" onclick={() => play('guess')}>
               {playingWhat === 'guess' ? '■ Stop' : '🎧 Écouter ma version'}
             </button>
