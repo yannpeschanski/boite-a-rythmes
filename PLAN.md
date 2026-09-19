@@ -48,6 +48,32 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'écran de pseudo perd son chapeau (2026-09-19)
+
+**Demande** : supprimer *« Tu vas apprendre à fabriquer des rythmes à
+l'oreille, dans un petit label de disques qui a cinq mois devant lui. Huit
+actes, des exercices courts, et l'Atelier qui s'ouvre en chemin. »*
+
+Trois lignes de résumé posées AVANT le champ de pseudo, sur le premier écran
+du Mode jeu. Ce qu'elles coûtaient, en plus de la place : elles **nommaient
+l'Atelier** et annonçaient « huit actes » à quelqu'un qui n'a pas encore tapé
+son nom — c'est-à-dire ce que `CLAUDE.md` interdit (*« un module fermé ne se
+NOMME pas »*, *« un élément n'apparaît qu'à l'écran qui l'explique »*). Le
+récit dit déjà tout ça, à l'écran qui le raconte.
+
+⚠️ **L'angle mort à retenir** : `scripts/verrous-masques.cjs` relit neuf écrans
+à chaque frontière d'acte, mais il JOUE la carrière — donc il passe par le
+formulaire de pseudo une seule fois, avant d'avoir un joueur, et cet écran-là
+n'est dans aucune de ses relectures. Une fuite de vocabulaire peut donc vivre
+ici sans qu'aucun test la voie.
+
+**Ce qui reste** (`src/ui/game/GameView.svelte`) : le titre « Face B », la
+liste des parties enregistrées quand il y en a, la phrase qui dit à quoi sert
+le champ (« Choisis un pseudo — c'est là que ta progression sera rangée »), le
+champ et « C'est parti ». Mesuré en 390 × 844, `pointer: coarse` confirmé :
+aucun débordement, dans les deux états de l'écran (avec et sans parties
+enregistrées).
+
 ### ✅ Un « jouer » se valide tout seul — dix frappes au-dessus de 70 % (2026-09-17)
 
 **Demande** : *« Pour les niveaux 1, 2 et 3 où on joue, ce n'est pas clair
