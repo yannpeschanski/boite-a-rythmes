@@ -3,7 +3,16 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **Un « jouer » se valide tout seul.**
+> Dernière mise à jour : 2026-09-19 — ✅ **L'écran de pseudo perd son chapeau.**
+> Yann a demandé la suppression des trois lignes de résumé posées avant le
+> champ de pseudo. Elles NOMMAIENT l'Atelier et annonçaient « huit actes » avant
+> que le joueur ait tapé son nom — la règle existait déjà (« un module fermé ne
+> se nomme pas »), c'est l'écran qui y échappait.
+> ⚠️ **Et il y échappait pour une raison à retenir** : `verrous-masques.cjs`
+> JOUE la carrière, donc il ne repasse jamais par le formulaire de pseudo. Aucun
+> test ne regarde cet écran.
+>
+> Avant cela, le 2026-09-17 : ✅ **Un « jouer » se valide tout seul.**
 > Yann : *« pour les niveaux 1, 2 et 3 où on joue, ce n'est pas clair qu'il
 > suffit de dépasser 70 % pour valider le niveau. Peut-être que la validation
 > peut être automatique dès que la justesse dépasse 70 % pendant 10 coups

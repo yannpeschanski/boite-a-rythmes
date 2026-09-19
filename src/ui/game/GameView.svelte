@@ -747,11 +747,6 @@
 <div class="game">
   {#if !game.pseudo}
     <XpWindow title="Face B" icon="🎮" accent="none">
-      <p class="lead">
-        Tu vas apprendre à fabriquer des rythmes <strong>à l’oreille</strong>, dans un petit label de
-        disques qui a cinq mois devant lui. Huit actes, des exercices courts, et l’Atelier qui
-        s’ouvre en chemin.
-      </p>
       <!-- ⚠️ Les parties enregistrées viennent AVANT le champ, et pas par
            politesse : cet écran ne s'affiche qu'à deux moments — un joueur
            tout neuf (la liste est alors vide, donc rien ne bouge) et un clic
