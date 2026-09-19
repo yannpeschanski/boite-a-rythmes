@@ -29,6 +29,8 @@ import {
   justesseDesFrappes,
   medianeDesEcarts,
   estVerbeParam,
+  jouerGagne,
+  coupsPourValider,
   LAVERIE_DRIVES,
 } from '../model/exercises';
 import {
@@ -2127,13 +2129,13 @@ class GameStore {
       return juste;
     }
 
-    // « Jouer » ne note pas ce qui est posé mais ce qui a été JOUÉ : il faut
-    // avoir frappé le bon nombre de fois, et assez juste.
+    /* « Jouer » ne note pas ce qui est posé mais ce qui a été JOUÉ : il faut
+     * avoir tenu le rythme assez longtemps, et assez juste. Le verdict est
+     * `jouerGagne` — la même fonction que celle qui déclenche la validation
+     * automatique, sinon l'écran validerait à un endroit et jugerait à un
+     * autre. */
     if (this.level.exercise === 'jouer') {
-      const juste =
-        this.frappes.length >= this.frappesAttendues &&
-        this.frappesAttendues > 0 &&
-        this.justesse() >= 70;
+      const juste = jouerGagne(this.justesse(), this.frappes.length, this.frappesAttendues);
       if (juste) this.win();
       return juste;
     }
@@ -2184,6 +2186,25 @@ class GameStore {
       this.frappes.map((f) => f.ecartMs),
       this.frappesAttendues,
     );
+  }
+
+  /* Combien de frappes il faut tenir pour que le niveau se valide — l'écran
+   * l'ANNONCE, donc il le lit ici plutôt que de recalculer le maximum. */
+  get coupsAValider(): number {
+    return coupsPourValider(this.frappesAttendues);
+  }
+
+  /* La validation d'un « jouer » est AUTOMATIQUE : la vue interroge ceci après
+   * chaque frappe et n'appelle `verify()` que si c'est gagné.
+   *
+   * ⚠️ Cet ordre est le point de câblage : appeler `verify()` à chaque frappe
+   * pour lui laisser trancher compterait un ESSAI par coup joué — donc zéro
+   * étoile après dix frappes, et un roast qui parle de dizaines de tentatives
+   * (`starsForAttempts`, `composerRoast`). Un « jouer » réussi est réussi du
+   * premier coup, par construction : il n'y a plus de bouton pour se tromper. */
+  jouerPret(): boolean {
+    if (this.level.exercise !== 'jouer' || this.solved || this.revealed) return false;
+    return jouerGagne(this.justesse(), this.frappes.length, this.frappesAttendues);
   }
 
   /* Le biais du joueur, en millisecondes signées. Diagnostic, jamais noté :

@@ -3,7 +3,26 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-17 — ✅ **Abandonner fait passer à la suite.**
+> Dernière mise à jour : 2026-09-17 — ✅ **Un « jouer » se valide tout seul.**
+> Yann : *« pour les niveaux 1, 2 et 3 où on joue, ce n'est pas clair qu'il
+> suffit de dépasser 70 % pour valider le niveau. Peut-être que la validation
+> peut être automatique dès que la justesse dépasse 70 % pendant 10 coups
+> d'affilée ? »* Le `✓ Vérifier` de `jouer` est **retiré** : dix frappes
+> au-dessus de 70 % et le niveau est gagné, la lecture s'arrête. La jauge porte
+> maintenant le trait du seuil (barre ambre en dessous, verte au-dessus) et la
+> règle est ÉCRITE sous elle.
+> ⚠️ **Le compte de dix ne durcit rien, et c'est ce qu'il faut garder** :
+> `justesseDesFrappes` retient la meilleure fenêtre, donc elle ne peut que
+> monter — une mesure propre jouée au 4e coup est encore là au 10e. La monotonie
+> est testée (60 × 24 frappes tirées) : c'est elle qui autorise la règle sur les
+> niveaux 37 et 38 de l'acte 7.
+> ⚠️ **Piège de câblage** : la vue demande `game.jouerPret()` AVANT d'appeler
+> `verify()` — sinon un essai par frappe, donc 1★ au lieu de 3★ et un roast qui
+> parle de dizaines de tentatives.
+> ⚠️ Vérifié bout en bout au navigateur (pad frappé par la tête de lecture, rien
+> de cliqué) : 10 frappes, 100 %, 3★.
+>
+> Avant cela, le même jour : ✅ **Abandonner fait passer à la suite.**
 > Yann : *« on n'est pas censé passer à la suite, on doit persévérer… mais pour
 > tester, ça facilite énormément de parcourir les niveaux, donc il faut conserver
 > cette fonctionnalité — et ça vaut pour les exercices en atelier »*. C'est un
