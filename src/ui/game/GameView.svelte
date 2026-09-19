@@ -205,9 +205,9 @@
     const phase = (visee + ecart / dureeDunPas()) / n;
     game.enregistrerFrappe(ecart * 1000, ((phase % 1) + 1) % 1);
     /* ⚠️ Un « jouer » se valide TOUT SEUL — retour de jeu : « ce n'est pas
-       clair qu'il suffit de dépasser 70 % ». Il n'y a plus de bouton à
-       trouver ; dès que dix frappes tiennent le seuil, le niveau est gagné et
-       la lecture s'arrête (`verify` appelle `stopAll`).
+       clair qu'il suffit de dépasser le seuil ». Il n'y a plus de bouton à
+       trouver ; dès que dix frappes tiennent `SEUIL_JUSTESSE`, le niveau est
+       gagné et la lecture s'arrête (`verify` appelle `stopAll`).
        ⚠️ On DEMANDE d'abord (`jouerPret`) au lieu de laisser `verify` trancher :
        `verify` compte un essai à chaque appel, donc un appel par frappe
        coûterait les étoiles du niveau. */
@@ -1615,8 +1615,8 @@
           </button>
           <!-- ⚠️ Le seuil est MARQUÉ sur la jauge, et la barre passe au vert en
                le franchissant : le vert dit « fait » (CLAUDE.md), donc il dit
-               ici exactement ce que « 70 % suffisent » essayait d'expliquer en
-               mots sous un bouton qu'il fallait trouver. -->
+               ici exactement ce que l'ancien « 70 % suffisent » essayait
+               d'expliquer en mots sous un bouton qu'il fallait trouver. -->
           <div
             class="jauge"
             role="meter"
@@ -1631,9 +1631,10 @@
                frappes s'accumulent d'un tour à l'autre, dépasser le compte est
                normal. On dit donc combien il en faut, pas une fraction.
                ⚠️ Et la RÈGLE est écrite là, sous la jauge qui la mesure : elle
-               vivait dans un « (70 % suffisent) » qui ne disait pas que le
-               niveau se validerait tout seul, ni combien de temps il faut
-               tenir. Deux phrases, toutes deux vraies — celle qui reste à faire
+               vivait dans un « (70 % suffisent) » figé, qui ne disait pas que
+               le niveau se validerait tout seul, ni combien de temps il faut
+               tenir. Le chiffre se lit maintenant sur `SEUIL_JUSTESSE` : il est
+               passé à 80 sans qu'une ligne d'écran ait à bouger. Deux phrases, toutes deux vraies — celle qui reste à faire
                quand le seuil est tenu, celle qui énonce la règle sinon. -->
           <p class="chiffres">
             {game.frappes.length} frappe{game.frappes.length > 1 ? 's' : ''} — justesse {game.justesse()}&nbsp;%

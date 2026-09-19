@@ -151,7 +151,10 @@ describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au 
     const eparpille = justesseDesFrappes([0, 300, 0, 300, 0, 300], 3);
     const daffilee = justesseDesFrappes([0, 0, 0, 300, 300, 300], 3);
     expect(eparpille).toBeLessThan(daffilee);
-    expect(eparpille).toBeLessThan(70);
+    // Et sous le seuil : éparpillées, ces frappes ne valident pas le niveau.
+    // Le chiffre se lit sur `SEUIL_JUSTESSE` — recopié, ce test cesserait de
+    // dire ça le jour où le seuil bouge.
+    expect(eparpille).toBeLessThan(SEUIL_JUSTESSE);
   });
 
   it('décroît linéairement entre les deux seuils', () => {
@@ -175,7 +178,9 @@ describe('jouerGagne — la validation se déclenche toute seule, et elle ne dur
   });
 
   it('le seuil est celui que l’écran annonce, et il est franc', () => {
-    expect(SEUIL_JUSTESSE).toBe(70);
+    // Relevé de 70 à 80 le 2026-09-19 (« il faut plutôt arriver à plus de
+    // 80 % ») : l'écart moyen toléré passe de 67 ms à 58 ms.
+    expect(SEUIL_JUSTESSE).toBe(80);
     expect(jouerGagne(SEUIL_JUSTESSE - 1, 20, 4)).toBe(false);
     expect(jouerGagne(SEUIL_JUSTESSE, 20, 4)).toBe(true);
   });
