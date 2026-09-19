@@ -48,6 +48,75 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les roasts, seconde passe — quatre verbes parlaient encore d'une version qui n'existe pas (2026-09-19)
+
+**Question** : *« Est-ce que tous les roasts ont bien été réécrits ? »* Non. La
+réécriture du 2026-09-04 avait produit les axes NEUFS (`ROAST_VERBE`, 12/12,
+tenu par le type ; `ROAST_ESSAIS` ; `ROAST_COMPARAISONS`) et laissé
+`ROAST_GUESS` et `ROAST_LOOP` **verbatim de l'original**, écrits pour la
+reproduction de rythme. Ils fuyaient sur quatre verbes, reproduit en appelant
+`composerRoast` :
+
+```
+INTRUS:  … Et en plus t'as réécouté ta propre version avant de valider …
+SILENCE: … T'as foncé sans réécouter ta version …
+STYLE:   … (idem)
+JOUER:   … (idem)
+```
+
+`intrus` n'a pas de version à soi : `play('intrus')` tombait dans le `else` de
+`GameView` et incrémentait **`guessPlays`**. `silence`, `style` et `jouer` n'ont
+pas le bouton « 🎧 Écouter ma version » — il leur a été retiré délibérément — et
+recevaient quand même le reproche de ne pas s'en être servis, parce que la
+branche `loopPlays > 0` mélangeait `ROAST_LOOP` et `ROAST_GUESS.no`.
+
+**Pourquoi aucun test ne le voyait** : `tests/roasts.test.ts` relisait les
+LISTES (« une ligne de `ROAST_VERBE` ne dit pas “ta version” »), le défaut
+vivait dans le BRANCHEMENT. Le nouveau test croise les 12 verbes × 4³
+combinaisons de compteurs — il échoue sur le code d'avant, vérifié en le
+remettant.
+
+**Corrigé :**
+
+- `VERBES_AVEC_VERSION` + `aUneVersion` (`model/exercises.ts`) — **une seule
+  définition** pour les deux lecteurs : le transport de `GameView` (qui affiche
+  le bouton) et `composerRoast` (qui le commentait en le devinant) ;
+- `GameView.play()` ne compte sur `guessPlays` que `which === 'guess'` : les
+  quatre mesures d'`intrus` sont de la matière, pas « ma version » ;
+- `composerRoast` garde ses deux branches par `aUneVersion` — **le roast ne
+  dépend plus de la justesse d'un compteur pour dire vrai** (défense en
+  profondeur : même mal compté, il ne peut plus inventer) ;
+- `ROAST_LOOP` réécrit neutre : il sert huit verbes, donc plus de « le rythme
+  n'a rien vu venir » ni de « le hi-hat a demandé une pause » sur une mélodie,
+  et plus « la boucle » là où ce sont quatre mesures ou une pulsation ;
+- `ABANDON_LINES` réécrit pour la même raison — il sert les DOUZE verbes, et
+  disait « Nouveau rythme demandé sans finir le précédent » sur un exercice de
+  vocabulaire.
+
+**Mesuré après coup** (Playwright, 390 × 844, les douze verbes ouverts un par
+un depuis l'écran d'exercice) — le bouton « 🎧 Écouter ma version » s'affiche
+exactement sur `VERBES_AVEC_VERSION`, donc la liste que lit le roast est bien
+celle de l'écran :
+
+```
+reproduire  OUI   🔊 Écouter le rythme à trouver | 🎧 Écouter ma version
+completer   OUI   🔊 Écouter la boucle entière   | 🎧 Écouter ma version
+melodie     OUI   🔊 Écouter la mélodie          | 🎧 Écouter ma version
+arrangement OUI   🔊 Écouter le rythme à trouver | 🎧 Écouter ma version
+intrus       —    🔊 Écouter les 4 mesures
+jouer        —    🔊 Écouter la boucle | ⏺ Jouer (précompte)
+silence      —    🔊 Écouter la pulsation
+style        —    🔊 Écouter la boucle
+lequel / nommer / regler / laverie — pas de transport (versions A/B/C)
+```
+
+**Non touché, et c'est voulu** : `ROAST_GUESS` garde ses lignes (elles sont
+vraies maintenant qu'elles sont gardées), `ROAST_LIVRAISON_*` et
+`model/reactions.ts` étaient déjà à jour. Le bouton « ma version » s'affiche
+exactement sur les mêmes verbes qu'avant — `aUneVersion(ex)` et
+`ex !== 'silence' && ex !== 'style'` couvrent le même ensemble dans cette
+branche du `{#if}` : aucun pixel ne bouge.
+
 ### ✅ L'écran de pseudo perd son chapeau (2026-09-19)
 
 **Demande** : supprimer *« Tu vas apprendre à fabriquer des rythmes à

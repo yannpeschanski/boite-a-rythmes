@@ -1,7 +1,7 @@
 // Données du Mode jeu — besace, lots de consolation, roasts. Portées
 // VERBATIM depuis l'original (l. 7524–7618) ; les roasts ont été réécrits par
 // VERBE le 2026-09-04, voir plus bas.
-import type { ExerciseKind } from '../exercises';
+import { aUneVersion, type ExerciseKind } from '../exercises';
 import { pick } from './levels';
 
 export interface BagItem { emoji: string; name: string }
@@ -40,16 +40,24 @@ export const BAG_ITEMS: BagItem[] = [
   { emoji:'🪅', name:'une piñata déjà vide' },
 ];
 
-// Lots de consolation : quand on abandonne un rythme (ex. "Nouveau rythme" sans
-// avoir trouvé), on récolte quand même quelque chose — mais un objet franchement nul.
+// Lots de consolation : quand on abandonne un exercice (ex. "Nouveau rythme"
+// sans avoir trouvé), on récolte quand même quelque chose — mais un objet
+// franchement nul.
+/* ⚠️ Ces six lignes servent les DOUZE verbes, donc aucune ne peut nommer une
+ * grille ni un instrument : réécrites le 2026-09-19 pour la raison qui avait
+ * fait réécrire les roasts de victoire le 2026-09-04 — « Nouveau rythme demandé
+ * sans finir le précédent » et « le hi-hat n'en revient toujours pas » tombaient
+ * sur un exercice de style, de vocabulaire ou de mélodie, où il n'y a ni rythme
+ * demandé ni charley. Abandonner est le seul geste commun aux douze : la
+ * réplique ne parle que de ça. */
 export const CONSOLATION_ITEM: BagItem = { emoji:'🧾', name:'un ticket de caisse illisible pour un article inconnu' };
 export const ABANDON_LINES: string[] = [
-  "Abandon en rase campagne. Le rythme te regarde partir sans un mot.",
+  "Abandon en rase campagne. L'exercice te regarde partir sans un mot.",
   "T'as jeté l'éponge — enfin, façon de parler, y'avait pas d'éponge.",
-  "Nouveau rythme demandé sans finir le précédent. Fuite stratégique ou pure lâcheté ? Va savoir.",
-  "Capitulation en direct. Le tempo continue sans toi, imperturbable.",
+  "Passé au suivant sans finir celui-là. Fuite stratégique ou pure lâcheté ? Va savoir.",
+  "Capitulation en direct. Personne n'a rien dit, et c'est bien ça le pire.",
   "T'as tourné les talons avant la fin. Ça arrive aux meilleurs, paraît-il — mais surtout à toi, là.",
-  "Retraite anticipée. Le hi-hat n'en revient toujours pas.",
+  "Retraite anticipée. On range le matériel, on n'en reparlera plus.",
 ];
 
 /* LES ROASTS — ce qu'on dit au joueur après une victoire.
@@ -72,6 +80,13 @@ export const ABANDON_LINES: string[] = [
  *     qui ne comptait rien : le roast affirmait « une seule écoute de la
  *     boucle » et « sans même réécouter ta propre version » à quelqu'un qui
  *     venait de comparer deux versions dix fois, et qui n'a pas de « version ».
+ *
+ * ⚠️ SECONDE PASSE le 2026-09-19 : la réécriture de 2026-09-04 s'était arrêtée
+ * aux axes NEUFS (le verbe, les essais, les comparaisons) et avait laissé
+ * `ROAST_GUESS` et `ROAST_LOOP` tels quels — écrits pour la reproduction de
+ * rythme, donc parlant de « ta propre version » et du hi-hat à des verbes qui
+ * n'ont ni l'une ni l'autre. Ils sont maintenant gardés par `aUneVersion` et
+ * rendus neutres.
  *
  * La règle qui remplace : **un roast ne commente que ce qui a été mesuré.**
  * Deux axes toujours vrais — le VERBE (le geste qu'on vient de faire) et les
@@ -201,6 +216,13 @@ export const ROAST_COMPARAISONS: Record<string, string[]> = {
   ],
 };
 
+/* La RÉÉCOUTE DE SA VERSION — le seul axe que l'original avait, et il ne vaut
+ * que pour les quatre verbes qui posent quelque chose (`VERBES_AVEC_VERSION`).
+ * ⚠️ Gardé par `aUneVersion` depuis le 2026-09-19 : `composerRoast` poussait
+ * ces répliques sur tous les verbes de grille, donc « sans même réécouter ta
+ * propre version » tombait sur un `silence`, un `style` et un « jouer », dont
+ * l'écran n'a PAS ce bouton — et le `yes` tombait sur un `intrus`, dont les
+ * écoutes étaient comptées sur le mauvais compteur (voir `GameView.play`). */
 export const ROAST_GUESS: Record<string, string[]> = {
   yes: [
     "Et en plus t'as réécouté ta propre version avant de valider, comme un pro un peu parano.",
@@ -213,21 +235,27 @@ export const ROAST_GUESS: Record<string, string[]> = {
     "T'as foncé sans réécouter ta version. Le courage ou l'inconscience, difficile à trancher.",
   ],
 };
+/* Les ÉCOUTES de ce qu'il y avait à entendre. ⚠️ Réécrites le 2026-09-19 :
+ * elles servent HUIT verbes (les quatre qui posent une grille, plus `intrus`,
+ * `silence`, `style` et « jouer »), donc aucune ne peut nommer un instrument ni
+ * appeler « la boucle » ce qui est ailleurs quatre mesures, une pulsation ou un
+ * genre à reconnaître. « Tellement d'écoutes que le hi-hat a demandé une
+ * pause » se disait sur une mélodie. */
 export const ROAST_LOOP: Record<string, string[]> = {
   1: [
-    "Une seule écoute de la boucle. Une oreille bionique, ou beaucoup de chance.",
-    "Écouté une fois, une seule fois. Soit t'es un métronome humain, soit t'as deviné.",
-    "Une écoute et basta. Le rythme n'a rien vu venir.",
+    "Une seule écoute, et tu as tranché. Oreille bionique, ou beaucoup de chance.",
+    "Écouté une fois, une seule fois. Soit tu es un métronome humain, soit tu as deviné.",
+    "Une écoute et basta. L'instinct, à défaut de méthode.",
   ],
   2: [
-    "Deux écoutes de la boucle, le minimum syndical du perfectionniste raisonnable.",
-    "Deux passages en boucle, la rigueur normale des gens qui doutent un minimum.",
+    "Deux écoutes, le minimum syndical du perfectionniste raisonnable.",
+    "Deux passages avant de trancher, la rigueur normale des gens qui doutent un minimum.",
     "Deux écoutes. On respecte la méthode.",
   ],
   3: [
-    "La boucle a tourné un paquet de fois avant que ça rentre. Le rythme a fini par abandonner et se laisser deviner.",
-    "Boucle écoutée en boucle en boucle... la patience a fini par payer, à défaut de l'oreille.",
-    "Tellement d'écoutes que le hi-hat a demandé une pause.",
+    "Ça a tourné un paquet de fois avant que ça rentre. À force, ça finit par se laisser deviner.",
+    "Ça a tourné, et retourné, et re-retourné… la patience a fini par payer, à défaut de l'oreille.",
+    "Tellement d'écoutes que les enceintes ont demandé une pause.",
   ],
 };
 
@@ -252,15 +280,22 @@ export function composerRoast(
     choisir(ROAST_VERBE[verbe] ?? ROAST_VERBE.reproduire),
     choisir(ROAST_ESSAIS[m.attempts <= 1 ? '1' : m.attempts <= 3 ? '2' : '3']),
   ];
+  const avecVersion = aUneVersion(verbe);
   if (m.paramEcoutes > 0) {
     bouts.push(choisir(ROAST_COMPARAISONS[palier(m.paramEcoutes)]));
-  } else if (m.guessPlays > 0) {
+  } else if (avecVersion && m.guessPlays > 0) {
     bouts.push(choisir(ROAST_GUESS.yes));
   } else if (m.loopPlays > 0) {
-    /* Les deux sont vraies : la boucle a tourné N fois, et sa version n'a
-     * jamais été réécoutée. On tire dans les deux plutôt que d'en sacrifier
-     * une — c'est aussi ce qui garde vivantes les répliques de `ROAST_GUESS.no`. */
-    bouts.push(choisir([...ROAST_LOOP[palier(m.loopPlays)], ...ROAST_GUESS.no]));
+    /* Sur un verbe qui pose une grille, les deux sont vraies : ça a tourné N
+     * fois, et sa version n'a jamais été réécoutée. On tire dans les deux
+     * plutôt que d'en sacrifier une — c'est aussi ce qui garde vivantes les
+     * répliques de `ROAST_GUESS.no`.
+     * ⚠️ Ailleurs, il n'y a rien à réécouter : le compte d'écoutes suffit. */
+    bouts.push(
+      avecVersion
+        ? choisir([...ROAST_LOOP[palier(m.loopPlays)], ...ROAST_GUESS.no])
+        : choisir(ROAST_LOOP[palier(m.loopPlays)]),
+    );
   }
   return bouts.join(' ');
 }

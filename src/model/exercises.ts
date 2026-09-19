@@ -108,6 +108,29 @@ export function estVerbeParam(v: ExerciseKind): boolean {
   return VERBES_PARAM.includes(v);
 }
 
+/** Les verbes où le joueur POSE quelque chose, donc où « ma version » existe.
+ *
+ * ⚠️ UNE SEULE DÉFINITION, parce que deux écrans la lisent : le transport de
+ * `GameView` (qui affiche ou non le bouton « 🎧 Écouter ma version ») et le
+ * roast de fin (`composerRoast`). Elle était vraie dans la vue et devinée dans
+ * le roast, qui reprochait à un `silence`, à un `style` et à un « jouer »
+ * d'avoir validé « sans même réécouter ta propre version » — un bouton qu'on
+ * avait délibérément retiré de leur écran, faute de version à jouer.
+ *
+ * Les verbes de PARAMÈTRE et `laverie` n'en sont pas non plus : leur écran ne
+ * propose que des versions à comparer (`ecouterVersion`), et `regler` appelle
+ * « ma version » son réglage courant, qui n'est pas une grille reposée. */
+export const VERBES_AVEC_VERSION: ExerciseKind[] = [
+  'reproduire',
+  'completer',
+  'melodie',
+  'arrangement',
+];
+
+export function aUneVersion(v: ExerciseKind): boolean {
+  return VERBES_AVEC_VERSION.includes(v);
+}
+
 /* Les trois paliers de drive de « la laverie », MESURÉS et non choisis à vue.
  *
  * Rendu du vrai graphe dans un `OfflineAudioContext`, kick seul, RMS après le

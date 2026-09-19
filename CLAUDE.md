@@ -1097,7 +1097,13 @@ premier temps — sans quoi il boucherait ce qu'on demande d'entendre.
 ⚠️ **Un roast ne commente que ce qui a été MESURÉ.** `composerRoast`
 (`presets/gameData.ts`, pur et testé) tire deux axes toujours vrais — le VERBE
 joué et les ESSAIS, comptés dans `verify()` pour tous les verbes — plus un
-troisième seulement si un compteur l'a vu passer, et rien sinon. L'ancien lisait
+troisième seulement si un compteur l'a vu passer, et rien sinon. ⚠️ Et « ta
+version » n'existe que pour `VERBES_AVEC_VERSION` (`model/exercises.ts`, la
+même liste que le bouton de la vue) : le roast ne le devine pas et ne s'en
+remet pas au compteur — `silence`, `style`, `jouer` et `intrus` se faisaient
+reprocher de n'avoir pas réécouté un bouton qu'ils n'ont pas. Les lignes
+d'abandon servent les DOUZE verbes : aucune ne nomme une grille ni un
+instrument. L'ancien lisait
 `voiceTier` pour annoncer « avec de la polyrythmie » sur les 51 niveaux `hard`
 de douze verbes, et parlait d'écoutes que les verbes de paramètre ne comptaient
 pas (`ecouterVersion` alimente maintenant `paramEcoutes`).
