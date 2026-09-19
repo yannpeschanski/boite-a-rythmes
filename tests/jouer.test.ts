@@ -92,7 +92,8 @@ describe('« jouer » — un seul canal à la fois', () => {
   /* ---- La validation AUTOMATIQUE ----
    *
    * ⚠️ Retour de jeu (2026-09-17) : *« pour les niveaux 1, 2 et 3 où on joue,
-   * ce n'est pas clair qu'il suffit de dépasser 70 % pour valider le niveau »*.
+   * ce n'est pas clair qu'il suffit de dépasser [le seuil] pour valider le
+   * niveau »*.
    * Il n'y a plus de bouton : dix frappes au-dessus du seuil et c'est gagné.
    * Ces tests tiennent le CÂBLAGE (le calcul est pur, il est dans
    * `tests/exercises.test.ts`) — et surtout le PRIX, qui est la raison pour

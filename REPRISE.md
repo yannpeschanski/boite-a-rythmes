@@ -3,7 +3,15 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-19 — ✅ **L'écran de pseudo perd son chapeau.**
+> Dernière mise à jour : 2026-09-19 — ✅ **Le seuil d'un « jouer » passe à
+> 80 %.** Yann, après essai : *« il faut plutôt arriver à plus de 80 % »*. Un
+> seul point à changer (`SEUIL_JUSTESSE`) — c'est ce que la livraison d'avant
+> avait acheté. ⚠️ Ce que ça change se lit en MILLISECONDES : l'écart moyen
+> toléré passe de 67 ms à 58 ms. Pour ouvrir ou resserrer encore, c'est ce
+> chiffre-là, jamais `TOLERANCE_MS` (qui dit ce qui s'entend, pas ce qui est
+> demandé).
+>
+> Avant cela, le même jour : ✅ **L'écran de pseudo perd son chapeau.**
 > Yann a demandé la suppression des trois lignes de résumé posées avant le
 > champ de pseudo. Elles NOMMAIENT l'Atelier et annonçaient « huit actes » avant
 > que le joueur ait tapé son nom — la règle existait déjà (« un module fermé ne

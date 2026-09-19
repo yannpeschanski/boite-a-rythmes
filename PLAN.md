@@ -48,6 +48,30 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le seuil d'un « jouer » passe à 80 % (2026-09-19)
+
+**Demande**, après essai de la validation automatique : *« il faut plutôt
+arriver à plus de 80 % »*.
+
+**Un seul point à changer** — `SEUIL_JUSTESSE` (`model/exercises.ts`). C'est ce
+que la livraison précédente avait acheté : le verdict (`jouerGagne`), le trait
+sur la jauge, la couleur de la barre et la phrase sous elle le lisent tous.
+Mesuré après coup : l'écran annonce « 10 frappes tiennent 80 % » et le trait
+tombe à 274,6 px sur une jauge de 344 (79,8 %) — aucune ligne d'écran n'a
+bougé.
+
+**Ce que ça change vraiment se lit en millisecondes.** La note d'une frappe
+décroît linéairement de `PARFAIT_MS` (40 ms, tout est 100) à `TOLERANCE_MS`
+(130 ms, tout est 0) : l'écart MOYEN toléré sur la fenêtre passe donc de
+**67 ms à 58 ms**. C'est le seul chiffre à bouger pour ouvrir ou resserrer —
+jamais `TOLERANCE_MS`, qui dit ce qui S'ENTEND et non ce qui est demandé.
+
+**Un test recopiait le chiffre** : « des frappes éparpillées ne suffisent pas »
+affirmait `< 70`, ce qui aurait cessé de vouloir dire « ne valide pas » le jour
+du changement. Il lit `SEUIL_JUSTESSE` maintenant. Vérifié bout en bout au
+navigateur : 10 frappes sur la tête de lecture, justesse 100 %, 3★, sans
+qu'aucun bouton soit cliqué.
+
 ### ✅ Les roasts, seconde passe — quatre verbes parlaient encore d'une version qui n'existe pas (2026-09-19)
 
 **Question** : *« Est-ce que tous les roasts ont bien été réécrits ? »* Non. La

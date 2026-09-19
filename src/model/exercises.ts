@@ -271,15 +271,22 @@ export const PARFAIT_MS = 40;
 /* ---- Ce qui VALIDE un « jouer » ----
  *
  * ⚠️ Retour de jeu (2026-09-17) : *« pour les niveaux 1, 2 et 3 où on joue, ce
- * n'est pas clair qu'il suffit de dépasser 70 % pour valider le niveau »*. Le
- * seuil était écrit deux fois — en dur dans `verify()` et en dur dans un
- * libellé — et il fallait DEVINER qu'un bouton posé tout en haut du transport,
- * loin du pad et de la jauge, était celui qui jugeait. D'où deux choses : une
- * seule définition du seuil, et plus de bouton du tout. **Un « jouer » se
- * valide TOUT SEUL**, au moment où le joueur tient le rythme.
+ * n'est pas clair qu'il suffit de dépasser [le seuil] pour valider le
+ * niveau »*. Le seuil était écrit deux fois — en dur dans `verify()` et en dur
+ * dans un libellé — et il fallait DEVINER qu'un bouton posé tout en haut du
+ * transport, loin du pad et de la jauge, était celui qui jugeait. D'où deux
+ * choses : une seule définition du seuil, et plus de bouton du tout. **Un
+ * « jouer » se valide TOUT SEUL**, au moment où le joueur tient le rythme.
+ *
+ * ⚠️ **Le seuil est passé de 70 à 80 le 2026-09-19**, après essai (« il faut
+ * plutôt arriver à plus de 80 % »). Ce que ça change se lit en millisecondes,
+ * pas en points : la note d'une frappe décroît linéairement de `PARFAIT_MS` à
+ * `TOLERANCE_MS`, donc l'écart MOYEN toléré sur la fenêtre passe de 67 ms à
+ * **58 ms**. C'est la seule valeur à bouger si on veut ouvrir ou resserrer —
+ * jamais `TOLERANCE_MS`, qui dit ce qui S'ENTEND et non ce qui est demandé.
  *
  * `COUPS_POUR_VALIDER` est la demande de Yann (« dès que la justesse dépasse
- * 70 % pendant 10 coups d'affilée ») et c'est ce qui rend l'automatisme
+ * [le seuil] pendant 10 coups d'affilée ») et c'est ce qui rend l'automatisme
  * honnête : sans lui le niveau se boucle sur la première mesure propre, quatre
  * frappes après le précompte, et la victoire ressemble à un accident.
  *
@@ -291,7 +298,7 @@ export const PARFAIT_MS = 40;
  * niveaux 37 et 38 de l'acte 7 comme les trois de l'acte 0) sans revenir sur
  * « les niveaux 37 et 38 sont tj trop compliqués ».
  */
-export const SEUIL_JUSTESSE = 70;
+export const SEUIL_JUSTESSE = 80;
 export const COUPS_POUR_VALIDER = 10;
 
 /** Combien de frappes il faut avoir posées pour que la validation se déclenche.
