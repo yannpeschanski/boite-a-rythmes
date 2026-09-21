@@ -48,6 +48,37 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le dernier écran qui ne disait pas FACE B (2026-09-21)
+
+**Question de Yann** : *« est-ce qu'on peut changer le nom du site ? en
+l'appelant face B par exemple ? »*
+
+**Il l'était déjà partout sauf à un endroit.** Relevé avant correction : le
+titre d'onglet (`index.html`), le titre du splash (`App.svelte`) et les deux
+fenêtres du Mode jeu (`GameView`, `CarriereView`) portaient « Face B » depuis
+l'acte du nommage. Le bandeau du Mode Live, lui, affichait encore
+« BOÎTE À RYTHMES — LIVE » en jeu libre — donc le seul écran de l'appli où le
+nom du produit contredisait les quatre autres. C'est la seule ligne de code de
+cette livraison.
+
+**Ce qui n'a PAS bougé, et pourquoi** : les occurrences en commentaire et dans
+les identifiants techniques (`boite-a-rythmes/morceau`, le worklet
+`boite-a-rythmes-capture`, `package.json`) parlent de l'OBJET boîte à rythmes,
+pas du produit — les renommer changerait le format des fichiers de morceau
+enregistrés pour une étiquette. Même raisonnement que les tokens `--xp-*`. Les
+deux commentaires qui CITENT l'ancien bandeau (`LiveView`, `carriere.ts`)
+racontent l'écran du 2026-09-10 : les réécrire ferait mentir une mesure datée.
+
+**Ce qui reste et ne se code pas** : l'URL
+`boite-a-rythmes.vercel.app` vient du nom du projet Vercel, pas du dépôt — elle
+se change dans Vercel (Settings → General → Project Name), ou en ajoutant
+`face-b.vercel.app` comme domaine sans retirer l'ancien. Aucune des deux n'est
+un geste de code, et renommer le dépôt GitHub ne la changerait pas.
+
+Vérifié au navigateur en 844 × 390, profil déverrouillé : bandeau
+« FACE B — LIVE », rien d'autre déplacé. `npm run check` 0 erreur, 760 tests,
+les deux builds.
+
 ### ✅ Le seuil d'un « jouer » passe à 80 % (2026-09-19)
 
 **Demande**, après essai de la validation automatique : *« il faut plutôt

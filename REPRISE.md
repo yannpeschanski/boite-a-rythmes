@@ -3,7 +3,19 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-19 — ✅ **Le seuil d'un « jouer » passe à
+> Dernière mise à jour : 2026-09-21 — ✅ **Le dernier écran qui ne disait pas
+> FACE B.** Yann : *« est-ce qu'on peut changer le nom du site ? en l'appelant
+> face B par exemple ? »* — il l'était déjà partout (onglet, splash, les deux
+> fenêtres du Mode jeu) SAUF le bandeau du Mode Live en jeu libre, qui affichait
+> encore « BOÎTE À RYTHMES — LIVE ». Une ligne.
+> ⚠️ **Ce qui reste est hors du code** : l'URL `boite-a-rythmes.vercel.app` vient
+> du nom du projet Vercel (Settings → General → Project Name), pas du dépôt.
+> C'est la seule action qui demande Yann.
+> ⚠️ Les identifiants techniques gardent l'ancien nom **par décision** —
+> `format: 'boite-a-rythmes/morceau'` est lu par `lireMorceau`, le renommer
+> casserait les fichiers de morceau déjà enregistrés.
+>
+> Avant cela, le 2026-09-19 : ✅ **Le seuil d'un « jouer » passe à
 > 80 %.** Yann, après essai : *« il faut plutôt arriver à plus de 80 % »*. Un
 > seul point à changer (`SEUIL_JUSTESSE`) — c'est ce que la livraison d'avant
 > avait acheté. ⚠️ Ce que ça change se lit en MILLISECONDES : l'écart moyen
