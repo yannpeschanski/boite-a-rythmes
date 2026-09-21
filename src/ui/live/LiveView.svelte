@@ -1958,7 +1958,7 @@
     <div class="live">
       <div class="titlebar">
         <span class="grip"></span>
-        <span class="app-name">{scene ? scene.titre : 'BOÎTE À RYTHMES — LIVE'}</span>
+        <span class="app-name">{scene ? scene.titre : 'FACE B — LIVE'}</span>
         <!-- ⚠️ La porte se NOMME quand on est venu par le récit. L'écran qui y
              envoie promet « tu redescends de scène quand tu veux » et la seule
              sortie était trois points sans un mot : quatrième fois que ce mode

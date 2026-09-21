@@ -603,8 +603,12 @@ ce que « pas du tout audible » désignait. Corollaire : la répétition consé
 ## Le récit
 
 ⚠️ **Le jeu s'appelle FACE B** — le nom du label, pas celui de l'outil. Il vit
-dans `index.html`, le splash et le titre de fenêtre du Mode jeu ; les occurrences
-en commentaire parlent de l'objet « boîte à rythmes » et restent.
+dans `index.html`, le splash, les fenêtres du Mode jeu et le bandeau du Mode Live
+en jeu libre ; les occurrences en commentaire et dans les identifiants techniques
+(`boite-a-rythmes/morceau`, le worklet de capture) parlent de l'objet « boîte à
+rythmes » et restent — les renommer changerait un format de fichier pour une
+étiquette. ⚠️ L'URL `boite-a-rythmes.vercel.app` ne se change PAS dans le code :
+c'est le nom du projet Vercel.
 
 ⚠️ **Le récit se passe en 2005, et une SEULE date est écrite.** `ANNEE` et
 `dateDeLActe` (`carriere.ts`) : le concert est le 14 juin 2005, tout le reste se
