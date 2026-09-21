@@ -8,9 +8,13 @@
 > face B par exemple ? »* — il l'était déjà partout (onglet, splash, les deux
 > fenêtres du Mode jeu) SAUF le bandeau du Mode Live en jeu libre, qui affichait
 > encore « BOÎTE À RYTHMES — LIVE ». Une ligne.
-> ⚠️ **Ce qui reste est hors du code** : l'URL `boite-a-rythmes.vercel.app` vient
-> du nom du projet Vercel (Settings → General → Project Name), pas du dépôt.
-> C'est la seule action qui demande Yann.
+> ⚠️ **Et l'adresse a suivi** : Yann a ajouté le domaine
+> **`face-b-2005.vercel.app`** dans Vercel (Settings → Domains). Le millésime
+> n'est pas un choix de style — `face-b.vercel.app` est déjà pris par une autre
+> équipe Vercel, et un renommage du projet aurait buté sur le même mur.
+> L'ancienne adresse répond toujours : c'est le nom du projet, donc aucun lien
+> déjà partagé ne casse. Rien de tout ça n'est dans le code (le déploiement
+> passe par `VERCEL_PROJECT_ID`, jamais par le nom).
 > ⚠️ Les identifiants techniques gardent l'ancien nom **par décision** —
 > `format: 'boite-a-rythmes/morceau'` est lu par `lireMorceau`, le renommer
 > casserait les fichiers de morceau déjà enregistrés.

@@ -607,8 +607,10 @@ dans `index.html`, le splash, les fenêtres du Mode jeu et le bandeau du Mode Li
 en jeu libre ; les occurrences en commentaire et dans les identifiants techniques
 (`boite-a-rythmes/morceau`, le worklet de capture) parlent de l'objet « boîte à
 rythmes » et restent — les renommer changerait un format de fichier pour une
-étiquette. ⚠️ L'URL `boite-a-rythmes.vercel.app` ne se change PAS dans le code :
-c'est le nom du projet Vercel.
+étiquette. ⚠️ **L'adresse du site est `face-b-2005.vercel.app`** (2026-09-21) —
+elle ne se change PAS dans le code, c'est un domaine ajouté dans Vercel.
+`boite-a-rythmes.vercel.app` reste le nom du projet, donc répond toujours ;
+`face-b.vercel.app` appartient à une autre équipe Vercel, d'où le millésime.
 
 ⚠️ **Le récit se passe en 2005, et une SEULE date est écrite.** `ANNEE` et
 `dateDeLActe` (`carriere.ts`) : le concert est le 14 juin 2005, tout le reste se
@@ -1554,7 +1556,8 @@ FINIR.
 
 Un `git push` sur `main` déclenche : types, tests, les deux builds, puis
 déploiement sur Vercel **seulement si tout passe**. Une pull request lance les
-tests sans déployer. Site : <https://boite-a-rythmes.vercel.app>
+tests sans déployer. Site : <https://face-b-2005.vercel.app> (l'ancienne adresse
+<https://boite-a-rythmes.vercel.app> répond toujours, c'est le nom du projet).
 
 ## Conventions de session (Claude Code)
 

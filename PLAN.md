@@ -69,11 +69,15 @@ enregistrés pour une étiquette. Même raisonnement que les tokens `--xp-*`. Le
 deux commentaires qui CITENT l'ancien bandeau (`LiveView`, `carriere.ts`)
 racontent l'écran du 2026-09-10 : les réécrire ferait mentir une mesure datée.
 
-**Ce qui reste et ne se code pas** : l'URL
-`boite-a-rythmes.vercel.app` vient du nom du projet Vercel, pas du dépôt — elle
-se change dans Vercel (Settings → General → Project Name), ou en ajoutant
-`face-b.vercel.app` comme domaine sans retirer l'ancien. Aucune des deux n'est
-un geste de code, et renommer le dépôt GitHub ne la changerait pas.
+**L'adresse a suivi, hors du code** : `face-b.vercel.app` est pris par une autre
+équipe Vercel — donc le renommage du projet aurait buté sur le même mur, puisque
+c'est lui qui génère l'adresse. Yann a ajouté le domaine
+**`face-b-2005.vercel.app`** (Settings → Domains), millésimé comme le récit.
+`boite-a-rythmes.vercel.app` reste le nom du projet et répond toujours, donc
+aucun lien déjà partagé ne casse. Rien de tout ça ne touche au dépôt : le job de
+déploiement lit `VERCEL_PROJECT_ID`, jamais un nom.
+⚠️ Non vérifié depuis la session : la politique réseau de l'environnement bloque
+les deux domaines.
 
 Vérifié au navigateur en 844 × 390, profil déverrouillé : bandeau
 « FACE B — LIVE », rien d'autre déplacé. `npm run check` 0 erreur, 760 tests,
