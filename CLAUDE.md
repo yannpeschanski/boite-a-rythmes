@@ -1559,6 +1559,16 @@ déploiement sur Vercel **seulement si tout passe**. Une pull request lance les
 tests sans déployer. Site : <https://face-b-2005.vercel.app> (l'ancienne adresse
 <https://boite-a-rythmes.vercel.app> répond toujours, c'est le nom du projet).
 
+⚠️ **La mesure d'audience est SANS COOKIE et ne part que du site déployé.**
+`inject()` de `@vercel/analytics` (`src/main.ts`) est gardé par `PROD` **et**
+par `MODE !== 'singlefile'` : le fichier HTML autonome s'envoie par mail et doit
+marcher sans réseau, donc il n'embarque aucun appel — vérifié sur les deux
+builds. Rien n'est collecté tant que l'onglet Analytics du projet Vercel n'est
+pas activé. ⚠️ Et elle ne dit QUE la fréquentation : l'appli est une page unique,
+les vues ne sont pas des URL. Compter ce qu'on JOUE demanderait des événements
+posés à la main — de la télémétrie sur la progression d'un joueur, donc une
+décision de produit, pas un ajout de passage.
+
 ## Conventions de session (Claude Code)
 
 **Piège git à chaque nouvelle session.** Le squash-merge d'une PR crée un SHA

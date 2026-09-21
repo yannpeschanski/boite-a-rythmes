@@ -3,7 +3,19 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-21 — ✅ **Le dernier écran qui ne disait pas
+> Dernière mise à jour : 2026-09-21 — ✅ **Savoir si quelqu'un vient.**
+> `@vercel/analytics` est branché dans `src/main.ts`, sans cookie donc sans
+> bandeau. ⚠️ **Deux gardes à ne pas retirer** : `PROD` (la sonde bavarde sur
+> `localhost`) et `MODE !== 'singlefile'` — le fichier autonome doit marcher
+> SANS RÉSEAU, et c'est mesuré sur les builds (zéro occurrence de « vercel »
+> dedans, contre une dans `dist/`).
+> ⚠️ **En attente côté Yann** : activer l'onglet Analytics du projet Vercel,
+> sans quoi rien n'est collecté.
+> ⚠️ **Et ça ne dira que la fréquentation** — page unique, les vues ne sont pas
+> des URL. Mesurer ce qu'on JOUE serait de la télémétrie sur la progression :
+> une fiche, pas un commit.
+>
+> Avant cela, le même jour : ✅ **Le dernier écran qui ne disait pas
 > FACE B.** Yann : *« est-ce qu'on peut changer le nom du site ? en l'appelant
 > face B par exemple ? »* — il l'était déjà partout (onglet, splash, les deux
 > fenêtres du Mode jeu) SAUF le bandeau du Mode Live en jeu libre, qui affichait

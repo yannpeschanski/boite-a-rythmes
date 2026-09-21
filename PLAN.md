@@ -48,6 +48,37 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Savoir si quelqu'un vient (2026-09-21)
+
+**Demande** : *« comment je peux savoir si des gens vont sur le site ? »*
+
+**Vercel Web Analytics**, contre trois autres pistes : l'onglet Observability
+(déjà là, mais il compte des requêtes, pas des visiteurs), une sonde tierce
+(Plausible, Umami — un service de plus à tenir pour la même chose), et rien du
+tout. Celle-ci est hébergée là où le site est déjà, **sans cookie**, donc aucun
+bandeau de consentement à ajouter.
+
+**Deux gardes, deux raisons distinctes** (`src/main.ts`) : `import.meta.env.PROD`
+parce qu'en dev la sonde appelle un point d'entrée absent de `localhost` ; et
+`MODE !== 'singlefile'` parce que le fichier HTML autonome s'envoie par mail et
+doit marcher **sans réseau** — un build qui embarque un appel tiers casse la
+promesse de ce format, et ça ne se verrait qu'à l'usage.
+
+**Mesuré sur les trois sorties** plutôt que déduit du code : `dist/` porte bien
+`_vercel/insights` (1 occurrence dans le bundle d'entrée), `dist-singlefile/`
+en porte **zéro** — et zéro occurrence du mot « vercel » tout court ; en dev, le
+navigateur ne charge que le module Vite, **aucun appel réseau** et aucune ligne
+de console.
+
+⚠️ **Ce que ça ne dira pas, et c'est structurel** : l'appli est une page unique,
+les vues (Atelier, Mode jeu, Mode Live) ne sont pas des URL — donc une page vue
+par visite. Compter ce qu'on JOUE demanderait des événements posés à la main,
+c'est-à-dire de la télémétrie sur la progression d'un joueur : une décision de
+produit, à instruire par une fiche, jamais un ajout de passage.
+
+⚠️ **Le code seul ne collecte rien** : l'onglet Analytics du projet Vercel doit
+être activé à la main. Il n'y a donc pas d'interrupteur caché dans le dépôt.
+
 ### ✅ Le dernier écran qui ne disait pas FACE B (2026-09-21)
 
 **Question de Yann** : *« est-ce qu'on peut changer le nom du site ? en
