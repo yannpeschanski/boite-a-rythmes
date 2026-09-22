@@ -1606,16 +1606,16 @@ conclure qu'un job est bloqué : `list_workflow_jobs` (le plus frais des trois)
 et `get_job_logs` — dont le 404 signifie « pas encore fini », pas « cassé » —
 tranchent. Et le verrou est **`Tests & build`** — c'est le seul job d'une PR.
 
-⚠️ **C'est VERCEL qui construit le site déployé depuis le 2026-09-22** (`vercel
-deploy` sans `--prebuilt`), et **ça n'a PAS réglé le 404** de
-`/_vercel/insights/script.js` : l'hypothèse « le prébuilt saute l'étape qui pose
-les routes de plateforme » a été testée et démentie (Vercel a bien construit —
-24 s au lieu de 2 — même résultat). Gardé parce qu'un suspect cité par la
-communauté n'a pas à être réintroduit tant que la question est ouverte, pas
-parce que ça marche. ⚠️ **La mesure d'audience ne fonctionne donc pas**, cause
-inconnue : les quatre causes documentées sont écartées (code présent, Analytics
-activé, déploiement en production, aucun proxy). Ne pas tenter une cinquième
-correction sans élément neuf.
+⚠️ **C'est VERCEL qui construit le site déployé — ne pas revenir au
+`--prebuilt`** (2026-09-22). Envoyer un dossier déjà construit supprime l'étape
+de construction côté Vercel (« Ready in 2s »), et c'est elle qui pose les routes
+de plateforme : `/_vercel/insights/script.js` répondait 404, donc aucune visite
+comptée. Depuis que Vercel construit (24 s), la mesure d'audience fonctionne.
+⚠️ **Piège de méthode payé ici** : le test fait DANS LA MINUTE qui suit le
+déploiement répondait encore 404, et j'en ai conclu que l'hypothèse était
+démentie — à tort. Une route de plateforme met du temps à répondre partout :
+attendre, recharger en dur, et ne pas retirer une correction sur une mesure
+prise trop tôt.
 
 ⚠️ **Le job de déploiement se lit « tout SAUF une pull request ».** Il portait
 `if: github.event_name == 'push'`, ce qui excluait `workflow_dispatch` — donc le
