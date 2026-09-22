@@ -1606,6 +1606,13 @@ conclure qu'un job est bloqué : `list_workflow_jobs` (le plus frais des trois)
 et `get_job_logs` — dont le 404 signifie « pas encore fini », pas « cassé » —
 tranchent. Et le verrou est **`Tests & build`** — c'est le seul job d'une PR.
 
+⚠️ **C'est VERCEL qui construit le site déployé, pas la CI — ne pas revenir au
+`--prebuilt`.** Envoyer un dossier déjà construit supprime l'étape de
+construction côté Vercel, et c'est elle qui pose les routes de plateforme : la
+mesure d'audience répondait 404 sur `/_vercel/insights/script.js` avec Web
+Analytics pourtant activé. Le coût est ~1 min de build en plus ; les tests
+restent le verrou (`needs: test`).
+
 ⚠️ **Le job de déploiement se lit « tout SAUF une pull request ».** Il portait
 `if: github.event_name == 'push'`, ce qui excluait `workflow_dispatch` — donc le
 bouton « Run workflow », qui existe pour relancer un déploiement sans toucher au

@@ -99,13 +99,23 @@ jobs:
       - name: Récupérer la configuration du projet
         if: steps.check.outputs.ready == 'true'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Build de production
-        if: steps.check.outputs.ready == 'true'
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      # ⚠️ C'EST VERCEL QUI CONSTRUIT, PAS NOUS — ne pas revenir au PRÉBUILT.
+      #
+      # Le montage d'avant faisait `vercel build` ici puis `vercel deploy
+      # --prebuilt` : on envoyait un dossier déjà construit, donc Vercel n'avait
+      # plus d'étape de construction (« Ready in 2s » dans les logs). Or c'est
+      # cette étape qui pose les routes de plateforme — dont
+      # `/_vercel/insights/*`, la mesure d'audience. Résultat : un 404 sur
+      # `script.js` avec Web Analytics pourtant ACTIVÉ, un déploiement en
+      # production et aucun proxy devant le site (les trois autres causes
+      # documentées, toutes écartées une par une).
+      #
+      # Ce que ça coûte : Vercel réinstalle et reconstruit, soit ~1 min de plus.
+      # Les tests restent le verrou (`needs: test`), donc rien de cassé ne part.
       - name: Déployer
         id: deploy
         if: steps.check.outputs.ready == 'true'
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Déployé sur $url" >> "$GITHUB_STEP_SUMMARY"
