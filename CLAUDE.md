@@ -1606,6 +1606,13 @@ conclure qu'un job est bloqué : `list_workflow_jobs` (le plus frais des trois)
 et `get_job_logs` — dont le 404 signifie « pas encore fini », pas « cassé » —
 tranchent. Et le verrou est **`Tests & build`** — c'est le seul job d'une PR.
 
+⚠️ **Le job de déploiement se lit « tout SAUF une pull request ».** Il portait
+`if: github.event_name == 'push'`, ce qui excluait `workflow_dispatch` — donc le
+bouton « Run workflow », qui existe pour relancer un déploiement sans toucher au
+code, ne rejouait que les tests, en silence. C'est le seul chemin vers un
+redéploiement quand rien ne change dans le dépôt (activer une option Vercel, par
+exemple) : ne pas le refermer sur `== 'push'`.
+
 ⚠️ **Pas de PRÉVERSION par pull request, et c'est une demande** (« arrête avec
 les préversions », 2026-09-11). Elle écrivait l'URL en COMMENTAIRE sur la PR ;
 les PR étant ouvertes sous le compte de Yann, GitHub l'abonne au fil et chaque

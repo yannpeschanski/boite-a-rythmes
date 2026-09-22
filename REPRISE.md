@@ -3,7 +3,19 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-21 — ✅ **Savoir si quelqu'un vient.**
+> Dernière mise à jour : 2026-09-22 — ✅ **Le bouton « Run workflow » ne
+> déployait pas.** `if: github.event_name == 'push'` excluait
+> `workflow_dispatch`, alors que c'est le seul chemin vers un redéploiement
+> quand le dépôt ne change pas. Passé à `!= 'pull_request'`.
+> ⚠️ **Le contexte** : la sonde d'audience répondait 404 sur
+> `/_vercel/insights/script.js` — Vercel ne sert cette route qu'aux
+> déploiements faits APRÈS l'activation de Web Analytics, et le projet n'est
+> pas connecté à Git. Le merge de cette livraison EST le redéploiement.
+> ⚠️ **À vérifier en jouant** : `script.js` doit passer en 200 sur
+> `face-b-2005.vercel.app` une fois le run de `main` terminé. S'il reste en
+> 404, c'est l'activation côté Vercel qu'il faut reprendre, pas le code.
+>
+> Avant cela, le 2026-09-21 : ✅ **Savoir si quelqu'un vient.**
 > `@vercel/analytics` est branché dans `src/main.ts`, sans cookie donc sans
 > bandeau. ⚠️ **Deux gardes à ne pas retirer** : `PROD` (la sonde bavarde sur
 > `localhost`) et `MODE !== 'singlefile'` — le fichier autonome doit marcher

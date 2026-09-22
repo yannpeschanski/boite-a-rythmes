@@ -56,7 +56,12 @@ jobs:
     # `needs` fait de ce job une étape bloquée par les tests : si un test
     # échoue, rien n'est déployé.
     needs: test
-    if: github.event_name == 'push'
+    # ⚠️ Lire « tout SAUF une pull request », jamais « seulement un push » :
+    # `workflow_dispatch` existe pour relancer un déploiement sans toucher au
+    # code, et `== 'push'` l'excluait — le bouton « Run workflow » ne faisait
+    # donc que rejouer les tests, en silence. Trouvé en s'en servant
+    # (2026-09-22, la route de mesure d'audience demandait un redéploiement).
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: production
