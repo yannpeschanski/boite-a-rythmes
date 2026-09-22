@@ -12,9 +12,14 @@
 > crédible, pas une intuition.
 > ⚠️ **Piège de méthode** : la capture du tableau de bord Vercel montrait un
 > déploiement périmé — **lire les logs de la CLI**, pas l'écran.
-> ⚠️ **À vérifier en jouant** : `script.js` en 200 sur `face-b-2005.vercel.app`.
-> Si c'est encore 404, les quatre causes documentées sont épuisées → ticket
-> Vercel, pas une correction de plus.
+> ⚠️ **TESTÉ, ET DÉMENTI** : Vercel a bien construit (24 s au lieu de 2), le
+> déploiement est aliasé — et `script.js` répond toujours **404**. Ce n'était pas
+> le prébuilt. La construction côté Vercel reste en place (on ne réintroduit pas
+> un suspect tant que la question est ouverte), mais elle ne règle rien.
+> ⚠️ **La mesure d'audience ne marche toujours pas, cause inconnue.** Cinq pistes
+> épuisées ; la suite est un ticket Vercel, pas une sixième correction. Le datum
+> qui manque : le 404 est-il le même sur l'URL brute du déploiement ? Si non,
+> c'est l'alias.
 >
 > Avant cela, le même jour : ✅ **Le bouton « Run workflow » ne
 > déployait pas.** `if: github.event_name == 'push'` excluait
