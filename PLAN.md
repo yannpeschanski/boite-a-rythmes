@@ -78,10 +78,24 @@ construit — `vercel.json` porte déjà `framework`, `installCommand`,
 pas la nôtre. Ce que ça ne coûte pas : le verrou des tests (`needs: test`) ne
 bouge pas.
 
-⚠️ **C'est une HYPOTHÈSE, et son test est décisif** : `script.js` en 200 ou
-toujours en 404. Si le 404 persiste, ce n'est pas le prébuilt — et les quatre
-autres causes sont déjà éliminées, donc la question suivante est un ticket chez
-Vercel, pas une correction de plus à l'aveugle.
+⚠️ **HYPOTHÈSE DÉMENTIE PAR SON PROPRE TEST** (le jour même). Les logs
+confirment que Vercel a construit cette fois — `npm ci`, `vite build`, « Ready
+in **24s** » là où le prébuilt disait 2 s — et le déploiement `hjqrzhtfa` est
+aliasé sur `face-b-2005`. `script.js` répond **toujours 404**. Ce n'était donc
+pas le prébuilt.
+
+**Ce qu'on garde quand même** : la construction côté Vercel. Pas parce qu'elle
+règle quelque chose, mais parce que le prébuilt est un suspect cité par la
+communauté et qu'on ne réintroduit pas un suspect tant que la question est
+ouverte. Le coût est une minute.
+
+**Ce que ça laisse** : les cinq causes envisageables sont épuisées, donc la
+suite n'est pas une sixième correction — c'est un ticket chez Vercel, avec les
+faits déjà réunis (activé, en production, sans proxy, construit côté Vercel,
+projet non connecté à Git, déployé par CLI). ⚠️ **Le datum qui manque au
+ticket** : `script.js` répond-il 404 aussi sur l'URL BRUTE du déploiement
+(`boite-a-rythmes-hjqrzhtfa-ypsch.vercel.app`) ? Si elle répond 200 et que
+`face-b-2005` non, c'est l'alias qui est en cause et non le projet.
 
 ### ✅ Le bouton « Run workflow » ne déployait pas (2026-09-22)
 
