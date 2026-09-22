@@ -48,6 +48,29 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le bouton « Run workflow » ne déployait pas (2026-09-22)
+
+**Trouvé en s'en servant.** La sonde d'audience répondait **404** sur
+`/_vercel/insights/script.js` : Vercel ne sert cette route que pour les
+déploiements faits APRÈS l'activation de Web Analytics, et le projet n'est pas
+connecté à Git (le workflow déploie par la CLI, `vercel pull` + `vercel build` +
+`vercel deploy --prebuilt`). Il fallait donc redéployer sans rien changer au
+code — exactement ce que `workflow_dispatch` promet.
+
+**Il ne le tenait pas** : le job `deploy` portait `if: github.event_name ==
+'push'`, qui exclut `workflow_dispatch`. Le bouton rejouait les tests et
+s'arrêtait là, sans un mot — le commentaire trois lignes plus haut annonçait
+pourtant l'inverse (« relancer un déploiement sans avoir à modifier le code, ex.
+après avoir renouvelé le jeton Vercel »). Un commentaire disait l'intention, la
+condition disait autre chose, et personne ne s'en était servi depuis.
+
+`!= 'pull_request'` dit la vraie règle, celle que le reste du fichier énonce
+déjà : une PR est TESTÉE, jamais déployée. Tout le reste déploie.
+
+⚠️ **Ce que ça n'apprend pas** : rien ne vérifie cette condition. Un test de
+workflow demanderait de rejouer GitHub Actions ; la garde reste le commentaire,
+et le fait que le prochain qui appuie sur le bouton verra le job Vercel tourner.
+
 ### ✅ Savoir si quelqu'un vient (2026-09-21)
 
 **Demande** : *« comment je peux savoir si des gens vont sur le site ? »*
