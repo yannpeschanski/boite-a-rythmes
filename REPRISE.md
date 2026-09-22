@@ -12,14 +12,15 @@
 > crédible, pas une intuition.
 > ⚠️ **Piège de méthode** : la capture du tableau de bord Vercel montrait un
 > déploiement périmé — **lire les logs de la CLI**, pas l'écran.
-> ⚠️ **TESTÉ, ET DÉMENTI** : Vercel a bien construit (24 s au lieu de 2), le
-> déploiement est aliasé — et `script.js` répond toujours **404**. Ce n'était pas
-> le prébuilt. La construction côté Vercel reste en place (on ne réintroduit pas
-> un suspect tant que la question est ouverte), mais elle ne règle rien.
-> ⚠️ **La mesure d'audience ne marche toujours pas, cause inconnue.** Cinq pistes
-> épuisées ; la suite est un ticket Vercel, pas une sixième correction. Le datum
-> qui manque : le 404 est-il le même sur l'URL brute du déploiement ? Si non,
-> c'est l'alias.
+> ⚠️ **CONFIRMÉ — la mesure d'audience FONCTIONNE** (« c'est bon, l'analytics
+> fonctionne »). Le passage à la construction côté Vercel était bien la
+> correction.
+> ⚠️ **Mais un FAUX NÉGATIF m'a fait conclure l'inverse pendant une heure** : le
+> test fait dans la minute suivant le déploiement répondait encore 404, et j'ai
+> annoncé l'hypothèse démentie. Une route de plateforme ne répond pas partout
+> tout de suite. **Un test « décisif » doit dire QUAND le mesurer**, sinon il
+> tranche sur du bruit — et une correction ne se retire pas sur une mesure prise
+> trop tôt.
 >
 > Avant cela, le même jour : ✅ **Le bouton « Run workflow » ne
 > déployait pas.** `if: github.event_name == 'push'` excluait

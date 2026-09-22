@@ -78,16 +78,27 @@ construit — `vercel.json` porte déjà `framework`, `installCommand`,
 pas la nôtre. Ce que ça ne coûte pas : le verrou des tests (`needs: test`) ne
 bouge pas.
 
-⚠️ **HYPOTHÈSE DÉMENTIE PAR SON PROPRE TEST** (le jour même). Les logs
+⚠️ **CONFIRMÉE — mais après un FAUX NÉGATIF qui m'a fait conclure l'inverse.**
+Yann le jour même : *« c'est bon, l'analytics fonctionne »*. Le passage à la
+construction côté Vercel EST la correction.
+
+⚠️ **Ce qu'il faut retenir du faux négatif**, parce qu'il a coûté une conclusion
+publique et une livraison de documents à réécrire : le test fait dans la minute
+qui a suivi le déploiement répondait encore 404. Une route de plateforme ne
+répond pas partout à l'instant où le déploiement est prêt. J'avais posé « 200 ou
+404, le test est décisif » — il l'était, mais pas à cette seconde-là. **Un test
+décisif doit dire QUAND le mesurer**, sinon il tranche sur du bruit. Ce que j'ai
+écrit ensuite (ci-dessous, conservé) était donc faux, et le rappeler vaut mieux
+que l'effacer.
+
+*Rédaction d'alors, fausse :* Les logs
 confirment que Vercel a construit cette fois — `npm ci`, `vite build`, « Ready
 in **24s** » là où le prébuilt disait 2 s — et le déploiement `hjqrzhtfa` est
 aliasé sur `face-b-2005`. `script.js` répond **toujours 404**. Ce n'était donc
 pas le prébuilt.
 
-**Ce qu'on garde quand même** : la construction côté Vercel. Pas parce qu'elle
-règle quelque chose, mais parce que le prébuilt est un suspect cité par la
-communauté et qu'on ne réintroduit pas un suspect tant que la question est
-ouverte. Le coût est une minute.
+**Ce qu'on garde** : la construction côté Vercel — et on sait maintenant
+qu'elle règle le problème. Le coût est une minute de build.
 
 **Ce que ça laisse** : les cinq causes envisageables sont épuisées, donc la
 suite n'est pas une sixième correction — c'est un ticket chez Vercel, avec les
