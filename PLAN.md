@@ -48,6 +48,41 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le `--prebuilt` mangeait les routes de plateforme (2026-09-22)
+
+**Symptôme** : `/_vercel/insights/script.js` en **404** sur le site, donc aucune
+visite comptée.
+
+**Quatre causes documentées, trois écartées par la mesure** avant de toucher à
+quoi que ce soit — c'est ce qui rend la quatrième crédible :
+
+1. *le code n'est pas là* → faux, le 404 a pour initiateur notre bundle
+   (`index-*.js`), vérifié dans le navigateur de Yann ;
+2. *Web Analytics n'est pas activé* → faux, le menu `...` de l'onglet Analytics
+   propose « Disable Web Analytics » ;
+3. *le déploiement est antérieur à l'activation* → faux, redéployé, et les logs
+   de la CLI le prouvent (`Production … qnikkrq84`, `▲ Aliased
+   https://face-b-2005.vercel.app`). ⚠️ La capture du tableau de bord montrait
+   encore le déploiement de la veille : **une page non rafraîchie** — lire les
+   logs, pas l'écran ;
+4. *un proxy devant le site* (Cloudflare) → sans objet ici.
+
+**Reste le montage du workflow.** `vercel build` puis `vercel deploy
+--prebuilt` envoie un dossier déjà construit : Vercel n'a plus d'étape de
+construction (« Ready in 2s » dans les logs, 5,8 Ko envoyés), et c'est cette
+étape qui pose `/_vercel/insights/*`. On déploie donc les SOURCES et Vercel
+construit — `vercel.json` porte déjà `framework`, `installCommand`,
+`buildCommand` et `outputDirectory`, donc rien d'autre à décrire.
+
+**Ce que ça coûte** : ~1 min de construction en plus, sur une machine qui n'est
+pas la nôtre. Ce que ça ne coûte pas : le verrou des tests (`needs: test`) ne
+bouge pas.
+
+⚠️ **C'est une HYPOTHÈSE, et son test est décisif** : `script.js` en 200 ou
+toujours en 404. Si le 404 persiste, ce n'est pas le prébuilt — et les quatre
+autres causes sont déjà éliminées, donc la question suivante est un ticket chez
+Vercel, pas une correction de plus à l'aveugle.
+
 ### ✅ Le bouton « Run workflow » ne déployait pas (2026-09-22)
 
 **Trouvé en s'en servant.** La sonde d'audience répondait **404** sur

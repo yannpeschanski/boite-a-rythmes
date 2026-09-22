@@ -3,7 +3,20 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-22 — ✅ **Le bouton « Run workflow » ne
+> Dernière mise à jour : 2026-09-22 — ✅ **Le `--prebuilt` mangeait les routes
+> de plateforme.** La CI faisait `vercel build` puis `vercel deploy --prebuilt`,
+> donc Vercel n'avait plus d'étape de construction — et c'est elle qui pose
+> `/_vercel/insights/*`. On déploie les SOURCES maintenant.
+> ⚠️ **Trois causes écartées avant celle-ci** (le code est là, Web Analytics est
+> activé, le déploiement est bien en production) : c'est ce qui la rend
+> crédible, pas une intuition.
+> ⚠️ **Piège de méthode** : la capture du tableau de bord Vercel montrait un
+> déploiement périmé — **lire les logs de la CLI**, pas l'écran.
+> ⚠️ **À vérifier en jouant** : `script.js` en 200 sur `face-b-2005.vercel.app`.
+> Si c'est encore 404, les quatre causes documentées sont épuisées → ticket
+> Vercel, pas une correction de plus.
+>
+> Avant cela, le même jour : ✅ **Le bouton « Run workflow » ne
 > déployait pas.** `if: github.event_name == 'push'` excluait
 > `workflow_dispatch`, alors que c'est le seul chemin vers un redéploiement
 > quand le dépôt ne change pas. Passé à `!= 'pull_request'`.
