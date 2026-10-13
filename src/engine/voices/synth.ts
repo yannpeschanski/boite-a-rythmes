@@ -136,8 +136,15 @@ export class SynthKit {
     g.connect(bus);
     osc.start(time);
     osc.stop(time + dur + release + 0.02);
+    /* Ce que la note a branché sur un bus permanent — débranché à la fin, en
+     * direct seulement. Même raison que `DrumKit.liberer` : sans ça, les notes
+     * mortes restent tirées par le bus jusqu'au passage du ramasse-miettes, et
+     * le coût du rendu grimpe tant que la boucle tourne. Toutes les couches
+     * s'arrêtent au même instant que `osc`. */
+    const aDebrancher: AudioNode[] = [g];
     osc.onended = () => {
       this.activeVoiceCount = Math.max(0, this.activeVoiceCount - 1);
+      if (!this.isOffline) for (const n of aDebrancher) n.disconnect();
     };
     this.track(osc);
 
@@ -177,6 +184,7 @@ export class SynthKit {
       osc.connect(chorusDelay);
       chorusDelay.connect(chorusOutGain);
       chorusOutGain.connect(bus);
+      aDebrancher.push(chorusOutGain);
       chorusLfo.start(time);
       chorusLfo.stop(time + dur + release + 0.02);
       this.track(chorusLfo);
@@ -193,6 +201,7 @@ export class SynthKit {
       rampGain(subG.gain, releaseCurve, 0.0001, time + dur + release);
       subOsc.connect(subG);
       subG.connect(bus);
+      aDebrancher.push(subG);
       subOsc.start(time);
       subOsc.stop(time + dur + release + 0.02);
       this.track(subOsc);
@@ -213,6 +222,7 @@ export class SynthKit {
       osc2.connect(filt2);
       filt2.connect(g2);
       g2.connect(bus);
+      aDebrancher.push(g2);
       osc2.start(time);
       osc2.stop(time + dur + release + 0.02);
       this.track(osc2);

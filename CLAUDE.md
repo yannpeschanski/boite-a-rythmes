@@ -209,6 +209,18 @@ construit le vrai graphe sur un contexte feint qui n'enregistre que les
 branchements, et refuse tout cycle sans délai : aucun test de notes ne regarde la
 FORME du graphe.
 
+⚠️ **Une frappe finie se DÉBRANCHE de son bus, en direct.** Ses nœuds restaient
+tirés par le bus jusqu'au passage du ramasse-miettes JS, qui ne vient pas (un
+`AudioNode` ne pèse rien côté JS) : le coût du rendu montait tant que la boucle
+tournait, d'où des grésillements au bout de quelques minutes. `DrumKit.liberer`
+et `playSynthNote` débranchent au `ended` — **jamais hors ligne**, où l'export
+doit rester identique à l'octet. `tests/frappes-debranchees.test.ts`.
+
+⚠️ **Le kick du Mode jeu porte un plancher de grain (`TONE_KICK_JEU`)** : nu,
+c'est une sinusoïde qu'un haut-parleur de téléphone ne reproduit pas (onze
+décibels sous la claire, mesuré) — une grille à compléter cachait ses kicks
+selon l'appareil.
+
 **L'analyseur de spectre** est un `AnalyserNode` branché en tap sur `finalGain`
 dans `buildGraph`, donc sur ce qu'on entend, limiteur compris. `getSpectrum(out)`
 **remplit un tableau fourni par l'appelant** — le visualiseur tourne à 60 Hz. La

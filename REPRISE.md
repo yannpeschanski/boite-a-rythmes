@@ -3,7 +3,17 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-09-22 — ✅ **Le `--prebuilt` mangeait les routes
+> Dernière mise à jour : 2026-10-13 — ✅ **Deux retours de Martin.** (1) La
+> boucle grésillait au bout de quelques minutes : les nœuds des frappes finies
+> restaient branchés au bus jusqu'au ramasse-miettes, le coût du rendu
+> grimpait sans fin (mesuré : 2 → 20 s par tranche de 20 s) ; ils se
+> débranchent au `ended`, en direct seulement — coût plat. (2) Des kicks
+> inaudibles sans écouteurs : sinusoïde pure, 11 dB sous la claire sur un
+> petit haut-parleur ; plancher `TONE_KICK_JEU = 22` dans les grilles du jeu.
+> ⚠️ **À faire réécouter à Martin sur son téléphone** — tout est mesuré dans
+> Chromium, rien sur l'appareil.
+>
+> Avant cela, le 2026-09-22 — ✅ **Le `--prebuilt` mangeait les routes
 > de plateforme.** La CI faisait `vercel build` puis `vercel deploy --prebuilt`,
 > donc Vercel n'avait plus d'étape de construction — et c'est elle qui pose
 > `/_vercel/insights/*`. On déploie les SOURCES maintenant.

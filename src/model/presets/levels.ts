@@ -553,8 +553,29 @@ export function voiceForLevel(cfg: GameLevel, presets: GamePresetLike[], rng: ()
   const preset = presetForLevel(cfg, presets);
   if (!preset) return randomVoice(VOICE_TIERS[cfg.voiceTier], rng);
   const v = (row: GamePresetRow): RowTimbre => ({ pitch: row.pitch || 0, attack: row.attack || 0, decay: row.decay || 0, tone: row.tone || 0 });
-  return { kick: v(preset.kick), snare: v(preset.snare), hat: v(preset.hat) };
+  const kick = v(preset.kick);
+  kick.tone = Math.max(kick.tone, TONE_KICK_JEU);
+  return { kick, snare: v(preset.snare), hat: v(preset.hat) };
 }
+
+/* Le GRAIN minimum du kick dans les exercices de grille.
+ *
+ * Retour de Martin : *« sans écouteurs il y a des kicks que j'entendais pas pour
+ * compléter des séquences »*. Le kick est une sinusoïde 140 → 38 Hz : un
+ * haut-parleur de téléphone ne la reproduit pas. Mesuré sur le modèle de petit
+ * haut-parleur du graphe (passe-haut à 450 Hz), une frappe seule : kick nu
+ * −49,9 dB RMS, caisse claire autour de −39 (bruit, donc à ±1 dB) — onze
+ * décibels sous la claire, donc inaudible dès qu'elle joue. À 22 de drive,
+ * −38,4 : à hauteur de la claire. Au casque l'écart n'est que de +2,3 dB
+ * (−29,7 → −27,4) — le grain ajoute des
+ * harmoniques là où le petit haut-parleur les entend, il ne grossit pas le kick.
+ *
+ * ⚠️ C'est la leçon de l'acte 4 (`kickQuiPorte`), appliquée au décor du Mode
+ * jeu : un exercice qui fait ENTENDRE une grille ne peut pas cacher une ligne
+ * selon l'appareil. 22 est la valeur que les arrangements posaient déjà à la
+ * main (`sons.kick.tone`, 20 à 24). Couleur, jamais réponse — comme le reste
+ * de `GameVoice`, la cible et la version du joueur la reçoivent toutes deux. */
+export const TONE_KICK_JEU = 22;
 
 // ---------- Timbre aléatoire par palier (Mode jeu) ----------
 // Pure couleur sonore, jamais montrée ni devinée — n'affecte que playKick/
@@ -565,7 +586,7 @@ export function randBetween(min: number, max: number, rng: () => number = Math.r
 }
 export function randomVoice(range: VoiceTierRange, rng: () => number = Math.random): GameVoice {
   return {
-    kick:  { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: randBetween(0, range.toneKick, rng) },
+    kick:  { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: TONE_KICK_JEU + randBetween(0, range.toneKick, rng) },
     snare: { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: randBetween(-range.toneSnare, range.toneSnare, rng) },
     hat:   { pitch: randBetween(-range.pitch, range.pitch, rng), attack: randBetween(0, range.attack, rng), decay: randBetween(-range.decay, range.decay, rng), tone: randBetween(0, range.toneHat, rng) },
   };

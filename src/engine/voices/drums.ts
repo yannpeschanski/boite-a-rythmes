@@ -41,10 +41,49 @@ export class DrumKit {
   private ctx: BaseAudioContext;
   private graph: GraphNodes;
   private activeOpenHat: { gainNode: GainNode; endTime: number } | null = null;
+  private isOffline: boolean;
 
-  constructor(graph: GraphNodes) {
+  constructor(graph: GraphNodes, isOffline = false) {
     this.ctx = graph.ctx;
     this.graph = graph;
+    this.isOffline = isOffline;
+  }
+
+  /* DÉBRANCHER une frappe finie — c'est ce qui empêche la boucle de grésiller
+   * au bout de quelques minutes.
+   *
+   * Chaque frappe crée ses nœuds et les branche sur un bus PERMANENT. Une fois
+   * la source arrêtée, ils ne servent plus à rien, mais tant qu'ils restent
+   * branchés le bus les tire à chaque bloc de 128 échantillons — et ils ne
+   * sont débranchés que par le ramasse-miettes JS, qui ne passe que quand le
+   * TAS JS est sous pression. Or un `AudioNode` ne pèse presque rien côté JS :
+   * le tas reste à 17 Mo pendant que le graphe enfle. Mesuré (programmation au
+   * fil de l'eau, kick + claire + charley en doubles croches à 140) : le coût
+   * de 20 s d'audio grimpe de 2,0 à 12,3 s, retombe d'un coup à 1,8 s quand le
+   * ramasse-miettes finit par passer, puis remonte à 20 s ; avec un
+   * ramasse-miettes forcé toutes les 20 s, il reste plat. Sur un téléphone,
+   * dépasser le temps réel s'entend : un grésillement par bloc manqué —
+   * le retour de Martin, « quand la boucle tourne trop longtemps ».
+   *
+   * On débranche donc à la main les nœuds qui touchent un bus, au `ended` de
+   * la DERNIÈRE source de la frappe. ⚠️ Jamais hors ligne : `ended` y arrive
+   * de façon asynchrone pendant le rendu, et l'export doit rester identique à
+   * l'octet près (CLAUDE.md, « un même état donne le même morceau »). */
+  private liberer(sources: AudioScheduledSourceNode[], noeuds: AudioNode[]): void {
+    if (this.isOffline) return;
+    let restantes = sources.length;
+    const fin = () => {
+      if (--restantes > 0) return;
+      for (const n of noeuds) n.disconnect();
+    };
+    for (const src of sources) src.addEventListener('ended', fin);
+  }
+
+  /* Ce qu'une frappe a branché sur le bus de sa ligne : son dernier gain, et le
+   * filtre de `filterDest` s'il en a créé un (sinon c'est le bus lui-même, qui
+   * ne se débranche JAMAIS). */
+  private aDebrancher(g: AudioNode, dest: AudioNode, bus: AudioNode): AudioNode[] {
+    return dest === bus ? [g] : [g, dest];
   }
 
   // Filtre passe-bas optionnel, intercalé juste avant le bus de ligne.
@@ -76,7 +115,8 @@ export class DrumKit {
     g.gain.setValueAtTime(0.0001, time);
     g.gain.exponentialRampToValueAtTime(Math.max(gain, 0.001), time + 0.004 + aAdd);
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.15 * dMult + aAdd);
-    const dest = this.filterDest(v, this.graph.drumLineGain.kick);
+    const kickBus = this.graph.drumLineGain.kick;
+    const dest = this.filterDest(v, kickBus);
     const tone = (v.tone || 0) / 100; // 0..1 : quantité de saturation
     if (tone > 0.03) {
       // seuil : en dessous, la saturation est inaudible — évite un nœud audio par kick pour rien
@@ -91,6 +131,7 @@ export class DrumKit {
     }
     osc.start(time);
     osc.stop(time + 0.17 * dMult + aAdd);
+    this.liberer([osc], this.aDebrancher(g, dest, kickBus));
   }
 
   playSnare(time: number, gain: number, voice?: Partial<DrumVoice>): void {
@@ -116,7 +157,8 @@ export class DrumKit {
     ng.gain.setValueAtTime(0.0001, time);
     ng.gain.exponentialRampToValueAtTime(Math.max(gain * 0.9, 0.001), time + 0.003 + aAdd);
     ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.14 * dMult + aAdd);
-    const snareDest = this.filterDest(v, this.graph.drumLineGain.snare);
+    const snareBus = this.graph.drumLineGain.snare;
+    const snareDest = this.filterDest(v, snareBus);
     src.connect(bp);
     bp.connect(ng);
     ng.connect(snareDest as AudioNode);
@@ -133,6 +175,7 @@ export class DrumKit {
     src.stop(time + 0.16 * dMult + aAdd);
     osc.start(time);
     osc.stop(time + 0.12 * dMult + aAdd);
+    this.liberer([src, osc], [ng, ...this.aDebrancher(og, snareDest, snareBus)]);
   }
 
   playRimshot(time: number, gain: number, voice?: Partial<DrumVoice>): void {
@@ -159,7 +202,8 @@ export class DrumKit {
     ng.gain.setValueAtTime(0.0001, time);
     ng.gain.exponentialRampToValueAtTime(Math.max(gain, 0.001), time + 0.001 + aAdd);
     ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.04 * dMult + aAdd);
-    const rimDest = this.filterDest(v, this.graph.drumLineGain.snare);
+    const rimBus = this.graph.drumLineGain.snare;
+    const rimDest = this.filterDest(v, rimBus);
     src.connect(bp);
     bp.connect(ng);
     ng.connect(rimDest as AudioNode);
@@ -178,6 +222,7 @@ export class DrumKit {
     src.stop(time + 0.05 * dMult + aAdd);
     osc.start(time);
     osc.stop(time + 0.03 * dMult + aAdd);
+    this.liberer([src, osc], [ng, ...this.aDebrancher(og, rimDest, rimBus)]);
   }
 
   playClap(time: number, gain: number, voice?: Partial<DrumVoice>): void {
@@ -190,7 +235,10 @@ export class DrumKit {
     const dMult = decayMult(v);
     const aAdd = attackAdd(v);
     const bpFreq = 1200 * Math.pow(2, (v.tone || 0) / 50) * mult;
-    const dest = this.filterDest(v, this.graph.drumLineGain.clap);
+    const clapBus = this.graph.drumLineGain.clap;
+    const dest = this.filterDest(v, clapBus);
+    const sources: AudioScheduledSourceNode[] = [];
+    const gains: AudioNode[] = [];
     const burstOf = (t: number, peak: number, dur: number) => {
       const src = this.ctx.createBufferSource();
       src.buffer = this.graph.noiseBuffer;
@@ -207,9 +255,12 @@ export class DrumKit {
       g.connect(dest as AudioNode);
       src.start(t);
       src.stop(t + dur + aAdd + 0.01);
+      sources.push(src);
+      gains.push(g);
     };
     CLAP_BURST_OFFSETS.forEach((offset) => burstOf(time + offset, gain * 0.6, 0.02 * dMult));
     burstOf(time + 0.03, gain * 0.8, 0.12 * dMult); // traîne finale, plus longue
+    this.liberer(sources, dest === clapBus ? gains : [...gains, dest]);
   }
 
   // Shaker (PLAN.md §6) : bruit passe-haut large bande, enveloppe courte —
@@ -238,9 +289,12 @@ export class DrumKit {
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.05 * dMult + aAdd);
     src.connect(hp);
     hp.connect(g);
-    g.connect(this.filterDest(v, this.graph.drumLineGain.shaker) as AudioNode);
+    const shakerBus = this.graph.drumLineGain.shaker;
+    const shakerDest = this.filterDest(v, shakerBus);
+    g.connect(shakerDest);
     src.start(time);
     src.stop(time + 0.06 * dMult + aAdd);
+    this.liberer([src], this.aDebrancher(g, shakerDest, shakerBus));
   }
 
   // Choke : un hat fermé coupe le hat ouvert encore en train de sonner —
@@ -257,14 +311,15 @@ export class DrumKit {
     }
   }
 
-  private triggerHatOscBank(time: number, stopTime: number, fundamental: number, dest: AudioNode): void {
-    HAT_OSC_RATIOS.forEach((ratio) => {
+  private triggerHatOscBank(time: number, stopTime: number, fundamental: number, dest: AudioNode): OscillatorNode[] {
+    return HAT_OSC_RATIOS.map((ratio) => {
       const osc = this.ctx.createOscillator();
       osc.type = 'square';
       osc.frequency.setValueAtTime(fundamental * ratio, time);
       osc.connect(dest);
       osc.start(time);
       osc.stop(stopTime);
+      return osc;
     });
   }
 
@@ -296,8 +351,11 @@ export class DrumKit {
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.045 * dMult + aAdd);
     bp.connect(hp);
     hp.connect(g);
-    g.connect(this.filterDest(v, this.graph.drumLineGain.hat) as AudioNode);
-    this.triggerHatOscBank(time, time + 0.06 * dMult + aAdd, HAT_FUNDAMENTAL * mult, bp);
+    const hatBus = this.graph.drumLineGain.hat;
+    const hatDest = this.filterDest(v, hatBus);
+    g.connect(hatDest);
+    const oscs = this.triggerHatOscBank(time, time + 0.06 * dMult + aAdd, HAT_FUNDAMENTAL * mult, bp);
+    this.liberer(oscs, this.aDebrancher(g, hatDest, hatBus));
   }
 
   playHatOpen(time: number, gain: number, voice?: Partial<DrumVoice>): void {
@@ -324,8 +382,11 @@ export class DrumKit {
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.35 * dMult + aAdd);
     bp.connect(hp);
     hp.connect(g);
-    g.connect(this.filterDest(v, this.graph.drumLineGain.hat) as AudioNode);
-    this.triggerHatOscBank(time, time + 0.4 * dMult + aAdd, HAT_FUNDAMENTAL * mult, bp);
+    const hatBus = this.graph.drumLineGain.hat;
+    const hatDest = this.filterDest(v, hatBus);
+    g.connect(hatDest);
+    const oscs = this.triggerHatOscBank(time, time + 0.4 * dMult + aAdd, HAT_FUNDAMENTAL * mult, bp);
+    this.liberer(oscs, this.aDebrancher(g, hatDest, hatBus));
     this.activeOpenHat = { gainNode: g, endTime: time + 0.35 * dMult + aAdd };
   }
 }
