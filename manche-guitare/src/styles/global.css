@@ -1,0 +1,108 @@
+:root {
+  --bois: #5b3a29;
+  --bois-clair: #7a5038;
+  --fondamentale: #e4572e;
+  --tierce: #29abe2;
+  --quinte: #3fae49;
+  --selection: #f4b400;
+  --texte: #fdf6ec;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #1b1b1b;
+  color: #eee;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.onglets {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.onglets button {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #444;
+  background: #262626;
+  color: #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.onglets button.actif {
+  background: var(--selection);
+  color: #1b1b1b;
+  border-color: var(--selection);
+}
+
+.selecteur label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.selecteur select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.4rem;
+  font-size: 1rem;
+}
+
+.selecteur > :global(.manche) {
+  margin: 1rem 0;
+}
+
+.legende,
+.correspondances {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.legende li {
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  background: #888;
+  color: #1b1b1b;
+}
+
+.legende li.accent-fondamentale {
+  background: var(--fondamentale);
+}
+.legende li.accent-tierce {
+  background: var(--tierce);
+}
+.legende li.accent-quinte {
+  background: var(--quinte);
+}
+
+.correspondances button,
+button[type='button'] {
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #262626;
+  color: #eee;
+  cursor: pointer;
+}
