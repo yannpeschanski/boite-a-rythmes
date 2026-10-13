@@ -48,6 +48,60 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Deux retours de Martin : la boucle qui grésille, le kick qu'on n'entend pas (2026-10-13)
+
+*« J'ai quelques petits grésillements quand la boucle tourne trop longtemps, et
+sans écouteurs il y a des kicks que j'entendais pas pour compléter des
+séquences. »* Deux bugs, deux mesures avant de toucher au code.
+
+**Le grésillement — des nœuds morts gardés dans le graphe.** Chaque frappe crée
+ses nœuds et les branche sur un bus permanent ; rien ne les débranchait, sauf
+le ramasse-miettes JS — qui ne passe pas, un `AudioNode` ne pesant presque rien
+côté JS (tas stable à 17,5 Mo sur 3 min de lecture en direct). Mesuré en
+programmant au fil de l'eau comme le moteur (kick, claire, charley en doubles
+croches à 140, contexte hors ligne suspendu tous les 250 ms), coût de rendu de
+chaque tranche de 20 s d'audio :
+
+| | tranches successives (ms) |
+|---|---|
+| avant | 1980 5320 9602 12284 **1838** 3189 6980 10632 14015 16973 20070 |
+| ramasse-miettes forcé toutes les 20 s | 1944 1751 1887 1715 1835 1782 1977 1746 2041 2611 2294 |
+| **après** (débranchement au `ended`) | 662 597 727 611 670 743 725 783 691 753 772 |
+
+La chute à 1838 est le passage spontané du ramasse-miettes. Sur un téléphone,
+la pente finit par dépasser le temps réel : un grésillement par bloc manqué.
+Correctif : `DrumKit.liberer` débranche, au `ended` de la DERNIÈRE source de la
+frappe, tout ce qu'elle a branché sur un bus (le gain, et le filtre de
+`filterDest` s'il en a créé un) ; `SynthKit.playSynthNote` fait de même pour
+ses quatre couches. ⚠️ **Jamais hors ligne** (`new DrumKit(graph, true)` dans
+`render-offline.ts`) : `ended` y arrive de façon asynchrone pendant le rendu,
+l'export doit rester identique à l'octet. En direct, l'écart mesuré contre la
+version sans débranchement est de **−72 dB au plus** (le reliquat des
+enveloppes, qui finissent à 0,0001 et non à 0, propagé par le limiteur).
+`tests/frappes-debranchees.test.ts` tient le câblage sur un contexte feint.
+
+**Le kick inaudible — une sinusoïde 140 → 38 Hz.** Un haut-parleur de téléphone
+ne la reproduit pas. Mesuré sur le modèle de petit haut-parleur du graphe
+(passe-haut 450 Hz), une frappe seule, RMS :
+
+| | casque | petit HP |
+|---|---|---|
+| kick nu (`tone` 0) | −29,7 dB | **−49,9 dB** |
+| kick `tone` 22 | −27,4 dB | −38,4 dB |
+| claire | ≈ −38 dB | ≈ −39 dB |
+
+Onze décibels sous la claire, donc inaudible dès qu'elle joue. Or les trois
+paliers de timbre du Mode jeu tiraient `toneKick: 0`. `TONE_KICK_JEU = 22`
+(`presets/levels.ts`) est un plancher sur les deux chemins qui fabriquent le
+timbre d'une grille (`randomVoice`, `voiceForLevel`) ; un preset plus
+granuleux garde le sien, claire et charley ne bougent pas. 22, parce que c'est
+la valeur que les arrangements posaient déjà à la main (`sons.kick.tone`).
+C'est la leçon de l'acte 4 (`kickQuiPorte`) appliquée au décor du jeu.
+`tests/kick-petit-hp.test.ts`.
+
+⚠️ **Non vérifié sur un vrai téléphone** — la pente et le correctif se mesurent
+dans Chromium, pas sur la thermique d'un appareil. À faire réécouter à Martin.
+
 ### ✅ Le `--prebuilt` mangeait les routes de plateforme (2026-09-22)
 
 **Symptôme** : `/_vercel/insights/script.js` en **404** sur le site, donc aucune

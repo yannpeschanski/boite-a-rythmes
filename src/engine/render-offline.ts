@@ -36,7 +36,7 @@ export async function renderPattern(
   const ctx = new OfflineCtor(1, Math.ceil(duration * sampleRate), sampleRate);
 
   const graph = buildGraph(ctx, state);
-  const kit = new DrumKit(graph);
+  const kit = new DrumKit(graph, true); // offline : rien n'est débranché en cours de rendu
   const synth = new SynthKit(graph, true); // offline : jamais de budget de voix
   const rng = makeSeededRng(seed);
   // Second flux, réservé aux frappes ajoutées par le fill de clap
