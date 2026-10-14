@@ -17,6 +17,7 @@ import {
   SEUIL_JUSTESSE,
   COUPS_POUR_VALIDER,
   medianeDesEcarts,
+  biaisAppareil,
   PARFAIT_MS,
   TOLERANCE_MS,
   LAVERIE_DRIVES,
@@ -685,5 +686,29 @@ describe('les niveaux tiennent ce que leur consigne annonce', () => {
         ).toBeGreaterThanOrEqual(lvl.forceRollCount);
       }
     }
+  });
+});
+
+/* Firefox + Bluetooth déclare ~22 ms pour ~180 réels : un joueur pile dans le
+   temps à l'oreille était noté 160 ms en retard. La correction est automatique,
+   donc elle doit reconnaître un retard d'APPAREIL — constant — et rien d'autre. */
+describe('biaisAppareil — le retard de la sortie, reconnu sans bouton', () => {
+  it('reconnaît un retard constant (casque Bluetooth)', () => {
+    expect(biaisAppareil([158, 171, 149, 166, 162])).toBe(162);
+  });
+  it('ne dit rien avant quatre frappes', () => {
+    expect(biaisAppareil([160, 160, 160])).toBeNull();
+  });
+  it('ne corrige pas un joueur déjà centré', () => {
+    expect(biaisAppareil([5, -12, 8, -3, 10])).toBeNull();
+  });
+  it('ne corrige pas des frappes éparpillées — c’est du placement', () => {
+    expect(biaisAppareil([40, 210, 90, 280, 130])).toBeNull();
+  });
+  it('ne corrige pas un joueur qui tape à contretemps', () => {
+    expect(biaisAppareil([380, 372, 390, 385])).toBeNull();
+  });
+  it('reconnaît aussi une avance constante', () => {
+    expect(biaisAppareil([-80, -92, -75, -85])).toBeLessThan(0);
   });
 });

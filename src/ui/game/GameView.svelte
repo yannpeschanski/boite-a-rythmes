@@ -19,6 +19,7 @@
     SEUIL_JUSTESSE,
     ecartAuClic,
     medianeDesEcarts,
+    biaisAppareil,
     aUneVersion,
     type ExerciseKind,
   } from '../../model/exercises';
@@ -172,10 +173,12 @@
    *    retranche.
    *
    * Reste ce qu'aucun code ne peut voir : la latence de la dalle tactile
-   * elle-même. D'où `decalageMedian`, affiché à côté de la note — un biais
+   * elle-même. D'où `biaisAppareil`, corrigé tout seul dès qu'il est constant — un biais
    * franc et constant est de la latence, pas un défaut de placement.
    */
   let dernierKickVu = $state(-1);
+  /* Le dernier retard d'appareil corrigé, pour le dire à l'écran. */
+  let correctionAppareil = $state<number | null>(null);
   let dernierKickAudio = 0;
   function dureeDunPas(): number {
     return 60 / game.tempo / Math.max(1, game.subdiv.kick / 4);
@@ -202,6 +205,18 @@
     const visee = ecart >= 0 ? dernierKickVu : (dernierKickVu + pas) % n;
     const phase = (visee + ecart / dureeDunPas()) / n;
     game.enregistrerFrappe(ecart * 1000, ((phase % 1) + 1) % 1);
+    /* Un retard CONSTANT est celui de l'appareil (casque Bluetooth, dalle
+       tactile), pas du joueur : on le corrige sans rien demander, et l'écran
+       le DIT — une frappe mesurée ne s'écarte jamais en silence. Les frappes
+       d'avant sont effacées : mesurées avec l'ancien réglage, elles
+       montreraient un retard qui n'existe déjà plus. */
+    const biais = biaisAppareil(game.frappes.map((f) => f.ecartMs));
+    if (biais !== null) {
+      latence.affiner(biais);
+      correctionAppareil = biais;
+      game.reinitialiserFrappes();
+      return;
+    }
     /* ⚠️ Un « jouer » se valide TOUT SEUL — retour de jeu : « ce n'est pas
        clair qu'il suffit de dépasser le seuil ». Il n'y a plus de bouton à
        trouver ; dès que dix frappes tiennent `SEUIL_JUSTESSE`, le niveau est
@@ -396,6 +411,7 @@
   function allerAuNiveau(id: number) {
     stopAll();
     echec = false;
+    correctionAppareil = null;
     // Choisir un niveau dans la carte, c'est répéter, pas avancer dans le
     // récit : sans cette ligne, réussir un niveau choisi à la main ferait
     // progresser la carrière d'une étape qu'on n'a pas jouée.
@@ -1618,25 +1634,11 @@
               {/if}
             </span>
           </p>
-          {#if game.frappes.length >= 4 && Math.abs(game.decalageMedian()) > 25}
-            <!-- Un biais franc et constant n'est pas un défaut de placement,
-                 c'est de la latence : la partie qui vient d'être jouée EST une
-                 mesure, autant s'en servir plutôt que de refaire un calibrage. -->
-            <!-- ⚠️ UN bouton, qui dit le constat ET le geste : c'est le seul
-                 réglage de latence de cet écran, il n'a plus à se distinguer
-                 d'un autre. Il n'apparaît que quand la mesure l'a vu. -->
-            <button
-              class="xp-btn"
-              onclick={() => {
-                latence.affiner(game.decalageMedian());
-                // Les frappes affichées ont été mesurées avec l'ANCIEN réglage :
-                // les garder montrerait un biais qui n'existe déjà plus.
-                game.reinitialiserFrappes();
-                stopAll();
-              }}
-            >
-              🎚 Toujours {Math.abs(game.decalageMedian())}&nbsp;ms {game.decalageMedian() > 0 ? 'en retard' : 'en avance'} : c’est ton appareil, corriger
-            </button>
+          {#if correctionAppareil !== null}
+            <p class="muted">
+              🎚 Ton appareil {correctionAppareil > 0 ? 'retarde' : 'avance'} le son de
+              {Math.abs(correctionAppareil)}&nbsp;ms — c’est corrigé, continue.
+            </p>
           {/if}
         </div>
       {:else}

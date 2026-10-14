@@ -396,6 +396,36 @@ export function medianeDesEcarts(ecarts: number[]): number {
   return Math.round(tri.length % 2 ? tri[m] : (tri[m - 1] + tri[m]) / 2);
 }
 
+/* Le retard de l'APPAREIL, reconnu dans les frappes — ou `null`.
+ *
+ * ⚠️ Pourquoi la correction est AUTOMATIQUE (2026-10-14). Sur Firefox avec un
+ * casque Bluetooth, le navigateur déclare ~22 ms de sortie pour ~180 réels :
+ * le joueur tape pile sur ce qu'il ENTEND et la note le compte 160 ms en
+ * retard, au-delà de `TOLERANCE_MS`. Un instrument en ligne (guitoro) n'a pas
+ * ce défaut parce qu'il ne note rien ; nous notons, donc c'est à nous de
+ * reconnaître le retard — pas au joueur de trouver un bouton de latence.
+ *
+ * Ce qui distingue un retard d'appareil d'un joueur qui traîne ou qui tape au
+ * hasard : il est CONSTANT. D'où trois conditions, toutes nécessaires :
+ *   - au moins `FRAPPES_BIAIS` frappes (une ou deux ne disent rien) ;
+ *   - une médiane franche, entre `BIAIS_MIN_MS` et `BIAIS_MAX_MS` — au-delà,
+ *     c'est un joueur qui tape à contretemps, pas une sortie lente ;
+ *   - une dispersion faible autour de cette médiane (`DISPERSION_MAX_MS`) :
+ *     des frappes éparpillées sont un placement à travailler, et les corriger
+ *     ferait passer un joueur qui ne tient pas le temps. */
+export const FRAPPES_BIAIS = 4;
+export const BIAIS_MIN_MS = 25;
+export const BIAIS_MAX_MS = 300;
+export const DISPERSION_MAX_MS = 50;
+
+export function biaisAppareil(ecarts: number[]): number | null {
+  if (ecarts.length < FRAPPES_BIAIS) return null;
+  const m = medianeDesEcarts(ecarts);
+  if (Math.abs(m) < BIAIS_MIN_MS || Math.abs(m) > BIAIS_MAX_MS) return null;
+  const dispersion = medianeDesEcarts(ecarts.map((e) => Math.abs(e - m)));
+  return dispersion <= DISPERSION_MAX_MS ? m : null;
+}
+
 /* Écart signé d'une frappe au clic le plus proche d'un métronome régulier.
  *
  * Sert au calibrage : `t`, `debut` et `intervalle` sont en secondes sur

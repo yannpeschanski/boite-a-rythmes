@@ -48,6 +48,25 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le retard d'un casque Bluetooth se corrige tout seul (2026-10-14)
+
+Yann, casque Bluetooth sur Firefox : sur guitoro.com « pas de pb de latence ».
+Le casque y retarde autant le son (~180 ms) ; la différence est que guitoro ne
+NOTE rien. Firefox + Bluetooth déclare ~22 ms (PLAN, enquête latence) : notre
+chrono retranchait 22 ms, le joueur pile à l'oreille était compté ~160 ms en
+retard, au-delà des ±130 de tolérance. Le tampon élargi (`tampon.ts`) n'y est
+pour rien : il ne bascule qu'au-delà de 100 ms déclarés.
+
+- `exercises.ts` : `biaisAppareil` — au moins 4 frappes, médiane entre 25 et
+  300 ms, dispersion ≤ 50 ms. Constant = l'appareil ; éparpillé = du placement ;
+  au-delà de 300 = un contretemps. Six cas testés.
+- `GameView.svelte` : appliqué à la frappe (`latence.affiner`, additif), frappes
+  effacées, une ligne le dit (« Ton appareil retarde le son de n ms — c'est
+  corrigé »). Le bouton « 🎚 Toujours n ms en retard » disparaît.
+
+Limite assumée : un joueur qui traîne de façon parfaitement régulière est
+corrigé comme un appareil.
+
 ### ✅ Le premier exercice allégé — la latence ne se règle plus d'avance (2026-10-14)
 
 Yann : « on est un peu perdu devant la masse de texte et boutons dans ce niveau
