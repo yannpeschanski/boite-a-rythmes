@@ -11,7 +11,6 @@
   import { AudioEngine } from './engine/AudioEngine';
   import { game } from './stores/game.svelte';
   import { latence } from './ui/latence.svelte';
-  import { synchroImage } from './ui/synchroImage.svelte';
   import { sortie } from './ui/sortie.svelte';
   import { pattern } from './stores/pattern.svelte';
   import { loadFromHash } from './stores/share';
@@ -32,9 +31,6 @@
     // de l'Atelier) : il se charge une fois, au démarrage, pas dans l'écran qui
     // s'en sert en premier.
     latence.charger();
-    // Le décalage image/son, propriété de l'appareil comme le précédent : posé
-    // avant que la moindre grille ne s'allume.
-    synchroImage.charger();
     // Même domicile, même moment : le tampon de sortie est lui aussi une
     // propriété de l'appareil, et il doit être posé AVANT le premier
     // AudioContext — celui-ci naît au premier son, donc après ce onMount.

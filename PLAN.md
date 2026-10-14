@@ -67,25 +67,18 @@ Arbitré (option recommandée) : écouter puis poser, sans chrono.
 
 Vérifié : carrière rejouée de bout en bout (`parcours-carriere.cjs`, aucune
 erreur console) ; premier écran mesuré en 390 × 844, sans débordement.
-### ✅ La synchro image / son — la case allumée suit enfin le casque (2026-10-14)
+### ↩️ La synchro image / son — essayée puis retirée (2026-10-14)
 
-Yann, après l'acte 0 en grilles : « le Bluetooth est totalement décalé du
-balayage visuel et ça rend la lecture du rythme bancale, ce n'est pas normal
-et c'est censé être gérable ». Ce n'était pas une régression : la case a
-toujours suivi le retard DÉCLARÉ (`audioTime()`), qui ment au casque (Firefox :
-22 ms pour ~180). Ça se voyait peu tant qu'on tapait ; l'acte 0 se LIT
-maintenant sur la grille.
+Livrée dans #234 (panneau : une case clignote sur un clic, curseur −150 à
++400 ms et pas de ±10 ms, crochet `AudioEngine.decalageImage` dans
+`consumePlayhead`). Verdict de Yann : « c'est imbitable ton truc » → « tout
+retirer ». Retiré en entier : store, panneau, crochet, entrées du Mode jeu et
+de l'Atelier, test. L'acte 0 en grilles, livré dans la même PR, reste.
 
-- `ui/synchroImage.svelte.ts` : réglage persistant (−150 à +400 ms), propriété
-  de l'appareil ; pose `AudioEngine.decalageImage`.
-- `AudioEngine.consumePlayhead` retranche ce décalage — les trois vues d'un
-  coup. `metronome()` rend aussi `programme` (heure du premier clic sur
-  l'horloge des grilles), pour que le panneau allume sa case comme elles.
-- `ui/xp/SynchroImage.svelte` : une case clignote sur un clic à 80 bpm, curseur
-  + ±10 ms, aucun geste mesuré (la dalle n'entre pas dans le réglage).
-- Entrées ÉCRITES : « 🎧 Synchro image / son » en pied d'exercice (verbes à
-  grille) et dans le menu Vue de l'Atelier.
-- `tests/synchro-image.test.ts` : le réglage atteint `consumePlayhead`.
+Ce qui reste vrai : la case allumée suit le retard DÉCLARÉ, donc elle est en
+avance au casque Bluetooth (~160 ms sur Firefox). Pistes non retenues à ce
+jour : un interrupteur « casque » (+150 ms d'un coup), ou ne plus faire défiler
+la case pendant l'écoute.
 
 ### ✅ Une reproduction repart de la grille de la précédente (2026-10-14)
 

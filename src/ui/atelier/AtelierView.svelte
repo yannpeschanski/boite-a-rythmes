@@ -16,7 +16,6 @@
   import type { DrumRowName, DrumStep, SynthRowName } from '../../model/types';
   import XpWindow from '../xp/XpWindow.svelte';
   import CalibrageLatence from '../xp/CalibrageLatence.svelte';
-  import SynchroImage from '../xp/SynchroImage.svelte';
   import XpSlider from '../xp/XpSlider.svelte';
   import XpTabs from '../xp/XpTabs.svelte';
   import DrumRowView from '../sequencer/DrumRowView.svelte';
@@ -412,10 +411,6 @@
      * (le panneau l'écoute) et un lancement de lecture (ce raccourci) : on
      * calibrerait le retard de l'appareil par-dessus le morceau qu'on vient
      * de démarrer sans le vouloir. Échap ferme, comme partout. */
-    if (synchro) {
-      if (e.key === 'Escape') synchro = false;
-      return;
-    }
     if (calibrage) {
       if (e.key === 'Escape') calibrage = false;
       return;
@@ -698,13 +693,6 @@
    * mesure serait faite sur des frappes calées à l'oreille sur autre chose.
    */
   let calibrage = $state(false);
-  /* La synchro image/son se règle sur un métronome nu : la lecture s'arrête,
-     pour la même raison que le calibrage. */
-  let synchro = $state(false);
-  function ouvrirSynchro() {
-    if (playing) void togglePlay();
-    synchro = true;
-  }
   function ouvrirCalibrage() {
     // ⚠️ `stop()` tout court passe le typecheck et ne fait PAS ce qu'on croit :
     // c'est `window.stop()`, qui interrompt le chargement de la page. Le
@@ -724,16 +712,6 @@
       <div class="modale-corps">
         <XpWindow title="Calibrage du décalage" icon="🎚" accent="teal">
           <CalibrageLatence {engine} onClose={() => (calibrage = false)} />
-        </XpWindow>
-      </div>
-    </div>
-  {/if}
-
-  {#if synchro}
-    <div class="modale" role="dialog" aria-modal="true" aria-label="Synchro image / son">
-      <div class="modale-corps">
-        <XpWindow title="Synchro image / son" icon="🎧" accent="teal">
-          <SynchroImage {engine} onClose={() => (synchro = false)} />
         </XpWindow>
       </div>
     </div>
@@ -821,7 +799,6 @@
     {onSwitchView}
     onLoadPreset={loadPreset}
     onLoadBank={loadBankEntry}
-    onSynchroImage={ouvrirSynchro}
     onExport={exportJson}
     onImport={() => fileInput.click()}
     onReset={() => {

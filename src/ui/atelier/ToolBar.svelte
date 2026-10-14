@@ -19,7 +19,6 @@
     onSwitchView,
     onLoadPreset,
     onLoadBank,
-    onSynchroImage,
     circleView = $bindable(false),
   }: {
     onExport: () => void;
@@ -33,8 +32,6 @@
     // n'écrit jamais dans `pattern`.
     onLoadPreset?: (p: SongPresetData, keepSynthAndTempo: boolean) => void;
     onLoadBank?: (id: string) => void;
-    // Réglage image/son : une surcouche de l'Atelier, comme le calibrage.
-    onSynchroImage?: () => void;
     circleView?: boolean;
   } = $props();
 
@@ -254,12 +251,6 @@
         <button onclick={() => choose(() => sortie.suivant())}
           >🎧 Sortie audio : {LIBELLES_SORTIE[sortie.preference]}</button
         >
-        {#if onSynchroImage}
-          <!-- À côté de la sortie : c'est l'autre réglage qui dépend du casque.
-               Écrit en toutes lettres — un réglage qu'aucun mot ne nomme
-               n'existe pas. -->
-          <button onclick={() => choose(onSynchroImage)}>🎧 Synchro image / son…</button>
-        {/if}
       </div>
     {/if}
   </div>
