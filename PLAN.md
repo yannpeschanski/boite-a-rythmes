@@ -48,6 +48,17 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une reproduction repart de la grille de la précédente (2026-10-14)
+
+Retour de jeu : *« un peu chiant de devoir cliquer sur les 16 hats à chaque
+niveau des actes rythme et groove »*. `startLevel` garde la proposition du
+dernier `reproduire` (`derniereProposition`, hors `$state`) et
+`reprendreProposition` la repose au suivant — même à travers un `regler` posé
+entre les deux (l'acte 2 alterne). Gardes : ligne par ligne à subdivision égale ;
+pas en rejouant le même niveau (après « voir la solution », il serait résolu) ;
+pas si la reprise égale la cible. Aucune case verrouillée. Seul `reproduire`
+en profite : `completer` a ses cases données. `tests/reprise-grille.test.ts`.
+
 ### ✅ Le rythme se note sans l'heure du son — fin de la latence au Mode jeu (2026-10-14)
 
 Yann : « le problème de latence, ça goûte la merde, je me sens empêtré dans

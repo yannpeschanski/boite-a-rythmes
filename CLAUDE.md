@@ -1021,6 +1021,12 @@ pratique — la recherche se fait par id depuis que `demarrerEtape` a cessé d'�
 positionnelle). **Un niveau ne se supprime jamais** — il cesse d'être cité.
 `tests/grilles-ecrites.test.ts` confronte chaque grille à son propre préambule.
 
+⚠️ **Une reproduction repart de la PROPOSITION de la précédente**
+(`reprendreProposition`, « cliquer les 16 hats à chaque niveau »). Ce que le
+joueur avait posé, jamais la cible ; ligne par ligne à subdivision égale ; ni en
+rejouant le même niveau, ni si la reprise résoudrait d'office.
+`tests/reprise-grille.test.ts`.
+
 ⚠️ **Un niveau ne promet pas ce qu'il ne pose pas.** `forceVariantCount` et
 `forceRollCount` étaient déclarés et lus par **personne** : les niveaux 5 et 8
 annonçaient un rim shot que la cible ne contenait jamais. Le forçage passe APRÈS

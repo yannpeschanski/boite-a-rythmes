@@ -1412,7 +1412,20 @@ class GameStore {
     if (i >= 0) this.startLevel(i);
   }
 
+  /* La dernière proposition d'un niveau `reproduire`, gardée pour le suivant.
+   * Hors `$state` : rien ne l'affiche, seul `startLevel` la lit. Elle survit à
+   * un niveau d'un autre verbe posé entre deux reproductions (l'acte 2 alterne
+   * « régler » et « reproduire »). */
+  private derniereProposition: { id: number; guess: Grid; rolls: Rolls } | null = null;
+
   startLevel(index: number): void {
+    if (this.level.exercise === 'reproduire') {
+      this.derniereProposition = {
+        id: this.level.id,
+        guess: $state.snapshot(this.guess) as Grid,
+        rolls: $state.snapshot(this.guessRolls) as Rolls,
+      };
+    }
     this.levelIndex = Math.max(0, Math.min(LEVELS.length - 1, index));
     const cfg = this.level;
     /* ⚠️ On revient TOUJOURS au moniteur de studio en changeant de niveau.
@@ -1513,6 +1526,7 @@ class GameStore {
     this.voice = voiceForLevel(cfgEffectif, presets);
     this.guess = emptyGrid(this.subdiv);
     this.guessRolls = emptyRolls(this.subdiv);
+    this.reprendreProposition();
     this.locked = {
       kick: new Array(this.subdiv.kick).fill(false),
       snare: new Array(this.subdiv.snare).fill(false),
@@ -1526,6 +1540,35 @@ class GameStore {
     this.solved = false;
     this.lastResult = null;
     this.preparerExercice();
+  }
+
+  /* Une reproduction repart de la proposition de la précédente.
+   *
+   * Demande de jeu : *« un peu chiant de devoir cliquer sur les 16 hats à
+   * chaque niveau »* — d'une grille à l'autre des actes 1 et 2, le charley
+   * bouge peu, le reposer case par case est du transport. Ce qu'on reprend est
+   * ce que le JOUEUR avait posé, jamais la cible : la grille reste à corriger.
+   *
+   * Trois gardes : ligne par ligne, seulement si la subdivision est la même
+   * (une ligne de 12 n'a rien à faire sur une de 16) ; jamais en rejouant le
+   * MÊME niveau (sa proposition, souvent juste, l'aurait résolu d'office) ; et
+   * jamais si la reprise tombe pile sur la cible — un niveau gagné avant le
+   * premier clic n'est pas un exercice. Les cases ne sont pas verrouillées :
+   * seul `verify` verrouille, et seulement ce qui est juste. */
+  private reprendreProposition(): void {
+    const prec = this.derniereProposition;
+    if (this.level.exercise !== 'reproduire' || !prec || prec.id === this.level.id) return;
+    const guess = emptyGrid(this.subdiv);
+    const rolls = emptyRolls(this.subdiv);
+    GAME_DRUM_ROWS.forEach((n) => {
+      if (prec.guess[n]?.length !== this.subdiv[n]) return;
+      guess[n] = [...prec.guess[n]];
+      rolls[n] = [...prec.rolls[n]];
+    });
+    const { exact } = comparerGrilles(this.target, this.targetRolls, guess, rolls, GAME_DRUM_ROWS);
+    if (exact) return;
+    this.guess = guess;
+    this.guessRolls = rolls;
   }
 
   /* Met en place ce que le verbe du niveau demande, une fois la cible tirée.
