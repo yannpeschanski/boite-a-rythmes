@@ -1606,7 +1606,9 @@
             {#if enPrecompte}
               <span class="decompte">{clicPrecompte || 4}</span>
             {:else if enregistre}
-              FRAPPE
+              <!-- Le bouton dit QUAND taper, pas seulement quoi : « FRAPPE »
+                   seul laissait demander « taper quand ? ». -->
+              TAPE<span class="pad-quand">en même temps que chaque coup</span>
             {:else if playingWhat === 'target'}
               écoute — « ⏺ Jouer » quand tu l’as
             {:else}
@@ -1668,6 +1670,14 @@
             <!-- Un biais franc et constant n'est pas un défaut de placement,
                  c'est de la latence : la partie qui vient d'être jouée EST une
                  mesure, autant s'en servir plutôt que de refaire un calibrage. -->
+            <!-- ⚠️ C'est le MÊME réglage que 🎚 Latence, pris sur ce qu'on vient
+                 de jouer au lieu d'un métronome — l'écran doit le dire, sinon
+                 on cherche « la différence avec le bouton latence » (retour
+                 de testeur, 2026-10-14). -->
+            <p class="muted compenser">
+              Toutes tes frappes tombent du même côté : c’est le délai de ton appareil, pas toi.
+              Ce bouton règle la 🎚 Latence d’après ce que tu viens de jouer.
+            </p>
             <button
               class="xp-btn"
               onclick={() => {
@@ -1678,7 +1688,7 @@
                 stopAll();
               }}
             >
-              🎚 Compenser ce décalage ({game.decalageMedian() > 0 ? '+' : ''}{game.decalageMedian()}&nbsp;ms)
+              🎚 Régler la latence ({game.decalageMedian() > 0 ? '+' : ''}{game.decalageMedian()}&nbsp;ms)
             </button>
           {/if}
         </div>
@@ -2613,6 +2623,15 @@
   .pad.precompte {
     color: var(--xp-playhead);
     cursor: default;
+  }
+  .pad-quand {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--xp-size-small);
+    letter-spacing: var(--xp-ls-tag);
+  }
+  .compenser {
+    margin: 8px 0 4px;
   }
   .decompte {
     font-size: 40px;

@@ -1419,7 +1419,10 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * calibrage dès que quatre frappes tombent du même côté de plus de 25 ms. */
   mkLevel(64, 'Le temps', {
     exercise: 'jouer', jouerIndice: 'ecoute',
-    preamble: "Quatre coups, un par temps, rien d'autre. Écoute la boucle autant de fois que tu veux, puis « ⏺ Jouer » : quatre clics de précompte te donnent le tempo, et tu tapes avec le kick. Si toutes tes frappes tombent du même côté, le bouton 🎚 Latence règle le retard de ton appareil une fois pour toutes.",
+    // ⚠️ Écrit pour quelqu'un qui n'a jamais touché une boîte à rythmes : ni
+    // « kick » ni « précompte » — « tape avec le kick » se lisait « taper
+    // quand ? ». Le geste est dit en premier, le reste ensuite.
+    preamble: "Ton geste : taper sur le gros bouton EN MÊME TEMPS que chaque coup que tu entends. Quatre coups par tour, réguliers. Écoute autant que tu veux, puis « ⏺ Jouer » : quatre clics pour compter, et dès le coup suivant, tu tapes avec. Si tu tapes juste mais que l'écran te dit en retard, c'est ton appareil : 🎚 Latence le corrige.",
     // Le tempo reste tiré (deux valeurs) : ce n'est pas lui qu'on enseigne, et
     // la tolérance de placement est absolue (±130 ms), donc il ne change pas la
     // note — seulement le confort. 76-84, l'allure d'un pas.
@@ -1443,7 +1446,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     } }),
   mkLevel(66, 'À vue', {
     exercise: 'jouer', jouerIndice: 'lecture',
-    preamble: "Cette fois le kick est MUET : tu vois le motif dessiné, tu ne l'entends pas. Le charley te donne la pulsation — huit croches régulières — et le contretemps a changé de place. Écoute d'abord si tu veux, puis « ⏺ Jouer ».",
+    preamble: "Cette fois le coup grave (le kick) est MUET : tu vois le motif dessiné, tu ne l'entends pas. Le charley (le « tss » aigu) te donne la pulsation — huit croches régulières — et le contretemps a changé de place. Écoute d'abord si tu veux, puis « ⏺ Jouer ».",
     // Plus lent que le 65 : lire un motif ET le jouer, ce sont deux choses.
     tempoOptions: [72, 80],
     grille: {
