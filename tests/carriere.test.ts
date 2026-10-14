@@ -1722,7 +1722,7 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
   });
 
   /* ⚠️ Il ne cite QUE des niveaux « jouer », et c'est le fond de l'acte :
-   * `justesseDesFrappes` retient la meilleure fenêtre consécutive et non la
+   * `justesseDuRythme` retient la meilleure fenêtre consécutive et non la
    * moyenne du tour, donc la notation pardonne un début raté et récompense la
    * reprise. C'est mot pour mot ce que Sol répond — « Tu te planteras. Mais
    * maintenant tu sais quoi faire après. » */

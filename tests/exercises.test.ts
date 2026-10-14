@@ -10,14 +10,13 @@ import {
   comparerGrilles,
   colonnesDeTranche,
   ecartAuClic,
-  ecartAuCoup,
-  justesseDesFrappes,
   jouerGagne,
   coupsPourValider,
   SEUIL_JUSTESSE,
   COUPS_POUR_VALIDER,
   medianeDesEcarts,
-  biaisAppareil,
+  justesseDuRythme,
+  DECALAGE_MAX_MS,
   PARFAIT_MS,
   TOLERANCE_MS,
   LAVERIE_DRIVES,
@@ -105,66 +104,35 @@ describe('colonnesDeTranche — chaque ligne a sa propre subdivision', () => {
   });
 });
 
-describe('ecartAuCoup — en retard sur le précédent ou en avance sur le suivant', () => {
-  it('juste après le coup : en retard, écart positif', () => {
-    expect(ecartAuCoup(30, 500)).toBe(30);
+describe('la fenêtre de la note — une mesure propre suffit, d’affilée', () => {
+  const CYCLE = 3000;
+  const QUATRE = [0, 0.25, 0.5, 0.75];
+  const frappes = (ecarts: number[]) =>
+    ecarts.map((e, i) => ((((QUATRE[i % 4] * CYCLE + e) / CYCLE) % 1) + 1) % 1);
+
+  it('parfait sous le seuil d’indiscernable', () => {
+    expect(justesseDuRythme(frappes([0, PARFAIT_MS, -PARFAIT_MS, 0]), QUATRE, CYCLE, 4).justesse).toBe(100);
   });
 
-  it('juste avant le suivant : en avance, écart négatif', () => {
-    expect(ecartAuCoup(470, 500)).toBe(-30);
-  });
-
-  it('le basculement se fait à la moitié, pas ailleurs', () => {
-    expect(ecartAuCoup(250, 500)).toBe(250);
-    expect(ecartAuCoup(251, 500)).toBe(-249);
-  });
-});
-
-describe('justesseDesFrappes — ce qui distingue « au bon endroit » de « au bon moment »', () => {
-  it('parfait sous le seuil d’indiscernable, nul au-delà de la tolérance', () => {
-    expect(justesseDesFrappes([0, PARFAIT_MS, -PARFAIT_MS], 3)).toBe(100);
-    expect(justesseDesFrappes([TOLERANCE_MS, -TOLERANCE_MS, 300], 3)).toBe(0);
-  });
-
-  it('une seule frappe très juste ne suffit pas quand trois sont attendues', () => {
-    // Sans le diviseur « au moins le nombre attendu », ce serait 100 % — et
-    // le niveau se gagnerait en tapant une fois puis en s’arrêtant.
-    expect(justesseDesFrappes([0], 3)).toBe(33);
-  });
-
-  /* ⚠️ Règle CHANGÉE le 2026-08-21, en connaissance de cause. L'ancienne
-   * assertion était « marteler le pad fait baisser la note » : la note
-   * moyennait tout le tour. Mais la boucle tourne en rond, et les tâtonnements
-   * des premières mesures plombaient définitivement le résultat — on ne pouvait
-   * jamais réussir UNE mesure, seulement diluer ses erreurs. C'était la vraie
-   * raison pour laquelle les niveaux paraissaient impossibles. */
-  it('une mesure propre suffit : les tâtonnements d’avant ne la plombent pas', () => {
-    const attendues = 3;
-    // Trois frappes ratées, puis trois parfaites : c'est une réussite.
-    expect(justesseDesFrappes([300, 300, 300, 0, 0, 0], attendues)).toBe(100);
-    // Et l'inverse aussi : on a réussi, puis on s'est relâché.
-    expect(justesseDesFrappes([0, 0, 0, 300, 300, 300], attendues)).toBe(100);
+  /* ⚠️ Règle CHANGÉE le 2026-08-21 : la note moyennait tout le tour, et les
+   * tâtonnements des premières mesures la plombaient pour toujours. */
+  it('les tâtonnements d’avant ne plombent pas une mesure propre', () => {
+    const n = justesseDuRythme(frappes([200, -200, 200, -200, 0, 0, 0, 0]), QUATRE, CYCLE, 4);
+    expect(n.justesse).toBe(100);
   });
 
   it('la fenêtre est CONSÉCUTIVE : des bonnes frappes éparpillées ne suffisent pas', () => {
-    // Prendre « les meilleures où qu'elles soient » récompenserait le
-    // martèlement. Ici trois frappes parfaites existent, mais jamais d'affilée.
-    const eparpille = justesseDesFrappes([0, 300, 0, 300, 0, 300], 3);
-    const daffilee = justesseDesFrappes([0, 0, 0, 300, 300, 300], 3);
-    expect(eparpille).toBeLessThan(daffilee);
-    // Et sous le seuil : éparpillées, ces frappes ne valident pas le niveau.
-    // Le chiffre se lit sur `SEUIL_JUSTESSE` — recopié, ce test cesserait de
-    // dire ça le jour où le seuil bouge.
-    expect(eparpille).toBeLessThan(SEUIL_JUSTESSE);
+    const eparpille = justesseDuRythme(frappes([0, 200, 0, -200, 0, 200, 0, -200]), QUATRE, CYCLE, 4);
+    expect(eparpille.justesse).toBeLessThan(SEUIL_JUSTESSE);
   });
 
-  it('décroît linéairement entre les deux seuils', () => {
-    const milieu = (PARFAIT_MS + TOLERANCE_MS) / 2;
-    expect(justesseDesFrappes([milieu], 1)).toBe(50);
+  it('au-delà de la tolérance, une frappe ne vaut rien', () => {
+    const milieu = justesseDuRythme(frappes([0, 0, 0, TOLERANCE_MS + 50]), QUATRE, CYCLE, 4).justesse;
+    expect(milieu).toBeLessThanOrEqual(75);
   });
 
   it('renvoie 0 si rien n’est attendu — jamais une division par zéro', () => {
-    expect(justesseDesFrappes([0, 0], 0)).toBe(0);
+    expect(justesseDuRythme([0, 0], QUATRE, CYCLE, 0).justesse).toBe(0);
   });
 });
 
@@ -200,7 +168,7 @@ describe('jouerGagne — la validation se déclenche toute seule, et elle ne dur
   });
 
   /* ⚠️ LE test de cette famille : c'est lui qui dit que le compte de dix
-   * RETARDE la victoire sans jamais l'interdire. `justesseDesFrappes` retient
+   * RETARDE la victoire sans jamais l'interdire. `justesseDuRythme` retient
    * la MEILLEURE fenêtre, donc elle ne peut que monter quand on ajoute une
    * frappe — une mesure propre jouée au quatrième coup est encore là au
    * dixième. Si cette propriété tombait, le compte deviendrait un durcissement
@@ -213,13 +181,14 @@ describe('jouerGagne — la validation se déclenche toute seule, et elle ne dur
   it('ajouter une frappe ne fait JAMAIS baisser la justesse', () => {
     for (let n = 0; n < 60; n++) {
       const attendues = 2 + Math.floor(Math.random() * 6);
-      const ecarts: number[] = [];
-      let avant = justesseDesFrappes(ecarts, attendues);
+      const coups = Array.from({ length: attendues }, (_, i) => i / attendues);
+      const phases: number[] = [];
+      let avant = justesseDuRythme(phases, coups, 3000, attendues).justesse;
       for (let i = 0; i < 24; i++) {
-        // Toute la plage, des frappes parfaites aux frappes hors tolérance.
-        ecarts.push((Math.random() * 2 - 1) * 300);
-        const apres = justesseDesFrappes(ecarts, attendues);
-        expect(apres, `${attendues} attendues, ${ecarts.length} frappes`).toBeGreaterThanOrEqual(avant);
+        // N'importe où dans la mesure : des frappes justes aux frappes perdues.
+        phases.push(Math.random());
+        const apres = justesseDuRythme(phases, coups, 3000, attendues).justesse;
+        expect(apres, `${attendues} attendues, ${phases.length} frappes`).toBeGreaterThanOrEqual(avant);
         avant = apres;
       }
     }
@@ -262,7 +231,6 @@ describe('medianeDesEcarts — le diagnostic que la justesse ne donne pas', () =
     // premier est de la latence, le second de l’imprécision.
     const traine = [60, 62, 58, 61];
     const disperse = [60, -62, 58, -61];
-    expect(justesseDesFrappes(traine, 4)).toBe(justesseDesFrappes(disperse, 4));
     expect(medianeDesEcarts(traine)).toBeGreaterThan(50);
     expect(Math.abs(medianeDesEcarts(disperse))).toBeLessThan(10);
   });
@@ -689,26 +657,71 @@ describe('les niveaux tiennent ce que leur consigne annonce', () => {
   });
 });
 
-/* Firefox + Bluetooth déclare ~22 ms pour ~180 réels : un joueur pile dans le
-   temps à l'oreille était noté 160 ms en retard. La correction est automatique,
-   donc elle doit reconnaître un retard d'APPAREIL — constant — et rien d'autre. */
-describe('biaisAppareil — le retard de la sortie, reconnu sans bouton', () => {
-  it('reconnaît un retard constant (casque Bluetooth)', () => {
-    expect(biaisAppareil([158, 171, 149, 166, 162])).toBe(162);
+/* Le rythme se note SANS l'heure du son : un retard constant d'appareil
+   (casque Bluetooth, dalle tactile) ne doit rien coûter, et rien d'autre ne
+   doit passer pour lui. */
+describe('justesseDuRythme — la place des frappes les unes par rapport aux autres', () => {
+  const CYCLE = 3000; // une mesure à 80 bpm
+  const QUATRE = [0, 0.25, 0.5, 0.75];
+  const CONTRETEMPS = [0, 0.25, 0.375, 0.5, 0.75]; // le niveau 65
+  const jouer = (coups: number[], tours: number, retardMs: number, bruit: (i: number) => number = () => 0) => {
+    const out: number[] = [];
+    for (let t = 0; t < tours; t++)
+      for (const c of coups) out.push(((((c * CYCLE + retardMs + bruit(out.length)) / CYCLE) % 1) + 1) % 1);
+    return out;
+  };
+
+  it('pile dans le temps : 100 %', () => {
+    expect(justesseDuRythme(jouer(QUATRE, 3, 0), QUATRE, CYCLE, 4).justesse).toBe(100);
   });
-  it('ne dit rien avant quatre frappes', () => {
-    expect(biaisAppareil([160, 160, 160])).toBeNull();
+
+  it('un casque Bluetooth (180 ms constants) ne coûte rien, et le décalage est retrouvé', () => {
+    const n = justesseDuRythme(jouer(QUATRE, 3, 180), QUATRE, CYCLE, 4);
+    expect(n.justesse).toBe(100);
+    expect(n.decalageMs).toBe(180);
+    expect(n.ecarts.every((e) => Math.abs(e) < 1)).toBe(true);
   });
-  it('ne corrige pas un joueur déjà centré', () => {
-    expect(biaisAppareil([5, -12, 8, -3, 10])).toBeNull();
+
+  it('le contretemps aussi, avec un retard plus grand que la moitié de son plus petit écart', () => {
+    // 375 ms entre le 2e temps et son « et » : comparé à l'heure du son, un
+    // retard de 250 ms faisait attribuer la frappe au mauvais coup.
+    expect(justesseDuRythme(jouer(CONTRETEMPS, 3, 250), CONTRETEMPS, CYCLE, 5).justesse).toBe(100);
   });
-  it('ne corrige pas des frappes éparpillées — c’est du placement', () => {
-    expect(biaisAppareil([40, 210, 90, 280, 130])).toBeNull();
+
+  it('oublier le contretemps coûte une note sur cinq : le motif se lit DANS L’ORDRE', () => {
+    // L'ancienne notation (« le coup le plus proche ») donnait 100 % aux
+    // quatre temps seuls. Lu dans l'ordre, le coup oublié vaut zéro.
+    // ⚠️ Limite connue, hors de cette règle : 4/5 = 80 %, pile le seuil.
+    const n = justesseDuRythme(jouer(QUATRE, 4, 0), CONTRETEMPS, CYCLE, 5);
+    expect(n.justesse).toBeLessThanOrEqual(80);
   });
-  it('ne corrige pas un joueur qui tape à contretemps', () => {
-    expect(biaisAppareil([380, 372, 390, 385])).toBeNull();
+
+  it('taper toujours le même coup ne passe pas', () => {
+    expect(justesseDuRythme(Array(12).fill(0.1), QUATRE, CYCLE, 4).justesse).toBeLessThan(SEUIL_JUSTESSE);
   });
-  it('reconnaît aussi une avance constante', () => {
-    expect(biaisAppareil([-80, -92, -75, -85])).toBeLessThan(0);
+
+  it('des frappes éparpillées restent mal notées : le décalage ne rattrape qu’une constante', () => {
+    const alterne = jouer(QUATRE, 3, 0, (i) => (i % 2 ? 200 : -200));
+    expect(justesseDuRythme(alterne, QUATRE, CYCLE, 4).justesse).toBeLessThan(SEUIL_JUSTESSE);
+  });
+
+  it('un contretemps systématique (un demi-temps) n’est pas un retard d’appareil', () => {
+    expect(CYCLE / 8).toBeGreaterThan(DECALAGE_MAX_MS);
+    const aContreTemps = jouer(QUATRE, 3, CYCLE / 8);
+    expect(justesseDuRythme(aContreTemps, QUATRE, CYCLE, 4).justesse).toBeLessThan(SEUIL_JUSTESSE);
+  });
+
+  it('ajouter une frappe ne fait jamais baisser la note', () => {
+    const frappes = jouer(QUATRE, 6, 120, (i) => ((i * 37) % 160) - 80);
+    let avant = 0;
+    for (let k = 1; k <= frappes.length; k++) {
+      const n = justesseDuRythme(frappes.slice(0, k), QUATRE, CYCLE, 4).justesse;
+      expect(n).toBeGreaterThanOrEqual(avant);
+      avant = n;
+    }
+  });
+
+  it('une seule frappe juste ne vaut pas 100 %', () => {
+    expect(justesseDuRythme([0], QUATRE, CYCLE, 4).justesse).toBe(25);
   });
 });

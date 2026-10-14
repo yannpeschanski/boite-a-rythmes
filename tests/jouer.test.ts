@@ -15,6 +15,14 @@ function niveauDeVerbe(exercise: string, indice?: string): number {
   return LEVELS.findIndex((l) => l.exercise === exercise && (!indice || l.jouerIndice === indice));
 }
 
+/* Une frappe posée sur le k-ième coup du motif, décalée de `retardMs` — comme
+   un vrai joueur, qui tape les coups dans l'ordre. */
+function frapperLeCoup(k: number, retardMs = 0): void {
+  const n = game.subdiv.kick;
+  const coups = game.target.kick.flatMap((v, i) => (v > 0 ? [i / n] : []));
+  game.enregistrerFrappe(coups[k % coups.length] + retardMs / (240000 / game.tempo));
+}
+
 describe('« jouer » — un seul canal à la fois', () => {
   beforeEach(() => {
     game.pseudo = 'test';
@@ -101,9 +109,9 @@ describe('« jouer » — un seul canal à la fois', () => {
    */
   it('dix frappes propres valident sans qu’on clique rien', () => {
     game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
-    for (let i = 0; i < game.coupsAValider - 1; i++) game.enregistrerFrappe(0, 0.1);
+    for (let i = 0; i < game.coupsAValider - 1; i++) frapperLeCoup(i);
     expect(game.jouerPret(), 'une frappe avant le compte : pas encore').toBe(false);
-    game.enregistrerFrappe(0, 0.1);
+    frapperLeCoup(game.coupsAValider - 1);
     expect(game.jouerPret()).toBe(true);
     expect(game.verify()).toBe(true);
     expect(game.solved).toBe(true);
@@ -115,7 +123,7 @@ describe('« jouer » — un seul canal à la fois', () => {
      * dix essais, une étoile au lieu de trois (`starsForAttempts`) et un roast
      * qui parle de dizaines de tentatives. */
     game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
-    for (let i = 0; i < game.coupsAValider; i++) game.enregistrerFrappe(0, 0.1);
+    for (let i = 0; i < game.coupsAValider; i++) frapperLeCoup(i);
     game.verify();
     expect(game.attempts).toBe(1);
     expect(game.lastResult?.stars).toBe(3);
@@ -134,7 +142,7 @@ describe('« jouer » — un seul canal à la fois', () => {
 
   it('marteler à côté ne valide jamais, même en jouant longtemps', () => {
     game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
-    for (let i = 0; i < 40; i++) game.enregistrerFrappe(i % 2 ? 300 : -300, 0.5);
+    for (let i = 0; i < 40; i++) frapperLeCoup(i, i % 2 ? 200 : -200);
     expect(game.jouerPret()).toBe(false);
     expect(game.verify()).toBe(false);
   });
@@ -143,13 +151,13 @@ describe('« jouer » — un seul canal à la fois', () => {
     // Le garde-fou de câblage : `jouerPret` est interrogé après chaque frappe,
     // et une frappe peut arriver sur n'importe quel niveau chargé.
     game.startLevel(0); // niveau 1, « reproduire »
-    for (let i = 0; i < 20; i++) game.enregistrerFrappe(0, 0.1);
+    for (let i = 0; i < 20; i++) game.enregistrerFrappe(0.1);
     expect(game.jouerPret()).toBe(false);
   });
 
   it('un niveau déjà gagné ne se revalide pas', () => {
     game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
-    for (let i = 0; i < game.coupsAValider; i++) game.enregistrerFrappe(0, 0.1);
+    for (let i = 0; i < game.coupsAValider; i++) frapperLeCoup(i);
     game.verify();
     expect(game.jouerPret(), 'sinon chaque frappe de plus rappellerait le carillon').toBe(false);
   });
@@ -157,11 +165,23 @@ describe('« jouer » — un seul canal à la fois', () => {
   it('effacer les frappes remet la justesse à zéro, pas le compte attendu', () => {
     game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
     const attendues = game.frappesAttendues;
-    game.enregistrerFrappe(5, 0.1);
-    game.enregistrerFrappe(-8, 0.6);
+    frapperLeCoup(0);
+    frapperLeCoup(1);
     expect(game.justesse()).toBeGreaterThan(0);
     game.reinitialiserFrappes();
     expect(game.justesse()).toBe(0);
     expect(game.frappesAttendues).toBe(attendues);
+  });
+});
+
+/* ⚠️ Arbitré le 2026-10-14 : la note ne lit plus l'heure du son. Ce test tient
+   le CÂBLAGE (le calcul est dans `tests/exercises.test.ts`) : un joueur pile
+   dans le temps, entendu 180 ms en retard par son casque, valide quand même. */
+describe('« jouer » — un retard d’appareil ne coûte rien', () => {
+  it('un casque Bluetooth (180 ms) valide comme un joueur sans retard', () => {
+    game.startLevel(niveauDeVerbe('jouer', 'ecoute'));
+    for (let i = 0; i < game.coupsAValider; i++) frapperLeCoup(i, 180);
+    expect(game.justesse()).toBe(100);
+    expect(game.jouerPret()).toBe(true);
   });
 });

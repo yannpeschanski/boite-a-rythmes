@@ -48,6 +48,32 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le rythme se note sans l'heure du son — fin de la latence au Mode jeu (2026-10-14)
+
+Yann : « le problème de latence, ça goûte la merde, je me sens empêtré dans
+cette problématique » → « je suis tes recommandations ». Trois PR le même jour
+(bouton, puis correction tirée des frappes, puis correction automatique) pour
+rattraper un chiffre que le navigateur ne connaît pas. On ne le rattrape plus.
+
+- `exercises.ts` : `justesseDuRythme(phases, coups, cycleMs, attendues)`. Une
+  frappe n'est plus qu'une PLACE dans la mesure. Chaque fenêtre consécutive
+  (au plus un cycle) cherche le décalage constant ≤ 300 ms qui la cale le mieux
+  (pas de 5 ms), et se lit dans l'ORDRE du motif. Meilleure fenêtre retenue,
+  donc monotone (testé sur 60 tirages). Retirés : `justesseDesFrappes`,
+  `biaisAppareil`, `ecartAuCoup`.
+- `game.svelte.ts` : `enregistrerFrappe(phase01)`, `rythme()` mémoïsé par
+  tableau de frappes ; `decalageMedian` retiré.
+- `GameView.svelte` : plus de `latence` ; les frappes s'affichent décalage
+  retiré, comme elles sont notées.
+- Gagné en route : lu au plus proche, les quatre temps donnaient 100 % au niveau
+  65 ; lus dans l'ordre, 80 %.
+
+**Limite connue, non traitée** : un coup oublié sur un motif de cinq = 80 %,
+pile `SEUIL_JUSTESSE`. C'est un réglage de seuil, pas de latence.
+
+Vérifié dans le navigateur : dix frappes régulières à un décalage quelconque
+valident à 100 %.
+
 ### ✅ Le retard d'un casque Bluetooth se corrige tout seul (2026-10-14)
 
 Yann, casque Bluetooth sur Firefox : sur guitoro.com « pas de pb de latence ».
