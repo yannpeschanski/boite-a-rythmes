@@ -147,8 +147,8 @@ un autre navigateur qu'il faut ; tampon bas mais mesure haute → c'est la route
 DÉCLENCHE (Synthé, Mode Live) et nomme la cause ; là où l'on MESURE (les
 niveaux `jouer`), rien d'avance — ni rappel ni bouton 🎚 Latence, retirés le
 2026-10-14 (« on est un peu perdu devant la masse de texte et boutons ») : la
-partie jouée EST la mesure, et la correction n'apparaît que quand elle a vu un
-biais. Le calibrage complet reste dans l'Atelier et `#diag`. ⚠️ Dans le Live, l'avis vit dans
+partie jouée EST la mesure, et la correction se fait seule dès qu'elle a vu un
+biais constant. Le calibrage complet reste dans l'Atelier et `#diag`. ⚠️ Dans le Live, l'avis vit dans
 `.live-root` et non dans `.live`, qui est une grille où un enfant de plus décale
 les rangées (mesuré : 6→22, 26→80, 132→384, identiques avec et sans), et il
 emploie `messageLatenceCourt` — la forme longue descendait à 39 px et mordait sur
@@ -1005,8 +1005,10 @@ les niveaux 49-51 restent au RÉSERVOIR (leurs trois mots sont enseignés à l'a
 où les boutons existent) ; les niveaux 37/38 restent à l'acte 7 ; et le
 contretemps du 66 est ailleurs que celui du 65, sinon « à vue » se rejoue de
 mémoire. ⚠️ C'est le premier écran qui expose la LATENCE de l'appareil, et le
-calibrage n'y est **ni une porte ni un bouton** : seule la correction tirée
-des frappes apparaît, et seulement quand un biais est mesuré. ⚠️ La dernière image de l'épilogue
+calibrage n'y est **ni une porte ni un bouton** : un retard CONSTANT est
+corrigé tout seul et l'écran le dit (`biaisAppareil`) — Firefox + Bluetooth
+déclare 22 ms pour ~180, donc un joueur juste à l'oreille était noté en retard.
+Constant seulement : des frappes éparpillées sont du placement, pas un appareil. ⚠️ La dernière image de l'épilogue
 cite le premier exercice de l'acte 0 : son test la **dérive** au lieu de la graver.
 
 ⚠️ **Un exercice qui se joue UNE fois ne se tire pas au sort — `GrilleEcrite`.**
