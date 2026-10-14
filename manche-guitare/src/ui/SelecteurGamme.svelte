@@ -2,13 +2,17 @@
   import Manche from './Manche.svelte';
   import type { CelluleManche } from './types';
   import { ACCORDAGE_STANDARD, NB_CASES } from '../model/accordage';
-  import { GAMMES } from '../model/gammes';
+  import { GAMMES, FAMILLES_GAMMES } from '../model/gammes';
   import { nomNote, libelleDegre, accentDuDegre } from '../model/notes';
   import { notesDuManche, grouperParCorde, degreDansGamme } from '../engine/manche';
   import { choixGamme } from '../stores/selection.svelte';
 
   const toniques = Array.from({ length: 12 }, (_, i) => i);
   const grilleNotes = grouperParCorde(notesDuManche(ACCORDAGE_STANDARD, NB_CASES), ACCORDAGE_STANDARD.length);
+  const gammesParFamille = FAMILLES_GAMMES.map((famille) => ({
+    famille,
+    gammes: GAMMES.filter((g) => g.famille === famille),
+  }));
 
   let cellules: CelluleManche[][] = $derived(
     grilleNotes.map((corde) =>
@@ -38,8 +42,12 @@
   <label>
     Gamme
     <select bind:value={choixGamme.gamme}>
-      {#each GAMMES as gamme (gamme.id)}
-        <option value={gamme}>{gamme.nom}</option>
+      {#each gammesParFamille as { famille, gammes } (famille)}
+        <optgroup label={famille}>
+          {#each gammes as gamme (gamme.id)}
+            <option value={gamme}>{gamme.nom}</option>
+          {/each}
+        </optgroup>
       {/each}
     </select>
   </label>

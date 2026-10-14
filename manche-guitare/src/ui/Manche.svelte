@@ -12,6 +12,12 @@
   let { accordage, nbCases, cellules, onCliqueCellule }: Props = $props();
 
   const REPERES = [3, 5, 7, 9, 12];
+
+  // accordage est rangé du grave à l'aigu ; on l'affiche à l'envers (aigu en
+  // haut, grave en bas) pour retrouver la lecture d'une tablature.
+  let ordreAffichage = $derived(
+    Array.from({ length: accordage.length }, (_, i) => accordage.length - 1 - i),
+  );
 </script>
 
 <div class="manche" style={`--cols: ${nbCases + 1}`}>
@@ -21,7 +27,7 @@
       <div class="repere-case">{REPERES.includes(i + 1) ? '●' : ''}</div>
     {/each}
   </div>
-  {#each accordage as _, corde (corde)}
+  {#each ordreAffichage as corde (corde)}
     <div class="corde">
       {#each cellules[corde] as cellule, caseIdx (caseIdx)}
         <button

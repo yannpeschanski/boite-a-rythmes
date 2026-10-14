@@ -41,16 +41,20 @@ export interface Correspondance {
 }
 
 /**
- * Gammes du catalogue qui contiennent exactement les classes de notes données,
- * pour une tonique quelconque (0-11). Vide tant qu'aucune note n'est sélectionnée.
+ * Gammes du catalogue qui contiennent exactement les classes de notes données.
+ * Sans fondamentale imposée, essaie les douze toniques possibles ; avec une
+ * fondamentale, ne regarde que celle-là. Vide tant qu'aucune note n'est
+ * sélectionnée.
  */
 export function gammesCorrespondantes(
   notesSelectionnees: ClasseNote[],
   catalogue: Gamme[] = GAMMES,
+  fondamentale: ClasseNote | null = null,
 ): Correspondance[] {
   if (notesSelectionnees.length === 0) return [];
+  const toniques = fondamentale === null ? Array.from({ length: 12 }, (_, i) => i) : [mod12(fondamentale)];
   const resultats: Correspondance[] = [];
-  for (let tonique = 0; tonique < 12; tonique++) {
+  for (const tonique of toniques) {
     for (const gamme of catalogue) {
       const ensemble = new Set(gamme.intervalles);
       const correspond = notesSelectionnees.every((classe) => ensemble.has(mod12(classe - tonique)));

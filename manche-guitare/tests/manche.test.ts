@@ -70,9 +70,50 @@ describe('gammesCorrespondantes', () => {
   });
 
   it('un jeu de notes incompatible avec le catalogue ne renvoie rien', () => {
-    // les douze classes de notes : aucune gamme du catalogue n'en compte plus de sept
+    // les douze classes de notes : la plus fournie du catalogue (diminuée) n'en compte que huit
     const toutesLesClasses = Array.from({ length: 12 }, (_, i) => i);
     const resultats = gammesCorrespondantes(toutesLesClasses);
     expect(resultats).toEqual([]);
+  });
+
+  it('avec une fondamentale imposée, ne regarde que cette tonique', () => {
+    // Do-Mi-Sol correspond à Do majeur (entre autres) mais pas à Ré majeur
+    const resultats = gammesCorrespondantes([0, 4, 7], undefined, 0);
+    expect(resultats.every((r) => r.tonique === 0)).toBe(true);
+    expect(resultats.some((r) => r.gamme.id === majeure.id)).toBe(true);
+  });
+
+  it('une fondamentale incompatible avec les notes renvoie une liste vide', () => {
+    // Do-Mi-Sol ne peut pas être la gamme majeure de Ré (Ré majeur ne contient pas Do, Mi ni Sol naturels ensemble)
+    const resultats = gammesCorrespondantes([0, 4, 7], [majeure], 2);
+    expect(resultats).toEqual([]);
+  });
+});
+
+describe('catalogue des gammes', () => {
+  it('chaque gamme est triée, commence à 0 et ne contient pas de doublon', () => {
+    for (const gamme of GAMMES) {
+      expect(gamme.intervalles[0], `${gamme.id} doit commencer à 0`).toBe(0);
+      const triee = [...gamme.intervalles].sort((a, b) => a - b);
+      expect(gamme.intervalles, `${gamme.id} doit être trié`).toEqual(triee);
+      expect(new Set(gamme.intervalles).size, `${gamme.id} ne doit pas avoir de doublon`).toBe(
+        gamme.intervalles.length,
+      );
+      for (const demiTons of gamme.intervalles) {
+        expect(demiTons, `${gamme.id} doit rester entre 0 et 11`).toBeGreaterThanOrEqual(0);
+        expect(demiTons).toBeLessThanOrEqual(11);
+      }
+    }
+  });
+
+  it('chaque gamme appartient à une famille, et chaque id est unique', () => {
+    for (const gamme of GAMMES) {
+      expect(gamme.famille.length).toBeGreaterThan(0);
+    }
+    expect(new Set(GAMMES.map((g) => g.id)).size).toBe(GAMMES.length);
+  });
+
+  it('ne contient pas la gamme chromatique (elle correspondrait à tout, tout le temps)', () => {
+    expect(GAMMES.some((g) => g.intervalles.length === 12)).toBe(false);
   });
 });
