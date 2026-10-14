@@ -1413,16 +1413,18 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    * la grille est posée et régulière, là-bas elle est tirée.
    *
    * ⚠️ Et c'est le premier écran du jeu qui expose la LATENCE de l'appareil.
-   * Le calibrage est un bouton (🎚 Latence) et pas un passage obligé — le forcer
-   * ferait commencer le jeu par un réglage. Deux filets existent déjà : le
-   * préambule du 64 nomme le bouton, et l'écran propose de lui-même le
-   * calibrage dès que quatre frappes tombent du même côté de plus de 25 ms. */
+   * Il n'en parle PAS d'avance (2026-10-14, « on est un peu perdu devant la
+   * masse de texte et boutons ») : ni bouton 🎚 Latence, ni rappel, ni mot dans
+   * le préambule. Le seul filet est la correction qui apparaît sous la jauge
+   * quand quatre frappes tombent du même côté de plus de 25 ms — la partie
+   * jouée EST la mesure. Le préambule ne dit que le mécanisme : la consigne de
+   * Sol dit le geste, le pad le répète au moment où il compte. */
   mkLevel(64, 'Le temps', {
     exercise: 'jouer', jouerIndice: 'ecoute',
     // ⚠️ Écrit pour quelqu'un qui n'a jamais touché une boîte à rythmes : ni
     // « kick » ni « précompte » — « tape avec le kick » se lisait « taper
     // quand ? ». Le geste est dit en premier, le reste ensuite.
-    preamble: "Ton geste : taper sur le gros bouton EN MÊME TEMPS que chaque coup que tu entends. Quatre coups par tour, réguliers. Écoute autant que tu veux, puis « ⏺ Jouer » : quatre clics pour compter, et dès le coup suivant, tu tapes avec. Si tu tapes juste mais que l'écran te dit en retard, c'est ton appareil : 🎚 Latence le corrige.",
+    preamble: "Appuie sur « ⏺ Jouer » : quatre clics pour compter, puis à toi.",
     // Le tempo reste tiré (deux valeurs) : ce n'est pas lui qu'on enseigne, et
     // la tolérance de placement est absolue (±130 ms), donc il ne change pas la
     // note — seulement le confort. 76-84, l'allure d'un pas.

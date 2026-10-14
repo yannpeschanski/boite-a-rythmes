@@ -23,10 +23,8 @@
     type ExerciseKind,
   } from '../../model/exercises';
   import { latence } from '../latence.svelte';
-  import CalibrageLatence from '../xp/CalibrageLatence.svelte';
   import XpWindow from '../xp/XpWindow.svelte';
   import CarriereView from './CarriereView.svelte';
-  import RappelCalibrage from '../xp/RappelCalibrage.svelte';
 
   let {
     onGoAtelier,
@@ -221,8 +219,6 @@
   });
   onDestroy(() => {
     cancelAnimationFrame(raf);
-    // Le métronome du calibrage n'est plus arrêté ici : il appartient au
-    // panneau (`CalibrageLatence`), qui le coupe lui-même en se démontant.
     engine.stop();
   });
 
@@ -395,22 +391,6 @@
     play('target');
   }
 
-  /* ---- Calibrage du décalage d'entrée ----
-   *
-   * La mesure elle-même vit dans `ui/xp/CalibrageLatence.svelte` depuis le
-   * 2026-08-24 : le pad d'écriture de l'Atelier en a besoin aussi (un casque
-   * Bluetooth décale ce qu'on y enregistre), et deux mesures qui doivent rester
-   * d'accord finissent toujours par ne plus l'être. Il ne reste ici que
-   * l'ouverture du panneau — et l'arrêt de tout ce qui sonnait, sans quoi on
-   * calibrerait sur un métronome couvert par l'exercice en cours.
-   */
-  let calibrage = $state(false);
-
-  function ouvrirCalibrage() {
-    stopAll();
-    calibrage = true;
-  }
-
   // Un seul point d'entrée vers un niveau : le drapeau d'échec est local à la
   // vue, il ne se remettrait pas à zéro tout seul en changeant de niveau.
   function allerAuNiveau(id: number) {
@@ -443,10 +423,6 @@
    * ajoute une latence de visée à ce qu'on mesure — et ce qu'on mesure ici est
    * précisément une latence. */
   function surTouche(e: KeyboardEvent) {
-    // Pendant le calibrage, c'est le panneau qui écoute la barre d'espace :
-    // deux auditeurs enregistreraient la même frappe deux fois, une fois comme
-    // mesure de latence et une fois comme frappe de jeu.
-    if (calibrage) return;
     if (ex !== 'jouer' || e.code !== 'Space' || e.repeat) return;
     if (!enregistre) return;
     e.preventDefault();
@@ -884,7 +860,11 @@
              joueur. « Répétition » plutôt que le nom complet parce que la barre
              en porte quatre à 390 px. -->
         <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Répétition</button>
-        <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
+        <!-- Une besace vide ne s'affiche pas : sur le premier exercice du jeu,
+             « Besace (0) » est un bouton de plus qui n'ouvre rien. -->
+        {#if game.bag.length > 0}
+          <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
+        {/if}
       </div>
       <!-- La consigne d'un exercice de carrière est souvent une réplique de
            Sol : elle porte son nom comme partout ailleurs dans le récit
@@ -1000,12 +980,11 @@
           <button class="xp-btn rec" onclick={toggleJouer}>
             {(playingWhat === 'target' && enregistre) || enPrecompte ? '■ Stop' : '⏺ Jouer (précompte)'}
           </button>
-          <button class="xp-btn" disabled={game.frappes.length === 0} onclick={() => game.reinitialiserFrappes()}>
-            ↺ Effacer
-          </button>
-          <button class="xp-btn" onclick={ouvrirCalibrage}>
-            🎚 Latence{latence.ms ? ` (${latence.ms > 0 ? '+' : ''}${latence.ms} ms)` : ''}
-          </button>
+          <!-- ⚠️ Deux boutons, pas quatre (2026-10-14, « on est un peu perdu
+               devant la masse de texte et boutons ») : « ↺ Effacer » doublait
+               « ⏺ Jouer », qui repart déjà de zéro, et « 🎚 Latence » vit dans
+               l'Atelier et dans #diag — ici, c'est la partie jouée qui mesure
+               (voir la correction sous la jauge). -->
         {:else}
           <button class="xp-btn" onclick={() => play('target')}>
             {playingWhat === 'target'
@@ -1532,21 +1511,7 @@
             ✓ Vérifier
           </button>
         </div>
-      {:else if ex === 'jouer' && calibrage}
-        <!-- Calibrage : un métronome nu, et on compare les frappes aux temps
-             PROGRAMMÉS des clics. Aucune estimation de navigateur ne remplace
-             cette mesure — WebKit ne déclare pas `outputLatency`, et personne ne
-             déclare la latence d'entrée d'une dalle tactile. -->
-        <CalibrageLatence {engine} onClose={() => (calibrage = false)} />
       {:else if ex === 'jouer'}
-        <!-- ⚠️ Le rappel de calibrage ne vit QUE sur les verbes qui MESURENT une
-             frappe — les quatre niveaux chronométrés que la carrière cite (64,
-             65, 66 à l'acte 0, et le 38 à la balance de l'acte 7). Ailleurs, un
-             retard ne change pas la note ; ici il la fausse entièrement tant que
-             l'appareil n'est pas mesuré. Et surtout : pas un mot sur le
-             navigateur, contrairement à `AvisLatence` — ce qui se mesure se
-             corrige, il n'y a rien à fuir. -->
-        <RappelCalibrage onCalibrer={ouvrirCalibrage} />
         <!-- UN SEUL des deux canaux, jamais les deux (voir jouerIndice) :
              montrer la grille pendant que le kick sonne ne demanderait que de
              suivre un point lumineux. À l'oreille le guide reste vide ; à vue
@@ -1652,32 +1617,14 @@
                 Le niveau se valide tout seul dès que {game.coupsAValider} frappes tiennent {SEUIL_JUSTESSE}&nbsp;%.
               {/if}
             </span>
-            {#if game.frappes.length >= 3}
-              <br />
-              <!-- Diagnostic, jamais noté : un biais franc et constant, c'est de
-                   la latence de la chaîne d'entrée, pas un défaut de placement. -->
-              <span class="muted">
-                écart médian {game.decalageMedian() > 0 ? '+' : ''}{game.decalageMedian()}&nbsp;ms
-                ({Math.abs(game.decalageMedian()) <= 15
-                  ? 'centré'
-                  : game.decalageMedian() > 0
-                    ? 'tu traînes'
-                    : 'tu anticipes'})
-              </span>
-            {/if}
           </p>
           {#if game.frappes.length >= 4 && Math.abs(game.decalageMedian()) > 25}
             <!-- Un biais franc et constant n'est pas un défaut de placement,
                  c'est de la latence : la partie qui vient d'être jouée EST une
                  mesure, autant s'en servir plutôt que de refaire un calibrage. -->
-            <!-- ⚠️ C'est le MÊME réglage que 🎚 Latence, pris sur ce qu'on vient
-                 de jouer au lieu d'un métronome — l'écran doit le dire, sinon
-                 on cherche « la différence avec le bouton latence » (retour
-                 de testeur, 2026-10-14). -->
-            <p class="muted compenser">
-              Toutes tes frappes tombent du même côté : c’est le délai de ton appareil, pas toi.
-              Ce bouton règle la 🎚 Latence d’après ce que tu viens de jouer.
-            </p>
+            <!-- ⚠️ UN bouton, qui dit le constat ET le geste : c'est le seul
+                 réglage de latence de cet écran, il n'a plus à se distinguer
+                 d'un autre. Il n'apparaît que quand la mesure l'a vu. -->
             <button
               class="xp-btn"
               onclick={() => {
@@ -1688,7 +1635,7 @@
                 stopAll();
               }}
             >
-              🎚 Régler la latence ({game.decalageMedian() > 0 ? '+' : ''}{game.decalageMedian()}&nbsp;ms)
+              🎚 Toujours {Math.abs(game.decalageMedian())}&nbsp;ms {game.decalageMedian() > 0 ? 'en retard' : 'en avance'} : c’est ton appareil, corriger
             </button>
           {/if}
         </div>
@@ -2629,9 +2576,6 @@
     margin-top: 4px;
     font-size: var(--xp-size-small);
     letter-spacing: var(--xp-ls-tag);
-  }
-  .compenser {
-    margin: 8px 0 4px;
   }
   .decompte {
     font-size: 40px;
