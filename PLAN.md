@@ -48,6 +48,23 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le premier exercice allégé — la latence ne se règle plus d'avance (2026-10-14)
+
+Yann : « on est un peu perdu devant la masse de texte et boutons dans ce niveau
+1. Pas sûr que le réglage de la latence apporte beaucoup. » Sur l'écran `jouer` :
+
+- transport réduit à « 🔊 Écouter » et « ⏺ Jouer » — « ↺ Effacer » doublait
+  Jouer (qui repart de zéro), « 🎚 Latence » et `RappelCalibrage` retirés
+  (le composant est supprimé ; le calibrage reste dans l'Atelier et `#diag`) ;
+- la ligne « écart médian » disparaît ; la correction tirée des frappes reste,
+  en UN bouton qui dit le constat et le geste (« Toujours 259 ms en retard :
+  c'est ton appareil, corriger ») — c'est elle qui a débloqué Thibault ;
+- préambule du 64 réduit au mécanisme (« Jouer », quatre clics) : la consigne
+  dit le geste, le pad le répète ;
+- « 🎒 Besace (0) » masquée tant qu'elle est vide.
+
+Mesuré en 390 × 844 tactile : aucun débordement.
+
 ### ✅ « Faut taper quand y a bruit ? » — la première consigne dit QUAND (2026-10-14)
 
 Retour de testeurs (WhatsApp, captures fournies par Yann) : bloqués au premier
