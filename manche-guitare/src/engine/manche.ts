@@ -35,6 +35,29 @@ export function degreDansGamme(classe: ClasseNote, tonique: ClasseNote, gamme: G
   return gamme.intervalles.includes(demiTons) ? demiTons : null;
 }
 
+/** Case où tombe la classe sur une corde donnée (valeur unique, 0-11 : les classes de notes bouclent tous les douze frettes). */
+export function fretDeNote(accordage: ClasseNote[], corde: number, classe: ClasseNote): number {
+  return mod12(classe - accordage[corde]);
+}
+
+export interface FenetrePosition {
+  debut: number;
+  fin: number;
+}
+
+/** Largeur (en frettes) d'une position, comme les boîtes de pentatonique habituelles. */
+export const LARGEUR_POSITION = 5;
+
+/**
+ * Fenêtre de `LARGEUR_POSITION` frettes centrée sur une fondamentale,
+ * décalée (jamais rétrécie) quand elle déborderait du manche.
+ */
+export function fenetrePosition(fretRacine: number, nbCases: number): FenetrePosition {
+  const debut = Math.max(0, Math.min(fretRacine - 2, nbCases - LARGEUR_POSITION + 1));
+  const fin = Math.min(nbCases, debut + LARGEUR_POSITION - 1);
+  return { debut, fin };
+}
+
 export interface Correspondance {
   gamme: Gamme;
   tonique: ClasseNote;

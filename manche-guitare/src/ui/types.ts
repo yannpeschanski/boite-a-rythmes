@@ -6,4 +6,6 @@ export interface CelluleManche {
   visible: boolean;
   libelle: string;
   accent: Accent | 'selection' | null;
+  /** Hors de la position choisie : la case s'affiche en estompé. Absent ou true = pas de filtre actif. */
+  dansFenetre?: boolean;
 }

@@ -5,6 +5,9 @@ import {
   notesDeGamme,
   degreDansGamme,
   gammesCorrespondantes,
+  fretDeNote,
+  fenetrePosition,
+  LARGEUR_POSITION,
 } from '../src/engine/manche';
 import { GAMMES } from '../src/model/gammes';
 import { ACCORDAGE_STANDARD, NB_CASES } from '../src/model/accordage';
@@ -115,5 +118,38 @@ describe('catalogue des gammes', () => {
 
   it('ne contient pas la gamme chromatique (elle correspondrait à tout, tout le temps)', () => {
     expect(GAMMES.some((g) => g.intervalles.length === 12)).toBe(false);
+  });
+});
+
+describe('fretDeNote', () => {
+  it('trouve la case où tombe la fondamentale sur une corde à vide', () => {
+    // corde 0 = Mi (4) ; Mi tombe donc case 0
+    expect(fretDeNote(ACCORDAGE_STANDARD, 0, 4)).toBe(0);
+  });
+
+  it('boucle correctement sur douze cases', () => {
+    // corde 1 = La (9) ; Sol (7) tombe 10 cases plus loin : (7-9+12)%12 = 10
+    expect(fretDeNote(ACCORDAGE_STANDARD, 1, 7)).toBe(10);
+  });
+});
+
+describe('fenetrePosition', () => {
+  it('centre une fenêtre de LARGEUR_POSITION cases autour de la fondamentale', () => {
+    const fenetre = fenetrePosition(6, NB_CASES);
+    expect(fenetre.fin - fenetre.debut + 1).toBe(LARGEUR_POSITION);
+    expect(fenetre.debut).toBeLessThanOrEqual(6);
+    expect(fenetre.fin).toBeGreaterThanOrEqual(6);
+  });
+
+  it('se décale sans se rétrécir près du sillet', () => {
+    const fenetre = fenetrePosition(0, NB_CASES);
+    expect(fenetre.debut).toBe(0);
+    expect(fenetre.fin - fenetre.debut + 1).toBe(LARGEUR_POSITION);
+  });
+
+  it('se décale sans se rétrécir près de la dernière case', () => {
+    const fenetre = fenetrePosition(NB_CASES, NB_CASES);
+    expect(fenetre.fin).toBe(NB_CASES);
+    expect(fenetre.fin - fenetre.debut + 1).toBe(LARGEUR_POSITION);
   });
 });

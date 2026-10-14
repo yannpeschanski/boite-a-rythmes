@@ -24,7 +24,7 @@
   <div class="reperes">
     <div class="repere-case"></div>
     {#each Array.from({ length: nbCases }) as _, i (i)}
-      <div class="repere-case">{REPERES.includes(i + 1) ? '●' : ''}</div>
+      <div class="repere-case" class:repere-marque={REPERES.includes(i + 1)}>{i + 1}</div>
     {/each}
   </div>
   {#each ordreAffichage as corde (corde)}
@@ -35,6 +35,7 @@
           class="case accent-{cellule.accent ?? 'vide'}"
           class:visible={cellule.visible}
           class:sillet={caseIdx === 0}
+          class:hors-fenetre={cellule.dansFenetre === false}
           disabled={!onCliqueCellule}
           onclick={() => onCliqueCellule?.(cellule.classe)}
         >
@@ -63,9 +64,14 @@
 
   .reperes {
     color: #d9c7a8;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-align: center;
     height: 1rem;
+  }
+
+  .repere-marque {
+    color: var(--texte);
+    font-weight: 700;
   }
 
   .corde {
@@ -115,6 +121,10 @@
   }
   .case.accent-selection.visible::before {
     background: var(--selection);
+  }
+
+  .case.hors-fenetre {
+    opacity: 0.3;
   }
 
   .libelle {
