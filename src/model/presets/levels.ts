@@ -1783,4 +1783,51 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     paramsAutorises: ['ghostDensity', 'randomVelocity', 'spontRoll'],
     preamble: "Tu les as entendus bouger ; maintenant, mets un nom dessus. Des coups en plus, une force qui varie, des rafales qui partent toutes seules — trois façons pour la machine de ne pas jouer deux fois pareil, et elles ne s'entendent pas au même endroit.",
     subdivOptions: [8], tempoOptions: [96] }),
+
+  /* ---------- L'ACTE 0 S'ÉCOUTE, PUIS SE POSE (2026-10-14) ----------
+   *
+   * ⚠️ Remplace les trois exercices de FRAPPE de l'acte 0 (64, 65, 66), qui
+   * restent au réservoir — un niveau ne se supprime jamais. Retour de Yann,
+   * au casque Bluetooth : *« on a l'impression de faire n'importe quoi, il faut
+   * peut-être songer à changer les niveaux du début »*. Taper en rythme sur un
+   * casque, c'est trois repères qui ne concordent pas : le temps entendu
+   * ~180 ms en retard, un doigt qui ne sonne pas, un écran en avance sur le
+   * son. Même bien noté, le geste est désagréable, et aucun réglage ne le
+   * recale. Ici on ÉCOUTE, puis on POSE sur la grille, sans chrono : aucun
+   * instant n'est mesuré, donc l'appareil ne compte plus.
+   *
+   * La courbe est celle des trois frappes, à l'identique : les quatre temps,
+   * puis un contretemps, puis une deuxième ligne avec le contretemps AILLEURS
+   * (sinon il se reposerait de mémoire). Elle prépare l'acte 1, qui ouvre sur
+   * le 68 et ses trois lignes. */
+  mkLevel(79, 'Le temps', {
+    preamble: "Une case par moitié de temps. Écoute, puis allume les cases où tu entends un coup — et réécoute ta version pour comparer.",
+    tempoOptions: [76, 84],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 1, 0, 1, 0, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      hat:   [0, 0, 0, 0, 0, 0, 0, 0],
+    } }),
+  mkLevel(80, 'Le contretemps', {
+    preamble: "Les quatre temps sont toujours là, et il y a un coup de plus — juste après le deuxième. Il ne tombe sur aucun temps : il tombe entre deux. C'est ça, un contretemps, et c'est ce qui sépare un rythme d'un métronome.",
+    tempoOptions: [80, 88],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      // Les quatre temps (0, 2, 4, 6) + le « et » du 2e temps (3).
+      kick:  [1, 0, 1, 1, 1, 0, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      hat:   [0, 0, 0, 0, 0, 0, 0, 0],
+    } }),
+  mkLevel(81, 'Deux lignes', {
+    preamble: "Deux sons cette fois, une ligne chacun : le grave (le kick) et le « tss » aigu (le charley), qui ne s'arrête jamais. Et le coup de plus a changé de place.",
+    tempoOptions: [72, 80],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      // Les quatre temps + le « et » du 3e (5), pas celui du 2e : la grille
+      // s'écoute, elle ne se repose pas de mémoire depuis l'exercice précédent.
+      kick:  [1, 0, 1, 0, 1, 1, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
 ];

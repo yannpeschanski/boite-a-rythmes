@@ -746,49 +746,46 @@ describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
     }
   });
 
-  it('met les mains sur la machine, puis fait entendre l’absence', () => {
+  /* ⚠️ Les mains, mais plus la frappe (2026-10-14) : au casque Bluetooth,
+   * taper en rythme donnait « l'impression de faire n'importe quoi ». On
+   * écoute, puis on POSE — aucun instant n'est mesuré, l'appareil ne compte
+   * plus. La frappe reste à l'acte 7. */
+  it('met les mains sur la grille, puis fait entendre l’absence', () => {
     const verbes = niveauxDeLActe(ACTES[0]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    expect(verbes).toEqual(['jouer', 'jouer', 'jouer', 'silence']);
+    expect(verbes).toEqual(['reproduire', 'reproduire', 'reproduire', 'silence']);
   });
 
-  /* Les trois frappes sont une COURBE, donc écrites : la deuxième ajoute un
-   * coup hors des temps, la troisième coupe le son du kick. Un générateur de
-   * densité ne sait pas ce qu'il vient d'ajouter — même raison qu'à l'acte 1. */
-  it('écrit ses trois rythmes de frappe, et n’en tire aucun', () => {
-    const frappes = niveauxDeLActe(ACTES[0])
+  it('ne mesure aucun instant : pas un seul exercice de frappe', () => {
+    for (const n of niveauxDeLActe(ACTES[0])) {
+      expect(LEVELS.find((x) => x.id === n)!.exercise, `niveau ${n}`).not.toBe('jouer');
+    }
+  });
+
+  /* Les trois grilles sont une COURBE, donc écrites : la deuxième ajoute un
+   * coup hors des temps, la troisième une deuxième ligne et le contretemps
+   * ailleurs. Un générateur de densité ne sait pas ce qu'il vient d'ajouter. */
+  it('écrit ses trois grilles, et n’en tire aucune', () => {
+    const grilles = niveauxDeLActe(ACTES[0])
       .map((n) => LEVELS.find((x) => x.id === n)!)
-      .filter((l) => l.exercise === 'jouer');
-    expect(frappes.map((l) => l.jouerIndice)).toEqual(['ecoute', 'ecoute', 'lecture']);
-    for (const l of frappes) {
+      .filter((l) => l.exercise === 'reproduire');
+    expect(grilles.length).toBe(3);
+    for (const l of grilles) {
       expect(l.grille, `niveau ${l.id} : tiré au sort`).toBeTruthy();
       const k = l.grille!.kick.slice(0, l.grille!.subdiv.kick);
-      // Deux frappes au moins, sinon on n'appuie pas : on tape une fois.
       expect(k.filter((v) => v > 0).length, `niveau ${l.id}`).toBeGreaterThanOrEqual(2);
     }
-    // Le premier ne pose QUE les temps ; les deux suivants ajoutent un coup
-    // entre deux temps — c'est la seule chose qui change d'un exercice à
-    // l'autre, et elle doit être dans les données, pas dans le préambule.
-    const horsTemps = (l: (typeof frappes)[number]) =>
+    const horsTemps = (l: (typeof grilles)[number]) =>
       l.grille!.kick.slice(0, l.grille!.subdiv.kick).filter((v, i) => v > 0 && i % 2 === 1).length;
-    expect(horsTemps(frappes[0]), 'le premier ne pose que les temps').toBe(0);
-    expect(horsTemps(frappes[1]), 'le deuxième pose un contretemps').toBe(1);
-    expect(horsTemps(frappes[2]), 'le troisième aussi, ailleurs').toBe(1);
-    // ⚠️ Et il est ailleurs : « à vue » se lit, il ne se rejoue pas de mémoire.
-    const place = (l: (typeof frappes)[number]) =>
+    expect(horsTemps(grilles[0]), 'le premier ne pose que les temps').toBe(0);
+    expect(horsTemps(grilles[1]), 'le deuxième pose un contretemps').toBe(1);
+    expect(horsTemps(grilles[2]), 'le troisième aussi, ailleurs').toBe(1);
+    const place = (l: (typeof grilles)[number]) =>
       l.grille!.kick.findIndex((v, i) => v > 0 && i % 2 === 1);
-    expect(place(frappes[2])).not.toBe(place(frappes[1]));
-  });
-
-  /* ⚠️ « À vue » coupe le son du kick : sans une autre ligne pour porter la
-   * pulsation, l'exercice se jouerait dans le silence, donc au hasard. C'est
-   * exactement pourquoi le niveau 38 porte un charley (voir `jouerIndice`). */
-  it('donne une pulsation à l’exercice où le kick est muet', () => {
-    const aVue = niveauxDeLActe(ACTES[0])
-      .map((n) => LEVELS.find((x) => x.id === n)!)
-      .find((l) => l.exercise === 'jouer' && l.jouerIndice === 'lecture')!;
-    const g = aVue.grille!;
-    const autres = [...g.snare.slice(0, g.subdiv.snare), ...g.hat.slice(0, g.subdiv.hat)];
-    expect(autres.filter((v) => v > 0).length).toBeGreaterThan(0);
+    expect(place(grilles[2])).not.toBe(place(grilles[1]));
+    // Une seule ligne aux deux premiers, une deuxième au troisième.
+    const lignes = (l: (typeof grilles)[number]) =>
+      (['kick', 'snare', 'hat'] as const).filter((r) => l.grille![r].some((v) => v > 0)).length;
+    expect(grilles.map(lignes)).toEqual([1, 1, 2]);
   });
 });
 
@@ -1876,9 +1873,9 @@ describe('L’épilogue ferme le jeu sans être un neuvième acte', () => {
     expect(phrase.length, 'la commande du premier exercice').toBeGreaterThan(10);
     const texte = EPILOGUE.flatMap((e) => e.lignes).join(' ');
     expect(texte, `l’épilogue ne cite plus « ${phrase} »`).toContain(phrase);
-    // Et le niveau que ce geste désigne est bien un exercice de frappe.
+    // Et le niveau que ce geste désigne est bien celui où l'on pose les coups.
     const premier = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[0])[0])!;
-    expect(premier.exercise).toBe('jouer');
+    expect(premier.exercise).toBe('reproduire');
   });
 
   it('finit sur FB-015 au mur, et ne promet rien après', () => {

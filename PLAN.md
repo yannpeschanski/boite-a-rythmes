@@ -48,6 +48,25 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 0 s'écoute puis se pose — plus de frappe au début (2026-10-14)
+
+Yann, au casque Bluetooth, après la notation sans l'heure du son : « on a
+l'impression de faire n'importe quoi, il faut peut-être songer à changer les
+niveaux du début ». Bien notée, la frappe reste désagréable : temps entendu
+~180 ms en retard, doigt muet, écran en avance (il suit le retard DÉCLARÉ).
+Arbitré (option recommandée) : écouter puis poser, sans chrono.
+
+- `levels.ts` : niveaux 79, 80, 81 (`reproduire`, grilles écrites, même
+  courbe que 64-66 : les temps ; un contretemps ; charley + contretemps
+  ailleurs). 64-66 restent au réservoir.
+- `carriere.ts` : l'acte 0 les cite ; consigne « Une croix à chaque coup » ;
+  l'épilogue la reprend (« Il en met cinq. Il y en a quatre. ») ; l'écran
+  LA GRILLE dit « La même que tes cases ».
+- `tests/carriere.test.ts` : la forme de l'acte devient trois `reproduire`
+  puis `silence`, aucune frappe, lignes 1/1/2.
+
+Vérifié : carrière rejouée de bout en bout (`parcours-carriere.cjs`, aucune
+erreur console) ; premier écran mesuré en 390 × 844, sans débordement.
 ### ✅ Une reproduction repart de la grille de la précédente (2026-10-14)
 
 Retour de jeu : *« un peu chiant de devoir cliquer sur les 16 hats à chaque

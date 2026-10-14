@@ -998,16 +998,15 @@ sont des verbes de VOCABULAIRE — ils exigent que le mot soit sur un bouton dé
 vu, donc que l'Atelier soit ouvert. Corollaire : un GESTE s'enseigne dans l'acte
 de son objet — variantes et rafales sont des gestes de grille, donc de l'acte 1.
 
-⚠️ **L'acte 0 se joue avec les MAINS — `lequel` demande un jugement, `jouer`
-demande un GESTE.** Quatre QCM à quelqu'un qui n'a rien touché, c'est un test
-d'entrée. L'acte enchaîne trois exercices de frappe ÉCRITS (64, 65, 66) puis le
-`silence`, qui reste parce qu'il n'exige aucun vocabulaire. Trois choses payées :
-les niveaux 49-51 restent au RÉSERVOIR (leurs trois mots sont enseignés à l'acte 2,
-où les boutons existent) ; les niveaux 37/38 restent à l'acte 7 ; et le
-contretemps du 66 est ailleurs que celui du 65, sinon « à vue » se rejoue de
-mémoire. ⚠️ C'est le premier écran qui expose la LATENCE de l'appareil, et le
-retard d'un appareil n'y coûte RIEN : la note ne lit que la place des frappes
-les unes par rapport aux autres (`justesseDuRythme`). ⚠️ La dernière image de l'épilogue
+⚠️ **L'acte 0 se joue avec les MAINS, sur la GRILLE — jamais en frappe.**
+Quatre QCM à quelqu'un qui n'a rien touché, c'est un test d'entrée ; taper en
+rythme au casque Bluetooth donnait « l'impression de faire n'importe quoi »
+(2026-10-14 : temps entendu en retard, doigt muet, écran en avance — trois
+repères qu'aucun réglage ne recale). L'acte écoute puis POSE trois grilles
+écrites (79, 80, 81 : les temps, un contretemps, une deuxième ligne avec le
+contretemps ailleurs), puis le `silence`. Les frappes 64-66 restent au
+réservoir, la frappe vit à l'acte 7 ; les niveaux 49-51 aussi (leurs mots sont
+enseignés à l'acte 2). ⚠️ La dernière image de l'épilogue
 cite le premier exercice de l'acte 0 : son test la **dérive** au lieu de la graver.
 
 ⚠️ **Un exercice qui se joue UNE fois ne se tire pas au sort — `GrilleEcrite`.**
