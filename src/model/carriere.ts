@@ -744,7 +744,11 @@ export const ACTES: Acte[] = [
          * café. — Je sais. » — donc rien ne pouvait dire qui parlait. Une
          * consigne est UNE ligne (voir `EtapeExercice.commande`) : le
          * dialogue, lui, a ses écrans. */
-        commande: 'SOL: Tu fais quoi exactement ici ? Le café, je sais. Écoute ça, et tape avec.',
+        /* ⚠️ « Tape avec » ne disait ni QUAND ni SUR QUOI — retour de testeurs
+         * (2026-10-14) : « faut taper quand y a bruit ? — oui, en même temps —
+         * ah voilà, c'est ça qu'il faut dire ». La consigne nomme le moment
+         * (chaque coup) et le geste (en même temps), sans mot de métier. */
+        commande: 'SOL: Le café, je sais. Écoute ça. Chaque fois que ça cogne, tu tapes en même temps.',
       },
       {
         kind: 'recit',
@@ -2932,7 +2936,8 @@ export const EPILOGUE: EtapeRecit[] = [
       'Il fait le café. Sol lui montre la machine.',
       'SOL: Elle fuit quand tu remplis trop.',
       'Puis elle lance une boucle, quatre coups, rien d’autre.',
-      'SOL: Écoute ça, et tape avec.',
+      'SOL: Écoute ça.',
+      'SOL: Chaque fois que ça cogne, tu tapes en même temps.',
       'Il tape. Il est à côté. Sol relance la boucle.',
     ],
   },

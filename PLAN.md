@@ -48,6 +48,25 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ « Faut taper quand y a bruit ? » — la première consigne dit QUAND (2026-10-14)
+
+Retour de testeurs (WhatsApp, captures fournies par Yann) : bloqués au premier
+exercice de frappe. « Écoute ça, et tape avec » ne disait ni QUAND ni SUR QUOI,
+le préambule disait « tape avec le kick » à quelqu'un qui ne connaît pas le mot,
+et le pad n'affichait que « FRAPPE ». Il a fallu « oui, en même temps » dans la
+conversation pour débloquer : « c'est ça qu'il faut dire ». Second trouble :
+« 🎚 Compenser ce décalage » se lisait comme un réglage distinct de 🎚 Latence.
+
+- `carriere.ts` : commande du 64 → « Écoute ça. Chaque fois que ça cogne, tu
+  tapes en même temps. » ; l'épilogue la cite (test dérivé, ligne coupée en deux).
+- `levels.ts` : préambule du 64 réécrit sans jargon, le geste en premier ; 66
+  glose « kick » et « charley ».
+- `GameView.svelte` : le pad dit « TAPE / en même temps que chaque coup » ; le
+  bouton de compensation devient « 🎚 Régler la latence (±n ms) » et une phrase
+  dit que c'est le même réglage, pris sur ce qu'on vient de jouer.
+
+Mesuré en 390 × 844 tactile : pad sans débordement, page à 390 px.
+
 ### ✅ Deux retours de Martin : la boucle qui grésille, le kick qu'on n'entend pas (2026-10-13)
 
 *« J'ai quelques petits grésillements quand la boucle tourne trop longtemps, et
