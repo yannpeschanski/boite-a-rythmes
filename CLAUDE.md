@@ -168,15 +168,10 @@ appareil : le tampon de Chrome y valait 171 ms, contexte nu comme contexte
 `interactive`. Ce qui compte se mesure à l'oreille — `#diag` décompose la chaîne
 et pose le total avoué à côté du total mesuré, et leur écart est le chiffre utile.
 
-⚠️ **L'IMAGE suit le son DÉCLARÉ, donc elle se RÈGLE** (`ui/synchroImage.svelte.ts`,
-2026-10-14). `consumePlayhead` allume une case quand `audioTime()` atteint le
-coup : au casque, Firefox déclare 22 ms pour ~180, et la case tombait avant le
-son (« la lecture du rythme [est] bancale »). Le remède est le réglage
-audio/vidéo des jeux de rythme : une case clignote sur un clic, on aligne à
-l'œil, et `AudioEngine.decalageImage` (statique, un seul écran) retarde toutes
-les grilles. Ce n'est PAS le calibrage d'entrée : sans geste, la dalle tactile
-n'y entre pas. Il est ÉCRIT dans le Mode jeu (« 🎧 Synchro image / son ») et
-dans le menu Vue de l'Atelier.
+⚠️ **Pas de réglage image/son** (essayé puis retiré le 2026-10-14, « c'est
+imbitable ») : la case allumée suit le retard DÉCLARÉ et reste en avance au
+casque Bluetooth (Firefox : 22 ms pour ~180). Connu, assumé ; un curseur à
+aligner à l'œil n'était pas la réponse.
 
 ⚠️ **Deux latences, deux traitements.** DÉCLENCHER un son (pads du Mode Live,
 aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où
