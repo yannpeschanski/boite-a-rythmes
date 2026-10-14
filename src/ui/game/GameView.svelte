@@ -13,6 +13,7 @@
   import { chordsFor, scaleFor } from '../../engine/harmony';
   import { PRESETS } from '../../model/presets/songs';
   import XpSlider from '../xp/XpSlider.svelte';
+  import SynchroImage from '../xp/SynchroImage.svelte';
   import {
     PARFAIT_MS,
     TOLERANCE_MS,
@@ -160,6 +161,16 @@
    *    pas régulière non plus.
    */
   let dernierKickVu = $state(-1);
+  /* Synchro image/son : la case qui avance suit le retard DÉCLARÉ par le
+     navigateur, qui ment au casque (voir `ui/synchroImage.svelte.ts`). Le
+     panneau se règle sur un métronome nu, donc tout ce qui sonnait s'arrête. */
+  let synchro = $state(false);
+  // Les verbes sans case qui avance n'ont rien à aligner.
+  const SANS_GRILLE: ExerciseKind[] = ['lequel', 'nommer', 'regler', 'laverie', 'style'];
+  function ouvrirSynchro() {
+    stopAll();
+    synchro = true;
+  }
   let dernierKickAudio = 0;
   function dureeDunPas(): number {
     return 60 / game.tempo / Math.max(1, game.subdiv.kick / 4);
@@ -936,6 +947,11 @@
            répond. On lisait « Vérifier » puis « Laquelle est la plus… ? ».
            Le bouton est descendu dans le corps de l'exercice, sous les
            réponses. -->
+      {#if synchro}
+        <div class="synchro">
+          <SynchroImage {engine} onClose={() => (synchro = false)} />
+        </div>
+      {/if}
       {#if ex !== 'lequel' && ex !== 'nommer' && ex !== 'regler' && ex !== 'laverie'}
       <div class="transport">
         {#if ex === 'intrus'}
@@ -1680,6 +1696,11 @@
           <button class="xp-btn tiny" onclick={() => { game.giveUp(); allerAuNiveau(game.levelIndex); }}>
             {game.level.grille ? 'Recommencer' : 'Nouveau rythme'}
           </button>
+          {#if !SANS_GRILLE.includes(ex) && !synchro}
+            <!-- Écrit, pas caché derrière un geste : la case en avance sur le
+                 son se VOIT, son remède doit se lire au même endroit. -->
+            <button class="xp-btn tiny" onclick={ouvrirSynchro}>🎧 Synchro image / son</button>
+          {/if}
         </div>
       {/if}
     </XpWindow>
@@ -2524,6 +2545,12 @@
   .pad.precompte {
     color: var(--xp-playhead);
     cursor: default;
+  }
+  .synchro {
+    margin: 0 0 10px;
+    padding: 8px;
+    border: 1px solid var(--xp-line);
+    box-shadow: var(--xp-bevel-in);
   }
   .pad-quand {
     display: block;
