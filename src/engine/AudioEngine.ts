@@ -608,6 +608,12 @@ export class AudioEngine {
      n'y a qu'UNE sortie audio. Un crochet d'instance demanderait le même
      branchement dans les trois vues — et le défaut de câblage habituel du
      projet, c'est l'oubli du troisième. Branché une fois dans `App.svelte`. */
+
+  /* Le décalage IMAGE / SON réglé sur l'appareil, en secondes — retranché de
+     l'horloge qui allume les cases (`consumePlayhead`). Statique pour la même
+     raison que `onSortieRefusee` : trois vues, trois moteurs, un seul écran.
+     Écrit par `ui/synchroImage.svelte.ts` ; le moteur ne connaît que le nombre. */
+  static decalageImage = 0;
   static onSortieRefusee: ((refusee: boolean) => void) | null = null;
 
   /* Le TAMPON du navigateur, poussé vers l'interface dès qu'il est connu.
@@ -1349,7 +1355,7 @@ export class AudioEngine {
     beats: number,
     bpm: number,
     apresQuoi?: number,
-  ): Promise<{ debut: number; intervalle: number; fin: number }> {
+  ): Promise<{ debut: number; intervalle: number; fin: number; programme: number }> {
     this.ensureAudio();
     const ctx = this.ctx!;
     // ⚠️ AWAIT, pas `void`. Un AudioContext fraîchement créé démarre suspendu :
@@ -1368,7 +1374,10 @@ export class AudioEngine {
     // Renvoyé sur l'horloge du son ENTENDU, comme audioTime : les deux doivent
     // parler la même langue, sinon la mesure porte la latence de sortie en plus.
     const debut = startAt - this.latenceSortie();
-    return { debut, intervalle, fin: debut + beats * intervalle };
+    // `programme` : le même premier clic sur l'horloge du CONTEXTE, celle des
+    // événements de grille — c'est contre elle que `consumePlayhead` allume
+    // les cases, donc contre elle que le réglage image/son se fait.
+    return { debut, intervalle, fin: debut + beats * intervalle, programme: startAt };
   }
 
   // Appelée à chaque frame rAF par l'UI : renvoie les événements dont le
@@ -1380,7 +1389,10 @@ export class AudioEngine {
   // curseur visuel semble en avance sur ce qu'on entend.
   consumePlayhead(): PlayheadEvent[] {
     if (!this.ctx || this.playheadQueue.length === 0) return [];
-    const now = this.audioTime()!;
+    // ⚠️ Moins le décalage image/son RÉGLÉ (`AudioEngine.decalageImage`) :
+    // le retard déclaré ment selon l'appareil (Firefox + Bluetooth : 22 ms
+    // pour ~180), et la case allumée tombait avant le coup.
+    const now = this.audioTime()! - AudioEngine.decalageImage;
     const due: PlayheadEvent[] = [];
     const remaining: PlayheadEvent[] = [];
     this.playheadQueue.sort((a, b) => a.time - b.time);

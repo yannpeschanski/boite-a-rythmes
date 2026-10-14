@@ -48,6 +48,45 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte 0 s'écoute puis se pose — plus de frappe au début (2026-10-14)
+
+Yann, au casque Bluetooth, après la notation sans l'heure du son : « on a
+l'impression de faire n'importe quoi, il faut peut-être songer à changer les
+niveaux du début ». Bien notée, la frappe reste désagréable : temps entendu
+~180 ms en retard, doigt muet, écran en avance (il suit le retard DÉCLARÉ).
+Arbitré (option recommandée) : écouter puis poser, sans chrono.
+
+- `levels.ts` : niveaux 79, 80, 81 (`reproduire`, grilles écrites, même
+  courbe que 64-66 : les temps ; un contretemps ; charley + contretemps
+  ailleurs). 64-66 restent au réservoir.
+- `carriere.ts` : l'acte 0 les cite ; consigne « Une croix à chaque coup » ;
+  l'épilogue la reprend (« Il en met cinq. Il y en a quatre. ») ; l'écran
+  LA GRILLE dit « La même que tes cases ».
+- `tests/carriere.test.ts` : la forme de l'acte devient trois `reproduire`
+  puis `silence`, aucune frappe, lignes 1/1/2.
+
+Vérifié : carrière rejouée de bout en bout (`parcours-carriere.cjs`, aucune
+erreur console) ; premier écran mesuré en 390 × 844, sans débordement.
+### ✅ La synchro image / son — la case allumée suit enfin le casque (2026-10-14)
+
+Yann, après l'acte 0 en grilles : « le Bluetooth est totalement décalé du
+balayage visuel et ça rend la lecture du rythme bancale, ce n'est pas normal
+et c'est censé être gérable ». Ce n'était pas une régression : la case a
+toujours suivi le retard DÉCLARÉ (`audioTime()`), qui ment au casque (Firefox :
+22 ms pour ~180). Ça se voyait peu tant qu'on tapait ; l'acte 0 se LIT
+maintenant sur la grille.
+
+- `ui/synchroImage.svelte.ts` : réglage persistant (−150 à +400 ms), propriété
+  de l'appareil ; pose `AudioEngine.decalageImage`.
+- `AudioEngine.consumePlayhead` retranche ce décalage — les trois vues d'un
+  coup. `metronome()` rend aussi `programme` (heure du premier clic sur
+  l'horloge des grilles), pour que le panneau allume sa case comme elles.
+- `ui/xp/SynchroImage.svelte` : une case clignote sur un clic à 80 bpm, curseur
+  + ±10 ms, aucun geste mesuré (la dalle n'entre pas dans le réglage).
+- Entrées ÉCRITES : « 🎧 Synchro image / son » en pied d'exercice (verbes à
+  grille) et dans le menu Vue de l'Atelier.
+- `tests/synchro-image.test.ts` : le réglage atteint `consumePlayhead`.
+
 ### ✅ Une reproduction repart de la grille de la précédente (2026-10-14)
 
 Retour de jeu : *« un peu chiant de devoir cliquer sur les 16 hats à chaque

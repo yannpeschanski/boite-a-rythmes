@@ -733,22 +733,28 @@ export const ACTES: Acte[] = [
        *
        * Le `silence` (niveau 52), lui, reste : ce n'est pas un `lequel`, il ne
        * demande aucun vocabulaire, et il est le contrepoint exact des trois
-       * exercices de frappe — on vient de taper ce qu'on entend, on va
-       * maintenant montrer ce qu'on n'entend PAS. */
+       * exercices — on vient de poser ce qu'on entend, on va maintenant
+       * montrer ce qu'on n'entend PAS.
+       *
+       * ⚠️ Les MAINS, mais plus la FRAPPE (2026-10-14) : les trois exercices
+       * de frappe (64, 65, 66) sont devenus trois exercices à poser sur la
+       * grille (79, 80, 81), même courbe. Au casque Bluetooth, taper en
+       * rythme donnait « l'impression de faire n'importe quoi » — le temps
+       * entendu en retard, un doigt muet, un écran en avance — et aucun réglage
+       * ne recale trois repères. La frappe reste à l'acte 7 et au réservoir. */
       {
         kind: 'exercice',
-        niveau: 64,
+        niveau: 79,
         /* ⚠️ D'UNE SEULE VOIX depuis que les répliques portent leur nom
          * (`model/locuteurs.ts`). Ce brief tenait trois répliques et deux
          * personnes sur une ligne — « — Tu fais quoi exactement ici ? — Le
          * café. — Je sais. » — donc rien ne pouvait dire qui parlait. Une
          * consigne est UNE ligne (voir `EtapeExercice.commande`) : le
          * dialogue, lui, a ses écrans. */
-        /* ⚠️ « Tape avec » ne disait ni QUAND ni SUR QUOI — retour de testeurs
-         * (2026-10-14) : « faut taper quand y a bruit ? — oui, en même temps —
-         * ah voilà, c'est ça qu'il faut dire ». La consigne nomme le moment
-         * (chaque coup) et le geste (en même temps), sans mot de métier. */
-        commande: 'SOL: Le café, je sais. Écoute ça. Chaque fois que ça cogne, tu tapes en même temps.',
+        /* ⚠️ Une consigne nomme le moment ET le geste, sans mot de métier —
+         * retour de testeurs (2026-10-14) sur « écoute ça, et tape avec » :
+         * « faut taper quand y a bruit ? ». */
+        commande: 'SOL: Le café, je sais. Écoute ça. Une croix à chaque coup.',
       },
       {
         kind: 'recit',
@@ -765,7 +771,7 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 65,
+        niveau: 80,
         commande: 'SOL: Recommence. Il y a un coup de plus, et il ne tombe pas sur un temps.',
       },
       /* L'écran qui prépare « à vue » — et, sans en avoir l'air, tout l'acte 1.
@@ -777,7 +783,7 @@ export const ACTES: Acte[] = [
         entete: 'LA GRILLE',
         lignes: [
           'Elle sort une feuille quadrillée du tiroir.',
-          'Une colonne par croche, une croix par coup.',
+          'La même que tes cases.',
           'SOL: C’est comme ça qu’on les écrit.',
           'TOI: Et on les lit comment ?',
           'SOL: Comme ça.',
@@ -786,8 +792,8 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 66,
-        commande: 'SOL: Là je coupe le son du kick. Tu l’as sous les yeux : joue-le.',
+        niveau: 81,
+        commande: 'SOL: Le charley entre. Une ligne pour lui, une pour le kick.',
       },
       {
         kind: 'recit',
@@ -2924,10 +2930,10 @@ export const EPILOGUE: EtapeRecit[] = [
    *
    * Elle a changé le jour où l'acte 0 a changé : c'était « lequel est le plus
    * grave ? », la question du niveau 49, tant que l'acte 0 ouvrait sur un
-   * `lequel`. Il ouvre maintenant sur « écoute ça, et tape avec » — la boucle
-   * cite donc ce geste-là. Elle y gagne, en plus : un geste se voit de la
-   * pièce voisine, une question à choix multiples non, et l'écran suivant
-   * repose entièrement sur ce que le joueur ENTEND depuis l'autre pièce. */
+   * `lequel`, puis « tape avec » tant qu'il ouvrait sur une frappe. Il ouvre
+   * maintenant sur « une croix à chaque coup » (2026-10-14) — la boucle cite
+   * donc ce geste-là, et l'écran suivant repose toujours sur ce que le joueur
+   * ENTEND depuis l'autre pièce. */
   {
     kind: 'recit',
     source: 'lcd',
@@ -2937,8 +2943,8 @@ export const EPILOGUE: EtapeRecit[] = [
       'SOL: Elle fuit quand tu remplis trop.',
       'Puis elle lance une boucle, quatre coups, rien d’autre.',
       'SOL: Écoute ça.',
-      'SOL: Chaque fois que ça cogne, tu tapes en même temps.',
-      'Il tape. Il est à côté. Sol relance la boucle.',
+      'SOL: Une croix à chaque coup.',
+      'Il en met cinq. Il y en a quatre. Sol relance la boucle.',
     ],
   },
   {
