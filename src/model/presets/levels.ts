@@ -1406,7 +1406,7 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
    *   66  le kick devient muet, le charley reste — lire au lieu d'entendre
    *
    * ⚠️ Les niveaux 37 et 38 de l'acte 7 RESTENT à l'acte 7 : ils sont cités
-   * là-bas par décision documentée (`justesseDesFrappes` retient la meilleure
+   * là-bas par décision documentée (`justesseDuRythme` retient la meilleure
    * mesure consécutive, donc la notation pardonne un début raté — mot pour mot
    * ce que Sol répond avant de brancher les enceintes). On ajoute une paire à
    * l'acte 0, on ne déplace pas la leur. La différence est la difficulté : ici

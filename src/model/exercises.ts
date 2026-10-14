@@ -290,7 +290,7 @@ export const PARFAIT_MS = 40;
  * honnête : sans lui le niveau se boucle sur la première mesure propre, quatre
  * frappes après le précompte, et la victoire ressemble à un accident.
  *
- * ⚠️ Ce compte ne durcit PAS l'exercice, et c'est `justesseDesFrappes` qui le
+ * ⚠️ Ce compte ne durcit PAS l'exercice, et c'est `justesseDuRythme` qui le
  * garantit : elle retient la MEILLEURE fenêtre, donc elle ne peut que monter
  * quand on ajoute une frappe. Une mesure propre jouée au quatrième coup reste
  * acquise au dixième — le compte retarde la victoire de quelques secondes, il
@@ -315,21 +315,6 @@ export function jouerGagne(justesse: number, frappes: number, attendues: number)
   return frappes >= coupsPourValider(attendues) && justesse >= SEUIL_JUSTESSE;
 }
 
-/* Écart signé au coup le plus proche.
- *
- * `ecoule` est le temps depuis le DERNIER coup joué, `intervalle` celui qui
- * sépare ce coup du suivant. Au-delà de la moitié, la frappe n'est plus en
- * retard sur le précédent : elle est en avance sur le suivant, et l'écart
- * devient négatif.
- *
- * L'intervalle est celui de coup à coup, jamais la durée d'un pas : sur une
- * boucle de 8 pas qui porte 3 kicks, cinq pas sur huit sont silencieux, et
- * mesurer contre la grille donnerait 100 % à une frappe posée sur un silence.
- */
-export function ecartAuCoup(ecoule: number, intervalle: number): number {
-  return ecoule > intervalle / 2 ? ecoule - intervalle : ecoule;
-}
-
 /** Note d'une frappe : 100 sous le seuil d'indiscernable, 0 au-delà de la
  *  tolérance, décroissance linéaire entre les deux. */
 function noteDUneFrappe(ecartMs: number): number {
@@ -337,44 +322,6 @@ function noteDUneFrappe(ecartMs: number): number {
   if (a <= PARFAIT_MS) return 100;
   if (a >= TOLERANCE_MS) return 0;
   return 100 * (1 - (a - PARFAIT_MS) / (TOLERANCE_MS - PARFAIT_MS));
-}
-
-/* Justesse 0-100 : la MEILLEURE mesure jouée, pas la moyenne de tout.
- *
- * ⚠️ Changement délibéré de règle (2026-08-21, « les niveaux 37 et 38 sont tj
- * trop compliqués »). La version précédente moyennait TOUTES les frappes du
- * tour, divisées par le plus grand du nombre attendu et du nombre joué. La
- * boucle tournant en rond, les tâtonnements des premières mesures plombaient la
- * note définitivement : on ne pouvait jamais « réussir une mesure », seulement
- * diluer ses erreurs — et plus on jouait, plus c'était dur. C'était la vraie
- * raison de la difficulté, bien avant les seuils.
- *
- * On note donc la meilleure fenêtre de `attendues` frappes CONSÉCUTIVES : une
- * mesure propre suffit, ce qui est exactement ce qu'un joueur cherche à faire.
- *
- * Consécutives, et pas « les meilleures » : prendre les meilleures où qu'elles
- * soient récompenserait le martèlement, puisqu'il suffirait d'en tirer quelques
- * bonnes au hasard. Une fenêtre consécutive propre, elle, s'obtient en jouant
- * en place.
- *
- * Tant qu'il n'y a pas assez de frappes, le diviseur reste le nombre ATTENDU :
- * frapper une seule fois très juste ne donne pas 100 %.
- */
-export function justesseDesFrappes(ecarts: number[], attendues: number): number {
-  if (attendues <= 0) return 0;
-  const notes = ecarts.map(noteDUneFrappe);
-  if (notes.length < attendues) {
-    // Les frappes manquantes comptent comme nulles.
-    return Math.round(notes.reduce((a, b) => a + b, 0) / attendues);
-  }
-  let meilleure = 0;
-  let courante = notes.slice(0, attendues).reduce((a, b) => a + b, 0);
-  meilleure = courante;
-  for (let i = attendues; i < notes.length; i++) {
-    courante += notes[i] - notes[i - attendues];
-    if (courante > meilleure) meilleure = courante;
-  }
-  return Math.round(meilleure / attendues);
 }
 
 /* Écart MÉDIAN signé d'une série de frappes.
@@ -396,34 +343,119 @@ export function medianeDesEcarts(ecarts: number[]): number {
   return Math.round(tri.length % 2 ? tri[m] : (tri[m - 1] + tri[m]) / 2);
 }
 
-/* Le retard de l'APPAREIL, reconnu dans les frappes — ou `null`.
+/* ---- Le RYTHME se note sans l'heure du son ----
  *
- * ⚠️ Pourquoi la correction est AUTOMATIQUE (2026-10-14). Sur Firefox avec un
- * casque Bluetooth, le navigateur déclare ~22 ms de sortie pour ~180 réels :
- * le joueur tape pile sur ce qu'il ENTEND et la note le compte 160 ms en
- * retard, au-delà de `TOLERANCE_MS`. Un instrument en ligne (guitoro) n'a pas
- * ce défaut parce qu'il ne note rien ; nous notons, donc c'est à nous de
- * reconnaître le retard — pas au joueur de trouver un bouton de latence.
+ * ⚠️ Arbitré le 2026-10-14 (« le problème de latence, ça goûte la merde, je
+ * me sens empêtré dans cette problématique » — puis « je suis tes
+ * recommandations »). On comparait chaque frappe à l'instant où le son était
+ * CENSÉ arriver à l'oreille : un chiffre que le navigateur connaît mal
+ * (Firefox + Bluetooth annonce 22 ms pour ~180 réels), que la dalle tactile
+ * et le casque allongent, et qu'on rattrapait par un calibrage, puis un bouton,
+ * puis une correction automatique — trois PR, et chaque appareil pouvait
+ * encore tomber à côté autrement.
  *
- * Ce qui distingue un retard d'appareil d'un joueur qui traîne ou qui tape au
- * hasard : il est CONSTANT. D'où trois conditions, toutes nécessaires :
- *   - au moins `FRAPPES_BIAIS` frappes (une ou deux ne disent rien) ;
- *   - une médiane franche, entre `BIAIS_MIN_MS` et `BIAIS_MAX_MS` — au-delà,
- *     c'est un joueur qui tape à contretemps, pas une sortie lente ;
- *   - une dispersion faible autour de cette médiane (`DISPERSION_MAX_MS`) :
- *     des frappes éparpillées sont un placement à travailler, et les corriger
- *     ferait passer un joueur qui ne tient pas le temps. */
-export const FRAPPES_BIAIS = 4;
-export const BIAIS_MIN_MS = 25;
-export const BIAIS_MAX_MS = 300;
-export const DISPERSION_MAX_MS = 50;
+ * Le retard d'un appareil est CONSTANT : il décale toutes les frappes de la
+ * même quantité. Ce qui fait un rythme, c'est la place des frappes LES UNES
+ * PAR RAPPORT AUX AUTRES. Donc, pour chaque fenêtre de frappes, on cherche le
+ * décalage constant (jusqu'à `DECALAGE_MAX_MS`) qui les cale le mieux sur le
+ * motif, et on ne note que ce qui reste. Il n'y a plus rien à calibrer, et le
+ * jeu se joue pareil sur Chrome, Firefox, iPhone, en Bluetooth ou en filaire.
+ *
+ * Ce qu'on accepte de perdre : le bon motif joué décalé de moins de
+ * `DECALAGE_MAX_MS` passe. Au-delà (un demi-temps à ces tempos), il ne passe
+ * pas — un contretemps systématique n'est pas un retard d'appareil.
+ *
+ * La fenêtre reste CONSÉCUTIVE et la meilleure est retenue (voir
+ * l'ancienne `justesseDesFrappes`, qu'elle remplace) : chaque fenêtre est
+ * jugée seule, donc ajouter une frappe ne peut que faire monter la note. */
+export const DECALAGE_MAX_MS = 300;
+const PAS_DECALAGE_MS = 5;
 
-export function biaisAppareil(ecarts: number[]): number | null {
-  if (ecarts.length < FRAPPES_BIAIS) return null;
-  const m = medianeDesEcarts(ecarts);
-  if (Math.abs(m) < BIAIS_MIN_MS || Math.abs(m) > BIAIS_MAX_MS) return null;
-  const dispersion = medianeDesEcarts(ecarts.map((e) => Math.abs(e - m)));
-  return dispersion <= DISPERSION_MAX_MS ? m : null;
+/** Le coup le plus proche d'une position du cycle, en bouclant (le dernier
+ *  coup enchaîne sur le premier) : son indice et l'écart signé, en ms. */
+export function coupLePlusProche(
+  posMs: number,
+  coupsMs: number[],
+  cycleMs: number,
+): { indice: number; ecart: number } {
+  let indice = -1;
+  let ecart = Infinity;
+  coupsMs.forEach((c, i) => {
+    let d = (((posMs - c) % cycleMs) + cycleMs) % cycleMs;
+    if (d > cycleMs / 2) d -= cycleMs;
+    if (Math.abs(d) < Math.abs(ecart)) {
+      ecart = d;
+      indice = i;
+    }
+  });
+  return { indice, ecart };
+}
+
+export interface NoteDuRythme {
+  justesse: number;
+  /** Le décalage constant retiré, en ms (positif : le joueur entend en retard). */
+  decalageMs: number;
+  /** L'écart de CHAQUE frappe au coup le plus proche, décalage retiré. */
+  ecarts: number[];
+}
+
+/**
+ * @param phases   position de chaque frappe dans le cycle, de 0 à 1
+ * @param coups    position de chaque coup du motif dans le cycle, de 0 à 1
+ * @param cycleMs  durée du cycle
+ * @param attendues taille de la fenêtre (les coups d'un cycle)
+ */
+export function justesseDuRythme(
+  phases: number[],
+  coups: number[],
+  cycleMs: number,
+  attendues: number,
+): NoteDuRythme {
+  const vide = { justesse: 0, decalageMs: 0, ecarts: phases.map(() => 0) };
+  if (attendues <= 0 || coups.length === 0 || cycleMs <= 0 || phases.length === 0) return vide;
+  const coupsMs = coups.map((c) => c * cycleMs);
+  const posMs = phases.map((p) => p * cycleMs);
+  let meilleureSomme = -1;
+  let meilleureDispersion = Infinity;
+  let meilleurDecalage = 0;
+  /* Toute fenêtre CONSÉCUTIVE d'au plus un cycle de frappes, divisée par le
+     cycle entier : ajouter une frappe ne fait qu'AJOUTER des fenêtres, donc la
+     note ne peut que monter, y compris avant le premier cycle complet.
+     Et une fenêtre se lit DANS L'ORDRE du motif : la frappe k vise le coup
+     `depart + k`, pas « le coup le plus proche ». Sans ça, jouer les quatre
+     temps passait le niveau du contretemps — chaque frappe tombait bien sur
+     « un » coup du motif, et le coup oublié ne manquait à personne. */
+  const m = coupsMs.length;
+  for (let debut = 0; debut < phases.length; debut++) {
+    const fin = Math.min(debut + attendues, phases.length);
+    for (let depart = 0; depart < m; depart++) {
+      for (let o = -DECALAGE_MAX_MS; o <= DECALAGE_MAX_MS; o += PAS_DECALAGE_MS) {
+        let somme = 0;
+        let dispersion = 0;
+        for (let k = debut; k < fin; k++) {
+          const vise = coupsMs[(depart + k - debut) % m];
+          let d = (((posMs[k] - o - vise) % cycleMs) + cycleMs) % cycleMs;
+          if (d > cycleMs / 2) d -= cycleMs;
+          somme += noteDUneFrappe(d);
+          dispersion += Math.abs(d);
+          // À note égale, le décalage qui CENTRE les frappes : c'est lui qui
+          // dit le vrai retard, et l'affichage le lit.
+          if (somme > meilleureSomme || (somme === meilleureSomme && dispersion < meilleureDispersion)) {
+            meilleureSomme = somme;
+            meilleureDispersion = dispersion;
+            meilleurDecalage = o;
+          }
+        }
+      }
+    }
+  }
+  return {
+    // Tant qu'il n'y a pas assez de frappes, le diviseur reste le nombre
+    // ATTENDU : une seule frappe juste ne vaut pas 100 %.
+    justesse: Math.round(meilleureSomme / attendues),
+    decalageMs: meilleurDecalage,
+    ecarts: posMs.map((p) => coupLePlusProche(p - meilleurDecalage, coupsMs, cycleMs).ecart),
+  };
 }
 
 /* Écart signé d'une frappe au clic le plus proche d'un métronome régulier.

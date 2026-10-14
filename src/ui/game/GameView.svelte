@@ -17,13 +17,9 @@
     PARFAIT_MS,
     TOLERANCE_MS,
     SEUIL_JUSTESSE,
-    ecartAuClic,
-    medianeDesEcarts,
-    biaisAppareil,
     aUneVersion,
     type ExerciseKind,
   } from '../../model/exercises';
-  import { latence } from '../latence.svelte';
   import XpWindow from '../xp/XpWindow.svelte';
   import CarriereView from './CarriereView.svelte';
 
@@ -148,37 +144,22 @@
     dernierKickVu = -1;
   }
 
-  /* « Jouer en rythme » — mesurer l'écart au COUP, sur l'horloge du SON.
+  /* « Jouer en rythme » — enregistrer la PLACE de la frappe dans la mesure.
    *
-   * Quatre façons de se tromper, écartées ici. Les deux premières viennent de
-   * l'essai des pilotes, les deux suivantes du retour de Yann (« doute sur le
-   * temps de réponse entre le toucher et la remontée dans le système ») :
+   * La note ne lit plus l'heure du son (arbitrage du 2026-10-14, voir
+   * `justesseDuRythme`) : elle compare les frappes ENTRE ELLES, donc tout
+   * retard constant — casque Bluetooth, dalle tactile, tampon du navigateur —
+   * s'annule. Plus de calibrage ni de correction ici. Restent deux précautions
+   * qui ne sont pas des retards constants, donc que le calcul ne rattrape pas :
    *
-   * 1. Quantifier puis comparer les cases. Une frappe posée 80 ms trop tard
-   *    tombe encore dans le bon pas : elle serait déclarée parfaite, alors
-   *    qu'elle s'entend en retard. On garde donc la DISTANCE, pas la case.
-   * 2. Mesurer contre le pas courant quel qu'il soit. Sur une boucle à 8 pas
-   *    qui porte 3 kicks, cinq pas sur huit sont silencieux : frapper sur un
-   *    silence bien aligné aurait donné 100 %. L'ancre est donc le dernier pas
-   *    ACTIF du kick, et l'intervalle est celui qui le sépare du prochain pas
-   *    actif — pas la durée d'un pas.
-   * 3. Dater le coup de référence avec `performance.now()` au moment où la
-   *    frame le consomme. rAF ne tourne qu'à 60 Hz : jusqu'à 16 ms d'erreur
-   *    ajoutés à chaque mesure. On prend `ev.time`, le temps AUDIO programmé.
-   * 4. Dater la frappe au moment où le gestionnaire s'exécute. Entre le
-   *    contact du doigt et l'appel du code il y a la file d'événements du
-   *    navigateur, et elle n'est pas régulière. `event.timeStamp` porte
-   *    l'instant où le navigateur a REÇU l'événement : la différence avec
-   *    `performance.now()` est exactement le retard de remontée, et on le
-   *    retranche.
-   *
-   * Reste ce qu'aucun code ne peut voir : la latence de la dalle tactile
-   * elle-même. D'où `biaisAppareil`, corrigé tout seul dès qu'il est constant — un biais
-   * franc et constant est de la latence, pas un défaut de placement.
+   * 1. Dater le coup de référence sur l'horloge AUDIO (`ev.time`, le temps
+   *    programmé) et non au passage de la frame : rAF ne tourne qu'à 60 Hz,
+   *    soit jusqu'à 16 ms d'erreur VARIABLE.
+   * 2. Retrancher le retard de remontée de l'événement (`event.timeStamp`
+   *    contre `performance.now()`) : la file d'événements du navigateur n'est
+   *    pas régulière non plus.
    */
   let dernierKickVu = $state(-1);
-  /* Le dernier retard d'appareil corrigé, pour le dire à l'écran. */
-  let correctionAppareil = $state<number | null>(null);
   let dernierKickAudio = 0;
   function dureeDunPas(): number {
     return 60 / game.tempo / Math.max(1, game.subdiv.kick / 4);
@@ -187,36 +168,11 @@
     if (playingWhat !== 'target' || !enregistre || enPrecompte || dernierKickVu < 0) return;
     const maintenant = engine.audioTime();
     if (maintenant === null) return;
-    // Retard de remontée de l'événement, retranché (point 4 ci-dessus).
     const retard = e && e.timeStamp > 0 ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0;
     const n = game.subdiv.kick;
-    // Combien de pas jusqu'au prochain kick (en tournant : le dernier kick de
-    // la boucle enchaîne sur le premier).
-    let pas = 1;
-    while (pas <= n && game.target.kick[(dernierKickVu + pas) % n] === 0) pas++;
-    const intervalle = pas * dureeDunPas();
-    // Le décalage mesuré au calibrage, retranché comme le retard de remontée :
-    // c'est ce que la chaîne d'entrée ajoute et qu'aucune API ne déclare.
-    const ecoule = maintenant - retard - latence.ms / 1000 - dernierKickAudio;
-    // Écart signé au kick le plus proche : en retard (positif) ou en avance sur
-    // le suivant (négatif). Le signe compte — voir `decalageMedian`.
-    const ecart = ecoule > intervalle / 2 ? ecoule - intervalle : ecoule;
-    // Position dans la mesure, pour afficher la séquence réellement jouée.
-    const visee = ecart >= 0 ? dernierKickVu : (dernierKickVu + pas) % n;
-    const phase = (visee + ecart / dureeDunPas()) / n;
-    game.enregistrerFrappe(ecart * 1000, ((phase % 1) + 1) % 1);
-    /* Un retard CONSTANT est celui de l'appareil (casque Bluetooth, dalle
-       tactile), pas du joueur : on le corrige sans rien demander, et l'écran
-       le DIT — une frappe mesurée ne s'écarte jamais en silence. Les frappes
-       d'avant sont effacées : mesurées avec l'ancien réglage, elles
-       montreraient un retard qui n'existe déjà plus. */
-    const biais = biaisAppareil(game.frappes.map((f) => f.ecartMs));
-    if (biais !== null) {
-      latence.affiner(biais);
-      correctionAppareil = biais;
-      game.reinitialiserFrappes();
-      return;
-    }
+    // Le début de la mesure, déduit du dernier coup entendu et de sa place.
+    const debutMesure = dernierKickAudio - dernierKickVu * dureeDunPas();
+    game.enregistrerFrappe((maintenant - retard - debutMesure) / (n * dureeDunPas()));
     /* ⚠️ Un « jouer » se valide TOUT SEUL — retour de jeu : « ce n'est pas
        clair qu'il suffit de dépasser le seuil ». Il n'y a plus de bouton à
        trouver ; dès que dix frappes tiennent `SEUIL_JUSTESSE`, le niveau est
@@ -228,8 +184,6 @@
   }
 
   onMount(() => {
-    // `latence.charger()` est fait une fois au démarrage (App.svelte) : le
-    // réglage vaut pour tous les modes, pas seulement pour celui-ci.
     raf = requestAnimationFrame(loop);
   });
   onDestroy(() => {
@@ -411,7 +365,6 @@
   function allerAuNiveau(id: number) {
     stopAll();
     echec = false;
-    correctionAppareil = null;
     // Choisir un niveau dans la carte, c'est répéter, pas avancer dans le
     // récit : sans cette ligne, réussir un niveau choisi à la main ferait
     // progresser la carrière d'une étape qu'on n'a pas jouée.
@@ -1559,11 +1512,16 @@
                 {/if}
               {/each}
             {/if}
+            <!-- Les frappes sont montrées DÉCALAGE RETIRÉ, comme elles sont
+                 notées : sinon un casque Bluetooth les dessinerait toutes à
+                 côté d'un trait qu'elles tiennent pourtant. -->
             {#each game.frappes as f, i (i)}
+              {@const note = game.rythme()}
+              {@const ecart = note.ecarts[i] ?? 0}
               <span
-                class="frappe {verdict(f.ecartMs)}"
-                style:left="{f.phase01 * 100}%"
-                title="{Math.round(f.ecartMs)} ms"
+                class="frappe {verdict(ecart)}"
+                style:left="{((((f.phase01 - note.decalageMs / (240000 / game.tempo)) % 1) + 1) % 1) * 100}%"
+                title="{Math.round(ecart)} ms"
               ></span>
             {/each}
           </div>
@@ -1634,12 +1592,6 @@
               {/if}
             </span>
           </p>
-          {#if correctionAppareil !== null}
-            <p class="muted">
-              🎚 Ton appareil {correctionAppareil > 0 ? 'retarde' : 'avance'} le son de
-              {Math.abs(correctionAppareil)}&nbsp;ms — c’est corrigé, continue.
-            </p>
-          {/if}
         </div>
       {:else}
         {#each GAME_DRUM_ROWS as name (name)}

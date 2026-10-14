@@ -144,11 +144,10 @@ un autre navigateur qu'il faut ; tampon bas mais mesure haute → c'est la route
 `AudioEngine.ts`). `tests/latence-verdict.test.ts` tient les deux cas mesurés.
 
 ⚠️ **Deux avis de latence, jamais le même conseil.** `AvisLatence` va où l'on
-DÉCLENCHE (Synthé, Mode Live) et nomme la cause ; là où l'on MESURE (les
-niveaux `jouer`), rien d'avance — ni rappel ni bouton 🎚 Latence, retirés le
-2026-10-14 (« on est un peu perdu devant la masse de texte et boutons ») : la
-partie jouée EST la mesure, et la correction se fait seule dès qu'elle a vu un
-biais constant. Le calibrage complet reste dans l'Atelier et `#diag`. ⚠️ Dans le Live, l'avis vit dans
+DÉCLENCHE (Synthé, Mode Live) et nomme la cause ; les niveaux `jouer` n'en
+ont AUCUN, parce que leur note ne lit plus l'heure du son (voir « Le RYTHME se
+note sans l'heure du son »). Le calibrage reste pour le pad d'écriture de
+l'Atelier et `#diag`. ⚠️ Dans le Live, l'avis vit dans
 `.live-root` et non dans `.live`, qui est une grille où un enfant de plus décale
 les rangées (mesuré : 6→22, 26→80, 132→384, identiques avec et sans), et il
 emploie `messageLatenceCourt` — la forme longue descendait à 39 px et mordait sur
@@ -171,13 +170,15 @@ et pose le total avoué à côté du total mesuré, et leur écart est le chiffr
 
 ⚠️ **Deux latences, deux traitements.** DÉCLENCHER un son (pads du Mode Live,
 aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où
-`latencyHint: 'interactive'` dans `ensureAudio`. MESURER un placement (Mode jeu,
-pad d'écriture) se corrige, lui, avec le décalage calibré.
+`latencyHint: 'interactive'` dans `ensureAudio`. MESURER un placement se corrige : le pad
+d'écriture avec le décalage calibré, le Mode jeu en ne regardant que l'écart
+ENTRE les frappes.
 
 ⚠️ **`outputLatency` n'existe pas dans WebKit.** `AudioEngine.audioTime()` se
 replie sur `baseLatency` — sans ce repli, iPhone et iPad ne compensaient rien.
-Ce que le repli ne couvre pas (dalle tactile, casque) se **mesure** : calibrage du
-Mode jeu (`ui/game/latence.svelte.ts`, propriété de l'APPAREIL, hors format v2).
+Ce que le repli ne couvre pas (dalle tactile, casque) se **mesure** : calibrage
+(`ui/latence.svelte.ts`, propriété de l'APPAREIL, hors format v2), que seul le
+pad d'écriture lit désormais.
 Son `affiner` est **additif** — les frappes sont déjà corrigées, leur médiane est
 ce qu'il RESTE à corriger ; remplacer ferait osciller au lieu de converger.
 
@@ -888,7 +889,7 @@ lecture du nom (sinon un pseudo peut se faire passer pour Sol), et le réglage
 commence n'est pas un réglage.
 
 ⚠️ **Les huit actes sont écrits** : `acteAVenir` ne renvoie plus jamais vrai.
-L'acte 7 ne cite que des niveaux `jouer`, et c'est délibéré — `justesseDesFrappes`
+L'acte 7 ne cite que des niveaux `jouer`, et c'est délibéré — `justesseDuRythme`
 retient la meilleure fenêtre consécutive, donc la notation pardonne un début raté
 et récompense la reprise, mot pour mot ce que Sol répond avant de brancher les
 enceintes. Un seul jeton de texte existe dans tout le récit, `{pseudo}`.
@@ -983,7 +984,7 @@ qui produisent un morceau vivent côte à côte dans le store (`livrerSonnerie` 
 
 La partie PURE de la notation vit dans `exercises.ts` — `comparerGrilles` (une
 case est exacte si son état **et** sa rafale coïncident), `colonnesDeTranche`,
-`justesseDesFrappes`, `ecartAuCoup` — et s'y teste sans navigateur ni Web Audio.
+`justesseDuRythme`, `ecartAuCoup` — et s'y teste sans navigateur ni Web Audio.
 Le paramètre `colonnes` de `comparerGrilles` est le point de conception : il
 permet à « compléter » de réutiliser *exactement* la vérification de
 « reproduire ». **Ne pas écrire un second comparateur** — deux comparateurs qui
@@ -1005,10 +1006,8 @@ les niveaux 49-51 restent au RÉSERVOIR (leurs trois mots sont enseignés à l'a
 où les boutons existent) ; les niveaux 37/38 restent à l'acte 7 ; et le
 contretemps du 66 est ailleurs que celui du 65, sinon « à vue » se rejoue de
 mémoire. ⚠️ C'est le premier écran qui expose la LATENCE de l'appareil, et le
-calibrage n'y est **ni une porte ni un bouton** : un retard CONSTANT est
-corrigé tout seul et l'écran le dit (`biaisAppareil`) — Firefox + Bluetooth
-déclare 22 ms pour ~180, donc un joueur juste à l'oreille était noté en retard.
-Constant seulement : des frappes éparpillées sont du placement, pas un appareil. ⚠️ La dernière image de l'épilogue
+retard d'un appareil n'y coûte RIEN : la note ne lit que la place des frappes
+les unes par rapport aux autres (`justesseDuRythme`). ⚠️ La dernière image de l'épilogue
 cite le premier exercice de l'acte 0 : son test la **dérive** au lieu de la graver.
 
 ⚠️ **Un exercice qui se joue UNE fois ne se tire pas au sort — `GrilleEcrite`.**
@@ -1135,12 +1134,22 @@ pas (`ecouterVersion` alimente maintenant `paramEcoutes`).
 aucun bouton.** Le seuil ne se devinait pas (il vivait dans un libellé, et le
 `✓ Vérifier` qui jugeait était en tête du transport, avant la consigne) ; le
 compte de dix rend l'automatisme honnête **sans durcir l'exercice**, parce que
-`justesseDesFrappes` ne peut que MONTER quand on ajoute une frappe — il retarde
+`justesseDuRythme` ne peut que MONTER quand on ajoute une frappe — il retarde
 la victoire, il ne l'interdit jamais (`tests/exercises.test.ts` tient la
 monotonie, c'est elle qui autorise la règle sur les niveaux 37 et 38).
 `SEUIL_JUSTESSE` / `jouerGagne` (`exercises.ts`) en sont la seule définition. ⚠️
 Et la vue DEMANDE (`jouerPret`) avant d'appeler `verify()` : un appel par frappe
 compterait un essai par coup, donc une étoile au lieu de trois.
+
+⚠️ **Le RYTHME se note sans l'heure du son** (`justesseDuRythme`, arbitré le
+2026-10-14 après trois PR de latence : « je me sens empêtré dans cette
+problématique »). Comparer une frappe à l'instant où le son est CENSÉ arriver
+exige un chiffre que le navigateur ignore (Firefox + Bluetooth : 22 ms annoncés
+pour ~180) ; or un retard d'appareil est CONSTANT. Chaque fenêtre cherche donc
+le décalage constant (≤ `DECALAGE_MAX_MS`, 300) qui la cale le mieux, et se lit
+DANS L'ORDRE du motif — au plus proche, les quatre temps passaient le niveau du
+contretemps. Plus aucun calibrage, bouton ni correction dans le Mode jeu : n'en
+remettre aucun. ⚠️ Limite connue : 4 coups justes sur 5 = 80 %, pile le seuil.
 
 ⚠️ **« Jouer » note la MEILLEURE fenêtre consécutive, pas la moyenne du tour.** La
 boucle tourne en rond : moyenner rend les tâtonnements définitifs. La fenêtre doit

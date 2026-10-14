@@ -2682,7 +2682,7 @@ export const ACTES: Acte[] = [
        * ⚠️ L'exercice reste, et il a changé de PLACE, pas de rôle. Il ne peut
        * plus être « le premier morceau » — le premier morceau se joue
        * maintenant pour de vrai — mais le vider de l'acte retirerait la seule
-       * mécanique qui dit ce que le texte raconte : `justesseDesFrappes`
+       * mécanique qui dit ce que le texte raconte : `justesseDuRythme`
        * retient la MEILLEURE FENÊTRE CONSÉCUTIVE et non la moyenne du tour,
        * donc la notation pardonne un début raté et récompense la reprise, mot
        * pour mot ce que Sol répond avant de brancher les enceintes. Il devient

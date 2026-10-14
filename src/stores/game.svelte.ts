@@ -26,8 +26,8 @@ import {
 import {
   comparerGrilles,
   colonnesDeTranche,
-  justesseDesFrappes,
-  medianeDesEcarts,
+  justesseDuRythme,
+  type NoteDuRythme,
   estVerbeParam,
   jouerGagne,
   coupsPourValider,
@@ -297,7 +297,7 @@ class GameStore {
    * décor : sans lui on annonce un pourcentage sans jamais montrer ce qui a été
    * joué, et le joueur ne peut pas voir qu'il traîne toujours sur le même
    * temps. */
-  frappes = $state<Array<{ ecartMs: number; phase01: number }>>([]);
+  frappes = $state<Array<{ phase01: number }>>([]);
   frappesAttendues = $state(0);
 
   /* ---- État propre aux verbes de PARAMÈTRE (lequel / nommer / regler) ----
@@ -2166,26 +2166,36 @@ class GameStore {
 
   /* ---- « Jouer en rythme » ----
    *
-   * Une frappe est enregistrée par son ÉCART au pas le plus proche, pas par le
-   * pas qu'elle vise. C'est la seule mesure qui distingue « au bon endroit » de
-   * « au bon moment » : quantifier d'abord puis comparer les cases rendrait
-   * parfaite une frappe posée 80 ms trop tard.
+   * Une frappe est enregistrée par sa PLACE dans le cycle, rien d'autre : la
+   * note se calcule sur la place des frappes les unes par rapport aux autres
+   * (`justesseDuRythme`), jamais sur l'heure du son — un retard d'appareil,
+   * constant, y disparaît. Voir l'arbitrage du 2026-10-14 dans `exercises.ts`.
    */
-  enregistrerFrappe(ecartMs: number, phase01: number): void {
+  enregistrerFrappe(phase01: number): void {
     if (this.solved || this.revealed) return;
-    // L'écart reste SIGNÉ ici : `justesseDesFrappes` prend la valeur absolue,
-    // mais `decalageMedian` a besoin du signe — c'est lui qui dit si le joueur
-    // traîne ou si c'est la chaîne d'entrée qui retarde.
-    this.frappes = [...this.frappes, { ecartMs, phase01 }];
+    this.frappes = [...this.frappes, { phase01: ((phase01 % 1) + 1) % 1 }];
   }
 
-  // La note elle-même est pure et testée dans model/exercises.ts ; le store ne
-  // fait que lui passer ce qu'il a.
-  justesse(): number {
-    return justesseDesFrappes(
-      this.frappes.map((f) => f.ecartMs),
+  /* La note et ce que l'écran en montre, calculées UNE fois par frappe : la
+   * vue les lit plusieurs fois par rendu, et la recherche du décalage n'est
+   * pas gratuite. La clé est le tableau lui-même (remplacé à chaque frappe). */
+  private noteEnCache: { pour: unknown; note: NoteDuRythme } | null = null;
+  rythme(): NoteDuRythme {
+    if (this.noteEnCache?.pour === this.frappes) return this.noteEnCache.note;
+    const n = this.subdiv.kick;
+    const coups = this.target.kick.flatMap((v, i) => (v > 0 ? [i / n] : []));
+    const note = justesseDuRythme(
+      this.frappes.map((f) => f.phase01),
+      coups,
+      240000 / this.tempo,
       this.frappesAttendues,
     );
+    this.noteEnCache = { pour: this.frappes, note };
+    return note;
+  }
+
+  justesse(): number {
+    return this.rythme().justesse;
   }
 
   /* Combien de frappes il faut tenir pour que le niveau se valide — l'écran
@@ -2205,13 +2215,6 @@ class GameStore {
   jouerPret(): boolean {
     if (this.level.exercise !== 'jouer' || this.solved || this.revealed) return false;
     return jouerGagne(this.justesse(), this.frappes.length, this.frappesAttendues);
-  }
-
-  /* Le biais du joueur, en millisecondes signées. Diagnostic, jamais noté :
-   * « tu joues 60 ms en retard, toujours » n'est pas la même faute que « tu es
-   * à ±60 ms dans les deux sens ». */
-  decalageMedian(): number {
-    return medianeDesEcarts(this.frappes.map((f) => f.ecartMs));
   }
 
   reinitialiserFrappes(): void {
