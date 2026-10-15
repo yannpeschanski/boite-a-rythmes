@@ -67,6 +67,34 @@ Arbitré (option recommandée) : écouter puis poser, sans chrono.
 
 Vérifié : carrière rejouée de bout en bout (`parcours-carriere.cjs`, aucune
 erreur console) ; premier écran mesuré en 390 × 844, sans débordement.
+### ✅ L'image suit l'horodatage de sortie — la synchro automatique (2026-10-14)
+
+Yann : « le décalage entre le balayage et le son rend le jeu injouable aux
+écouteurs Bluetooth. Il faut pouvoir détecter. La synchro se fait partout
+ailleurs et automatiquement, pourquoi n'est-elle pas faite ici ? »
+
+Pourquoi ailleurs : une vidéo passe par le lecteur du navigateur, qui reçoit du
+système l'instant où chaque son SORT (Bluetooth compris) et retarde l'image
+d'autant. Nous lisions `outputLatency`, que Firefox Android déclare ~22 ms au
+casque pour ~180. La norme prévoit `AudioContext.getOutputTimestamp()` pour
+synchroniser une image avec Web Audio — jamais lu jusqu'ici.
+
+- `AudioEngine.latenceSortie()` = max(déclaré, horodaté). L'horodaté : retard
+  entre `currentTime` et l'instant du contexte qui sort maintenant, une lecture
+  toutes les 200 ms au plus, médiane des 15 dernières, jeté hors de 0-600 ms
+  (horloge pas démarrée). Écouté seulement s'il dit PLUS que le déclaré.
+- Tout ce qui lit `audioTime()` suit : cases des trois vues, calibrage du pad.
+- `#diag` : « retard horodaté — getOutputTimestamp » et « retard suivi par
+  les grilles », à côté de `outputLatency`.
+- `tests/horodatage-sortie.test.ts` : 180 horodatés battent 22 déclarés ; un
+  horodatage plus court, absent ou à zéro ne change rien.
+
+Mesuré dans Chromium (bureau, sans casque) : déclaré 32, horodaté 36 — les
+deux sources concordent là où le déclaré est juste. **Non vérifié** : que
+Firefox Android remplisse l'horodatage avec le retard Bluetooth. C'est ce que
+`#diag` dira sur le téléphone ; si les deux lignes restent à ~22, la piste
+suivante est de faire passer le son par un élément `<audio>`.
+
 ### ↩️ La synchro image / son — essayée puis retirée (2026-10-14)
 
 Livrée dans #234 (panneau : une case clignote sur un clic, curseur −150 à

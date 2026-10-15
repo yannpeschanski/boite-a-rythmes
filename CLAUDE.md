@@ -168,10 +168,14 @@ appareil : le tampon de Chrome y valait 171 ms, contexte nu comme contexte
 `interactive`. Ce qui compte se mesure à l'oreille — `#diag` décompose la chaîne
 et pose le total avoué à côté du total mesuré, et leur écart est le chiffre utile.
 
-⚠️ **Pas de réglage image/son** (essayé puis retiré le 2026-10-14, « c'est
-imbitable ») : la case allumée suit le retard DÉCLARÉ et reste en avance au
-casque Bluetooth (Firefox : 22 ms pour ~180). Connu, assumé ; un curseur à
-aligner à l'œil n'était pas la réponse.
+⚠️ **L'image suit le PLUS GRAND des deux retards, déclaré ou HORODATÉ**
+(`latenceSortie`, 2026-10-14). Une vidéo se synchronise seule parce que le
+lecteur du navigateur reçoit l'instant réel de sortie ; Web Audio expose le
+même chose par `getOutputTimestamp()` — jamais lu jusque-là, alors que
+`outputLatency` ment au casque (Firefox : 22 ms pour ~180). L'horodatage est
+lissé (médiane, une lecture toutes les 200 ms) et n'est écouté que s'il en dit
+PLUS : là où il n'apporte rien, rien ne change. `#diag` affiche les deux.
+⚠️ Pas de réglage image/son à la main : essayé, « c'est imbitable ».
 
 ⚠️ **Deux latences, deux traitements.** DÉCLENCHER un son (pads du Mode Live,
 aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où

@@ -109,7 +109,7 @@
     // Une horloge à l'arrêt PENDANT une lecture est exactement le symptôme
     // qu'on traque : le scheduler tourne, le temps audio n'avance pas.
     if (cle === 'horloge') return etat.joue === true && valeur === 0;
-    if (cle === 'baseLatencyMs' || cle === 'outputLatencyMs') return false;
+    if (cle === 'baseLatencyMs' || cle === 'outputLatencyMs' || cle === 'horodatageSortieMs' || cle === 'retardSuiviMs') return false;
     return valeur === false;
   }
 
@@ -214,6 +214,8 @@
     'echantillonnage',
     'baseLatencyMs',
     'outputLatencyMs',
+    'horodatageSortieMs',
+    'retardSuiviMs',
     'tamponDemande',
     'graphe',
     'kit',
@@ -228,6 +230,8 @@
     echantillonnage: 'échantillonnage',
     baseLatencyMs: 'baseLatency (ms)',
     outputLatencyMs: 'outputLatency (ms)',
+    horodatageSortieMs: 'retard horodaté — getOutputTimestamp (ms)',
+    retardSuiviMs: 'retard suivi par les grilles (ms)',
     tamponDemande: 'tampon demandé',
     graphe: 'graphe construit',
     kit: 'kit construit',

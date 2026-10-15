@@ -585,6 +585,10 @@ export class AudioEngine {
       echantillonnage: ctx ? ctx.sampleRate : 0,
       baseLatencyMs: ctx ? ms(ctx.baseLatency) : null,
       outputLatencyMs: ctx ? ms(ctx.outputLatency) : null,
+      // Le même retard, lu sur l'horodatage de sortie : s'il dépasse le
+      // déclaré, c'est lui que suivent les grilles (voir `latenceSortie`).
+      horodatageSortieMs: ctx ? ms(this.retardHorodate() ?? undefined) : null,
+      retardSuiviMs: ctx ? ms(this.latenceSortie()) : null,
       tamponDemande: this.tamponDemande,
       graphe: this.graph !== null,
       kit: this.kit !== null,
@@ -1312,11 +1316,62 @@ export class AudioEngine {
    */
   private latenceSortie(): number {
     if (!this.ctx) return 0;
+    const declaree = this.latenceDeclaree();
+    /* ⚠️ LE PLUS GRAND des deux retards — déclaré ou HORODATÉ (2026-10-14).
+     *
+     * « La synchro se fait partout ailleurs et automatiquement, pourquoi pas
+     * ici ? » Ailleurs (une vidéo), le lecteur du navigateur reçoit du système
+     * l'instant où chaque son SORT, Bluetooth compris. Nous lisions
+     * `outputLatency`, que Firefox Android déclare à ~22 ms au casque pour
+     * ~180 réels : la grille s'allumait avant le son. `getOutputTimestamp()`
+     * est l'outil que la norme prévoit pour ça — il dit quel instant du
+     * contexte sort MAINTENANT, à partir de l'horodatage de la plateforme.
+     * On ne l'écoute que s'il en dit PLUS que le chiffre déclaré : là où il
+     * n'apporte rien, rien ne change. */
+    const horodate = this.retardHorodate();
+    return horodate !== null && horodate > declaree ? horodate : declaree;
+  }
+
+  private latenceDeclaree(): number {
+    if (!this.ctx) return 0;
     const sortie = this.ctx.outputLatency;
     if (typeof sortie === 'number' && sortie > 0) return sortie;
     // ×2 : le trajet complet vaut au moins l'aller du tampon plus ce que la
     // carte son y ajoute. Estimation grossière, assumée comme telle.
     return (this.ctx.baseLatency || 0) * 2;
+  }
+
+  /* Le retard de sortie lu sur l'HORODATAGE de la plateforme, lissé — ou
+   * null tant qu'il n'y en a pas (contexte neuf, navigateur qui ne le
+   * renseigne pas).
+   *
+   * Un échantillon toutes les 200 ms au plus, médiane des quinze derniers :
+   * l'horodatage avance par blocs, une lecture isolée sautille de la taille
+   * d'un bloc. Hors de 0-600 ms, l'échantillon est jeté — ce n'est plus une
+   * sortie audio, c'est une horloge qui n'a pas encore démarré. */
+  private echantillonsHorodatage: number[] = [];
+  private dernierEchantillonMs = 0;
+  private retardHorodate(): number | null {
+    const ctx = this.ctx as (AudioContext & { getOutputTimestamp?: () => AudioTimestamp }) | null;
+    if (!ctx || typeof ctx.getOutputTimestamp !== 'function' || typeof performance === 'undefined') {
+      return null;
+    }
+    const maintenant = performance.now();
+    if (maintenant - this.dernierEchantillonMs >= 200) {
+      this.dernierEchantillonMs = maintenant;
+      const ts = ctx.getOutputTimestamp();
+      if (ts.contextTime && ts.performanceTime) {
+        const sortEnCe = ts.contextTime + (maintenant - ts.performanceTime) / 1000;
+        const retard = ctx.currentTime - sortEnCe;
+        if (retard >= 0 && retard <= 0.6) {
+          this.echantillonsHorodatage.push(retard);
+          if (this.echantillonsHorodatage.length > 15) this.echantillonsHorodatage.shift();
+        }
+      }
+    }
+    if (this.echantillonsHorodatage.length < 3) return null;
+    const tri = [...this.echantillonsHorodatage].sort((x, y) => x - y);
+    return tri[Math.floor(tri.length / 2)];
   }
 
   /* L'horloge du son ENTENDU, en secondes.
