@@ -773,6 +773,11 @@
      qu'on l'entende. L'écran lit donc celle-ci, posée quand on ENTEND la
      frontière (`engine.quandOnEntendra`). */
   let sectionAffichee = $state(0);
+  /* ⚠️ Un repère d'affichage attend l'oreille — une demi-seconde au casque.
+     Changer de chaîne pendant ce temps (charger un montage, la quitter) ne doit
+     pas le laisser rallumer une case de l'ANCIENNE chaîne dans la nouvelle :
+     chaque repère porte la génération de chaîne qui l'a posé. */
+  let generationChaine = 0;
   const sectionEntendue = $derived(archSections[sectionAffichee] ?? null);
   /* Hors de la fenêtre de bascule, c'est la même section : on garde le même
      chiffre que la logique. Dedans, la longueur se lit lettre par lettre —
@@ -794,7 +799,10 @@
   function appliquerSection(i: number) {
     const s = architecture.sections[i];
     sectionIndex = i;
-    engine.quandOnEntendra(() => (sectionAffichee = i));
+    const generation = generationChaine;
+    engine.quandOnEntendra(() => {
+      if (generation === generationChaine) sectionAffichee = i;
+    });
     basculeEnAttente = false;
     if (!s) return;
     /* ⚠️ CE QU'ON ENTEND EST DANS `ui/chaine.ts` DEPUIS LE 2026-09-17 — le
@@ -893,6 +901,7 @@
 
   /* Charger un MONTAGE : la chaîne et les calques de lignes. */
   function chargerMontage(nom: string) {
+    generationChaine++;
     architecture.chargerMontage(nom);
     basculeEnAttente = false;
     engine.cancelQueuedSwap();
@@ -905,6 +914,7 @@
   }
 
   function quitterArchitecture() {
+    generationChaine++;
     architecture.effacer();
     sectionIndex = 0;
     sectionAffichee = 0;
@@ -939,7 +949,10 @@
     if (!parties.remplie(id)) return;
     engine.queueSwapAtNextBar(() => {
       parties.chargerGardantTempo(id);
-      engine.quandOnEntendra(() => (partieHorsChaine = id));
+      const generation = generationChaine;
+      engine.quandOnEntendra(() => {
+        if (generation === generationChaine) partieHorsChaine = id;
+      });
     });
   }
 

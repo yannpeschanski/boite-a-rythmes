@@ -30,7 +30,7 @@
    */
   import { sortie } from '../sortie.svelte';
   import { latence } from '../latence.svelte';
-  import { verdictLatence, messageLatence, messageLatenceCourt } from '../latenceVerdict';
+  import { verdictLatence, mesureAutomatique, messageLatence, messageLatenceCourt } from '../latenceVerdict';
 
   /* ⚠️ `flottant` existe pour le Mode Live, et c'est une contrainte de MISE EN
      PAGE, pas de style : la surface du Live est une grille dont les rangées sont
@@ -40,15 +40,17 @@
      dans `.live-root`, et ne déplace rien. */
   let { flottant = false }: { flottant?: boolean } = $props();
 
-  /* La mesure — tant que le joueur a calibré, comme avant : c'était alors la
-     chaîne ENTIÈRE. Depuis le 2026-10-15 le calibrage date les clics quand on
-     les ENTEND, donc il ne trouve plus que le reste (la dalle) : la chaîne
-     entière est ce reste PLUS le retard que le moteur voit lui-même
-     (`sortie.retardMs`). Sans calibrage, rien ne change — le tampon déclaré
-     seul, pour ne pas dire « c'est le Bluetooth » à un ordinateur filaire. */
-  const verdict = $derived(
-    verdictLatence(sortie.baseMs, latence.ms !== 0 ? (sortie.retardMs ?? 0) + latence.ms : null),
-  );
+  /* La mesure : le retard que le moteur VOIT lui-même (`sortie.retardMs`),
+     quand il en dit plus que le tampon (`mesureAutomatique` — c'est la route,
+     Bluetooth compris, sans un geste du joueur) ; plus le reste que le
+     calibrage a trouvé à la dalle, s'il a été fait. Depuis le 2026-10-15 le
+     calibrage date les clics quand on les ENTEND : il ne mesure plus que ce
+     reste. Ni l'un ni l'autre : le tampon déclaré seul, comme avant. */
+  const verdict = $derived.by(() => {
+    const auto = mesureAutomatique(sortie.baseMs, sortie.retardMs);
+    if (auto !== null) return verdictLatence(sortie.baseMs, auto + latence.ms);
+    return verdictLatence(sortie.baseMs, latence.ms !== 0 ? (sortie.retardMs ?? 0) + latence.ms : null);
+  });
   const message = $derived(
     flottant ? messageLatenceCourt(verdict) : messageLatence(verdict),
   );

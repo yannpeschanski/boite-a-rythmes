@@ -133,7 +133,10 @@ export class LiveRecorder {
   /* Détache le tap et renvoie le WAV. ⚠️ Un Blob, plus un AudioBuffer : le
      fichier est déjà écrit au fil de l'eau, en refaire un AudioBuffer pour le
      reconvertir aussitôt était exactement la copie qu'on supprime. */
-  stop(): Blob {
+  /* `ignorerSecondes` : ce qui a été capté AVANT le premier temps — le
+     magnétophone se branche avant `start()`, et sur un précompte enchaîné il
+     écoute quatre temps de silence. */
+  stop(ignorerSecondes = 0): Blob {
     if (this.tap && this.node) {
       try {
         this.tap.disconnect(this.node);
@@ -163,7 +166,8 @@ export class LiveRecorder {
 
     // `subarray` et non `slice` : une VUE sur ce qui est déjà écrit, donc
     // aucune copie de plus avant le Blob.
-    const pcm = this.donnees.subarray(0, this.longueur);
+    const debut = Math.min(this.longueur, Math.max(0, Math.round(ignorerSecondes * sampleRate)));
+    const pcm = this.donnees.subarray(debut, this.longueur);
     const blob = wavDepuisInt16(pcm, sampleRate);
     this.donnees = new Int16Array(0);
     this.longueur = 0;

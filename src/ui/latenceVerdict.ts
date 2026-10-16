@@ -109,6 +109,25 @@ export function messageLatenceCourt(v: VerdictLatence): string | null {
   return `${constat} sur cet appareil.`;
 }
 
+/* Le retard d'une frappe que le MOTEUR mesure tout seul (`sortie.retardMs`,
+ * sur l'horloge entendue), quand il dit quelque chose que le tampon déclaré ne
+ * dit pas — sinon null.
+ *
+ * ⚠️ « Arrête de me demander des valeurs » (2026-10-15) : sans ça, l'avis ne
+ * parlait du casque qu'à qui avait calibré. Mais le retard d'une frappe contient
+ * TOUJOURS le tampon : 2,5 fois `baseLatency` sur Chrome (les deux tampons
+ * qu'`outputLatency` compte, plus la demi-marche de rendu) et l'avance de
+ * déclenchement. Ce qui reste est la ROUTE. On ne s'en sert qu'au-delà du seuil
+ * LOURD : en deçà, un haut-parleur de téléphone sous Firefox ou un ordinateur
+ * filaire se feraient dire « c'est le Bluetooth ». */
+export const SEUIL_ROUTE = SEUIL_LOURD; // ms
+
+export function mesureAutomatique(baseMs: number | null, retardMs: number | null): number | null {
+  if (retardMs === null || !Number.isFinite(retardMs)) return null;
+  const route = retardMs - 2.5 * Math.max(0, baseMs ?? 0) - 8;
+  return route >= SEUIL_ROUTE ? retardMs : null;
+}
+
 /** Ce qu'on écrit à l'écran. Une phrase, jamais un chiffre nu. */
 export function messageLatence(v: VerdictLatence): string | null {
   if (v.palier === 'jouable') return null;

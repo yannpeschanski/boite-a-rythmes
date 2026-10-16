@@ -83,8 +83,32 @@ const ECHANTILLON_MIN_MS = 20;
 /* Au moins trois horodatages récents avant de les croire. */
 const HORODATAGES_MIN = 3;
 /* Un écart plus grand que ça entre deux images n'est pas une correction mais
-   une horloge neuve : on ne bloque pas la sortie pour « ne jamais reculer ». */
+   une horloge neuve : on ne retient pas la sortie pour « ne jamais reculer ». */
 const RECUL_MAX = 1;
+/* Quand l'estimation RECULE (une correction), l'image ne se fige pas : elle
+   ralentit à cette vitesse jusqu'à la rejoindre. Figer tenait une case allumée
+   le temps du recul entier — 183 ms mesurés quand Firefox livre enfin son
+   retard. À mi-vitesse, 100 ms se rattrapent en 200 ms sans un arrêt. */
+const VITESSE_DE_RATTRAPAGE = 0.5;
+/* Deux relevés plus espacés que ça ne bornent plus une marche : le dernier
+   coup d'œil avant elle peut en être loin (fil principal bloqué), et sa veille
+   serait en avance d'autant. On ne la garde pas. */
+const ECART_RELEVES_MAX_MS = 50;
+/* CHANGEMENT DE RÉGIME — un vrai décrochage du rendu (sortie qui a manqué un
+   bloc), un changement de sortie. La médiane sur deux secondes le suivrait en
+   une seconde, image en avance pendant tout ce temps (mesuré : 105 ms pour un
+   seul rappel en retard de 100 ms qui a affamé la sortie). Si les derniers
+   échantillons s'écartent TOUS de la médiane d'avant, du même côté et de plus
+   que ce seuil, l'avant ne vaut plus. Un rappel isolé en retard, sans trou dans
+   le son, ne déplace qu'UN échantillon : il ne déclenche rien. */
+const SEUIL_REGIME = 0.015; // s
+const RECENTS_VEILLES = 3;
+/* ⚠️ En RAPPELS, pas en relevés : Chrome ne renouvelle son horodatage qu'à
+   chaque rappel (171 ms sur le téléphone de Yann), et six relevés y valaient UN
+   rappel — un seul rappel bruité réduisait la fenêtre à lui (contre-revue du
+   2026-10-16). Un échantillon n'est donc pris que si `performanceTime` a
+   changé. */
+const RECENTS_HORODATAGES = 3;
 /* Tolérance de lecture : un horodatage qui annonce un instant AU-DELÀ de ce qui
    est rendu, ou plus de deux secondes en arrière, n'est pas une sortie audio. */
 const MARGE_RENDU = 0.005;
@@ -103,10 +127,25 @@ function mediane(xs: number[]): number {
 }
 
 /** Le retard déclaré, en secondes. `outputLatency` s'il dit quelque chose ;
- *  sinon deux tampons (WebKit ne déclare pas `outputLatency`). */
+ *  sinon deux tampons (WebKit ne déclare pas `outputLatency`).
+ *  ⚠️ Pas d'a priori deviné là où `baseLatency` vaut 0 (Gecko) : deux marches
+ *  y faisaient 84 ms, plus que le vrai retard au haut-parleur (22 ms) — l'image
+ *  passait de 22 ms d'avance à 56 ms de retard. L'a priori est le retard LU à
+ *  la visite précédente (`AudioEngine.poserSortieConnue`), ou rien. */
 export function retardDeclare(r: Releve): number {
   if (typeof r.outputLatency === 'number' && r.outputLatency > 0) return r.outputLatency;
   return (r.baseLatency || 0) * 2;
+}
+
+/* Si les `n` derniers échantillons s'écartent tous de la médiane des
+   précédents, du même côté et de plus de `SEUIL_REGIME`, on ne garde qu'eux. */
+function suivreLeRegime(xs: Echantillon[], n: number): void {
+  if (xs.length <= n + 1) return;
+  const anciens = mediane(xs.slice(0, -n).map((e) => e.valeur));
+  const ecarts = xs.slice(-n).map((e) => e.valeur - anciens);
+  const auDessus = ecarts.every((e) => e > SEUIL_REGIME);
+  const auDessous = ecarts.every((e) => e < -SEUIL_REGIME);
+  if (auDessus || auDessous) xs.splice(0, xs.length - n);
 }
 
 /** L'horodatage de ce relevé dit-il quelque chose que `currentTime` ne dit
@@ -130,22 +169,24 @@ export function decalageHorodate(r: Releve): number | null {
 export class HorlogeEntendue {
   private horodates: Echantillon[] = [];
   private dernierHorodateMs = -Infinity;
+  private dernierPerformanceTime = -1;
   /* Le décalage `currentTime − mur` relevé À LA VEILLE de chaque marche. */
   private veilles: Echantillon[] = [];
   private dernier: Releve | null = null;
   private sauts: number[] = [];
-  private derniereMarcheMs: number | null = null;
   private derniereSortie: number | null = null;
+  private derniereSortieMs = 0;
 
   /** Contexte neuf : rien de l'ancien ne vaut pour lui. */
   oublier(): void {
     this.horodates = [];
     this.dernierHorodateMs = -Infinity;
+    this.dernierPerformanceTime = -1;
     this.veilles = [];
     this.dernier = null;
     this.sauts = [];
-    this.derniereMarcheMs = null;
     this.derniereSortie = null;
+    this.derniereSortieMs = 0;
   }
 
   noter(r: Releve): void {
@@ -153,29 +194,25 @@ export class HorlogeEntendue {
     if (avant && r.currentTime < avant.currentTime) {
       // L'horloge a reculé : ce n'est plus le même contexte.
       this.oublier();
-    } else if (avant && r.currentTime > avant.currentTime) {
+    } else if (avant && r.currentTime > avant.currentTime && r.murMs - avant.murMs <= ECART_RELEVES_MAX_MS) {
       /* Une MARCHE. Le relevé d'avant était le dernier coup d'œil sur
          l'ancienne valeur, donc le plus proche de ce qu'on entendait : c'est
          lui qui dit l'heure. */
-      const pas = this.pasMarche();
-      if (this.derniereMarcheMs !== null && r.murMs - this.derniereMarcheMs > 4000 * pas + 100) {
-        /* L'horloge était ARRÊTÉE (rendu interrompu), pas entre deux marches :
-           le décalage d'avant ne vaut plus, et sa médiane mettrait une
-           seconde à l'oublier. */
-        this.veilles = [];
-      }
-      this.derniereMarcheMs = r.murMs;
       this.veilles.push({ murMs: r.murMs, valeur: avant.currentTime - avant.murMs / 1000 });
       this.sauts.push(r.currentTime - avant.currentTime);
       if (this.sauts.length > 16) this.sauts.shift();
+      suivreLeRegime(this.veilles, RECENTS_VEILLES);
     }
     this.dernier = r;
     this.purger(this.veilles, r.murMs);
 
     const d = decalageHorodate(r);
-    if (d !== null && r.murMs - this.dernierHorodateMs >= ECHANTILLON_MIN_MS) {
+    const perf = r.horodatage?.performanceTime ?? -1;
+    if (d !== null && perf !== this.dernierPerformanceTime && r.murMs - this.dernierHorodateMs >= ECHANTILLON_MIN_MS) {
       this.dernierHorodateMs = r.murMs;
+      this.dernierPerformanceTime = perf;
       this.horodates.push({ murMs: r.murMs, valeur: d });
+      suivreLeRegime(this.horodates, RECENTS_HORODATAGES);
     }
     this.purger(this.horodates, r.murMs);
   }
@@ -223,16 +260,27 @@ export class HorlogeEntendue {
     return murMs / 1000 + decalage - retardDeclare(r);
   }
 
-  /** L'heure entendue MAINTENANT (au relevé `r`) : ne recule jamais, et ne
+  /** L'heure entendue MAINTENANT (au relevé `r`) : ne recule jamais — une
+   *  correction vers l'arrière se rattrape en ralentissant, sans figer — et ne
    *  dépasse jamais ce qui est rendu. */
   maintenant(r: Releve): number | null {
     this.noter(r);
     let t = this.entenduA(r.murMs);
     if (t === null) return null;
     if (t > r.currentTime) t = r.currentTime;
+    /* ⚠️ Pas de plancher tant que l'heure n'est pas ÉTABLIE (aucune veille de
+       marche, aucun horodatage) : la toute première estimation d'un contexte
+       neuf peut être loin — sous Firefox, sans marche vue, on ne connaît même
+       pas le tampon — et la retenir ferait ralentir l'image pendant une
+       seconde pour s'en défaire. */
+    if (!this.veilles.length && !this.horodatesFrais()) return t;
     const avant = this.derniereSortie;
-    if (avant !== null && t < avant && avant - t < RECUL_MAX) t = avant;
+    if (avant !== null && t < avant && avant - t < RECUL_MAX) {
+      const ecoule = Math.max(0, (r.murMs - this.derniereSortieMs) / 1000);
+      t = Math.min(avant + VITESSE_DE_RATTRAPAGE * ecoule, Math.max(avant, r.currentTime));
+    }
     this.derniereSortie = t;
+    this.derniereSortieMs = r.murMs;
     return t;
   }
 }

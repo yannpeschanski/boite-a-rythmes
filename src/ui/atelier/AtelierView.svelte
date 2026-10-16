@@ -539,6 +539,12 @@
   async function ecouterDepuis(i: number) {
     const sections = architecture.sections;
     if (!sections[i]) return;
+    /* ⚠️ LA FIN EST DÉJÀ PROGRAMMÉE : la sortie se tait à la frontière et
+       l'écoute se ferme quand on l'entendra — une latence de sortie plus tard,
+       une demi-seconde au casque. Un saut mis en file ici serait avalé par
+       cette fermeture, et muet de toute façon. On repart donc de zéro, depuis
+       la scène demandée. */
+    if (ecoute && finProgrammee) arreterEcoute();
     finDeMorceau = false;
     if (ecoute) {
       /* ⚠️ On annule la bascule DÉJÀ programmée, sinon l'avance automatique
@@ -571,6 +577,7 @@
     ecoute = null;
     sceneEntendue = -1;
     finDeMorceau = false;
+    finProgrammee = false;
     basculeEnAttente = false;
     engine.stop();
     playing = false;
@@ -607,6 +614,9 @@
      frontière (`taireA`, à l'échantillon près), le contexte se ferme quand
      l'oreille y est. */
   let finDeMorceau = false;
+  /* La bascule de fin est APPLIQUÉE (la sortie va se taire), on attend de
+     l'entendre. */
+  let finProgrammee = false;
   function suivreLaChaine() {
     if (!ecoute || !playing) return;
     if (finDeMorceau) return arreterEcoute();
@@ -620,6 +630,7 @@
       basculeEnAttente = true;
       engine.queueSwapAtNextBar((frontiere) => {
         basculeEnAttente = false;
+        finProgrammee = true;
         engine.taireA(frontiere);
         engine.quandOnEntendra(() => (finDeMorceau = true));
       });
@@ -648,11 +659,11 @@
   // déterministe), ceci capture vraiment ce qui joue — curseurs bougés
   // pendant la lecture inclus. `playing`/`recording` pilotent l'affichage du
   // transport pendant toute la durée, gérée par AudioEngine.startLiveRecording.
-  async function recordLive(bars: number) {
+  async function recordLive(bars: number, depart?: number) {
     recording = true;
     playing = true;
     try {
-      return await engine.startLiveRecording(bars);
+      return await engine.startLiveRecording(bars, depart);
     } finally {
       playing = false;
       recording = false;

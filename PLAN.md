@@ -48,6 +48,50 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'horloge entendue, ce que la revue a trouvé (2026-10-16)
+
+Revue adversariale de #237 (trois angles, deux contre-vérificateurs par
+défaut ; plusieurs coupés par la limite de session, chaque défaut relu à la
+main avant correction) :
+
+- **Un rendu qui décroche** : la médiane sur 2 s suivait un trou dans le son en
+  ~1 s, image en avance puis figée. → changement de RÉGIME (les derniers relevés
+  s'écartent tous du même côté de > 15 ms : 3 veilles, 6 horodatages) ; une
+  veille n'est gardée que si le relevé d'avant date de < 50 ms (fil principal
+  bloqué ≠ rendu arrêté) ; un recul se rattrape à mi-vitesse au lieu de figer ;
+  pas de plancher tant que l'heure n'est pas établie.
+- **Firefox, première écoute de la page** : 1,5 s à retard 0. → le retard lu se
+  retient sur l'appareil (`onSortieLue` / `poserSortieConnue`,
+  `ui/sortie.svelte.ts`) ; sans lui, deux marches observées.
+- **Enregistrer le direct** repartait d'un contexte neuf après le précompte
+  entendu, un temps entier plus tard au casque. → `countIn({ enchainer })` +
+  `startLiveRecording(bars, depart)` sur le même contexte, prise coupée au
+  premier temps (`LiveRecorder.stop(ignorerSecondes)`).
+- **Écoute de chaîne** : un saut demandé pendant la fin programmée était avalé.
+  → `finProgrammee` : on repart de zéro depuis la scène.
+- **Mode Live** : un repère d'affichage d'une chaîne quittée rallumait une case
+  dans la nouvelle. → génération de chaîne.
+- **L'avis de latence** n'utilisait jamais le retard mesuré sans calibrage. →
+  `mesureAutomatique` (route = retard − 2,5 × tampon − 8 ms ≥ 100 ms).
+- Contre-revue et revue de l'ordonnanceur : le retard RETENU ne sert qu'à
+  l'image (il faisait basculer un haut-parleur sur le gros tampon) ; les
+  horodatages se comptent en rappels ; plus d'a priori « deux marches » sous
+  Gecko (84 ms > 22 ms au haut-parleur) ; le mix d'une bascule se pose à la
+  frontière (il la devançait de 61 à 229 ms) ; un saut trop tard pour la mesure
+  part à la suivante (premier temps doublé, jusqu'à 4 doubles croches de
+  débordement). Restent ouverts, mineurs et antérieurs : un 🫨 Break garde le
+  premier temps de sa mesure, un fil bloqué une rafale à la bascule perd des
+  notes de la mesure sortante, les gestes du Live programmés s'entendent
+  ~0,17 s plus tard sur Chrome Android (coût assumé de l'horizon).
+- Tests : `plusLongGel` remplace des « ne recule jamais » tautologiques ; arrêts
+  du rendu avec et sans trou, fil principal bloqué, premier contexte Gecko,
+  six cas réels de l'avis.
+
+Vérifié dans Chromium (Chrome Android simulé) : 0 case sautée ; précompte à une
+image ; la prise enchaînée commence pile au départ (2221 ms des deux côtés) ;
+un saut pendant la fin d'écoute relance depuis la scène ; un montage chargé
+pendant la fenêtre de bascule s'affiche dès sa première scène.
+
 ### ✅ L'horloge du son ENTENDU — l'image suit le son, le tempo reste propre (2026-10-15)
 
 Yann : « il s'agit avant tout de bien synchroniser le son à l'image et que le
