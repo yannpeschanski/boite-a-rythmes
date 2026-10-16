@@ -759,11 +759,31 @@
   $effect(() => {
     const n = archSections.length;
     if (n && sectionIndex >= n) sectionIndex = n - 1;
+    if (n && sectionAffichee >= n) sectionAffichee = n - 1;
   });
   /* La longueur de la section EN COURS se lit sur le motif chargé — c'est lui
      qui joue. Les longueurs AFFICHÉES, elles, se lisent lettre par lettre. */
   const mesuresCourantes = $derived(sectionCourante ? mesuresDeSection(sectionCourante, cycleMotif) : 0);
   const cycleDe = $derived((id: PartieId) => parties.cycle(id));
+  /* ⚠️ LA SECTION QU'ON ENTEND N'EST PAS CELLE QUI JOUE (2026-10-15).
+     `sectionIndex` change à la bascule, que le moteur applique AVANT la
+     mesure pour l'écrire à temps : un retard de sortie plus tôt que l'oreille,
+     une demi-seconde au casque sur Chrome. C'est juste pour décider de la
+     suivante, faux pour l'afficher — la case passait à la scène d'après avant
+     qu'on l'entende. L'écran lit donc celle-ci, posée quand on ENTEND la
+     frontière (`engine.quandOnEntendra`). */
+  let sectionAffichee = $state(0);
+  const sectionEntendue = $derived(archSections[sectionAffichee] ?? null);
+  /* Hors de la fenêtre de bascule, c'est la même section : on garde le même
+     chiffre que la logique. Dedans, la longueur se lit lettre par lettre —
+     le motif chargé est déjà celui d'après. */
+  const mesuresEntendues = $derived(
+    !sectionEntendue
+      ? 0
+      : sectionAffichee === sectionIndex
+        ? mesuresCourantes
+        : mesuresDeSection(sectionEntendue, cycleDe(sectionEntendue.partie)),
+  );
   const dureeMorceau = $derived(
     archSections.length ? formaterDuree(dureeSecondes(archSections, cycleDe, st.tempo)) : '',
   );
@@ -774,6 +794,7 @@
   function appliquerSection(i: number) {
     const s = architecture.sections[i];
     sectionIndex = i;
+    engine.quandOnEntendra(() => (sectionAffichee = i));
     basculeEnAttente = false;
     if (!s) return;
     /* ⚠️ CE QU'ON ENTEND EST DANS `ui/chaine.ts` DEPUIS LE 2026-09-17 — le
@@ -842,11 +863,13 @@
     }
   }
 
-  /** Avancement dans la section courante, 0..1 — le remplissage de la case. */
-  function avancementSection(): number {
-    if (!playing || mesuresCourantes <= 0) return 0;
-    const m = Math.min(engine.barDansSection, mesuresCourantes - 1);
-    return Math.max(0, Math.min(1, (m + engine.barProgress()) / mesuresCourantes));
+  /** Avancement dans la section ENTENDUE, 0..1 — le remplissage de la case.
+   *  Sur l'horloge entendue, comme la case allumée : lu sur le compteur du
+   *  rendu, il devançait le son du retard de sortie. */
+  function avancementSection(m: { dansSection: number; progres: number }): number {
+    if (!playing || mesuresEntendues <= 0) return 0;
+    const dans = Math.min(Math.max(0, m.dansSection), mesuresEntendues - 1);
+    return Math.max(0, Math.min(1, (dans + m.progres) / mesuresEntendues));
   }
   let avancement = $state(0);
   /* ⚠️ `engine.barDansSection` est un getter d'une classe ordinaire, pas du
@@ -884,6 +907,7 @@
   function quitterArchitecture() {
     architecture.effacer();
     sectionIndex = 0;
+    sectionAffichee = 0;
     basculeEnAttente = false;
     engine.cancelQueuedSwap();
     picker = null;
@@ -915,7 +939,7 @@
     if (!parties.remplie(id)) return;
     engine.queueSwapAtNextBar(() => {
       parties.chargerGardantTempo(id);
-      partieHorsChaine = id;
+      engine.quandOnEntendra(() => (partieHorsChaine = id));
     });
   }
 
@@ -1896,8 +1920,9 @@
     breakArmed = engine.breakPending;
     fillArmed = engine.fillPending;
     suivreArchitecture();
-    avancement = avancementSection();
-    mesureDansSection = Math.max(0, engine.barDansSection);
+    const entendue = engine.mesureEntendue();
+    avancement = avancementSection(entendue);
+    mesureDansSection = Math.max(0, entendue.dansSection);
     const taille = tailleCarre();
     for (const name of lignesVisibles) {
       const canvas = pisteCanvas[name];
@@ -2013,14 +2038,14 @@
         </button>
         <div class="lcd-block">
           <div class="lcd-tempo">
-            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}{sectionCourante ? ` · ${sectionCourante.nom}` : ''}</span>
+            <span class="lcd">{Math.round(st.tempo)} BPM · {playing ? 'LECTURE' : 'ARRÊT'}{recording ? ' · ENREGISTREMENT' : ''}{sectionEntendue ? ` · ${sectionEntendue.nom}` : ''}</span>
           </div>
           <!-- Le musicien pense en CYCLES, l'ingénieur lit des MESURES : les
                deux sont affichés, et personne ne se trompe sur ce que « ×8 »
                veut dire. -->
           <span class="lcd-sub">
-            {#if sectionCourante}
-              MESURE {Math.min(mesureDansSection, mesuresCourantes - 1) + 1}/{mesuresCourantes} · CYCLE DU MOTIF {cycleMotif} MES. · MORCEAU {dureeMorceau}
+            {#if sectionEntendue}
+              MESURE {Math.min(mesureDansSection, mesuresEntendues - 1) + 1}/{mesuresEntendues} · CYCLE DU MOTIF {cycleMotif} MES. · MORCEAU {dureeMorceau}
             {:else}
               TOUT RÉEL · 🎲 AU HASARD · ASSIGNER POUR CHOISIR
             {/if}
@@ -2073,7 +2098,7 @@
         <div class="parties">
           {#each PARTIES as id (id)}
             {@const remplie = parties.remplie(id)}
-            {@const jouee = sectionCourante ? sectionCourante.partie === id : partieHorsChaine === id}
+            {@const jouee = sectionEntendue ? sectionEntendue.partie === id : partieHorsChaine === id}
             <button
               class="partie"
               class:remplie
@@ -2094,15 +2119,15 @@
             {#each archSections as sec, i (sec.id)}
               <button
                 class="case"
-                class:on={i === sectionIndex}
-                class:done={i < sectionIndex}
+                class:on={i === sectionAffichee}
+                class:done={i < sectionAffichee}
                 class:vide={!parties.remplie(sec.partie)}
                 onpointerdown={() => onCaseDown(i)}
                 onpointerup={() => onCaseUp(i)}
                 onpointerleave={onCaseLeave}
                 title="{sec.nom} — {libelleDePartie(sec)} · {mesuresDeSection(sec, cycleDe(sec.partie))} mesures · appui long : changer la lettre ou la longueur"
               >
-                {#if i === sectionIndex}
+                {#if i === sectionAffichee}
                   <span class="fill" style:width="{avancement * 100}%"></span>
                 {/if}
                 <span class="case-nom">{sec.nom}</span>

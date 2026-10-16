@@ -40,7 +40,15 @@
      dans `.live-root`, et ne déplace rien. */
   let { flottant = false }: { flottant?: boolean } = $props();
 
-  const verdict = $derived(verdictLatence(sortie.baseMs, latence.ms || null));
+  /* La mesure — tant que le joueur a calibré, comme avant : c'était alors la
+     chaîne ENTIÈRE. Depuis le 2026-10-15 le calibrage date les clics quand on
+     les ENTEND, donc il ne trouve plus que le reste (la dalle) : la chaîne
+     entière est ce reste PLUS le retard que le moteur voit lui-même
+     (`sortie.retardMs`). Sans calibrage, rien ne change — le tampon déclaré
+     seul, pour ne pas dire « c'est le Bluetooth » à un ordinateur filaire. */
+  const verdict = $derived(
+    verdictLatence(sortie.baseMs, latence.ms !== 0 ? (sortie.retardMs ?? 0) + latence.ms : null),
+  );
   const message = $derived(
     flottant ? messageLatenceCourt(verdict) : messageLatence(verdict),
   );

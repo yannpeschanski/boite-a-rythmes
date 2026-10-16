@@ -47,6 +47,12 @@ class Sortie {
    * retard sans demander au joueur de calibrer d'abord. */
   baseMs = $state<number | null>(null);
 
+  /* Le retard d'une frappe, doigt exclu, MESURÉ par le moteur sur l'horloge
+   * entendue (`AudioEngine.onRetardMesure`) — `null` tant qu'aucune lecture
+   * n'a tourné. C'est la « mesure » du verdict : elle contient la route,
+   * Bluetooth compris, que `baseMs` ne dit pas. */
+  retardMs = $state<number | null>(null);
+
   charger(): void {
     let brut: string | null = null;
     try {

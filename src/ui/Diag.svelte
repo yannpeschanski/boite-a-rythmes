@@ -109,7 +109,14 @@
     // Une horloge à l'arrêt PENDANT une lecture est exactement le symptôme
     // qu'on traque : le scheduler tourne, le temps audio n'avance pas.
     if (cle === 'horloge') return etat.joue === true && valeur === 0;
-    if (cle === 'baseLatencyMs' || cle === 'outputLatencyMs' || cle === 'horodatageSortieMs' || cle === 'retardSuiviMs') return false;
+    if (
+      cle === 'baseLatencyMs' ||
+      cle === 'outputLatencyMs' ||
+      cle === 'sourceHorloge' ||
+      cle === 'pasHorlogeMs' ||
+      cle === 'retardSuiviMs'
+    )
+      return false;
     return valeur === false;
   }
 
@@ -131,8 +138,10 @@
    *     pincettes — c'est tout le sujet ;
    *   - le total réel : seulement à l'oreille, par le calibrage.
    *
-   * L'écart entre le total avoué et le total mesuré est le chiffre le plus
-   * utile de cet écran : c'est ce que le navigateur ne dit pas. */
+   * ⚠️ Depuis le 2026-10-15 le calibrage ne mesure plus la chaîne ENTIÈRE :
+   * les clics sont datés à l'instant où on les ENTEND (l'horloge entendue),
+   * donc ce qu'il reste à l'oreille est la dalle, plus ce que l'horloge rate.
+   * Le comparer au total avoué n'aurait plus de sens — la ligne est retirée. */
   let retards = $state<number[]>([]);
   const retardMedian = $derived(medianeDesEcarts(retards));
 
@@ -214,7 +223,8 @@
     'echantillonnage',
     'baseLatencyMs',
     'outputLatencyMs',
-    'horodatageSortieMs',
+    'sourceHorloge',
+    'pasHorlogeMs',
     'retardSuiviMs',
     'tamponDemande',
     'graphe',
@@ -230,8 +240,9 @@
     echantillonnage: 'échantillonnage',
     baseLatencyMs: 'baseLatency (ms)',
     outputLatencyMs: 'outputLatency (ms)',
-    horodatageSortieMs: 'retard horodaté — getOutputTimestamp (ms)',
-    retardSuiviMs: 'retard suivi par les grilles (ms)',
+    sourceHorloge: 'heure des grilles (horodatage / déclaré)',
+    pasHorlogeMs: 'marche de l’horloge audio (ms)',
+    retardSuiviMs: 'retard rendu → entendu (ms)',
     tamponDemande: 'tampon demandé',
     graphe: 'graphe construit',
     kit: 'kit construit',
@@ -313,8 +324,8 @@
   <AvisLatence />
   <p class="aide">
     Tape une dizaine de fois sur la zone ci-dessous, puis lance la mesure à
-    l’oreille. Un chiffre déclaré par le navigateur ne prouve rien — c’est
-    l’écart entre les deux totaux qui compte.
+    l’oreille. Les clics y sont datés quand on les entend : ce qui reste est la
+    dalle, plus ce que l’horloge des grilles rate.
   </p>
   <button class="pad" onpointerdown={taper} aria-label="Zone de frappe">
     {retards.length === 0 ? 'TAPE ICI' : `${retards.length} frappe${retards.length > 1 ? 's' : ''}`}
@@ -337,14 +348,8 @@
       <tr><th>sortie totale (déclarée)</th><td>{etat.outputLatencyMs ?? 'non déclaré'} ms</td></tr>
       <tr><th>total AVOUÉ</th><td>{totalAvoue} ms</td></tr>
       <tr>
-        <th>mesuré à l’oreille (calibrage)</th>
-        <td class:alerte={latence.ms > 50}>{latence.ms === 0 ? 'non mesuré' : `${latence.ms} ms`}</td>
-      </tr>
-      <tr>
-        <th>ce que le navigateur n’avoue pas</th>
-        <td class:alerte={latence.ms !== 0 && latence.ms - totalAvoue > 30}
-          >{latence.ms === 0 ? '—' : `${latence.ms - totalAvoue} ms`}</td
-        >
+        <th>reste à l’oreille (calibrage)</th>
+        <td class:alerte={Math.abs(latence.ms) > 50}>{latence.ms === 0 ? 'non mesuré' : `${latence.ms} ms`}</td>
       </tr>
     </tbody>
   </table>

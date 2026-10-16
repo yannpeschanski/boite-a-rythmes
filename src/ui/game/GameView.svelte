@@ -84,7 +84,14 @@
   };
   let raf = 0;
   function loop() {
-    for (const ev of engine.consumePlayhead()) {
+    const evenements = engine.consumePlayhead();
+    /* Le précompte cède la place quand on ENTEND le premier temps de la
+       boucle — pas quand elle est programmée, quatre temps plus tôt. */
+    if (enPrecompte && departPrecompte !== null && (engine.audioTime() ?? -Infinity) >= departPrecompte) {
+      enPrecompte = false;
+      departPrecompte = null;
+    }
+    for (const ev of evenements) {
       if (ev.name in playhead) playhead[ev.name as GameDrumRowName] = ev.col;
       if (ev.name === game.level.melodie.ligne) playheadBass = ev.col;
       if (ex === 'arrangement') playheadArr[ev.name] = ev.col;
@@ -155,9 +162,12 @@
    * 1. Dater le coup de référence sur l'horloge AUDIO (`ev.time`, le temps
    *    programmé) et non au passage de la frame : rAF ne tourne qu'à 60 Hz,
    *    soit jusqu'à 16 ms d'erreur VARIABLE.
-   * 2. Retrancher le retard de remontée de l'événement (`event.timeStamp`
-   *    contre `performance.now()`) : la file d'événements du navigateur n'est
-   *    pas régulière non plus.
+   * 2. Dater la frappe à l'instant du DOIGT (`event.timeStamp`), projeté sur
+   *    l'horloge entendue (`audioTimeA`). Relire l'horloge dans le
+   *    gestionnaire y ajoutait la file d'événements — irrégulière — et, sur
+   *    Chrome Android, toute une marche de `currentTime` : jusqu'à 171 ms
+   *    d'erreur VARIABLE, que la recherche du décalage constant ne rattrape
+   *    pas (2026-10-15).
    */
   let dernierKickVu = $state(-1);
   let dernierKickAudio = 0;
@@ -166,13 +176,15 @@
   }
   function frapper(e?: Event) {
     if (playingWhat !== 'target' || !enregistre || enPrecompte || dernierKickVu < 0) return;
-    const maintenant = engine.audioTime();
+    // `timeStamp` est sur l'horloge de `performance.now()`, et jamais dans
+    // l'avenir — une valeur absurde retombe sur l'heure du gestionnaire.
+    const auDoigt = e && e.timeStamp > 0 && e.timeStamp <= performance.now() ? e.timeStamp : performance.now();
+    const maintenant = engine.audioTimeA(auDoigt);
     if (maintenant === null) return;
-    const retard = e && e.timeStamp > 0 ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0;
     const n = game.subdiv.kick;
     // Le début de la mesure, déduit du dernier coup entendu et de sa place.
     const debutMesure = dernierKickAudio - dernierKickVu * dureeDunPas();
-    game.enregistrerFrappe((maintenant - retard - debutMesure) / (n * dureeDunPas()));
+    game.enregistrerFrappe((maintenant - debutMesure) / (n * dureeDunPas()));
     /* ⚠️ Un « jouer » se valide TOUT SEUL — retour de jeu : « ce n'est pas
        clair qu'il suffit de dépasser le seuil ». Il n'y a plus de bouton à
        trouver ; dès que dix frappes tiennent `SEUIL_JUSTESSE`, le niveau est
@@ -191,14 +203,18 @@
     engine.stop();
   });
 
-  async function play(which: 'target' | 'guess' | 'intrus') {
+  /* `depart` : l'instant de contexte rendu par le précompte — la boucle part
+     dessus, sur le même contexte. Sans lui, on repart d'un contexte neuf. */
+  async function play(which: 'target' | 'guess' | 'intrus', depart?: number) {
     if (playingWhat === which) {
       engine.stop();
       playingWhat = '';
       resetPlayhead();
       return;
     }
-    engine.stop();
+    // ⚠️ Pas d'arrêt quand on enchaîne : `stop()` ferme le contexte, donc les
+    // clics du précompte et l'instant de départ avec lui.
+    if (depart === undefined) engine.stop();
     resetPlayhead();
     /* ⚠️ Les quatre mesures d'`intrus` sont de la MATIÈRE à écouter, pas « ma
      * version » : comptées dans le `else` jusqu'au 2026-09-19, elles faisaient
@@ -211,7 +227,7 @@
     // le getState() ci-dessus, sinon la toute première fenêtre programmée
     // (jusqu'à 0.25s) jouerait encore l'ancienne.
     playingWhat = which;
-    await engine.start();
+    await engine.start(depart);
     // Le monitoring suit la lecture, ici aussi : le graphe est neuf à chaque
     // ouverture du contexte, et il naît neutre.
     engine.setPetitHautParleur(game.ecoutePetite);
@@ -319,6 +335,8 @@
    */
   let enPrecompte = $state(false);
   let clicPrecompte = $state(0);
+  /* L'instant de contexte du premier temps après le précompte. */
+  let departPrecompte: number | null = null;
   /* Écouter n'est pas jouer.
    *
    * Le premier essai du niveau 37 était trop dur pour une raison qui n'a rien à
@@ -351,13 +369,22 @@
     echec = false;
     enPrecompte = true;
     clicPrecompte = 0;
-    await engine.countIn((beat) => (clicPrecompte = beat));
-    // Un Stop pendant le précompte doit rester un Stop : sans ce test, la
-    // boucle démarrerait quand même quatre temps plus tard.
+    /* ⚠️ ENCHAÎNÉ (2026-10-15) : la boucle est programmée tout de suite, sur
+       le contexte du précompte, au temps qui suit le quatrième clic. Elle
+       repartait d'un contexte neuf après un `setTimeout`, donc à côté de la
+       grille qu'on venait de compter. Le précompte s'efface au premier pas
+       ENTENDU de la boucle (voir `loop`). */
+    const depart = await engine.countIn(
+      (beat) => {
+        if (enPrecompte) clicPrecompte = beat;
+      },
+      { enchainer: true },
+    );
+    // Un Stop pendant la reprise de la sortie doit rester un Stop.
     if (!enPrecompte) return;
-    enPrecompte = false;
+    departPrecompte = depart;
     enregistre = true;
-    play('target');
+    await play('target', depart);
   }
 
   // Un seul point d'entrée vers un niveau : le drapeau d'échec est local à la

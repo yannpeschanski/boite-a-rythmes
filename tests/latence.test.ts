@@ -71,7 +71,16 @@ describe('latence — le réglage converge au lieu d’osciller', () => {
   });
 
   it('une valeur illisible en stockage ne casse rien', () => {
-    magasin.set('boite-a-rythme:latence-entree', 'ceci-nest-pas-un-nombre');
+    magasin.set('boite-a-rythme:latence-entree-2', 'ceci-nest-pas-un-nombre');
+    latence.charger();
+    expect(latence.ms).toBe(0);
+  });
+
+  it("un réglage pris contre l'ANCIENNE horloge des clics n'est pas relu", () => {
+    // Il portait la latence de sortie en plus (voir la clé, 2026-10-15).
+    latence.regler(0);
+    magasin.set('boite-a-rythme:latence-entree', '-6');
+    latence.ms = 0;
     latence.charger();
     expect(latence.ms).toBe(0);
   });
