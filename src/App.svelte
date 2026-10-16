@@ -41,6 +41,9 @@
     AudioEngine.onSortieRefusee = (refusee) => (sortie.bloquee = refusee);
     AudioEngine.onLatenceSortie = (baseMs) => (sortie.baseMs = baseMs);
     AudioEngine.onRetardMesure = (ms) => (sortie.retardMs = ms);
+    // Le retard lu à la visite précédente, rendu au moteur avant le premier son.
+    AudioEngine.poserSortieConnue(sortie.sortieLue());
+    AudioEngine.onSortieLue = (s) => sortie.retenirSortieLue(s);
     /* ⚠️ UNE PANNE DU MOTEUR NE DOIT PAS ÊTRE SILENCIEUSE — et elle l'était.
      *
      * Retour de jeu du 2026-09-15 : sur Firefox, « on appuie sur lecture et il

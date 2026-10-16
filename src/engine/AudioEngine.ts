@@ -690,8 +690,9 @@ export class AudioEngine {
   /* Le retard d'une FRAPPE, doigt exclu — du code qui déclenche à l'oreille —,
    * MESURÉ sur l'horloge entendue et poussé vers l'interface.
    *
-   * ⚠️ Remplace le calibrage comme source du verdict (2026-10-15, « arrête de
-   * me demander des valeurs »). Un son déclenché maintenant part à
+   * ⚠️ C'est la mesure du verdict là où elle dit la ROUTE (2026-10-15, « arrête
+   * de me demander des valeurs » — voir `mesureAutomatique`) : le calibrage n'y
+   * ajoute plus que la dalle. Un son déclenché maintenant part à
    * `currentTime + AVANCE_DECLENCHEMENT` et s'entend quand l'horloge entendue
    * y arrive : l'écart entre les deux EST le retard, sans un geste du joueur.
    * Médiane d'une seconde de relevés, parce que `currentTime` va par marches. */
@@ -1273,6 +1274,12 @@ export class AudioEngine {
     else fn();
   }
 
+  /* Faire `fn` quand on ENTENDRA l'instant de contexte `t` — ce qui suit un
+   * précompte, par exemple. Mêmes repères que ci-dessus : `stop()` les vide. */
+  aLInstantEntendu(t: number, fn: () => void): void {
+    this.reperes.push({ t, fn });
+  }
+
   /* Coupe la sortie à l'instant de contexte `t`, sans clic — la fin d'une
    * écoute. Programmé sur l'horloge du RENDU, donc à l'échantillon près : la
    * boucle qui reprend derrière la frontière ne s'entend pas, même le temps
@@ -1518,7 +1525,10 @@ export class AudioEngine {
       if (!gecko || ctx.currentTime - this.debutFluxCt >= DELAI_LECTURE_SORTIE) {
         const lu = ctx.outputLatency;
         if (typeof lu === 'number' && lu > 0) {
-          AudioEngine.sortieConnue = lu;
+          if (AudioEngine.sortieConnue === undefined || Math.abs(lu - AudioEngine.sortieConnue) > 0.001) {
+            AudioEngine.sortieConnue = lu;
+            AudioEngine.onSortieLue?.(lu);
+          }
           return lu;
         }
         return AudioEngine.sortieConnue ?? lu;
@@ -1530,6 +1540,19 @@ export class AudioEngine {
   /* Pour les tests : le dernier retard lu est partagé par tous les moteurs. */
   static oublierSortieConnue(): void {
     AudioEngine.sortieConnue = undefined;
+  }
+
+  /* LE RETARD LU SE RETIENT D'UNE VISITE À L'AUTRE — c'est une propriété de
+   * l'APPAREIL, comme le calibrage. Sans lui, la première écoute de chaque page
+   * passait sous Firefox une seconde et demie sans retard connu, l'image en
+   * avance de tout le casque (mesuré : +205 ms, puis 183 ms de gel). Le moteur
+   * ne touche pas au stockage : l'interface le lui rend au démarrage
+   * (`poserSortieConnue`) et le reçoit à chaque lecture neuve (`onSortieLue`),
+   * branchés une fois dans `App.svelte`. Sans valeur retenue, l'horloge prend
+   * deux marches observées — mieux que zéro. */
+  static onSortieLue: ((secondes: number) => void) | null = null;
+  static poserSortieConnue(secondes: number | undefined): void {
+    if (typeof secondes === 'number' && secondes > 0 && secondes < 2) AudioEngine.sortieConnue = secondes;
   }
 
   /* La hauteur d'une marche de rendu, en secondes : le tampon déclaré, ou ce
@@ -1586,7 +1609,7 @@ export class AudioEngine {
    * tout de suite que le navigateur ne renseigne rien. */
   latenceSortieMs(): number {
     const r = this.releve();
-    return r ? Math.round(retardDeclare(r) * 1000) : 0;
+    return r ? Math.round(retardDeclare(r, this.horloge.pasMarche()) * 1000) : 0;
   }
 
   /* Métronome de calibrage : programme `beats` clics réguliers et renvoie leur
@@ -1762,22 +1785,34 @@ export class AudioEngine {
   // s'entend dans le résultat, comme dans l'original (LiveRecorder). Le tap
   // se fait via un AudioWorklet (recorder.ts) plutôt que le ScriptProcessorNode
   // déprécié de l'original.
-  async startLiveRecording(bars: number): Promise<Blob> {
-    this.stop();
+  /* `depart` : l'instant rendu par `countIn({ enchainer: true })`. On
+   * enregistre alors sur le contexte du précompte, sans le fermer : la prise
+   * tombe sur la grille qu'on vient de compter (2026-10-16 — elle repartait
+   * d'un contexte neuf une latence de sortie plus tard, un temps entier au
+   * casque). Les clics du précompte vont droit à la destination, pas dans la
+   * prise ; ce qui est capté avant le départ est du silence, et il est coupé. */
+  async startLiveRecording(bars: number, depart?: number): Promise<Blob> {
+    const enchaine = depart !== undefined && this.ctx !== null && !this.isPlaying;
+    if (!enchaine) this.stop();
     this.ensureAudio();
     const ctx = this.ctx!;
     await this.reprendre(ctx);
     this.liveRecorder = new LiveRecorder();
     await this.liveRecorder.start(ctx, this.graph!.finalGain);
-    await this.start();
-    const durationMs = (barDuration(this.getState().tempo) * bars + 1.0) * 1000;
+    const captureDepuis = ctx.currentTime;
+    await this.start(enchaine ? depart : undefined);
+    const debut = this.debutsDeMesure[0]?.t ?? ctx.currentTime;
+    const fin = debut + barDuration(this.getState().tempo) * bars + 1.0;
     return new Promise((resolve) => {
-      setTimeout(() => {
-        const wav = this.liveRecorder!.stop();
-        this.liveRecorder = null;
-        this.stop();
-        resolve(wav);
-      }, durationMs);
+      setTimeout(
+        () => {
+          const wav = this.liveRecorder!.stop(Math.max(0, debut - captureDepuis));
+          this.liveRecorder = null;
+          this.stop();
+          resolve(wav);
+        },
+        Math.max(0, (fin - ctx.currentTime) * 1000),
+      );
     });
   }
 

@@ -191,6 +191,71 @@ describe('Firefox : `outputLatency` ne se lit pas trop tôt', () => {
   });
 });
 
+describe('Firefox : la première écoute de la page', () => {
+  /* ⚠️ Trouvé par la revue du 2026-10-16 : pendant la seconde et demie où
+     `outputLatency` ne se lit pas, le retard valait 0 — image en avance de TOUT
+     le retard, puis figée 183 ms quand il devenait lisible. */
+  function suivre(tel: ReturnType<typeof telephone>, engine: AudioEngine, prive: { tick(): void }, ms: number) {
+    const images: Array<{ m: number; lu: number; vrai: number }> = [];
+    rouler(tel, prive, ms, () => {
+      engine.consumePlayhead();
+      const lu = engine.audioTime();
+      if (lu !== null) images.push({ m: tel.murMs, lu, vrai: tel.entendu() });
+    });
+    return images;
+  }
+  const gel = (xs: Array<{ lu: number }>) => {
+    let max = 0;
+    let n = 0;
+    for (let k = 1; k < xs.length; k++) {
+      n = xs[k].lu <= xs[k - 1].lu ? n + 1 : 0;
+      max = Math.max(max, n);
+    }
+    return max;
+  };
+
+  it('le retard retenu de la visite précédente vaut dès le premier son', () => {
+    AudioEngine.poserSortieConnue(RETARD);
+    const tel = telephone({ gecko: true });
+    const { engine, prive } = moteur(tel.ctx);
+    Object.assign(engine, { isPlaying: true, nextBarTime: 2 });
+    const images = suivre(tel, engine, prive, 3000);
+    const debut = images[0].m;
+    for (const i of images.filter((x) => x.m > debut + 600)) expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.02);
+    // … et toujours sans lire `outputLatency` trop tôt.
+    expect(tel.lectures().horodatages).toBe(0);
+  });
+
+  it('sans retard retenu : deux marches en attendant, puis rattrapé sans gel', () => {
+    const tel = telephone({ gecko: true });
+    const { engine, prive } = moteur(tel.ctx);
+    Object.assign(engine, { isPlaying: true, nextBarTime: 2 });
+    const images = suivre(tel, engine, prive, 3500);
+    const debut = images[0].m;
+    // Mieux que zéro : l'avance est le retard MOINS deux marches, pas le retard.
+    for (const i of images.filter((x) => x.m > debut + 600 && x.m < debut + 1400)) {
+      expect(i.lu - i.vrai).toBeLessThan(RETARD - 2 * MARCHE + 0.02);
+    }
+    expect(gel(images.filter((x) => x.m > debut + 300))).toBe(0);
+    for (const i of images.filter((x) => x.m > debut + 2400)) expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.02);
+  });
+
+  it('le retard lu est rendu à l’interface pour la visite suivante', () => {
+    const lus: number[] = [];
+    AudioEngine.onSortieLue = (secondes) => lus.push(secondes);
+    try {
+      const tel = telephone({ gecko: true });
+      const { engine, prive } = moteur(tel.ctx);
+      Object.assign(engine, { isPlaying: true, nextBarTime: 2 });
+      rouler(tel, prive, 2500, () => engine.consumePlayhead());
+      // Une fois, pas à chaque image.
+      expect(lus).toEqual([RETARD]);
+    } finally {
+      AudioEngine.onSortieLue = null;
+    }
+  });
+});
+
 describe('le tempo propre sur une horloge en marches', () => {
   it('la bascule tombe AVANT la mesure, jamais après — et rien ne part en retard', () => {
     const tel = telephone();

@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   verdictLatence,
+  mesureAutomatique,
   messageLatence,
   messageLatenceCourt,
   SEUIL_SENSIBLE,
@@ -108,5 +109,48 @@ describe('la forme courte du Mode Live', () => {
 
   it('se tait quand la longue se tait', () => {
     expect(messageLatenceCourt(verdictLatence(5, 0))).toBeNull();
+  });
+});
+
+/* La mesure AUTOMATIQUE — le retard que le moteur voit sur l'horloge entendue,
+ * sans calibrage (2026-10-16). Elle ne sert que si elle dit la ROUTE : ce qui
+ * reste une fois le tampon retiré (2,5 × baseLatency) et l'avance (8 ms). */
+describe('la mesure automatique, sans calibrage', () => {
+  it('Firefox au casque Bluetooth : la route se voit, et l’avis dit « Bluetooth »', () => {
+    const m = mesureAutomatique(0, 190);
+    expect(m).toBe(190);
+    const v = verdictLatence(0, m);
+    expect(v.cause).toBe('sortie');
+    expect(messageLatence(v)).toMatch(/bluetooth/i);
+  });
+
+  it('Firefox sur le haut-parleur du téléphone : rien — pas de « Bluetooth » à tort', () => {
+    expect(mesureAutomatique(0, 69)).toBeNull();
+  });
+
+  it('un ordinateur filaire : rien', () => {
+    expect(mesureAutomatique(10, 35)).toBeNull();
+  });
+
+  it('Chrome Android au haut-parleur : le tampon explique tout, le verdict ne change pas', () => {
+    // 416 déclarés + une demi-marche + l'avance : la route n'y fait que ~74 ms.
+    expect(mesureAutomatique(171, 509)).toBeNull();
+    expect(verdictLatence(171, null).cause).toBe('navigateur');
+  });
+
+  it('Chrome Android au casque : la mesure entre, la cause reste le navigateur', () => {
+    const m = mesureAutomatique(171, 541);
+    expect(m).toBe(541);
+    const v = verdictLatence(171, m);
+    expect(v.cause).toBe('navigateur');
+    expect(messageLatence(v)).not.toMatch(/bluetooth/i);
+  });
+
+  it('un ordinateur au casque Bluetooth : la sortie est en cause', () => {
+    expect(verdictLatence(10, mesureAutomatique(10, 200)).cause).toBe('sortie');
+  });
+
+  it('rien de mesuré, rien de dit', () => {
+    expect(mesureAutomatique(171, null)).toBeNull();
   });
 });

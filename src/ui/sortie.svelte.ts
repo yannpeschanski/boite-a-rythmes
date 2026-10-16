@@ -17,6 +17,9 @@
 import { setPreferenceTampon, type PreferenceTampon } from '../engine/tampon';
 
 const KEY = 'boite-a-rythme:tampon-sortie';
+/* Le dernier `outputLatency` LU par le moteur, en secondes — l'a priori de la
+   première écoute d'une visite (voir `AudioEngine.poserSortieConnue`). */
+const KEY_SORTIE_LUE = 'boite-a-rythme:sortie-lue';
 
 const VALEURS: PreferenceTampon[] = ['auto', 'large', 'court'];
 
@@ -69,6 +72,24 @@ class Sortie {
       localStorage.setItem(KEY, p);
     } catch {
       /* stockage refusé : le réglage vaut pour la session */
+    }
+  }
+
+  /* Le retard de sortie lu à la visite précédente, ou rien. */
+  sortieLue(): number | undefined {
+    try {
+      const v = Number(localStorage.getItem(KEY_SORTIE_LUE));
+      return Number.isFinite(v) && v > 0 ? v : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  retenirSortieLue(secondes: number): void {
+    try {
+      localStorage.setItem(KEY_SORTIE_LUE, String(secondes));
+    } catch {
+      /* stockage refusé : l'a priori vaut pour la session */
     }
   }
 

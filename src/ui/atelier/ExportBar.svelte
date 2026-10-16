@@ -23,9 +23,13 @@
     playing,
     recordLive,
   }: {
-    engine: { stop: () => void; countIn: (onTick?: (beat: number) => void) => Promise<number> };
+    engine: {
+      stop: () => void;
+      countIn: (onTick?: (beat: number) => void, opts?: { enchainer?: boolean }) => Promise<number>;
+      aLInstantEntendu: (t: number, fn: () => void) => void;
+    };
     playing: boolean;
-    recordLive: (bars: number) => Promise<Blob>;
+    recordLive: (bars: number, depart?: number) => Promise<Blob>;
   } = $props();
 
   let seconds = $state(20);
@@ -72,9 +76,13 @@
       // ne démarre réellement — le temps de se préparer, comme un vrai
       // enregistrement plutôt que de capturer dès le clic sur le bouton.
       status = 'Précompte…';
-      await engine.countIn((beat) => (status = `Précompte… ${beat}`));
-      status = `Enregistrement du direct en cours… (~${durationS}s)`;
-      const wav = await recordLive(bars);
+      /* ⚠️ ENCHAÎNÉ : la prise démarre sur le contexte du précompte, au temps
+         qui suit le quatrième clic — repartir d'un contexte neuf la posait une
+         latence de sortie plus tard, hors de la grille qu'on vient de compter.
+         Les messages suivent ce qu'on ENTEND, pas ce qui est programmé. */
+      const depart = await engine.countIn((beat) => (status = `Précompte… ${beat}`), { enchainer: true });
+      engine.aLInstantEntendu(depart, () => (status = `Enregistrement du direct en cours… (~${durationS}s)`));
+      const wav = await recordLive(bars, depart);
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
       status = 'Écriture du WAV…';
       downloadBlob(wav, `rythme-live-${stamp}.wav`);
