@@ -15,7 +15,7 @@ import { AudioEngine } from '../src/engine/AudioEngine';
 import { defaultState } from '../src/model/defaults';
 import { barDuration } from '../src/engine/groove';
 import { makeRecorders } from './helpers/rejeu';
-import { oublierSortie } from '../src/engine/tampon';
+import { oublierSortie, sortieLente } from '../src/engine/tampon';
 import type { PatternStateV2 } from '../src/model/types';
 
 vi.mock('../src/engine/metronome', () => ({ scheduleClick: () => {} }));
@@ -226,18 +226,31 @@ describe('Firefox : la première écoute de la page', () => {
     expect(tel.lectures().horodatages).toBe(0);
   });
 
-  it('sans retard retenu : deux marches en attendant, puis rattrapé sans gel', () => {
+  it('sans retard retenu : rattrapé sans gel dès que le retard se lit', () => {
+    /* Rien n'est deviné pendant la seconde et demie (un a priori de deux
+       marches faisait 84 ms, plus que le vrai retard d'un haut-parleur sous
+       Firefox) : l'image est en avance du retard, puis le rejoint à
+       mi-vitesse, sans jamais se figer. */
     const tel = telephone({ gecko: true });
     const { engine, prive } = moteur(tel.ctx);
     Object.assign(engine, { isPlaying: true, nextBarTime: 2 });
-    const images = suivre(tel, engine, prive, 3500);
+    const images = suivre(tel, engine, prive, 4000);
     const debut = images[0].m;
-    // Mieux que zéro : l'avance est le retard MOINS deux marches, pas le retard.
-    for (const i of images.filter((x) => x.m > debut + 600 && x.m < debut + 1400)) {
-      expect(i.lu - i.vrai).toBeLessThan(RETARD - 2 * MARCHE + 0.02);
-    }
     expect(gel(images.filter((x) => x.m > debut + 300))).toBe(0);
-    for (const i of images.filter((x) => x.m > debut + 2400)) expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.02);
+    for (const i of images.filter((x) => x.m > debut + 3000)) expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.02);
+  });
+
+  it('le retard retenu d’hier ne fait pas basculer le tampon d’aujourd’hui', () => {
+    // Hier au casque (448 ms retenus), aujourd'hui au haut-parleur (30 ms) :
+    // la détection ne se persiste pas (engine/tampon.ts).
+    AudioEngine.poserSortieConnue(RETARD);
+    const tel = telephone();
+    Object.defineProperty(tel.ctx, 'outputLatency', { get: () => 0.03 });
+    const { engine, prive } = moteur(tel.ctx);
+    Object.assign(engine, { isPlaying: true, nextBarTime: 2 });
+    rouler(tel, prive, 1000, () => engine.consumePlayhead());
+    expect(sortieLente()).toBe(false);
+    expect(engine.latenceSortieMs()).toBe(30);
   });
 
   it('le retard lu est rendu à l’interface pour la visite suivante', () => {
@@ -295,6 +308,63 @@ describe('le tempo propre sur une horloge en marches', () => {
     // Et la nouvelle section sonne sur son premier temps, pile.
     const kicks = events.filter((e) => e.startsWith('kick ')).map((e) => Number(e.split(' ')[1]));
     expect(kicks.some((t) => Math.abs(t - frontiereAttendue) < 1e-3)).toBe(true);
+  });
+
+  it('le mix de la scène suivante change À LA FRONTIÈRE, pas au tick qui bascule', () => {
+    // Revue du 2026-10-16 : posé à `currentTime`, il devançait la frontière de
+    // 61 à 229 ms sur Chrome Android.
+    const tel = telephone();
+    const etat = defaultState();
+    const { engine, prive } = moteur(tel.ctx, () => etat);
+    const ecritures: number[] = [];
+    const profond = (): unknown =>
+      new Proxy(function () {}, {
+        get: (_c, k) =>
+          k === 'setValueAtTime'
+            ? (_v: number, t: number) => ecritures.push(t)
+            : k === 'derniereTailleReverbe'
+              ? etat.synthGlobal.reverbSize
+              : k === 'ctx'
+                ? tel.ctx
+                : profond(),
+        set: () => true,
+      });
+    Object.assign(engine, { graph: profond() });
+    const mesure = barDuration(etat.tempo);
+    const frontiere = 13 * MARCHE + 0.1;
+    lancerA(engine, frontiere - mesure, mesure);
+    rouler(tel, prive, (mesure - 0.6) * 1000);
+    engine.queueSwapAtNextBar(() => engine.refreshMixSettings());
+    rouler(tel, prive, 800);
+    expect(ecritures.length).toBeGreaterThan(5);
+    for (const t of ecritures) expect(t).toBeCloseTo(frontiere, 9);
+    // Hors bascule (un curseur de l'Atelier), le mix change tout de suite.
+    ecritures.length = 0;
+    engine.refreshMixSettings();
+    for (const t of ecritures) expect(t).toBeCloseTo(tel.ctx.currentTime, 9);
+  });
+
+  it('un saut demandé trop tard pour cette mesure part à la suivante — sans doubler le premier temps', () => {
+    const tel = telephone();
+    let etat = defaultState();
+    const { engine, events, prive } = moteur(tel.ctx, () => etat);
+    const mesure = barDuration(etat.tempo);
+    const debut = tel.ctx.currentTime + 0.06;
+    lancerA(engine, debut, mesure);
+    // Le rendu est à ~0,18 s de la frontière : l'horizon (0,42 s ici) l'a
+    // déjà dépassée, la scène sortante est écrite par-delà.
+    rouler(tel, prive, 1950);
+    expect(debut + mesure - tel.ctx.currentTime).toBeLessThan(0.25);
+    let frontiereVue: number | null = null;
+    const suivant = defaultState();
+    engine.queueSwapAtNextBar((f) => {
+      frontiereVue = f;
+      etat = suivant;
+    });
+    rouler(tel, prive, 3000);
+    expect(frontiereVue).toBeCloseTo(debut + 2 * mesure, 6);
+    const kicks = events.filter((e) => e.startsWith('kick ')).map((e) => e.split(' ')[1]);
+    expect(new Set(kicks).size).toBe(kicks.length);
   });
 
   it('ce qui attend d’être ENTENDU attend vraiment l’oreille', () => {

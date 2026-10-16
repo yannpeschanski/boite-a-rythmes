@@ -48,9 +48,10 @@ export function applyCompressionAmount(
   compNode: DynamicsCompressorNode,
   amount: number,
   ctx: BaseAudioContext,
+  at = ctx.currentTime,
 ): void {
   const t = amount; // 0..1
-  const now = ctx.currentTime;
+  const now = Math.max(at, ctx.currentTime);
   compNode.threshold.setValueAtTime(0 - t * 36, now);
   compNode.ratio.setValueAtTime(1 + t * 15, now);
   compNode.knee.setValueAtTime(10 - t * 8, now);

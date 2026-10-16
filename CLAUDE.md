@@ -182,11 +182,13 @@ chiffres. Une frappe se date à `event.timeStamp`, projeté (`audioTimeA`).
 ⚠️ Gecko n'a pas d'horodatage à lui (il le DÉDUIT d'`outputLatency`) et GARDE
 la première valeur d'`outputLatency` qu'on lui demande : là où `baseLatency`
 vaut 0, ni l'un ni l'autre ne se lit avant 1,5 s de flux (`sortieLisible`) — en
-attendant, le dernier retard lu à la visite précédente (`onSortieLue`), sinon
-deux marches. ⚠️ Un recul de l'estimation se rattrape à MI-VITESSE, jamais en
+attendant, le dernier retard lu à la visite précédente (`onSortieLue`) — pour
+l'IMAGE seulement, jamais pour le tampon ni l'affichage « déclaré » : la route a
+pu changer. ⚠️ Un recul de l'estimation se rattrape à MI-VITESSE, jamais en
 figeant la case ; un changement de régime (trou dans le son, autre sortie) se
-reconnaît à ce que les derniers relevés s'écartent TOUS du même côté — un rappel
-en retard isolé n'en déplace qu'un. Un test qui affirme « ne recule jamais » ne
+reconnaît à ce que les derniers échantillons s'écartent TOUS du même côté —
+comptés en RAPPELS (un horodatage Chrome ne change qu'à chaque rappel), sinon un
+seul rappel bruité vaut six relevés. Un test qui affirme « ne recule jamais » ne
 peut pas échouer : on borne le GEL (`plusLongGel`).
 `tests/horloge-entendue.test.ts` (contextes feints), `tests/horloge-moteur.test.ts`.
 ⚠️ Pas de réglage image/son à la main : essayé, « c'est imbitable ».
@@ -197,7 +199,10 @@ le rendu.** Une bascule s'applique un retard de sortie AVANT d'être entendue
 fin d'une écoute et chiffres du précompte passent par `quandOnEntendra` /
 `mesureEntendue` / des repères ; une écoute se tait à l'échantillon (`taireA`)
 avant de fermer le contexte. `bar` / `barDansSection` restent sur le rendu,
-pour `doitBasculer`. ⚠️ Un repère vit une demi-seconde : il porte la génération
+pour `doitBasculer`. ⚠️ Le MIX d'une bascule se pose à la frontière
+(`refreshMixSettings` lit `frontiereEnCours`), et un saut demandé quand
+l'horizon a déjà écrit par-delà la frontière part à la mesure SUIVANTE
+(`frontieresASauter`) — sinon premier temps doublé. ⚠️ Un repère vit une demi-seconde : il porte la génération
 de chaîne qui l'a posé (Live), et un saut demandé quand la fin est déjà
 programmée repart de zéro au lieu d'être avalé (Atelier).
 

@@ -73,6 +73,16 @@ main avant correction) :
   dans la nouvelle. → génération de chaîne.
 - **L'avis de latence** n'utilisait jamais le retard mesuré sans calibrage. →
   `mesureAutomatique` (route = retard − 2,5 × tampon − 8 ms ≥ 100 ms).
+- Contre-revue et revue de l'ordonnanceur : le retard RETENU ne sert qu'à
+  l'image (il faisait basculer un haut-parleur sur le gros tampon) ; les
+  horodatages se comptent en rappels ; plus d'a priori « deux marches » sous
+  Gecko (84 ms > 22 ms au haut-parleur) ; le mix d'une bascule se pose à la
+  frontière (il la devançait de 61 à 229 ms) ; un saut trop tard pour la mesure
+  part à la suivante (premier temps doublé, jusqu'à 4 doubles croches de
+  débordement). Restent ouverts, mineurs et antérieurs : un 🫨 Break garde le
+  premier temps de sa mesure, un fil bloqué une rafale à la bascule perd des
+  notes de la mesure sortante, les gestes du Live programmés s'entendent
+  ~0,17 s plus tard sur Chrome Android (coût assumé de l'horizon).
 - Tests : `plusLongGel` remplace des « ne recule jamais » tautologiques ; arrêts
   du rendu avec et sans trou, fil principal bloqué, premier contexte Gecko,
   six cas réels de l'avis.

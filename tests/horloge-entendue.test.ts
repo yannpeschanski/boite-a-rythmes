@@ -210,10 +210,10 @@ describe("l'horloge entendue — Chrome Android, marches de 171 ms", () => {
     const images = rouler(casque, 4, h, 4);
     // L'image RALENTIT pour se laisser rejoindre — elle ne se fige jamais…
     expect(plusLongGel(images)).toBe(0);
-    // … et le nouveau retard est suivi en moins d'une demi-seconde : le
-    // changement de régime se voit à ce que tous les relevés récents
-    // s'écartent du même côté, il n'attend pas que la médiane bascule.
-    for (const i of images.filter((x) => x.m > DEBUT_MS + 4500)) {
+    // … et le nouveau retard est suivi en moins d'une seconde : trois RAPPELS
+    // qui s'écartent du même côté (513 ms ici), puis 150 ms rattrapés à
+    // mi-vitesse — sans attendre que la médiane de deux secondes bascule.
+    for (const i of images.filter((x) => x.m > DEBUT_MS + 4900)) {
       expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.003);
     }
   });
@@ -238,6 +238,22 @@ describe("l'horloge entendue — un rendu qui s'arrête", () => {
       expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.02);
     }
     expect(plusLongGel(images.filter((x) => x.m > DEBUT_MS + 2500 && x.m < DEBUT_MS + 3900))).toBe(0);
+  });
+
+  it('Chrome : UN rappel dont l’horodatage s’écarte de 60 ms ne déplace rien', () => {
+    // Contre-revue du 2026-10-16 : compté en relevés, ce seul rappel en
+    // valait six et réduisait la fenêtre à lui.
+    const md: Modele = { ...CHROME_BT };
+    const h = new HorlogeEntendue();
+    const images: Array<{ m: number; lu: number; vrai: number }> = [];
+    for (let m = DEBUT_MS; m < DEBUT_MS + 7000; m += 1000 / 60) {
+      const r = releve(md, m);
+      const k = Math.floor((m - DEBUT_MS) / (md.marche * 1000));
+      if (k === 30 && r.horodatage) r.horodatage = { ...r.horodatage, contextTime: r.horodatage.contextTime - 0.06 };
+      const lu = h.maintenant(r);
+      if (lu !== null && m > DEBUT_MS + 2000) images.push({ m, lu, vrai: entenduReel(md, m) });
+    }
+    for (const i of images) expect(Math.abs(i.lu - i.vrai)).toBeLessThan(0.003);
   });
 
   it('un rappel en retard SANS trou ne déplace rien', () => {

@@ -103,7 +103,12 @@ const ECART_RELEVES_MAX_MS = 50;
    le son, ne déplace qu'UN échantillon : il ne déclenche rien. */
 const SEUIL_REGIME = 0.015; // s
 const RECENTS_VEILLES = 3;
-const RECENTS_HORODATAGES = 6;
+/* ⚠️ En RAPPELS, pas en relevés : Chrome ne renouvelle son horodatage qu'à
+   chaque rappel (171 ms sur le téléphone de Yann), et six relevés y valaient UN
+   rappel — un seul rappel bruité réduisait la fenêtre à lui (contre-revue du
+   2026-10-16). Un échantillon n'est donc pris que si `performanceTime` a
+   changé. */
+const RECENTS_HORODATAGES = 3;
 /* Tolérance de lecture : un horodatage qui annonce un instant AU-DELÀ de ce qui
    est rendu, ou plus de deux secondes en arrière, n'est pas une sortie audio. */
 const MARGE_RENDU = 0.005;
@@ -122,13 +127,14 @@ function mediane(xs: number[]): number {
 }
 
 /** Le retard déclaré, en secondes. `outputLatency` s'il dit quelque chose ;
- *  sinon deux tampons (WebKit ne déclare pas `outputLatency`). `pas` : la
- *  marche observée, qui tient lieu de tampon là où `baseLatency` vaut 0 —
- *  Gecko, avant que son `outputLatency` se lise. Deux tampons y valent mieux
- *  que zéro, qui mettait l'image en avance de TOUT le retard. */
-export function retardDeclare(r: Releve, pas = 0): number {
+ *  sinon deux tampons (WebKit ne déclare pas `outputLatency`).
+ *  ⚠️ Pas d'a priori deviné là où `baseLatency` vaut 0 (Gecko) : deux marches
+ *  y faisaient 84 ms, plus que le vrai retard au haut-parleur (22 ms) — l'image
+ *  passait de 22 ms d'avance à 56 ms de retard. L'a priori est le retard LU à
+ *  la visite précédente (`AudioEngine.poserSortieConnue`), ou rien. */
+export function retardDeclare(r: Releve): number {
   if (typeof r.outputLatency === 'number' && r.outputLatency > 0) return r.outputLatency;
-  return (r.baseLatency || pas) * 2;
+  return (r.baseLatency || 0) * 2;
 }
 
 /* Si les `n` derniers échantillons s'écartent tous de la médiane des
@@ -163,6 +169,7 @@ export function decalageHorodate(r: Releve): number | null {
 export class HorlogeEntendue {
   private horodates: Echantillon[] = [];
   private dernierHorodateMs = -Infinity;
+  private dernierPerformanceTime = -1;
   /* Le décalage `currentTime − mur` relevé À LA VEILLE de chaque marche. */
   private veilles: Echantillon[] = [];
   private dernier: Releve | null = null;
@@ -174,6 +181,7 @@ export class HorlogeEntendue {
   oublier(): void {
     this.horodates = [];
     this.dernierHorodateMs = -Infinity;
+    this.dernierPerformanceTime = -1;
     this.veilles = [];
     this.dernier = null;
     this.sauts = [];
@@ -199,8 +207,10 @@ export class HorlogeEntendue {
     this.purger(this.veilles, r.murMs);
 
     const d = decalageHorodate(r);
-    if (d !== null && r.murMs - this.dernierHorodateMs >= ECHANTILLON_MIN_MS) {
+    const perf = r.horodatage?.performanceTime ?? -1;
+    if (d !== null && perf !== this.dernierPerformanceTime && r.murMs - this.dernierHorodateMs >= ECHANTILLON_MIN_MS) {
       this.dernierHorodateMs = r.murMs;
+      this.dernierPerformanceTime = perf;
       this.horodates.push({ murMs: r.murMs, valeur: d });
       suivreLeRegime(this.horodates, RECENTS_HORODATAGES);
     }
@@ -247,7 +257,7 @@ export class HorlogeEntendue {
     const decalage = this.veilles.length
       ? mediane(this.veilles.map((e) => e.valeur))
       : r.currentTime - r.murMs / 1000 - (r.baseLatency || 0) / 2;
-    return murMs / 1000 + decalage - retardDeclare(r, this.pasMarche());
+    return murMs / 1000 + decalage - retardDeclare(r);
   }
 
   /** L'heure entendue MAINTENANT (au relevé `r`) : ne recule jamais — une

@@ -377,11 +377,17 @@ export function buildGraph(ctx: BaseAudioContext, state: PatternStateV2): GraphN
 
 // Application en direct des réglages de mix/fx sans reconstruire le graphe —
 // appelée quand les curseurs concernés bougent.
-export function applyMixSettings(g: GraphNodes, state: PatternStateV2): void {
-  const now = g.ctx.currentTime;
+/* `at` : l'instant de contexte où le mix doit changer — la FRONTIÈRE d'une
+ * bascule de scène. Posé à `currentTime`, il devançait la frontière de toute
+ * l'avance de la bascule (jusqu'à 229 ms sur Chrome Android, mesuré) : la fin de
+ * la scène sortante passait déjà par le mix de la suivante. Les courbes et
+ * l'impulsion de réverbe ne se programment pas : elles changent tout de suite,
+ * et seulement si la lettre les change. */
+export function applyMixSettings(g: GraphNodes, state: PatternStateV2, at = g.ctx.currentTime): void {
+  const now = Math.max(at, g.ctx.currentTime);
   g.sat.curve = driveCurve(state.globalSaturation / 100);
   g.crush.curve = bitcrushCurve(state.globalBitcrush / 100);
-  applyCompressionAmount(g.comp, state.globalCompression / 100, g.ctx);
+  applyCompressionAmount(g.comp, state.globalCompression / 100, g.ctx, now);
   g.makeup.gain.setValueAtTime(makeupGainForCompression(state.globalCompression / 100), now);
   g.finalGain.gain.setValueAtTime(state.finalVolume / 100 || 1, now);
   const enabled = state.synthGlobal.limitersEnabled;

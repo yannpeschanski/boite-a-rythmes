@@ -291,6 +291,10 @@ export class AudioEngine {
   /* La frontière de la bascule en cours d'application — lue par
      `quandOnEntendra`, nulle en dehors. */
   private frontiereEnCours: number | null = null;
+  /* Jusqu'où l'ordonnanceur a déjà ÉCRIT, et combien de frontières la bascule
+     en attente doit laisser passer (0 ou 1) — voir `queueSwapAtNextBar`. */
+  private horizonEcrit = 0;
+  private frontieresASauter = 0;
   /* Ce que l'interface veut faire quand on ENTENDRA un instant — pas quand il
      est rendu (voir `quandOnEntendra`). Vidé à chaque image par
      `consumePlayhead`. */
@@ -310,6 +314,12 @@ export class AudioEngine {
      demie où un contexte neuf ne se lit pas encore — `stop()` ferme le
      contexte, donc chaque écoute en ouvre un. */
   private static sortieConnue: number | undefined;
+  /* L'A PRIORI d'une visite précédente (stockage) — pour l'IMAGE seulement.
+     ⚠️ Jamais pour décider du tampon ni pour l'afficher comme « déclaré » :
+     hier au casque, aujourd'hui au haut-parleur, il ferait basculer un
+     haut-parleur sur le gros tampon (+40 ms à chaque frappe), alors que la
+     détection ne se persiste pas, par règle (engine/tampon.ts). */
+  private static sortieRetenue: number | undefined;
   private breakRequested = false;
   private breakWindow: BreakWindow | null = null;
   // Curseur visuel découplé : file d'événements consommée contre l'horloge
@@ -753,6 +763,8 @@ export class AudioEngine {
     this.currentBar = 0;
     this.sectionStartBar = 0;
     this.pendingSwap = null;
+    this.horizonEcrit = 0;
+    this.frontieresASauter = 0;
     this.playheadQueue = [];
     // Les repères d'un précompte qu'on ENCHAÎNE sont ceux de ses chiffres.
     if (depart === undefined) this.reperes = [];
@@ -1233,7 +1245,8 @@ export class AudioEngine {
 
   // Réglages de mix/fx appliqués en direct sans reconstruire le graphe.
   refreshMixSettings(): void {
-    if (this.graph) applyMixSettings(this.graph, this.getState());
+    // Dans une bascule, le mix change à la FRONTIÈRE, pas au tick qui l'applique.
+    if (this.graph) applyMixSettings(this.graph, this.getState(), this.frontiereEnCours ?? undefined);
   }
 
   /* Bande d'architecture — demande d'appliquer `apply` (typiquement un
@@ -1256,6 +1269,13 @@ export class AudioEngine {
       this.sectionStartBar = this.currentBar;
       return;
     }
+    /* ⚠️ TROP TARD POUR CETTE MESURE ? L'horizon a pu déjà écrire la scène
+       sortante PAR-DELÀ la frontière (il court jusqu'à 0,42 s sur Chrome
+       Android) : basculer là doublerait le premier temps et laisserait déborder
+       jusqu'à quatre doubles croches de l'ancienne scène (mesuré). On part
+       alors à la mesure d'après — la quantification de lancement de toutes les
+       machines. */
+    this.frontieresASauter = this.nextBarTime !== null && this.horizonEcrit > this.nextBarTime + 1e-9 ? 1 : 0;
     this.pendingSwap = apply;
   }
 
@@ -1295,6 +1315,7 @@ export class AudioEngine {
 
   cancelQueuedSwap(): void {
     this.pendingSwap = null;
+    this.frontieresASauter = 0;
   }
 
   /* La mesure qu'on ENTEND, et où on en est dedans (0..1).
@@ -1378,7 +1399,12 @@ export class AudioEngine {
     /* ⚠️ `+ pas` : sur une horloge en marches, la dernière valeur lue avant la
        mesure peut en être à une marche entière. Seuil sans elle, la bascule
        tombait APRÈS la mesure deux fois sur trois (voir MARGE_HORIZON). */
-    if (this.pendingSwap !== null && this.nextBarTime !== null && this.nextBarTime - now <= AVANCE_BASCULE + pas) {
+    if (
+      this.pendingSwap !== null &&
+      this.frontieresASauter === 0 &&
+      this.nextBarTime !== null &&
+      this.nextBarTime - now <= AVANCE_BASCULE + pas
+    ) {
       const apply = this.pendingSwap;
       this.pendingSwap = null;
       this.frontiereEnCours = this.nextBarTime;
@@ -1403,6 +1429,7 @@ export class AudioEngine {
       const justStartedBarTime = this.nextBarTime; // avant incrément : début de la mesure qui démarre tout juste
       this.currentBar++;
       this.nextBarTime += barDur;
+      if (this.frontieresASauter > 0) this.frontieresASauter--;
       this.debutsDeMesure.push({
         t: justStartedBarTime,
         bar: this.currentBar,
@@ -1428,9 +1455,10 @@ export class AudioEngine {
        l'ancien motif, donc que `resetCursorsAt` ne peut pas doubler une note.
        L'écrêtage dure au plus le temps d'un tick avant la bascule. */
     const horizon =
-      this.pendingSwap !== null && this.nextBarTime !== null
+      this.pendingSwap !== null && this.frontieresASauter === 0 && this.nextBarTime !== null
         ? Math.min(now + avance, this.nextBarTime)
         : now + avance;
+    this.horizonEcrit = Math.max(this.horizonEcrit, horizon);
 
     scheduleDrumWindow(
       {
@@ -1497,7 +1525,7 @@ export class AudioEngine {
       murMs: performance.now(),
       currentTime: ctx.currentTime,
       baseLatency,
-      outputLatency: this.sortieLisible(),
+      outputLatency: this.sortieLisible() ?? AudioEngine.sortieRetenue,
       horodatage,
     };
   }
@@ -1540,6 +1568,7 @@ export class AudioEngine {
   /* Pour les tests : le dernier retard lu est partagé par tous les moteurs. */
   static oublierSortieConnue(): void {
     AudioEngine.sortieConnue = undefined;
+    AudioEngine.sortieRetenue = undefined;
   }
 
   /* LE RETARD LU SE RETIENT D'UNE VISITE À L'AUTRE — c'est une propriété de
@@ -1548,11 +1577,11 @@ export class AudioEngine {
    * avance de tout le casque (mesuré : +205 ms, puis 183 ms de gel). Le moteur
    * ne touche pas au stockage : l'interface le lui rend au démarrage
    * (`poserSortieConnue`) et le reçoit à chaque lecture neuve (`onSortieLue`),
-   * branchés une fois dans `App.svelte`. Sans valeur retenue, l'horloge prend
-   * deux marches observées — mieux que zéro. */
+   * branchés une fois dans `App.svelte`. ⚠️ Il ne sert qu'à l'IMAGE (voir
+   * `sortieRetenue`) : la route a pu changer depuis. */
   static onSortieLue: ((secondes: number) => void) | null = null;
   static poserSortieConnue(secondes: number | undefined): void {
-    if (typeof secondes === 'number' && secondes > 0 && secondes < 2) AudioEngine.sortieConnue = secondes;
+    if (typeof secondes === 'number' && secondes > 0 && secondes < 2) AudioEngine.sortieRetenue = secondes;
   }
 
   /* La hauteur d'une marche de rendu, en secondes : le tampon déclaré, ou ce
@@ -1609,7 +1638,10 @@ export class AudioEngine {
    * tout de suite que le navigateur ne renseigne rien. */
   latenceSortieMs(): number {
     const r = this.releve();
-    return r ? Math.round(retardDeclare(r, this.horloge.pasMarche()) * 1000) : 0;
+    if (!this.ctx) return 0;
+    // Ce qui est LU dans cette visite — ni l'a priori retenu, ni un tampon deviné.
+    const ol = this.sortieLisible();
+    return Math.round((typeof ol === 'number' && ol > 0 ? ol : (this.ctx.baseLatency || 0) * 2) * 1000);
   }
 
   /* Métronome de calibrage : programme `beats` clics réguliers et renvoie leur
