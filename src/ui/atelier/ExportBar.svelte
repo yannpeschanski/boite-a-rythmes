@@ -23,7 +23,7 @@
     playing,
     recordLive,
   }: {
-    engine: { stop: () => void; countIn: (onTick?: (beat: number) => void) => Promise<void> };
+    engine: { stop: () => void; countIn: (onTick?: (beat: number) => void) => Promise<number> };
     playing: boolean;
     recordLive: (bars: number) => Promise<Blob>;
   } = $props();

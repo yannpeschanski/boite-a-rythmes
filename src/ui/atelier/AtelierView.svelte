@@ -511,6 +511,10 @@
    * réglage en direct, rien qui se joue. On ÉCOUTE ce qu'on vient de monter,
    * c'est tout. Monter reste un geste de préparation. */
   let ecoute = $state<{ scene: number; motifAvant: string } | null>(null);
+  /* La scène qu'on ENTEND — celle que le panneau allume. `ecoute.scene` est
+     celle que le moteur JOUE, qui change à la bascule : un retard de sortie
+     plus tôt, une demi-seconde au casque sur Chrome (voir `quandOnEntendra`). */
+  let sceneEntendue = $state(-1);
 
   function mesuresDeLaScene(i: number): number {
     const sec = architecture.sections[i];
@@ -546,12 +550,14 @@
         if (!ecoute) return;
         ecoute = { ...ecoute, scene: i };
         appliquerSectionAuMoteur(engine, sections[i]);
+        engine.quandOnEntendra(() => (sceneEntendue = i));
       });
       return;
     }
     /* Le travail en cours, mis de côté AVANT que la première lettre le
        remplace. C'est la seule chose qui rend ce bouton sans risque. */
     ecoute = { scene: i, motifAvant: pattern.toJson() };
+    sceneEntendue = i;
     appliquerSectionAuMoteur(engine, sections[i]);
     if (!playing) {
       await engine.start();
@@ -563,6 +569,7 @@
     if (!ecoute) return;
     const { motifAvant } = ecoute;
     ecoute = null;
+    sceneEntendue = -1;
     finDeMorceau = false;
     basculeEnAttente = false;
     engine.stop();
@@ -592,8 +599,13 @@
   let basculeEnAttente = false;
   /* ⚠️ L'arrêt ne se fait PAS dans la file du moteur : `apply()` est appelé au
      milieu du tick, qui continue ensuite sur `resetCursorsAt`. On lève un
-     drapeau, et la frame suivante coupe — au plus 16 ms après la frontière,
-     c'est-à-dire après la fin du morceau. */
+     drapeau, et la frame suivante coupe.
+     ⚠️ ET LE DRAPEAU SE LÈVE QUAND ON ENTEND LA FIN, pas quand elle est
+     rendue (2026-10-15) : `stop()` ferme le contexte, donc tout ce qui était
+     rendu mais pas encore sorti — la fin de la dernière mesure, une
+     demi-seconde au casque — était coupé. La sortie se tait pile à la
+     frontière (`taireA`, à l'échantillon près), le contexte se ferme quand
+     l'oreille y est. */
   let finDeMorceau = false;
   function suivreLaChaine() {
     if (!ecoute || !playing) return;
@@ -606,9 +618,10 @@
        à la frontière — le morceau est fini. */
     if (ecoute.scene >= total - 1) {
       basculeEnAttente = true;
-      engine.queueSwapAtNextBar(() => {
+      engine.queueSwapAtNextBar((frontiere) => {
         basculeEnAttente = false;
-        finDeMorceau = true;
+        engine.taireA(frontiere);
+        engine.quandOnEntendra(() => (finDeMorceau = true));
       });
       return;
     }
@@ -621,6 +634,7 @@
       if (!sec) return;
       ecoute = { ...ecoute, scene: cible };
       appliquerSectionAuMoteur(engine, sec);
+      engine.quandOnEntendra(() => (sceneEntendue = cible));
     });
   }
 
@@ -1083,7 +1097,7 @@
         <MontagePanel
           {onSwitchView}
           enEcoute={!!ecoute}
-          sceneEnCours={ecoute?.scene ?? -1}
+          sceneEnCours={ecoute ? sceneEntendue : -1}
           onEcouter={ecouterMontage}
           onEcouterDepuis={ecouterDepuis}
         />

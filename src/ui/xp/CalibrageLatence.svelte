@@ -85,10 +85,15 @@
   }
 
   function frapper(e?: Event) {
-    const maintenant = engine.audioTime();
-    if (maintenant === null || !ouvert) return;
-    const retard = e && e.timeStamp > 0 ? Math.max(0, (performance.now() - e.timeStamp) / 1000) : 0;
-    const t = maintenant - retard;
+    if (!ouvert) return;
+    /* La frappe est datée à l'instant du DOIGT, sur l'horloge entendue — la
+       même que les clics (`metronome` rend leur instant programmé, qui EST
+       l'instant où on les entend). Et elle est déjà corrigée du réglage en
+       place : c'est ce qui rend « Appliquer » additif sans faire osciller. */
+    const auDoigt = e && e.timeStamp > 0 && e.timeStamp <= performance.now() ? e.timeStamp : performance.now();
+    const entendu = engine.audioTimeA(auDoigt);
+    if (entendu === null) return;
+    const t = entendu - latence.ms / 1000;
     // Avant le premier clic : on ne jette pas la frappe en silence, on le dit.
     // Tout écran qui MESURE une frappe doit dire pourquoi il en ignore une,
     // sinon l'utilisateur conclut que la fonction est cassée.

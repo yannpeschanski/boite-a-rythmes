@@ -48,6 +48,52 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'horloge du son ENTENDU — l'image suit le son, le tempo reste propre (2026-10-15)
+
+Yann : « il s'agit avant tout de bien synchroniser le son à l'image et que le
+tempo soit propre. Arrête de me demander des valeurs dans tous les sens. Ce
+n'est pas le premier site internet qui synchronise l'image et le son. »
+
+Cause, lue dans le code de Chromium et de Gecko (pas devinée) :
+- Chrome Android rend par RAFALES d'un tampon (171 ms sur le téléphone de
+  Yann) : `currentTime` saute de 171 ms d'un coup. `currentTime − retard`
+  allume les cases par paquets — des cases sautées, quel que soit le retard.
+  `getOutputTimestamp()` donne l'instant entendu sans à-coups ; on en lisait
+  `currentTime − contextTime`, que la norme dit justement non fiable, et on
+  prenait le MAX avec le déclaré.
+- Firefox : son horodatage est déduit d'`outputLatency` (il ne dit rien de
+  plus), et `outputLatency` est GARDÉ à la première valeur lue — que le
+  moteur lisait au premier tick, pendant le démarrage du flux.
+
+Livré :
+- `engine/horlogeEntendue.ts` (pur) : horodatage → médiane du décalage
+  `contextTime − performanceTime/1000` ; sinon retard déclaré retranché du
+  `currentTime` relevé à la veille de chaque marche ; Gecko reconnu sans nom
+  de navigateur (`baseLatency` à 0, ou `performanceTime` = maintenant − OL) ;
+  jamais de recul, borné à `currentTime`.
+- `AudioEngine` : `audioTime()` / `audioTimeA(timeStamp)` sur cette horloge ;
+  `outputLatency` et `getOutputTimestamp` non lus avant 1,5 s de flux là où
+  `baseLatency` vaut 0, dernier retard lu partagé entre moteurs ; horizon
+  `max(0,25, 0,06 + 2 × marche + 0,02)` et seuil de bascule `0,06 + marche` ;
+  `quandOnEntendra`, `mesureEntendue`, `taireA` ; `countIn({ enchainer })` +
+  `start(depart)` ; `metronome` rend l'instant programmé.
+- Vues : frappe du Mode jeu datée au doigt ; précompte enchaîné sur son
+  contexte, chiffres au son entendu ; écoute de chaîne qui se tait à la
+  frontière et se ferme quand on l'entend ; scène et mesure affichées à
+  l'entendu (Atelier, Live) ; calibrage aligné (clé `-2`) ; `#diag`.
+
+Mesuré dans Chromium avec Chrome Android SIMULÉ (marches de 171 ms, 448 ms
+déclarés, horodatage continu), charley en doubles croches à 120 BPM :
+**avant** 12 cases sautées en 6 s, 10-11 images par case, dispersion de
+l'allumage contre le son entendu 130 ms ; **après** 0 case sautée, 7-8 images
+(125 ms), dispersion 7-10 ms. Précompte : chiffres et premier temps de la
+boucle à une image du son. Mode Live : scène et compteur changent ensemble,
+à la mesure entendue.
+
+**Non vérifié** : le téléphone réel. Si l'Android ou le casque ne déclarent pas
+leur retard Bluetooth, aucune page ne peut le connaître — on fait alors
+exactement aussi bien qu'une vidéo dans le même navigateur.
+
 ### ✅ L'acte 0 s'écoute puis se pose — plus de frappe au début (2026-10-14)
 
 Yann, au casque Bluetooth, après la notation sans l'heure du son : « on a

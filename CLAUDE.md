@@ -110,14 +110,13 @@ un autre : un tirage de plus décale tout ce qui suit.
 `tests/scheduler.test.ts` verrouille les deux ; si son instantané tombe, la
 question est « viens-je de rendre les anciens exports non reproductibles ? ».
 
-⚠️ **L'avance de déclenchement est la marge dont l'attaque dépend.** Toutes les
-voix ouvrent sur une rampe de 3-4 ms. Si `AVANCE_DECLENCHEMENT`
-(`engine/AudioEngine.ts`) descend au même ordre, un retard du fil principal fait
-tomber `setValueAtTime` dans le passé, la rampe est sautée, **le gain saute — un
-clic par note**. 20 ms, pas moins. Idem `TAMPON_SORTIE` : `'interactive'` est le
-préréglage dimensionné pour ça. `tests/latence-audio.test.ts` verrouille les deux.
-Pour descendre plus bas il faut rendre les enveloppes robustes à un démarrage
-tardif, pas raccourcir la constante.
+⚠️ **L'attaque est protégée par `depart.ts`, pas par l'avance.** Toutes les voix
+ouvrent sur une rampe de 3-4 ms ; un `setValueAtTime` tombé dans le passé la
+sauterait — **un clic par note**. `departSur` fait repartir de maintenant, AVEC
+son attaque, toute voix en retard : c'est ce qui a permis à
+`AVANCE_DECLENCHEMENT` de descendre à 8 ms (le grain de l'ordonnanceur). Ne
+pas retirer l'un sans remonter l'autre. `TAMPON_SORTIE` reste `'interactive'`.
+`tests/latence-audio.test.ts` et `tests/depart.test.ts`.
 
 ⚠️ **Le tampon de sortie SUIT la sortie : `'interactive'` est un défaut, pas une
 constante.** En Bluetooth (100-200 ms hors de portée du navigateur), les 40 ms
@@ -165,17 +164,37 @@ d'un côté, 30 ms de l'autre **sur le haut-parleur**. Donc `outputLatency` ne p
 pas piloter une décision (c'est ce que fait encore `tampon.ts`, et il se
 déclenche là où il est sans effet), et `latencyHint` n'a eu AUCUN effet sur cet
 appareil : le tampon de Chrome y valait 171 ms, contexte nu comme contexte
-`interactive`. Ce qui compte se mesure à l'oreille — `#diag` décompose la chaîne
-et pose le total avoué à côté du total mesuré, et leur écart est le chiffre utile.
+`interactive`. Ce qui place l'image est l'HORODATAGE de sortie quand il existe
+(règle suivante), jamais un aveu pris seul.
 
-⚠️ **L'image suit le PLUS GRAND des deux retards, déclaré ou HORODATÉ**
-(`latenceSortie`, 2026-10-14). Une vidéo se synchronise seule parce que le
-lecteur du navigateur reçoit l'instant réel de sortie ; Web Audio expose le
-même chose par `getOutputTimestamp()` — jamais lu jusque-là, alors que
-`outputLatency` ment au casque (Firefox : 22 ms pour ~180). L'horodatage est
-lissé (médiane, une lecture toutes les 200 ms) et n'est écouté que s'il en dit
-PLUS : là où il n'apporte rien, rien ne change. `#diag` affiche les deux.
+⚠️ **L'image suit l'horloge du son ENTENDU, recalculée à chaque image**
+(`engine/horlogeEntendue.ts`, 2026-10-15) — ce que fait un lecteur vidéo.
+Jamais `currentTime − un retard` : Chrome Android rend par rafales, et
+`currentTime` y saute de 171 ms d'un coup (mesuré : 12 cases sautées en 6 s,
+0 après). Source 1 : la médiane du décalage `contextTime − performanceTime`
+de `getOutputTimestamp()` ; source 2 : le retard déclaré retranché du
+`currentTime` relevé à la VEILLE de chaque marche. Jamais le MAX de deux
+chiffres. Une frappe se date à `event.timeStamp`, projeté (`audioTimeA`).
+⚠️ Gecko n'a pas d'horodatage à lui (il le DÉDUIT d'`outputLatency`) et GARDE
+la première valeur d'`outputLatency` qu'on lui demande : là où `baseLatency`
+vaut 0, ni l'un ni l'autre ne se lit avant 1,5 s de flux (`sortieLisible`).
+`tests/horloge-entendue.test.ts` (contextes feints), `tests/horloge-moteur.test.ts`.
 ⚠️ Pas de réglage image/son à la main : essayé, « c'est imbitable ».
+
+⚠️ **Ce qu'on AFFICHE d'une bascule attend l'oreille ; ce qu'on DÉCIDE reste sur
+le rendu.** Une bascule s'applique un retard de sortie AVANT d'être entendue
+(une demi-seconde au casque sur Chrome). Scène allumée, compteur de mesures,
+fin d'une écoute et chiffres du précompte passent par `quandOnEntendra` /
+`mesureEntendue` / des repères ; une écoute se tait à l'échantillon (`taireA`)
+avant de fermer le contexte. `bar` / `barDansSection` restent sur le rendu,
+pour `doitBasculer`.
+
+⚠️ **L'horizon et le seuil de bascule suivent la MARCHE de rendu**
+(`pasDeRendu`). Un seuil fixe de 60 ms, lu sur des marches de 171 ms, était
+franchi APRÈS la mesure deux fois sur trois : le premier temps de la scène
+suivante partait en retard. Et le précompte s'ENCHAÎNE sur son contexte
+(`countIn({ enchainer })` → `start(depart)`) : la boucle repartait d'un contexte
+neuf, hors de la grille qu'on venait de compter.
 
 ⚠️ **Deux latences, deux traitements.** DÉCLENCHER un son (pads du Mode Live,
 aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où
@@ -183,13 +202,15 @@ aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où
 d'écriture avec le décalage calibré, le Mode jeu en ne regardant que l'écart
 ENTRE les frappes.
 
-⚠️ **`outputLatency` n'existe pas dans WebKit.** `AudioEngine.audioTime()` se
-replie sur `baseLatency` — sans ce repli, iPhone et iPad ne compensaient rien.
-Ce que le repli ne couvre pas (dalle tactile, casque) se **mesure** : calibrage
+⚠️ **`outputLatency` n'existe pas dans WebKit** : `retardDeclare` se replie sur
+`baseLatency` — sans ce repli, iPhone et iPad ne compensaient rien. Ce que
+l'horloge ne voit pas (la dalle tactile) se **mesure** : calibrage
 (`ui/latence.svelte.ts`, propriété de l'APPAREIL, hors format v2), que seul le
-pad d'écriture lit désormais.
-Son `affiner` est **additif** — les frappes sont déjà corrigées, leur médiane est
-ce qu'il RESTE à corriger ; remplacer ferait osciller au lieu de converger.
+pad d'écriture lit. ⚠️ Ses clics sont datés quand on les ENTEND (`metronome`
+rend l'instant programmé) : datés au rendu, la mesure portait la latence de
+sortie, que le pad retranchait une seconde fois — d'où la clé `-2`.
+Son `affiner` est **additif** — les frappes sont corrigées du réglage en place,
+leur médiane est ce qu'il RESTE à corriger ; remplacer ferait osciller.
 
 ⚠️ **Un étage « neutre » posé EN SÉRIE dans la chaîne finale ne l'est jamais.**
 Un passe-haut sous l'audible ne s'entend pas en AMPLITUDE, mais en PHASE : le

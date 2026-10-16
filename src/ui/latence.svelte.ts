@@ -22,7 +22,13 @@
  * partagé par deux joueurs a le même.
  */
 
-const KEY = 'boite-a-rythme:latence-entree';
+/* ⚠️ `-2` depuis le 2026-10-15 : l'ancienne clé portait des mesures prises
+ * contre des clics datés à l'instant où ils étaient RENDUS, pas entendus —
+ * elles contenaient donc la latence de sortie, que le pad d'écriture
+ * retranchait une seconde fois (au casque sur Chrome : une demi-seconde,
+ * repliée modulo 600 ms par le calibrage). Les garder, ce serait garder
+ * l'erreur ; un réglage à zéro est juste à la dalle près. */
+const KEY = 'boite-a-rythme:latence-entree-2';
 
 /* Bornes de bon sens. Au-delà d'une demi-seconde ce n'est plus une latence,
  * c'est une frappe ratée — accepter n'importe quoi laisserait un calibrage

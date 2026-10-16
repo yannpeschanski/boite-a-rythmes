@@ -34,6 +34,7 @@ import { chordsFor, chordFreqs, degreeFreq, SCALE_LIBRARY } from './harmony';
 import { driveCurve, bitcrushCurve, applyCompressionAmount, makeupGainForCompression } from './fx';
 import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices';
 import { tamponCourant, noterSortie } from './tampon';
+import { HorlogeEntendue, retardDeclare, type Horodatage, type Releve } from './horlogeEntendue';
 
 const LOOKAHEAD = 25; // ms
 const SCHEDULE_AHEAD = 0.25; // s
@@ -46,6 +47,35 @@ const SCHEDULE_AHEAD = 0.25; // s
  * retrouve sa pleine avance dès le tick suivant.
  */
 const AVANCE_BASCULE = 0.06; // s
+
+/* ⚠️ L'AVANCE SUIT LA MARCHE DE RENDU (2026-10-15, « que le tempo soit
+ * propre »). Les deux constantes ci-dessus supposent une horloge qui avance
+ * à peu près en continu. Chrome Android rend par RAFALES d'un tampon entier —
+ * 171 ms sur le téléphone de Yann — et `currentTime` saute d'autant :
+ *
+ *   - une bascule à « 60 ms de la mesure » se lit alors sur des valeurs
+ *     espacées de 171 ms, et deux fois sur trois la première qui passe le
+ *     seuil est déjà APRÈS la mesure : le premier temps de la section suivante
+ *     partait en retard, à chaque changement de scène ;
+ *   - 250 ms d'avance ne couvrent qu'une rafale et demie : un fil principal
+ *     occupé le temps d'une seule rafale suffisait à faire tomber des notes
+ *     dans le passé.
+ *
+ * Les deux s'allongent donc de la hauteur de marche observée (`pasDeRendu`).
+ * Ailleurs (un tampon de 10 ms), elles valent ce qu'elles valaient. */
+const MARGE_HORIZON = 0.02; // s
+
+/* Le délai, en secondes d'horloge AUDIO, avant de lire `outputLatency`.
+ *
+ * ⚠️ Gecko GARDE la première valeur non nulle qu'on lui demande, pour toute la
+ * vie de son graphe (partagé par tous les contextes de la page) — et ses
+ * premières mesures, prises au démarrage du flux, ne sont pas fiables. Lire au
+ * premier tick, comme on le faisait, figeait un chiffre de démarrage : c'est
+ * l'explication la plus probable des « 22 ms au casque » de Firefox.
+ * `getOutputTimestamp()` y est calculé à partir de la même valeur, donc il ne
+ * se lit pas non plus avant. Une seconde et demie : le flux est ouvert, la
+ * route est établie. */
+const DELAI_LECTURE_SORTIE = 1.5; // s
 
 /* Avance de déclenchement d'un son JOUÉ (pad, aperçu, note tenue), en secondes.
  *
@@ -257,7 +287,29 @@ export class AudioEngine {
      note de la section suivante n'est écrite avec l'ancien motif, donc remettre
      les curseurs à zéro au basculement ne peut jamais doubler une note déjà
      programmée. */
-  private pendingSwap: (() => void) | null = null;
+  private pendingSwap: ((frontiere: number) => void) | null = null;
+  /* La frontière de la bascule en cours d'application — lue par
+     `quandOnEntendra`, nulle en dehors. */
+  private frontiereEnCours: number | null = null;
+  /* Ce que l'interface veut faire quand on ENTENDRA un instant — pas quand il
+     est rendu (voir `quandOnEntendra`). Vidé à chaque image par
+     `consumePlayhead`. */
+  private reperes: Array<{ t: number; fn: () => void }> = [];
+  /* Le début de chaque mesure rendue, sur l'horloge du contexte : c'est ce qui
+     permet de dire quelle mesure on ENTEND (`mesureEntendue`), le compteur
+     `currentBar` étant en avance du retard de sortie. */
+  private debutsDeMesure: Array<{ t: number; bar: number; dansSection: number }> = [];
+  /* L'heure du son entendu (voir engine/horlogeEntendue.ts). Une par contexte :
+     `oublier()` à chaque contexte neuf. */
+  private horloge = new HorlogeEntendue();
+  /* L'instant de contexte où le flux a commencé à couler — voir
+     `sortieLisible`. */
+  private debutFluxCt: number | null = null;
+  /* Le dernier retard déclaré qu'on a pu LIRE, tous moteurs confondus : il y
+     a trois vues, trois moteurs, une seule sortie. Sert pendant la seconde et
+     demie où un contexte neuf ne se lit pas encore — `stop()` ferme le
+     contexte, donc chaque écoute en ouvre un. */
+  private static sortieConnue: number | undefined;
   private breakRequested = false;
   private breakWindow: BreakWindow | null = null;
   // Curseur visuel découplé : file d'événements consommée contre l'horloge
@@ -451,6 +503,9 @@ export class AudioEngine {
     // manuel le demande (engine/tampon.ts).
     this.tamponDemande = tamponCourant();
     this.ctx = new AudioContext({ latencyHint: this.tamponDemande });
+    this.horloge.oublier();
+    this.debutFluxCt = null;
+    this.retardsVus = [];
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);
@@ -495,7 +550,7 @@ export class AudioEngine {
     // à ce moment-là remplacerait le graphe sous le magnétophone, qui
     // enregistrerait un contexte fermé — un WAV silencieux, sans erreur.
     if (!ctx || this.isPlaying || this.liveRecorder) return;
-    noterSortie(ctx.outputLatency);
+    noterSortie(this.sortieLisible());
     if (tamponCourant() === this.tamponDemande) return;
     // ⚠️ `close()` n'est PAS attendu, et rien ici n'en dépend : le contexte
     // neuf ne partage rien avec l'ancien, et attendre la fermeture coûterait
@@ -584,10 +639,14 @@ export class AudioEngine {
       horloge: ctx ? Math.round(ctx.currentTime * 1000) / 1000 : 0,
       echantillonnage: ctx ? ctx.sampleRate : 0,
       baseLatencyMs: ctx ? ms(ctx.baseLatency) : null,
-      outputLatencyMs: ctx ? ms(ctx.outputLatency) : null,
-      // Le même retard, lu sur l'horodatage de sortie : s'il dépasse le
-      // déclaré, c'est lui que suivent les grilles (voir `latenceSortie`).
-      horodatageSortieMs: ctx ? ms(this.retardHorodate() ?? undefined) : null,
+      // ⚠️ Par `sortieLisible`, jamais en direct : cet écran se rafraîchit
+      // toutes les 200 ms, et une lecture trop tôt fige Firefox.
+      outputLatencyMs: ctx ? ms(this.sortieLisible()) : null,
+      // D'où vient l'heure que suivent les grilles, et la hauteur des marches
+      // de `currentTime` — 171 ms sur le téléphone de Yann, c'est le défaut
+      // que l'horloge entendue efface (voir engine/horlogeEntendue.ts).
+      sourceHorloge: ctx ? this.horloge.source() : null,
+      pasHorlogeMs: ctx ? ms(this.horloge.pasMarche()) : null,
       retardSuiviMs: ctx ? ms(this.latenceSortie()) : null,
       tamponDemande: this.tamponDemande,
       graphe: this.graph !== null,
@@ -628,6 +687,33 @@ export class AudioEngine {
   static onLatenceSortie: ((baseMs: number | null) => void) | null = null;
   private derniereBaseMs: number | null = null;
 
+  /* Le retard d'une FRAPPE, doigt exclu — du code qui déclenche à l'oreille —,
+   * MESURÉ sur l'horloge entendue et poussé vers l'interface.
+   *
+   * ⚠️ Remplace le calibrage comme source du verdict (2026-10-15, « arrête de
+   * me demander des valeurs »). Un son déclenché maintenant part à
+   * `currentTime + AVANCE_DECLENCHEMENT` et s'entend quand l'horloge entendue
+   * y arrive : l'écart entre les deux EST le retard, sans un geste du joueur.
+   * Médiane d'une seconde de relevés, parce que `currentTime` va par marches. */
+  static onRetardMesure: ((ms: number | null) => void) | null = null;
+  private retardsVus: number[] = [];
+  private dernierRetardPousse: number | null = null;
+
+  private noterRetardMesure(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const t = this.audioTime();
+    if (t === null) return;
+    this.retardsVus.push(ctx.currentTime - t);
+    if (this.retardsVus.length > 40) this.retardsVus.shift();
+    if (this.retardsVus.length < 10) return;
+    const tri = [...this.retardsVus].sort((a, b) => a - b);
+    const ms = Math.round((tri[tri.length >> 1] + AVANCE_DECLENCHEMENT) * 1000);
+    if (this.dernierRetardPousse !== null && Math.abs(ms - this.dernierRetardPousse) < 5) return;
+    this.dernierRetardPousse = ms;
+    AudioEngine.onRetardMesure?.(ms);
+  }
+
   private noterLatenceSortie(): void {
     const ctx = this.ctx;
     if (!ctx) return;
@@ -637,13 +723,21 @@ export class AudioEngine {
     AudioEngine.onLatenceSortie?.(base);
   }
 
-  async start(): Promise<void> {
+  /* `depart` : l'instant de CONTEXTE où la lecture doit commencer — celui que
+   * `countIn({ enchainer: true })` a rendu. Sans lui, la boucle partait d'un
+   * contexte NEUF, à `currentTime + 60 ms` du moment où un `setTimeout` avait
+   * fini d'attendre : rien ne tombait sur la grille du précompte (2026-10-15).
+   * Ignoré s'il n'est plus dans l'avenir, ou si le contexte a changé. */
+  async start(depart?: number): Promise<void> {
     // ⚠️ L'ORDRE EST LA CORRECTION (voir adapterTampon) : la bascule de tampon
     // d'abord, SYNCHRONE, puis une SEULE reprise — le premier `await` de la
     // tâche du geste. Un `resume()` posé après un autre `await` est refusé
     // partout où l'autoplay se juge sur l'activation transitoire, et un refus
     // ne rejette pas : il fige.
-    this.adapterTampon();
+    // ⚠️ Pas de bascule quand on enchaîne : elle fermerait le contexte qui
+    // porte le précompte, et l'instant de départ avec lui.
+    const ctxDuDepart = depart !== undefined ? this.ctx : null;
+    if (depart === undefined) this.adapterTampon();
     this.ensureAudio();
     const ctx = this.ctx!;
     await this.reprendre(ctx);
@@ -659,8 +753,13 @@ export class AudioEngine {
     this.sectionStartBar = 0;
     this.pendingSwap = null;
     this.playheadQueue = [];
-    const startAt = ctx.currentTime + 0.06;
+    // Les repères d'un précompte qu'on ENCHAÎNE sont ceux de ses chiffres.
+    if (depart === undefined) this.reperes = [];
+    const auPlusTot = ctx.currentTime + 0.06;
+    const startAt =
+      depart !== undefined && ctx === ctxDuDepart && depart >= ctx.currentTime + 0.02 ? depart : auPlusTot;
     this.nextBarTime = startAt + barDuration(this.getState().tempo);
+    this.debutsDeMesure = [{ t: startAt, bar: 0, dansSection: 0 }];
     (Object.keys(this.cursors) as DrumRowName[]).forEach((n) => {
       this.cursors[n] = { stepIndex: 0, nextStepTime: startAt };
     });
@@ -677,6 +776,8 @@ export class AudioEngine {
     this.schedulerTimer = null;
     this.isPlaying = false;
     this.playheadQueue = [];
+    this.reperes = [];
+    this.debutsDeMesure = [];
     this.breakRequested = false;
     this.breakWindow = null;
     this.fillRequested = false;
@@ -1147,18 +1248,63 @@ export class AudioEngine {
    * `apply` est une fonction pure du point de vue du moteur — c'est
    * l'appelant qui sait remplacer son état (le moteur n'importe pas Svelte).
    */
-  queueSwapAtNextBar(apply: () => void): void {
+  queueSwapAtNextBar(apply: (frontiere: number) => void): void {
     if (!this.isPlaying) {
       // À l'arrêt il n'y a pas de mesure à attendre : on applique tout de suite.
-      apply();
+      apply(this.ctx?.currentTime ?? 0);
       this.sectionStartBar = this.currentBar;
       return;
     }
     this.pendingSwap = apply;
   }
 
+  /* Faire `fn` quand on ENTENDRA la frontière de la bascule en cours.
+   *
+   * ⚠️ UNE BASCULE S'APPLIQUE AVANT D'ÊTRE ENTENDUE, du retard de sortie entier
+   * — un demi-seconde au casque Bluetooth sur Chrome. C'est juste pour le SON
+   * (l'ordonnanceur doit écrire la section suivante avant qu'elle ne soit
+   * rendue), faux pour l'IMAGE : la scène allumée changeait une demi-seconde
+   * avant qu'on l'entende, et la fin d'une écoute coupait la dernière mesure.
+   * Appelée DANS une bascule, `fn` attend que l'horloge entendue atteigne la
+   * frontière ; ailleurs (à l'arrêt, hors bascule), elle passe tout de suite.
+   * Les repères se vident à chaque image, dans `consumePlayhead`. */
+  quandOnEntendra(fn: () => void): void {
+    if (this.frontiereEnCours !== null) this.reperes.push({ t: this.frontiereEnCours, fn });
+    else fn();
+  }
+
+  /* Coupe la sortie à l'instant de contexte `t`, sans clic — la fin d'une
+   * écoute. Programmé sur l'horloge du RENDU, donc à l'échantillon près : la
+   * boucle qui reprend derrière la frontière ne s'entend pas, même le temps
+   * d'une image. Le contexte suivant naît avec un graphe neuf. */
+  taireA(t: number): void {
+    const ctx = this.ctx;
+    const g = this.graph?.finalGain.gain;
+    if (!ctx || !g) return;
+    const a = Math.max(t, ctx.currentTime);
+    g.setValueAtTime(g.value, a);
+    g.linearRampToValueAtTime(0, a + 0.01);
+  }
+
   cancelQueuedSwap(): void {
     this.pendingSwap = null;
+  }
+
+  /* La mesure qu'on ENTEND, et où on en est dedans (0..1).
+   *
+   * ⚠️ `bar`, `barDansSection` et `barProgress` sont sur l'horloge du RENDU :
+   * c'est sur elle qu'on décide d'une bascule, et c'est juste. Pour un
+   * AFFICHAGE, ils devancent le son du retard de sortie entier. Ceci se lit
+   * sur l'horloge entendue, à partir du début de chaque mesure rendue. */
+  mesureEntendue(): { bar: number; dansSection: number; progres: number } {
+    const t = this.audioTime();
+    const debuts = this.debutsDeMesure;
+    if (t === null || !debuts.length) return { bar: 0, dansSection: 0, progres: 0 };
+    while (debuts.length > 1 && debuts[1].t <= t) debuts.shift();
+    const m = debuts[0];
+    const fin = debuts.length > 1 ? debuts[1].t : m.t + barDuration(this.getState().tempo);
+    const progres = fin > m.t ? Math.max(0, Math.min(1, (t - m.t) / (fin - m.t))) : 0;
+    return { bar: m.bar, dansSection: m.dansSection, progres };
   }
 
   /** Mesure courante depuis ▶ — l'afficheur de la bande en a besoin. */
@@ -1202,12 +1348,18 @@ export class AudioEngine {
        fil principal et celui de ses dépassements. `performance.now()` et non
        l'horloge audio — c'est le retard du FIL qu'on mesure, pas celui du son. */
     const murMs = performance.now();
+    // Chaque tick nourrit aussi l'horloge entendue : ses marches se voient
+    // mieux à 40 relevés par seconde qu'aux seules images.
+    const releve = this.releve();
+    if (releve) this.horloge.noter(releve);
+    const pas = this.pasDeRendu();
+    const avance = Math.max(SCHEDULE_AHEAD, AVANCE_BASCULE + 2 * pas + MARGE_HORIZON);
     if (this.dernierTickMs !== null) {
       const retard = murMs - this.dernierTickMs - LOOKAHEAD;
       if (retard > this.retardTickMaxMs) this.retardTickMaxMs = Math.round(retard);
       // Au-delà de l'horizon de programmation, le retard cesse d'être absorbé
       // et devient audible : c'est le seuil qui compte, pas une moyenne.
-      if (retard > SCHEDULE_AHEAD * 1000) this.ticksHorsHorizon++;
+      if (retard > avance * 1000) this.ticksHorsHorizon++;
     }
     this.dernierTickMs = murMs;
     this.ticks++;
@@ -1216,10 +1368,18 @@ export class AudioEngine {
 
     /* La bascule s'applique JUSTE AVANT la mesure, pas à son début audible :
        c'est à cet instant que l'ordonnanceur commence à écrire dedans. */
-    if (this.pendingSwap !== null && this.nextBarTime !== null && this.nextBarTime - now <= AVANCE_BASCULE) {
+    /* ⚠️ `+ pas` : sur une horloge en marches, la dernière valeur lue avant la
+       mesure peut en être à une marche entière. Seuil sans elle, la bascule
+       tombait APRÈS la mesure deux fois sur trois (voir MARGE_HORIZON). */
+    if (this.pendingSwap !== null && this.nextBarTime !== null && this.nextBarTime - now <= AVANCE_BASCULE + pas) {
       const apply = this.pendingSwap;
       this.pendingSwap = null;
-      apply();
+      this.frontiereEnCours = this.nextBarTime;
+      try {
+        apply(this.nextBarTime);
+      } finally {
+        this.frontiereEnCours = null;
+      }
       this.resetCursorsAt(this.nextBarTime);
       this.sectionStartBar = this.currentBar + 1; // la mesure qui commence
     }
@@ -1228,13 +1388,21 @@ export class AudioEngine {
     // La latence déclarée n'est fiable qu'une fois le flux ouvert : c'est ici
     // qu'on la voit vraiment. Une comparaison de nombre, 40 fois par seconde ;
     // ce qu'elle observe ne s'applique qu'au prochain ▶ (voir adapterTampon).
-    noterSortie(ctx.outputLatency);
+    noterSortie(this.sortieLisible());
     this.noterLatenceSortie();
+    this.noterRetardMesure();
 
     if (this.nextBarTime !== null && now >= this.nextBarTime) {
       const justStartedBarTime = this.nextBarTime; // avant incrément : début de la mesure qui démarre tout juste
       this.currentBar++;
       this.nextBarTime += barDur;
+      this.debutsDeMesure.push({
+        t: justStartedBarTime,
+        bar: this.currentBar,
+        dansSection: this.currentBar - this.sectionStartBar,
+      });
+      // Une page qui ne lit jamais `mesureEntendue` ne doit pas accumuler.
+      if (this.debutsDeMesure.length > 64) this.debutsDeMesure.shift();
       if (this.breakRequested) {
         this.breakWindow = { startTime: justStartedBarTime, endTime: justStartedBarTime + barDur };
         this.breakRequested = false;
@@ -1254,8 +1422,8 @@ export class AudioEngine {
        L'écrêtage dure au plus le temps d'un tick avant la bascule. */
     const horizon =
       this.pendingSwap !== null && this.nextBarTime !== null
-        ? Math.min(now + SCHEDULE_AHEAD, this.nextBarTime)
-        : now + SCHEDULE_AHEAD;
+        ? Math.min(now + avance, this.nextBarTime)
+        : now + avance;
 
     scheduleDrumWindow(
       {
@@ -1298,98 +1466,127 @@ export class AudioEngine {
     }
   }
 
-  /* Le retard entre « l'échantillon est traité » et « on l'entend », en secondes.
+  /* CE QU'ON LIT DE LA SORTIE — un relevé pour l'horloge entendue.
    *
-   * ⚠️ `outputLatency` n'est PAS implémenté par WebKit : sur iPhone et iPad il
-   * vaut `undefined`, donc l'ancien `|| 0` ne compensait rien du tout. Avec
-   * `latencyHint: 'playback'` (choisi pour la robustesse Bluetooth, voir
-   * ensureAudio) le tampon de sortie est gros — l'écart non compensé s'y compte
-   * en dizaines de millisecondes, et le Mode jeu mesurait les frappes contre une
-   * horloge en avance sur ce qu'on entend. C'est ce que Yann a senti en essayant
-   * le niveau 37 : « il y a clairement une latence ».
-   *
-   * `baseLatency` est, lui, largement supporté : il ne couvre que le tampon de
-   * traitement (pas la chaîne matérielle), donc c'est un plancher, pas la
-   * vérité. Il vaut infiniment mieux que zéro. Ce qui reste — la dalle tactile,
-   * le casque — ne se devine pas : il se MESURE, et c'est l'objet du calibrage
-   * du Mode jeu (voir `metronome` ci-dessous).
-   */
-  private latenceSortie(): number {
-    if (!this.ctx) return 0;
-    const declaree = this.latenceDeclaree();
-    /* ⚠️ LE PLUS GRAND des deux retards — déclaré ou HORODATÉ (2026-10-14).
-     *
-     * « La synchro se fait partout ailleurs et automatiquement, pourquoi pas
-     * ici ? » Ailleurs (une vidéo), le lecteur du navigateur reçoit du système
-     * l'instant où chaque son SORT, Bluetooth compris. Nous lisions
-     * `outputLatency`, que Firefox Android déclare à ~22 ms au casque pour
-     * ~180 réels : la grille s'allumait avant le son. `getOutputTimestamp()`
-     * est l'outil que la norme prévoit pour ça — il dit quel instant du
-     * contexte sort MAINTENANT, à partir de l'horodatage de la plateforme.
-     * On ne l'écoute que s'il en dit PLUS que le chiffre déclaré : là où il
-     * n'apporte rien, rien ne change. */
-    const horodate = this.retardHorodate();
-    return horodate !== null && horodate > declaree ? horodate : declaree;
-  }
-
-  private latenceDeclaree(): number {
-    if (!this.ctx) return 0;
-    const sortie = this.ctx.outputLatency;
-    if (typeof sortie === 'number' && sortie > 0) return sortie;
-    // ×2 : le trajet complet vaut au moins l'aller du tampon plus ce que la
-    // carte son y ajoute. Estimation grossière, assumée comme telle.
-    return (this.ctx.baseLatency || 0) * 2;
-  }
-
-  /* Le retard de sortie lu sur l'HORODATAGE de la plateforme, lissé — ou
-   * null tant qu'il n'y en a pas (contexte neuf, navigateur qui ne le
-   * renseigne pas).
-   *
-   * Un échantillon toutes les 200 ms au plus, médiane des quinze derniers :
-   * l'horodatage avance par blocs, une lecture isolée sautille de la taille
-   * d'un bloc. Hors de 0-600 ms, l'échantillon est jeté — ce n'est plus une
-   * sortie audio, c'est une horloge qui n'a pas encore démarré. */
-  private echantillonsHorodatage: number[] = [];
-  private dernierEchantillonMs = 0;
-  private retardHorodate(): number | null {
+   * ⚠️ `outputLatency` passe par `sortieLisible`, jamais en direct. Et
+   * `getOutputTimestamp()` ne s'appelle pas là où `baseLatency` vaut 0 : c'est
+   * Gecko, où il n'a pas de source à lui — il RELIT `outputLatency`, donc le
+   * figerait aussi tôt que si on l'avait lu nous-mêmes, pour n'apporter rien
+   * (voir engine/horlogeEntendue.ts). */
+  private releve(): Releve | null {
     const ctx = this.ctx as (AudioContext & { getOutputTimestamp?: () => AudioTimestamp }) | null;
-    if (!ctx || typeof ctx.getOutputTimestamp !== 'function' || typeof performance === 'undefined') {
-      return null;
-    }
-    const maintenant = performance.now();
-    if (maintenant - this.dernierEchantillonMs >= 200) {
-      this.dernierEchantillonMs = maintenant;
-      const ts = ctx.getOutputTimestamp();
-      if (ts.contextTime && ts.performanceTime) {
-        const sortEnCe = ts.contextTime + (maintenant - ts.performanceTime) / 1000;
-        const retard = ctx.currentTime - sortEnCe;
-        if (retard >= 0 && retard <= 0.6) {
-          this.echantillonsHorodatage.push(retard);
-          if (this.echantillonsHorodatage.length > 15) this.echantillonsHorodatage.shift();
-        }
+    if (!ctx || typeof performance === 'undefined') return null;
+    const baseLatency = typeof ctx.baseLatency === 'number' ? ctx.baseLatency : undefined;
+    let horodatage: Horodatage | null = null;
+    if (baseLatency !== 0 && typeof ctx.getOutputTimestamp === 'function') {
+      try {
+        const ts = ctx.getOutputTimestamp();
+        horodatage = { contextTime: ts.contextTime ?? 0, performanceTime: ts.performanceTime ?? 0 };
+      } catch {
+        /* contexte fermé entre-temps : pas d'horodatage, c'est tout */
       }
     }
-    if (this.echantillonsHorodatage.length < 3) return null;
-    const tri = [...this.echantillonsHorodatage].sort((x, y) => x - y);
-    return tri[Math.floor(tri.length / 2)];
+    return {
+      murMs: performance.now(),
+      currentTime: ctx.currentTime,
+      baseLatency,
+      outputLatency: this.sortieLisible(),
+      horodatage,
+    };
   }
 
-  /* L'horloge du son ENTENDU, en secondes.
+  /* `outputLatency`, quand il peut se LIRE sans dommage — sinon le dernier
+   * qu'on a lu, ou rien.
    *
-   * Mesurer un placement contre `performance.now()` mesure l'horloge du fil
-   * principal, qui n'est pas celle qu'on entend. Renvoie null tant qu'aucun
-   * contexte n'existe.
+   * ⚠️ « Sans dommage » parce que Gecko garde la PREMIÈRE valeur non nulle
+   * qu'on lui demande, pour toute la vie de son graphe, et que celles du
+   * démarrage du flux ne sont pas fiables (voir DELAI_LECTURE_SORTIE). On
+   * attend donc que l'horloge du contexte ait tourné une seconde et demie —
+   * là où `baseLatency` vaut 0, c'est-à-dire Gecko. Ailleurs on lit tout de
+   * suite : Chrome ne garde rien, et c'est ce chiffre qui place l'image
+   * pendant la demi-seconde où son horodatage n'existe pas encore.
+   *
+   * ⚠️ `outputLatency` n'est PAS implémenté par WebKit : il vaut `undefined`
+   * sur iPhone et iPad, et rien ne se substitue à lui ici — c'est
+   * `retardDeclare` qui se replie sur `baseLatency`. */
+  private sortieLisible(): number | undefined {
+    const ctx = this.ctx;
+    if (!ctx) return undefined;
+    const gecko = ctx.baseLatency === 0;
+    if (ctx.state !== 'suspended' && ctx.state !== 'closed' && ctx.currentTime > 0) {
+      this.debutFluxCt ??= ctx.currentTime;
+      if (!gecko || ctx.currentTime - this.debutFluxCt >= DELAI_LECTURE_SORTIE) {
+        const lu = ctx.outputLatency;
+        if (typeof lu === 'number' && lu > 0) {
+          AudioEngine.sortieConnue = lu;
+          return lu;
+        }
+        return AudioEngine.sortieConnue ?? lu;
+      }
+    }
+    return AudioEngine.sortieConnue;
+  }
+
+  /* Pour les tests : le dernier retard lu est partagé par tous les moteurs. */
+  static oublierSortieConnue(): void {
+    AudioEngine.sortieConnue = undefined;
+  }
+
+  /* La hauteur d'une marche de rendu, en secondes : le tampon déclaré, ou ce
+     qu'on a VU — Gecko déclare 0 et rend pourtant par blocs. */
+  private pasDeRendu(): number {
+    return Math.max(this.ctx?.baseLatency || 0, this.horloge.pasMarche());
+  }
+
+  /* Le retard entre « rendu » et « entendu », en secondes — pour l'AFFICHER.
+   *
+   * ⚠️ Plus rien ne se décide sur ce chiffre (2026-10-15). Sur une horloge en
+   * marches il oscille de toute la hauteur d'une marche — de 448 à 619 ms sur
+   * le téléphone de Yann — et c'est précisément pour ça que l'image ne le
+   * retranche plus : elle lit `audioTime()`, qui est l'heure entendue
+   * elle-même. */
+  private latenceSortie(): number {
+    const ctx = this.ctx;
+    if (!ctx) return 0;
+    const t = this.audioTime();
+    return t === null ? 0 : Math.max(0, ctx.currentTime - t);
+  }
+
+  /* L'heure du son ENTENDU, en secondes d'horloge de contexte : un son
+   * programmé à T s'entend quand `audioTime()` vaut T.
+   *
+   * C'est ce que fait un lecteur vidéo, et ce qu'on ne faisait pas : on lisait
+   * `currentTime − un retard`, une horloge qui saute de 171 ms d'un coup sur
+   * Chrome Android, et on y retranchait le plus grand de deux chiffres. Le
+   * détail, les deux sources et le cas de Firefox sont dans
+   * engine/horlogeEntendue.ts. Ne recule jamais ; null sans contexte.
    */
   audioTime(): number | null {
-    if (!this.ctx) return null;
-    return this.ctx.currentTime - this.latenceSortie();
+    const r = this.releve();
+    return r ? this.horloge.maintenant(r) : null;
   }
 
-  /* Ce que le moteur croit compenser, en millisecondes — pour l'afficher.
-   * Un chiffre à zéro sur un appareil où l'on entend un décalage dit tout de
-   * suite que le navigateur ne renseigne rien, et qu'il faut calibrer. */
+  /* L'heure entendue à un instant MURAL passé — la date d'une frappe.
+   *
+   * Pour `event.timeStamp`, qui est sur l'horloge de `performance.now()` : on
+   * ne relit plus l'horloge audio dans le gestionnaire en retranchant le
+   * retard de la file d'événements, on projette l'instant du doigt sur la
+   * droite entendue. Relire `currentTime` y ajoutait une erreur VARIABLE de
+   * toute une marche — jusqu'à 171 ms — qu'aucun calcul de décalage constant
+   * ne rattrape. */
+  audioTimeA(murMs: number): number | null {
+    const r = this.releve();
+    if (!r) return null;
+    this.horloge.noter(r);
+    return this.horloge.entenduA(murMs);
+  }
+
+  /* Ce que le navigateur DÉCLARE, en millisecondes — pour l'afficher sous ce
+   * nom. Un chiffre à zéro sur un appareil où l'on entend un décalage dit
+   * tout de suite que le navigateur ne renseigne rien. */
   latenceSortieMs(): number {
-    return Math.round(this.latenceSortie() * 1000);
+    const r = this.releve();
+    return r ? Math.round(retardDeclare(r) * 1000) : 0;
   }
 
   /* Métronome de calibrage : programme `beats` clics réguliers et renvoie leur
@@ -1399,6 +1596,12 @@ export class AudioEngine {
    * qu'à la deviner : le joueur tape sur les clics, on compare ses frappes à
    * ces temps-là, et la médiane des écarts est son décalage. Aucune estimation
    * de navigateur ne remplace cette mesure.
+   *
+   * ⚠️ `debut` EST l'instant programmé (2026-10-15). Il valait `startAt −
+   * latenceSortie()`, c'est-à-dire l'instant où le clic est RENDU, alors qu'un
+   * son programmé à T s'entend quand `audioTime()` vaut T : la mesure portait
+   * donc la latence de sortie EN PLUS, que le pad d'écriture retranchait une
+   * seconde fois. Les frappes et les clics parlent maintenant la même langue.
    */
   async metronome(
     beats: number,
@@ -1412,30 +1615,41 @@ export class AudioEngine {
     // sur une horloge figée. C'est silencieux et incompréhensible côté joueur.
     await this.reprendre(ctx);
     const intervalle = 60 / Math.max(20, bpm);
-    // `apresQuoi` (sur l'horloge du son entendu) enchaîne une salve sur la
-    // précédente sans rupture de phase : le calibrage a besoin d'un métronome
-    // QUI CONTINUE, pas d'une fenêtre de quelques secondes qu'on rate en lisant
-    // la consigne. Les salves se recouvrent donc bout à bout, et la grille
-    // `debut + n × intervalle` reste vraie d'un bout à l'autre.
-    const startAt =
-      apresQuoi !== undefined ? apresQuoi + this.latenceSortie() : ctx.currentTime + 0.3;
+    // `apresQuoi` enchaîne une salve sur la précédente sans rupture de phase :
+    // le calibrage a besoin d'un métronome QUI CONTINUE, pas d'une fenêtre de
+    // quelques secondes qu'on rate en lisant la consigne. Si la relance arrive
+    // trop tard, on saute des temps entiers plutôt que de décaler la grille.
+    let startAt = ctx.currentTime + 0.3;
+    if (apresQuoi !== undefined) {
+      startAt = apresQuoi;
+      const auPlusTot = ctx.currentTime + 0.05;
+      if (startAt < auPlusTot) startAt += Math.ceil((auPlusTot - startAt) / intervalle) * intervalle;
+    }
     for (let i = 0; i < beats; i++) scheduleClick(ctx, startAt + i * intervalle, i % 4 === 0);
-    // Renvoyé sur l'horloge du son ENTENDU, comme audioTime : les deux doivent
-    // parler la même langue, sinon la mesure porte la latence de sortie en plus.
-    const debut = startAt - this.latenceSortie();
-    return { debut, intervalle, fin: debut + beats * intervalle };
+    return { debut: startAt, intervalle, fin: startAt + beats * intervalle };
   }
 
-  // Appelée à chaque frame rAF par l'UI : renvoie les événements dont le
-  // temps audio programmé est déjà passé selon l'horloge de l'AudioContext.
-  // Compensée par outputLatency : ctx.currentTime avance dès qu'un
-  // échantillon est TRAITÉ, pas quand il sort réellement du haut-parleur —
-  // avec latencyHint 'playback' (choisi pour la robustesse Bluetooth, voir
-  // ensureAudio), cet écart peut être significatif. Sans compensation, le
-  // curseur visuel semble en avance sur ce qu'on entend.
+  /* Appelée à chaque image par l'interface : rend les pas qu'on ENTEND déjà,
+   * et fait ce qui attendait d'être entendu (`quandOnEntendra`).
+   *
+   * Un pas programmé à T s'allume quand `audioTime()` atteint T. L'horloge
+   * étant une droite et non plus un escalier, deux pas d'une même ligne ne
+   * tombent plus dans la même image — c'est ce qui faisait sauter une case :
+   * les vues gardent le dernier pas de chaque ligne. */
   consumePlayhead(): PlayheadEvent[] {
-    if (!this.ctx || this.playheadQueue.length === 0) return [];
-    const now = this.audioTime()!;
+    if (!this.ctx) return [];
+    // Lue à chaque image même sans pas en attente : c'est aussi ce qui nourrit
+    // l'horloge entre deux lectures.
+    const now = this.audioTime();
+    if (now === null) return [];
+    if (this.reperes.length) {
+      const dus = this.reperes.filter((r) => r.t <= now);
+      if (dus.length) {
+        this.reperes = this.reperes.filter((r) => r.t > now);
+        for (const r of dus) r.fn();
+      }
+    }
+    if (this.playheadQueue.length === 0) return [];
     const due: PlayheadEvent[] = [];
     const remaining: PlayheadEvent[] = [];
     this.playheadQueue.sort((a, b) => a.time - b.time);
@@ -1494,7 +1708,24 @@ export class AudioEngine {
   // `onTick` laisse l'appelant afficher le décompte sans dupliquer le
   // calcul du tempo/timing ; la promesse ne se résout qu'une fois les 4
   // clics passés, avant que startLiveRecording ne commence à capturer.
-  async countIn(onTick?: (beat: number) => void): Promise<void> {
+  /* Précompte : quatre clics au tempo du morceau. Rend l'instant de CONTEXTE
+   * du temps qui suit le quatrième — le premier de la boucle.
+   *
+   * ⚠️ DEUX CORRECTIONS (2026-10-15, « que le tempo soit propre »).
+   *   - Les chiffres s'affichent quand on ENTEND le clic : calés sur
+   *     `currentTime`, ils devançaient le son du retard de sortie entier — une
+   *     demi-seconde au casque sur Chrome, soit un temps à 120 BPM.
+   *   - `enchainer` rend la main dès les clics programmés, sur le MÊME
+   *     contexte : l'appelant passe l'instant rendu à `start(depart)`, et la
+   *     boucle tombe sur la grille du précompte. Avant, on attendait la fin par
+   *     un `setTimeout`, puis `play()` fermait le contexte et la boucle
+   *     repartait d'un neuf, n'importe où.
+   *   Sans `enchainer` (l'enregistrement du direct, qui rouvre tout), on attend
+   *   comme avant — mais la fin ENTENDUE. */
+  async countIn(onTick?: (beat: number) => void, opts: { enchainer?: boolean } = {}): Promise<number> {
+    // Même ordre que `start()` : la bascule de tampon d'abord, synchrone —
+    // `start(depart)` ne la fera pas, elle fermerait ce contexte-ci.
+    this.adapterTampon();
     this.ensureAudio();
     const ctx = this.ctx!;
     await this.reprendre(ctx);
@@ -1503,12 +1734,24 @@ export class AudioEngine {
     for (let beat = 0; beat < 4; beat++) {
       scheduleClick(ctx, startAt + beat * beatDur, beat === 0);
     }
-    await new Promise<void>((resolve) => {
-      for (let beat = 0; beat < 4; beat++) {
-        setTimeout(() => onTick?.(beat + 1), Math.max(0, (startAt - ctx.currentTime + beat * beatDur) * 1000));
-      }
-      setTimeout(resolve, Math.max(0, (startAt - ctx.currentTime + 4 * beatDur) * 1000));
-    });
+    const depart = startAt + 4 * beatDur;
+    /* Des REPÈRES, pas des minuteries calculées une fois : sur un contexte
+       neuf, l'horloge entendue n'a pas encore ses relevés, et une minuterie
+       posée sur sa première estimation garde son erreur jusqu'au bout (225 ms
+       d'avance mesurés sur Chrome Android simulé). Un repère se juge à chaque
+       image, sur l'horloge du moment. */
+    for (let beat = 0; beat < 4; beat++) {
+      this.reperes.push({ t: startAt + beat * beatDur, fn: () => onTick?.(beat + 1) });
+    }
+    if (!opts.enchainer) {
+      // Filet : une page sans image (onglet caché) ne vide pas les repères.
+      const filetMs = Math.max(0, (depart - ctx.currentTime) * 1000) + 1000;
+      await new Promise<void>((resolve) => {
+        const montre = setTimeout(resolve, filetMs);
+        this.reperes.push({ t: depart, fn: () => (clearTimeout(montre), resolve()) });
+      });
+    }
+    return depart;
   }
 
   // Enregistrement du direct : démarre une lecture depuis le tout début du
