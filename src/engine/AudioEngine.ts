@@ -30,7 +30,8 @@ import {
 import { barDuration, type BreakWindow } from './groove';
 import { LiveRecorder } from './recorder';
 import { scheduleClick } from './metronome';
-import { chordsFor, chordFreqs, degreeFreq, SCALE_LIBRARY } from './harmony';
+import { chordsFor, chordFreqs, degreeFreq, SCALE_LIBRARY, stepDurForLine, stepsForLine } from './harmony';
+import { instantDuDoigt, calerSurLaGrille, caseSuivante, caseDuDoigt, type Grille } from './doigt';
 import { driveCurve, bitcrushCurve, applyCompressionAmount, makeupGainForCompression } from './fx';
 import { SYNTH_VOICE_PRESETS, resolveVoicePreset } from '../model/presets/voices';
 import { tamponCourant, noterSortie } from './tampon';
@@ -516,6 +517,7 @@ export class AudioEngine {
     this.horloge.oublier();
     this.debutFluxCt = null;
     this.retardsVus = [];
+    this.noteAuDoigt = {};
     this.graph = buildGraph(this.ctx, this.getState());
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);
@@ -788,6 +790,7 @@ export class AudioEngine {
     if (this.schedulerTimer) clearInterval(this.schedulerTimer);
     this.schedulerTimer = null;
     this.isPlaying = false;
+    this.noteAuDoigt = {};
     this.playheadQueue = [];
     this.reperes = [];
     this.debutsDeMesure = [];
@@ -1991,15 +1994,16 @@ export class AudioEngine {
    *
    * ⚠️ La nappe reçoit un INDEX d'accord, jamais un degré (CLAUDE.md) : le pad
    * balaie `chordsFor(state)`, pas la gamme. */
-  playLivePadChord(chordIdx: number): void {
+  playLivePadChord(chordIdx: number, murMs?: number): void {
     if (!this.ctx || !this.synth) return;
     void this.ctx.resume();
     const state = this.withLiveOverrides(this.getState());
     const freqs = chordFreqs(state, chordsFor(state), chordIdx);
     if (!freqs.length) return;
     const row = state.synthRows.pad;
-    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
-    this.synth.playPadChord(freqs, t, 0.6, 0.3, row.voice, (row.strum || 0) * 0.08, 0, null);
+    this.jouerAuDoigt('pad', murMs, (t) =>
+      this.synth!.playPadChord(freqs, t, 0.6, 0.3, row.voice, (row.strum || 0) * 0.08, 0, null),
+    );
   }
 
   /** Le nombre d'accords que le pad peut balayer — la course de SOLO NAPPE. */
@@ -2011,23 +2015,107 @@ export class AudioEngine {
     return degreeFreq(this.withLiveOverrides(this.getState()), degree, octaveShift, -24);
   }
 
-  playLiveBassNote(freq: number, glideFrom: number | null): void {
+  playLiveBassNote(freq: number, glideFrom: number | null, murMs?: number): void {
     if (!this.ctx || !this.synth) return;
     void this.ctx.resume();
     const row = this.withLiveOverrides(this.getState()).synthRows.bass;
-    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
     const glideTime = (row.glide || 0) * 0.12;
     const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
-    this.synth.playBassNote(freq, t, 0.5, 0.45, row.voice, glide);
+    this.jouerAuDoigt('bass', murMs, (t) => this.synth!.playBassNote(freq, t, 0.5, 0.45, row.voice, glide));
   }
 
-  playLiveMelodyNote(freq: number, glideFrom: number | null): void {
+  playLiveMelodyNote(freq: number, glideFrom: number | null, murMs?: number): void {
     if (!this.ctx || !this.synth) return;
     void this.ctx.resume();
     const row = this.withLiveOverrides(this.getState()).synthRows.melody;
-    const t = this.ctx.currentTime + AVANCE_DECLENCHEMENT;
     const glideTime = (row.glide || 0) * 0.12;
     const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
-    this.synth.playMelodyNote(freq, t, 0.5, 0.4, row.voice, glide);
+    this.jouerAuDoigt('melody', murMs, (t) => this.synth!.playMelodyNote(freq, t, 0.5, 0.4, row.voice, glide));
+  }
+
+  /* JOUER AU DOIGT — quand part une note de SOLO (engine/doigt.ts).
+   *
+   * ⚠️ « Les pads arrivent en retard » (2026-10-20). Le retard de la sortie ne
+   * se retire pas ; ce qui se retire, c'est son IRRÉGULARITÉ — la note partait
+   * à `currentTime + 8 ms`, donc de zéro à une marche de rendu plus tard selon
+   * l'instant du doigt. Elle part maintenant à un retard CONSTANT, et sur la
+   * PROCHAINE CASE de sa ligne dès que ce retard s'entend (arbitré « seulement
+   * si retard audible »).
+   *
+   * ⚠️ Une case n'accueille qu'UNE note par ligne : le doigt qui glisse d'une
+   * zone à l'autre avant qu'elle sonne la REMPLACE (la dernière zone gagne),
+   * tant qu'elle n'est pas rendue ; rendue, la suivante prend la case d'après.
+   * Sans ça, un glissé posait deux notes sur la même case — un accord faux. */
+  private noteAuDoigt: Partial<Record<SynthRowName, { t: number; oscillateurs: OscillatorNode[] }>> = {};
+  private caleSurLaGrille = false;
+
+  private jouerAuDoigt(ligne: SynthRowName, murMs: number | undefined, jouer: (t: number) => void): void {
+    const ctx = this.ctx!;
+    let t = this.instantAuDoigt(ligne, murMs);
+    const prevue = this.noteAuDoigt[ligne];
+    if (this.caleSurLaGrille && prevue && prevue.t >= t - 1e-6) {
+      if (prevue.t > ctx.currentTime + this.pasDeRendu() + AVANCE_DECLENCHEMENT) {
+        for (const o of prevue.oscillateurs) {
+          try {
+            o.stop(prevue.t);
+          } catch {
+            /* déjà arrêté */
+          }
+        }
+        t = prevue.t;
+      } else {
+        const g = this.grilleDe(ligne);
+        if (g) t = caseSuivante(prevue.t + 1e-6, g);
+      }
+    }
+    const oscillateurs = this.synth!.capturer(() => jouer(t));
+    this.noteAuDoigt[ligne] = { t, oscillateurs };
+  }
+
+  /* L'instant de rendu d'une note jouée au doigt. Hors lecture, ou tant que
+     l'horloge entendue n'a pas une seconde de relevés : tout de suite, comme
+     avant — il n'y a ni grille ni écart à tenir. */
+  private instantAuDoigt(ligne: SynthRowName, murMs: number | undefined): number {
+    const ctx = this.ctx!;
+    const avance = this.isPlaying && this.retardsVus.length >= 10 ? Math.max(...this.retardsVus) : null;
+    const maintenantMs = performance.now();
+    const doigt =
+      murMs !== undefined && Number.isFinite(murMs) && murMs > 0 && murMs <= maintenantMs ? murMs : maintenantMs;
+    const entendu = avance !== null ? this.audioTimeA(doigt) : null;
+    const d = { maintenant: ctx.currentTime, entendu, avanceRendu: avance };
+    const libre = instantDuDoigt(d, AVANCE_DECLENCHEMENT);
+    if (avance === null || entendu === null) return libre;
+    this.caleSurLaGrille = calerSurLaGrille(avance + AVANCE_DECLENCHEMENT, this.caleSurLaGrille);
+    if (!this.caleSurLaGrille) return libre;
+    const g = this.grilleDe(ligne);
+    return g ? caseDuDoigt(d, AVANCE_DECLENCHEMENT, g) : libre;
+  }
+
+  /* La grille d'une ligne de synthé, telle que `scheduleSynthWindow` la pose :
+     ses cases, son décalage, le swing du synthé sur les impaires, sa traîne.
+     ⚠️ Une ligne plus lente que le TEMPS (une nappe en blanches, en rondes)
+     se cale sur le temps : attendre la mesure suivante pour un accord joué au
+     doigt, ce n'est plus du jeu. */
+  private grilleDe(ligne: SynthRowName): Grille | null {
+    if (!this.isPlaying) return null;
+    const state = this.withLiveOverrides(this.getState());
+    const row = state.synthRows[ligne];
+    const barDur = barDuration(state.tempo);
+    const temps = barDur / 4;
+    const pas = stepDurForLine(row, barDur);
+    if (pas > temps + 1e-9) {
+      return this.nextBarTime === null
+        ? null
+        : { repere: this.nextBarTime, index: 0, pas: temps, total: 4, decalage: () => 0 };
+    }
+    const c = this.synthCursors[ligne];
+    return {
+      repere: c.nextStepTime,
+      index: c.stepIndex,
+      pas,
+      total: stepsForLine(row),
+      decalage: (col) =>
+        (row.shiftPct / 100) * pas + (col % 2 === 1 ? (state.synthSwing / 100) * pas : 0) + (state.synthDrag / 100) * pas,
+    };
   }
 }

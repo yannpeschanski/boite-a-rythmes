@@ -42,6 +42,7 @@ export function makeRecorders(events: Ev[]) {
   } as unknown as DrumKit;
 
   const synth = {
+    capturer: (jouer: () => void) => (jouer(), []),
     syncDroneMode: () => {},
     stopDrone: (t: number) => events.push(`droneStop ${n(t)}`),
     updateDrone: (f: number[], t: number) => events.push(`drone ${f.map(n).join(',')} ${n(t)}`),

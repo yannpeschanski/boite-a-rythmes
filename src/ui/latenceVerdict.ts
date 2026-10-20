@@ -34,6 +34,8 @@
  * Module PUR : aucune rune, aucun DOM. `tests/latence-verdict.test.ts` le tient.
  */
 
+import { RETARD_AUDIBLE_S } from '../engine/doigt';
+
 export type PalierLatence = 'jouable' | 'sensible' | 'lourde';
 export type CauseLatence = 'navigateur' | 'sortie' | 'inconnue';
 
@@ -44,8 +46,9 @@ export interface VerdictLatence {
   ms: number;
 }
 
-/** Au-delà, le décalage s'entend quand on joue au doigt. */
-export const SEUIL_SENSIBLE = 40; // ms
+/** Au-delà, le décalage s'entend quand on joue au doigt — la même définition
+ *  que celle qui cale les SOLO du Mode Live sur la grille (`engine/doigt.ts`). */
+export const SEUIL_SENSIBLE = Math.round(RETARD_AUDIBLE_S * 1000); // ms
 /** Au-delà, jouer au doigt n'a plus de sens sur cet appareil. */
 export const SEUIL_LOURD = 100; // ms
 

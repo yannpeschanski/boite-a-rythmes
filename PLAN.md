@@ -48,6 +48,31 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les SOLO du Mode Live : un retard constant, calé sur la grille (2026-10-20)
+
+« Dans le Mode Live, les pads arrivent en retard. » Une note de SOLO partait à
+`currentTime + 8 ms` : au retard de la sortie (incompressible — un lecteur
+vidéo ne le retire pas non plus, il retarde l'image, ce qu'un geste ne permet
+pas) s'ajoutait l'escalier de Chrome Android, de 0 à 171 ms selon l'instant
+du doigt. Un retard irrégulier ne s'apprend pas.
+
+- `engine/doigt.ts` (pur) : la note se date au doigt (`event.timeStamp` →
+  `audioTimeA`) et part à `entendu + max(currentTime − entendu) + 8 ms` (la
+  dernière seconde de relevés) — retard constant, au prix d'une demi-marche en
+  moyenne. Au-delà de 40 ms (`RETARD_AUDIBLE_S`, que `SEUIL_SENSIBLE` relit),
+  elle part sur la prochaine case de SA ligne, swing compris, une ligne plus
+  lente que le temps se calant sur le temps ; hystérésis de 10 ms. La case est
+  visée depuis le doigt et ne cède que si elle est passée.
+- Une case n'accueille qu'une note par ligne : un glissé la REMPLACE tant
+  qu'elle n'est pas rendue (`SynthKit.capturer`, oscillateurs arrêtés à leur
+  départ), sinon il prend la case suivante.
+- Hors lecture, ou horloge pas encore établie : départ immédiat, comme avant.
+- Tests : `tests/doigt.test.ts` (calcul) ; `tests/horloge-moteur.test.ts` —
+  même endroit de huit mesures → même case sur l'escalier (échoue avec l'ancien
+  départ), glissé sans doublon, sortie rapide libre, arrêt inchangé.
+- Limite dite à Yann : au casque sur Chrome Android le retard tient ~0,6 s
+  (448 ms déclarés + une marche) ; constant, il s'anticipe, mais il reste.
+
 ### ✅ L'horloge entendue, ce que la revue a trouvé (2026-10-16)
 
 Revue adversariale de #237 (trois angles, deux contre-vérificateurs par

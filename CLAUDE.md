@@ -216,7 +216,11 @@ aussi (`startLiveRecording(bars, depart)`, prise coupée au premier temps).
 
 ⚠️ **Deux latences, deux traitements.** DÉCLENCHER un son (pads du Mode Live,
 aperçus, notes jouées) ne se compense pas, seulement se réduit — d'où
-`latencyHint: 'interactive'` dans `ensureAudio`. MESURER un placement se corrige : le pad
+`latencyHint: 'interactive'` dans `ensureAudio`. ⚠️ Mais son IRRÉGULARITÉ se
+retire : une note de SOLO se date au doigt et part au haut de l'escalier
+rendu → entendu (`engine/doigt.ts`), donc toujours au même retard ; et quand ce
+retard s'entend (≥ 40 ms, la même définition que l'avis), elle part sur la
+PROCHAINE CASE de sa ligne — arbitré « seulement si retard audible ». MESURER un placement se corrige : le pad
 d'écriture avec le décalage calibré, le Mode jeu en ne regardant que l'écart
 ENTRE les frappes.
 

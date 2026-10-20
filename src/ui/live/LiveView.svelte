@@ -1160,13 +1160,13 @@
   // liveMelodyFreqForDegree (et non degreeFreq(st, ...) directement) : un
   // bouton PAS "tonalité"/"gamme" tenu en direct pendant qu'on joue au pad
   // doit s'entendre ici aussi, pas seulement sur le séquenceur programmé.
-  function playSoloMelody(px: number, py: number) {
+  function playSoloMelody(px: number, py: number, murMs?: number) {
     const degree = Math.min(7, Math.floor(px * 7) + 1);
     const yInverted = 1 - py;
     const octave = yInverted < 1 / 3 ? -1 : yInverted < 2 / 3 ? 0 : 1;
     const freq = engine.liveMelodyFreqForDegree(degree, octave);
     if (freq !== lastMelodyFreq) {
-      engine.playLiveMelodyNote(freq, lastMelodyFreq);
+      engine.playLiveMelodyNote(freq, lastMelodyFreq, murMs);
       lastMelodyFreq = freq;
     }
   }
@@ -1174,13 +1174,13 @@
   /* SOLO BASSE — même découpage que la mélodie, mais le REGISTRE vient du
      moteur (`liveBassFreqForDegree`, −24 demi-tons comme le scheduler). Sans
      ça le doigt sonnerait deux octaves au-dessus de ce que la grille joue. */
-  function playSoloBass(px: number, py: number) {
+  function playSoloBass(px: number, py: number, murMs?: number) {
     const degree = Math.min(7, Math.floor(px * 7) + 1);
     const yInverted = 1 - py;
     const octave = yInverted < 1 / 3 ? -1 : yInverted < 2 / 3 ? 0 : 1;
     const freq = engine.liveBassFreqForDegree(degree, octave);
     if (freq !== lastBassFreq) {
-      engine.playLiveBassNote(freq, lastBassFreq);
+      engine.playLiveBassNote(freq, lastBassFreq, murMs);
       lastBassFreq = freq;
     }
   }
@@ -1190,32 +1190,35 @@
      sert pas : un accord n'a pas d'octave à choisir dans ce modèle (le registre
      est ancré à −12 par `chordFreqs`), et inventer un usage à Y ferait un
      geste de plus qu'aucun mot n'explique. */
-  function playSoloPad(px: number) {
+  function playSoloPad(px: number, murMs?: number) {
     const n = Math.max(1, engine.liveChordCount());
     const idx = Math.min(n - 1, Math.floor(px * n));
     if (idx !== dernierAccord) {
-      engine.playLivePadChord(idx);
+      engine.playLivePadChord(idx, murMs);
       dernierAccord = idx;
     }
   }
 
   // Les deux paramètres sont inversés pour l'axe Y du pad (haut du pad =
   // 100%), pas pour l'axe X ni pour l'inclinaison.
-  function setPad(clientX: number, clientY: number, rect: DOMRect) {
+  /* `murMs` : l'instant du DOIGT (`event.timeStamp`), pas celui du
+     gestionnaire — une note de SOLO se date là où on l'a jouée
+     (engine/doigt.ts). */
+  function setPad(clientX: number, clientY: number, rect: DOMRect, murMs?: number) {
     padX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     padY = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
     /* ⚠️ L'ordre décide quand deux solos sont tenus ensemble, et il faut
        qu'il soit ÉCRIT : le pad est une surface, elle ne joue qu'une ligne. */
     if (soloMelodyHeld) {
-      playSoloMelody(padX, padY);
+      playSoloMelody(padX, padY, murMs);
       return;
     }
     if (soloPadHeld) {
-      playSoloPad(padX);
+      playSoloPad(padX, murMs);
       return;
     }
     if (soloBassHeld) {
-      playSoloBass(padX, padY);
+      playSoloBass(padX, padY, murMs);
       return;
     }
     applyAxisValue(assignments.axisX, padX);
@@ -1226,10 +1229,10 @@
   function padPointerDown(e: PointerEvent, el: HTMLDivElement) {
     dragging = true;
     el.setPointerCapture(e.pointerId);
-    setPad(e.clientX, e.clientY, el.getBoundingClientRect());
+    setPad(e.clientX, e.clientY, el.getBoundingClientRect(), e.timeStamp);
   }
   function padPointerMove(e: PointerEvent, el: HTMLDivElement) {
-    if (dragging) setPad(e.clientX, e.clientY, el.getBoundingClientRect());
+    if (dragging) setPad(e.clientX, e.clientY, el.getBoundingClientRect(), e.timeStamp);
   }
 
   // ---- Séquenceur linéaire (vrai pattern) + visualiseur (vrais niveaux) ----

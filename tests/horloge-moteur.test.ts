@@ -20,11 +20,15 @@ import type { PatternStateV2 } from '../src/model/types';
 
 vi.mock('../src/engine/metronome', () => ({ scheduleClick: () => {} }));
 
-const MARCHE = 0.171;
-const RETARD = 0.448;
+const MARCHE_TEL = 0.171;
+const RETARD_TEL = 0.448;
+const MARCHE = MARCHE_TEL;
+const RETARD = RETARD_TEL;
 
 /** Un téléphone feint : l'horloge murale avance quand on le dit. */
-function telephone(opts: { gecko?: boolean } = {}) {
+function telephone(opts: { gecko?: boolean; retard?: number; marche?: number } = {}) {
+  const RETARD = opts.retard ?? RETARD_TEL;
+  const MARCHE = opts.marche ?? MARCHE_TEL;
   let murMs = 50_000;
   const debutMs = murMs;
   vi.spyOn(performance, 'now').mockImplementation(() => murMs);
@@ -463,5 +467,119 @@ describe('le métronome du calibrage', () => {
     const pas = (suite.debut - m.debut) / m.intervalle;
     expect(Math.abs(pas - Math.round(pas))).toBeLessThan(1e-9);
     expect(suite.debut).toBeGreaterThan(tel.ctx.currentTime);
+  });
+});
+
+/* Les SOLO du Mode Live — « les pads arrivent en retard » (2026-10-20).
+ * Le calcul est dans `tests/doigt.test.ts` ; ici, ce que le moteur en fait sur
+ * l'escalier de Chrome. */
+describe('une note jouée au doigt', () => {
+  const SEIZE = 16;
+  function etatSeize(): () => PatternStateV2 {
+    const etat = defaultState();
+    const m = etat.synthRows.melody;
+    Object.assign(m, {
+      subdivisions: SEIZE,
+      cycleBars: 1,
+      pattern: new Array(SEIZE).fill(null),
+      rolls: new Array(SEIZE).fill(1),
+    });
+    return () => etat;
+  }
+  const notes = (events: string[]) =>
+    events.filter((e) => e.startsWith('melody ')).map((e) => Number(e.split(' ')[2]));
+
+  /** Lance la lecture et laisse l'horloge entendue s'établir. */
+  function enJeu(tel: ReturnType<typeof telephone>) {
+    const m = moteur(tel.ctx, etatSeize());
+    tel.avancer(1500);
+    const mesure = barDuration(120);
+    const t0 = tel.ctx.currentTime + 0.1;
+    lancerA(m.engine, t0, mesure);
+    rouler(tel, m.prive, 1500);
+    return { ...m, t0, mesure, pas: mesure / SEIZE };
+  }
+  /** Avance jusqu'à ce qu'on ENTENDE `cible`, puis encore `file` ms. */
+  function jusquA(tel: ReturnType<typeof telephone>, prive: { tick(): void }, cible: number, file = 0) {
+    const doigt = tel.murMs + (cible - tel.entendu()) * 1000;
+    rouler(tel, prive, doigt - tel.murMs + file);
+    return doigt;
+  }
+
+  it('au casque, le même endroit de la musique tombe sur la même case, quelle que soit la marche', () => {
+    const tel = telephone();
+    const { engine, events, prive, t0, mesure, pas } = enJeu(tel);
+    // Le doigt joue au même endroit de huit mesures ; l'escalier de 171 ms,
+    // lui, n'est jamais à la même hauteur (une mesure n'en vaut pas un nombre
+    // rond). L'événement attend 40 ms dans la file avant d'être traité.
+    const ou = 0.5725;
+    const cases: number[] = [];
+    for (let k = 2; k < 10; k++) {
+      const doigt = jusquA(tel, prive, t0 + k * mesure + ou, 40);
+      const avant = notes(events).length;
+      engine.playLiveMelodyNote(440 + k, null, doigt);
+      const t = notes(events)[avant];
+      // Sur une case de la ligne, comme l'ordonnanceur la poserait…
+      const n = (t - t0) / pas;
+      expect(Math.abs(n - Math.round(n))).toBeLessThan(1e-6);
+      cases.push(Math.round(n) % SEIZE);
+      // … et à un retard d'au plus une case au-delà du haut de l'escalier.
+      const retard = t - tel.entendu(doigt);
+      expect(retard).toBeGreaterThanOrEqual(RETARD + MARCHE - 0.03);
+      expect(retard).toBeLessThan(RETARD + MARCHE + 0.01 + pas);
+    }
+    expect(new Set(cases).size).toBe(1);
+  });
+
+  it('un doigt qui glisse ne pose jamais deux notes sur la même case — la dernière zone sonne', () => {
+    const tel = telephone();
+    const { engine, events, prive, t0, mesure } = enJeu(tel);
+    const coupees = new Map<number, number[]>();
+    let n = 0;
+    Object.assign((engine as unknown as { synth: object }).synth, {
+      capturer: (jouer: () => void) => {
+        jouer();
+        const id = n++;
+        return [{ stop: (t: number) => coupees.set(id, [...(coupees.get(id) ?? []), t]) }];
+      },
+    });
+    jusquA(tel, prive, t0 + 3 * mesure + 0.3);
+    // Douze zones en un quart de seconde : plus vite que les cases.
+    for (let z = 0; z < 12; z++) {
+      engine.playLiveMelodyNote(300 + z * 20, null, tel.murMs);
+      rouler(tel, prive, 20);
+    }
+    const ts = notes(events);
+    const sonnent = ts.filter((_, id) => !coupees.has(id));
+    expect(new Set(sonnent).size).toBe(sonnent.length);
+    // Une note coupée l'est à son propre départ : elle ne fait aucun bruit.
+    for (const [id, arrets] of coupees) expect(arrets).toEqual([ts[id]]);
+    expect(coupees.has(ts.length - 1)).toBe(false);
+  });
+
+  it('sur une sortie rapide, le pad reste libre entre les cases', () => {
+    const tel = telephone({ retard: 0.02, marche: 0.003 });
+    const { engine, events, prive, t0, mesure, pas } = enJeu(tel);
+    const hors: number[] = [];
+    for (let k = 2; k < 8; k++) {
+      jusquA(tel, prive, t0 + k * mesure + 0.05 + k * 0.011);
+      const doigt = tel.murMs - 5; // traité 5 ms après le doigt
+      const avant = notes(events).length;
+      engine.playLiveMelodyNote(440 + k, null, doigt);
+      const t = notes(events)[avant];
+      const retard = t - tel.entendu(doigt);
+      expect(retard).toBeLessThan(0.04);
+      const r = (t - t0) / pas;
+      hors.push(Math.abs(r - Math.round(r)));
+    }
+    expect(Math.max(...hors)).toBeGreaterThan(0.05);
+  });
+
+  it('à l’arrêt, rien ne change : la note part tout de suite', () => {
+    const tel = telephone();
+    const { engine, events } = moteur(tel.ctx, etatSeize());
+    tel.avancer(3000);
+    engine.playLiveMelodyNote(440, null, tel.murMs);
+    expect(notes(events)[0]).toBeCloseTo(tel.ctx.currentTime + 0.008, 9);
   });
 });

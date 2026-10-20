@@ -55,7 +55,24 @@ export class SynthKit {
 
   private track(node: OscillatorNode): void {
     this.activeOscillators.add(node);
+    this.capture?.push(node);
     node.addEventListener('ended', () => this.activeOscillators.delete(node));
+  }
+
+  /* Les oscillateurs démarrés pendant `jouer` — de quoi retirer une note
+     programmée qui n'a pas encore été rendue (un SOLO calé sur une case que
+     le doigt a quittée avant qu'elle sonne, voir AudioEngine.jouerAuDoigt). */
+  private capture: OscillatorNode[] | null = null;
+  capturer(jouer: () => void): OscillatorNode[] {
+    const avant = this.capture;
+    const pris: OscillatorNode[] = [];
+    this.capture = pris;
+    try {
+      jouer();
+    } finally {
+      this.capture = avant;
+    }
+    return pris;
   }
 
   stopAll(): void {
