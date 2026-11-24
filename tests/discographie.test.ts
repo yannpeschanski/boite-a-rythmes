@@ -203,8 +203,8 @@ describe('un acte qui livre plusieurs genres les garde tous', () => {
    * garderait la version sans synthé à côté de la version finie, c'est-à-dire
    * le brouillon à côté du disque. C'est la même règle que la chaîne du
    * Tunnel, appliquée à un acte qui livre plusieurs genres. */
-  it('et l’acte 5 déclare quatre séries pour ses six commandes', async () => {
-    const cmds = ACTES.find((a) => a.id === 5)!.etapes.filter((e) => e.kind === 'commande');
+  it('et l’acte des styles déclare quatre séries pour ses six commandes', async () => {
+    const cmds = ACTES.find((a) => a.id === 4)!.etapes.filter((e) => e.kind === 'commande');
     const series = cmds.map((c) => (c as { serie?: string }).serie);
     expect(series).toHaveLength(6);
     expect(new Set(series).size).toBe(4);

@@ -157,7 +157,7 @@ describe('ce que le verrou dit', () => {
  * ne se referme pas à l'écran suivant. */
 describe('le concert ouvre le Mode Live, et l’acte le garde ouvert', () => {
   // L'acte 7 en cours, tout au début : le joueur y est, il n'a rien franchi.
-  const DEBUT_ACTE_7 = { level: 1, plancher: 1, acte: 7, etape: 0 };
+  const DEBUT_ACTE_7 = { level: 1, plancher: 1, acte: 6, etape: 0 };
   const SCENE = ETAPE_DU_MODULE.live;
 
   it('avant l’étape qui le prête, le Mode Live reste fermé', () => {
@@ -170,7 +170,7 @@ describe('le concert ouvre le Mode Live, et l’acte le garde ouvert', () => {
    * l'arbitrage qui se vérifie ici — l'autre est dans `carriere.test.ts`. */
   it('⚠️ et l’acte 6 le laisse fermé de bout en bout', () => {
     for (const etape of [0, 5, 10, 20, 99]) {
-      expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 6, etape }), `étape ${etape}`).toBe(false);
+      expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 5, etape }), `étape ${etape}`).toBe(false);
     }
   });
 
@@ -192,7 +192,7 @@ describe('le concert ouvre le Mode Live, et l’acte le garde ouvert', () => {
     expect(moduleUnlocked('live', surLaScene)).toBe(true);
     expect(moduleUnlocked('live', ecranSuivant)).toBe(true);
     // Et il reste ouvert après la carrière, donc pour toujours.
-    expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 8, etape: 0 })).toBe(true);
+    expect(moduleUnlocked('live', { level: 1, plancher: 1, acte: 7, etape: 0 })).toBe(true);
   });
 });
 
@@ -206,11 +206,11 @@ describe('le catalogue des morceaux suit le récit', () => {
   const neuf = (acte: number) => ({ level: 1, plancher: 1, acte, etape: 0 });
 
   it('reste fermé tant que l’acte des styles n’est pas passé', () => {
-    for (const a of [0, 1, 2, 3, 4, 5]) expect(catalogueOuvert(neuf(a))).toBe(false);
+    for (const a of [0, 1, 2, 3, 4]) expect(catalogueOuvert(neuf(a))).toBe(false);
   });
 
   it('s’ouvre l’acte 5 franchi, et ne se referme jamais', () => {
-    for (const a of [6, 7, 8]) expect(catalogueOuvert(neuf(a))).toBe(true);
+    for (const a of [5, 6, 7]) expect(catalogueOuvert(neuf(a))).toBe(true);
   });
 
   /* ⚠️ Une porte déjà ouverte ne se referme jamais : qui avait les 34 morceaux

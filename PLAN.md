@@ -48,6 +48,37 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Les actes 1 et 2 fusionnés — une nouveauté par exercice (2026-11-24)
+
+**Pourquoi** — retour des testeurs : « on ne comprend rien, trop difficile, pas
+assez progressif, on ne comprend pas l'histoire » ; aucun n'avait passé l'acte du
+rythme. Fiche `docs/relecture/premiers-pas.html` (27 cartes), puis arbitrages de
+Yann : fusionner rythme et groove (« trop de swing et de décalage »), charley
+8 → 16 → 12 puis polyrythmie, décalage sorti entièrement.
+
+**Fait** — `carriere.ts` : un acte « LE RYTHME » de 19 étapes : 3, 68, 7, 69 →
+gestes de Sol → 60 → sonnerie (ouvre l'Atelier) → Kelvin → **82** (nouveau, trois
+lignes en triolets) → 48 (swing au curseur) → 74 → commande de Kelvin (série
+`kelvin`, part du 82, cahier à 4 lignes sans « ligne qui glisse »). Sept actes,
+`JOURS` garde les dates des actes suivants. FB-015 n'exige plus de rafale. Le
+prologue ne dit plus « tape avec ». `ETAPE_DU_MODULE` compte la livraison,
+`ACTE_DU_GROOVE` est dérivé, `serieDuMorceau` évite que l'acte des styles reparte
+de la sonnerie. Niveau 16 : « 45 % » périmé → 33 %.
+
+**Migration** — `model/migrationActes.ts` (table à la main, testée contre les
+données) : curseur, étoiles `c<acte>.x`, discographie, une fois, marqué
+`PlayerProgress.schema`. Clé de session passée à `-2`.
+
+**Défaut trouvé en passant (existait sur `main`)** — après un rechargement,
+« Au travail ▸ » ouvrait le niveau `level` du réservoir (« Poser une note
+(kick) ») au lieu de l'exercice de l'étape. `CarriereView.auTravail` relance
+l'étape si le niveau chargé n'est pas le sien.
+
+**Vérifié** — 938 tests, check 0, deux builds ; `parcours-carriere.cjs` jusqu'à
+l'épilogue (modules au fil de l'eau, sonnerie et Kelvin coexistent),
+`verrous-masques.cjs` sans fuite ; captures 390 × 844 du 82 et du 74, pas de
+débordement. **Pas vérifié** : à l'oreille, sur un téléphone.
+
 ### ✅ L'horloge entendue, ce que la revue a trouvé (2026-10-16)
 
 Revue adversariale de #237 (trois angles, deux contre-vérificateurs par

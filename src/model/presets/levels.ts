@@ -823,7 +823,7 @@ export const LEVELS: GameLevel[] = [
     variant: { snare: true, hat: true }, variantChance: 0.3, rollMax: 2, rollChance: 0.3,
     density: { kickMin: 1, kickMax: 1, snareMin: 0, snareMax: 1, hatMin: 0.45, hatMax: 0.6 } }),
   mkLevel(16, 'Reproduire un preset (UK Garage)', {
-    preamble: "Le swing de ce preset est très marqué (45%) — pas un hasard, c'est ce chapitre qu'il illustre.",
+    preamble: "Le swing de ce preset est réglé au triolet (33 %) — pas un hasard, c'est ce chapitre qu'il illustre.",
     variant: { snare: true, hat: true }, rollMax: 2, presetId: 'garage', forceVariantCount: 1, forceRollCount: 1 }),
   /* ⚠️ Au RÉSERVOIR depuis le 2026-09-01 : il était la seconde moitié du trio
    * comparatif (« la même grille, exactement »), et le trio est dissous. Un
@@ -1829,5 +1829,25 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       kick:  [1, 0, 1, 0, 1, 1, 1, 0],
       snare: [0, 0, 0, 0, 0, 0, 0, 0],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
+  /* ⚠️ LE SHUFFLE ÉCRIT — acte 1 fusionné (2026-11-24). Le charley « commence
+   * à 8, passe à 16 et finit à 12 » (Yann) : douze cases, trois par temps, et
+   * c'est la réponse à Kelvin (« personne ne danse carré ») sans un seul
+   * curseur. Les trois lignes sont en douze, parce qu'un contretemps BINAIRE
+   * contre des triolets ferait une polyrythmie — ce que le 74 enseigne juste
+   * après, exprès.
+   *
+   * La syncope acquise au niveau 7 reste : le kick tombe sur le dernier
+   * triolet du 2e temps (5). Le charley joue ses douze coups, ce qui laisse
+   * à la commande de Kelvin, qui part d'ici, quelque chose à demander
+   * (« laisse de la place » — c'est en le trouant qu'on entend le shuffle). */
+  mkLevel(82, 'Trois par temps', {
+    preamble: "Le charley ne coupe plus le temps en deux ou en quatre, mais en TROIS : douze cases, trois par temps. Le kick et la claire suivent la même grille. C'est ce qui fait balancer.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 12, snare: 12, hat: 12 },
+      kick:  [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+      snare: [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     } }),
 ];

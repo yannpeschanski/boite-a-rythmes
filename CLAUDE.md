@@ -946,6 +946,14 @@ enceintes. Un seul jeton de texte existe dans tout le récit, `{pseudo}`.
 
 ## Le Mode carrière
 
+⚠️ **SEPT ACTES depuis le 2026-11-24 — le rythme et le groove sont FUSIONNÉS**
+(retour des testeurs : « on ne comprend rien, trop difficile », aucun n'avait
+passé l'acte du rythme). **Dans ce fichier, un numéro d'acte écrit avant cette
+date est l'ANCIEN** : acte n ≥ 3 → n − 1 (la mélodie est l'acte 2, FB-015 le 5,
+le concert le 6). Les sauvegardes migrent une fois (`model/migrationActes.ts`,
+`PlayerProgress.schema`) — curseur, clés `c<acte>.x` ET discographie ensemble.
+Fiche : `docs/relecture/premiers-pas.html`.
+
 **Le Mode jeu s'ouvre sur le Mode carrière, et c'est le RÉCIT qui ouvre les
 modules.** `src/model/carriere.ts` porte les huit actes ;
 `PlayerProgress.carriere = { acte, etape }` est un **second axe**, séparé de
@@ -975,7 +983,9 @@ GARDÉ de l'arbitrage renversé : le module s'ouvre à l'ÉTAPE qui le prête
 (`ETAPE_DU_MODULE` → la première scène de l'acte 7) et pas à la frontière de
 l'acte, sinon il se refermerait entre le rappel et la dernière réplique.
 
-⚠️ **Le panneau GROOVE est fermé jusqu'à la COMMANDE de l'acte 2**
+⚠️ **Le panneau GROOVE est fermé jusqu'à la COMMANDE de Kelvin** (acte 1 depuis la
+fusion ; la LIVRAISON de la sonnerie, qui la précède, ouvre l'Atelier —
+`ETAPE_DU_MODULE` la compte)
 (`grooveOuvert`, `model/unlocks.ts` — une règle nommée, pas un cinquième
 `LockedModule` : aucun écran à ouvrir, donc rien à cadenasser, et ce qui est
 verrouillé ne s'affiche pas). Ses six curseurs s'affichaient sur le premier
@@ -1308,7 +1318,17 @@ produit. Les niveaux posent donc deux à quatre occurrences, **de longueurs et d
 timbres différents**, et les variantes ne sont **ni la première ni la dernière**
 case de la ligne.
 
-⚠️ **Mais un sujet ne vaut qu'UN exercice — le plus dense.** La règle inverse
+⚠️ **UNE NOUVEAUTÉ PAR EXERCICE** (2026-11-24) — renverse le paragraphe
+suivant : la somme de coupes « le plus dense » avait retiré toutes les marches
+(trois nouveautés au premier exercice de l'acte 1, la polyrythmie au troisième).
+Le charley va 8 → 16 → 12 (triolets, niveau 82), puis la polyrythmie ; la
+résolution BINAIRE ne recule jamais, le ternaire vient après. Le 67 reste dehors
+(« trop facile », 2026-09-04) : l'acte ouvre sur le 3. `grilles-ecrites.test.ts`
+compte les propriétés NEUVES par grille. Le DÉCALAGE et les RAFALES ont quitté la
+carrière (exercices ET cahiers — on ne demande pas un geste qu'aucun écran
+n'enseigne) ; 8, 61, 14, 23, 47, 63, 71, 72 sont au réservoir.
+
+~~Mais un sujet ne vaut qu'UN exercice — le plus dense.~~ *(révoqué)* La règle inverse
 (« un exercice pose, le suivant applique ») a tenu du 2026-08-31 au 2026-09-01 et
 a été révoquée : *« l'acte 1 fusionné 12 → 6-7, le niveau 2 retiré, plus une
 polyrythmie »*. Deux lectures de seize cases pour une seule idée neuve font de la
@@ -1346,6 +1366,7 @@ Le kick y sort du temps comme depuis le niveau 7 et le charley entre (simple au
 75, TROUÉ au 76 — `dePlacePourLaVoix` là où il s'entend). L'axe de l'acte ne
 bouge pas pour autant : ce qui monte reste le nombre de VOIX.
 
+*(Historique — l'acte du groove n'existe plus depuis le 2026-11-24.)*
 ⚠️ **L'acte 2 porte TROIS arbitrages successifs — ne pas restaurer l'un en
 croyant corriger l'autre.** Ses cinq grilles générées ont été retirées (elles
 posaient des rafales et des rim shots sans rapport avec le groove) ; puis les
@@ -1423,8 +1444,9 @@ exception qu'on ne voit qu'en lisant un test est une exception que personne ne v
 ⚠️ **La sévérité d'une commande DÉCROÎT avec le récit**, et c'est l'acte 6 qui
 l'impose : « aucun brief, aucun client, aucun style imposé ». Les clients des actes
 2 à 5 exigent des choses précises parce qu'ils paient ; FB-015 constate seulement
-qu'on s'est servi de ce qu'on a appris. Et **jamais de commande avant l'acte 2** :
-l'acte 1 garde sa `livraison`, qui est un cadeau et non une épreuve.
+qu'on s'est servi de ce qu'on a appris. Et **jamais de commande avant la
+sonnerie** : sa `livraison` est un cadeau et non une épreuve, et c'est elle qui
+ouvre l'Atelier où la commande de Kelvin se joue.
 
 ⚠️ **COMPLET n'est pas SÉVÈRE — le cahier de FB-015 est le plus long du jeu
 (onze lignes) et n'exige aucun goût.** Il RÉCAPITULE : une section par acte

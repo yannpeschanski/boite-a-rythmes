@@ -546,10 +546,15 @@ const OUT = process.env.PARCOURS_OUT || require('node:os').tmpdir();
     if (game.productions.length !== 15) log.push('   ⚠️ QUINZE productions attendues');
     // ⚠️ SEPT depuis le crescendo du 2026-09-17 : deux morceaux en couplet /
     // refrain, un seul qui monte jusqu'au pont.
-    if (game.productions.filter((p) => p.acte === 6).length !== 7)
-      log.push('   ⚠️ l’acte 6 doit ranger SEPT boucles — 2 + 2 + 3');
-    if (game.productions.filter((p) => p.acte === 5).length !== 4)
-      log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
+    /* ⚠️ Numéros d'APRÈS la fusion des actes 1 et 2 (2026-11-24) : FB-015 est
+       l'acte 5, les styles l'acte 4 — et l'acte 1 livre DEUX morceaux, la
+       sonnerie et la boucle de Kelvin, qui doivent coexister. */
+    if (game.productions.filter((p) => p.acte === 5).length !== 7)
+      log.push('   ⚠️ l’acte de FB-015 doit ranger SEPT boucles — 2 + 2 + 3');
+    if (game.productions.filter((p) => p.acte === 4).length !== 4)
+      log.push('   ⚠️ les quatre genres de l’acte des styles devraient coexister');
+    if (game.productions.filter((p) => p.acte === 1).length !== 2)
+      log.push('   ⚠️ la sonnerie et la boucle de Kelvin devraient coexister');
     return log;
   });
 

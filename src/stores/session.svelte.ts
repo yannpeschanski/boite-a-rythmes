@@ -29,7 +29,11 @@
  * (`App`, `AtelierView`, `GameView`) montent à des moments différents.
  */
 
-const CLE = 'boite-a-rythme:session';
+/* ⚠️ « -2 » depuis la fusion des actes 1 et 2 (2026-11-24) : une session porte
+ * la COMMANDE ouverte par son numéro d'acte, qui a changé. Elle se périme en
+ * deux heures ; changer de clé coûte une restauration, jamais une commande
+ * rouverte dans le mauvais acte. */
+const CLE = 'boite-a-rythme:session-2';
 
 /** Deux heures : la durée d'une séance de travail, pas celle d'une absence. */
 export const PEREMPTION_MS = 2 * 60 * 60 * 1000;

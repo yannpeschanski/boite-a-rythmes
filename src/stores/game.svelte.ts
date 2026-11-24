@@ -94,6 +94,7 @@ import {
   productionDeLaSerie,
   type Production,
 } from '../model/discographie';
+import { SCHEMA_ACTES, migrerCurseur, migrerEtoiles, migrerProduction } from '../model/migrationActes';
 import { reactionA, type Reaction } from '../model/reactions';
 import { serializeState, deserializeState } from '../model/serialize';
 
@@ -150,6 +151,16 @@ export interface PlayerProgress {
    *
    * Facultatif, et jamais réécrit une fois posé. */
   plancher?: number;
+  /* La numérotation des actes dans laquelle `carriere`, les clés `c<acte>.x`
+   * de `stars` et la discographie sont écrits. Absent = d'avant la fusion des
+   * actes 1 et 2 (2026-11-24), migré une fois par `load()`. */
+  schema?: number;
+}
+
+/* Une progression NEUVE naît dans la numérotation courante — sans quoi le
+ * prochain `load()` la croirait d'avant la fusion et décalerait ses actes. */
+function progressionNeuve(): PlayerProgress {
+  return { level: 1, stars: {}, schema: SCHEMA_ACTES };
 }
 
 // 3★ du 1er coup, 2★ en 2-3 essais, 1★ au-delà, 0★ si abandon.
@@ -483,7 +494,7 @@ class GameStore {
       }
       return { level: LEVELS.length, stars };
     }
-    return this.progress[this.pseudo] ?? { level: 1, stars: {} };
+    return this.progress[this.pseudo] ?? progressionNeuve();
   }
 
   get bag(): BagItem[] {
@@ -932,7 +943,10 @@ class GameStore {
       return p ? deserializeState(p.etat) : etatVierge();
     }
     if (e.partirDuMorceauDeLActe !== undefined) {
-      const p = productionDeLActe(this.productions, e.partirDuMorceauDeLActe);
+      const p =
+        e.serieDuMorceau !== undefined
+          ? productionDeLaSerie(this.productions, e.partirDuMorceauDeLActe, e.serieDuMorceau)
+          : productionDeLActe(this.productions, e.partirDuMorceauDeLActe);
       return p ? deserializeState(p.etat) : etatVierge();
     }
     if (e.partirDu === undefined) return etatVierge();
@@ -1213,7 +1227,7 @@ class GameStore {
    * l'Atelier. */
   private memoriserCarriere(acte: number, etape: number): void {
     if (this.pseudo.toLowerCase() === 'master') return;
-    const prev = this.progress[this.pseudo] ?? { level: 1, stars: {} };
+    const prev = this.progress[this.pseudo] ?? progressionNeuve();
     const cur = prev.carriere ?? { acte: 0, etape: 0 };
     if (acte < cur.acte || (acte === cur.acte && etape <= cur.etape)) return;
     this.progress = { ...this.progress, [this.pseudo]: { ...prev, carriere: { acte, etape } } };
@@ -1244,7 +1258,7 @@ class GameStore {
     if (!this.pseudo || this.pseudo.toLowerCase() === 'master') return;
     const prev = this.progress[this.pseudo];
     if (prev?.plancher !== undefined) return;
-    const base = prev ?? { level: 1, stars: {} };
+    const base = prev ?? progressionNeuve();
     this.progress = { ...this.progress, [this.pseudo]: { ...base, plancher: base.level } };
     this.ecrireProgression();
   }
@@ -1263,6 +1277,7 @@ class GameStore {
     this.bags = readJson<Record<string, BagItem[]>>(KEY_BAG, {});
     this.disques = readJson<Record<string, Production[]>>(KEY_PROD, {});
     this.persistanceRefusee = !stockageEcrivable();
+    this.migrerFusionDesActes();
     // Seulement si aucun pseudo n'est actif : `setPseudo` appelle `load()`
     // APRÈS avoir posé le sien, il ne faut pas l'écraser avec l'ancien.
     if (!this.pseudo) {
@@ -1283,6 +1298,31 @@ class GameStore {
     this.gelerPlancher();
     this.brancherBanque();
     if (this.pseudo) this.seReplacer();
+  }
+
+  /* Huit actes sont devenus sept (2026-11-24) : curseur, étoiles de commande
+   * et discographie d'une sauvegarde d'avant passent dans la numérotation
+   * nouvelle, ensemble et une seule fois (`model/migrationActes.ts`). */
+  private migrerFusionDesActes(): void {
+    let change = false;
+    const progress = { ...this.progress };
+    const disques = { ...this.disques };
+    for (const [qui, prog] of Object.entries(progress)) {
+      if ((prog.schema ?? 1) >= SCHEMA_ACTES) continue;
+      progress[qui] = {
+        ...prog,
+        stars: migrerEtoiles(prog.stars ?? {}),
+        ...(prog.carriere ? { carriere: migrerCurseur(prog.carriere) } : {}),
+        schema: SCHEMA_ACTES,
+      };
+      if (disques[qui]) disques[qui] = disques[qui].map(migrerProduction);
+      change = true;
+    }
+    if (!change) return;
+    this.progress = progress;
+    this.disques = disques;
+    this.ecrireProgression();
+    if (!writeJson(KEY_PROD, this.disques)) this.persistanceRefusee = true;
   }
 
   /* ⚠️ SE REPLACER OÙ LE JOUEUR S'EST ARRÊTÉ — et c'était le défaut le plus
@@ -2364,7 +2404,7 @@ class GameStore {
 
   private saveProgress(stars: number): void {
     if (this.pseudo.toLowerCase() === 'master') return;
-    const prev = this.progress[this.pseudo] ?? { level: 1, stars: {} };
+    const prev = this.progress[this.pseudo] ?? progressionNeuve();
     const id = String(this.level.id);
     const next: PlayerProgress = {
       // `...prev` d'abord : sans lui, réussir un niveau effacerait le curseur
@@ -2417,7 +2457,7 @@ class GameStore {
    * livrer un cahier n'est pas réussir le niveau suivant. */
   private saveEtoilesCommande(acte: number, etape: number, stars: number): void {
     if (this.pseudo.toLowerCase() === 'master') return;
-    const prev = this.progress[this.pseudo] ?? { level: 1, stars: {} };
+    const prev = this.progress[this.pseudo] ?? progressionNeuve();
     const id = cleCommande(acte, etape);
     const next: PlayerProgress = {
       ...prev,

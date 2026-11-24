@@ -31,7 +31,6 @@ import { LEVELS } from './presets/levels';
 import {
   type Contrainte,
   lignesPresentes,
-  auMoinsUneRafale,
   swingAuMoins,
   ligneSynthPresente,
   pasLeMotifDeDepart,
@@ -66,7 +65,6 @@ import {
   reverbDosee,
   contrasteDeVolume,
   chaqueLigneRetouchee,
-  uneLigneQuiGlisse,
   deLAlea,
   unePhrase,
   seReposeSurLaTonique,
@@ -94,7 +92,7 @@ const AVOIR_PRODUIT = pasLeMotifDeDepart(DEPART);
  * que le joueur vient de reproduire. Une commande qui TRANSFORME compare à son
  * propre départ, pas à la table rase : sinon « il faut y avoir touché » serait
  * coché dès l'ouverture, puisque l'Atelier n'est justement pas vide. */
-const NIVEAU_KELVIN = LEVELS.find((l) => l.id === 63)!;
+const NIVEAU_KELVIN = LEVELS.find((l) => l.id === 82)!;
 const DEPART_KELVIN = etatDepuisGrille(NIVEAU_KELVIN.grille!, NIVEAU_KELVIN.tempoOptions[0]);
 
 /* La fiche du genre commandé par Zik'Mobile. Chargée une fois : elle sert à la
@@ -151,7 +149,7 @@ function dansLaSection<T extends { section?: string }>(section: string, lignes: 
   return lignes.map((l) => ({ ...l, section }));
 }
 
-export type ActeId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type ActeId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /* Les huit compétences du récit — une par acte, `HISTOIRE.md` § « Ce que le
  * récit ouvre, acte par acte ». Elles ne sont pas (encore) mesurées : ce sont
@@ -419,6 +417,10 @@ export interface EtapeCommande {
    * `tests/transformer.test.ts` ne peut pas voir (elle mesure sur une
    * discographie vide, donc sur une table rase). */
   partirDuMorceauDeLActe?: ActeId;
+  /* La SÉRIE du morceau à reprendre, quand l'acte cité en livre plusieurs —
+   * l'acte 1 livre la sonnerie PUIS la boucle de Kelvin depuis la fusion.
+   * Sans elle, « la dernière livrée » dépendrait de l'ordre des relectures. */
+  serieDuMorceau?: string;
   /* ⚠️ Partir d'une SÉRIE précise de l'acte courant.
    *
    * `partirDeLaLivraison` reprend « la dernière » production de l'acte, ce qui
@@ -520,7 +522,9 @@ export interface Acte {
  * s'affiche jamais (`HISTOIRE.md`) : on affiche des jours et une date sans
  * millésime, ce qui date l'histoire à deux ans près — ce qui suffit.
  */
-const JOURS: Record<ActeId, number> = { 0: 151, 1: 120, 2: 92, 3: 61, 4: 42, 5: 28, 6: 14, 7: 0 };
+/* ⚠️ Sept actes depuis la fusion du rythme et du groove (2026-11-24) : l'ancien
+ * acte 2 (92 jours) a disparu, les suivants gardent leur date. */
+const JOURS: Record<ActeId, number> = { 0: 151, 1: 120, 2: 61, 3: 42, 4: 28, 5: 14, 6: 0 };
 
 /* ⚠️ L'ANNÉE — 2005, et ce n'est pas un détail de décor.
  *
@@ -683,7 +687,7 @@ const PROLOGUE: Etape[] = [
       // donc reconnaître des choses sans les avoir nommées, alors que
       // l'Atelier, où vivent les boutons, n'est même pas encore ouvert.
       'Sol se tourne vers toi.',
-      'SOL: Approche. Écoute, et tape avec.',
+      'SOL: Approche. Écoute.',
     ],
   },
 ];
@@ -834,14 +838,28 @@ export const ACTES: Acte[] = [
     competence: 'rythme',
     competenceLabel: 'RYTHME',
     module: 'atelier',
-    resume: 'Un brief que personne ne sait expliquer. Kick, snare, hi-hat.',
+    resume: 'Un brief que personne ne sait expliquer. Kick, snare, hi-hat. Puis Kelvin, qui trouve ça carré.',
+    /* ⚠️ LES ACTES 1 ET 2 SONT FUSIONNÉS (2026-11-24) — retour des testeurs :
+     * « on ne comprend rien, trop difficile, pas assez progressif », et aucun
+     * n'avait dépassé l'acte du rythme. Arbitrages de Yann sur la fiche
+     * `docs/relecture/premiers-pas.html` :
+     *
+     * - « fusionner les actes 1 & 2. Trop de niveaux avec swing et décalage,
+     *   pas intéressant et trop difficile » : le décalage sort ENTIÈREMENT de
+     *   la carrière (exercices ET cahier), le swing garde un seul réglage ;
+     * - le charley « commence à 8, passe à 16 et finit à 12 » — les triolets,
+     *   puis la polyrythmie en fin d'acte (« les deux ») ;
+     * - UNE nouveauté par exercice. Ça renverse « un sujet, un exercice, le
+     *   plus dense » (2026-09-01) : la somme de coupes défendables avait retiré
+     *   toutes les marches — trois nouveautés au premier exercice de l'acte, la
+     *   polyrythmie au troisième.
+     *
+     * Ce qui sort vers le réservoir : 61 et 8 (les rafales quittent la
+     * carrière), et tout l'ancien acte 2 sauf le 48 — 14, 71, 23, 47, 72, 63.
+     * Le 67 n'y revient PAS : retiré le 2026-09-04 comme « trop facile »,
+     * l'acte 0 finissant déjà sur deux lignes. L'acte ouvre donc sur le 3, qui
+     * n'ajoute que la claire à la fin de l'acte 0. */
     etapes: [
-      /* ⚠️ L'acte ouvrait sur DEUX écrans de lecture — le brief, puis « Sol
-       * t'apprend la grille » : quatre mots sur un afficheur, pour un écran
-       * entier. Les trois mots tiennent dans le brief, où ils sont en plus
-       * motivés (c'est la réponse de Sol au client qui ne sait pas ce qu'il
-       * veut). Même règle que l'entrelacement du prologue : ce qui peut tenir
-       * dans l'écran d'à côté n'a pas besoin du sien. */
       {
         kind: 'recit',
         source: 'fax',
@@ -856,78 +874,26 @@ export const ACTES: Acte[] = [
           'SOL: Le reste, c’est de la décoration.',
         ],
       },
-      /* ⚠️ Le niveau 1 a sauté — « niveau 1 à supprimer, on peut passer au
-       * niveau 2 directement » (Yann). Il ne faisait poser que des kicks, sur
-       * une grille où les deux autres lignes étaient explicitement vides : un
-       * écran où il n'y a rien à arbitrer. Le niveau reste dans le réservoir,
-       * la carrière ne le cite plus. */
-      /* ⚠️ UN SUJET, UN EXERCICE — et c'est l'INVERSE de la règle du
-       * 2026-08-31, révoquée par la relecture complète : *« l'acte 1 fusionné
-       * 12 → 6-7, le niveau 2 retiré, plus une polyrythmie »* (Yann).
-       *
-       * La série de douze doublait chaque sujet : un exercice le POSAIT, le
-       * suivant l'exigeait ailleurs. Ce que ça donnait à jouer, c'est deux
-       * lectures de seize cases pour une seule idée neuve — et l'acte
-       * s'étirait sans monter. Chaque sujet garde donc son exercice le plus
-       * DENSE, celui qui demande le plus de travail : la base (67), le charley
-       * en doubles-croches (68), la syncope partout (69), la polyrythmie (74),
-       * les deux variantes ensemble (60), les rafales (8), puis tout (61).
-       *
-       * Les niveaux 2, 3, 5, 7, 59 et 70 restent au réservoir — un niveau ne se
-       * supprime jamais, il cesse d'être cité. Le 2 est nommément retiré : à
-       * douze cases, il était le plus léger de la carrière.
-       *
-       * ⚠️ La polyrythmie se pose APRÈS la syncope et AVANT les variantes.
-       * Après, parce que c'est la même idée d'un cran plus loin — une ligne qui
-       * ne tombe plus là où on l'attend, puis une ligne qui ne compte même plus
-       * comme les autres. Avant, parce que la résolution ne redescend jamais
-       * (44 cases, entre les 32 du 69 et les 48 du 60). */
-      /* ⚠️ Le niveau 67 a quitté l'acte le 2026-09-04 — *« supprimer : trop
-       * facile »* (Yann, en jouant). Il posait le backbeat le plus simple du
-       * monde sur deux lignes, juste après un acte 0 qui a déjà fait TAPER
-       * trois rythmes : la marche était vers le bas.
-       *
-       * L'acte ouvre donc sur le 68, qui pose les trois lignes d'un coup —
-       * exactement les trois mots que le brief vient d'écrire sur la table
-       * (« Kick. Snare. Hi-hat. »). Sa consigne est réécrite pour tenir seule :
-       * elle disait « par-dessus », ce qui ne veut plus rien dire quand il n'y
-       * a plus de « dessous ». Le 67 reste au réservoir. */
-      { kind: 'exercice', niveau: 68, commande: 'La première sonnerie, et les trois lignes à la fois : le kick sur les quatre temps, la claire sur 2 et 4, le charley à la double-croche.' },
-      { kind: 'exercice', niveau: 69, commande: 'Maintenant le kick sort du temps — deux fois — et la claire s’y met aussi. Plus rien n’est où tu l’attends.' },
-      { kind: 'exercice', niveau: 74, commande: 'Et si une ligne ne comptait plus comme les autres ? La claire boucle en douze, les deux autres en seize.' },
-      /* ⚠️ Les variantes et les rafales atterrissent ICI, et c'est un
-       * déménagement demandé : elles vivaient à l'acte 2, où « on ne comprend pas
-       * pourquoi il y a les rafales et les charleys ouverts, rim shot,
-       * personne n'explique, ce n'est pas lié au groove » (Yann). Ce sont deux
-       * gestes de GRILLE — un deuxième clic, un appui long — donc deux gestes
-       * de l'acte qui enseigne la grille. Et quelqu'un les explique : Sol les
-       * fait, à l'écran, avant qu'on les demande. */
+      { kind: 'exercice', niveau: 3, commande: 'SOL: Un son de plus : la claire, qui claque sur 2 et 4. Le reste, tu connais.' },
+      { kind: 'exercice', niveau: 68, commande: 'SOL: Même rythme. Le charley va deux fois plus vite.' },
+      { kind: 'exercice', niveau: 7, commande: 'SOL: Le kick sort du temps. Une fois, une seule.' },
+      { kind: 'exercice', niveau: 69, commande: 'SOL: Maintenant la claire aussi sort du temps.' },
+      /* Sol fait le geste AVANT qu'on le demande. La rafale n'y est plus : elle
+       * a quitté la carrière avec les niveaux 8 et 61. */
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'SOL',
         lignes: [
           'SOL: C’est juste, et c’est plat.',
-          'Elle reclique sur une case déjà allumée.',
-          'La snare devient un rim shot : le bord, pas la peau.',
-          'Elle appuie longuement sur une autre.',
-          'Le coup part en rafale, trois fois plus vite.',
-          'SOL: Deux gestes. C’est tout ce qui sépare',
-          'SOL: une sonnerie d’un réveille-matin.',
+          'Elle reclique sur une claire déjà allumée.',
+          'Elle devient un rim shot : le bord, pas la peau.',
+          'Elle reclique sur un charley.',
+          'Il s’ouvre : un « tss » qui traîne.',
+          'SOL: Reclique une case. C’est tout.',
         ],
       },
-      /* ⚠️ Trois exercices après la leçon de Sol, et non plus cinq : le rim
-       * shot et l'ouverture du charley ne s'apprennent plus séparément avant
-       * d'être réunis, ils arrivent ENSEMBLE (60), parce que Sol vient de faire
-       * les deux gestes à l'écran. Puis la rafale (8), puis tout (61).
-       *
-       * Ce qui reste vrai de la passe du 2026-08-27 (« monter en difficulté
-       * l'acte 1 ») : ces trois-là sont les plus denses de la série, quarante-
-       * huit cases chacun. Ce qui a changé, c'est qu'on n'y arrive plus par une
-       * marche d'escalier par nouveauté. */
-      { kind: 'exercice', niveau: 60, commande: 'Les deux gestes de Sol dans le même rythme — deux rim shots, trois ouvertures.' },
-      { kind: 'exercice', niveau: 8, commande: 'Quatre rafales, deux longueurs, deux lignes. Compte les coups.' },
-      { kind: 'exercice', niveau: 61, commande: 'Le dernier. Tout ce que tu sais, dans une mesure — et rien au singulier.' },
+      { kind: 'exercice', niveau: 60, commande: 'SOL: Les deux gestes dans le même rythme. Reclique une case allumée pour la changer.' },
       {
         kind: 'recit',
         source: 'lcd',
@@ -941,13 +907,8 @@ export const ACTES: Acte[] = [
           'SOL: Les gens ont arrêté d’acheter.',
         ],
       },
-      /* La LIVRAISON — et c'est elle qui ouvre l'Atelier, pas un écran de fin
-       * d'acte. « Sortir une vraie sonnerie de téléphone avec […] ce qui peut
-       * être drôle, c'est de l'exporter et de proposer d'en faire la sonnerie de
-       * son téléphone/réveil matin » (Yann). Le déverrouillage cesse d'être une
-       * annonce : on entre dans l'Atelier avec le rythme qu'on vient de faire,
-       * et l'export MP3 — qui existe depuis toujours — trouve enfin son
-       * moment. */
+      /* La LIVRAISON ouvre l'Atelier (`ETAPE_DU_MODULE` la compte), et elle
+       * n'est plus la fin de l'acte : Kelvin arrive juste après. */
       {
         kind: 'livraison',
         entete: 'FB — TA SONNERIE',
@@ -964,55 +925,6 @@ export const ACTES: Acte[] = [
         ],
         bouton: 'Emporter ma sonnerie ▸',
       },
-    ],
-  },
-  {
-    id: 2,
-    titre: 'LE GROOVE',
-    quand: 'Trois mois avant',
-    jours: JOURS[2],
-    competence: 'groove',
-    competenceLabel: 'GROOVE',
-    module: null,
-    resume: 'Kelvin a seize ans, il vient le mardi, et il trouve ça nul.',
-    etapes: [
-      /* ⚠️ TROIS ARBITRAGES SUCCESSIFS, et il faut les garder tous les trois —
-       * ne pas « restaurer » l'un en croyant corriger l'autre.
-       *
-       * 1. (2026-08-27) « Pour le groove, on ne comprend pas pourquoi il y a
-       *    les rafales et les charleys ouverts, rim shot ; ce n'est pas lié au
-       *    groove. Le groove, ce sont des paramètres qu'on doit pouvoir
-       *    régler. » → l'acte passe aux verbes de PARAMÈTRE, et ses grilles
-       *    n'apportent ni variante ni rafale.
-       * 2. (plus tard) « Les quiz sont moins intéressants que les exercices de
-       *    reproduction. » → les grilles reviennent, écrites.
-       * 3. (2026-09-01, relecture complète) *« les rythmes se ressemblent
-       *    trop »* — cinq fois — et *« les autres verbes ne sont pas forcément
-       *    tous intéressants : lequel, régler et nommer »*, avec une consigne
-       *    d'ordre : **régler en premier**, et **l'aléa dans le cahier**.
-       *
-       * Ce que le 3 change, et pourquoi ça ne contredit pas le 2 : le TRIO
-       * comparatif (14, 17, 23 sur une seule grille) est dissous. Comparer
-       * deux balancements ne demandait pas trois reproductions — un curseur
-       * qu'on vise contre une cible le dit mieux, et c'est `regler`. Chaque
-       * sujet s'ouvre donc sur son réglage et se referme sur UNE grille, toutes
-       * différentes ; les trois `lequel` sortent (désigner A ou B est le même
-       * jugement, en moins engageant) ; les deux exercices d'aléa sortent aussi
-       * et deviennent une exigence du cahier de Kelvin, où l'on POSE l'aléa au
-       * lieu de le reconnaître.
-       *
-       * Les niveaux 17, 45, 46, 62 et 73 restent au réservoir : un niveau ne se
-       * supprime jamais, il cesse d'être cité.
-       *
-       * `nommer` reste, une fois : c'est le seul écran du jeu qui met les deux
-       * mots côte à côte, et l'Atelier est ouvert depuis l'acte 1 — les mots
-       * « Swing » et « Décalage » sont sur des curseurs déjà vus. À l'acte 0 ils
-       * ne renvoyaient à rien.
-       *
-       * La traîne (`drag`) n'y est pas, et c'est un choix : elle est GLOBALE
-       * dans le format v2 (un seul champ pour tout le morceau), donc
-       * impossible à faire entendre ligne par ligne sans mentir sur ce qu'on
-       * règle. Voir `parametres.ts`. */
       {
         kind: 'recit',
         source: 'lcd',
@@ -1020,88 +932,51 @@ export const ACTES: Acte[] = [
         lignes: [
           'Kelvin a seize ans. Il fait du rap.',
           'Il n’a jamais rien sorti, il ne montre jamais ses textes.',
-          'Il te demande une boucle. Tu lui donnes ta plus propre.',
+          'Il écoute ta sonnerie.',
           'KELVIN: C’est nul.',
           'TOI: Pourquoi ?',
           'KELVIN: Ça fait réveil.',
-          'Il tape du doigt sur la table, à côté du temps.',
           'KELVIN: C’est carré. Personne ne danse carré.',
         ],
       },
-      /* ⚠️ Le mot AVANT le curseur. Le récit nomme le swing, puis on le règle,
-       * puis on le repose dans une grille — un exercice n'enseigne que ce qu'un
-       * écran a déjà expliqué, et c'est d'autant plus vrai depuis que les
-       * `lequel` d'écoute sont partis. */
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'SOL',
         lignes: [
           'Sol, sans lever les yeux :',
-          'SOL: Il a raison.',
+          'SOL: Il a raison. Tu coupes le temps en deux, en quatre.',
+          'SOL: Coupe-le en trois.',
+          'Elle tape sur la table : un, deux-trois. Un, deux-trois.',
+          'KELVIN: Voilà. Comme ça.',
+        ],
+      },
+      { kind: 'exercice', niveau: 82, commande: 'SOL: Le charley joue trois coups par temps. Écoute comme ça balance.' },
+      {
+        kind: 'recit',
+        source: 'lcd',
+        entete: 'SOL',
+        lignes: [
+          'SOL: Il y a un bouton qui fait presque pareil.',
           'SOL: Ça s’appelle le swing.',
-          'SOL: Un temps sur deux arrive un peu en retard.',
-          'SOL: Toujours le même, toujours du même retard.',
+          'SOL: Un coup sur deux arrive un peu en retard.',
           'TOI: Et c’est réglable ?',
           'SOL: Tout est réglable. C’est bien le problème.',
         ],
       },
-      /* ⚠️ RÉGLER D'ABORD, REPOSER ENSUITE — l'ordre demandé par Yann. Viser
-       * un curseur contre une cible remplace le `lequel` qui ouvrait l'acte :
-       * c'est le même jugement d'oreille, mais on le pose au lieu de le
-       * désigner, et c'est le geste qu'on refera dans l'Atelier. */
-      {
-        kind: 'exercice',
-        niveau: 48,
-        commande: 'Trouve-le au curseur. Pas le chiffre : le balancement.',
-      },
-      {
-        kind: 'exercice',
-        niveau: 14,
-        commande: 'Maintenant tiens-le sur seize cases. Ce n’est plus de l’entendre, c’est de le poser.',
-      },
+      { kind: 'exercice', niveau: 48, commande: 'SOL: Trouve-le au curseur. Pas le chiffre : le balancement.' },
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'KELVIN',
         lignes: [
-          'Il refait le geste du doigt sur la table.',
-          'KELVIN: Comme ça.',
-          'TOI: Ça fait combien, « comme ça » ?',
-          'KELVIN: J’en sais rien. Comme ça.',
-          'SOL: Il y en a un autre. Là, c’est la ligne entière qui glisse.',
-          'SOL: Le kick, lui, ne bouge pas. C’est contre lui qu’on l’entend.',
+          'Kelvin tape deux rythmes à la fois, un par main.',
+          'KELVIN: Et ça, tu sais faire ?',
+          'SOL: Trois contre quatre. Une main compte en trois,',
+          'SOL: l’autre en quatre. Et elles ne se rattrapent jamais.',
         ],
       },
-      {
-        kind: 'exercice',
-        niveau: 71,
-        commande: 'Celui-là aussi se règle. De quel côté glisse-t-il, et de combien ?',
-      },
-      /* ⚠️ Une AUTRE grille, et c'est le sujet de la passe du 2026-09-01 : ce
-       * niveau reprenait celle du 14 case pour case. */
-      {
-        kind: 'exercice',
-        niveau: 23,
-        commande: 'Une autre boucle, sans balancement — mais le charley traîne derrière. Repose-la.',
-      },
-      {
-        kind: 'exercice',
-        niveau: 47,
-        commande: 'Kelvin en a repéré deux. Il ne sait pas les nommer. Toi, si.',
-      },
-      /* La seule grille où les DEUX feels jouent ensemble : les deux exercices
-       * précédents les isolent, celle-ci les cumule. */
-      {
-        kind: 'exercice',
-        niveau: 72,
-        commande: 'Les deux sur la même ligne : le charley balance ET traîne. Repose-la.',
-      },
-      /* ⚠️ L'ALÉA n'a plus d'exercice — il est dans le CAHIER, en bas de l'acte.
-       * Les niveaux 62 et 73 faisaient reconnaître trois boutons ; la commande
-       * demande de les POSER, ce qui est la seule façon d'apprendre à quoi ils
-       * servent. Le récit garde ce qu'ils avaient d'utile : le mot, et
-       * l'idée. */
+      { kind: 'exercice', niveau: 74, commande: 'SOL: La claire compte en douze, les autres en seize. Garde le charley comme repère.' },
       {
         kind: 'recit',
         source: 'lcd',
@@ -1111,62 +986,37 @@ export const ACTES: Acte[] = [
           'SOL: La machine peut jouer à côté toute seule :',
           'SOL: des coups en plus, ou pas toujours la même force.',
           'SOL: Ghost notes, vélocité, rafales. Trois boutons.',
+          'SOL: Tu les trouveras dans le panneau GROOVE.',
           'SOL: C’est ce qui sépare une boîte à rythmes d’un batteur.',
-          'SOL: Et ça, tu ne le reconnaîtras qu’en l’ayant mis toi-même.',
         ],
-      },
-      /* ⚠️ LE PALIER — retour de testeur : « le jeu reste trop longtemps trop
-       * facile ». Mesuré : l'acte 1 finissait à 24 cases avec deux variantes,
-       * et l'acte 2 n'avait jamais dépassé 24 cases sans variante. Il était un
-       * cran EN ARRIÈRE, et le premier exercice plus dur que la fin de l'acte 1
-       * n'arrivait qu'au 33e sur 42.
-       *
-       * Ce niveau double la résolution (seize cases par ligne) et devient le
-       * point de départ de la commande : c'est la boucle que Kelvin a en tête,
-       * et c'est elle qu'on transforme juste après. */
-      {
-        kind: 'exercice',
-        niveau: 63,
-        commande: 'Kelvin repose la cassette. — Celle-là. C’est celle-là que je veux, mais elle bouge pas assez.',
       },
       {
         kind: 'commande',
         entete: 'KELVIN — IL ATTEND SA BOUCLE',
         lignes: [
-          'KELVIN: Bon. Tu me la refais ?',
+          'Kelvin ressort la boucle en triolets.',
+          'KELVIN: Celle-là. Mais elle bouge pas assez.',
           'Il ne dira pas ce qu’il veut : il ne sait pas le dire.',
-          'Il saura le reconnaître.',
           'Va dans l’Atelier. Fais-en une qui respire.',
         ],
         bouton: 'Ouvrir l’Atelier ▸',
-        /* ⚠️ L'Atelier s'ouvre SUR le rythme du niveau 63 — celui que le
-         * joueur vient de reproduire, celui que Kelvin a en tête. Le travail
-         * n'est plus « fais-en une », c'est « transforme celle-là ».
+        /* ⚠️ Une SÉRIE à elle : la sonnerie est livrée dans le même acte, et la
+         * discographie range par (acte, série) — sans nom, l'une remplacerait
+         * l'autre. L'acte des styles la reprend PAR SON NOM. */
+        serie: 'kelvin',
+        /* L'Atelier s'ouvre sur le shuffle du niveau 82, celui qu'on vient de
+         * reposer. Le cahier n'exige que ce que ce départ n'a PAS : le charley
+         * joue ses douze coups (aucune place), aucune variante, aucun aléa. Le
+         * kick sort déjà du temps : ce n'est plus une exigence, c'est acquis.
          *
-         * Le cahier est donc écrit contre ce point de départ : le rythme de
-         * départ ne satisfait AUCUNE des trois exigences. Kick sur 1 et 3
-         * (donc jamais entre deux temps), charley sur les huit cases (donc
-         * aucune place), pas une variante. La check-list s'ouvre à 0/3 et
-         * chaque case demande un vrai geste — c'est la condition qui remplace
-         * « l'Atelier part vide ». `tests/transformer.test.ts` la tient. */
-        partirDu: 63,
-        /* ⚠️ SIX lignes depuis le 2026-09-01, et les deux dernières sont la
-         * leçon de l'acte : *« l'aléa dans le cahier »* (Yann). L'acte
-         * enseignait le décalage et les trois boutons d'aléa par des quiz, et
-         * sa commande n'en demandait rien — on pouvait donc traverser l'acte du
-         * GROOVE et livrer une boucle carrée, c'est-à-dire exactement ce que
-         * Kelvin refuse au premier écran (« ça fait réveil »).
-         *
-         * ⚠️ Le swing, lui, n'est PAS exigé : la grille de départ (niveau 63)
-         * en porte déjà 20, donc la case serait cochée à l'ouverture — le
-         * défaut que `tests/transformer.test.ts` interdit. Ce qu'on demande est
-         * ce que le départ n'a pas : une ligne qui glisse contre les autres. */
+         * ⚠️ « Une ligne qui glisse » (le décalage) est RETIRÉE avec la leçon
+         * qui l'enseignait — on ne demande pas un geste que l'acte n'apprend
+         * plus. */
+        partirDu: 82,
         cahier: [
           pasLeMotifDeDepart(DEPART_KELVIN, 'Il faut y avoir touché'),
-          kickQuiSortDuTemps('Fais bouger le kick — qu’il sorte du temps'),
           dePlacePourLaVoix('Laisse de la place : le charley ne joue pas tout'),
           auMoinsUneVariante('Quelque chose qui ne se répète pas — rim shot ou charley ouvert'),
-          uneLigneQuiGlisse(6, 'Une ligne qui glisse contre les autres — et une qui ne bouge pas'),
           deLAlea('Que la machine ne joue pas deux fois pareil — un des trois boutons'),
         ],
         accepte: 'KELVIN: Là. Ça respire. Tu vois quand tu veux.',
@@ -1189,10 +1039,10 @@ export const ACTES: Acte[] = [
     ],
   },
   {
-    id: 3,
+    id: 2,
     titre: 'LA MÉLODIE',
     quand: 'Deux mois avant',
-    jours: JOURS[3],
+    jours: JOURS[2],
     competence: 'melodie',
     competenceLabel: 'MÉLODIE',
     module: 'synth',
@@ -1461,10 +1311,10 @@ export const ACTES: Acte[] = [
     ],
   },
   {
-    id: 4,
+    id: 3,
     titre: 'LA PRODUCTION',
     quand: 'Six semaines avant',
-    jours: JOURS[4],
+    jours: JOURS[3],
     competence: 'production',
     competenceLabel: 'PRODUCTION',
     module: 'production',
@@ -1682,10 +1532,10 @@ export const ACTES: Acte[] = [
     ],
   },
   {
-    id: 5,
+    id: 4,
     titre: 'LES STYLES',
     quand: 'Quatre semaines avant',
-    jours: JOURS[5],
+    jours: JOURS[4],
     competence: 'styles',
     competenceLabel: 'CULTURE DES STYLES',
     module: null,
@@ -1813,7 +1663,8 @@ export const ACTES: Acte[] = [
         ],
         bouton: 'Reprendre la boucle de Kelvin ▸',
         serie: 'hip-hop',
-        partirDuMorceauDeLActe: 2,
+        partirDuMorceauDeLActe: 1,
+        serieDuMorceau: 'kelvin',
         cahier: [
           avoirTouche('Il faut y avoir touché — elle repart au travail'),
           unePhrase('melody', 4, 3, 'Une mélodie qui fait une phrase — quatre notes, trois hauteurs'),
@@ -2022,10 +1873,10 @@ export const ACTES: Acte[] = [
     ],
   },
   {
-    id: 6,
+    id: 5,
     titre: 'FB-015',
     quand: 'Deux semaines avant',
-    jours: JOURS[6],
+    jours: JOURS[5],
     competence: 'creation',
     competenceLabel: 'CRÉATION',
     /* ⚠️ CET ACTE PRÉPARE, IL NE MONTRE PLUS LA CONSOLE — arbitré le
@@ -2230,7 +2081,6 @@ export const ACTES: Acte[] = [
           ...dansLaSection(FB_RYTHME, [
             lignesPresentes(['kick', 'snare', 'hat'], 'Les trois lignes de la grille'),
             auMoinsUneVariante('Un rim shot ou un charley ouvert — les deux gestes de Sol'),
-            auMoinsUneRafale('Une rafale — ce qui casse la boucle avant qu’elle recommence'),
           ]),
           ...dansLaSection(FB_GROOVE, [
             swingAuMoins(8, 'Que ça ne soit pas carré — du balancement'),
@@ -2644,10 +2494,10 @@ export const ACTES: Acte[] = [
     ],
   },
   {
-    id: 7,
+    id: 6,
     titre: 'LE 14 JUIN',
     quand: 'Le jour même',
-    jours: JOURS[7],
+    jours: JOURS[6],
     competence: 'scene',
     competenceLabel: 'SCÈNE',
     /* ⚠️ C'EST CET ACTE QUI OUVRE LE MODE LIVE — arbitré le 2026-09-16
@@ -2774,7 +2624,7 @@ export const ACTES: Acte[] = [
         // Le disque de l'acte 6 : un MORCEAU par lettre, et les sept boucles
         // en banque.
         montage: 'A B C · A B′ C′',
-        depuisLActe: 6,
+        depuisLActe: 5,
         bouclesDeLActe: [
           { serie: 'passe-couplet', nom: 'QUI PASSE — COUPLET', partie: 'A' },
           { serie: 'passe-refrain', nom: 'QUI PASSE — REFRAIN' },
@@ -2838,7 +2688,7 @@ export const ACTES: Acte[] = [
           'Une seule boucle, montée en club : ça entre, ça monte, ça casse, ça repart. La salle chante ; toi, tu conduis.',
         // L'acte 3 est celui du jingle de la laverie — sa commande le range
         // dans la discographie sous « JINGLE LAVERIE ».
-        morceauDeLActe: 3,
+        morceauDeLActe: 2,
         // Une seule LETTRE, sept scènes : le morceau tient dans une boucle, le
         // relief vient entièrement des calques de CLUB.
         montage: 'CLUB',
@@ -3039,7 +2889,14 @@ export const ETAPE_DU_MODULE: Record<LockedModule, number> = (() => {
   const out = {} as Record<LockedModule, number>;
   for (const a of ACTES) {
     if (!a.module) continue;
-    const i = a.etapes.findIndex((e) => (e.kind === 'commande' || e.kind === 'scene') && e.modulesRequis?.includes(a.module!));
+    /* ⚠️ La LIVRAISON de la sonnerie prête l'Atelier : depuis la fusion, elle
+     * n'est plus la dernière étape de son acte, et la commande de Kelvin qui
+     * la suit a besoin de l'Atelier ouvert. */
+    const i = a.etapes.findIndex(
+      (e) =>
+        (e.kind === 'livraison' && a.module === 'atelier') ||
+        ((e.kind === 'commande' || e.kind === 'scene') && e.modulesRequis?.includes(a.module!)),
+    );
     out[a.module] = i < 0 ? Infinity : i;
   }
   return out;
@@ -3064,7 +2921,9 @@ export const ETAPE_DU_MODULE: Record<LockedModule, number> = (() => {
  * frontière de l'acte 2 rendrait donc sa propre commande insatisfiable — le
  * cul-de-sac déjà payé par le Synthé à l'acte 3. Et une fois ouverte, elle ne
  * se referme pas : même règle que `ETAPE_DU_MODULE`. */
-export const ACTE_DU_GROOVE = 2;
+/* L'acte de la PREMIÈRE commande — dérivé, comme `ETAPE_DU_MODULE` : depuis la
+ * fusion des actes 1 et 2, c'est l'acte 1. */
+export const ACTE_DU_GROOVE: ActeId = ACTES.find((a) => a.etapes.some((e) => e.kind === 'commande'))!.id;
 export const ETAPE_DU_GROOVE: number = (() => {
   const i = ACTES[ACTE_DU_GROOVE].etapes.findIndex((e) => e.kind === 'commande');
   return i < 0 ? Infinity : i;
