@@ -442,6 +442,8 @@
     frapper(e);
   }
 
+  /* Le seul chemin du jeu vers l'Atelier avec un rythme : la livraison de la
+     sonnerie (`onLivraison`). */
   function saveToAtelier() {
     pattern.replace(game.toAtelierState());
     onGoAtelier?.();
@@ -1783,12 +1785,11 @@
                 Niveau suivant →
               </button>
             {/if}
-            {#if ex === 'reproduire' || ex === 'completer'}
-              <!-- Rien à sauvegarder pour « intrus » et « jouer » : leur grille
-                   de proposition est vide par construction, le bouton
-                   n'enverrait dans l'Atelier qu'un rythme muet. -->
-              <button class="xp-btn" onclick={saveToAtelier}>💾 Sauvegarder dans l’Atelier</button>
-            {/if}
+            <!-- ⚠️ Plus de « 💾 Sauvegarder dans l'Atelier » ici (2026-11-24,
+                 « ça brouille plus qu'autre chose ») : un deuxième bouton sous
+                 « Continuer ▸ », qui sortait du récit vers un outil. Le rythme
+                 part dans l'Atelier par un seul chemin, la LIVRAISON de la
+                 sonnerie, qui le dit. -->
           </div>
         </div>
       {:else}
