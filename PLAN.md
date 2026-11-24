@@ -48,6 +48,13 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Plus de « Sauvegarder dans l'Atelier » après un exercice (2026-11-24)
+
+« Ça brouille plus qu'autre chose. » Le bouton doublait « Continuer ▸ » sous
+chaque réussite et sortait du récit vers un outil. Retiré de `GameView` ; le seul
+chemin du jeu vers l'Atelier avec un rythme reste la livraison de la sonnerie
+(`saveToAtelier`, gardé pour elle).
+
 ### ✅ Une tête de lecture continue dans le Mode jeu (2026-11-24)
 
 **Pourquoi** — « entre le son et le défilement, ce n'est pas fluide ». Mesuré au
