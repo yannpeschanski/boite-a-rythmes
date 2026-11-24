@@ -48,6 +48,24 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une tête de lecture continue dans le Mode jeu (2026-11-24)
+
+**Pourquoi** — « entre le son et le défilement, ce n'est pas fluide ». Mesuré au
+niveau 68 (pas de 178,6 ms) : la case allumée changeait toutes les 166 à
+184 ms. Libérée image par image, elle boite d'une image alors que le son est
+régulier — rien d'un retard (le retour extérieur proposait l'horloge audio : elle
+pilotait déjà l'affichage).
+
+**Fait** — `GameView` : `tete` recalculée à chaque image depuis
+`engine.mesureEntendue()` (fraction de la mesure ENTENDUE ; sur un arrangement de
+deux mesures, la fraction de la boucle), barre `.tete` sur chaque ligne de la
+grille de batterie et de l'arrangement. La case allumée reste. En passant :
+préambule du 68 réécrit (« complète le trio » était faux depuis la fusion).
+
+**Mesuré** — avancée par image : médiane 0,640 %, p95 0,650 % (constante) ;
+barre dans la case allumée 295/295 images, au 68 comme au 85 (deux mesures).
+**Pas vérifié** : sur téléphone, à l'oreille.
+
 ### ✅ Une introduction qu'on suit (2026-11-24)
 
 **Pourquoi** — « on se perd dans l'histoire ». Le prologue ouvrait sur six

@@ -1508,7 +1508,9 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
     } }),
 
   mkLevel(68, 'Le charley qui double', {
-    preamble: "Le charleston complète le trio, et il arrive directement à son débit habituel : SEIZE cases pour lui seul, quatre fois par temps là où le kick en fait un. C'est la double-croche, c'est ce qui donne le tempo à l'oreille. Le kick et la claire, eux, ne bougent pas.",
+    /* ⚠️ Réécrit le 2026-11-24 : depuis la fusion, le trio est posé au niveau 3,
+     * juste avant. Ce niveau n'apporte plus que la vitesse du charley. */
+    preamble: "Même trio, mais le charley va deux fois plus vite : SEIZE cases pour lui seul, quatre par temps. C'est la double-croche, ce qui donne le tempo à l'oreille. Le kick et la claire ne bougent pas.",
     tempoOptions: [84, 92],
     grille: {
       subdiv: { kick: 8, snare: 8, hat: 16 },

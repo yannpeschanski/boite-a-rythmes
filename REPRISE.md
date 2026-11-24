@@ -9,6 +9,7 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ✅ Une TÊTE DE LECTURE continue dans le Mode jeu (la case allumée boitait d'une image).
 > ✅ L'INTRODUCTION réécrite (le joueur d'abord, sans jargon) ; grille Kick / Claire / Charley.
 > ✅ Le bouton principal d'un récit COMPLÈTE d'abord le texte (« Tout afficher ▸ »).
 > ✅ L'OBJECTIF au premier écran : « TON BUT · passer de stagiaire à artiste ».

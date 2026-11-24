@@ -83,8 +83,23 @@
     pad: 'la nappe',
     melody: 'la mélodie',
   };
+  /* ⚠️ LA TÊTE DE LECTURE CONTINUE (2026-11-24) — « entre le son et le
+     défilement, ce n'est pas fluide ». Mesuré : sur un pas de 178,6 ms, la
+     case allumée changeait toutes les 166 à 184 ms. Elle ne peut changer qu'à
+     une IMAGE (16,7 ms), donc les pas affichés boitent d'une image alors que le
+     son est régulier. Une barre dont la position est RECALCULÉE à chaque image
+     depuis l'horloge entendue (`mesureEntendue`, la même que les cases) glisse
+     sans à-coup — c'est la tête de lecture de tout séquenceur. La case allumée
+     reste : elle dit QUELLE case, la barre dit OÙ on en est. -1 = à l'arrêt. */
+  let tete = $state(-1);
   let raf = 0;
   function loop() {
+    if (playingWhat === 'target' || playingWhat === 'guess') {
+      const m = engine.mesureEntendue();
+      const a = game.level.arrangement;
+      const mesures = ex === 'arrangement' && a ? Math.max(1, Math.round(game.arrColonnes / a.subdiv)) : 1;
+      tete = ((m.bar % mesures) + m.progres) / mesures;
+    } else if (tete !== -1) tete = -1;
     const evenements = engine.consumePlayhead();
     /* Le précompte cède la place quand on ENTEND le premier temps de la
        boucle — pas quand elle est programmée, quatre temps plus tôt. */
@@ -144,6 +159,7 @@
   }
 
   function resetPlayhead() {
+    tete = -1;
     playhead = { kick: -1, snare: -1, hat: -1 };
     playheadBass = -1;
     playheadArr = {};
@@ -1375,6 +1391,7 @@
               <span class="count" class:ok={posees === attendues}>{posees}/{attendues}</span>
             </div>
             <div class="cells" style:--cols={total}>
+              {#if tete >= 0}<span class="tete" style:left="{tete * 100}%" aria-hidden="true"></span>{/if}
               {#each { length: total } as _, col (col)}
                 {@const vrai = n ? col % n : 0}
                 {@const echo = col >= n}
@@ -1712,6 +1729,7 @@
                 {/if}
               </div>
               <div class="cells" class:guide={tutoriel?.etape === 2} style:--cols={game.subdiv[name]}>
+                {#if tete >= 0}<span class="tete" style:left="{tete * 100}%" aria-hidden="true"></span>{/if}
                 {#each { length: game.subdiv[name] } as _, col (col)}
                   {@const st = game.guess[name][col]}
                   {@const locked = game.locked[name][col]}
@@ -2385,9 +2403,23 @@
     color: var(--xp-playhead);
   }
   .cells {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 3px;
+  }
+  /* La tête de lecture continue : un trait, au-dessus des cases, que les
+     doigts traversent (aucun clic ne s'y arrête). */
+  .tete {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--xp-playhead);
+    box-shadow: 0 0 4px var(--xp-playhead);
+    pointer-events: none;
+    z-index: 2;
   }
   .cell {
     position: relative;

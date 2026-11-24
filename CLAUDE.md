@@ -171,6 +171,13 @@ appareil : le tampon de Chrome y valait 171 ms, contexte nu comme contexte
 `interactive`. Ce qui place l'image est l'HORODATAGE de sortie quand il existe
 (règle suivante), jamais un aveu pris seul.
 
+⚠️ **Une case allumée BOITE d'une image ; une tête de lecture continue, non**
+(2026-11-24, « pas fluide »). Mesuré : un pas de 178,6 ms s'affichait en 166 à
+184 ms — une case ne change qu'à une image. Le Mode jeu porte donc une BARRE
+dont la position est recalculée à chaque image par `mesureEntendue()` (même
+horloge que les cases) : avancée constante, toujours dans la case allumée. Ce
+n'est PAS un réglage image/son, ni un retard corrigé : la case reste.
+
 ⚠️ **L'image suit l'horloge du son ENTENDU, recalculée à chaque image**
 (`engine/horlogeEntendue.ts`, 2026-10-15) — ce que fait un lecteur vidéo.
 Jamais `currentTime − un retard` : Chrome Android rend par rafales, et
