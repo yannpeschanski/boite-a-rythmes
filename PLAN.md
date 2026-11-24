@@ -48,6 +48,27 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le premier exercice guidé, l'acte 0 allégé (2026-11-24)
+
+**Pourquoi** — « les gens ne savaient pas quoi faire en voyant le premier écran
+de jeu ». Mesuré à 390 px : onze éléments cliquables, deux textes redondants,
+huit carrés gris sans un mot qui dise de les toucher.
+
+**Arbitré** — pas à pas intégré (plutôt qu'une démo avant) + allègement de
+l'acte 0.
+
+**Fait** — `model/tutoriel.ts` : `etapeDuTutoriel` (écouter → poser → vérifier,
+déduite de l'état) et sa consigne. `GameView` : bandeau ambre « ÉTAPE n/3 » à la
+place du préambule, `guide` (contour ambre pulsé, coupé sous
+`prefers-reduced-motion`) sur l'élément de l'étape. Acte 0 de la carrière :
+Répétition, « ma version » et « Recommencer » masqués, préambule derrière
+« ▸ Plus d'explications ». La grille n'a pas été remontée au-dessus du
+transport : réduit à une rangée, il ne l'en sépare plus.
+
+**Vérifié** — 956 tests (5 neufs), check 0 ; joué dans Chromium tactile 390 px :
+étapes 1 → 2 → 3 → réussite, bandeau effacé après ; acte 0 (niveau 80) à six
+boutons, acte 1 inchangé.
+
 ### ✅ L'aide qui monte avec les essais (2026-11-24)
 
 **Pourquoi** — carte P3 de `premiers-pas.html` : un raté ne disait que « pas
