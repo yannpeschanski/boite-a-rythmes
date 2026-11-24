@@ -72,7 +72,7 @@ border-radius:6px;padding:7px 12px;cursor:pointer}
 </style></head><body>
 <header class="top">
   <h1>Premiers pas — pourquoi on décroche</h1>
-  <span class="sous">Les testeurs n’ont pas dépassé l’acte du rythme. Ce qui suit ne touche qu’aux actes 0 et 1. Annote, puis « Exporter mes notes ».</span>
+  <span class="sous">Les testeurs n’ont pas dépassé l’acte du rythme. Sections 1-6 : les actes 0 et 1 ; section 7 : les niveaux mis de côté. Annote, puis « Exporter mes notes ».</span>
   <span id="compteur"></span>
   <select id="filtre" aria-label="filtrer">
     <option value="tout">tout</option><option value="annote">annoté</option><option value="0">pas encore</option>
@@ -663,6 +663,147 @@ cette carte.</p>
 <li><b>A — oui</b>, acte + étape seulement, site déployé seulement (jamais le fichier autonome) <span class="reco">recommandé</span></li>
 <li><b>B — non</b>, on s’en tient aux tests d’observation (M1)</li>
 </ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+<section class="grp"><h2>7 · Les niveaux mis de côté</h2>
+<p class="chapo">Ta proposition du 24 novembre : sortir les niveaux trop durs de la carrière et les ouvrir à la fin du jeu.</p>
+<article class="fiche" data-id="d1">
+  <header><span class="ref">D1</span><h3>Le principe : la carrière garde le chemin, les inédits gardent le défi <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Ta proposition : retirer de la carrière une partie des niveaux trop durs, et
+les rendre disponibles <b>à la fin du jeu</b>. La carrière devient un chemin
+qu’on finit ; la difficulté devient un <b>choix</b>, offert à qui a fini.</p>
+<p class="pour">Ça ne casse rien de ce qui existe. Le projet a déjà la règle :
+<i>« un niveau ne se supprime jamais, il cesse d’être cité »</i>. Un niveau
+retiré de la carrière garde son id, ses étoiles, sa grille écrite et ses
+tests.</p>
+<p>Ce que ça résout en plus : le joueur moyen voit la fin du jeu (le concert,
+l’épilogue), qui est la partie la plus forte du récit et que personne n’a
+vue.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d2">
+  <header><span class="ref">D2</span><h3>Le critère : qu’est-ce qu’un niveau « trop dur » ?</h3></header>
+  <div class="fiche-b">
+<p>Une règle lisible, pour ne pas trier au cas par cas :</p>
+<ul class="opts">
+<li><b>A — par la taille</b> <span class="reco">recommandé</span> : dans la carrière,
+une seule grille de 48 cases par acte (son sommet), un arrangement à 5 voix au
+plus, une mélodie à 5 degrés au plus. Tout ce qui dépasse devient un inédit.</li>
+<li><b>B — par la notion</b> : ce qui n’est pas réutilisé plus tard sort
+(polyrythmie, rafales, rim shots).</li>
+<li><b>C — par la mesure</b> : attendre M1/M2 et sortir les niveaux où les
+joueurs abandonnent.</li>
+</ul>
+<p>A se décide aujourd’hui et se teste. C est plus juste mais demande des
+données qu’on n’a pas. On peut faire A maintenant et corriger avec C.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d3">
+  <header><span class="ref">D3</span><h3>La liste, avec le critère A</h3></header>
+  <div class="fiche-b">
+<table>
+<tr><th>Acte</th><th>Restent dans la carrière</th><th>Deviennent des inédits</th></tr>
+<tr><td>0</td><td>79, 80, 81, 52</td><td>—</td></tr>
+<tr><td>1</td><td>(suite S2 : 67, 3, 68, 7, 69) + <b>61</b>, la sonnerie</td><td><b>74</b> polyrythmie, <b>60</b> rim shots, <b>8</b> rafales</td></tr>
+<tr><td>2</td><td>48, 71, 47 (réglages) + <b>14</b> le balancement</td><td><b>23</b> une ligne en retard, <b>72</b> swing ET décalage, <b>63</b> la claire qui se faufile</td></tr>
+<tr><td>3</td><td>42, 43, 75, 76</td><td><b>44</b> toute la gamme (7 degrés, 16 pas), <b>77</b> sept lignes, <b>78</b> deux mesures</td></tr>
+<tr><td>5</td><td>58 (style)</td><td><b>16</b> UK garage</td></tr>
+<tr><td>7</td><td>38 (le concert)</td><td>—</td></tr>
+</table>
+<p><b>Dix niveaux</b> passent aux inédits ; la carrière passe de 27 exercices à
+17 (plus les marches de S2). Les commandes ne bougent pas.</p>
+<p class="alerte">Deux conséquences à vérifier. (1) Si 60 et 8 sortent, le rim shot
+et la rafale ne sont plus <b>enseignés</b> par un exercice : seulement montrés par
+Sol (démonstration P2) avant la sonnerie 61, qui les contient. Variante : 61
+remplacé par une sonnerie sans gestes, et les gestes deviennent entièrement un
+inédit. (2) Le niveau 16 annonce un swing « très marqué (45 %) » alors que le
+preset garage est à 33 depuis le 17 septembre : texte périmé, à corriger de
+toute façon.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d4">
+  <header><span class="ref">D4</span><h3>Comment ils s’ouvrent : le dossier du sous-traitant <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Le prologue laisse un fil pendant : <i>« Il laisse un dossier et un mot de
+passe. Le mot de passe ne marche pas. »</i> Personne ne le rouvre.</p>
+<ul class="opts">
+<li><b>A — le dossier s’ouvre à l’épilogue</b> <span class="reco">recommandé</span> :
+une dernière ligne (« le mot de passe, c’était… ») ouvre <b>« LE DOSSIER »</b>,
+les dix inédits présentés comme les sonneries du sous-traitant, les plus
+difficiles qu’il ait faites. Le récit se referme et le défi s’ouvre au même
+moment.</li>
+<li><b>B — « LES INÉDITS »</b> dans la salle de répétition, sans habillage.</li>
+<li><b>C — ouverts au fil des actes</b>, en défi facultatif, à la fin de
+chaque acte. Plus généreux pour les joueurs à l’aise, mais ce n’est pas ce
+que tu as proposé, et ça remet du « verrouillé visible » en cours de route.</li>
+</ul>
+<p class="regle">Avec A et B, la règle « ce qui est verrouillé ne s’affiche pas »
+tient : rien n’annonce le dossier avant qu’il ne s’ouvre.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d5">
+  <header><span class="ref">D5</span><h3>Ce qu’un inédit vaut, et ce qu’il ne touche pas</h3></header>
+  <div class="fiche-b">
+<ul>
+<li>Il se joue et se note comme aujourd’hui (étoiles, essais, abandon).</li>
+<li>Il ne fait <b>jamais</b> avancer <code>level</code> ni le plancher : il
+n’ouvre aucun module, la carrière est déjà finie.</li>
+<li>Il se nomme par son acte d’origine (« acte 1 · inédit »), comme la salle
+de répétition le fait déjà (<code>repereDeNiveau</code>).</li>
+<li>Un vétéran qui les a déjà réussis garde ses étoiles.</li>
+</ul>
+<p class="alerte">Des tests de courbe tomberont et devront être <b>réécrits</b>,
+pas affaiblis : « toutes les grilles de l’acte 2 portent un feel », « chaque
+nouveauté est posée au moins deux fois », « la résolution ne recule jamais ». Le
+dernier reste vrai ; les deux autres changent de sens si les grilles à
+nouveauté multiple sortent.</p>
   </div>
   <footer class="annot">
     <div class="prios" role="group" aria-label="réponse">

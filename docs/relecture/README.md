@@ -136,7 +136,7 @@ revérifient avec `node scripts/parcours-carriere.cjs` et
 
 ## `premiers-pas.html` — pourquoi on décroche (actes 0 et 1)
 
-Vingt-deux cartes (2026-11-24), après le retour *« on ne comprend rien, trop
+Vingt-sept cartes (2026-11-24), après le retour *« on ne comprend rien, trop
 difficile, pas assez progressif, on ne comprend pas l'histoire »* — et le
 constat que les testeurs n'ont jamais dépassé l'acte du rythme. Six parties :
 ce que la relecture a trouvé (l'acte 1 ajoute deux ou trois nouveautés par
@@ -150,3 +150,6 @@ mesure.
 2026-09-01) et H2-B (« le prologue ne se raccourcit pas »). Rien n'est codé.
 
 Écrite à la main, pas dérivée des données.
+Section 7 (ajoutée le même jour, sur la proposition de Yann) : sortir de la
+carrière dix niveaux trop durs et les ouvrir à l'épilogue, par le « dossier du
+sous-traitant » laissé en suspens au prologue.
