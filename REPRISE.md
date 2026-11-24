@@ -9,6 +9,7 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ✅ Des SILENCES dans le charley et quatre grilles à 8 (86-91) ; le silence de l'acte 0 se pose ; la sonnerie n'est plus écrasée par l'autosave.
 > ✅ Plus de « Sauvegarder dans l'Atelier » sous un exercice réussi.
 > ✅ Une TÊTE DE LECTURE continue dans le Mode jeu (la case allumée boitait d'une image).
 > ✅ L'INTRODUCTION réécrite (le joueur d'abord, sans jargon) ; grille Kick / Claire / Charley.

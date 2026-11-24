@@ -1315,14 +1315,15 @@ class GameStore {
     const progress = { ...this.progress };
     const disques = { ...this.disques };
     for (const [qui, prog] of Object.entries(progress)) {
-      if ((prog.schema ?? 1) >= SCHEMA_ACTES) continue;
+      const depuis = prog.schema ?? 1;
+      if (depuis >= SCHEMA_ACTES) continue;
       progress[qui] = {
         ...prog,
-        stars: migrerEtoiles(prog.stars ?? {}),
-        ...(prog.carriere ? { carriere: migrerCurseur(prog.carriere) } : {}),
+        stars: migrerEtoiles(prog.stars ?? {}, depuis),
+        ...(prog.carriere ? { carriere: migrerCurseur(prog.carriere, depuis) } : {}),
         schema: SCHEMA_ACTES,
       };
-      if (disques[qui]) disques[qui] = disques[qui].map(migrerProduction);
+      if (disques[qui]) disques[qui] = disques[qui].map((p) => migrerProduction(p, depuis));
       change = true;
     }
     if (!change) return;

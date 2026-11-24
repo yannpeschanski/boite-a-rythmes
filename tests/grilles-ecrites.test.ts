@@ -392,7 +392,8 @@ describe('la courbe ne redescend jamais', () => {
    * partie binaire monte sans redescendre, et le ternaire vient APRÈS elle. */
   it('⚠️ l’acte 1 ne revient jamais à une résolution BINAIRE déjà quittée', () => {
     const suite = suiteEcrite(1);
-    expect(suite.length, 'les sept rythmes écrits').toBe(7);
+    // NEUF depuis le 2026-11-24 : quatre grilles à 8 avant le passage à 16.
+    expect(suite.length, 'les neuf rythmes écrits').toBe(9);
     const ternaire = (l: GameLevel) => Object.values(l.grille!.subdiv).some((v) => v % 3 === 0);
     const iTernaire = suite.findIndex(ternaire);
     expect(iTernaire, 'un passage en triolets').toBeGreaterThan(0);
@@ -419,9 +420,9 @@ describe('la courbe ne redescend jamais', () => {
      * refaisait trois fois le niveau 3. Une nouveauté se montre sur ce qu'on
      * sait déjà faire. */
     const suite = suiteEcrite(1);
-    // La syncope s'enseigne seule au niveau 7 — revenu dans l'acte le
-    // 2026-11-24, une nouveauté par exercice.
-    const iSyncope = suite.findIndex((l) => l.id === 7);
+    // La syncope s'enseigne seule au niveau 88 (le 7 à huit cases, avec un
+    // charley qui respire — 2026-11-24).
+    const iSyncope = suite.findIndex((l) => l.id === 88);
     expect(iSyncope, 'le niveau qui enseigne la syncope').toBeGreaterThan(0);
     // Une case est « hors du temps » quand elle ne tombe pas sur un des quatre
     // temps — vrai quelle que soit la subdivision de la ligne.
@@ -529,7 +530,7 @@ describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
     const cites = acte1.etapes.filter((e) => e.kind === 'exercice').map((e) => (e as { niveau: number }).niveau);
     // Le réglage du swing (48) n'a pas de grille : c'est un curseur.
     const grilles = cites.filter((id) => niveau(id).exercise === 'reproduire');
-    expect(grilles.length, 'sept reproductions depuis la fusion').toBe(7);
+    expect(grilles.length, 'neuf reproductions depuis le 2026-11-24').toBe(9);
     for (const id of grilles) expect(niveau(id).grille, `niveau ${id} : tiré au sort`).toBeTruthy();
   });
 

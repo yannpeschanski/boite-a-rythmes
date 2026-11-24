@@ -1857,6 +1857,77 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     } }),
 
+  /* ⚠️ PLUS DE SILENCES DANS LE CHARLEY, PLUS DE GRILLES À 8 (2026-11-24) —
+   * « On joue toujours toutes les hats, c'est dommage de pas avoir plus de
+   * silence. Pas suffisamment de niveaux à 8 hats aussi. » Et le silence de
+   * l'acte 0 (niveau 52) était le seul exercice dont le GESTE différait
+   * (désigner un coup manquant dans une pulsation) : « à remplacer par un
+   * niveau similaire aux autres ». Ces six grilles l'écrivent :
+   *
+   * - 86 (acte 0) : l'absence se POSE — le charley se tait deux fois ;
+   * - 87 à 89 (acte 1) : trois grilles à 8 avant le passage à 16, chacune
+   *   avec un charley qui laisse de la place ;
+   * - 90 : le charley passe à 16 sur la grille ACQUISE (syncopes comprises —
+   *   le 68 remettait le kick sur les temps) ;
+   * - 91 : à 16, le charley respire lui aussi.
+   *
+   * Les 7, 68, 69 et 52 retournent au réservoir. Les trous ne tombent jamais
+   * au hasard : là où la claire frappe, ou en fin de temps. */
+  mkLevel(86, 'Le charley se tait', {
+    preamble: "Le kick sur les quatre temps, le charley en croches — mais il se tait deux fois. Ce qu'on n'entend pas se pose aussi : laisse ces cases vides.",
+    tempoOptions: [76, 84],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 1, 0, 1, 0, 1, 0],
+      snare: [0, 0, 0, 0, 0, 0, 0, 0],
+      hat:   [1, 1, 1, 0, 1, 1, 1, 0],
+    } }),
+  mkLevel(87, 'Le charley laisse la place', {
+    preamble: "Le trio, et le charley se tait là où la claire claque : sur 2 et 4. Deux sons ne se disputent plus le même instant.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 1, 0, 1, 0, 1, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
+      hat:   [1, 1, 0, 1, 1, 1, 0, 1],
+    } }),
+  mkLevel(88, 'Le kick sort du temps', {
+    preamble: "Le kick quitte le temps une fois : il tombe ENTRE deux temps, juste avant le troisième. C'est la syncope. Le charley, lui, respire en fin de mesure.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 1, 0],
+      snare: [0, 0, 1, 0, 0, 0, 1, 0],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 0],
+    } }),
+  mkLevel(89, 'La claire sort du temps', {
+    preamble: "La claire aussi tombe entre deux temps, deux fois. Le charley se tait sous elle pour la laisser passer.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 8 },
+      kick:  [1, 0, 0, 1, 1, 0, 1, 0],
+      snare: [0, 0, 1, 0, 0, 1, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 0, 1, 0],
+    } }),
+  mkLevel(90, 'Le charley double', {
+    preamble: "La même grille, mais le charley va deux fois plus vite : seize cases, quatre par temps. C'est la double-croche. Le kick et la claire ne bougent pas.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 16 },
+      kick:  [1, 0, 0, 1, 1, 0, 1, 0],
+      snare: [0, 0, 1, 0, 0, 1, 0, 1],
+      hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    } }),
+  mkLevel(91, 'Le charley respire', {
+    preamble: "Seize cases, et le charley se tait quatre fois : il respire avant chaque claire. Écoute les trous autant que les coups.",
+    tempoOptions: [84, 92],
+    grille: {
+      subdiv: { kick: 8, snare: 8, hat: 16 },
+      kick:  [1, 0, 0, 1, 1, 0, 1, 0],
+      snare: [0, 0, 1, 0, 0, 1, 0, 1],
+      hat:   [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+    } }),
+
   /* ⚠️ L'ACTE DE LA MÉLODIE RENDU HOMOGÈNE (2026-11-24) — *« les 3 premiers
    * sont trop différents des 4 derniers, mais la difficulté est plutôt
    * correcte »* (Yann). Les 42, 43 et 44 étaient des mélodies TIRÉES AU SORT,
