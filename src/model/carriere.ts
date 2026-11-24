@@ -701,6 +701,20 @@ export const LONGUEUR_PROLOGUE = PROLOGUE.length;
  *  un nombre. */
 export const ETAPE_DU_COMPTE_A_REBOURS = 2;
 
+/* ⚠️ L'OBJECTIF DU JOUEUR, nommé dès le premier écran (2026-11-24).
+ *
+ * Retour des testeurs : « on ne comprend pas l'histoire ». Le prologue disait
+ * ce que vit le LABEL (il va mal, Sol va vendre) sans jamais dire ce que le
+ * JOUEUR cherche à faire : le 14 juin s'y lisait comme une défaite annoncée,
+ * et la raison pour laquelle Sol fait tout apprendre n'arrive qu'à l'acte 6.
+ *
+ * La phrase doit être VRAIE et ne rien gâcher. Vraie : au concert, Sol
+ * présente le joueur sous son nom d'artiste (`tests/carriere.test.ts` le
+ * vérifie — si la fin change, la promesse tombe). Sans spoiler : ni la vente,
+ * ni le concert, ni FB-015. Sans date : l'échéance est au compte à rebours,
+ * qui arrive à l'écran qui l'explique. */
+export const OBJECTIF = 'passer de stagiaire à artiste.';
+
 export const ACTES: Acte[] = [
   {
     id: 0,

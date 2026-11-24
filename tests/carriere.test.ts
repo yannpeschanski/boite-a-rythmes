@@ -5,6 +5,7 @@ import {
   NB_ACTES,
   ACTE_DU_MODULE,
   ETAPE_DU_MODULE,
+  OBJECTIF,
   acteAVenir,
   acteParId,
   niveauxDeLActe,
@@ -1898,6 +1899,23 @@ describe('Le curseur de l’épilogue est séparé, et ne débloque rien', () =>
  * qui rend le calendrier crédible : elle était déjà dans `JOURS`, elle n'était
  * pas affichée — et un ajustement du compte à rebours la casserait en silence.
  */
+describe('l’objectif nommé au premier écran', () => {
+  /* ⚠️ La promesse affichée dès le premier écran doit être TENUE par la fin :
+   * « passer de stagiaire à artiste » n'est vrai que parce que Sol présente
+   * le joueur sous son nom au concert. Si cette réplique disparaît, l'objectif
+   * ment — et ce test le dit avant le joueur. */
+  it('est tenu : au dernier acte, Sol présente le joueur', () => {
+    expect(OBJECTIF).toMatch(/stagiaire/);
+    expect(OBJECTIF).toMatch(/artiste/);
+    const dernier = ACTES[NB_ACTES - 1].etapes.flatMap((e) => (e.kind === 'recit' ? e.lignes : []));
+    expect(dernier.some((l) => /Je vous présente.*\{pseudo\}/.test(l))).toBe(true);
+  });
+
+  it('ne gâche rien : ni la vente, ni le concert, ni une date', () => {
+    expect(OBJECTIF).not.toMatch(/vend|concert|juin|FB-015|\d/i);
+  });
+});
+
 describe('le calendrier du récit', () => {
   it('pose le concert le 14 juin 2005', () => {
     expect(ANNEE).toBe(2005);

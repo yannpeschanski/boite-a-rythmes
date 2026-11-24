@@ -23,6 +23,7 @@
     acteAVenir,
     LONGUEUR_PROLOGUE,
     ETAPE_DU_COMPTE_A_REBOURS,
+    OBJECTIF,
     ACTE_DU_DISQUE,
     SERIE_DU_DISQUE,
     ANNEE,
@@ -403,6 +404,13 @@
        situe : « J−92 » dit l'urgence, « 14 mars 2005 » dit l'époque — et
        l'époque est ce qui rend un label de sonneries crédible. Une seule date
        est écrite dans le code (le concert), tout le reste se déduit. -->
+  <!-- ⚠️ L'OBJECTIF, dès le premier écran et jusqu'au dernier acte
+       (`OBJECTIF`, model/carriere.ts) : le joueur doit savoir ce qu'il cherche
+       à faire avant de savoir pourquoi. Effacé à l'épilogue, où il est atteint.
+       Ambre, jamais vert — le vert dit « fait ». -->
+  {#if !game.enEpilogue}
+    <p class="objectif"><span class="objectif-k">TON BUT</span> {OBJECTIF}</p>
+  {/if}
   {#if montrerCompteARebours}
     <div class="lcd">
       <span>14 JUIN {ANNEE}</span>
@@ -755,6 +763,20 @@
   /* L'afficheur : même verre que le bandeau du séquenceur (StatusLcd), même
      vert. Le compte à rebours EST un cadran, pas une phrase — d'où
      l'interlettrage. */
+  .objectif {
+    margin: 0 0 6px;
+    padding: 4px 8px;
+    font-size: var(--xp-size-body);
+    color: var(--xp-text);
+    background: var(--xp-accent-amber-soft);
+    border-left: 3px solid var(--xp-accent-amber);
+  }
+  .objectif-k {
+    color: var(--xp-accent-amber);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-right: 6px;
+  }
   .lcd {
     display: flex;
     align-items: baseline;

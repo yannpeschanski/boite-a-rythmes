@@ -688,7 +688,11 @@ deux semaines. Quatre tests le tiennent.
 l'écran, le joueur juge sur ce qui s'affiche. Corollaire de mise en scène : **un
 élément n'apparaît qu'à l'écran qui l'explique** — le compte à rebours sur
 « LE 14 JUIN », le carnet après le prologue, et le premier écran ne montre qu'un
-appareil, un message, un bouton.
+appareil, un message, un bouton — et, depuis le 2026-11-24, **l'OBJECTIF du
+joueur** (« TON BUT · passer de stagiaire à artiste », `OBJECTIF`), qui
+s'explique lui-même. Les testeurs ne comprenaient pas l'histoire : elle disait
+ce que vit le label, jamais ce que cherche le joueur. Sans date ni spoiler, et
+TENU par la fin (Sol présente le joueur au concert — un test le vérifie).
 
 ⚠️ **Ce qui est VERROUILLÉ ne s'affiche pas.** Un accueil où deux entrées sur
 trois sont barrées présente le jeu par ce qu'on ne peut PAS faire. Splash, barre

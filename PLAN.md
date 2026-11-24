@@ -48,6 +48,21 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'objectif du joueur, nommé dès le premier écran (2026-11-24)
+
+**Pourquoi** — carte H1 de `premiers-pas.html` : le prologue disait ce que vit
+le label (Sol va vendre le 14 juin) sans jamais dire ce que le joueur cherche.
+
+**Fait** — `OBJECTIF` (`carriere.ts`) : « passer de stagiaire à artiste. »,
+bandeau ambre « TON BUT » au-dessus de l'afficheur, du premier écran du récit
+jusqu'à la fin de l'acte 6, effacé à l'épilogue. Choisi pour être vrai (Sol
+présente le joueur sous son nom au concert) et ne rien gâcher (ni vente, ni
+concert, ni date — l'échéance reste au compte à rebours). Le texte de Sol n'est
+pas touché. Deux tests : la promesse est tenue par le dernier acte, et elle ne
+contient aucun spoiler.
+
+**Vérifié** — check 0, tests verts ; capture 390 px du premier écran.
+
 ### ✅ Le premier exercice guidé, l'acte 0 allégé (2026-11-24)
 
 **Pourquoi** — « les gens ne savaient pas quoi faire en voyant le premier écran
