@@ -2732,8 +2732,28 @@ class GameStore {
   }
 
   // « Sauvegarde-le dans l'Atelier » : transfère les 3 lignes trouvées.
+  /* ⚠️ Ce qu'on EMPORTE est ce qu'on a joué, et rien d'autre (2026-11-24).
+   * `buildState` part de `defaultState()` — le motif d'accueil, un Motown
+   * avec ses lignes de synthé et son clap — et n'en remplace que les lignes
+   * que l'exercice écrit : la sonnerie arrivait dans l'Atelier avec un synthé
+   * que personne n'avait posé. On part donc de la table rase et on n'y copie
+   * que les lignes de l'exercice : la batterie du jeu, et les lignes de synthé
+   * quand le verbe en écrit (arrangement, mélodie). */
   toAtelierState(): PatternStateV2 {
-    return this.buildState('guess');
+    const joue = this.buildState('guess');
+    const st = etatVierge();
+    st.tempo = joue.tempo;
+    st.swing = joue.swing;
+    st.drag = joue.drag;
+    for (const n of GAME_DRUM_ROWS) st.rows[n] = joue.rows[n];
+    const ex = this.level.exercise;
+    if (ex === 'arrangement') {
+      for (const n of DRUM_ROW_NAMES) st.rows[n] = joue.rows[n];
+      for (const n of SYNTH_ROW_NAMES) st.synthRows[n] = joue.synthRows[n];
+    } else if (ex === 'melodie') {
+      for (const n of SYNTH_ROW_NAMES) st.synthRows[n] = joue.synthRows[n];
+    }
+    return st;
   }
 }
 

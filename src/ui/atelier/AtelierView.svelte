@@ -28,7 +28,7 @@
   import SequenceBank from './SequenceBank.svelte';
   import { presetToState } from '../../model/presetAdapter';
   import { sequenceBank } from '../../stores/bank.svelte';
-  import { noterSession, sessionReprise } from '../../stores/session.svelte';
+  import { noterSession, sessionReprise, repriseAtelierDue } from '../../stores/session.svelte';
   import PartiesStrip from './PartiesStrip.svelte';
   import MontagePanel from './MontagePanel.svelte';
   import type { SongPresetData } from '../../model/presets/songs';
@@ -292,7 +292,7 @@
      *
      * ⚠️ Un rythme PARTAGÉ gagne toujours : `#r=` est une intention explicite,
      * et l'écraser par l'autosave viderait le lien de son sens. */
-    if (aRestaurer && sessionReprise() && !unlocks.sharedPattern) {
+    if (aRestaurer && repriseAtelierDue() && !unlocks.sharedPattern) {
       appliquerAutosave(sessionPrecedente!);
       refreshFx();
       canRestore = false;

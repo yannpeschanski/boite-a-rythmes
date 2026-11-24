@@ -76,6 +76,24 @@ export function sessionReprise(): Session | null {
   return reprise;
 }
 
+/* ⚠️ LE TRAVAIL DE L'ATELIER NE SE RÉAPPLIQUE QU'APRÈS UN RECHARGEMENT
+ * *DANS* L'ATELIER, et une seule fois (2026-11-24).
+ *
+ * La reprise automatique lisait « une session existe » : elle se déclenchait
+ * donc à CHAQUE ouverture de l'Atelier pendant deux heures, y compris quand on
+ * y arrivait depuis le jeu avec la sonnerie — posée, puis aussitôt écrasée par
+ * la dernière composition de l'Atelier, synthé compris (« lorsqu'on peut
+ * emporter la sonnerie, il y avait un synthé chargé »). Elle existe pour un
+ * rechargement par erreur PENDANT qu'on compose ; tout le reste est une
+ * arrivée volontaire avec un motif, et le bandeau « Restaurer » propose sans
+ * rien imposer. */
+let repriseAtelierConsommee = false;
+export function repriseAtelierDue(): boolean {
+  if (repriseAtelierConsommee) return false;
+  repriseAtelierConsommee = true;
+  return reprise?.vue === 'atelier';
+}
+
 /* Noter un morceau de la session. Fusionne avec ce qui est déjà écrit : chaque
  * vue est responsable de SON champ et ne connaît pas les autres, sinon la
  * dernière à écrire effacerait le reste. */

@@ -911,6 +911,16 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
       0,
     );
     expect(coups).toBeGreaterThan(0);
+    /* ⚠️ Et RIEN d'autre (2026-11-24) : la sonnerie arrivait dans l'Atelier
+     * avec le synthé et le clap du motif d'accueil, que personne n'avait
+     * posés. */
+    for (const r of ['clap', 'shaker'] as const) {
+      expect(st.rows[r].pattern.some((v) => v > 0), `ligne ${r}`).toBe(false);
+    }
+    for (const r of ['bass', 'melody'] as const) {
+      expect(st.synthRows[r].pattern.some((v) => v !== null), `synthé ${r}`).toBe(false);
+    }
+    expect(st.synthRows.pad.pattern.some((v) => v !== null && v !== -1), 'nappe').toBe(false);
   });
 
   // Une seule livraison dans toute la carrière : c'est un moment, pas un
