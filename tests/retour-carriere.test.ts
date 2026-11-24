@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ranger, cleProduction, type Production } from '../src/model/discographie';
 import { grooveOuvert, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
 import { ACTE_DU_GROOVE, ETAPE_DU_GROOVE, NB_ACTES, acteParId } from '../src/model/carriere';
+import { SCHEMA_ACTES } from '../src/model/migrationActes';
 
 /* Vitest tourne sous Node : pas de `localStorage`. Même stub minimal que
  * `tests/discographie.test.ts`. */
@@ -68,14 +69,17 @@ describe('le panneau GROOVE attend que le récit le demande', () => {
    * commande de Kelvin insatisfiable, puisqu'elle exige de l'aléa. */
   const neuf = { level: 1, plancher: 1 };
 
-  it('⚠️ fermé pour un joueur neuf, et pendant tout l’acte 1', () => {
+  /* ⚠️ Depuis la fusion des actes 1 et 2 (2026-11-24), la commande de Kelvin
+   * est DANS l'acte 1 : le panneau reste fermé jusqu'à elle, sonnerie
+   * comprise, et s'ouvre à elle. */
+  it('⚠️ fermé pour un joueur neuf, et dans l’acte 1 jusqu’à la commande', () => {
+    expect(ACTE_DU_GROOVE).toBe(1);
     expect(grooveOuvert({ ...neuf, acte: 0, etape: 0 })).toBe(false);
     expect(grooveOuvert({ ...neuf, acte: 1, etape: 3 })).toBe(false);
-    // La sonnerie fait passer le curseur à l'acte 2 étape 0 : encore fermé.
-    expect(grooveOuvert({ ...neuf, acte: 2, etape: 0 })).toBe(false);
+    expect(grooveOuvert({ ...neuf, acte: 1, etape: ETAPE_DU_GROOVE - 1 })).toBe(false);
   });
 
-  it('⚠️ OUVERT à la commande de l’acte 2 — celle qui exige de l’aléa', () => {
+  it('⚠️ OUVERT à la commande de Kelvin — celle qui exige de l’aléa', () => {
     expect(ETAPE_DU_GROOVE).toBeLessThan(acteParId(ACTE_DU_GROOVE).etapes.length);
     expect(grooveOuvert({ ...neuf, acte: ACTE_DU_GROOVE, etape: ETAPE_DU_GROOVE })).toBe(true);
   });
@@ -187,7 +191,7 @@ describe('RECHARGER la page ne renvoie pas au premier écran du jeu', () => {
     const { game } = await import('../src/stores/game.svelte');
     game.pseudo = '';
     game.setPseudo('revient');
-    game.progress = { revient: { level: 1, stars: {}, carriere: { acte: 3, etape: 5 } } };
+    game.progress = { revient: { level: 1, stars: {}, carriere: { acte: 3, etape: 5 }, schema: SCHEMA_ACTES } };
     // Ce que fait un rechargement : le pseudo est en mémoire, `App` appelle
     // `load()` et RIEN d'autre.
     stockage.setItem('boite-a-rythme:pseudo', 'revient');

@@ -30,14 +30,17 @@ import { PRESETS } from '../src/model/presets/songs';
 import { moduleUnlocked, LOCKED_MODULES, MODULE_UNLOCK_LEVEL } from '../src/model/unlocks';
 import { game } from '../src/stores/game.svelte';
 
-describe('Mode carrière — la charpente en huit actes', () => {
-  it('a les huit actes de HISTOIRE.md, dans l’ordre', () => {
-    expect(NB_ACTES).toBe(8);
-    expect(ACTES.map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+describe('Mode carrière — la charpente en sept actes', () => {
+  /* ⚠️ SEPT depuis le 2026-11-24 : LE RYTHME et LE GROOVE sont fusionnés
+   * (« trop de niveaux avec swing et décalage, pas intéressant et trop
+   * difficile » — Yann, après des testeurs qui n'avaient pas dépassé l'acte du
+   * rythme). HISTOIRE.md en compte huit ; le jeu en joue sept. */
+  it('a les actes de HISTOIRE.md, le rythme et le groove réunis, dans l’ordre', () => {
+    expect(NB_ACTES).toBe(7);
+    expect(ACTES.map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6]);
     expect(ACTES.map((a) => a.titre)).toEqual([
       'LE CAFÉ',
       'LE RYTHME',
-      'LE GROOVE',
       'LA MÉLODIE',
       'LA PRODUCTION',
       'LES STYLES',
@@ -73,14 +76,14 @@ describe('Mode carrière — la charpente en huit actes', () => {
      * l'acte 6 faisait découvrir la console pour n'y jouer qu'un morceau, et
      * l'acte 7 recommençait avec le même. On prépare à l'acte 6, on joue à
      * l'acte 7, et le module s'ouvre là — à l'ÉTAPE qui le prête. */
-    expect(ACTE_DU_MODULE).toEqual({ atelier: 1, synth: 3, production: 4, live: 7 });
+    expect(ACTE_DU_MODULE).toEqual({ atelier: 1, synth: 2, production: 3, live: 6 });
     // Et chaque module verrouillé est bien ouvert par un acte : un module qui
     // n'apparaîtrait nulle part dans le récit ne s'ouvrirait plus jamais par lui.
     for (const m of LOCKED_MODULES) expect(ACTE_DU_MODULE[m]).toBeTypeOf('number');
   });
 
   it('déclare « à venir » exactement les actes dont les exercices ne sont pas écrits', () => {
-    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(ACTES.filter((a) => !acteAVenir(a)).map((a) => a.id)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   /* Chaque acte jouable doit contenir au moins un récit ET au moins une étape
@@ -104,8 +107,8 @@ describe('Mode carrière — la charpente en huit actes', () => {
 
   it('borne acteParId aux actes existants', () => {
     expect(acteParId(-3).id).toBe(0);
-    expect(acteParId(99).id).toBe(7);
-    expect(acteParId(2).titre).toBe('LE GROOVE');
+    expect(acteParId(99).id).toBe(6);
+    expect(acteParId(2).titre).toBe('LA MÉLODIE');
   });
 });
 
@@ -453,19 +456,19 @@ describe('Le retour arrière ne coûte aucune progression', () => {
   });
 });
 
-/* L'acte 3 — le premier acte qui sorte de la batterie.
+/* L'acte 2 — le premier acte qui sorte de la batterie.
  *
  * « poursuis sur la suite chronologique » : après le groove vient la mélodie,
  * et c'est elle qui ouvre le Synthé.
  */
-describe('L’acte 3 enseigne ce que le récit annonce', () => {
+describe('L’acte 2 enseigne ce que le récit annonce', () => {
   it('est jouable, et ouvre le Synthé', () => {
-    const acte3 = ACTES[3];
+    const acte3 = ACTES[2];
     expect(acteAVenir(acte3)).toBe(false);
     expect(acte3.module).toBe('synth');
-    // Le Synthé s'ouvre une fois l'acte 3 DERRIÈRE soi, donc à l'acte 4.
-    expect(moduleUnlocked('synth', { level: 1, acte: 3 })).toBe(false);
-    expect(moduleUnlocked('synth', { level: 1, acte: 4 })).toBe(true);
+    // Le Synthé s'ouvre une fois l'acte 2 DERRIÈRE soi, donc à l'acte 3.
+    expect(moduleUnlocked('synth', { level: 1, acte: 2 })).toBe(false);
+    expect(moduleUnlocked('synth', { level: 1, acte: 3 })).toBe(true);
   });
 
   it('ne cite que des verbes de HAUTEUR — les degrés, seuls puis empilés', () => {
@@ -475,14 +478,14 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
      * *« des exercices de reproduction de synthé avec en même temps plusieurs
      * lignes »*, batterie comprise. Ce qui reste interdit ici, c'est un verbe
      * qui ne parle pas de hauteur. */
-    const verbes = niveauxDeLActe(ACTES[3]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
+    const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
     for (const [i, v] of verbes.entries()) {
-      expect(['melodie', 'arrangement'], `niveau ${niveauxDeLActe(ACTES[3])[i]}`).toContain(v);
+      expect(['melodie', 'arrangement'], `niveau ${niveauxDeLActe(ACTES[2])[i]}`).toContain(v);
     }
     // Les degrés seuls AVANT les degrés empilés : on n'arrange pas ce qu'on ne
     // sait pas encore écrire.
     expect(verbes.lastIndexOf('melodie')).toBeLessThan(verbes.indexOf('arrangement'));
-    for (const n of niveauxDeLActe(ACTES[3])) {
+    for (const n of niveauxDeLActe(ACTES[2])) {
       const l = LEVELS.find((x) => x.id === n)!;
       if (l.exercise === 'melodie') expect(l.melodie.pas, `niveau ${n}`).toBeGreaterThan(0);
     }
@@ -497,7 +500,7 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
    * propre à ce verbe. */
   describe('les arrangements empilent les voix, pas les cases', () => {
     const arrs = () =>
-      niveauxDeLActe(ACTES[3])
+      niveauxDeLActe(ACTES[2])
         .map((n) => LEVELS.find((x) => x.id === n)!)
         .filter((l) => l.exercise === 'arrangement');
 
@@ -620,7 +623,7 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
   });
 });
 
-/* ⚠️ L'ACTE 3 EMPILE TROIS ENVOIS — refait le 2026-09-01.
+/* ⚠️ L'ACTE 2 EMPILE TROIS ENVOIS — refait le 2026-09-01.
  *
  * Demande de Yann après relecture complète : *« il faut que tout soit en
  * atelier avec des cahiers des charges assez complexes »*, et pour cet
@@ -632,8 +635,8 @@ describe('L’acte 3 enseigne ce que le récit annonce', () => {
  * vrai point de conception — que les couches précédentes sont protégées SANS
  * interdiction, par des contraintes relationnelles.
  */
-describe('L’acte 3 empile trois envois du même jingle', () => {
-  const envois = ACTES[3].etapes.filter((e) => e.kind === 'commande');
+describe('L’acte 2 empile trois envois du même jingle', () => {
+  const envois = ACTES[2].etapes.filter((e) => e.kind === 'commande');
   const ids = (i: number) => (envois[i] as { cahier: Array<{ id: string }> }).cahier.map((c) => c.id);
 
   it('en a trois, et seul le premier ne reprend pas une livraison', () => {
@@ -668,7 +671,7 @@ describe('L’acte 3 empile trois envois du même jingle', () => {
   });
 
   it('⚠️ ouvre le Synthé sur les trois — sinon l’acte est un cul-de-sac', () => {
-    // Le Synthé ne s'ouvre qu'une fois l'acte 3 FRANCHI : c'est `modulesRequis`
+    // Le Synthé ne s'ouvre qu'une fois l'acte 2 FRANCHI : c'est `modulesRequis`
     // qui le prête le temps de la commande (le défaut trouvé en JOUANT).
     for (const e of envois as Array<{ modulesRequis?: string[] }>) {
       expect(e.modulesRequis).toContain('synth');
@@ -806,12 +809,22 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
    *   marche de l'acte descendait au lieu de monter.
    *
    * Les trois restent au réservoir : un niveau ne se supprime jamais. */
-  it('ne cite plus les niveaux 1, 2 ni 67 — il ouvre sur les trois lignes', () => {
+  /* ⚠️ Et il ouvre sur le 3 depuis la fusion des actes 1 et 2 (2026-11-24) :
+   * le 68, qui ouvrait, ajoutait d'un coup la claire, la double-croche et une
+   * troisième ligne. Le 3 n'ajoute que la claire à la fin de l'acte 0 — le 67
+   * reste au réservoir, il serait une marche vers le BAS (deux lignes, l'acte 0
+   * en posant déjà deux). */
+  it('ne cite plus les niveaux 1, 2 ni 67 — il ouvre sur UNE nouveauté', () => {
     for (const retire of [1, 2, 67]) {
       expect(niveauxDeLActe(ACTES[1]), `niveau ${retire}`).not.toContain(retire);
     }
-    // Le 68 pose les trois lignes d'un coup — les trois mots du brief.
-    expect(niveauxDeLActe(ACTES[1])[0]).toBe(68);
+    const premier = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[1])[0])!.grille!;
+    const finActe0 = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[0]).filter((n) => LEVELS.find((x) => x.id === n)!.grille).at(-1))!.grille!;
+    // Même résolution, même charley : seule la claire entre.
+    expect(premier.subdiv).toEqual(finActe0.subdiv);
+    expect(premier.hat).toEqual(finActe0.hat);
+    expect(finActe0.snare.some((v) => v > 0)).toBe(false);
+    expect(premier.snare.some((v) => v > 0)).toBe(true);
   });
 
   /* ⚠️ Les variantes (rim shot, charley ouvert) et les rafales ont déménagé de
@@ -819,34 +832,49 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
    * les charleys ouverts, rim shot, personne n'explique, ce n'est pas lié au
    * groove ». Ce sont deux gestes de GRILLE, donc de l'acte qui l'enseigne —
    * et ils sont montrés à l'écran avant d'être demandés. */
-  it('enseigne la variante et la rafale, et les explique avant de les demander', () => {
+  /* ⚠️ La RAFALE a quitté la carrière avec les niveaux 8 et 61 (2026-11-24) :
+   * un geste caché (appui long) de plus, sur des grilles de 48 cases, dans
+   * l'acte où les testeurs décrochaient. Le cahier de FB-015 ne l'exige plus. */
+  it('enseigne la variante, l’explique avant de la demander, et ne demande plus de rafale', () => {
     const e = ACTES[1].etapes;
     const niveaux = niveauxDeLActe(ACTES[1]);
-    // ⚠️ Le premier niveau à variantes est le 60 depuis la fusion du
-    // 2026-09-01 : le 5 (rim shots seuls) est retourné au réservoir, et Sol
-    // fait maintenant les DEUX gestes avant qu'on les demande ensemble.
     expect(niveaux).toContain(60);
-    expect(niveaux).toContain(8);
+    for (const retire of [8, 61]) expect(niveaux).not.toContain(retire);
     const premierAvecVariante = e.findIndex((x) => x.kind === 'exercice' && x.niveau === 60);
     const explication = e.findIndex(
       (x) => x.kind === 'recit' && x.lignes.join(' ').includes('rim shot'),
     );
     expect(explication).toBeGreaterThanOrEqual(0);
     expect(explication).toBeLessThan(premierAvecVariante);
+    for (const n of niveaux) {
+      const g = LEVELS.find((l) => l.id === n)!.grille;
+      const rafales = g?.rolls ? Object.values(g.rolls).flat().filter((x) => (x as number) > 1) : [];
+      expect(rafales, `niveau ${n}`).toEqual([]);
+    }
   });
 
   /* La livraison — « sortir une vraie sonnerie de téléphone avec […] ce qui
    * peut être drôle, c'est de l'exporter et de proposer d'en faire la sonnerie
    * de son téléphone/réveil matin ». Elle clôt l'acte qui ouvre l'Atelier :
    * placée ailleurs, elle enverrait dans un module encore cadenassé. */
-  it('finit sur une livraison, dans l’acte qui ouvre l’Atelier', () => {
+  /* ⚠️ Depuis la fusion, la livraison n'est plus la DERNIÈRE étape : Kelvin
+   * arrive juste après, et sa commande a besoin de l'Atelier. C'est donc la
+   * livraison elle-même qui l'ouvre (`ETAPE_DU_MODULE`), et elle précède la
+   * commande — sinon le joueur serait envoyé dans un module cadenassé. */
+  it('livre la sonnerie, ouvre l’Atelier à cette étape, puis passe à Kelvin', () => {
     const e = ACTES[1].etapes;
-    const derniere = e[e.length - 1];
-    expect(derniere.kind).toBe('livraison');
+    const iLivraison = e.findIndex((x) => x.kind === 'livraison');
+    const iCommande = e.findIndex((x) => x.kind === 'commande');
     expect(ACTES[1].module).toBe('atelier');
-    if (derniere.kind !== 'livraison') return;
-    expect(derniere.bouton.length).toBeGreaterThan(0);
-    expect(derniere.lignes.join(' ')).toMatch(/sonnerie|réveil/i);
+    expect(iLivraison).toBeGreaterThan(0);
+    expect(iCommande).toBeGreaterThan(iLivraison);
+    expect(ETAPE_DU_MODULE.atelier).toBe(iLivraison);
+    expect(moduleUnlocked('atelier', { level: 1, acte: 1, etape: iLivraison - 1 })).toBe(false);
+    expect(moduleUnlocked('atelier', { level: 1, acte: 1, etape: iLivraison })).toBe(true);
+    const l = e[iLivraison];
+    if (l.kind !== 'livraison') return;
+    expect(l.bouton.length).toBeGreaterThan(0);
+    expect(l.lignes.join(' ')).toMatch(/sonnerie|réveil/i);
   });
 
   /* ⚠️ Ce que la livraison EMPORTE — et c'est là qu'elle peut mentir sans que
@@ -860,7 +888,8 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
     game.pseudo = 'livraison-test';
     game.acteActif = 1;
     const e = ACTES[1].etapes;
-    const dernierExo = e.map((x) => x.kind).lastIndexOf('exercice');
+    const iLivraison = e.findIndex((x) => x.kind === 'livraison');
+    const dernierExo = e.slice(0, iLivraison).map((x) => x.kind).lastIndexOf('exercice');
     game.etapeActive = dernierExo;
     game.demarrerEtape();
     // On réussit l'exercice, puis on lit ce qui reste avant la livraison.
@@ -869,7 +898,7 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
     game.guess = { ...game.target };
     game.guessRolls = { ...game.targetRolls };
     expect(game.verify()).toBe(true);
-    for (let i = dernierExo; i < e.length - 1; i++) game.avancerCarriere();
+    for (let i = dernierExo; i < iLivraison; i++) game.avancerCarriere();
     expect(game.etapeCourante?.kind).toBe('livraison');
 
     const st = game.toAtelierState();
@@ -929,182 +958,97 @@ describe('un acte lance le niveau qu’il CITE, pas son voisin', () => {
   });
 });
 
-describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', () => {
-  /* ⚠️ DEUX ARBITRAGES SUCCESSIFS, et il faut les garder tous les deux —
-   * ne pas « restaurer » l'un en croyant corriger l'autre.
-   *
-   * 1. (2026-08-27) « Pour le groove, on ne comprend pas pourquoi il y a les
-   *    rafales et les charleys ouverts, rim shot, personne n'explique, ce
-   *    n'est pas lié au groove. » L'acte citait cinq grilles GÉNÉRÉES, qui
-   *    posaient des variantes et des rafales sans rapport avec ce qu'il
-   *    enseigne. Elles ont été retirées au profit des trois verbes de
-   *    paramètre.
-   * 2. (plus tard le même jour) « Les quiz sont moins intéressants que les
-   *    exercices de reproduction et surtout que ceux de l'atelier. » Trois
-   *    écrans où l'on ne fait que DÉSIGNER, aucun où l'on pose.
-   *
-   * Les deux tiennent ensemble parce que ce qui est revenu n'est pas ce qui
-   * était parti : les grilles de l'acte 2 sont ÉCRITES, sans une variante ni
-   * une rafale.
-   *
-   * ⚠️ Un TROISIÈME arbitrage s'y est ajouté le 2026-09-01 (« les rythmes se
-   * ressemblent trop ») : elles étaient jusque-là toutes IDENTIQUES, seul le
-   * feel changeant, pour rendre deux balancements comparables. Elles sont
-   * désormais toutes DIFFÉRENTES, et la comparaison passe par `regler`. Le
-   * `it` correspondant, plus bas, porte le détail. */
-  const grillesDeLActe2 = () =>
-    niveauxDeLActe(ACTES[2])
-      .map((n) => LEVELS.find((x) => x.id === n)!)
-      .filter((l) => l.exercise === 'reproduire');
+/* ⚠️ LE GROOVE N'A PLUS SON ACTE — fusionné dans celui du rythme le 2026-11-24.
+ *
+ * *« Fusionner les actes 1 & 2. Trop de niveaux avec swing et décalage, pas
+ * intéressant et trop difficile »* (Yann), après des testeurs qui n'avaient
+ * jamais dépassé l'acte du rythme. Ce qui en reste, et que ces tests tiennent :
+ *
+ * - le balancement s'apprend d'abord ÉCRIT (le charley en triolets, niveau 82),
+ *   puis par UN réglage au curseur (48) — plus de reproduction à feel ;
+ * - le DÉCALAGE sort entièrement de la carrière, exercices ET cahier : on ne
+ *   demande pas un geste qu'aucun écran n'enseigne ;
+ * - le charley « commence à 8, passe à 16 et finit à 12 », puis la polyrythmie
+ *   ferme la partie grille de l'acte ;
+ * - l'aléa reste dans le cahier de Kelvin, jamais en exercice.
+ *
+ * Les trois arbitrages de l'ancien acte 2 (grilles sans variante, grilles
+ * toutes différentes, régler avant reposer) s'éteignent avec ses grilles :
+ * 14, 23, 72, 63, 71 et 47 sont au réservoir. */
+describe('Le groove, dans l’acte du rythme', () => {
+  const e = () => ACTES[1].etapes;
+  const ou = (pred: (x: ReturnType<typeof e>[number]) => boolean) => e().findIndex(pred);
+  const exo = (n: number) => ou((x) => x.kind === 'exercice' && x.niveau === n);
 
-  it('ses verbes de paramètre restent tous sur la famille groove', () => {
-    const niveaux = niveauxDeLActe(ACTES[2]);
-    expect(niveaux.length).toBeGreaterThan(0);
-    for (const n of niveaux) {
-      const l = LEVELS.find((x) => x.id === n)!;
-      if (l.exercise === 'reproduire') continue;
-      expect(['lequel', 'nommer', 'regler'], `niveau ${n}`).toContain(l.exercise);
-      expect(l.familleParam, `niveau ${n}`).toBe('groove');
-    }
+  it('le charley passe de 8 à 16 puis à 12, et la polyrythmie vient en dernier', () => {
+    const grilles = niveauxDeLActe(ACTES[1])
+      .map((n) => LEVELS.find((x) => x.id === n)!)
+      .filter((l) => l.grille);
+    const charley = grilles.map((l) => l.grille!.subdiv.hat);
+    const premiere = (v: number) => charley.indexOf(v);
+    expect(premiere(8), 'le charley commence à 8').toBe(0);
+    expect(premiere(16)).toBeGreaterThan(premiere(8));
+    const triolets = grilles.findIndex((l) => Object.values(l.grille!.subdiv).every((v) => v === 12));
+    expect(triolets, 'une grille entièrement en triolets').toBeGreaterThan(premiere(16));
+    // Une POLYRYTHMIE : une ligne en douze contre une en seize, sur la même mesure.
+    const poly = grilles.findIndex((l) => {
+      const v = Object.values(l.grille!.subdiv);
+      return v.includes(12) && v.includes(16);
+    });
+    expect(poly, 'la polyrythmie après les triolets').toBeGreaterThan(triolets);
+    expect(poly, 'et elle ferme la partie grille').toBe(grilles.length - 1);
   });
 
-  it('⚠️ ses grilles n’apportent AUCUNE variante ni rafale — l’arbitrage 1', () => {
-    const grilles = grillesDeLActe2();
-    expect(grilles.length).toBeGreaterThan(0);
-    for (const l of grilles) {
-      expect(l.grille, `niveau ${l.id} : doit être écrite, pas tirée`).toBeTruthy();
-      const g = l.grille!;
-      for (const r of ['kick', 'snare', 'hat'] as const) {
-        expect(g[r].slice(0, g.subdiv[r]), `niveau ${l.id} : variante sur ${r}`).not.toContain(2);
-        const rolls = g.rolls?.[r] ?? [];
-        expect(rolls.some((v) => v > 1), `niveau ${l.id} : rafale sur ${r}`).toBe(false);
+  it('82 — trois coups par temps sur les trois lignes, et la syncope acquise reste', () => {
+    const g = LEVELS.find((x) => x.id === 82)!.grille!;
+    expect(g.subdiv).toEqual({ kick: 12, snare: 12, hat: 12 });
+    expect(g.hat.every((v) => v === 1), 'le charley joue ses douze coups').toBe(true);
+    expect(g.kick.some((v, i) => v > 0 && i % 3 !== 0), 'le kick sort du temps').toBe(true);
+    expect(g.swing ?? 0, 'le balancement est ÉCRIT, pas réglé').toBe(0);
+  });
+
+  it('ÉCRIT d’abord, RÉGLÉ ensuite — un seul réglage, et l’Atelier est déjà ouvert', () => {
+    const iLivraison = ou((x) => x.kind === 'livraison');
+    expect(exo(82)).toBeGreaterThan(iLivraison);
+    expect(exo(48)).toBeGreaterThan(exo(82));
+    expect(exo(74)).toBeGreaterThan(exo(48));
+    expect(ou((x) => x.kind === 'commande')).toBeGreaterThan(exo(74));
+    const params = niveauxDeLActe(ACTES[1])
+      .map((n) => LEVELS.find((x) => x.id === n)!)
+      .filter((l) => l.exercise !== 'reproduire');
+    expect(params.map((l) => l.id), 'un seul exercice de paramètre').toEqual([48]);
+    expect(params[0].exercise).toBe('regler');
+    expect(params[0].paramsAutorises).toEqual(['swing']);
+  });
+
+  it('⚠️ le DÉCALAGE n’est demandé nulle part dans la carrière', () => {
+    for (const a of ACTES) {
+      for (const n of niveauxDeLActe(a)) {
+        const l = LEVELS.find((x) => x.id === n)!;
+        expect(l.paramsAutorises ?? [], `acte ${a.id}, niveau ${n}`).not.toContain('shiftPct');
+        const shift = l.grille?.shift ?? {};
+        expect(Object.values(shift).every((v) => v === 0), `acte ${a.id}, niveau ${n} : décalage écrit`).toBe(true);
+      }
+      for (const x of a.etapes) {
+        if (x.kind !== 'commande') continue;
+        expect(x.cahier.map((c) => c.id), `acte ${a.id}, ${x.entete}`).not.toContain('ligne-glisse');
       }
     }
   });
 
-  it('⚠️ ses grilles sont TOUTES DIFFÉRENTES — le trio est dissous', () => {
-    /* ⚠️ CE TEST DIT L'INVERSE DE CE QU'IL DISAIT, et c'est un arbitrage, pas
-     * une régression. Il exigeait que les niveaux 14, 17 et 23 partagent une
-     * seule grille : c'était la condition pour comparer deux balancements —
-     * mêmes cases, autres instants.
-     *
-     * Retour de Yann (relecture complète, 2026-09-01), cinq fois dans le même
-     * document : *« les rythmes se ressemblent trop »*. Trois reproductions de
-     * la même grille, c'est trois fois le même travail de lecture pour une
-     * seule idée. La comparaison passe donc par `regler` — un curseur visé
-     * contre une cible dit la même chose en un geste — et les grilles de
-     * l'acte, elles, sont toutes différentes.
-     *
-     * Ce que la version d'avant protégeait et qui reste tenu ailleurs : une
-     * grille de cet acte n'apporte ni variante ni rafale (test au-dessus), et
-     * porte toujours un feel (test en dessous). */
-    const grilles = grillesDeLActe2();
-    expect(grilles.length).toBeGreaterThanOrEqual(3);
-    const cases = (l: (typeof grilles)[number]) =>
-      JSON.stringify([l.grille!.subdiv, l.grille!.kick, l.grille!.snare, l.grille!.hat]);
-    const vues = grilles.map(cases);
-    expect(new Set(vues).size, 'deux grilles identiques dans l’acte 2').toBe(grilles.length);
-    // Et le feel diffère aussi : deux grilles ne racontent pas la même chose.
-    const feels = grilles.map((l) =>
-      JSON.stringify([l.grille!.swing ?? null, l.grille!.shift ?? null]),
-    );
-    expect(new Set(feels).size, 'deux grilles au même feel').toBe(grilles.length);
-  });
-
-  it('⚠️ et l’acte reprend là où l’acte 1 s’arrête, PLUS le feel', () => {
-    /* « Le jeu reste trop longtemps trop facile. » Mesuré en août : l'acte 1
-     * finissait à 24 cases et l'acte 2 plafonnait à 24 sans variante — un cran
-     * en arrière.
-     *
-     * ⚠️ La formulation a changé le 2026-08-31, et il faut savoir pourquoi.
-     * Les deux actes sont désormais à la résolution MAXIMALE lisible sur un
-     * téléphone (seize cases par ligne, mesuré : 18,7 px la case en 390 px de
-     * large). Exiger « strictement plus de cases » qu'à l'acte 1 forcerait
-     * trente-deux cases, c'est-à-dire des cases de 9 px — on rendrait le jeu
-     * illisible en croyant le rendre difficile.
-     *
-     * L'escalade de l'acte 2 est sur un AUTRE axe, et c'est son sujet même :
-     * toutes ses grilles portent un feel — swing, décalage, ou les deux — donc
-     * les cases ne sonnent plus là où elles sont dessinées. Aucune grille de
-     * l'acte 1 n'en porte. C'est ça qu'on vérifie. */
-    const poids = (id: number) => {
-      const g = LEVELS.find((x) => x.id === id)!.grille!;
-      return g.subdiv.kick + g.subdiv.snare + g.subdiv.hat;
-    };
-    const finActe1 = poids(61);
-    for (const l of grillesDeLActe2()) {
-      expect(poids(l.id), `acte 2, niveau ${l.id} : sous la fin de l’acte 1`).toBeGreaterThanOrEqual(
-        finActe1,
-      );
-      const g = l.grille!;
-      const feel = (g.swing ?? 0) !== 0 || Object.values(g.shift ?? {}).some((v) => v !== 0);
-      expect(feel, `acte 2, niveau ${l.id} : une grille sans feel`).toBe(true);
-    }
-    // Et l'acte 1, lui, n'en pose aucun : le feel est la nouveauté de l'acte 2.
+  /* L'aléa reste où l'ancien acte 2 l'avait mis : dans le cahier de Kelvin,
+   * jamais en exercice — on ne reconnaît pas des ghost notes, on en pose. */
+  it('demande l’aléa dans la LIVRAISON de Kelvin, pas dans un exercice', () => {
+    const cmd = e().find((x) => x.kind === 'commande');
+    if (cmd?.kind !== 'commande') throw new Error('pas de commande');
+    expect(cmd.client).toBe('KELVIN');
+    expect(cmd.cahier.map((c) => c.id)).toContain('alea');
     for (const n of niveauxDeLActe(ACTES[1])) {
-      const g = LEVELS.find((x) => x.id === n)!.grille;
-      if (!g) continue;
-      expect((g.swing ?? 0) === 0, `acte 1, niveau ${n} : du swing écrit`).toBe(true);
-      expect(Object.keys(g.shift ?? {}), `acte 1, niveau ${n} : un décalage écrit`).toHaveLength(0);
-    }
-  });
-
-  it('⚠️ RÈGLE d’abord, repose ensuite — l’ordre est le contenu de l’acte', () => {
-    /* ⚠️ L'ordre a changé le 2026-09-01, sur une consigne d'une ligne :
-     * *« régler en premier »*, et *« les autres verbes ne sont pas forcément
-     * tous intéressants : lequel, régler et nommer »*.
-     *
-     * Ce qui part : les trois `lequel` (désigner A ou B est le même jugement
-     * d'oreille que viser un curseur, en moins engageant) et les deux
-     * exercices d'ALÉA, qui deviennent une exigence du cahier de Kelvin — on
-     * ne reconnaît plus des ghost notes, on en pose.
-     *
-     * Ce qui reste : chaque sujet s'ouvre sur son RÉGLAGE et se referme sur une
-     * grille, et `nommer` garde son écran, le seul du jeu qui mette les deux
-     * mots côte à côte. */
-    const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    expect(verbes).toEqual([
-      // le swing : régler au curseur → tenir sur seize cases
-      'regler', 'reproduire',
-      // le décalage : régler → reposer
-      'regler', 'reproduire',
-      // les deux : nommer lequel des deux → les cumuler
-      'nommer', 'reproduire',
-      // le palier, qui devient le départ de la commande
-      'reproduire',
-    ]);
-    // Aucune reproduction avant le réglage qui l'a préparée.
-    expect(verbes.indexOf('regler')).toBeLessThan(verbes.indexOf('reproduire'));
-    // Et plus aucun quiz d'écoute : ce que l'acte demande, il le fait poser.
-    expect(verbes).not.toContain('lequel');
-  });
-
-  /* ⚠️ L'ALÉA A DÉMÉNAGÉ DANS LE CAHIER — *« l'aléa dans le cahier »* (Yann).
-   *
-   * Le défaut qu'il corrige se voit en jouant : on traversait l'acte du GROOVE
-   * en reconnaissant des boutons, et sa commande n'en demandait aucun. On
-   * pouvait donc livrer à Kelvin une boucle carrée — exactement ce qu'il refuse
-   * au premier écran (« ça fait réveil »). */
-  it('demande le groove dans la LIVRAISON, pas seulement dans les exercices', () => {
-    const cmd = ACTES[2].etapes.find((e) => e.kind === 'commande')!;
-    const ids = cmd.cahier.map((c) => c.id);
-    expect(ids).toContain('alea');
-    expect(ids).toContain('ligne-glisse');
-    // Et plus aucun exercice de l'acte ne porte sur l'aléa : c'est l'un OU
-    // l'autre, sinon on demande deux fois la même chose.
-    for (const n of niveauxDeLActe(ACTES[2])) {
       const l = LEVELS.find((x) => x.id === n)!;
       for (const p of l.paramsAutorises ?? []) {
         expect(['ghostDensity', 'randomVelocity', 'spontRoll'], `niveau ${n}`).not.toContain(p);
       }
     }
-  });
-
-  // Et il arrive APRÈS l'acte qui ouvre l'Atelier : `nommer` et `regler`
-  // mettent des mots sur des curseurs, encore faut-il que le joueur ait vu les
-  // curseurs.
-  it('tombe après l’ouverture de l’Atelier', () => {
-    expect(moduleUnlocked('atelier', { level: 1, acte: 2 })).toBe(true);
   });
 });
 
@@ -1113,13 +1057,13 @@ describe('L’acte 2 : le groove s’entend, puis se repose, puis se règle', ()
  * « Poursuis » : après la mélodie vient la production, et c'est elle qui ouvre
  * le module Production.
  */
-describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
+describe('L’acte 3 fait entendre ce qu’aucun texte ne peut dire', () => {
   it('est jouable, et ouvre la Production', () => {
-    const acte4 = ACTES[4];
+    const acte4 = ACTES[3];
     expect(acteAVenir(acte4)).toBe(false);
     expect(acte4.module).toBe('production');
-    expect(moduleUnlocked('production', { level: 1, acte: 4 })).toBe(false);
-    expect(moduleUnlocked('production', { level: 1, acte: 5 })).toBe(true);
+    expect(moduleUnlocked('production', { level: 1, acte: 3 })).toBe(false);
+    expect(moduleUnlocked('production', { level: 1, acte: 4 })).toBe(true);
   });
 
   /* ⚠️ CE QUE CET ACTE VÉRIFIE A CHANGÉ le 2026-09-01, et il faut savoir
@@ -1135,11 +1079,11 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
    * qu'on tient maintenant, c'est ça : on ne demande le mixage qu'APRÈS avoir
    * accepté le morceau, et chaque envoi repart du précédent. */
   it('ne pose plus aucun exercice — il se joue entièrement à l’Atelier', () => {
-    expect(niveauxDeLActe(ACTES[4])).toEqual([]);
+    expect(niveauxDeLActe(ACTES[3])).toEqual([]);
   });
 
   it('enchaîne trois envois du même morceau, et le premier ne juge que le morceau', () => {
-    const cmds = ACTES[4].etapes.filter((e) => e.kind === 'commande') as Array<{
+    const cmds = ACTES[3].etapes.filter((e) => e.kind === 'commande') as Array<{
       entete: string;
       cahier: Array<{ id: string }>;
       partirDeLaLivraison?: boolean;
@@ -1167,7 +1111,7 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
    * ranges. Ajouter, c'est après »), donc l'ordre des envois doit le tenir —
    * sinon le récit décrit une méthode que le jeu ne demande pas. */
   it('enlève et range AVANT d’ajouter de l’espace', () => {
-    const cmds = ACTES[4].etapes.filter((e) => e.kind === 'commande') as Array<{
+    const cmds = ACTES[3].etapes.filter((e) => e.kind === 'commande') as Array<{
       cahier: Array<{ id: string }>;
     }>;
     const ids = (i: number) => cmds[i].cahier.map((c) => c.id);
@@ -1181,7 +1125,7 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
   // Le mot du récit et le mot de l'écran sont le même : si le texte dit « la
   // laverie », c'est là que le morceau doit être renvoyé.
   it('nomme la laverie dans le récit qui amène le deuxième envoi', () => {
-    const e = ACTES[4].etapes;
+    const e = ACTES[3].etapes;
     const i = e.findIndex((x) => x.kind === 'commande' && /DEUXIÈME/.test(x.entete));
     const avant = e
       .slice(0, i)
@@ -1192,7 +1136,7 @@ describe('L’acte 4 fait entendre ce qu’aucun texte ne peut dire', () => {
   });
 });
 
-/* L'acte 5 — celui qui avait l'air d'être une liste.
+/* L'acte 4 — celui qui avait l'air d'être une liste.
  *
  * Quinze genres à produire : la tentation était quinze niveaux de
  * reproduction, c'est-à-dire le même exercice quinze fois. Sa vraie scène est
@@ -1216,16 +1160,16 @@ function estContrainteDeSynthe(id: string): boolean {
   );
 }
 
-describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
+describe('L’acte 4 fait NOMMER les genres avant de les refaire', () => {
   it('est jouable, et n’ouvre aucun module', () => {
-    expect(acteAVenir(ACTES[5])).toBe(false);
+    expect(acteAVenir(ACTES[4])).toBe(false);
     // Rien à déverrouiller : l'acte ne paie aucune dette mécanique, ce qui est
     // précisément ce qui le rend bon marché à écrire.
-    expect(ACTES[5].module).toBeNull();
+    expect(ACTES[4].module).toBeNull();
   });
 
   it('commence par reconnaître, puis reconstruit', () => {
-    const verbes = niveauxDeLActe(ACTES[5]).map(
+    const verbes = niveauxDeLActe(ACTES[4]).map(
       (n) => LEVELS.find((x) => x.id === n)!.exercise,
     );
     expect(verbes[0]).toBe('style');
@@ -1238,12 +1182,12 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
    * donc un `presetId` sur chacune. C'était un raccourci, pas la règle.
    *
    * La vraie règle est plus forte, et c'est elle qu'on tient maintenant :
-   * **aucun rythme de l'acte 5 n'est TIRÉ**. Un genre reconnu sur une grille
+   * **aucun rythme de l'acte 4 n'est TIRÉ**. Un genre reconnu sur une grille
    * générique n'est pas un genre, et une polyrythmie tirée au sort n'apprend
    * pas ce qu'est une polyrythmie. Chaque exercice est donc soit le verbe
    * `style`, soit un preset réel, soit une grille écrite. */
   it('ne joue aucun rythme tiré au sort', () => {
-    for (const n of niveauxDeLActe(ACTES[5])) {
+    for (const n of niveauxDeLActe(ACTES[4])) {
       const l = LEVELS.find((x) => x.id === n)!;
       if (l.exercise === 'style') continue;
       expect(
@@ -1263,7 +1207,7 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
    * Ce qu'il tient maintenant est ce que l'acte promet vraiment : QUATRE cases
    * de fax, quatre séries, et jamais deux fois le même genre. */
   it('couvre les quatre cases du fax, et jamais deux fois le même genre', () => {
-    const cmds = ACTES[5].etapes.filter((e) => e.kind === 'commande') as Array<{
+    const cmds = ACTES[4].etapes.filter((e) => e.kind === 'commande') as Array<{
       serie?: string;
       cahier: Array<{ id: string }>;
     }>;
@@ -1287,10 +1231,12 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
    * honnête à la place : elle repart de cette livraison-là, et n'exige que ce
    * que l'acte 2 ne demande pas. */
   it('⚠️ la case hip-hop reprend le morceau de Kelvin au lieu de rejuger le genre', () => {
-    const hh = ACTES[5].etapes.find(
+    const hh = ACTES[4].etapes.find(
       (e) => e.kind === 'commande' && e.serie === 'hip-hop',
-    ) as unknown as { partirDuMorceauDeLActe?: number; cahier: Array<{ id: string }> };
-    expect(hh.partirDuMorceauDeLActe, 'elle doit repartir de l’acte de Kelvin').toBe(2);
+    ) as unknown as { partirDuMorceauDeLActe?: number; serieDuMorceau?: string; cahier: Array<{ id: string }> };
+    expect(hh.partirDuMorceauDeLActe, 'elle doit repartir de l’acte de Kelvin').toBe(1);
+    // ⚠️ Et par sa SÉRIE : l'acte 1 livre aussi la sonnerie depuis la fusion.
+    expect(hh.serieDuMorceau).toBe('kelvin');
     expect(hh.cahier.some((c) => c.id.startsWith('fiche:'))).toBe(false);
     // L'acte 2 n'exige aucune ligne de synthé : c'est donc là qu'est le travail.
     expect(hh.cahier.some((c) => estContrainteDeSynthe(c.id))).toBe(true);
@@ -1312,7 +1258,7 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
    * travail. Un test qui ne regarderait que la présence, lui, laisserait
    * l'acte redescendre à une ligne de basse partout. */
   it('⚠️ chaque case du fax exige le synthé, et l’exigence ne redescend jamais', () => {
-    const cmds = ACTES[5].etapes.filter((e) => e.kind === 'commande') as Array<{
+    const cmds = ACTES[4].etapes.filter((e) => e.kind === 'commande') as Array<{
       serie?: string;
       cahier: Array<{ id: string }>;
     }>;
@@ -1334,8 +1280,8 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
   // Le mot du récit et le verbe de l'écran sont le même : si le texte fait
   // fredonner un genre, l'exercice doit demander de le nommer.
   it('pose la scène du genre qu’on ne sait pas nommer', () => {
-    const avant = ACTES[5].etapes
-      .slice(0, ACTES[5].etapes.findIndex((e) => e.kind === 'exercice'))
+    const avant = ACTES[4].etapes
+      .slice(0, ACTES[4].etapes.findIndex((e) => e.kind === 'exercice'))
       .flatMap((e) => (e.kind === 'recit' ? e.lignes : []))
       .join(' ');
     expect(avant).toMatch(/fredonn/i);
@@ -1343,14 +1289,14 @@ describe('L’acte 5 fait NOMMER les genres avant de les refaire', () => {
   });
 });
 
-/* L'acte 6 — celui où le cahier des charges devait presque disparaître.
+/* L'acte 5 — celui où le cahier des charges devait presque disparaître.
  *
  * « Aucun brief. Aucun client. Aucun style imposé. […] Cette fois, personne ne
  * te dit si c'est bon. » C'est ce texte qui donne sa forme à toute la
  * mécanique de commande : la sévérité DÉCROÎT avec le récit.
  */
-describe('L’acte 6 ne commande rien, il demande de faire', () => {
-  const acte6 = () => ACTES[6];
+describe('L’acte 5 ne commande rien, il demande de faire', () => {
+  const acte6 = () => ACTES[5];
 
   /* ⚠️ SEPT commandes depuis le crescendo du 2026-09-17 : deux morceaux de
    * DEUX boucles, puis un de TROIS (*« il faut y aller crescendo dans les
@@ -1495,41 +1441,41 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     }
   });
 
-  /* ⚠️ L'ACTE 6 PRÉPARE, IL NE MONTRE PAS LA CONSOLE — 2026-09-16, et ça
+  /* ⚠️ L'ACTE 5 PRÉPARE, IL NE MONTRE PAS LA CONSOLE — 2026-09-16, et ça
    * renverse l'arbitrage du 2026-09-14 que ce test gardait.
    *
-   * Ce que le jeu a montré : *« fin de l'acte 6 : on découvre le mode live et
-   * on ne joue qu'un seul des morceaux »*, puis *« acte 7 : on a le mode live
+   * Ce que le jeu a montré : *« fin de l'acte 5 : on découvre le mode live et
+   * on ne joue qu'un seul des morceaux »*, puis *« acte 6 : on a le mode live
    * pour le premier morceau (de nouveau) »*. Un seul défaut, vu deux fois — la
    * scène d'ici montait UN morceau (une architecture décrit un morceau), donc
    * le concert recommençait avec lui. On prépare ici, on joue là-bas.
    *
    * Ce que le test garde, et qui est l'essentiel : les sept boucles ne se
    * perdent pas. Elles n'ont jamais eu besoin d'une scène pour exister — c'est
-   * le SET de l'acte 7 qui les range toutes en banque (`depuisLActe: 6`), et
+   * le SET de l'acte 6 qui les range toutes en banque (`depuisLActe: 5`), et
    * c'est là qu'on les joue. Voir « monte le DISQUE en set » plus bas. */
   it('⚠️ ne monte AUCUNE scène — la console est pour le 14 juin', () => {
     expect(acte6().etapes.some((e) => e.kind === 'scene'), 'une scène est revenue').toBe(false);
-    expect(acte6().module, 'l’acte 6 n’ouvre plus le Mode Live').toBeNull();
+    expect(acte6().module, 'l’acte 5 n’ouvre plus le Mode Live').toBeNull();
     /* ⚠️ Et il ne le NOMME pas non plus : un module fermé ne se nomme pas, pas
      * même dans une réplique. C'est la règle qui a fait masquer les cadenas. */
     const texte = acte6()
       .etapes.flatMap((e) => (e.kind === 'recit' ? [e.entete, ...e.lignes] : []))
       .join(' ')
       .toLowerCase();
-    expect(texte, 'l’acte 6 nomme le Mode Live').not.toContain('mode live');
+    expect(texte, 'l’acte 5 nomme le Mode Live').not.toContain('mode live');
   });
 
   /* ⚠️ …mais les sept boucles doivent toutes ATTERRIR quelque part, et c'est
-   * l'acte 7 qui les reprend. Ce test croise les deux actes : une série livrée
+   * l'acte 6 qui les reprend. Ce test croise les deux actes : une série livrée
    * ici et oubliée là-bas serait un morceau produit que personne ne rejoue. */
   it('⚠️ et ses sept séries sont TOUTES reprises par le concert', () => {
     const series = acte6().etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
     expect(series).toHaveLength(7);
-    const set = ACTES[7].etapes.find(
-      (e) => e.kind === 'scene' && e.depuisLActe === 6,
+    const set = ACTES[6].etapes.find(
+      (e) => e.kind === 'scene' && e.depuisLActe === 5,
     ) as Extract<Etape, { kind: 'scene' }> | undefined;
-    expect(set, 'aucune scène de l’acte 7 ne reprend l’acte 6').toBeTruthy();
+    expect(set, 'aucune scène de l’acte 6 ne reprend l’acte 5').toBeTruthy();
     expect(set?.bouclesDeLActe?.map((b) => b.serie)).toEqual(series);
   });
 
@@ -1557,7 +1503,7 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
 
   /* ⚠️ LE PLUS COMPLET DU JEU, et « complet » n'est pas « sévère ».
    *
-   * Demande de Yann (2026-09-01) : *« l'acte 6, le plus complet du jeu »*. Elle
+   * Demande de Yann (2026-09-01) : *« l'acte 5, le plus complet du jeu »*. Elle
    * entre en tension apparente avec la phrase de l'acte — aucun brief, aucun
    * client, aucun style imposé — et la tension se résout dans ce que le cahier
    * DEMANDE : il récapitule des gestes appris, il ne juge aucun goût. Ce test
@@ -1568,7 +1514,7 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
     if (c.kind !== 'commande') return;
     // La moitié « complet » : plus long que tous les autres cahiers du jeu.
     const autres = ACTES.flatMap((a) =>
-      a.id === 6 ? [] : a.etapes.flatMap((e) => (e.kind === 'commande' ? [e.cahier.length] : [])),
+      a.id === 5 ? [] : a.etapes.flatMap((e) => (e.kind === 'commande' ? [e.cahier.length] : [])),
     );
     expect(autres.length).toBeGreaterThan(0);
     expect(c.cahier.length, 'FB-015 devrait être le plus long').toBeGreaterThan(Math.max(...autres));
@@ -1599,15 +1545,18 @@ describe('L’acte 6 ne commande rien, il demande de faire', () => {
 /* Où les commandes ont le droit de se poser — et où elles ne l'ont pas. */
 describe('Les commandes arrivent quand l’Atelier existe', () => {
   /* ⚠️ On ne peut pas commander un travail dans un module qu'on n'a pas
-   * encore ouvert. L'acte 1 est celui qui donne la clé : sa dernière étape est
-   * une LIVRAISON (un cadeau, pas une épreuve), et la première vraie commande
-   * ne peut arriver qu'après. */
-  it('jamais avant l’acte qui ouvre l’Atelier', () => {
+   * encore ouvert. L'acte 1 est celui qui donne la clé : sa LIVRAISON (un
+   * cadeau, pas une épreuve) ouvre l'Atelier, et la première vraie commande ne
+   * peut arriver qu'après — depuis la fusion, dans le même acte. */
+  it('jamais avant l’étape qui ouvre l’Atelier', () => {
     for (const a of ACTES) {
-      const aDesCommandes = a.etapes.some((e) => e.kind === 'commande');
-      if (aDesCommandes) expect(a.id, `acte ${a.id}`).toBeGreaterThan(1);
+      a.etapes.forEach((e, i) => {
+        if (e.kind !== 'commande') return;
+        expect(a.id, `acte ${a.id}`).toBeGreaterThanOrEqual(1);
+        expect(moduleUnlocked('atelier', { level: 1, acte: a.id, etape: i }), `acte ${a.id}, étape ${i}`).toBe(true);
+        if (a.id === 1) expect(i).toBeGreaterThan(ETAPE_DU_MODULE.atelier);
+      });
     }
-    expect(moduleUnlocked('atelier', { level: 1, acte: 2 })).toBe(true);
   });
 
   /* ⚠️ LA RÈGLE A CHANGÉ le 2026-09-01, et il faut savoir laquelle a cédé.
@@ -1682,7 +1631,7 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
     const avecCommande = ACTES.filter((a) => a.etapes.some((e) => e.kind === 'commande')).map(
       (a) => a.id,
     );
-    expect(avecCommande).toEqual([2, 3, 4, 5, 6]);
+    expect(avecCommande).toEqual([1, 2, 3, 4, 5]);
   });
 });
 
@@ -1690,13 +1639,13 @@ describe('Les commandes arrivent quand l’Atelier existe', () => {
  *
  * Il ferme aussi la boucle du récit : Sol dit le nom du joueur au micro.
  */
-describe('L’acte 7 joue, et n’ouvre plus rien', () => {
-  const acte7 = () => ACTES[7];
+describe('L’acte 6 joue, et n’ouvre plus rien', () => {
+  const acte7 = () => ACTES[6];
 
   it('⚠️ est jouable, et c’est LUI qui ouvre le Mode Live', () => {
     expect(acteAVenir(acte7())).toBe(false);
-    /* ⚠️ Renversé le 2026-09-16 : l'acte 6 l'ouvrait depuis le 2026-09-14, et
-     * ça faisait découvrir la console pour un seul morceau, que l'acte 7
+    /* ⚠️ Renversé le 2026-09-16 : l'acte 5 l'ouvrait depuis le 2026-09-14, et
+     * ça faisait découvrir la console pour un seul morceau, que l'acte 6
      * rejouait. *« Le mode live serait offert à l'issue »* — donc ici. */
     expect(acte7().module).toBe('live');
     /* ⚠️ « À l'issue » se lit sur l'ÉTAPE, pas sur la frontière : il s'ouvre à
@@ -1708,14 +1657,14 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
     );
     expect(etapeDuSet).toBeGreaterThanOrEqual(0);
     expect(ETAPE_DU_MODULE.live).toBe(etapeDuSet);
-    expect(moduleUnlocked('live', { level: 1, acte: 7, etape: etapeDuSet })).toBe(true);
+    expect(moduleUnlocked('live', { level: 1, acte: 6, etape: etapeDuSet })).toBe(true);
     // Et il le reste : jusqu'à la fin de l'acte, et après.
-    expect(moduleUnlocked('live', { level: 1, acte: 7, etape: acte7().etapes.length - 1 })).toBe(true);
+    expect(moduleUnlocked('live', { level: 1, acte: 6, etape: acte7().etapes.length - 1 })).toBe(true);
     expect(moduleUnlocked('live', { level: 1, acte: NB_ACTES })).toBe(true);
-    /* Avant la scène, il est fermé — c'est le sens de « on prépare à l'acte 6,
+    /* Avant la scène, il est fermé — c'est le sens de « on prépare à l'acte 5,
        on joue au 7 » : la console n'existe pas avant le concert. */
-    expect(moduleUnlocked('live', { level: 1, acte: 7, etape: 0 })).toBe(false);
-    expect(moduleUnlocked('live', { level: 1, acte: 6, etape: 99 })).toBe(false);
+    expect(moduleUnlocked('live', { level: 1, acte: 6, etape: 0 })).toBe(false);
+    expect(moduleUnlocked('live', { level: 1, acte: 5, etape: 99 })).toBe(false);
   });
 
   /* ⚠️ Il ne cite QUE des niveaux « jouer », et c'est le fond de l'acte :
@@ -1755,7 +1704,7 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
   /* ⚠️ Le jeton n'existe QUE là. Un `{pseudo}` oublié ailleurs s'afficherait
    * tel quel — accolades comprises — sur un écran que personne ne relit. */
   it('n’emploie le jeton nulle part ailleurs', () => {
-    const ailleurs = ACTES.filter((a) => a.id !== 7).flatMap((a) =>
+    const ailleurs = ACTES.filter((a) => a.id !== 6).flatMap((a) =>
       a.etapes.flatMap((e) => (e.kind === 'recit' ? e.lignes : [])),
     );
     for (const l of ailleurs) expect(l).not.toContain('{pseudo}');
@@ -1764,8 +1713,8 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
   /* ⚠️ LE CONCERT SE JOUE EN MODE LIVE — l'acte refait le 2026-09-09.
    *
    * Avant, l'acte n'y montait que pour le RAPPEL : le concert lui-même était un
-   * exercice au clavier du Mode jeu, si bien que la répétition de l'acte 6
-   * (« sept boucles, un disque ») était plus riche que le concert de l'acte 7.
+   * exercice au clavier du Mode jeu, si bien que la répétition de l'acte 5
+   * (« sept boucles, un disque ») était plus riche que le concert de l'acte 6.
    * Les deux scènes se distinguent, et ce test garde la distinction : le SET
    * monte le disque, un MORCEAU par lettre ; le RAPPEL pose une boucle. */
   it('⚠️ monte le DISQUE en set — un morceau par lettre', () => {
@@ -1773,14 +1722,14 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
     expect(scenes, 'le concert et le rappel').toHaveLength(2);
     const [set, rappel] = scenes as Extract<Etape, { kind: 'scene' }>[];
 
-    // Le SET rejoue ce que l'acte 6 a livré — l'acte 7 ne produit rien.
-    expect(set.depuisLActe).toBe(6);
-    const series6 = ACTES[6].etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
+    // Le SET rejoue ce que l'acte 5 a livré — l'acte 6 ne produit rien.
+    expect(set.depuisLActe).toBe(5);
+    const series6 = ACTES[5].etapes.flatMap((e) => (e.kind === 'commande' ? [e.serie] : []));
     expect(set.bouclesDeLActe?.map((b) => b.serie), 'les sept boucles vont en banque').toEqual(
       series6,
     );
     /* ⚠️ TROIS MORCEAUX, TROIS LETTRES — pas trois sections d'un morceau. Ce
-     * qui distingue le concert de la répétition : à l'acte 6 A/B/C sont le
+     * qui distingue le concert de la répétition : à l'acte 5 A/B/C sont le
      * couplet, le refrain et le pont d'un même morceau ; ici ce sont trois
      * morceaux différents, et c'est ce que « un set » veut dire. */
     const montees = (set.bouclesDeLActe ?? []).filter((b) => b.partie);
@@ -1796,7 +1745,7 @@ describe('L’acte 7 joue, et n’ouvre plus rien', () => {
      * « CLUB » : un modèle à deux lettres poserait ici une scène sur B, c'est-
      * à-dire une lettre vide, qui se replie sur A et joue la même chose sans
      * qu'aucune erreur ne le dise. */
-    expect(rappel.morceauDeLActe).toBe(3);
+    expect(rappel.morceauDeLActe).toBe(2);
     expect(rappel.montage).toBe('CLUB');
     const club = montageParNom(rappel.montage!);
     expect(club, 'le modèle du rappel n’existe pas').toBeTruthy();
@@ -1846,7 +1795,7 @@ describe('L’épilogue ferme le jeu sans être un neuvième acte', () => {
     // Il n'a ni compétence, ni module, ni exercice, et il se passe des mois
     // après le 14 juin. L'ajouter à ACTES casserait ActeId, JOURS et le compte
     // à rebours pour ranger du texte dans une structure qui décrit des épreuves.
-    expect(NB_ACTES).toBe(8);
+    expect(NB_ACTES).toBe(7);
     expect(EPILOGUE.length).toBe(LONGUEUR_EPILOGUE);
     expect(LONGUEUR_EPILOGUE).toBeGreaterThan(0);
     for (const e of EPILOGUE) expect(e.kind).toBe('recit');
@@ -1906,7 +1855,7 @@ describe('Le curseur de l’épilogue est séparé, et ne débloque rien', () =>
     game.pseudo = 'pas-fini';
     game.progress = {
       ...game.progress,
-      'pas-fini': { level: 1, stars: {}, carriere: { acte: 7, etape: 0 } },
+      'pas-fini': { level: 1, stars: {}, carriere: { acte: NB_ACTES - 1, etape: 0 } },
     };
     expect(game.enEpilogue).toBe(false);
     expect(game.ecranEpilogue).toBeNull();
@@ -1949,20 +1898,22 @@ describe('Le curseur de l’épilogue est séparé, et ne débloque rien', () =>
 describe('le calendrier du récit', () => {
   it('pose le concert le 14 juin 2005', () => {
     expect(ANNEE).toBe(2005);
-    expect(dateDeLActe(7)).toBe('14 juin 2005');
+    expect(dateDeLActe(6)).toBe('14 juin 2005');
   });
 
-  it('fait tomber les quatre premiers actes le 14 de leur mois', () => {
+  /* ⚠️ Sept actes depuis la fusion du rythme et du groove (2026-11-24) : le
+   * 14 mars, qui était l'acte du groove, n'a plus d'acte — les suivants gardent
+   * leur date, l'histoire ne se resserre pas. */
+  it('fait tomber les trois premiers actes le 14 de leur mois', () => {
     expect(dateDeLActe(0)).toBe('14 janvier 2005');
     expect(dateDeLActe(1)).toBe('14 février 2005');
-    expect(dateDeLActe(2)).toBe('14 mars 2005');
-    expect(dateDeLActe(3)).toBe('14 avril 2005');
+    expect(dateDeLActe(2)).toBe('14 avril 2005');
   });
 
   it('place les trois derniers à six, quatre et deux semaines', () => {
-    expect(dateDeLActe(4)).toBe('3 mai 2005');
-    expect(dateDeLActe(5)).toBe('17 mai 2005');
-    expect(dateDeLActe(6)).toBe('31 mai 2005');
+    expect(dateDeLActe(3)).toBe('3 mai 2005');
+    expect(dateDeLActe(4)).toBe('17 mai 2005');
+    expect(dateDeLActe(5)).toBe('31 mai 2005');
   });
 
   it('reste d’accord avec le « quand » écrit à la main de chaque acte', () => {

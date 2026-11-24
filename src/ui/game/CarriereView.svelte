@@ -133,6 +133,18 @@
     if (game.etapeCourante?.kind === 'exercice') onExercice();
   }
 
+  /* ⚠️ « Au travail ▸ » doit ouvrir l'exercice DE L'ÉTAPE. Après un
+   * rechargement, `seReplacer` remet le curseur sur l'étape mais le niveau
+   * chargé est celui de `level` (le réservoir) : le bouton envoyait sur un
+   * niveau de répétition — « Poser une note (kick) » au milieu de l'acte 1.
+   * On ne relance que si ce n'est pas déjà le bon niveau : revenir d'un
+   * exercice en cours ne doit pas effacer la grille qu'on y a posée. */
+  function auTravail() {
+    const e = game.etapeCourante;
+    if (e?.kind === 'exercice' && (!game.enCarriere || game.level.id !== e.niveau)) game.demarrerEtape();
+    onExercice();
+  }
+
   /* ⚠️ La livraison FRANCHIT l'étape avant d'ouvrir l'Atelier, et l'ordre est
    * le sujet. `moduleUnlocked` lit l'acte ATTEINT (`acte > 1` pour l'Atelier) :
    * partir de la dernière étape de l'acte 1 sans l'avoir franchie enverrait le
@@ -665,7 +677,7 @@
              rejouer pour repartir. -->
         <button class="xp-btn tap44-y" onclick={suite}>Suite ▸</button>
       {/if}
-      <button class="xp-btn primary tap44-y" onclick={onExercice}>Au travail ▸</button>
+      <button class="xp-btn primary tap44-y" onclick={auTravail}>Au travail ▸</button>
     </div>
   {/if}
 

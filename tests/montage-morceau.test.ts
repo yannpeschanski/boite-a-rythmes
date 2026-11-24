@@ -142,7 +142,7 @@ describe('⚠️ le jingle du rappel se monte en CLUB', () => {
   });
 
   it('c’est bien lui que la scène pose', () => {
-    const rappel = ACTES.find((a) => a.id === 7)!.etapes.filter((e) => e.kind === 'scene')[1];
+    const rappel = ACTES.find((a) => a.id === 6)!.etapes.filter((e) => e.kind === 'scene')[1];
     expect(rappel.kind === 'scene' && rappel.montage).toBe('CLUB');
   });
 

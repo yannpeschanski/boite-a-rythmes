@@ -172,7 +172,7 @@ export function moduleUnlocked(name: LockedModule, cx: UnlockContext): boolean {
  * garde (« une porte déjà ouverte ne se referme jamais »). C'est le seuil de la
  * Production, le module de la même époque du récit.
  */
-export const ACTE_DU_CATALOGUE = 5;
+export const ACTE_DU_CATALOGUE = 4;
 
 export function catalogueOuvert(cx: UnlockContext): boolean {
   if ((cx.acte ?? 0) > ACTE_DU_CATALOGUE) return true;

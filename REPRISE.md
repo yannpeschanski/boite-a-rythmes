@@ -3,7 +3,20 @@
 > À lire en premier, avant `PLAN.md` (le journal des livraisons du Mode jeu ;
 > ceci en est la carte, et `docs/plan/` porte les archives d'avant). `CLAUDE.md` reste la source des règles.
 >
-> Dernière mise à jour : 2026-10-13 — ✅ **Deux retours de Martin.** (1) La
+> Dernière mise à jour : 2026-11-24 — ✅ **Les actes 1 et 2 fusionnés.** Les
+> testeurs n'ont pas dépassé l'acte du rythme (« on ne comprend rien, trop
+> difficile »). Fiche `docs/relecture/premiers-pas.html` ; arbitrages appliqués :
+> sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
+> polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
+> passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ⚠️ **À faire ensuite, arbitré** : l'acte de la MÉLODIE (n° 2) à homogénéiser —
+> 42-44 (mélodies tirées, seules) contre 75-78 (arrangements écrits) — dans une
+> seconde PR. Puis, non arbitré : démonstrations guidées, aide qui monte avec les
+> essais, « Snare/Hat » à l'écran contre « claire/charley » dans le texte,
+> l'objectif nommé au premier écran, le dossier des inédits à l'épilogue. Acte 5
+> (FB-015) trop long : pas prioritaire.
+>
+> Avant cela, le 2026-10-13 — ✅ **Deux retours de Martin.** (1) La
 > boucle grésillait au bout de quelques minutes : les nœuds des frappes finies
 > restaient branchés au bus jusqu'au ramasse-miettes, le coût du rendu
 > grimpait sans fin (mesuré : 2 → 20 s par tranche de 20 s) ; ils se

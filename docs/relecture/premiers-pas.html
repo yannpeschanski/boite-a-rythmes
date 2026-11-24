@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Premiers pas</title>
+<style>
+:root{--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+--bg:#0e0e13;--carte:#17171f;--carte2:#1e1e28;--bord:#2c2c3a;--text:#e6e6ef;--doux:#9a9ab0;
+--violet:#7c6cf0;--vert:#39c26a;--ambre:#e8a33d;--rouge:#e2585f;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 var(--sans);}
+header.top{position:sticky;top:0;z-index:5;background:#12121a;border-bottom:1px solid var(--bord);
+padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:16px;margin:0;font-weight:650}
+header.top .sous{color:var(--doux);font-size:12.5px;flex:1 1 240px;min-width:0}
+header.top select,header.top button{font:13px var(--sans);background:var(--carte2);color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:6px 10px;cursor:pointer}
+#compteur{font:12px var(--mono);color:var(--doux)}
+main{max-width:900px;margin:0 auto;padding:22px 18px 80px}
+.intro{background:var(--carte);border:1px solid var(--bord);border-left:3px solid var(--violet);
+border-radius:10px;padding:14px 16px;margin:0 0 26px;font-size:14px}
+.intro p{margin:0 0 8px}.intro p:last-child{margin:0}
+.acquis{background:#12241a;border:1px solid #2b5a3c;border-radius:10px;padding:12px 16px;margin:0 0 26px;font-size:13.5px}
+.acquis b{color:#8ee0a8}
+.acquis ul{margin:6px 0 0;padding-left:20px}.acquis li{margin:0 0 4px}
+section.grp{margin:0 0 34px}
+section.grp>h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--doux);
+margin:0 0 6px;border-bottom:1px solid var(--bord);padding-bottom:6px}
+section.grp>.chapo{color:var(--doux);font-size:13.5px;margin:0 0 14px}
+.fiche{background:var(--carte);border:1px solid var(--bord);border-radius:10px;margin:0 0 14px;overflow:hidden}
+.fiche.hide{display:none}
+.fiche>header{display:flex;gap:10px;align-items:baseline;padding:11px 14px 0}
+.fiche .ref{font:11px var(--mono);color:var(--doux);flex:none}
+.fiche h3{margin:0;font-size:15.5px;font-weight:650}
+.fiche-b{padding:8px 14px 12px;font-size:14px}
+.fiche-b p{margin:0 0 9px}.fiche-b p:last-child{margin:0}
+.fiche-b table{border-collapse:collapse;margin:4px 0 10px;font-size:13px;width:100%}
+.fiche-b th,.fiche-b td{border:1px solid var(--bord);padding:5px 8px;text-align:left}
+.fiche-b th{color:var(--doux);font-weight:600}
+.fiche-b code{font:12.5px var(--mono);background:#101018;padding:1px 4px;border-radius:3px}
+.fiche-b ul{margin:4px 0 10px;padding-left:20px}.fiche-b li{margin:0 0 5px}
+.fiche-b ul.opts{list-style:none;padding:0}
+.fiche-b ul.opts li{border-left:2px solid var(--bord);padding:2px 0 2px 11px;margin:0 0 8px}
+.fiche-b blockquote{margin:6px 0 10px;padding:8px 12px;border-left:3px solid var(--violet);
+background:#12121a;color:var(--doux);font-size:13.5px;font-style:italic}
+figure{margin:8px 0 12px}
+figure img{width:100%;height:auto;display:block;border:1px solid var(--bord);border-radius:6px;background:#000}
+figcaption{font-size:11.5px;color:var(--doux);margin-top:5px}
+.reco{background:var(--vert);color:#06210f;font-size:11px;padding:1px 6px;border-radius:4px;font-weight:700}
+.alerte{color:var(--ambre)}.pour{color:var(--vert)}
+.regle{color:var(--doux);font-style:italic;font-size:13px}
+.annot{display:flex;gap:9px;align-items:flex-start;flex-wrap:wrap;
+padding:9px 14px 11px;border-top:1px solid var(--bord);background:var(--carte2)}
+.prios{display:flex;gap:5px;flex:none}
+.p{font:11px var(--sans);letter-spacing:.04em;font-weight:700;border:1px solid var(--bord);
+background:#101018;color:var(--doux);border-radius:5px;padding:6px 9px;cursor:pointer}
+.fiche.p1 .p1{background:var(--vert);color:#06210f;border-color:var(--vert)}
+.fiche.p2 .p2{background:var(--ambre);color:#2a1a02;border-color:var(--ambre)}
+.fiche.p3 .p3{background:var(--rouge);color:#2a0508;border-color:var(--rouge)}
+.fiche.p1{border-color:var(--vert)}.fiche.p2{border-color:var(--ambre)}.fiche.p3{border-color:var(--rouge)}
+.annot textarea{flex:1 1 240px;min-height:36px;font:14px/1.45 var(--sans);color:var(--text);
+background:#101018;border:1px solid var(--bord);border-radius:6px;padding:7px 9px;resize:vertical}
+.annot textarea:focus{outline:1px solid var(--violet)}
+dialog{background:var(--carte);color:var(--text);border:1px solid var(--bord);border-radius:10px;
+max-width:820px;width:92vw;padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog textarea{width:100%;height:52vh;font:12px/1.5 var(--mono);background:#101018;color:var(--text);
+border:1px solid var(--bord);border-radius:6px;padding:9px}
+dialog .titre{font-weight:650;margin:0 0 8px}
+dialog .actions{display:flex;gap:8px;margin-top:10px}
+dialog button{font:13px var(--sans);background:var(--carte2);color:var(--text);border:1px solid var(--bord);
+border-radius:6px;padding:7px 12px;cursor:pointer}
+</style></head><body>
+<header class="top">
+  <h1>Premiers pas — pourquoi on décroche</h1>
+  <span class="sous">Les testeurs n’ont pas dépassé l’acte du rythme. Sections 1-6 : les actes 0 et 1 ; section 7 : les niveaux mis de côté. Annote, puis « Exporter mes notes ».</span>
+  <span id="compteur"></span>
+  <select id="filtre" aria-label="filtrer">
+    <option value="tout">tout</option><option value="annote">annoté</option><option value="0">pas encore</option>
+    <option value="1">d'accord</option><option value="2">à discuter</option><option value="3">non</option>
+  </select>
+  <button type="button" id="btn-export">Exporter mes notes</button>
+</header>
+<main>
+<div class="intro">
+<p><b>Le retour.</b> <i>« On ne comprend rien. Gameplay trop difficile. Besoin
+de plus d’accompagnement et de progressivité. On ne comprend pas trop
+l’histoire. »</i> Et ton intuition : les testeurs n’ont jamais dépassé l’acte
+du rythme. La plupart écoutent au casque Bluetooth.</p>
+<p><b>Ce que ça veut dire.</b> Le groove, le synthé, la production, les styles
+et le concert n’ont pas été vus. Le jeu a été jugé sur ses <b>deux premiers
+actes</b> et sur eux seuls. C’est donc là, et seulement là, que porte cette
+fiche. Rien n’est codé.</p>
+<p><b>La lecture.</b> Section 1 : ce que la relecture du code a trouvé, des
+faits. Sections 2 à 6 : ce qui se tranche, une carte par décision,
+recommandation en premier. <span class="alerte">Deux cartes renversent des
+arbitrages passés</span> (la fusion de l’acte 1, le prologue qu’on ne raccourcit
+pas) : elles le disent.</p>
+</div>
+
+<section class="grp"><h2>1 · Ce que la relecture a trouvé</h2>
+<p class="chapo">Des faits lus dans <code>carriere.ts</code> et <code>presets/levels.ts</code>, pas des avis.</p>
+
+<article class="fiche" data-id="k1">
+  <header><span class="ref">K1</span><h3>L’acte 1 est un mur : six exercices, six marches</h3></header>
+  <div class="fiche-b">
+<table>
+<tr><th>#</th><th>Niveau</th><th>Cases</th><th>Coups</th><th>Ce qui est neuf</th></tr>
+<tr><td colspan="5"><i>Fin de l’acte 0</i></td></tr>
+<tr><td>—</td><td>81 Deux lignes</td><td>24</td><td>13</td><td>kick + charley, en croches</td></tr>
+<tr><td colspan="5"><i>Acte 1</i></td></tr>
+<tr><td>1</td><td>68 Le charley qui double</td><td>32</td><td>22</td><td class="alerte">la claire (jamais entendue) <b>et</b> la double-croche <b>et</b> trois lignes</td></tr>
+<tr><td>2</td><td>69 La claire sort du temps</td><td>32</td><td>23</td><td>syncope du kick <b>et</b> de la claire</td></tr>
+<tr><td>3</td><td>74 Trois contre quatre</td><td>44</td><td>25</td><td class="alerte">polyrythmie 12 contre 16</td></tr>
+<tr><td>4</td><td>60 Les deux à la fois</td><td>48</td><td>26</td><td>rim shot <b>et</b> charley ouvert <b>et</b> 16 cases partout</td></tr>
+<tr><td>5</td><td>8 Les rafales</td><td>48</td><td>24</td><td>rafales de deux longueurs</td></tr>
+<tr><td>6</td><td>61 Tout ensemble</td><td>48</td><td>26</td><td>tout</td></tr>
+</table>
+<p>Chaque exercice ajoute <b>deux ou trois</b> choses. Le premier de l’acte en
+ajoute trois d’un coup. La polyrythmie, notion de musicien confirmé, tombe au
+troisième.</p>
+<p><b>D’où ça vient.</b> L’acte a été fusionné de douze exercices à six le
+1<sup>er</sup> septembre, en gardant chaque fois « le plus dense ». Chaque
+coupe était défendable. Leur somme a retiré toutes les marches
+intermédiaires.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="k2">
+  <header><span class="ref">K2</span><h3>Les marches existent déjà, au réservoir</h3></header>
+  <div class="fiche-b">
+<p>Les niveaux qu’on a retirés sont écrits, testés, et attendent :</p>
+<ul>
+<li><b>67 Les quatre temps</b> : kick + claire sur 2 et 4, huit cases. La claire présentée seule.</li>
+<li><b>3 Le trio</b> : les trois lignes, toutes en croches.</li>
+<li><b>7 Le kick qui sort du temps</b> : <i>une seule</i> syncope, rien d’autre.</li>
+<li><b>70 La relance</b> : un fill, rafales et rim shots.</li>
+</ul>
+<p class="pour">Une progression douce se monte donc surtout en <b>citant</b> des
+niveaux existants, pas en en écrivant.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="k3">
+  <header><span class="ref">K3</span><h3>Le jeu fait faire avant de montrer</h3></header>
+  <div class="fiche-b">
+<ul>
+<li>L’écran <b>« LA GRILLE »</b> (« C’est comme ça qu’on les écrit ») arrive
+<b>après</b> les deux premiers exercices de grille.</li>
+<li>Le rim shot et la rafale sont <b>racontés</b> : <i>« Elle reclique sur une
+case déjà allumée… Elle appuie longuement sur une autre. »</i> Puis
+l’exercice les exige. Ce sont deux <b>gestes cachés</b> (re-cliquer, appui
+long ou clic droit), et le joueur ne les a jamais faits lui-même.</li>
+</ul>
+<p class="regle">CLAUDE.md : « sur cette surface, ce qui n’est pas ÉCRIT n’existe
+pas ». La règle vaut pour le Mode Live ; ici, le geste n’est écrit que dans un
+paragraphe.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="k4">
+  <header><span class="ref">K4</span><h3>Le vocabulaire est celui d’un batteur</h3></header>
+  <div class="fiche-b">
+<p>Dans les consignes des actes 0 et 1 : <i>double-croche, charleston, claire,
+backbeat, syncope, polyrythmie, rim shot, fill, rafale, « sur 2 et 4 »,
+« sur un seizième »</i>. Le personnage du joueur, lui, « fait le café ».</p>
+<p>Le niveau 81 montre que ça peut se faire : <i>« le grave (le kick) et le
+“tss” aigu (le charley) »</i>. Le son d’abord, le mot entre parenthèses.
+C’est la seule consigne écrite comme ça.</p>
+<p>Les préambules sont aussi <b>longs</b> : 69 et 74 dépassent 300 signes,
+lus avant d’avoir entendu quoi que ce soit.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="k5">
+  <header><span class="ref">K5</span><h3>Une consigne périmée, au pire endroit</h3></header>
+  <div class="fiche-b">
+<p>Le dernier écran du prologue, juste avant le premier exercice, se termine
+sur : <b>« SOL: Approche. Écoute, et tape avec. »</b></p>
+<p>Depuis le 14 octobre, l’acte 0 ne fait plus taper : il fait <b>poser des
+croix</b> sur une grille. La première consigne du jeu annonce un geste qui
+n’existe pas.</p>
+<p class="pour">C’est un défaut, pas un choix : il se corrige quelle que soit la
+suite.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="k6">
+  <header><span class="ref">K6</span><h3>L’échec dit « pas encore » et rien d’autre</h3></header>
+  <div class="fiche-b">
+<p>L’aide existe, en deux morceaux : chaque ligne affiche un compteur
+<b>posés / attendus</b> (« 3/4 »), et après ✓ Vérifier les cases justes se
+verrouillent (<i>« Pas encore. Les cases justes sont verrouillées ✓ —
+reprends les autres. »</i>). Ce qui manque :</p>
+<ul>
+<li>une case <b>posée à tort</b> n’est jamais désignée : le joueur sait qu’il y
+a une erreur sur la ligne, pas <b>où</b> ;</li>
+<li>aucune aide ne monte au fil des essais : le 5<sup>e</sup> échec ressemble
+au 1<sup>er</sup> ;</li>
+<li>le compteur et le verrou ne sont <b>expliqués nulle part</b> : un « 3/4 »
+en coin se lit comme un score.</li>
+</ul>
+<p>Sur 48 cases à l’oreille, « reprends les autres » ne suffit pas.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="k7">
+  <header><span class="ref">K7</span><h3>Le joueur ne sait pas ce qu’il cherche à atteindre</h3></header>
+  <div class="fiche-b">
+<p>Le prologue dit : le label va mal, il vit des sonneries, <b>« Sol a
+jusqu’au 14 juin pour accepter. SOL: Je vais vendre. »</b> Puis le
+sous-traitant part.</p>
+<p>Ce qu’un joueur en retient : le label est déjà vendu. Le 14 juin est la date
+d’une <b>défaite annoncée</b>, pas un objectif. Le concert, qui est le vrai
+horizon du jeu, n’est nommé nulle part avant l’acte 7. Et son rôle à lui (« tu
+fais le café ») ne lui donne aucune raison d’agir.</p>
+<p>Le ton (ellipses, ironie, références 2005 : SMS surtaxé, agrégateur, onze
+centimes) marche pour qui connaît l’histoire. Pour qui la découvre, c’est
+quatre écrans de contexte sans enjeu.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>2 · Les principes à trancher</h2>
+<p class="chapo">Ce que les actes 0 et 1 deviendraient. Chaque principe est indépendant : tu peux en refuser un.</p>
+
+<article class="fiche" data-id="p1">
+  <header><span class="ref">P1</span><h3>Une seule nouveauté par exercice <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Une marche ajoute <b>une</b> chose : une ligne, <i>ou</i> une résolution plus
+fine, <i>ou</i> une syncope, <i>ou</i> un geste. Jamais deux.</p>
+<p class="alerte"><b>Renverse</b> l’arbitrage du 1<sup>er</sup> septembre
+(« l’acte 1 fusionné 12 → 6-7 », « un sujet ne vaut qu’un exercice, le plus
+dense »). L’argument d’alors, « deux lectures de seize cases pour une seule
+idée font de la longueur », reste vrai. La réponse n’est pas de revenir à
+douze grosses grilles, c’est que <b>les premières marches soient petites</b>
+(8 cases, deux lignes) et donc courtes.</p>
+<p class="regle">Ce qu’on garde de l’ancienne règle : « une nouveauté n’est
+demandée qu’après avoir été MONTRÉE ».</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="p2">
+  <header><span class="ref">P2</span><h3>Montrer → faire avec un guide → tester <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Trois temps pour chaque nouveauté :</p>
+<ul class="opts">
+<li><b>Montrer</b> : la grille joue, les cases s’allument <i>au moment où on les
+entend</i>. Le joueur ne fait qu’écouter et regarder.</li>
+<li><b>Faire avec un guide</b> : une partie est donnée. Le verbe
+<code>completer</code> existe déjà (un temps vide, le reste posé et
+verrouillé) et l’acte 0 ne s’en sert pas. Pour un geste (rim shot, rafale) :
+<i>« reclique la case qui clignote »</i>, et le geste est fait une fois, pour
+de vrai.</li>
+<li><b>Tester</b> : la reproduction entière, comme aujourd’hui.</li>
+</ul>
+<p>Le premier temps demande un <b>nouveau type d’étape</b> (une démonstration
+qui joue une grille, sans note ni vérification). C’est le seul ajout de
+moteur de jeu de cette fiche.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="p3">
+  <header><span class="ref">P3</span><h3>Une aide qui monte avec les essais <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<ul class="opts">
+<li><b>1<sup>er</sup> échec</b> : comme aujourd’hui (les justes se verrouillent).</li>
+<li><b>2<sup>e</sup></b> : les cases <b>posées à tort</b> sont marquées (le
+compteur dit déjà combien il en manque).</li>
+<li><b>3<sup>e</sup></b> : un bouton <b>écrit</b>, « Montre-moi une case »,
+qui pose et verrouille une case juste. Il coûte une étoile.</li>
+</ul>
+<p>Les étoiles mesurent déjà les essais : l’aide se paie naturellement, sans
+nouvelle règle de notation. Et l’abandon (« Continuer ▸ ») reste la sortie,
+comme aujourd’hui.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="p4">
+  <header><span class="ref">P4</span><h3>Le son d’abord, le mot ensuite <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Sur le modèle du niveau 81 : <i>« le grave (le kick) »</i>,
+<i>« le claquement (la claire) »</i>, <i>« le tss (le charley) »</i>. Le mot de
+métier arrive comme une étiquette posée sur un son déjà entendu.</p>
+<p>Et un préambule ne dépasse pas <b>deux phrases</b> : ce qu’on entend, ce
+qu’on fait. L’explication (« c’est ce qui sépare un rythme qui marche d’un
+rythme qui groove ») passe dans une réplique de Sol <i>après</i> la réussite,
+quand elle a un sens.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="p5">
+  <header><span class="ref">P5</span><h3>Un seul nom par ligne, et un mot simple dessous <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p><b>Lu dans la vue</b> : les lignes de l’exercice s’appellent
+<b>« Kick / Snare / Hat »</b> (<code>GameView.svelte</code>), alors que les
+consignes disent <b>« claire »</b> et <b>« charley »</b>. Le joueur lit deux
+noms différents pour le même son, sur le même écran.</p>
+<p>Proposition : un seul nom par ligne, celui des consignes, avec le mot simple
+en dessous (grave · claque · tss) et une <b>touche d’écoute</b> qui joue le son
+seul.</p>
+</div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>3 · La suite proposée</h2>
+<p class="chapo">Ce que deviendraient les deux actes. ◆ = niveau existant cité ; ◇ = à écrire ; ▶ = démonstration (P2).</p>
+
+<article class="fiche" data-id="s1">
+  <header><span class="ref">S1</span><h3>Acte 0 — une ligne, puis deux</h3></header>
+  <div class="fiche-b">
+<table>
+<tr><th></th><th>Étape</th><th>Ce qu’on fait</th></tr>
+<tr><td>▶</td><td>La grille (déplacée, rendue interactive)</td><td>Sol joue les quatre temps, les cases s’allument au son</td></tr>
+<tr><td>◆</td><td>79 Le temps</td><td>en guidé : le premier coup est donné</td></tr>
+<tr><td>◇</td><td>80 en <code>completer</code></td><td>le contretemps : seul le temps qui le contient est vide</td></tr>
+<tr><td>◆</td><td>80 Le contretemps</td><td>la même grille, entière</td></tr>
+<tr><td>◆</td><td>81 Deux lignes</td><td>inchangé</td></tr>
+<tr><td>◆</td><td>52 Le silence</td><td>inchangé</td></tr>
+</table>
+<p>Quatre exercices → cinq, plus une démonstration. Le récit entre les
+exercices ne bouge pas (sauf H1–H2).</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="s2">
+  <header><span class="ref">S2</span><h3>Acte 1 — trois lignes, puis le groove, puis les gestes</h3></header>
+  <div class="fiche-b">
+<table>
+<tr><th></th><th>Étape</th><th>La seule nouveauté</th><th>Cases</th></tr>
+<tr><td>◆</td><td>67 Les quatre temps</td><td>la claire</td><td>16</td></tr>
+<tr><td>◆</td><td>3 Le trio</td><td>trois lignes</td><td>24</td></tr>
+<tr><td>◆</td><td>68 Le charley qui double</td><td>la double-croche</td><td>32</td></tr>
+<tr><td>◆</td><td>7 Le kick qui sort du temps</td><td>une syncope</td><td>32</td></tr>
+<tr><td>◆</td><td>69 La claire sort du temps</td><td>la syncope partout</td><td>32</td></tr>
+<tr><td>▶</td><td>Sol : le rim shot et l’ouverture</td><td>le geste, fait une fois avec guide</td><td>—</td></tr>
+<tr><td>◆</td><td>60 Les deux à la fois</td><td>variantes</td><td>48</td></tr>
+<tr><td>▶</td><td>Sol : la rafale</td><td>le geste, fait une fois avec guide</td><td>—</td></tr>
+<tr><td>◆</td><td>8 Les rafales</td><td>rafales</td><td>48</td></tr>
+<tr><td>◆</td><td>61 Tout ensemble</td><td>— (le sommet, c’est la sonnerie)</td><td>48</td></tr>
+</table>
+<p>Six exercices → huit, plus deux démonstrations. <b>Les trois premiers sont
+courts</b> (16 à 32 cases) : la durée totale monte moins que le compte.</p>
+<p class="regle">Les tests de courbe (<code>grilles-ecrites.test.ts</code>,
+<code>carriere.test.ts</code>) tiennent « la résolution ne recule jamais » et
+« chaque niveau après le 7 garde une syncope » : cette suite les respecte,
+à vérifier en les lançant.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="s3">
+  <header><span class="ref">S3</span><h3>La polyrythmie (74) sort de l’acte 1 <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Elle revient à l’acte 5, celui des styles, où les autres polyrythmies sont
+déjà jouées, ou au réservoir. À l’acte 1 elle ne prépare rien de ce qui
+suit, et c’est la marche la plus haute de l’acte.</p>
+<ul class="opts">
+<li><b>A — à l’acte 5</b>, juste avant les styles qui en ont besoin <span class="reco">recommandé</span></li>
+<li><b>B — au réservoir</b>, rencontrée dans la salle de répétition seulement</li>
+</ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>4 · L’histoire</h2>
+<p class="chapo">Ne pas réécrire le récit, seulement rendre l’enjeu lisible dès le départ.</p>
+
+<article class="fiche" data-id="h1">
+  <header><span class="ref">H1</span><h3>Un objectif, nommé au premier écran <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Le joueur doit savoir en une phrase <b>ce qu’il cherche à faire</b>. Pistes
+(à réécrire par toi, c’est ton récit) :</p>
+<ul class="opts">
+<li><b>A</b> — <i>« Le 14 juin, Face B donne son dernier concert. D’ici là, tu as
+cinq mois pour apprendre à faire de la musique. »</i></li>
+<li><b>B</b> — garder la vente comme moteur, mais avec un pari : <i>« Si le label
+gagne de l’argent d’ici le 14 juin, Sol ne vendra peut-être pas. »</i> Change le
+sens de la fin : à arbitrer avec <code>HISTOIRE.md</code>.</li>
+<li><b>C</b> — ne rien toucher au récit, ajouter seulement un <b>objectif écrit</b>
+sous le compte à rebours (« Objectif : le concert du 14 juin »).</li>
+</ul>
+<p>C est la plus légère et ne touche pas au texte de Sol. A et B sont plus
+fortes.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="h2">
+  <header><span class="ref">H2</span><h3>Le prologue : déplacer, pas raccourcir</h3></header>
+  <div class="fiche-b">
+<p>Quatre écrans de récit avant le premier son. La règle en vigueur : <i>« la
+sortie n’est jamais de raccourcir le prologue, mais de l’ENTRELACER »</i>.</p>
+<ul class="opts">
+<li><b>A — entrelacer davantage</b> <span class="reco">recommandé</span> : devant,
+seulement l’enjeu (H1) et Sol (« Approche, écoute »). L’histoire du label (« FACE
+B », chiffres de ventes) et le répondeur passent <b>entre</b> les premiers
+exercices. Deux écrans avant le premier son au lieu de quatre, rien de
+supprimé.</li>
+<li><b>B — raccourcir</b> : fusionner les écrans. <span class="alerte">Renverse la
+règle.</span></li>
+</ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="h3">
+  <header><span class="ref">H3</span><h3>Relire les actes 0 et 1 avec quelqu’un qui ne connaît pas l’histoire</h3></header>
+  <div class="fiche-b">
+<p>Les références 2005 (SMS surtaxé, agrégateur, fax) font le charme du récit,
+mais chacune demande un contexte. Proposition : faire lire les écrans à une
+personne extérieure et lui demander de résumer en une phrase « qui est qui, et
+qu’est-ce qu’on cherche ». Ce qu’elle ne sait pas dire est ce qu’il faut
+réécrire.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>5 · Le Bluetooth</h2>
+<p class="chapo">Une limite physique : le navigateur ne connaît pas le vrai retard des écouteurs.</p>
+
+<article class="fiche" data-id="b1">
+  <header><span class="ref">B1</span><h3>Pour les actes 0 et 1 : ce qui reste exposé</h3></header>
+  <div class="fiche-b">
+<p>Plus aucun exercice des actes 0-1 ne se joue en frappe, c’est acquis. Ce qui
+reste exposé : la <b>tête de lecture</b> qui avance sur la grille pendant
+l’écoute. Elle suit l’horloge entendue (<code>horlogeEntendue.ts</code>), mais
+l’estimation dépend de ce que le navigateur avoue, et sous Firefox +
+Bluetooth il ment.</p>
+<p>Une démonstration (P2) qui allume les cases <i>au son</i> y est encore plus
+exposée : décalée de 180 ms, elle enseignerait le mauvais placement.</p>
+<ul class="opts">
+<li><b>A — tester sur un vrai téléphone en Bluetooth</b> avant de livrer la
+démonstration, et ne rien ajouter d’autre <span class="reco">recommandé</span></li>
+<li><b>B — un réglage « mes écouteurs sont sans fil »</b> qui allume les cases
+avec une avance fixe. <span class="alerte">Le réglage image/son à la main a déjà
+été essayé et jugé « imbitable ».</span></li>
+</ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="b2">
+  <header><span class="ref">B2</span><h3>L’acte 7 se joue encore en frappe — plus tard</h3></header>
+  <div class="fiche-b">
+<p>Le concert ne cite que des niveaux <code>jouer</code> (taper en rythme). La
+notation compare les frappes entre elles, donc un retard constant ne la
+fausse pas. Mais le joueur, lui, entend son doigt en retard.</p>
+<p>Personne ne l’a atteint : ce n’est pas la priorité. Je le note pour qu’il ne
+soit pas oublié.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+
+<section class="grp"><h2>6 · Comment saura-t-on que ça marche</h2>
+<p class="chapo">Le dernier retour est arrivé sans dire où les gens ont lâché. Le prochain devrait le dire.</p>
+
+<article class="fiche" data-id="m1">
+  <header><span class="ref">M1</span><h3>Regarder trois personnes jouer, sans les aider <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Quinze minutes chacune, sur leur téléphone et leurs écouteurs. Noter
+l’écran où elles hésitent, ce qu’elles disent à voix haute, et l’écran où
+elles s’arrêtent. C’est le test le moins cher et le plus parlant.</p>
+<p>À faire <b>deux fois</b> : sur la version actuelle (pour confirmer le
+diagnostic), puis après la refonte.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+
+<article class="fiche" data-id="m2">
+  <header><span class="ref">M2</span><h3>Compter où les joueurs s’arrêtent</h3></header>
+  <div class="fiche-b">
+<p>La mesure d’audience Vercel est en place, sans cookie. Elle ne dit que la
+fréquentation. Un <b>événement anonyme « étape atteinte »</b> (acte et étape,
+rien d’autre) dirait où le gros des joueurs décroche.</p>
+<p class="alerte">CLAUDE.md classe ça comme une décision de produit (« de la
+télémétrie sur la progression d’un joueur »), pas un ajout de passage. D’où
+cette carte.</p>
+<ul class="opts">
+<li><b>A — oui</b>, acte + étape seulement, site déployé seulement (jamais le fichier autonome) <span class="reco">recommandé</span></li>
+<li><b>B — non</b>, on s’en tient aux tests d’observation (M1)</li>
+</ul>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+<section class="grp"><h2>7 · Les niveaux mis de côté</h2>
+<p class="chapo">Ta proposition du 24 novembre : sortir les niveaux trop durs de la carrière et les ouvrir à la fin du jeu.</p>
+<article class="fiche" data-id="d1">
+  <header><span class="ref">D1</span><h3>Le principe : la carrière garde le chemin, les inédits gardent le défi <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Ta proposition : retirer de la carrière une partie des niveaux trop durs, et
+les rendre disponibles <b>à la fin du jeu</b>. La carrière devient un chemin
+qu’on finit ; la difficulté devient un <b>choix</b>, offert à qui a fini.</p>
+<p class="pour">Ça ne casse rien de ce qui existe. Le projet a déjà la règle :
+<i>« un niveau ne se supprime jamais, il cesse d’être cité »</i>. Un niveau
+retiré de la carrière garde son id, ses étoiles, sa grille écrite et ses
+tests.</p>
+<p>Ce que ça résout en plus : le joueur moyen voit la fin du jeu (le concert,
+l’épilogue), qui est la partie la plus forte du récit et que personne n’a
+vue.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d2">
+  <header><span class="ref">D2</span><h3>Le critère : qu’est-ce qu’un niveau « trop dur » ?</h3></header>
+  <div class="fiche-b">
+<p>Une règle lisible, pour ne pas trier au cas par cas :</p>
+<ul class="opts">
+<li><b>A — par la taille</b> <span class="reco">recommandé</span> : dans la carrière,
+une seule grille de 48 cases par acte (son sommet), un arrangement à 5 voix au
+plus, une mélodie à 5 degrés au plus. Tout ce qui dépasse devient un inédit.</li>
+<li><b>B — par la notion</b> : ce qui n’est pas réutilisé plus tard sort
+(polyrythmie, rafales, rim shots).</li>
+<li><b>C — par la mesure</b> : attendre M1/M2 et sortir les niveaux où les
+joueurs abandonnent.</li>
+</ul>
+<p>A se décide aujourd’hui et se teste. C est plus juste mais demande des
+données qu’on n’a pas. On peut faire A maintenant et corriger avec C.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d3">
+  <header><span class="ref">D3</span><h3>La liste, avec le critère A</h3></header>
+  <div class="fiche-b">
+<table>
+<tr><th>Acte</th><th>Restent dans la carrière</th><th>Deviennent des inédits</th></tr>
+<tr><td>0</td><td>79, 80, 81, 52</td><td>—</td></tr>
+<tr><td>1</td><td>(suite S2 : 67, 3, 68, 7, 69) + <b>61</b>, la sonnerie</td><td><b>74</b> polyrythmie, <b>60</b> rim shots, <b>8</b> rafales</td></tr>
+<tr><td>2</td><td>48, 71, 47 (réglages) + <b>14</b> le balancement</td><td><b>23</b> une ligne en retard, <b>72</b> swing ET décalage, <b>63</b> la claire qui se faufile</td></tr>
+<tr><td>3</td><td>42, 43, 75, 76</td><td><b>44</b> toute la gamme (7 degrés, 16 pas), <b>77</b> sept lignes, <b>78</b> deux mesures</td></tr>
+<tr><td>5</td><td>58 (style)</td><td><b>16</b> UK garage</td></tr>
+<tr><td>7</td><td>38 (le concert)</td><td>—</td></tr>
+</table>
+<p><b>Dix niveaux</b> passent aux inédits ; la carrière passe de 27 exercices à
+17 (plus les marches de S2). Les commandes ne bougent pas.</p>
+<p class="alerte">Deux conséquences à vérifier. (1) Si 60 et 8 sortent, le rim shot
+et la rafale ne sont plus <b>enseignés</b> par un exercice : seulement montrés par
+Sol (démonstration P2) avant la sonnerie 61, qui les contient. Variante : 61
+remplacé par une sonnerie sans gestes, et les gestes deviennent entièrement un
+inédit. (2) Le niveau 16 annonce un swing « très marqué (45 %) » alors que le
+preset garage est à 33 depuis le 17 septembre : texte périmé, à corriger de
+toute façon.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d4">
+  <header><span class="ref">D4</span><h3>Comment ils s’ouvrent : le dossier du sous-traitant <span class="reco">recommandé</span></h3></header>
+  <div class="fiche-b">
+<p>Le prologue laisse un fil pendant : <i>« Il laisse un dossier et un mot de
+passe. Le mot de passe ne marche pas. »</i> Personne ne le rouvre.</p>
+<ul class="opts">
+<li><b>A — le dossier s’ouvre à l’épilogue</b> <span class="reco">recommandé</span> :
+une dernière ligne (« le mot de passe, c’était… ») ouvre <b>« LE DOSSIER »</b>,
+les dix inédits présentés comme les sonneries du sous-traitant, les plus
+difficiles qu’il ait faites. Le récit se referme et le défi s’ouvre au même
+moment.</li>
+<li><b>B — « LES INÉDITS »</b> dans la salle de répétition, sans habillage.</li>
+<li><b>C — ouverts au fil des actes</b>, en défi facultatif, à la fin de
+chaque acte. Plus généreux pour les joueurs à l’aise, mais ce n’est pas ce
+que tu as proposé, et ça remet du « verrouillé visible » en cours de route.</li>
+</ul>
+<p class="regle">Avec A et B, la règle « ce qui est verrouillé ne s’affiche pas »
+tient : rien n’annonce le dossier avant qu’il ne s’ouvre.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+<article class="fiche" data-id="d5">
+  <header><span class="ref">D5</span><h3>Ce qu’un inédit vaut, et ce qu’il ne touche pas</h3></header>
+  <div class="fiche-b">
+<ul>
+<li>Il se joue et se note comme aujourd’hui (étoiles, essais, abandon).</li>
+<li>Il ne fait <b>jamais</b> avancer <code>level</code> ni le plancher : il
+n’ouvre aucun module, la carrière est déjà finie.</li>
+<li>Il se nomme par son acte d’origine (« acte 1 · inédit »), comme la salle
+de répétition le fait déjà (<code>repereDeNiveau</code>).</li>
+<li>Un vétéran qui les a déjà réussis garde ses étoiles.</li>
+</ul>
+<p class="alerte">Des tests de courbe tomberont et devront être <b>réécrits</b>,
+pas affaiblis : « toutes les grilles de l’acte 2 portent un feel », « chaque
+nouveauté est posée au moins deux fois », « la résolution ne recule jamais ». Le
+dernier reste vrai ; les deux autres changent de sens si les grilles à
+nouveauté multiple sortent.</p>
+  </div>
+  <footer class="annot">
+    <div class="prios" role="group" aria-label="réponse">
+      <button type="button" class="p p1" data-p="1">D'ACCORD</button>
+      <button type="button" class="p p2" data-p="2">À DISCUTER</button>
+      <button type="button" class="p p3" data-p="3">NON</button>
+      <button type="button" class="p px" data-p="0" title="effacer">✕</button>
+    </div>
+    <textarea rows="1" placeholder="ce que tu en penses…"></textarea>
+  </footer>
+</article>
+</section>
+</main>
+</main>
+<dialog id="dlg">
+  <p class="titre">Mes notes — à copier</p>
+  <textarea id="sortie" readonly></textarea>
+  <div class="actions">
+    <button type="button" id="btn-copier">Copier</button>
+    <button type="button" id="btn-fichier">Télécharger</button>
+    <button type="button" id="btn-reset">Tout effacer</button>
+    <button type="button" id="btn-fermer">Fermer</button>
+  </div>
+</dialog>
+<script>
+(function () {
+  var CLE = 'faceb-fiche-premiers-pas';
+  var etat = {};
+  try { etat = JSON.parse(localStorage.getItem(CLE) || '{}') || {}; } catch (e) { etat = {}; }
+  function garder() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) {} }
+  var fiches = Array.prototype.slice.call(document.querySelectorAll('.fiche'));
+  var compteur = document.getElementById('compteur');
+  function peindre(f) {
+    var e = etat[f.dataset.id] || {};
+    f.classList.remove('p1', 'p2', 'p3');
+    if (e.p) f.classList.add('p' + e.p);
+    var ta = f.querySelector('textarea');
+    if (ta.value !== (e.note || '')) ta.value = e.note || '';
+    auto(ta);
+  }
+  function auto(ta) { ta.style.height = 'auto'; ta.style.height = Math.max(36, ta.scrollHeight) + 'px'; }
+  function annote(id) { var e = etat[id]; return !!(e && (e.p || (e.note || '').trim())); }
+  function compter() {
+    var n = 0;
+    for (var i = 0; i < fiches.length; i++) if (annote(fiches[i].dataset.id)) n++;
+    compteur.textContent = n + ' / ' + fiches.length;
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('.p') : null;
+    if (!b) return;
+    var f = b.closest('.fiche'), id = f.dataset.id, p = b.dataset.p;
+    var e = etat[id] || (etat[id] = {});
+    if (p === '0') { delete e.p; delete e.note; f.querySelector('textarea').value = ''; }
+    else e.p = e.p === p ? undefined : p;
+    if (!e.p && !(e.note || '').trim()) delete etat[id];
+    garder(); peindre(f); compter(); filtrer();
+  });
+  document.addEventListener('input', function (ev) {
+    var ta = ev.target;
+    if (ta.tagName !== 'TEXTAREA' || !ta.closest('.fiche')) return;
+    var f = ta.closest('.fiche'), id = f.dataset.id;
+    var e = etat[id] || (etat[id] = {});
+    e.note = ta.value;
+    if (!e.p && !e.note.trim()) delete etat[id];
+    auto(ta); garder(); compter();
+  });
+  var filtre = document.getElementById('filtre');
+  function filtrer() {
+    var v = filtre.value;
+    fiches.forEach(function (f) {
+      var e = etat[f.dataset.id] || {};
+      var ok = v === 'tout' || (v === 'annote' && annote(f.dataset.id))
+        || (v === '0' && !annote(f.dataset.id)) || (v === e.p);
+      f.classList.toggle('hide', !ok);
+    });
+    document.querySelectorAll('section.grp').forEach(function (s) {
+      var reste = s.querySelectorAll('.fiche:not(.hide)').length;
+      s.style.display = (reste === 0 && v !== 'tout') ? 'none' : '';
+    });
+  }
+  filtre.addEventListener('change', filtrer);
+  var TITRES = { '1': "D'ACCORD", '2': 'À DISCUTER', '3': 'NON' };
+  function entree(f) {
+    var e = etat[f.dataset.id] || {};
+    var titre = (f.querySelector('h3') || {}).textContent || '';
+    var l = '- [' + f.dataset.id + '] ' + titre;
+    if ((e.note || '').trim()) l += '\n      > ' + e.note.trim().replace(/\n/g, '\n      > ');
+    return l;
+  }
+  function texte() {
+    var lignes = ['# Premiers pas — pourquoi on décroche — ' + new Date().toLocaleDateString('fr-FR'), ''];
+    ['1', '2', '3'].forEach(function (p) {
+      var d = fiches.filter(function (f) { return (etat[f.dataset.id] || {}).p === p; });
+      if (!d.length) return;
+      lignes.push('## ' + TITRES[p] + ' (' + d.length + ')', '');
+      d.forEach(function (f) { lignes.push(entree(f)); });
+      lignes.push('');
+    });
+    var sansP = fiches.filter(function (f) {
+      var e = etat[f.dataset.id] || {};
+      return !e.p && (e.note || '').trim();
+    });
+    if (sansP.length) {
+      lignes.push('## Notes sans réponse (' + sansP.length + ')', '');
+      sansP.forEach(function (f) { lignes.push(entree(f)); });
+    }
+    if (lignes.length <= 2) lignes.push('(rien d’annoté)');
+    return lignes.join('\n');
+  }
+  var dlg = document.getElementById('dlg'), sortie = document.getElementById('sortie');
+  document.getElementById('btn-export').addEventListener('click', function () {
+    sortie.value = texte();
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    sortie.focus(); sortie.select();
+  });
+  document.getElementById('btn-fermer').addEventListener('click', function () {
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+  });
+  document.getElementById('btn-copier').addEventListener('click', function () {
+    sortie.select();
+    if (navigator.clipboard) navigator.clipboard.writeText(sortie.value).catch(function () {});
+    else document.execCommand('copy');
+  });
+  document.getElementById('btn-fichier').addEventListener('click', function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([sortie.value], { type: 'text/markdown' }));
+    a.download = 'premiers-pas.md'; a.click();
+  });
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    if (!confirm('Effacer toutes les annotations ?')) return;
+    etat = {}; garder(); fiches.forEach(peindre); compter(); filtrer();
+  });
+  fiches.forEach(peindre); compter(); filtrer();
+})();
+</script></body></html>

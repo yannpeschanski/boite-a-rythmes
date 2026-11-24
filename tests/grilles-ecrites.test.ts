@@ -385,41 +385,30 @@ describe('la courbe ne redescend jamais', () => {
       .map((e) => niveau((e as { niveau: number }).niveau))
       .filter((l) => l.grille);
 
-  it('⚠️ l’acte 1 ne revient jamais à une résolution déjà quittée', () => {
+  /* ⚠️ RÉÉCRIT le 2026-11-24, avec la fusion des actes 1 et 2. Le charley
+   * « commence à 8, passe à 16 et finit à 12 » (Yann) : la résolution BINAIRE
+   * ne recule toujours jamais, mais douze n'est pas « moins que seize », c'est
+   * un autre découpage du temps (trois par temps). La règle devient donc : la
+   * partie binaire monte sans redescendre, et le ternaire vient APRÈS elle. */
+  it('⚠️ l’acte 1 ne revient jamais à une résolution BINAIRE déjà quittée', () => {
     const suite = suiteEcrite(1);
-    /* ⚠️ SEPT depuis le 2026-09-01, et c'est l'inverse de la consigne
-     * précédente. « On peut faire plus d'exercices, prendre plus notre temps »
-     * (2026-08-31) avait porté la série à douze en doublant chaque sujet ;
-     * la relecture complète tranche l'autre sens : *« l'acte 1 fusionné
-     * 12 → 6-7, le niveau 2 retiré, plus une polyrythmie »*. Deux lectures de
-     * seize cases pour une seule idée neuve, c'est de la longueur, pas de la
-     * difficulté.
-     *
-     * ⚠️ SIX depuis le 2026-09-04 : le 67 est parti à son tour — *« supprimer :
-     * trop facile »* (Yann, en jouant). Il ouvrait l'acte sur le backbeat le
-     * plus simple du monde, deux lignes et huit cases, juste après un acte 0
-     * qui fait déjà TAPER trois rythmes. La borne basse de l'acte monte donc
-     * d'un cran, ce que la suite de poids ci-dessous vérifie toute seule. */
-    expect(suite.length, 'les six rythmes écrits').toBe(6);
-    const poidss = suite.map(poids);
+    expect(suite.length, 'les sept rythmes écrits').toBe(7);
+    const ternaire = (l: GameLevel) => Object.values(l.grille!.subdiv).some((v) => v % 3 === 0);
+    const iTernaire = suite.findIndex(ternaire);
+    expect(iTernaire, 'un passage en triolets').toBeGreaterThan(0);
+    const binaire = suite.slice(0, iTernaire);
+    expect(binaire.some(ternaire)).toBe(false);
+    expect(suite.slice(iTernaire).every(ternaire), 'le ternaire vient après tout le binaire').toBe(true);
+    const poidss = binaire.map(poids);
     poidss.forEach((p, i) => {
       if (i === 0) return;
       expect(
         p,
-        `niveau ${suite[i].id} (${p} cases) redescend sous le niveau ${suite[i - 1].id} (${poidss[i - 1]})`,
+        `niveau ${binaire[i].id} (${p} cases) redescend sous le niveau ${binaire[i - 1].id} (${poidss[i - 1]})`,
       ).toBeGreaterThanOrEqual(poidss[i - 1]);
     });
-    /* Et elle monte VRAIMENT.
-     *
-     * ⚠️ Le seuil était « le double du premier », et il est passé à « la
-     * moitié en plus » le 2026-09-04 — non parce que la courbe s'est aplatie,
-     * mais parce que son PIED est monté : le 67 retiré, l'acte n'ouvre plus
-     * sur 24 cases mais sur 32. Un rapport calculé contre une première marche
-     * minuscule mesure la petitesse du départ autant que la montée. On garde
-     * donc les deux moitiés : une progression relative, ET un écart absolu que
-     * ni l'un ni l'autre bout ne peut satisfaire tout seul. */
-    expect(poidss[poidss.length - 1], 'la montée relative').toBeGreaterThanOrEqual(1.5 * poidss[0]);
-    expect(poidss[poidss.length - 1] - poidss[0], 'la montée absolue').toBeGreaterThanOrEqual(16);
+    // Et elle monte VRAIMENT : du simple au double sur la partie binaire.
+    expect(poidss.at(-1)!, 'la montée').toBeGreaterThanOrEqual(2 * poidss[0]);
   });
 
   it('⚠️ et chaque nouveauté de l’acte 1 est POSÉE sur la grille acquise', () => {
@@ -430,9 +419,9 @@ describe('la courbe ne redescend jamais', () => {
      * refaisait trois fois le niveau 3. Une nouveauté se montre sur ce qu'on
      * sait déjà faire. */
     const suite = suiteEcrite(1);
-    // ⚠️ L'ancre a changé avec la fusion : la syncope s'enseigne au niveau 69
-    // (le 7, qui la posait seule, est retourné au réservoir).
-    const iSyncope = suite.findIndex((l) => l.id === 69);
+    // La syncope s'enseigne seule au niveau 7 — revenu dans l'acte le
+    // 2026-11-24, une nouveauté par exercice.
+    const iSyncope = suite.findIndex((l) => l.id === 7);
     expect(iSyncope, 'le niveau qui enseigne la syncope').toBeGreaterThan(0);
     // Une case est « hors du temps » quand elle ne tombe pas sur un des quatre
     // temps — vrai quelle que soit la subdivision de la ligne.
@@ -461,35 +450,38 @@ describe('la courbe ne redescend jamais', () => {
     }
   });
 
-  it('⚠️ un SUJET, UN exercice — et c’est le plus DENSE de la paire', () => {
-    /* ⚠️ CE TEST DIT L'INVERSE DE CE QU'IL DISAIT, et c'est un arbitrage.
-     * Il exigeait deux exercices par sujet — un qui pose, un qui applique
-     * (« prendre plus notre temps », 2026-08-31). La relecture complète du
-     * 2026-09-01 le révoque : *« l'acte 1 fusionné 12 → 6-7 »*.
-     *
-     * Ce qui reste vérifiable, et qui est la vraie décision : sur chaque paire,
-     * c'est l'exercice le plus DENSE qui survit — jamais le plus facile. Un
-     * « on fusionne » qui garderait le premier de chaque paire ferait redescendre
-     * l'acte, ce qui est le défaut que toute cette section combat. */
-    const garde = suiteEcrite(1).map((l) => l.id);
-    /* ⚠️ « la base » a disparu de cette table le 2026-09-04, et pas en trichant :
-     * le sujet lui-même a quitté l'acte. Le backbeat de départ (67, qui avait
-     * gagné contre le 2) était devenu la marche la plus basse d'un acte qui
-     * doit monter — il est au réservoir avec son adversaire. Le premier sujet
-     * de l'acte est donc le charley, et c'est le 68 qui ouvre. */
-    for (const [sujet, gardé, rendu] of [
-      ['le charley', 68, 3],
-      ['la syncope', 69, 7],
-      ['les variantes', 60, 5],
-      ['les variantes', 60, 59],
-      ['la rafale', 8, 70],
-    ] as [string, number, number][]) {
-      expect(garde, `${sujet} : le niveau ${gardé} devrait être cité`).toContain(gardé);
-      expect(garde, `${sujet} : le niveau ${rendu} devrait être au réservoir`).not.toContain(rendu);
-      expect(
-        poids(niveau(gardé)),
-        `${sujet} : on a gardé le plus léger (${gardé}) au lieu du ${rendu}`,
-      ).toBeGreaterThanOrEqual(poids(niveau(rendu)));
+  /* ⚠️ UNE NOUVEAUTÉ PAR EXERCICE — et c'est l'INVERSE de ce que ce test
+   * disait jusqu'au 2026-11-24 (« un sujet, un exercice, et c'est le plus
+   * DENSE de la paire », arbitré le 2026-09-01). Le retour des testeurs l'a
+   * renversé : *« on ne comprend rien, trop difficile, pas assez
+   * progressif »*, et aucun n'avait dépassé cet acte. La somme de coupes
+   * défendables avait retiré toutes les marches — le premier exercice ajoutait
+   * la claire, la double-croche et une troisième ligne d'un coup.
+   *
+   * Ce qui se mesure : chaque grille apporte AU PLUS une propriété jamais vue
+   * dans les grilles qui la précèdent, acte 0 compris. */
+  it('⚠️ chaque grille de l’acte 1 n’apporte qu’UNE nouveauté', () => {
+    const proprietes = (l: GameLevel): Set<string> => {
+      const g = l.grille!;
+      const p = new Set<string>();
+      for (const r of LIGNES) {
+        if (ligne(l, r).some((v) => v > 0)) p.add(`ligne:${r}`);
+        const pas = g.subdiv[r] / 4;
+        if (ligne(l, r).some((v, i) => v > 0 && i % pas !== 0)) p.add(`syncope:${r}`);
+        if (compte(ligne(l, r), 2) > 0) p.add('variante');
+        if (rafales(l, r).some((v) => v > 1)) p.add('rafale');
+      }
+      p.add(`charley:${g.subdiv.hat}`);
+      const v = Object.values(g.subdiv);
+      if (new Set(v).size > 1 && v.includes(12)) p.add('polyrythmie');
+      return p;
+    };
+    const vu = new Set<string>();
+    for (const l of suiteEcrite(0)) proprietes(l).forEach((x) => vu.add(x));
+    for (const l of suiteEcrite(1)) {
+      const neuves = [...proprietes(l)].filter((x) => !vu.has(x));
+      expect(neuves.length, `niveau ${l.id} apporte ${neuves.join(', ')}`).toBeLessThanOrEqual(1);
+      neuves.forEach((x) => vu.add(x));
     }
   });
 
@@ -519,14 +511,12 @@ describe('la courbe ne redescend jamais', () => {
     expect(ligne(l, 'hat').every((v) => v === 1)).toBe(true);
   });
 
-  it('⚠️ et l’acte 2 commence au-dessus de la fin de l’acte 1', () => {
-    /* Le défaut mesuré en août : l'acte 2 plafonnait sous la fin de l'acte 1,
-     * donc le récit avançait pendant que les exercices reculaient. On exige
-     * désormais que sa PREMIÈRE grille soit déjà au niveau de la dernière de
-     * l'acte 1 — pas seulement son maximum. */
-    const fin1 = poids(suiteEcrite(1).at(-1)!);
-    const debut2 = poids(suiteEcrite(2)[0]);
-    expect(debut2, `acte 2 démarre à ${debut2}, acte 1 finit à ${fin1}`).toBeGreaterThanOrEqual(fin1);
+  /* ⚠️ Remplace « l'acte 2 commence au-dessus de la fin de l'acte 1 » : l'acte
+   * du groove, qui reprenait des grilles, est fondu dans celui du rythme
+   * (2026-11-24). L'acte qui suit est celui de la mélodie, qui ne reproduit
+   * plus de batterie seule — la grille s'arrête donc à l'acte 1. */
+  it('⚠️ et la batterie seule s’arrête à l’acte 1', () => {
+    expect(suiteEcrite(2).filter((l) => l.exercise === 'reproduire')).toEqual([]);
   });
 });
 
@@ -537,8 +527,10 @@ describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
     // nouveautés d'un coup ou aucune.
     const acte1 = ACTES.find((a) => a.id === 1)!;
     const cites = acte1.etapes.filter((e) => e.kind === 'exercice').map((e) => (e as { niveau: number }).niveau);
-    expect(cites.length, 'la série fusionnée en compte six').toBe(6);
-    for (const id of cites) expect(niveau(id).grille, `niveau ${id} : tiré au sort`).toBeTruthy();
+    // Le réglage du swing (48) n'a pas de grille : c'est un curseur.
+    const grilles = cites.filter((id) => niveau(id).exercise === 'reproduire');
+    expect(grilles.length, 'sept reproductions depuis la fusion').toBe(7);
+    for (const id of grilles) expect(niveau(id).grille, `niveau ${id} : tiré au sort`).toBeTruthy();
   });
 
   it('⚠️ et aucune nouveauté n’est demandée avant d’avoir été MONTRÉE à l’écran', () => {
@@ -563,14 +555,21 @@ describe('l’acte 1 est une COURBE, donc rien n’y est tiré au sort', () => {
     const explique = (mot: RegExp) => acte1.etapes.findIndex((_, i) => dit(i, mot));
 
     const iVariante = premier(
-      (l) => compte(ligne(l, 'snare'), 2) > 0 || compte(ligne(l, 'hat'), 2) > 0,
+      (l) => !!l.grille && (compte(ligne(l, 'snare'), 2) > 0 || compte(ligne(l, 'hat'), 2) > 0),
     );
-    const iRafale = premier((l) => LIGNES.some((r) => Math.max(...rafales(l, r)) > 1));
+    const iRafale = premier((l) => !!l.grille && LIGNES.some((r) => Math.max(...rafales(l, r)) > 1));
+    const iTriolets = premier((l) => !!l.grille && Object.values(l.grille.subdiv).every((v) => v === 12));
+    const iPoly = premier((l) => !!l.grille && new Set(Object.values(l.grille.subdiv)).size > 1 && Object.values(l.grille.subdiv).includes(12));
     expect(iVariante, 'aucun exercice ne pose de variante').toBeGreaterThan(0);
-    expect(iRafale, 'aucun exercice ne pose de rafale').toBeGreaterThan(0);
-    expect(explique(/rim shot/i), 'le rim shot n’est expliqué nulle part').toBeGreaterThanOrEqual(0);
-    expect(explique(/rafale/i), 'la rafale n’est expliquée nulle part').toBeGreaterThanOrEqual(0);
-    expect(explique(/rim shot/i), 'la variante est demandée avant d’être montrée').toBeLessThan(iVariante);
-    expect(explique(/rafale/i), 'la rafale est demandée avant d’être montrée').toBeLessThan(iRafale);
+    expect(explique(/rim shot/i), 'la variante est demandée avant d’être montrée').toBeGreaterThanOrEqual(0);
+    expect(explique(/rim shot/i)).toBeLessThan(iVariante);
+    expect(iTriolets, 'les triolets').toBeGreaterThan(0);
+    expect(explique(/en trois/i), 'les triolets sont demandés avant d’être montrés').toBeGreaterThanOrEqual(0);
+    expect(explique(/en trois/i)).toBeLessThan(iTriolets);
+    expect(iPoly, 'la polyrythmie').toBeGreaterThan(0);
+    expect(explique(/trois contre quatre/i), 'la polyrythmie est demandée avant d’être montrée').toBeGreaterThanOrEqual(0);
+    expect(explique(/trois contre quatre/i)).toBeLessThan(iPoly);
+    // ⚠️ La rafale a quitté la carrière avec les niveaux 8 et 61.
+    expect(iRafale, 'une rafale est encore demandée').toBe(-1);
   });
 });

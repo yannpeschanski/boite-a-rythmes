@@ -133,3 +133,23 @@ l'argument qu'on perd et celui qu'on gagne. Rien n'est codé côté actes 6/7.
 Écrite à la main, pas dérivée des données. Les mesures qu'elle cite se
 revérifient avec `node scripts/parcours-carriere.cjs` et
 `node scripts/verrous-masques.cjs` (serveur de dev FRAÎCHEMENT démarré).
+
+## `premiers-pas.html` — pourquoi on décroche (actes 0 et 1)
+
+Vingt-sept cartes (2026-11-24), après le retour *« on ne comprend rien, trop
+difficile, pas assez progressif, on ne comprend pas l'histoire »* — et le
+constat que les testeurs n'ont jamais dépassé l'acte du rythme. Six parties :
+ce que la relecture a trouvé (l'acte 1 ajoute deux ou trois nouveautés par
+exercice, la polyrythmie au troisième ; les marches retirées attendent au
+réservoir — 67, 3, 7 ; une consigne périmée « tape avec » ; « Snare / Hat » à
+l'écran contre « claire / charley » dans le texte ; l'objectif du joueur jamais
+nommé), puis les principes, la suite proposée, l'histoire, le Bluetooth et la
+mesure.
+
+⚠️ Deux cartes **renversent des arbitrages** : P1 (la fusion de l'acte 1,
+2026-09-01) et H2-B (« le prologue ne se raccourcit pas »). Rien n'est codé.
+
+Écrite à la main, pas dérivée des données.
+Section 7 (ajoutée le même jour, sur la proposition de Yann) : sortir de la
+carrière dix niveaux trop durs et les ouvrir à l'épilogue, par le « dossier du
+sous-traitant » laissé en suspens au prologue.

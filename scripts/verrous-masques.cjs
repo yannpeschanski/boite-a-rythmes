@@ -498,10 +498,11 @@ const CHROME = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium';
     log.push(`discographie : ${game.productions.length} morceaux — ${game.productions.map((p) => `${p.acte}:${p.titre}`).join(' · ')}`);
     if (game.productions.length !== 15) log.push('   ⚠️ QUINZE productions attendues');
     // ⚠️ SEPT depuis le crescendo du 2026-09-17 : 2 + 2 + 3.
-    if (game.productions.filter((p) => p.acte === 6).length !== 7)
-      log.push('   ⚠️ l’acte 6 doit ranger SEPT boucles — 2 + 2 + 3');
-    if (game.productions.filter((p) => p.acte === 5).length !== 4)
-      log.push('   ⚠️ les quatre genres de l’acte 5 devraient coexister');
+    // ⚠️ Numéros d'APRÈS la fusion des actes 1 et 2 (2026-11-24).
+    if (game.productions.filter((p) => p.acte === 5).length !== 7)
+      log.push('   ⚠️ l’acte de FB-015 doit ranger SEPT boucles — 2 + 2 + 3');
+    if (game.productions.filter((p) => p.acte === 4).length !== 4)
+      log.push('   ⚠️ les quatre genres de l’acte des styles devraient coexister');
     return { log, snaps };
   });
 

@@ -23,7 +23,7 @@ if (!(globalThis as { localStorage?: unknown }).localStorage) {
   (globalThis as unknown as { localStorage: FauxStockage }).localStorage = stockage;
 }
 
-const CLE = 'boite-a-rythme:session';
+const CLE = 'boite-a-rythme:session-2';
 
 /* ⚠️ Le module lit le stockage dans son CORPS, une fois : tester la lecture
  * demande donc un module NEUF à chaque fois (même raison que la banque de
