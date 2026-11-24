@@ -6,7 +6,8 @@
   import type { GameDrumRowName } from '../../model/presets/levels';
   import type { SynthRowName } from '../../model/types';
   import { parametre } from '../../model/parametres';
-  import { repereDeNiveau, acteParId } from '../../model/carriere';
+  import { repereDeNiveau, acteParId, ACTES, niveauxDeLActe } from '../../model/carriere';
+  import { etapeDuTutoriel, consigneDuTutoriel } from '../../model/tutoriel';
   import { analyserLigne } from '../../model/locuteurs';
   import { noterSession, sessionReprise } from '../../stores/session.svelte';
   import { noteNameForScaleDegree } from '../../model/presets/scales';
@@ -512,6 +513,31 @@
     const e = game.etapeCourante;
     return e && e.kind === 'exercice' ? (e.commande ?? '') : '';
   });
+  /* ⚠️ L'ACTE 0 S'ALLÈGE, ET SON PREMIER EXERCICE SE JOUE GUIDÉ (2026-11-24).
+     « Les gens ne savaient pas quoi faire en voyant le premier écran de jeu »
+     (Yann). Pendant l'acte 0 de la CARRIÈRE : ni Répétition, ni « ma
+     version », ni « Recommencer » — trois boutons pour des gestes qu'on n'a
+     pas encore — et une seule consigne, celle de Sol ; l'explication longue
+     reste à un bouton écrit. Tout revient à l'acte 1. Le premier exercice du
+     jeu se joue en trois étapes (`model/tutoriel.ts`) déduites de l'état :
+     écouter, poser, vérifier. */
+  const acte0 = $derived(game.enCarriere && game.acteActif === 0);
+  const PREMIER_EXERCICE = niveauxDeLActe(ACTES[0])[0];
+  const tutoriel = $derived.by(() => {
+    if (!acte0 || game.solved || game.revealed) return null;
+    const e = game.etapeCourante;
+    if (e?.kind !== 'exercice' || e.niveau !== PREMIER_EXERCICE) return null;
+    let posees = 0;
+    let attendues = 0;
+    for (const r of GAME_DRUM_ROWS) {
+      const c = game.counts(r);
+      posees += c.placed;
+      attendues += c.expected;
+    }
+    const etape = etapeDuTutoriel({ ecoutes: game.loopPlays, posees, attendues });
+    return { etape, texte: consigneDuTutoriel(etape, { posees, attendues }) };
+  });
+  let explicationOuverte = $state(false);
   const titreFenetre = $derived(
     game.enCarriere
       ? `Acte ${game.acteCourant.id} — ${game.acteCourant.titre} · ${game.etapeActive + 1}/${game.acteCourant.etapes.length}`
@@ -855,7 +881,9 @@
              deux noms pour un seul endroit, donc deux endroits dans la tête du
              joueur. « Répétition » plutôt que le nom complet parce que la barre
              en porte quatre à 390 px. -->
-        <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Répétition</button>
+        {#if !acte0}
+          <button class="xp-btn tiny" onclick={() => (showMap = !showMap)}>🗺️ Répétition</button>
+        {/if}
         <!-- Une besace vide ne s'affiche pas : sur le premier exercice du jeu,
              « Besace (0) » est un bouton de plus qui n'ouvre rien. -->
         {#if game.bag.length > 0}
@@ -871,7 +899,20 @@
           {#if dite.qui}<span class="qui">{dite.qui.nom} —</span>{/if}{dite.texte}
         </p>
       {/if}
-      {#if lvl.preamble}<p class="preamble">{lvl.preamble}</p>{/if}
+      {#if tutoriel}
+        <p class="tuto" aria-live="polite">
+          <span class="tuto-n">ÉTAPE {tutoriel.etape}/3</span>
+          {tutoriel.texte}
+        </p>
+      {:else if lvl.preamble && acte0 && commande && !game.solved}
+        <!-- Une seule consigne à l'acte 0 : celle de Sol. L'explication reste
+             derrière un bouton ÉCRIT, jamais un geste caché. -->
+        {#if explicationOuverte}
+          <p class="preamble">{lvl.preamble}</p>
+        {:else}
+          <button class="xp-btn tiny plus" onclick={() => (explicationOuverte = true)}>▸ Plus d’explications</button>
+        {/if}
+      {:else if lvl.preamble && !(acte0 && commande)}<p class="preamble">{lvl.preamble}</p>{/if}
 
       {#if showMap}
         <!-- La salle de répétition ne liste QUE les niveaux déjà rencontrés
@@ -982,7 +1023,11 @@
                l'Atelier et dans #diag — ici, c'est la partie jouée qui mesure
                (voir la correction sous la jauge). -->
         {:else}
-          <button class="xp-btn" onclick={() => play('target')}>
+          <button
+            class="xp-btn"
+            class:guide={tutoriel?.etape === 1}
+            onclick={() => play('target')}
+          >
             {playingWhat === 'target'
               ? '■ Stop'
               : ex === 'completer'
@@ -999,7 +1044,7 @@
                     '🔊 Écouter la boucle à trouver'
                   : '🔊 Écouter le rythme à trouver'}
           </button>
-          {#if aUneVersion(ex)}
+          {#if aUneVersion(ex) && !acte0}
             <!-- ⚠️ Pas de « ma version » pour le silence ni pour le style : on
                  ne pose rien sur la grille, on désigne un pas ou un genre. Le
                  bouton ne jouait donc jamais que du vide — et un bouton qui ne
@@ -1022,6 +1067,8 @@
                fait jamais rien, et c'est lui qu'on croyait devoir trouver. -->
           <button
             class="xp-btn primary"
+            class:guide={tutoriel?.etape === 3}
+            class:attenue={!!tutoriel && tutoriel.etape !== 3}
             disabled={game.solved || game.revealed || (ex === 'intrus' && game.intrusChoix === null)}
             onclick={verify}
           >
@@ -1660,7 +1707,7 @@
                   <span class="badge" title="Cette ligne est décalée">{game.shift[name] < 0 ? '◀' : '▶'}</span>
                 {/if}
               </div>
-              <div class="cells" style:--cols={game.subdiv[name]}>
+              <div class="cells" class:guide={tutoriel?.etape === 2} style:--cols={game.subdiv[name]}>
                 {#each { length: game.subdiv[name] } as _, col (col)}
                   {@const st = game.guess[name][col]}
                   {@const locked = game.locked[name][col]}
@@ -1734,6 +1781,7 @@
                dit ce qu'il fait. Même famille de défaut que le préambule qui
                annonce un rim shot jamais posé : c'est l'écran qui promet ce
                que le code ne tient pas. -->
+          {#if !acte0}
           <button class="xp-btn tiny" onclick={() => { game.giveUp(); allerAuNiveau(game.levelIndex); }}>
             <!-- ⚠️ Un ARRANGEMENT est écrit lui aussi (`level.arrangement`) : il
                  annonçait « Nouveau rythme » sur les sept exercices de l'acte
@@ -1745,6 +1793,7 @@
                 ? 'Nouvelle phrase'
                 : 'Nouveau rythme'}
           </button>
+          {/if}
         </div>
       {/if}
     </XpWindow>
@@ -2188,6 +2237,43 @@
     cursor: pointer;
     text-decoration: underline dotted;
     text-underline-offset: 3px;
+  }
+  /* Le tutoriel : ambre sur le chrome (4,76:1, CLAUDE.md), jamais vert — le
+     vert dit « fait », et une étape à faire ne l'est pas. */
+  .tuto {
+    font-size: var(--xp-size-body);
+    color: var(--xp-text, #e6e6ef);
+    background: var(--xp-accent-amber-soft);
+    border-left: 3px solid var(--xp-accent-amber);
+    padding: 6px 8px;
+    margin: 0 0 10px;
+  }
+  .tuto-n {
+    color: var(--xp-accent-amber);
+    font-weight: 700;
+    margin-right: 6px;
+    letter-spacing: var(--xp-ls-tag, 0.08em);
+  }
+  .plus {
+    margin: 0 0 10px;
+  }
+  .guide {
+    outline: 2px solid var(--xp-accent-amber);
+    outline-offset: 2px;
+    animation: guidePulse 1.4s ease-in-out infinite;
+  }
+  @keyframes guidePulse {
+    0%,
+    100% { outline-color: var(--xp-accent-amber); }
+    50% { outline-color: transparent; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .guide { animation: none; }
+  }
+  /* Seul « Vérifier » s'estompe, tant qu'il est trop tôt : réécouter en
+     posant est le geste qu'on veut, l'écoute ne s'estompe jamais. */
+  .attenue {
+    opacity: 0.45;
   }
   .preamble {
     font-size: var(--xp-size-body);

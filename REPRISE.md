@@ -9,6 +9,8 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ✅ Le PREMIER EXERCICE se joue guidé (écouter → poser → vérifier) et l'acte 0
+> est allégé (onze éléments cliquables → six).
 > ✅ Et l'AIDE QUI MONTE avec les essais (cases ✕ au 2ᵉ raté, « Montre-moi une
 > case » au 3ᵉ), sans pénalité d'étoile — elle ne mordait jamais.
 > ✅ Puis l'acte de la MÉLODIE sur un seul verbe : 83-85 (arrangements écrits)

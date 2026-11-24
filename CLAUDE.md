@@ -1184,6 +1184,15 @@ catalogue ne doit pas retomber en silence sur le défaut.
 et testés : le trou n'est jamais sur le premier pas, et le kick ne tient que ce
 premier temps — sans quoi il boucherait ce qu'on demande d'entendre.
 
+⚠️ **Le premier exercice du jeu se joue GUIDÉ, et l'acte 0 est allégé**
+(2026-11-24, « les gens ne savaient pas quoi faire en voyant le premier écran »).
+Trois étapes DÉDUITES de l'état, jamais un bouton « suivant » : écouter, poser,
+vérifier (`model/tutoriel.ts`) — l'élément de l'étape pulse en ambre, seul
+« Vérifier » s'estompe tant qu'il est trop tôt (réécouter en posant est le geste
+voulu). Pendant l'acte 0 de la carrière : ni Répétition, ni « ma version », ni
+« Recommencer », et la consigne de Sol seule — l'explication derrière un bouton
+ÉCRIT. Mesuré : onze éléments cliquables → six.
+
 ⚠️ **L'aide MONTE avec les essais** (2026-11-24, « besoin de plus
 d'accompagnement ») sur les quatre verbes qui reposent une grille : au 2ᵉ raté
 les cases POSÉES à tort sont marquées ✕ (`casesFausses` — jamais un vide qui
