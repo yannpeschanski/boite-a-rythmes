@@ -559,11 +559,15 @@
     if (a <= PARFAIT_MS) return 'parfait';
     return a < TOLERANCE_MS ? 'dedans' : 'dehors';
   }
-  const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Snare', hat: 'Hat' };
+  /* ⚠️ Les noms que les CONSIGNES emploient (2026-11-24) : le texte du jeu dit
+     « claire » et « charley » une cinquantaine de fois, la grille disait
+     « Snare » et « Hat » — deux noms pour le même son, sur le même écran.
+     L'Atelier, qui est l'outil, garde les siens. */
+  const rowLabels: Record<GameDrumRowName, string> = { kick: 'Kick', snare: 'Claire', hat: 'Charley' };
   /* Le nom d'une ligne d'arrangement — batterie ou synthé, même carte : la
      vue ne sait pas d'avance laquelle des huit le niveau va citer. */
   const NOM_LIGNE: Record<string, string> = {
-    kick: 'Kick', snare: 'Snare', hat: 'Hat', clap: 'Clap', shaker: 'Shaker',
+    kick: 'Kick', snare: 'Claire', hat: 'Charley', clap: 'Clap', shaker: 'Shaker',
     bass: 'Basse', melody: 'Mélodie', pad: 'Nappe',
   };
 

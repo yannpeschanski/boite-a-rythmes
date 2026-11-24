@@ -931,6 +931,15 @@ Corollaire mesuré : le nom s'affiche **au-dessus** de la réplique, jamais deva
 — devant, il mangeait jusqu'à douze signes et repliait sept lignes écrites pour
 tenir sur une seule.
 
+⚠️ **L'introduction parle d'abord du JOUEUR, en mots simples** (2026-11-24, « on
+se perd dans l'histoire »). Le premier écran ouvre sur « Tu es stagiaire chez
+Face B » — le joueur n'apparaissait qu'au quatrième, après avoir déjà répondu à
+Sol. Plus de jargon d'époque sans contexte (sous-traitant, agrégateur, SMS
+surtaxé, monophoniques), plus d'ironie qu'il faut décoder pour suivre. Et une
+consigne d'acte 0 NOMME ce que la grille affiche, le préambule étant replié. La
+grille du Mode jeu dit **Kick / Claire / Charley**, comme les consignes ;
+l'Atelier garde ses noms. ⚠️ Le jeu s'écarte ici de `HISTOIRE.md` : c'est voulu.
+
 ⚠️ **Le premier appui sur le bouton principal COMPLÈTE le texte, le second
 agit** (2026-11-24, « compléter le texte sans attendre que tout défile ») — et
 le bouton le DIT : « Tout afficher ▸ » tant que ça tape. Toucher le texte le
