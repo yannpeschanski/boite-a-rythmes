@@ -48,6 +48,19 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ La sonnerie arrivait dans l'Atelier avec un synthé (2026-11-24)
+
+**Retour** — « lorsqu'on peut emporter la sonnerie, il y avait un synthé
+chargé ». **Cause, reproduite** : à son montage, l'Atelier réappliquait
+l'autosave dès qu'une session de moins de deux heures existait — pas seulement
+après un rechargement dans l'Atelier. Emportée depuis le jeu, la sonnerie était
+posée puis aussitôt écrasée par la dernière composition (mesuré : 2 notes de
+basse, 2 kicks au lieu de 4). **Fait** — `repriseAtelierDue()` (session) : vrai
+une seule fois, et seulement si le rechargement était DANS l'Atelier.
+`toAtelierState` part en plus de `etatVierge()` (n'emporter que ce qu'on a
+joué). **Vérifié** — même scénario : sonnerie intacte, 0 note de synthé ;
+961 tests (3 neufs + le test de livraison étendu).
+
 ### ✅ Plus de « Sauvegarder dans l'Atelier » après un exercice (2026-11-24)
 
 « Ça brouille plus qu'autre chose. » Le bouton doublait « Continuer ▸ » sous

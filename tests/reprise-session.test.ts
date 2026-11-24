@@ -33,6 +33,31 @@ async function sessionNeuve() {
   return import('../src/stores/session.svelte');
 }
 
+describe('le travail de l’Atelier ne revient qu’après un rechargement DANS l’Atelier', () => {
+  /* « Lorsqu'on peut emporter la sonnerie, il y avait un synthé chargé » : la
+   * reprise se déclenchait à chaque ouverture de l'Atelier pendant deux heures,
+   * et écrasait la sonnerie qu'on venait d'y emporter. */
+  beforeEach(() => stockage.clear());
+
+  it('⚠️ rechargé dans l’Atelier : la reprise est due, UNE fois', async () => {
+    stockage.setItem(CLE, JSON.stringify({ vue: 'atelier', quand: Date.now() }));
+    const { repriseAtelierDue } = await sessionNeuve();
+    expect(repriseAtelierDue()).toBe(true);
+    expect(repriseAtelierDue(), 'une seconde ouverture n’est plus un rechargement').toBe(false);
+  });
+
+  it('⚠️ rechargé dans le jeu : arriver dans l’Atelier (la sonnerie) ne réapplique rien', async () => {
+    stockage.setItem(CLE, JSON.stringify({ vue: 'game', quand: Date.now() }));
+    const { repriseAtelierDue } = await sessionNeuve();
+    expect(repriseAtelierDue()).toBe(false);
+  });
+
+  it('sans session, rien', async () => {
+    const { repriseAtelierDue } = await sessionNeuve();
+    expect(repriseAtelierDue()).toBe(false);
+  });
+});
+
 describe('la reprise a une PÉREMPTION — un rechargement, pas une visite', () => {
   beforeEach(() => stockage.clear());
 

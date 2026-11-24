@@ -352,6 +352,12 @@ est un écran de choix et le geste par lequel le navigateur accorde le son ; la
 lecture se fait au CHARGEMENT DU MODULE et se garde en mémoire (même leçon que
 `lireAutosave`, les trois vues montent à des moments différents) ; et
 `noterSession` FUSIONNE, chaque vue n'écrivant que son champ.
+⚠️ **Le travail de l'Atelier ne se réapplique qu'après un rechargement DANS
+l'Atelier, une seule fois** (`repriseAtelierDue`, 2026-11-24). Lu sur « une
+session existe », il revenait à chaque ouverture pendant deux heures et
+ÉCRASAIT la sonnerie qu'on venait d'emporter (« un synthé chargé ») : arriver
+depuis le jeu est une arrivée avec un motif, le bandeau propose sans imposer.
+Et `toAtelierState` part de la table rase : on n'emporte que ce qu'on a joué.
 ⚠️ **Ce qui ne se restaure pas, et pourquoi** : un module fermé (`vueAutorisee`),
 un Live emprunté par une SCÈNE (`retourDeScene` est volatil — on revient à la
 carrière, qui réaffiche la scène et son « ▶ LANCER »), et la GRILLE d'un
