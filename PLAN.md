@@ -48,6 +48,25 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Des silences dans le charley, plus de grilles à 8 (2026-11-24)
+
+**Retours** — « niveau 3 différent dans le gameplay » (précisé : le silence de
+l'acte 0, seul exercice où l'on désigne au lieu de poser) ; « on joue toujours
+toutes les hats, c'est dommage de pas avoir plus de silence ; pas suffisamment
+de niveaux à 8 hats ».
+
+**Fait** — six grilles écrites (86 à 91, fin de tableau). Acte 0 : 86 remplace
+le 52 — le charley se tait deux fois, on laisse les cases vides. Acte 1 : 3 →
+87 (le charley se tait sous la claire) → 88 (une syncope) → 89 (la claire sort
+du temps) → 90 (charley à 16 sur la grille acquise) → 91 (à 16, troué) → 60.
+68, 7, 69, 52 au réservoir. Schéma de sauvegarde 3 : l'acte 1 gagne deux
+étapes, ses étapes ≥ 5 avancent de deux (`versSchema3`), étoiles de commande
+comprises. Tests réécrits (acte 0 : quatre grilles, la dernière trouée ; acte 1 :
+neuf grilles ; ancre de syncope 88) et migration 2 → 3 testée.
+
+**Vérifié** — 976 tests, check 0 ; `parcours-carriere.cjs` jusqu'à l'épilogue,
+`verrous-masques.cjs` sans fuite.
+
 ### ✅ La sonnerie arrivait dans l'Atelier avec un synthé (2026-11-24)
 
 **Retour** — « lorsqu'on peut emporter la sonnerie, il y avait un synthé

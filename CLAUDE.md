@@ -1376,6 +1376,13 @@ produit. Les niveaux posent donc deux à quatre occurrences, **de longueurs et d
 timbres différents**, et les variantes ne sont **ni la première ni la dernière**
 case de la ligne.
 
+⚠️ **Le charley SE TAIT, et l'acte 1 reste à 8 plus longtemps** (2026-11-24,
+« on joue toujours toutes les hats… pas suffisamment de niveaux à 8 ») : 3, 87,
+88, 89 à huit cases avec un charley troué (là où la claire frappe, ou en fin de
+temps), puis 90 (seize, sur la grille ACQUISE) et 91 (seize, troué). 68, 7 et 69
+au réservoir. Et le `silence` (52) quitte l'acte 0, seul geste différent : 86 y
+fait POSER l'absence. Format de sauvegarde au schéma 3 (`migrationActes.ts`).
+
 ⚠️ **UNE NOUVEAUTÉ PAR EXERCICE** (2026-11-24) — renverse le paragraphe
 suivant : la somme de coupes « le plus dense » avait retiré toutes les marches
 (trois nouveautés au premier exercice de l'acte 1, la polyrythmie au troisième).

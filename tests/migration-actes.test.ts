@@ -17,8 +17,9 @@ describe('le curseur passe dans la numérotation à sept actes', () => {
   });
 
   it('l’ancien acte 1 retombe sur la MÊME étape quand elle existe encore', () => {
-    // Ancien index 1 = le 68, ancien 2 = le 69, ancien 5 = le 60.
-    for (const [ancien, niveau] of [[1, 68], [2, 69], [5, 60]] as const) {
+    // Ancien index 1 = le 68, ancien 2 = le 69, ancien 5 = le 60. Depuis le
+    // schéma 3, le 68 et le 69 ont leurs remplaçants à huit cases (87, 89).
+    for (const [ancien, niveau] of [[1, 87], [2, 89], [5, 60]] as const) {
       const n = migrerCurseur({ acte: 1, etape: ancien });
       const e = etape(n.acte, n.etape);
       expect(e.kind === 'exercice' && e.niveau, `ancienne étape ${ancien}`).toBe(niveau);
@@ -45,6 +46,29 @@ describe('le curseur passe dans la numérotation à sept actes', () => {
     expect(migrerCurseur({ acte: 7, etape: 2 })).toEqual({ acte: 6, etape: 2 });
     // Une carrière FINIE (curseur après le dernier acte) reste finie.
     expect(migrerCurseur({ acte: 8, etape: 0 }).acte).toBe(NB_ACTES);
+  });
+});
+
+describe('schéma 2 → 3 : l’acte 1 gagne deux exercices (2026-11-24)', () => {
+  /* Les joueurs passés aux sept actes dans la journée ont un curseur sur
+   * l'acte 1 tel qu'il était : 3, 68, 7, 69, puis le reste. */
+  const ex = (c: { acte: number; etape: number }) => {
+    const e = etape(c.acte, c.etape);
+    return e.kind === 'exercice' ? e.niveau : e.kind;
+  };
+  it('le 7 devient le 88, le 69 le 89, le 60 reste le 60', () => {
+    expect(ex(migrerCurseur({ acte: 1, etape: 3 }, 2))).toBe(88);
+    expect(ex(migrerCurseur({ acte: 1, etape: 4 }, 2))).toBe(89);
+    expect(ex(migrerCurseur({ acte: 1, etape: 6 }, 2))).toBe(60);
+  });
+  it('la livraison et la commande de Kelvin restent les mêmes étapes', () => {
+    expect(ex(migrerCurseur({ acte: 1, etape: 8 }, 2))).toBe('livraison');
+    expect(ex(migrerCurseur({ acte: 1, etape: 17 }, 2))).toBe('commande');
+    expect(migrerCurseur({ acte: 1, etape: 18 }, 2).etape).toBe(ACTES[1].etapes.length - 1);
+  });
+  it('les autres actes ne bougent pas', () => {
+    expect(migrerCurseur({ acte: 3, etape: 2 }, 2)).toEqual({ acte: 3, etape: 2 });
+    expect(migrerCurseur({ acte: 0, etape: 9 }, 2)).toEqual({ acte: 0, etape: 9 });
   });
 });
 

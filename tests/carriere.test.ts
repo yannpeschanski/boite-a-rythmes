@@ -757,9 +757,16 @@ describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
    * taper en rythme donnait « l'impression de faire n'importe quoi ». On
    * écoute, puis on POSE — aucun instant n'est mesuré, l'appareil ne compte
    * plus. La frappe reste à l'acte 7. */
-  it('met les mains sur la grille, puis fait entendre l’absence', () => {
+  /* ⚠️ L'absence se POSE depuis le 2026-11-24 : le `silence` (désigner un
+   * coup manquant dans une pulsation) était le seul geste différent de l'acte
+   * — « à remplacer par un niveau similaire aux autres ». */
+  it('met les mains sur la grille, du premier exercice au dernier — l’absence comprise', () => {
     const verbes = niveauxDeLActe(ACTES[0]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    expect(verbes).toEqual(['reproduire', 'reproduire', 'reproduire', 'silence']);
+    expect(verbes).toEqual(['reproduire', 'reproduire', 'reproduire', 'reproduire']);
+    const dernier = LEVELS.find((x) => x.id === niveauxDeLActe(ACTES[0]).at(-1))!.grille!;
+    const hat = dernier.hat.slice(0, dernier.subdiv.hat);
+    expect(hat.filter((v) => v === 0).length, 'le charley se tait').toBeGreaterThanOrEqual(2);
+    expect(hat.filter((v) => v > 0).length).toBeGreaterThan(0);
   });
 
   it('ne mesure aucun instant : pas un seul exercice de frappe', () => {
@@ -771,11 +778,11 @@ describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
   /* Les trois grilles sont une COURBE, donc écrites : la deuxième ajoute un
    * coup hors des temps, la troisième une deuxième ligne et le contretemps
    * ailleurs. Un générateur de densité ne sait pas ce qu'il vient d'ajouter. */
-  it('écrit ses trois grilles, et n’en tire aucune', () => {
+  it('écrit ses quatre grilles, et n’en tire aucune', () => {
     const grilles = niveauxDeLActe(ACTES[0])
       .map((n) => LEVELS.find((x) => x.id === n)!)
       .filter((l) => l.exercise === 'reproduire');
-    expect(grilles.length).toBe(3);
+    expect(grilles.length).toBe(4);
     for (const l of grilles) {
       expect(l.grille, `niveau ${l.id} : tiré au sort`).toBeTruthy();
       const k = l.grille!.kick.slice(0, l.grille!.subdiv.kick);
@@ -792,7 +799,8 @@ describe('L’acte 0 ne demande que ce qu’on peut entendre', () => {
     // Une seule ligne aux deux premiers, une deuxième au troisième.
     const lignes = (l: (typeof grilles)[number]) =>
       (['kick', 'snare', 'hat'] as const).filter((r) => l.grille![r].some((v) => v > 0)).length;
-    expect(grilles.map(lignes)).toEqual([1, 1, 2]);
+    expect(horsTemps(grilles[3]), 'le dernier repose les temps : l’oreille est sur les trous').toBe(0);
+    expect(grilles.map(lignes)).toEqual([1, 1, 2, 2]);
   });
 });
 
@@ -824,11 +832,11 @@ describe('L’acte 1 apprend la grille, et repart avec l’objet', () => {
     }
     const premier = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[1])[0])!.grille!;
     const finActe0 = LEVELS.find((l) => l.id === niveauxDeLActe(ACTES[0]).filter((n) => LEVELS.find((x) => x.id === n)!.grille).at(-1))!.grille!;
-    // Même résolution, même charley : seule la claire entre.
+    // Même résolution, mêmes lignes plus UNE : seule la claire entre.
+    const lignes = (g: typeof premier) => (['kick', 'snare', 'hat'] as const).filter((r) => g[r].some((v) => v > 0));
     expect(premier.subdiv).toEqual(finActe0.subdiv);
-    expect(premier.hat).toEqual(finActe0.hat);
     expect(finActe0.snare.some((v) => v > 0)).toBe(false);
-    expect(premier.snare.some((v) => v > 0)).toBe(true);
+    expect(lignes(premier)).toEqual([...lignes(finActe0), 'snare'].sort((a, b) => ['kick', 'snare', 'hat'].indexOf(a) - ['kick', 'snare', 'hat'].indexOf(b)));
   });
 
   /* ⚠️ Les variantes (rim shot, charley ouvert) et les rafales ont déménagé de

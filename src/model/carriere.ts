@@ -838,8 +838,13 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 52,
-        commande: 'SOL: Ce qu’on n’entend pas compte autant. Où est le trou ?',
+        /* ⚠️ Le 52 (« Où est le trou ? ») était le seul exercice de l'acte
+         * dont le GESTE différait — désigner un coup manquant dans une
+         * pulsation (2026-11-24, « à remplacer par un niveau similaire aux
+         * autres »). L'absence se POSE maintenant sur la grille, comme le
+         * reste. Le 52 reste au réservoir. */
+        niveau: 86,
+        commande: 'SOL: Ce qu’on n’entend pas compte autant. Le charley se tait deux fois : laisse ces cases vides.',
       },
       {
         kind: 'recit',
@@ -903,9 +908,14 @@ export const ACTES: Acte[] = [
         ],
       },
       { kind: 'exercice', niveau: 3, commande: 'SOL: Un son de plus : la claire, qui claque sur 2 et 4. Le reste, tu connais.' },
-      { kind: 'exercice', niveau: 68, commande: 'SOL: Même rythme. Le charley va deux fois plus vite.' },
-      { kind: 'exercice', niveau: 7, commande: 'SOL: Le kick sort du temps. Une fois, une seule.' },
-      { kind: 'exercice', niveau: 69, commande: 'SOL: Maintenant la claire aussi sort du temps.' },
+      /* ⚠️ Quatre grilles à 8 avant le passage à 16, et un charley qui se TAIT
+       * (2026-11-24, « on joue toujours toutes les hats… pas suffisamment de
+       * niveaux à 8 ») : 87 à 91 remplacent 68, 7 et 69. */
+      { kind: 'exercice', niveau: 87, commande: 'SOL: Même trio. Le charley se tait là où la claire claque.' },
+      { kind: 'exercice', niveau: 88, commande: 'SOL: Le kick sort du temps. Une fois, une seule.' },
+      { kind: 'exercice', niveau: 89, commande: 'SOL: Maintenant la claire aussi sort du temps.' },
+      { kind: 'exercice', niveau: 90, commande: 'SOL: Même rythme. Le charley va deux fois plus vite.' },
+      { kind: 'exercice', niveau: 91, commande: 'SOL: Et à cette vitesse, il respire aussi. Écoute les trous.' },
       /* Sol fait le geste AVANT qu'on le demande. La rafale n'y est plus : elle
        * a quitté la carrière avec les niveaux 8 et 61. */
       {
