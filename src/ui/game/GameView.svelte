@@ -993,6 +993,10 @@
                   ? '🔊 Écouter la pulsation'
                   : ex === 'melodie'
                   ? `🔊 Écouter ${LIBELLE_LIGNE[game.level.melodie.ligne]}`
+                  : ex === 'arrangement'
+                  ? /* Batterie ET synthé : ce n'est pas un « rythme »
+                       qu'on cherche, c'est la boucle entière (2026-11-24). */
+                    '🔊 Écouter la boucle à trouver'
                   : '🔊 Écouter le rythme à trouver'}
           </button>
           {#if aUneVersion(ex)}
@@ -1705,7 +1709,15 @@
                annonce un rim shot jamais posé : c'est l'écran qui promet ce
                que le code ne tient pas. -->
           <button class="xp-btn tiny" onclick={() => { game.giveUp(); allerAuNiveau(game.levelIndex); }}>
-            {game.level.grille ? 'Recommencer' : 'Nouveau rythme'}
+            <!-- ⚠️ Un ARRANGEMENT est écrit lui aussi (`level.arrangement`) : il
+                 annonçait « Nouveau rythme » sur les sept exercices de l'acte
+                 de la mélodie (2026-11-24). Et une mélodie tirée n'est pas un
+                 rythme : c'est une phrase. -->
+            {game.level.grille || game.level.arrangement
+              ? 'Recommencer'
+              : ex === 'melodie'
+                ? 'Nouvelle phrase'
+                : 'Nouveau rythme'}
           </button>
         </div>
       {/if}
