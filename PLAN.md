@@ -48,6 +48,20 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Compléter le texte d'un appui (2026-11-24)
+
+**Pourquoi** — « il faudrait qu'on puisse compléter le texte sans attendre que
+tout défile, en appuyant sur le bouton suivant par exemple ».
+
+**Fait** — `ui/game/lecture.svelte.ts` (état partagé + `apresLecture`) ;
+`RecitLignes` y publie `fini` et `sauter`. Les six boutons principaux d'un écran
+de récit (Suite, épilogue, commande, livraison, scène, montage) complètent
+d'abord le texte et s'appellent « Tout afficher ▸ » tant qu'il défile. Toucher le
+texte le complète toujours.
+
+**Vérifié** — check 0, tests verts ; joué dans Chromium : 1ᵉʳ appui → texte
+complet, toujours 1/12 ; 2ᵉ → 2/12.
+
 ### ✅ L'objectif du joueur, nommé dès le premier écran (2026-11-24)
 
 **Pourquoi** — carte H1 de `premiers-pas.html` : le prologue disait ce que vit

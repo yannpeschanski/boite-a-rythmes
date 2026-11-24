@@ -18,6 +18,7 @@
    */
   import { analyserRecit, timbreDe } from '../../model/locuteurs';
   import { frapper } from './voix';
+  import { lecture } from './lecture.svelte';
 
   let {
     lignes,
@@ -116,6 +117,18 @@
     annuler = null;
     revele = total;
   }
+
+  /* Le bouton principal de l'écran lit cet état : tant que le texte défile,
+     il le complète au lieu d'agir (`lecture.svelte.ts`). Au démontage, plus
+     rien ne défile — le bouton suivant ne doit pas rester bloqué. */
+  $effect(() => {
+    lecture.fini = fini;
+    lecture.sauter = sauter;
+  });
+  $effect(() => () => {
+    lecture.fini = true;
+    lecture.sauter = () => {};
+  });
 
   /* Le défilement suit la ligne en cours — le fantôme donne au bloc sa hauteur
      définitive dès le premier signe, donc la tête de lecture peut sortir de la

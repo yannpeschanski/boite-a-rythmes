@@ -33,6 +33,7 @@
   } from '../../model/carriere';
   import XpWindow from '../xp/XpWindow.svelte';
   import RecitLignes from './RecitLignes.svelte';
+  import { lecture, apresLecture } from './lecture.svelte';
   import { analyserLigne } from '../../model/locuteurs';
   import { voixActives, setVoixActives } from './voix';
   import { AudioEngine } from '../../engine/AudioEngine';
@@ -514,7 +515,9 @@
       </button>
       <span class="position">Épilogue · {game.etapeEpilogue + 1}/{LONGUEUR_EPILOGUE}</span>
       {#if !game.finDuJeu}
-        <button class="xp-btn primary tap44-y" onclick={() => game.avancerEpilogue()}>Suite ▸</button>
+        <button class="xp-btn primary tap44-y" onclick={apresLecture(() => game.avancerEpilogue())}>
+          {lecture.fini ? 'Suite ▸' : 'Tout afficher ▸'}
+        </button>
       {:else}
         <!-- Le dernier écran du jeu ne propose pas de « Suite » : il n'y a rien
              après. Le carnet et la salle de répétition restent, eux, ouverts. -->
@@ -569,7 +572,11 @@
         ◂ Retour
       </button>
       <span class="position">{enPrologue ? position : `Acte ${acte.id} · ${position}`}</span>
-      <button class="xp-btn primary tap44-y" onclick={suite}>Suite ▸</button>
+      <!-- ⚠️ Premier appui : le texte se complète ; second : la suite. Le
+           bouton DIT ce qu'il va faire (`lecture.svelte.ts`). -->
+      <button class="xp-btn primary tap44-y" onclick={apresLecture(suite)}>
+        {lecture.fini ? 'Suite ▸' : 'Tout afficher ▸'}
+      </button>
     </div>
   {:else if etape && etape.kind === 'commande'}
     <!-- ⚠️ Le cahier des charges est montré AVANT de partir, jamais découvert
@@ -594,7 +601,9 @@
         ◂ Retour
       </button>
       <span class="position">Acte {acte.id} · {position}</span>
-      <button class="xp-btn primary tap44-y" onclick={travailler}>{etape.bouton}</button>
+      <button class="xp-btn primary tap44-y" onclick={apresLecture(travailler)}>
+        {lecture.fini ? etape.bouton : 'Tout afficher ▸'}
+      </button>
     </div>
   {:else if etape && etape.kind === 'livraison'}
     <!-- On repart avec l'objet, pas avec un score : le rythme qu'on vient de
@@ -612,7 +621,9 @@
         ◂ Retour
       </button>
       <span class="position">Acte {acte.id} · {position}</span>
-      <button class="xp-btn primary tap44-y" onclick={livrer}>{etape.bouton}</button>
+      <button class="xp-btn primary tap44-y" onclick={apresLecture(livrer)}>
+        {lecture.fini ? etape.bouton : 'Tout afficher ▸'}
+      </button>
     </div>
   {:else if etape && etape.kind === 'scene'}
     <!-- ⚠️ LA SCÈNE — le seul écran qui n'envoie ni retrouver ni produire, mais
@@ -629,7 +640,9 @@
         ◂ Retour
       </button>
       <span class="position">Acte {acte.id} · {position}</span>
-      <button class="xp-btn primary tap44-y" onclick={monterSurScene}>{etape.bouton}</button>
+      <button class="xp-btn primary tap44-y" onclick={apresLecture(monterSurScene)}>
+        {lecture.fini ? etape.bouton : 'Tout afficher ▸'}
+      </button>
     </div>
     <!-- ⚠️ Le Mode Live ne s'ouvre qu'à l'HORIZONTALE : en portrait il affiche
          « tourne ton téléphone » et rien d'autre. Envoyer le joueur dessus sans
@@ -655,7 +668,9 @@
         ◂ Retour
       </button>
       <span class="position">Acte {acte.id} · {position}</span>
-      <button class="xp-btn primary tap44-y" onclick={monterLeMorceau}>{etape.bouton}</button>
+      <button class="xp-btn primary tap44-y" onclick={apresLecture(monterLeMorceau)}>
+        {lecture.fini ? etape.bouton : 'Tout afficher ▸'}
+      </button>
     </div>
     <!-- ⚠️ Le modèle est NOMMÉ ici aussi : le joueur doit aller le chercher
          dans un sélecteur, et un nom lu une seule fois sur l'écran d'avant ne
