@@ -1184,6 +1184,15 @@ catalogue ne doit pas retomber en silence sur le défaut.
 et testés : le trou n'est jamais sur le premier pas, et le kick ne tient que ce
 premier temps — sans quoi il boucherait ce qu'on demande d'entendre.
 
+⚠️ **L'aide MONTE avec les essais** (2026-11-24, « besoin de plus
+d'accompagnement ») sur les quatre verbes qui reposent une grille : au 2ᵉ raté
+les cases POSÉES à tort sont marquées ✕ (`casesFausses` — jamais un vide qui
+devrait sonner, ce serait donner la réponse), au 3ᵉ « Montre-moi une case »
+(`caseAMontrer`). Une seule vue sur la grille notée (`grilleNotee`), trois
+familles. ⚠️ **Sans pénalité**, contre la fiche : au 4ᵉ essai la réussite vaut
+déjà 1★, un « −1★ » qui ne mord jamais serait un prix mensonger — l'écran dit
+« la réussite vaudra 1★ ». `tests/aide-essais.test.ts`.
+
 ⚠️ **Un roast ne commente que ce qui a été MESURÉ.** `composerRoast`
 (`presets/gameData.ts`, pur et testé) tire deux axes toujours vrais — le VERBE
 joué et les ESSAIS, comptés dans `verify()` pour tous les verbes — plus un

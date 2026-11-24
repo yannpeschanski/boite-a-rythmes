@@ -685,7 +685,11 @@ export const LEVELS: GameLevel[] = [
       hat:   [0, 0, 0, 0],
     } }),
   mkLevel(3, 'Le trio', {
-    preamble: "Le charleston complète la base : il joue en croches, deux fois par temps, et c'est lui qui donne le débit. Le kick garde ses quatre temps, la claire répond sur 2 et 4. Kick, claire, charley — avec ces trois-là tu peux déjà tout faire.",
+    /* ⚠️ Réécrit le 2026-11-24 : depuis la fusion des actes 1 et 2, ce niveau
+     * OUVRE l'acte du rythme juste après un acte 0 qui a déjà posé le kick et
+     * le charley en croches. La nouveauté est la CLAIRE, plus le charley —
+     * le préambule annonçait l'inverse de ce que Sol venait de dire. */
+    preamble: "La claire entre : un « clac » sur 2 et 4. Le kick garde ses quatre temps, le charley ses croches. Kick, claire, charley — avec ces trois-là tu peux déjà tout faire.",
     tempoOptions: [84, 92],
     grille: {
       // Les trois lignes en croches : le charley remplit les huit cases, le

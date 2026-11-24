@@ -219,6 +219,79 @@ export function comparerGrilles<N extends string = GameDrumRowName>(
   return { exact, aVerrouiller };
 }
 
+/* ---- L'aide qui MONTE avec les essais (2026-11-24) ----
+ *
+ * Retour des testeurs : « trop difficile, besoin de plus d'accompagnement ».
+ * Un raté ne disait que « pas encore » : les cases justes se verrouillent,
+ * mais une case POSÉE À TORT n'était jamais désignée — sur 48 cases à
+ * l'oreille, « reprends les autres » ne suffit pas. Trois paliers, sur les
+ * verbes qui reposent une grille :
+ *
+ * 1. premier raté : comme avant (les justes se verrouillent) ;
+ * 2. deuxième : les cases posées à tort sont MARQUÉES (`casesFausses`) ;
+ * 3. troisième : un bouton écrit pose une case juste (`caseAMontrer`).
+ *
+ * ⚠️ Elle ne coûte PAS d'étoile, et ce n'est pas un oubli : la fiche le
+ * proposait, mais au quatrième essai `starsForAttempts` vaut déjà 1★, et
+ * l'aide n'apparaît qu'après trois ratés — une pénalité qui ne mord jamais,
+ * affichée « −1★ », serait un prix mensonger. L'écran dit ce qui est vrai :
+ * la réussite vaudra 1★, ce qui reste mieux que les 0★ de l'abandon.
+ *
+ * Même règle que `comparerGrilles`, dont ces deux fonctions sont les sœurs :
+ * une case est juste si son état ET sa rafale coïncident, et `colonnes`
+ * restreint à ce qui est noté (le temps vide de « compléter »). */
+export const ESSAIS_AVANT_MARQUES = 2;
+export const ESSAIS_AVANT_AIDE = 3;
+
+type Case<N extends string> = { row: N; col: number };
+
+function estJuste<N extends string>(
+  cible: Grille<N>, cr: Rafales<N>, prop: Grille<N>, pr: Rafales<N>, row: N, col: number,
+): boolean {
+  return prop[row][col] === cible[row][col] && pr[row][col] === cr[row][col];
+}
+
+/** Les cases POSÉES (non vides) qui ne sont pas justes. Une case vide qui
+ *  devrait sonner n'y est pas : la désigner serait donner la réponse — le
+ *  compteur « posés / attendus » dit déjà qu'il en manque. */
+export function casesFausses<N extends string>(
+  cible: Grille<N>, cibleRafales: Rafales<N>, proposition: Grille<N>, propositionRafales: Rafales<N>,
+  lignes: N[], colonnes?: Partial<Record<N, number[]>>,
+): Case<N>[] {
+  const out: Case<N>[] = [];
+  for (const row of lignes) {
+    const indices = colonnes?.[row] ?? cible[row].map((_, i) => i);
+    for (const col of indices) {
+      if (proposition[row][col] === 0) continue;
+      if (!estJuste(cible, cibleRafales, proposition, propositionRafales, row, col)) out.push({ row, col });
+    }
+  }
+  return out;
+}
+
+/** La case à MONTRER : la plus tôt dans la mesure (en fraction de mesure,
+ *  les lignes n'ayant pas toutes la même subdivision), d'abord parmi celles
+ *  qui doivent SONNER — un coup manquant s'apprend, un coup en trop se
+ *  corrige déjà grâce aux marques. `null` si tout ce qui est noté est juste. */
+export function caseAMontrer<N extends string>(
+  cible: Grille<N>, cibleRafales: Rafales<N>, proposition: Grille<N>, propositionRafales: Rafales<N>,
+  lignes: N[], verrous: Partial<Record<N, boolean[]>>, colonnes?: Partial<Record<N, number[]>>,
+): Case<N> | null {
+  const candidates: Array<Case<N> & { t: number; sonne: boolean }> = [];
+  for (const row of lignes) {
+    const n = cible[row].length;
+    const indices = colonnes?.[row] ?? cible[row].map((_, i) => i);
+    for (const col of indices) {
+      if (verrous[row]?.[col]) continue;
+      if (estJuste(cible, cibleRafales, proposition, propositionRafales, row, col)) continue;
+      candidates.push({ row, col, t: col / n, sonne: cible[row][col] > 0 });
+    }
+  }
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => Number(b.sonne) - Number(a.sonne) || a.t - b.t);
+  return { row: candidates[0].row, col: candidates[0].col };
+}
+
 /* Les colonnes d'UNE tranche d'une ligne, la ligne étant coupée en `tranches`
  * parts égales.
  *

@@ -25,6 +25,10 @@ import {
 } from '../model/presets/levels';
 import {
   comparerGrilles,
+  casesFausses,
+  caseAMontrer,
+  ESSAIS_AVANT_MARQUES,
+  ESSAIS_AVANT_AIDE,
   colonnesDeTranche,
   justesseDuRythme,
   type NoteDuRythme,
@@ -270,6 +274,9 @@ class GameStore {
   locked = $state<Record<GameDrumRowName, boolean[]>>({ kick: [], snare: [], hat: [] });
   revealed = $state(false);
   attempts = $state(0);
+  /* L'aide qui monte avec les essais — voir `casesFausses` (model/exercises).
+   * Clé `ligne:colonne` ; une case retouchée perd sa marque. */
+  marques = $state<Record<string, true>>({});
   loopPlays = $state(0);
   guessPlays = $state(0);
   /* ⚠️ Les écoutes des VERSIONS (verbes de paramètre, laverie). Elles
@@ -1574,6 +1581,7 @@ class GameStore {
     };
     this.revealed = false;
     this.attempts = 0;
+    this.marques = {};
     this.loopPlays = 0;
     this.guessPlays = 0;
     this.paramEcoutes = 0;
@@ -1816,6 +1824,7 @@ class GameStore {
   /** Poser un coup sur une ligne de BATTERIE de l'arrangement. */
   arrCycler(ligne: string, pas: number): void {
     if (this.solved || this.revealed || this.arrLocked[ligne]?.[pas]) return;
+    this.demarquer(ligne, pas);
     const max = ligne === 'kick' ? 1 : 2;
     this.arrGuess[ligne][pas] = (this.arrGuess[ligne][pas] + 1) % (max + 1);
   }
@@ -1834,6 +1843,7 @@ class GameStore {
     // Un degré hors du clavier de CETTE ligne n'existe pas : sur la nappe, la
     // cinquième touche ne correspond à aucun accord.
     if (degre > this.arrDegreMax(sel.ligne)) return;
+    this.demarquer(sel.ligne, sel.pas);
     const ligne = this.arrGuess[sel.ligne];
     ligne[sel.pas] = ligne[sel.pas] === degre ? 0 : degre;
   }
@@ -1900,6 +1910,7 @@ class GameStore {
    *  le même geste que la case de batterie, qui s'éteint en la recliquant. */
   poserNote(pas: number, degre: number): void {
     if (this.solved || this.revealed || this.melodieLocked[pas]) return;
+    this.demarquer('melodie', pas);
     this.melodieGuess[pas] = this.melodieGuess[pas] === degre ? 0 : degre;
   }
 
@@ -2106,6 +2117,7 @@ class GameStore {
 
   cycleCell(name: GameDrumRowName, col: number): void {
     if (this.locked[name][col] || this.solved || this.revealed) return;
+    this.demarquer(name, col);
     const maxState = name === 'kick' ? 1 : 2;
     const next = ((this.guess[name][col] + 1) % (maxState + 1)) as DrumStep;
     this.guess[name][col] = next;
@@ -2114,6 +2126,7 @@ class GameStore {
 
   cycleRoll(name: GameDrumRowName, col: number): void {
     if (this.locked[name][col] || this.solved || this.revealed) return;
+    this.demarquer(name, col);
     if (this.guess[name][col] > 0) this.guessRolls[name][col] = (this.guessRolls[name][col] % 4) + 1;
   }
 
@@ -2182,6 +2195,7 @@ class GameStore {
       const r = comparerGrilles<string>(this.arrCible, uns, this.arrGuess, uns, noms);
       r.aVerrouiller.forEach(({ row, col }) => (this.arrLocked[row][col] = true));
       if (r.exact) this.win();
+      else this.apresRate();
       return r.exact;
     }
 
@@ -2202,6 +2216,7 @@ class GameStore {
       );
       r.aVerrouiller.forEach(({ col }) => (this.melodieLocked[col] = true));
       if (r.exact) this.win();
+      else this.apresRate();
       return r.exact;
     }
 
@@ -2233,7 +2248,105 @@ class GameStore {
     );
     aVerrouiller.forEach(({ row, col }) => (this.locked[row][col] = true));
     if (exact) this.win();
+    else this.apresRate();
     return exact;
+  }
+
+  /* ---- L'aide qui monte avec les essais (2026-11-24) ----
+   *
+   * Une SEULE vue sur ce qui est noté, quel que soit le verbe qui repose une
+   * grille : la batterie (reproduire, compléter), l'arrangement, la mélodie.
+   * Les marques et la case montrée passent par elle — trois copies
+   * divergeraient au premier verbe ajouté. */
+  private grilleNotee(): {
+    cible: Record<string, number[]>;
+    cr: Record<string, number[]>;
+    prop: Record<string, number[]>;
+    pr: Record<string, number[]>;
+    lignes: string[];
+    colonnes?: Partial<Record<string, number[]>>;
+    verrous: Record<string, boolean[]>;
+    poser: (row: string, col: number) => void;
+  } | null {
+    const ex = this.level.exercise;
+    if (ex === 'reproduire' || ex === 'completer') {
+      return {
+        cible: this.target, cr: this.targetRolls, prop: this.guess, pr: this.guessRolls,
+        lignes: [...GAME_DRUM_ROWS], colonnes: this.colonnesNotees(), verrous: this.locked,
+        poser: (row, col) => {
+          const r = row as GameDrumRowName;
+          this.guess[r][col] = this.target[r][col] as DrumStep;
+          this.guessRolls[r][col] = this.targetRolls[r][col];
+          if (this.target[r][col] > 0) this.locked[r][col] = true;
+        },
+      };
+    }
+    if (ex === 'arrangement') {
+      const uns: Record<string, number[]> = {};
+      for (const l of this.arrLignes) uns[l.nom] = new Array(this.arrCible[l.nom].length).fill(1);
+      return {
+        cible: this.arrCible, cr: uns, prop: this.arrGuess, pr: uns,
+        lignes: this.arrLignes.map((l) => l.nom), verrous: this.arrLocked,
+        poser: (row, col) => {
+          this.arrGuess[row][col] = this.arrCible[row][col];
+          if (this.arrCible[row][col] > 0) this.arrLocked[row][col] = true;
+        },
+      };
+    }
+    if (ex === 'melodie') {
+      const r = this.melodieRafales;
+      return {
+        cible: { melodie: this.melodieCible }, cr: { melodie: r },
+        prop: { melodie: this.melodieGuess }, pr: { melodie: r },
+        lignes: ['melodie'], verrous: { melodie: this.melodieLocked },
+        poser: (_row, col) => {
+          this.melodieGuess[col] = this.melodieCible[col];
+          if (this.melodieCible[col] > 0) this.melodieLocked[col] = true;
+        },
+      };
+    }
+    return null;
+  }
+
+  /** Une case est-elle marquée « posée à tort » ? Clé : nom de ligne (ou
+   *  `melodie`) et colonne. */
+  estMarquee(ligne: string, col: number): boolean {
+    return !!this.marques[`${ligne}:${col}`];
+  }
+
+  private demarquer(ligne: string, col: number): void {
+    const k = `${ligne}:${col}`;
+    if (this.marques[k]) delete this.marques[k];
+  }
+
+  /** Après un raté : à partir du deuxième, les cases posées à tort sont
+   *  désignées. Recalculées à chaque raté — ce qui a été corrigé disparaît. */
+  private apresRate(): void {
+    if (this.attempts < ESSAIS_AVANT_MARQUES) return;
+    const g = this.grilleNotee();
+    if (!g) return;
+    const m: Record<string, true> = {};
+    for (const c of casesFausses(g.cible, g.cr, g.prop, g.pr, g.lignes, g.colonnes)) m[`${c.row}:${c.col}`] = true;
+    this.marques = m;
+  }
+
+  /** Le bouton « Montre-moi une case » est-il proposé ? Après le troisième
+   *  raté, tant que le niveau n'est ni gagné ni abandonné. */
+  get peutMontrer(): boolean {
+    return !this.solved && !this.revealed && this.attempts >= ESSAIS_AVANT_AIDE && this.grilleNotee() !== null;
+  }
+
+  /** Pose UNE case juste et la verrouille. Renvoie la case montrée, ou
+   *  `null`. Sans pénalité : à ce stade la réussite vaut déjà 1★. */
+  montrerUneCase(): { row: string; col: number } | null {
+    if (!this.peutMontrer) return null;
+    const g = this.grilleNotee();
+    if (!g) return null;
+    const c = caseAMontrer(g.cible, g.cr, g.prop, g.pr, g.lignes, g.verrous, g.colonnes);
+    if (!c) return null;
+    g.poser(c.row, c.col);
+    this.demarquer(c.row, c.col);
+    return c;
   }
 
   /* Quelles colonnes sont notées, selon le verbe du niveau.
