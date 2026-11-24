@@ -9,6 +9,7 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ✅ L'INTRODUCTION réécrite (le joueur d'abord, sans jargon) ; grille Kick / Claire / Charley.
 > ✅ Le bouton principal d'un récit COMPLÈTE d'abord le texte (« Tout afficher ▸ »).
 > ✅ L'OBJECTIF au premier écran : « TON BUT · passer de stagiaire à artiste ».
 > ✅ Le PREMIER EXERCICE se joue guidé (écouter → poser → vérifier) et l'acte 0
@@ -16,8 +17,7 @@
 > ✅ Et l'AIDE QUI MONTE avec les essais (cases ✕ au 2ᵉ raté, « Montre-moi une
 > case » au 3ᵉ), sans pénalité d'étoile — elle ne mordait jamais.
 > ✅ Puis l'acte de la MÉLODIE sur un seul verbe : 83-85 (arrangements écrits)
-> remplacent 42-44. Restent, non arbitrés : démonstrations guidées, « Snare/Hat » à l'écran contre « claire/charley » dans le texte,
-> le dossier des inédits à l'épilogue. Acte 5
+> remplacent 42-44. Restent, non arbitrés : démonstrations guidées, le dossier des inédits à l'épilogue. Acte 5
 > (FB-015) trop long : pas prioritaire.
 >
 > Avant cela, le 2026-10-13 — ✅ **Deux retours de Martin.** (1) La

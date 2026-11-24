@@ -48,6 +48,27 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Une introduction qu'on suit (2026-11-24)
+
+**Pourquoi** — « on se perd dans l'histoire ». Le prologue ouvrait sur six
+chiffres et une ironie, le joueur n'apparaissait qu'au 4ᵉ écran (après avoir
+répondu à Sol au 3ᵉ), et le vocabulaire supposait 2005 connu.
+
+**Fait** — `carriere.ts`, acte 0, même structure (4 écrans, Sol présentée avant
+de parler, le 14 juin au 3ᵉ) : écran 1 « Tu es stagiaire chez Face B. Tu fais le
+café. », le lieu, deux chiffres, « Pour tenir, il fabrique des sonneries de
+téléphone. » ; « C'est ta patronne » ; « Une grande maison de disques veut
+racheter Face B » ; le studio (et non le sous-traitant) dont les sonneries sont
+perdues, « Il va falloir les refaire nous-mêmes », « Je vais t'apprendre ».
+Après les exercices : SMS sans « surtaxé », « Tu as de l'oreille » au lieu de la
+plante verte, « le vendeur de sonneries » au lieu de l'agrégateur, « simples »
+au lieu de « monophoniques ». Consignes 79 et 81 : nomment le kick et le
+charley. Grille du Mode jeu : Kick / Claire / Charley ; les trois mots de Sol
+(acte 1) suivent.
+
+**Vérifié** — 958 tests, check 0 ; mesuré à 390 px : aucune ligne repliée sur
+les quatre écrans du prologue.
+
 ### ✅ Compléter le texte d'un appui (2026-11-24)
 
 **Pourquoi** — « il faudrait qu'on puisse compléter le texte sans attendre que

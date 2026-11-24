@@ -604,18 +604,25 @@ const PROLOGUE: Etape[] = [
     kind: 'recit',
     source: 'lcd',
     entete: 'FACE B',
+    /* ⚠️ RÉÉCRIT le 2026-11-24 — « on se perd dans l'histoire » (retour de
+     * testeurs). L'écran ouvrait sur six chiffres et une ironie (« Zéro en
+     * activité ») avant de dire QUI on est : le joueur n'apparaissait qu'au
+     * quatrième écran, après avoir déjà répondu à Sol au troisième. Il ouvre
+     * maintenant sur « tu », puis le lieu, puis ce qui va mal, en mots
+     * simples ; deux chiffres au lieu de six, ceux qui racontent la chute. Le
+     * café est posé ici : la première réplique de Sol (« Le café, je sais »)
+     * et la dernière image de l'épilogue y répondent. */
     lignes: [
-      'Label indépendant fondé en 1989.',
-      'Quatorze artistes au catalogue.',
-      'Zéro en activité.',
-      'Quatre cent mille disques vendus en 1996.',
-      'Mille huit cents l’an dernier.',
-      'Il reste trois pièces au-dessus d’une laverie.',
+      'Tu es stagiaire chez Face B. Tu fais le café.',
+      'Face B est un petit label de musique,',
+      'trois pièces au-dessus d’une laverie.',
+      'En 1996, il vendait quatre cent mille disques.',
+      'L’an dernier, mille huit cents.',
       // Le mot « sonneries » doit être posé AVANT le message du répondeur, qui
       // parle du sous-traitant « qui fabrique les sonneries » : sinon l'incident
       // arrive dans un métier qu'on n'a pas encore nommé. Les chiffres, eux,
       // attendent l'écran d'après le premier exercice.
-      'Le label ne vit plus des disques. Il vit des sonneries.',
+      'Pour tenir, il fabrique des sonneries de téléphone.',
     ],
   },
   /* ⚠️ Sol a son écran, et il a fallu un retour pour qu'elle l'ait :
@@ -642,9 +649,9 @@ const PROLOGUE: Etape[] = [
     source: 'lcd',
     entete: 'SOL',
     lignes: [
-      'Sol dirige le label.',
+      'Sol dirige le label. C’est ta patronne.',
       'Sur les statuts, c’est Solange Vasseur.',
-      'Sur les pochettes, ç’a toujours été Sol.',
+      'Tout le monde dit Sol.',
       'Le syndicat lui envoie des cartons d’autocollants :',
       'LE PIRATAGE TUE LA MUSIQUE.',
       // ⚠️ Chaque ligne doit tenir sur UNE ligne d'afficheur à 390 px : le récit
@@ -658,8 +665,8 @@ const PROLOGUE: Etape[] = [
     source: 'lcd',
     entete: 'LE 14 JUIN',
     lignes: [
-      'Une grosse maison propose de racheter Face B.',
-      'Les albums, les droits, les bandes et le nom.',
+      'Une grande maison de disques veut racheter Face B :',
+      'les albums, les droits et le nom.',
       'Sol a jusqu’au 14 juin pour accepter.',
       'SOL: Je vais vendre.',
       'TOI: Alors pourquoi on travaille encore ?',
@@ -676,18 +683,20 @@ const PROLOGUE: Etape[] = [
     source: 'repondeur',
     entete: 'MESSAGE — 11 s',
     lignes: [
-      'Le sous-traitant qui fabrique les sonneries arrête.',
-      'Il laisse un dossier et un mot de passe.',
+      /* ⚠️ Plus de « sous-traitant » : le joueur doit comprendre d'un coup
+       * ce qui est perdu (les sonneries) et ce qu'on va faire (les refaire).
+       * Le stagiaire est passé au premier écran (2026-11-24). */
+      'Le studio qui fabriquait vos sonneries arrête.',
+      'Il laisse un dossier, protégé par un mot de passe.',
       'Le mot de passe ne marche pas.',
-      'Sol essaie trois fois. Il ne répond plus.',
-      'SOL: Il va falloir tout refaire.',
-      'Toi, tu es stagiaire. Tu fais le café.',
+      'Quatre ans de sonneries sont perdus.',
+      'SOL: Il va falloir les refaire nous-mêmes.',
       // ⚠️ Ce que le joueur va devoir entendre est NOMMÉ ici, avant qu'on le
       // lui demande. Cette ligne vivait après les trois exercices — on faisait
       // donc reconnaître des choses sans les avoir nommées, alors que
       // l'Atelier, où vivent les boutons, n'est même pas encore ouvert.
       'Sol se tourne vers toi.',
-      'SOL: Approche. Écoute.',
+      'SOL: Approche. Je vais t’apprendre.',
     ],
   },
 ];
@@ -772,14 +781,17 @@ export const ACTES: Acte[] = [
         /* ⚠️ Une consigne nomme le moment ET le geste, sans mot de métier —
          * retour de testeurs (2026-10-14) sur « écoute ça, et tape avec » :
          * « faut taper quand y a bruit ? ». */
-        commande: 'SOL: Le café, je sais. Écoute ça. Une croix à chaque coup.',
+        /* ⚠️ La consigne NOMME ce que la grille affiche (« KICK ») : depuis
+         * l'allègement de l'acte 0 (2026-11-24), le préambule est replié, et
+         * c'est la seule phrase lue avant la grille. */
+        commande: 'SOL: Le café, je sais. Écoute ce son grave : le kick. Une croix à chaque coup.',
       },
       {
         kind: 'recit',
         source: 'fax',
         entete: 'CE QUI FAIT VIVRE FACE B',
         lignes: [
-          'Douze secondes, trois euros, par SMS surtaxé.',
+          'Une sonnerie : douze secondes, trois euros par SMS.',
           'TAPEZ FACEB AU 61000.',
           'SOL: Sur les trois euros,',
           'SOL: il nous en revient onze centimes.',
@@ -811,14 +823,15 @@ export const ACTES: Acte[] = [
       {
         kind: 'exercice',
         niveau: 81,
-        commande: 'SOL: Le charley entre. Une ligne pour lui, une pour le kick.',
+        commande: 'SOL: Un deuxième son : le « tss » aigu, le charley. Une ligne pour lui, une pour le kick.',
       },
       {
         kind: 'recit',
         source: 'lcd',
         entete: 'SOL',
         lignes: [
-          'Elle te regarde comme si la plante verte venait de parler.',
+          'Sol te regarde, surprise.',
+          'SOL: Tu as de l’oreille.',
           'SOL: Lundi tu fais les sonneries.',
           'SOL: Encore une chose.',
         ],
@@ -831,11 +844,11 @@ export const ACTES: Acte[] = [
       {
         kind: 'recit',
         source: 'fax',
-        entete: 'COMMANDE — AGRÉGATEUR',
+        entete: 'COMMANDE — LE VENDEUR DE SONNERIES',
         lignes: [
-          'Cinq sonneries monophoniques, pour remplacer les perdues.',
+          'Cinq sonneries simples, pour remplacer les perdues.',
           'Douze secondes avec trois sons.',
-          'Tu livres. C’est objectivement mauvais.',
+          'Tu les fais. Elles ne sont pas très bonnes.',
           'Une des cinq est mise en ligne.',
           'Relevé de fin de mois : NEUF EUROS.',
           'SOL: Voilà. Tu es officiellement',
@@ -852,7 +865,7 @@ export const ACTES: Acte[] = [
     competence: 'rythme',
     competenceLabel: 'RYTHME',
     module: 'atelier',
-    resume: 'Un brief que personne ne sait expliquer. Kick, snare, hi-hat. Puis Kelvin, qui trouve ça carré.',
+    resume: 'Un brief que personne ne sait expliquer. Kick, claire, charley. Puis Kelvin, qui trouve ça carré.',
     /* ⚠️ LES ACTES 1 ET 2 SONT FUSIONNÉS (2026-11-24) — retour des testeurs :
      * « on ne comprend rien, trop difficile, pas assez progressif », et aucun
      * n'avait dépassé l'acte du rythme. Arbitrages de Yann sur la fiche
@@ -884,7 +897,8 @@ export const ACTES: Acte[] = [
           'TOI: Ça veut dire quoi ?',
           'SOL: Ça veut dire qu’ils ne savent pas.',
           'Sol pose trois mots sur la table :',
-          'Kick. Snare. Hi-hat.',
+          // Les mots que la GRILLE affiche (2026-11-24) — un seul nom par son.
+          'Kick. Claire. Charley.',
           'SOL: Le reste, c’est de la décoration.',
         ],
       },
