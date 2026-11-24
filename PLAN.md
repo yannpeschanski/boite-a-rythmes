@@ -48,6 +48,24 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'aide qui monte avec les essais (2026-11-24)
+
+**Pourquoi** — carte P3 de `premiers-pas.html` : un raté ne disait que « pas
+encore », jamais OÙ était l'erreur.
+
+**Fait** — `exercises.ts` : `casesFausses`, `caseAMontrer` (purs, sœurs de
+`comparerGrilles`). Store : `grilleNotee()` (batterie, arrangement, mélodie),
+marques au 2ᵉ raté, effacées à la retouche, `montrerUneCase()` au 3ᵉ. Vue : ✕
+et contour rouge sur la case, une phrase dans le message d'échec, bouton écrit
+« 💡 Montre-moi une case » + « la réussite vaudra 1★ ».
+**Écart assumé** : pas de pénalité d'étoile (elle ne mordait jamais — 4 essais
+valent déjà 1★). En passant : préambule du niveau 3 réécrit (il présentait le
+charley comme nouveau, la nouveauté est la claire depuis la fusion).
+
+**Vérifié** — 951 tests (13 neufs), check 0 ; à 390 × 844 en tactile, sur la
+batterie (niveau 3) et l'arrangement (83) : une marque, la phrase, le bouton,
+une case verrouillée de plus après l'aide.
+
 ### ✅ L'acte de la mélodie sur un seul écran (2026-11-24)
 
 **Pourquoi** — « les 3 premiers sont trop différents des 4 derniers, mais la

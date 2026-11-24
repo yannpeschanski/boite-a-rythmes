@@ -1032,7 +1032,27 @@
       {/if}
 
       {#if echec && !game.solved && !game.revealed}
-        <p class="echec">✗ {MSG_ECHEC[ex]}</p>
+        <p class="echec">
+          ✗ {MSG_ECHEC[ex]}
+          {#if Object.keys(game.marques).length}
+            <!-- Deuxième raté : ce qui est posé à tort est désigné
+                 (`casesFausses`). La phrase le dit — une marque qu'aucun mot
+                 n'explique se lit comme une décoration. -->
+            <br />Les cases marquées ✕ sont posées à tort.
+          {/if}
+        </p>
+      {/if}
+      {#if game.peutMontrer}
+        <!-- ⚠️ L'aide est ÉCRITE et son prix aussi : un bouton qu'on ne
+             comprend pas en le lisant ne se trouve pas en jouant. Il reste
+             affiché une fois proposé, même après une retouche — sinon il
+             faudrait rater une fois de plus pour le retrouver. -->
+        <div class="aide">
+          <button class="xp-btn tap44-y" onclick={() => { stopAll(); game.montrerUneCase(); echec = false; }}>
+            💡 Montre-moi une case
+          </button>
+          <span class="aide-prix">la réussite vaudra 1★</span>
+        </div>
       {/if}
 
       {#if descripteur && (ex === 'lequel' || ex === 'nommer' || ex === 'regler' || ex === 'laverie')}
@@ -1315,6 +1335,7 @@
                   <button
                     class="cell state-{montre}"
                     class:locked={verrou}
+                    class:faux={!echo && game.estMarquee(l.nom, vrai)}
                     class:echo
                     class:debut-mesure={debutMesure}
                     class:revealed={game.revealed && game.arrCible[l.nom][vrai] > 0 && !verrou}
@@ -1323,7 +1344,8 @@
                     aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{echo ? ' (répétition)' : ''}"
                     onclick={() => { game.arrCycler(l.nom, vrai); echec = false; }}
                   >
-                    {#if verrou && !echo}<span class="mark">✓</span>{/if}
+                    {#if verrou && !echo}<span class="mark">✓</span>
+                    {:else if !echo && game.estMarquee(l.nom, vrai)}<span class="mark">✕</span>{/if}
                   </button>
                 {:else}
                   <button
@@ -1333,10 +1355,11 @@
                     class:debut-mesure={debutMesure}
                     class:sel={game.arrSel?.ligne === l.nom && game.arrSel?.pas === vrai && !echo && !game.solved && !game.revealed}
                     class:locked={verrou}
+                    class:faux={!echo && game.estMarquee(l.nom, vrai)}
                     class:revealed={game.revealed && game.arrCible[l.nom][vrai] > 0 && !verrou}
                     class:playing={playheadCol(l, col, n)}
                     class:win-flash={winFlash}
-                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}{echo ? ' (répétition)' : ''}"
+                    aria-label="{NOM_LIGNE[l.nom]}, pas {col + 1}{montre ? `, degré ${montre}` : ', vide'}{!echo && game.estMarquee(l.nom, vrai) ? ', posée à tort' : ''}{echo ? ' (répétition)' : ''}"
                     onclick={() => { game.arrViser(l.nom, vrai); echec = false; }}
                   >{montre > 0 ? montre : ''}</button>
                 {/if}
@@ -1434,6 +1457,7 @@
                 class:vide={!montre}
                 class:sel={melSel === col && !game.solved && !game.revealed}
                 class:verrou={game.melodieLocked[col]}
+                class:faux={game.estMarquee('melodie', col)}
                 class:revelee={(game.solved || game.revealed) && !pose && game.melodieCible[col] > 0}
                 class:playing={playheadBass === col}
                 class:win-flash={winFlash}
@@ -1643,6 +1667,7 @@
                   <button
                     class="cell state-{st}"
                     class:locked
+                    class:faux={game.estMarquee(name, col)}
                     class:revealed={game.revealed && game.target[name][col] > 0 && !locked}
                     class:playing={playhead[name] === col}
                     class:donne={ex === 'completer' && !zone[name].has(col)}
@@ -1655,6 +1680,7 @@
                     }}
                   >
                     {#if locked}<span class="mark">{ex === 'completer' && !zone[name].has(col) ? '·' : '✓'}</span>
+                    {:else if game.estMarquee(name, col)}<span class="mark">✕</span>
                     {:else if game.revealed && game.target[name][col] > 0}<span class="mark">○</span>{/if}
                     {#if game.guessRolls[name][col] > 1}<span class="roll">×{game.guessRolls[name][col]}</span>{/if}
                   </button>
@@ -2299,6 +2325,12 @@
   .cell.revealed {
     outline: 2px dashed var(--xp-playhead);
   }
+  /* Posée à tort — même couleur que le message d'échec qui l'explique. */
+  .cell.faux,
+  .mel-case.faux {
+    outline: 2px solid var(--cell-kick);
+    outline-offset: -2px;
+  }
   .cell.playing {
     outline: 2px solid var(--xp-playhead);
     outline-offset: -1px;
@@ -2362,6 +2394,17 @@
     gap: 6px;
     flex-wrap: wrap;
     margin-top: 8px;
+  }
+  .aide {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: -4px 0 10px;
+  }
+  .aide-prix {
+    font-size: var(--xp-size-small, 11px);
+    color: var(--xp-accent-amber);
   }
   .echec {
     font-size: var(--xp-size-body);
