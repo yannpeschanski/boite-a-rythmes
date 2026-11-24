@@ -9,13 +9,14 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ✅ L'OBJECTIF au premier écran : « TON BUT · passer de stagiaire à artiste ».
 > ✅ Le PREMIER EXERCICE se joue guidé (écouter → poser → vérifier) et l'acte 0
 > est allégé (onze éléments cliquables → six).
 > ✅ Et l'AIDE QUI MONTE avec les essais (cases ✕ au 2ᵉ raté, « Montre-moi une
 > case » au 3ᵉ), sans pénalité d'étoile — elle ne mordait jamais.
 > ✅ Puis l'acte de la MÉLODIE sur un seul verbe : 83-85 (arrangements écrits)
 > remplacent 42-44. Restent, non arbitrés : démonstrations guidées, « Snare/Hat » à l'écran contre « claire/charley » dans le texte,
-> l'objectif nommé au premier écran, le dossier des inédits à l'épilogue. Acte 5
+> le dossier des inédits à l'épilogue. Acte 5
 > (FB-015) trop long : pas prioritaire.
 >
 > Avant cela, le 2026-10-13 — ✅ **Deux retours de Martin.** (1) La
