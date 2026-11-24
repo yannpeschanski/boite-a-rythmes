@@ -1850,4 +1850,71 @@ mkLevel(30, 'Polyrythmie — 16 contre 12', {
       snare: [0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
       hat:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     } }),
+
+  /* ⚠️ L'ACTE DE LA MÉLODIE RENDU HOMOGÈNE (2026-11-24) — *« les 3 premiers
+   * sont trop différents des 4 derniers, mais la difficulté est plutôt
+   * correcte »* (Yann). Les 42, 43 et 44 étaient des mélodies TIRÉES AU SORT,
+   * seules, sur le verbe `melodie` ; les 75 à 78, des arrangements ÉCRITS avec
+   * une batterie dessous. Ces trois-là les remplacent dans la carrière, au même
+   * niveau de synthé (pas, degrés, nombre de notes, reprise ou non), sur le
+   * MÊME écran que la suite : ce qui monte d'un exercice à l'autre est le
+   * nombre de VOIX, 2 → 3 → 3 → 4 → 5 → 7 → 6. La batterie y est légère —
+   * deux lignes au plus, et la syncope du kick acquise à l'acte 1 — pour que
+   * l'oreille reste sur le synthé. Les 42-44 restent au réservoir (un niveau
+   * ne se supprime jamais), et écrire ce qui se joue une fois est la règle
+   * (`GrilleEcrite`). */
+  mkLevel(83, 'Reposer une phrase', {
+    exercise: 'arrangement',
+    preamble: "Une phrase de mélodie sur un kick. Le kick, tu connais ; la phrase se repose case par case : choisis une case, appuie sur la note entendue. La première t'est donnée, c'est le repère.",
+    tempoOptions: [86, 92],
+    sons: {
+      melody: { voix: 'housepluck', retouches: { release: 0.07 }, delay: 0.3, reverb: 0.22 },
+      kick: { tone: 22, decay: 6 },
+    },
+    arrangement: {
+      subdiv: 8,
+      degreMax: 5,
+      lignes: [
+        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 0, 1, 1, 0, 0, 0] },
+        { nom: 'melody', nature: 'degres', pas: [1, 0, 3, 5, 0, 4, 3, 2] },
+      ],
+    } }),
+  mkLevel(84, 'La basse, sous la phrase', {
+    exercise: 'arrangement',
+    preamble: "On descend d'un étage : la basse, sur deux mesures. La deuxième reprend la première, note pour note — une basse qui se répète porte le morceau. Toute la gamme cette fois : sept notes au clavier.",
+    tempoOptions: [86, 92],
+    sons: {
+      bass: { voix: 'round', retouches: { release: 0.42 }, reverb: 0.08, volume: 1.05 },
+      kick: { tone: 22, decay: 6 },
+      snare: { reverb: 0.12 },
+    },
+    arrangement: {
+      subdiv: 8,
+      degreMax: 7,
+      lignes: [
+        { nom: 'kick',  nature: 'drum',   pas: [1, 0, 0, 1, 1, 0, 1, 0] },
+        { nom: 'snare', nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'bass',  nature: 'degres', cycles: 2,
+          pas: [1, 0, 0, 5, 0, 6, 0, 4,  1, 0, 0, 5, 0, 6, 0, 4] },
+      ],
+    } }),
+  mkLevel(85, 'Toute la gamme', {
+    exercise: 'arrangement',
+    preamble: "La mélodie sur deux mesures, toute la gamme, et aucune reprise : la deuxième mesure ne répète pas la première. Les notes hautes sont les plus dures à situer — compte depuis la première, c'est la tonique.",
+    tempoOptions: [80, 88],
+    sons: {
+      melody: { voix: 'housepluck', retouches: { release: 0.07 }, delay: 0.3, reverb: 0.22 },
+      kick: { tone: 22, decay: 6 },
+      snare: { reverb: 0.12 },
+    },
+    arrangement: {
+      subdiv: 8,
+      degreMax: 7,
+      lignes: [
+        { nom: 'kick',   nature: 'drum',   pas: [1, 0, 0, 0, 1, 0, 0, 1] },
+        { nom: 'snare',  nature: 'drum',   pas: [0, 0, 1, 0, 0, 0, 1, 0] },
+        { nom: 'melody', nature: 'degres', cycles: 2,
+          pas: [1, 0, 3, 5, 0, 6, 5, 0,  4, 0, 7, 6, 0, 5, 2, 1] },
+      ],
+    } }),
 ];

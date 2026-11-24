@@ -471,24 +471,26 @@ describe('L’acte 2 enseigne ce que le récit annonce', () => {
     expect(moduleUnlocked('synth', { level: 1, acte: 3 })).toBe(true);
   });
 
-  it('ne cite que des verbes de HAUTEUR — les degrés, seuls puis empilés', () => {
-    /* ⚠️ Deux verbes depuis le 2026-09-02, et l'ordre est le contenu de
-     * l'acte : `melodie` pose les degrés sur UNE ligne, `arrangement` les
-     * empile avec la batterie et une seconde ligne de synthé. Demande de Yann :
-     * *« des exercices de reproduction de synthé avec en même temps plusieurs
-     * lignes »*, batterie comprise. Ce qui reste interdit ici, c'est un verbe
-     * qui ne parle pas de hauteur. */
-    const verbes = niveauxDeLActe(ACTES[2]).map((n) => LEVELS.find((x) => x.id === n)!.exercise);
-    for (const [i, v] of verbes.entries()) {
-      expect(['melodie', 'arrangement'], `niveau ${niveauxDeLActe(ACTES[2])[i]}`).toContain(v);
-    }
-    // Les degrés seuls AVANT les degrés empilés : on n'arrange pas ce qu'on ne
-    // sait pas encore écrire.
-    expect(verbes.lastIndexOf('melodie')).toBeLessThan(verbes.indexOf('arrangement'));
-    for (const n of niveauxDeLActe(ACTES[2])) {
+  /* ⚠️ UN SEUL VERBE depuis le 2026-11-24 — *« les 3 premiers sont trop
+   * différents des 4 derniers, mais la difficulté est plutôt correcte »*
+   * (Yann). L'acte posait d'abord des mélodies TIRÉES, seules (`melodie`),
+   * puis des arrangements ÉCRITS (`arrangement`) : deux écrans, deux façons
+   * de faire, au milieu de l'acte. Tout est maintenant `arrangement`, et ce qui
+   * monte est le nombre de VOIX — le test des deux axes, plus bas, le tient.
+   * Les 42-44 restent au réservoir. */
+  it('ne cite qu’un verbe, l’arrangement ÉCRIT, du premier exercice au dernier', () => {
+    const niveaux = niveauxDeLActe(ACTES[2]);
+    expect(niveaux.length).toBe(7);
+    for (const retire of [42, 43, 44]) expect(niveaux, `niveau ${retire}`).not.toContain(retire);
+    for (const n of niveaux) {
       const l = LEVELS.find((x) => x.id === n)!;
-      if (l.exercise === 'melodie') expect(l.melodie.pas, `niveau ${n}`).toBeGreaterThan(0);
+      expect(l.exercise, `niveau ${n}`).toBe('arrangement');
+      expect(l.arrangement, `niveau ${n} : tiré au sort`).toBeTruthy();
     }
+    // Les voix montent en commençant petit : la phrase seule sur un kick.
+    const voix = niveaux.map((n) => LEVELS.find((x) => x.id === n)!.arrangement!.lignes.length);
+    expect(voix[0]).toBe(2);
+    expect(Math.max(...voix)).toBe(7);
   });
 
   /* ⚠️ L'ARRANGEMENT — le verbe qui repose PLUSIEURS lignes de deux natures.
@@ -508,7 +510,8 @@ describe('L’acte 2 enseigne ce que le récit annonce', () => {
       expect(arrs().length).toBeGreaterThanOrEqual(3);
       for (const l of arrs()) {
         expect(l.arrangement, `niveau ${l.id}`).toBeTruthy();
-        expect(l.arrangement!.lignes.length, `niveau ${l.id}`).toBeGreaterThanOrEqual(3);
+        // Deux lignes au moins — une batterie et un synthé : c'est la demande.
+        expect(l.arrangement!.lignes.length, `niveau ${l.id}`).toBeGreaterThanOrEqual(2);
       }
     });
 

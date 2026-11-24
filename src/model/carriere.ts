@@ -1076,12 +1076,12 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 42,
+        niveau: 83,
         commande: 'Tu commences par la mélodie — c’est elle qu’on fredonne. Les hauteurs, une par une.',
       },
       {
         kind: 'exercice',
-        niveau: 43,
+        niveau: 84,
         commande: 'Puis la basse, dessous. Elle se répète : c’est ce qui la rend tenable.',
       },
       {
@@ -1102,8 +1102,8 @@ export const ACTES: Acte[] = [
       },
       {
         kind: 'exercice',
-        niveau: 44,
-        commande: 'La deuxième, celle qu’il réclame. Toute la gamme, seize pas, aucune reprise.',
+        niveau: 85,
+        commande: 'La deuxième, celle qu’il réclame. Toute la gamme, deux mesures, aucune reprise.',
       },
       /* ⚠️ LES ARRANGEMENTS — demande de Yann (2026-09-02) : *« des exercices
        * de reproduction de synthé avec en même temps plusieurs lignes »*, et,

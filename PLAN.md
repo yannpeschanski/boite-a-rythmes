@@ -48,6 +48,21 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'acte de la mélodie sur un seul écran (2026-11-24)
+
+**Pourquoi** — « les 3 premiers sont trop différents des 4 derniers, mais la
+difficulté est plutôt correcte » (Yann). 42-44 : mélodies tirées au sort, seules,
+verbe `melodie` ; 75-78 : arrangements écrits, batterie dessous.
+
+**Fait** — niveaux 83, 84, 85 (fin de tableau), `arrangement` écrits, même
+difficulté de synthé que 42, 43, 44 (8 pas / 5 degrés / 6 notes ; basse sur deux
+mesures qui se reprend, 7 degrés ; mélodie sur deux mesures sans reprise,
+7 degrés, 11 notes), avec kick (et claire) dessous. Voix : 2, 3, 3, 4, 5, 7, 6.
+42-44 au réservoir. Test réécrit : un seul verbe sur l'acte.
+
+**Vérifié** — 938 tests, check 0 ; captures 390 × 844 de 83, 84, 85, aucun
+débordement, clavier à sept touches sur une rangée.
+
 ### ✅ Les actes 1 et 2 fusionnés — une nouveauté par exercice (2026-11-24)
 
 **Pourquoi** — retour des testeurs : « on ne comprend rien, trop difficile, pas
