@@ -1132,6 +1132,11 @@ pouvoir s'approprier les outils. »* ⚠️ Et une case POSÉE n'est pas une cas
 VALIDÉE : le vert dit « fait » donc il appartient au verrou, une note qu'on
 vient de poser est ambre.
 
+⚠️ **L'acte de la MÉLODIE ne parle plus qu'`arrangement`** (2026-11-24, « les 3
+premiers trop différents des 4 derniers ») : 83-85 remplacent 42-44 (mélodies
+TIRÉES, seules) au même niveau de synthé, avec une batterie légère ; ce qui
+monte est le nombre de voix, 2 → 7. `melodie` reste un verbe du réservoir.
+
 ⚠️ **`arrangement` repose PLUSIEURS lignes de deux natures à la fois** — une
 batterie qu'on allume au clic, un synthé en degrés qu'un clavier écrit, sur la
 même colonne. Un seul verbe couvre l'acte 3 et les grosses reproductions des

@@ -9,9 +9,8 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
-> ⚠️ **À faire ensuite, arbitré** : l'acte de la MÉLODIE (n° 2) à homogénéiser —
-> 42-44 (mélodies tirées, seules) contre 75-78 (arrangements écrits) — dans une
-> seconde PR. Puis, non arbitré : démonstrations guidées, aide qui monte avec les
+> ✅ Puis l'acte de la MÉLODIE sur un seul verbe : 83-85 (arrangements écrits)
+> remplacent 42-44. Restent, non arbitrés : démonstrations guidées, aide qui monte avec les
 > essais, « Snare/Hat » à l'écran contre « claire/charley » dans le texte,
 > l'objectif nommé au premier écran, le dossier des inédits à l'épilogue. Acte 5
 > (FB-015) trop long : pas prioritaire.
