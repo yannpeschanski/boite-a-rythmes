@@ -9,6 +9,7 @@
 > sept actes, une nouveauté par exercice, charley 8 → 16 → 12 (niveau 82) puis
 > polyrythmie, décalage et rafales hors carrière, sauvegardes migrées. Corrigé en
 > passant : « Au travail ▸ » ouvrait un niveau de répétition après rechargement.
+> ✅ Le bouton principal d'un récit COMPLÈTE d'abord le texte (« Tout afficher ▸ »).
 > ✅ L'OBJECTIF au premier écran : « TON BUT · passer de stagiaire à artiste ».
 > ✅ Le PREMIER EXERCICE se joue guidé (écouter → poser → vérifier) et l'acte 0
 > est allégé (onze éléments cliquables → six).

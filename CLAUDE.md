@@ -931,6 +931,15 @@ Corollaire mesuré : le nom s'affiche **au-dessus** de la réplique, jamais deva
 — devant, il mangeait jusqu'à douze signes et repliait sept lignes écrites pour
 tenir sur une seule.
 
+⚠️ **Le premier appui sur le bouton principal COMPLÈTE le texte, le second
+agit** (2026-11-24, « compléter le texte sans attendre que tout défile ») — et
+le bouton le DIT : « Tout afficher ▸ » tant que ça tape. Toucher le texte le
+complétait déjà, mais c'était un geste caché, et le bouton passait à la suite en
+emportant le texte non lu — consigne d'une commande comprise. L'état est partagé
+par `ui/game/lecture.svelte.ts` (`apresLecture`), sur les six boutons d'écran de
+récit ; il se remet à « fini » au démontage, sinon le bouton suivant resterait
+bloqué.
+
 ⚠️ **Le récit se TAPE, et chaque personnage a une voix** (`RecitLignes.svelte`,
 `engine/voixRecit.ts`) : six percussions synthétisées — charley pour Sol,
 machine à écrire pour le texte off. Trois choses à ne pas défaire : le texte non
