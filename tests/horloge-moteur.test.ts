@@ -520,3 +520,87 @@ describe('le retard que le navigateur n’avoue pas recale l’IMAGE, et elle se
     }
   });
 });
+
+describe('la sortie reste ouverte entre deux lectures, et la première attend le son (2026-11-25)', () => {
+  /* Fait avancer ensemble le mur du téléphone feint et les minuteries. */
+  async function attendre(tel: ReturnType<typeof telephone>, ms: number) {
+    for (let k = 0; k < ms / 10; k++) {
+      tel.avancer(10);
+      await vi.advanceTimersByTimeAsync(10);
+    }
+  }
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'] }));
+  afterEach(() => vi.useRealTimers());
+
+  it('sur un contexte neuf, la lecture part quand l’horloge sait l’heure — et l’image ne court pas devant', async () => {
+    const tel = telephone();
+    const { engine } = moteur(tel.ctx);
+    tel.avancer(5);
+    const appuiCt = tel.ctx.currentTime;
+    const demarre = engine.start();
+    // Pendant l'attente, rien n'est programmé et la grille est au début.
+    await attendre(tel, 200);
+    expect(engine.mesureEntendue().progres).toBe(0);
+    await attendre(tel, 1000);
+    await demarre;
+    const debut = (engine as unknown as { debutsDeMesure: { t: number }[] }).debutsDeMesure[0].t;
+    expect(debut, 'la lecture a attendu les horodatages').toBeGreaterThan(appuiCt + 0.3);
+    // Une fois partie, l'image colle au son dès la première image : pas
+    // d'avance à rattraper.
+    const ecarts: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      tel.avancer(1000 / 60);
+      ecarts.push(Math.abs(engine.audioTime()! - tel.entendu()));
+    }
+    expect(Math.max(...ecarts)).toBeLessThan(0.02);
+    engine.stop();
+  });
+
+  it('■ ne ferme plus le contexte : il reste, l’horloge nourrie, puis se ferme au bout de la veille', async () => {
+    const tel = telephone();
+    const close = vi.spyOn(tel.ctx, 'close');
+    const { engine } = moteur(tel.ctx);
+    const prive = engine as unknown as { ctx: unknown };
+    await attendre(tel, 1200);
+    expect(prive.ctx).toBe(tel.ctx);
+    (engine as unknown as { isPlaying: boolean }).isPlaying = false;
+    engine.stop();
+    expect(prive.ctx, 'gardé après ■').toBe(tel.ctx);
+    expect(close).not.toHaveBeenCalled();
+    await attendre(tel, 5000);
+    // L'horloge a continué d'apprendre : un ▶ maintenant n'attendrait rien.
+    expect((engine as unknown as { horloge: { etablie(): boolean } }).horloge.etablie()).toBe(true);
+    await attendre(tel, 26_000);
+    expect(close).toHaveBeenCalled();
+    expect(prive.ctx).toBeNull();
+  });
+
+  it('au ▶ suivant, sur le contexte gardé, la lecture part tout de suite', async () => {
+    const tel = telephone();
+    const { engine } = moteur(tel.ctx);
+    await attendre(tel, 1500);
+    engine.stop();
+    await attendre(tel, 500);
+    // Le graphe est jeté au ■ : on remet le feint (pas d'AudioContext sous Node).
+    const vierge = moteur(tel.ctx).engine as unknown as Record<string, unknown>;
+    Object.assign(engine, { graph: vierge.graph, kit: vierge.kit, synth: vierge.synth });
+    const appuiCt = tel.ctx.currentTime;
+    const demarre = engine.start();
+    await attendre(tel, 20);
+    await demarre;
+    const debut = (engine as unknown as { debutsDeMesure: { t: number }[] }).debutsDeMesure[0].t;
+    expect(debut).toBeLessThan(appuiCt + 0.25);
+    engine.stop();
+  });
+
+  it('un ■ pendant l’attente annule le départ', async () => {
+    const tel = telephone();
+    const { engine } = moteur(tel.ctx);
+    const demarre = engine.start();
+    await attendre(tel, 100);
+    engine.stop();
+    await attendre(tel, 1200);
+    await demarre;
+    expect((engine as unknown as { isPlaying: boolean }).isPlaying).toBe(false);
+  });
+});

@@ -48,6 +48,30 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'image attend le son ; la sortie reste ouverte (2026-11-25)
+
+« J'utilise Chrome et je trouve qu'il y a toujours un retard au début » puis
+« la grille démarre en avance puis on dirait que ça se recale, ça embrouille
+tout ». Cause : `stop()` fermait le contexte, donc chaque ▶ en ouvrait un neuf
+— la route Bluetooth se réveillait, et l'horloge entendue partait sur une
+estimation (avant les horodatages de Chrome), puis se rattrapait à mi-vitesse
+sous les yeux du joueur.
+
+- Comme un lecteur vidéo : sur un contexte neuf, `start()` / `countIn` /
+  `metronome` attendent `HorlogeEntendue.etablie()` (horodatages arrivés sous
+  Chrome ; marche vue + retard lisible ailleurs), au plus 1 s.
+- `stop()` garde le contexte 30 s (`VEILLE_SORTIE_MS`) et jette le graphe
+  (`retirerGraphe` : fondu 10 ms, tout débranché, y compris les analyseurs que
+  Chrome tire sans destination). L'horloge reste nourrie, donc le ▶ suivant
+  part tout de suite. Un seul moteur au repos (`auRepos`). Garde de génération :
+  un ■ pendant l'attente annule le départ.
+- Les clics de précompte passent par `busClics` (ils allaient droit à la
+  destination, que seule la fermeture coupait).
+- Mesuré dans Chromium : trois écoutes, UN contexte créé, zéro fermé ; Atelier
+  idem. Tests : `horloge-entendue` (+3), `horloge-moteur` (+4).
+
+Non vérifié sur un vrai casque.
+
 ### ✅ Le retard du casque recale le défilement (2026-11-25)
 
 « Le jeu aux écouteurs Bluetooth ne marche pas très bien […] il faudrait que la

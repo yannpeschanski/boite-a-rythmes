@@ -653,10 +653,10 @@
      milieu du tick, qui continue ensuite sur `resetCursorsAt`. On lève un
      drapeau, et la frame suivante coupe.
      ⚠️ ET LE DRAPEAU SE LÈVE QUAND ON ENTEND LA FIN, pas quand elle est
-     rendue (2026-10-15) : `stop()` ferme le contexte, donc tout ce qui était
+     rendue (2026-10-15) : `stop()` coupe la sortie, donc tout ce qui était
      rendu mais pas encore sorti — la fin de la dernière mesure, une
      demi-seconde au casque — était coupé. La sortie se tait pile à la
-     frontière (`taireA`, à l'échantillon près), le contexte se ferme quand
+     frontière (`taireA`, à l'échantillon près), et on arrête quand
      l'oreille y est. */
   let finDeMorceau = false;
   /* La bascule de fin est APPLIQUÉE (la sortie va se taire), on attend de

@@ -349,3 +349,43 @@ describe("l'horloge entendue — ce qui n'est pas une sortie audio", () => {
     expect(h.entenduA(DEBUT_MS)).toBeNull();
   });
 });
+
+describe('l’heure ÉTABLIE — ce qu’attend le départ d’une lecture (2026-11-25)', () => {
+  /* « La grille démarre en avance puis on dirait que ça se recale, ça embrouille
+     tout. » Un lecteur vidéo n'avance pas l'image avant de savoir quand le son
+     sort ; la lecture attend `etablie()`. */
+  it('Chrome : pas avant que les horodatages soient arrivés, même avec des marches vues', () => {
+    const md: Modele = { marche: 0.171, outputLatency: 0.448, baseLatency: 0.171, retardReel: 0.3, horodatage: 'chrome' };
+    const h = new HorlogeEntendue();
+    let premier: number | null = null;
+    for (let m = DEBUT_MS + 5; m < DEBUT_MS + 2000; m += 20) {
+      h.noter(releve(md, m));
+      if (premier === null && h.etablie()) premier = m - DEBUT_MS;
+    }
+    // Les horodatages ne valent qu'une fois le son sorti (retard réel 300 ms),
+    // puis il en faut trois : la réponse tombe entre ces bornes, pas avant.
+    expect(premier).not.toBeNull();
+    expect(premier!).toBeGreaterThan(300);
+    expect(premier!).toBeLessThan(1000);
+  });
+
+  it('Firefox : dès qu’une marche est vue ET que le retard déclaré se lit', () => {
+    const muet: Modele = { marche: 0.042, outputLatency: undefined, baseLatency: 0, retardReel: 0.18, horodatage: null };
+    const h = new HorlogeEntendue();
+    for (let m = DEBUT_MS + 5; m < DEBUT_MS + 600; m += 20) h.noter(releve(muet, m));
+    expect(h.etablie(), 'retard pas encore lisible').toBe(false);
+    const lu: Modele = { ...muet, outputLatency: 0.18 };
+    h.noter(releve(lu, DEBUT_MS + 620));
+    h.noter(releve(lu, DEBUT_MS + 640));
+    expect(h.etablie()).toBe(true);
+  });
+
+  it('un contexte neuf oublie qu’elle l’était', () => {
+    const md: Modele = { marche: 0.042, outputLatency: 0.05, baseLatency: 0.01, retardReel: 0.05, horodatage: null };
+    const h = new HorlogeEntendue();
+    for (let m = DEBUT_MS + 5; m < DEBUT_MS + 400; m += 20) h.noter(releve(md, m));
+    expect(h.etablie()).toBe(true);
+    h.oublier();
+    expect(h.etablie()).toBe(false);
+  });
+});

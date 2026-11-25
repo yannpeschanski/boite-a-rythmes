@@ -77,6 +77,24 @@ const MARGE_HORIZON = 0.02; // s
  * route est établie. */
 const DELAI_LECTURE_SORTIE = 1.5; // s
 
+/* LA SORTIE RESTE OUVERTE ENTRE DEUX LECTURES (2026-11-25, « la grille démarre
+ * en avance puis on dirait que ça se recale, ça embrouille tout »). `stop()`
+ * fermait le contexte, donc chaque ▶ en ouvrait un neuf : au casque Bluetooth,
+ * la route se réveillait à chaque fois, et l'horloge entendue repartait sans
+ * rien savoir du retard. Le contexte reste maintenant ouvert ce temps-là après
+ * un arrêt (le graphe, lui, est jeté et reconstruit — voir `retirerGraphe`) ;
+ * au-delà, il se ferme comme avant, pour ne pas tenir un flux ouvert pour rien. */
+const VEILLE_SORTIE_MS = 30_000;
+/* Pendant ce temps, l'horloge continue d'être nourrie : au ▶ suivant, elle sait
+   déjà l'heure, et il n'y a rien à attendre. */
+const NOURRIR_HORLOGE_MS = 50;
+/* L'IMAGE ATTEND LE SON, comme un lecteur vidéo : sur un contexte neuf, la
+   lecture ne part qu'une fois l'horloge entendue ÉTABLIE (`HorlogeEntendue.
+   etablie`) — au plus ce temps-là, après quoi elle part sur la meilleure
+   estimation. Le son et la grille démarrent donc ensemble, au lieu d'une grille
+   en avance qui ralentit pour se recaler. */
+const ATTENTE_HORLOGE_MAX_MS = 1000;
+
 /* Avance de déclenchement d'un son JOUÉ (pad, aperçu, note tenue), en secondes.
  *
  * Ce n'est pas du confort de programmation : c'est de la latence pure ajoutée
@@ -309,10 +327,22 @@ export class AudioEngine {
   /* L'instant de contexte où le flux a commencé à couler — voir
      `sortieLisible`. */
   private debutFluxCt: number | null = null;
+  /* Ce qui garde la sortie ouverte entre deux lectures (voir VEILLE_SORTIE_MS). */
+  private veille: ReturnType<typeof setTimeout> | null = null;
+  private nourrisseur: ReturnType<typeof setInterval> | null = null;
+  /* Les clics de précompte passent par lui et non droit à la destination : un
+     ■ pendant le précompte doit les couper, et le contexte n'est plus fermé. */
+  private busClics: GainNode | null = null;
+  /* Incrémentée à chaque `stop()` : un `start()` qui attendait l'horloge ne
+     démarre pas une lecture qu'on vient d'arrêter. */
+  private generation = 0;
+  /* Un seul moteur garde sa sortie au repos : il y a une vue par moteur, et une
+     seule sortie à réveiller. Ouvrir un contexte ferme celui des autres. */
+  private static auRepos = new Set<AudioEngine>();
   /* Le dernier retard déclaré qu'on a pu LIRE, tous moteurs confondus : il y
      a trois vues, trois moteurs, une seule sortie. Sert pendant la seconde et
-     demie où un contexte neuf ne se lit pas encore — `stop()` ferme le
-     contexte, donc chaque écoute en ouvre un. */
+     demie où un contexte neuf ne se lit pas encore — après une veille
+     (VEILLE_SORTIE_MS), ou dans une autre vue. */
   private static sortieConnue: number | undefined;
   /* L'A PRIORI d'une visite précédente (stockage) — pour l'IMAGE seulement.
      ⚠️ Jamais pour décider du tampon ni pour l'afficher comme « déclaré » :
@@ -507,16 +537,24 @@ export class AudioEngine {
    * placement ; ici il n'y a rien à corriger, seulement à réduire.
    */
   private ensureAudio(): void {
+    this.annulerVeille();
     if (this.ctx && this.graph) return;
-    // `tamponCourant()` vaut TAMPON_SORTIE tant que la sortie n'a rien dit de
-    // suspect ; il passe à 'playback' sur une sortie lente ou si le réglage
-    // manuel le demande (engine/tampon.ts).
-    this.tamponDemande = tamponCourant();
-    this.ctx = new AudioContext({ latencyHint: this.tamponDemande });
-    this.horloge.oublier();
-    this.debutFluxCt = null;
-    this.retardsVus = [];
+    if (!this.ctx || this.ctx.state === 'closed') {
+      for (const autre of AudioEngine.auRepos) if (autre !== this) autre.fermerSortie();
+      // `tamponCourant()` vaut TAMPON_SORTIE tant que la sortie n'a rien dit de
+      // suspect ; il passe à 'playback' sur une sortie lente ou si le réglage
+      // manuel le demande (engine/tampon.ts).
+      this.tamponDemande = tamponCourant();
+      this.ctx = new AudioContext({ latencyHint: this.tamponDemande });
+      this.horloge.oublier();
+      this.debutFluxCt = null;
+      this.retardsVus = [];
+    }
+    // Un graphe NEUF à chaque lecture, même sur un contexte gardé : le prochain
+    // start() part de l'état, pas du dernier réglage live (voir stop()).
     this.graph = buildGraph(this.ctx, this.getState());
+    this.busClics = this.ctx.createGain();
+    this.busClics.connect(this.ctx.destination);
     this.kit = new DrumKit(this.graph);
     this.synth = new SynthKit(this.graph, false);
     this.derniereBaseMs = null; // contexte neuf : le tampon peut avoir changé
@@ -565,15 +603,7 @@ export class AudioEngine {
     // ⚠️ `close()` n'est PAS attendu, et rien ici n'en dépend : le contexte
     // neuf ne partage rien avec l'ancien, et attendre la fermeture coûterait
     // l'activation du geste. Le navigateur libère la sortie quand il a fini.
-    void ctx.close();
-    this.ctx = null;
-    this.graph = null;
-    this.kit = null;
-    this.synth = null;
-    // Même remise à zéro qu'au stop() : le graphe neuf part de l'état, pas du
-    // dernier palier live appliqué (voir setLiveSaturation/setLiveBitcrush).
-    this.liveSatBucket = null;
-    this.liveCrushBucket = null;
+    this.fermerSortie();
     this.ensureAudio();
     // Pas de reprise ici : c'est `start()` qui reprend, dans la tâche du geste.
   }
@@ -751,8 +781,13 @@ export class AudioEngine {
     if (depart === undefined) this.adapterTampon();
     this.ensureAudio();
     const ctx = this.ctx!;
+    const generation = this.generation;
     await this.reprendre(ctx);
-    if (this.isPlaying) return;
+    // L'image attend le son (ATTENTE_HORLOGE_MAX_MS) — sauf quand on enchaîne
+    // un précompte : il a déjà attendu, et l'instant de départ est donné.
+    if (depart === undefined) await this.attendreHorloge(ctx);
+    if (this.isPlaying || generation !== this.generation || this.ctx !== ctx) return;
+    this.annulerVeille();
     this.isPlaying = true;
     // La régularité se mesure PAR LECTURE : cumuler d'une lecture à l'autre
     // ferait porter à celle-ci le retard d'une autre.
@@ -812,18 +847,92 @@ export class AudioEngine {
     // contexte au prochain start() — le moyen le plus sûr de couper net
     // toutes les queues (notes programmées, réverbe, delay).
     this.synth?.stopAll();
+    this.generation++;
     if (this.ctx) {
-      void this.ctx.close();
-      this.ctx = null;
-      this.graph = null;
-      this.kit = null;
-      this.synth = null;
-      // Le prochain start() reconstruit un graphe neuf (sat/crush initialisés
-      // depuis l'état, pas depuis le dernier réglage live) — sans ce reset,
-      // un pad qui retombe sur le même palier arrondi qu'avant le STOP
-      // sauterait sa réapplication (voir setLiveSaturation/setLiveBitcrush).
-      this.liveSatBucket = null;
-      this.liveCrushBucket = null;
+      // ⚠️ Le CONTEXTE reste (VEILLE_SORTIE_MS), le GRAPHE part : couper net
+      // toutes les queues (notes programmées, réverbe, delay, clics) était ce
+      // que la fermeture garantissait, `retirerGraphe` le garantit sans elle.
+      this.retirerGraphe();
+      this.mettreEnVeille();
+    }
+  }
+
+  /* Coupe le graphe de la lecture qui finit, sans fermer le contexte : un
+   * fondu de 10 ms sur sa sortie (et celle des clics), puis TOUT débranché —
+   * les analyseurs sont tirés par le navigateur même sans destination, un
+   * graphe laissé branché continuerait de coûter. Le prochain start()
+   * reconstruit un graphe neuf (sat/crush initialisés depuis l'état, pas
+   * depuis le dernier réglage live) — sans le reset des paliers, un pad qui
+   * retombe sur le même palier arrondi qu'avant le STOP sauterait sa
+   * réapplication (voir setLiveSaturation/setLiveBitcrush). */
+  private retirerGraphe(): void {
+    const ctx = this.ctx;
+    const graph = this.graph;
+    const clics = this.busClics;
+    this.graph = null;
+    this.kit = null;
+    this.synth = null;
+    this.busClics = null;
+    this.liveSatBucket = null;
+    this.liveCrushBucket = null;
+    if (!ctx || ctx.state === 'closed') return;
+    const t = ctx.currentTime;
+    for (const g of [graph?.finalGain, clics]) {
+      if (!g) continue;
+      try {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0, t + 0.01);
+      } catch {
+        /* contexte en train de se fermer : rien à faire entendre */
+      }
+    }
+    setTimeout(() => {
+      clics?.disconnect();
+      if (graph) debrancherTout(graph);
+    }, 60);
+  }
+
+  /* Le contexte reste ouvert un moment, l'horloge nourrie, puis se ferme. */
+  private mettreEnVeille(): void {
+    this.annulerVeille();
+    AudioEngine.auRepos.add(this);
+    this.nourrisseur = setInterval(() => {
+      const r = this.releve();
+      if (r) this.horloge.noter(r);
+    }, NOURRIR_HORLOGE_MS);
+    this.veille = setTimeout(() => this.fermerSortie(), VEILLE_SORTIE_MS);
+  }
+
+  private annulerVeille(): void {
+    if (this.veille) clearTimeout(this.veille);
+    if (this.nourrisseur) clearInterval(this.nourrisseur);
+    this.veille = null;
+    this.nourrisseur = null;
+    AudioEngine.auRepos.delete(this);
+  }
+
+  /* Ferme vraiment la sortie — ce que `stop()` faisait à chaque arrêt. Sans
+     effet pendant une lecture. */
+  fermerSortie(): void {
+    if (this.isPlaying) return;
+    this.annulerVeille();
+    this.retirerGraphe();
+    if (this.ctx && this.ctx.state !== 'closed') void this.ctx.close();
+    this.ctx = null;
+  }
+
+  /* Attend que l'horloge entendue sache l'heure — au plus
+   * ATTENTE_HORLOGE_MAX_MS. Immédiat sur un contexte gardé ouvert. */
+  private async attendreHorloge(ctx: AudioContext): Promise<void> {
+    const debut = performance.now();
+    for (let i = 0; i < ATTENTE_HORLOGE_MAX_MS / 20; i++) {
+      if (this.ctx !== ctx) return;
+      const r = this.releve();
+      if (!r) return;
+      this.horloge.noter(r);
+      if (this.horloge.etablie() || performance.now() - debut >= ATTENTE_HORLOGE_MAX_MS) return;
+      await new Promise((fin) => setTimeout(fin, 20));
     }
   }
 
@@ -1694,6 +1803,7 @@ export class AudioEngine {
     // `currentTime` n'avance pas, et une salve programmée avant la reprise part
     // sur une horloge figée. C'est silencieux et incompréhensible côté joueur.
     await this.reprendre(ctx);
+    if (apresQuoi === undefined) await this.attendreHorloge(ctx);
     const intervalle = 60 / Math.max(20, bpm);
     // `apresQuoi` enchaîne une salve sur la précédente sans rupture de phase :
     // le calibrage a besoin d'un métronome QUI CONTINUE, pas d'une fenêtre de
@@ -1705,7 +1815,7 @@ export class AudioEngine {
       const auPlusTot = ctx.currentTime + 0.05;
       if (startAt < auPlusTot) startAt += Math.ceil((auPlusTot - startAt) / intervalle) * intervalle;
     }
-    for (let i = 0; i < beats; i++) scheduleClick(ctx, startAt + i * intervalle, i % 4 === 0);
+    for (let i = 0; i < beats; i++) scheduleClick(ctx, startAt + i * intervalle, i % 4 === 0, this.busClics ?? undefined);
     return { debut: startAt, intervalle, fin: startAt + beats * intervalle };
   }
 
@@ -1809,10 +1919,13 @@ export class AudioEngine {
     this.ensureAudio();
     const ctx = this.ctx!;
     await this.reprendre(ctx);
+    // Les chiffres du précompte sont de l'IMAGE : ils attendent que l'horloge
+    // sache l'heure, comme une lecture (voir ATTENTE_HORLOGE_MAX_MS).
+    await this.attendreHorloge(ctx);
     const beatDur = 60 / this.getState().tempo;
     const startAt = ctx.currentTime + 0.05;
     for (let beat = 0; beat < 4; beat++) {
-      scheduleClick(ctx, startAt + beat * beatDur, beat === 0);
+      scheduleClick(ctx, startAt + beat * beatDur, beat === 0, this.busClics ?? undefined);
     }
     const depart = startAt + 4 * beatDur;
     /* Des REPÈRES, pas des minuteries calculées une fois : sur un contexte
@@ -2054,5 +2167,23 @@ export class AudioEngine {
     const glideTime = (row.glide || 0) * 0.12;
     const glide = glideTime > 0 && glideFrom != null ? { fromFreq: glideFrom, glideTime } : null;
     this.synth.playMelodyNote(freq, t, 0.5, 0.4, row.voice, glide);
+  }
+}
+
+/* Débranche tous les nœuds d'un graphe jeté — ceux portés directement et ceux
+   rangés par ligne. Duck-typé : les tests tournent sans `AudioNode`. */
+function debrancherTout(graph: object): void {
+  const debrancher = (v: unknown) => {
+    if (v && typeof (v as AudioNode).disconnect === 'function') {
+      try {
+        (v as AudioNode).disconnect();
+      } catch {
+        /* déjà débranché */
+      }
+    }
+  };
+  for (const v of Object.values(graph)) {
+    if (v && typeof (v as AudioNode).disconnect === 'function') debrancher(v);
+    else if (v && typeof v === 'object') for (const w of Object.values(v)) debrancher(w);
   }
 }
