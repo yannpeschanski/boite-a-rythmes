@@ -48,6 +48,30 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Le retard du casque recale le défilement (2026-11-25)
+
+« Le jeu aux écouteurs Bluetooth ne marche pas très bien […] il faudrait que la
+latence du Bluetooth s'applique au défilement. » L'image suivait déjà l'horloge
+du son entendu, mais seulement de ce que le navigateur AVOUE (Firefox : 22 ms
+annoncés au casque pour ~180 ; WebKit : pas d'`outputLatency`). Là, la grille
+défilait en avance sur le son, et aucun calcul ne pouvait le voir.
+
+- `AudioEngine.tempsAffiche()` = `audioTime()` − `decalageImage`, plafonné à
+  `currentTime`. Lu par `mesureEntendue`, `consumePlayhead` (cases ET repères)
+  et la fin du précompte du Mode jeu. Jamais par `audioTimeA` (la date d'une
+  frappe) ni par le retard mesuré.
+- Le décalage EST le calibrage existant (`latence.ms`, tape sur les clics) :
+  `latence` le pousse au moteur dans `charger` et `regler`. Résiduel, donc ~0
+  là où le navigateur dit déjà vrai (Chrome Android).
+- Le Mode jeu le rend accessible : « 🎧 Son décalé ? » dans la barre du haut,
+  surcouche de calibrage ; l'Atelier l'a aussi dans le menu Vue. Consigne
+  réécrite pour dire ce qu'on recale.
+- La notation des « jouer » n'en dépend toujours pas (écart ENTRE frappes).
+- `tests/horloge-moteur.test.ts` : l'image attend le retard, la date d'une
+  frappe ne bouge pas, un retard négatif n'affiche rien de non rendu.
+
+Non vérifié sur un vrai casque.
+
 ### ✅ L'Atelier accueille celui qui arrive du jeu (2026-11-24)
 
 **Retour** — « pas du tout évident de s'y retrouver […] il faut un tuto

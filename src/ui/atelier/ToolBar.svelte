@@ -19,6 +19,7 @@
     onSwitchView,
     onLoadPreset,
     onLoadBank,
+    onSynchro,
     circleView = $bindable(false),
   }: {
     onExport: () => void;
@@ -32,6 +33,9 @@
     // n'écrit jamais dans `pattern`.
     onLoadPreset?: (p: SongPresetData, keepSynthAndTempo: boolean) => void;
     onLoadBank?: (id: string) => void;
+    /* Recaler l'image sur le son (casque Bluetooth) — le calibrage vit chez
+       AtelierView, qui arrête la lecture avant de l'ouvrir. */
+    onSynchro?: () => void;
     circleView?: boolean;
   } = $props();
 
@@ -251,6 +255,9 @@
         <button onclick={() => choose(() => sortie.suivant())}
           >🎧 Sortie audio : {LIBELLES_SORTIE[sortie.preference]}</button
         >
+        {#if onSynchro}
+          <button onclick={() => choose(onSynchro)}>🎧 Son décalé ? Recaler l’image</button>
+        {/if}
       </div>
     {/if}
   </div>

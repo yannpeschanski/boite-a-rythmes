@@ -22,6 +22,8 @@
  * partagé par deux joueurs a le même.
  */
 
+import { AudioEngine } from '../engine/AudioEngine';
+
 /* ⚠️ `-2` depuis le 2026-10-15 : l'ancienne clé portait des mesures prises
  * contre des clics datés à l'instant où ils étaient RENDUS, pas entendus —
  * elles contenaient donc la latence de sortie, que le pad d'écriture
@@ -47,10 +49,15 @@ class Latence {
     } catch {
       /* stockage refusé : on repart de zéro, le jeu reste jouable */
     }
+    AudioEngine.poserDecalageImage(this.ms);
   }
 
   regler(ms: number): void {
     this.ms = this.borner(ms);
+    /* ⚠️ Le même chiffre recale l'IMAGE (2026-11-25) : ce que le navigateur
+       n'avoue pas du casque, l'écran le devançait. Le moteur ne lit pas ce
+       store — on lui pousse la valeur, ici et dans `charger`. */
+    AudioEngine.poserDecalageImage(this.ms);
     try {
       localStorage.setItem(KEY, String(this.ms));
     } catch {

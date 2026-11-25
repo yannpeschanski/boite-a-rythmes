@@ -23,6 +23,7 @@
     type ExerciseKind,
   } from '../../model/exercises';
   import XpWindow from '../xp/XpWindow.svelte';
+  import CalibrageLatence from '../xp/CalibrageLatence.svelte';
   import CarriereView from './CarriereView.svelte';
 
   let {
@@ -104,7 +105,7 @@
     const evenements = engine.consumePlayhead();
     /* Le précompte cède la place quand on ENTEND le premier temps de la
        boucle — pas quand elle est programmée, quatre temps plus tôt. */
-    if (enPrecompte && departPrecompte !== null && (engine.audioTime() ?? -Infinity) >= departPrecompte) {
+    if (enPrecompte && departPrecompte !== null && (engine.tempsAffiche() ?? -Infinity) >= departPrecompte) {
       enPrecompte = false;
       departPrecompte = null;
     }
@@ -285,6 +286,21 @@
   }
 
   const descripteur = $derived(parametre(game.paramId));
+
+  /* ⚠️ LE CASQUE BLUETOOTH (2026-11-25, « il faudrait que la latence du
+     Bluetooth s'applique au défilement »). L'image suit déjà l'horloge du son
+     entendu, mais seulement de ce que le navigateur AVOUE : Firefox et Safari
+     n'avouent rien du casque, et la grille défile alors en avance sur ce qu'on
+     entend. Ça ne se devine pas, ça se mesure — une fois par appareil, en
+     tapant sur des clics (le même calibrage que le pad de l'Atelier, un seul
+     chiffre pour l'appareil). Ce qui en dépend : l'IMAGE seulement. La note
+     d'un « jouer » ne le lit pas (elle ne regarde que l'écart ENTRE les
+     frappes, voir `justesseDuRythme`). */
+  let synchro = $state(false);
+  function ouvrirSynchro() {
+    stopAll();
+    synchro = true;
+  }
 
   function stopAll() {
     engine.stop();
@@ -894,6 +910,17 @@
       }}
     />
   {:else}
+    <!-- Hors de la fenêtre : une surcouche `fixed` y serait rangée dans la
+         fenêtre au lieu de couvrir l'écran. -->
+    {#if synchro}
+      <div class="modale" role="dialog" aria-modal="true" aria-label="Recaler l’image sur le son">
+        <div class="modale-corps">
+          <XpWindow title="Recaler l’image sur le son" icon="🎧" accent="teal">
+            <CalibrageLatence {engine} onClose={() => (synchro = false)} />
+          </XpWindow>
+        </div>
+      </div>
+    {/if}
     <XpWindow title={titreFenetre} icon="🎮" accent="none">
       <div class="head">
         <button class="xp-btn tiny" onclick={() => { stopAll(); ecran = 'carriere'; }}>◂ Carrière</button>
@@ -913,6 +940,9 @@
         {#if game.bag.length > 0}
           <button class="xp-btn tiny" onclick={() => (showBag = !showBag)}>🎒 Besace ({game.bag.length})</button>
         {/if}
+        <!-- ÉCRIT, parce que celui qui en a besoin ne sait pas que ça existe :
+             il entend seulement que « ça ne colle pas ». -->
+        <button class="xp-btn tiny" onclick={ouvrirSynchro} title="Recaler la grille sur le son (casque Bluetooth)">🎧 Son décalé ?</button>
       </div>
       <!-- La consigne d'un exercice de carrière est souvent une réplique de
            Sol : elle porte son nom comme partout ailleurs dans le récit
@@ -2836,5 +2866,19 @@
       min-height: 44px;
       margin-bottom: 8px;
     }
+  }
+  .modale {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: rgb(0 0 0 / 0.55);
+    overflow: auto;
+  }
+  .modale-corps {
+    width: min(560px, 100%);
   }
 </style>
