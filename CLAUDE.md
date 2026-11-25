@@ -211,6 +211,15 @@ peut pas échouer : on borne le GEL (`plusLongGel`).
 navigateur n'avoue pas du casque se MESURE (calibrage, tape sur les clics) et
 recale l'IMAGE seule (`tempsAffiche`, 2026-11-25) — jamais la date d'une frappe.
 « 🎧 Son décalé ? » le rend joignable depuis le Mode jeu.
+⚠️ **L'image attend le son, et la sortie reste ouverte entre deux lectures**
+(2026-11-25, « la grille démarre en avance puis se recale ») — comme un lecteur
+vidéo. Sur un contexte neuf, `start()`, `countIn` et `metronome` attendent
+`HorlogeEntendue.etablie()` (au plus `ATTENTE_HORLOGE_MAX_MS`) avant de
+programmer. Et `stop()` ne ferme plus le contexte : il JETTE le graphe
+(`retirerGraphe` : fondu, tout débranché — c'était la garantie de la
+fermeture) et garde la sortie `VEILLE_SORTIE_MS`, l'horloge nourrie ; un seul
+moteur au repos (`auRepos`). Les clics passent par `busClics`, jamais droit à la
+destination : ■ doit les couper.
 
 ⚠️ **Ce qu'on AFFICHE d'une bascule attend l'oreille ; ce qu'on DÉCIDE reste sur
 le rendu.** Une bascule s'applique un retard de sortie AVANT d'être entendue

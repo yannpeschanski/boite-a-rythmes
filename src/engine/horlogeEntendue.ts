@@ -176,6 +176,9 @@ export class HorlogeEntendue {
   private sauts: number[] = [];
   private derniereSortie: number | null = null;
   private derniereSortieMs = 0;
+  /* Le navigateur a un horodatage de sortie à lui (Chrome) : on attend alors
+     qu'il parle avant de dire l'heure établie. */
+  private horodatageAttendu = false;
 
   /** Contexte neuf : rien de l'ancien ne vaut pour lui. */
   oublier(): void {
@@ -187,6 +190,7 @@ export class HorlogeEntendue {
     this.sauts = [];
     this.derniereSortie = null;
     this.derniereSortieMs = 0;
+    this.horodatageAttendu = false;
   }
 
   noter(r: Releve): void {
@@ -206,6 +210,7 @@ export class HorlogeEntendue {
     this.dernier = r;
     this.purger(this.veilles, r.murMs);
 
+    if (r.horodatage && r.baseLatency !== 0) this.horodatageAttendu = true;
     const d = decalageHorodate(r);
     const perf = r.horodatage?.performanceTime ?? -1;
     if (d !== null && perf !== this.dernierPerformanceTime && r.murMs - this.dernierHorodateMs >= ECHANTILLON_MIN_MS) {
@@ -227,6 +232,21 @@ export class HorlogeEntendue {
   source(): SourceHorloge | null {
     if (!this.dernier) return null;
     return this.horodatesFrais() ? 'horodatage' : 'declare';
+  }
+
+  /** L'heure entendue est-elle CONNUE, et pas seulement estimée ? Là où le
+   *  navigateur horodate sa sortie (Chrome), quand les horodatages sont
+   *  arrivés ; ailleurs, quand une marche a été vue et que le retard déclaré
+   *  se lit (Gecko ne le donne qu'au bout d'une seconde et demie, sauf retard
+   *  retenu de la visite précédente). C'est ce qu'attend le départ d'une
+   *  lecture : l'image ne part pas sur une estimation qu'elle devrait ensuite
+   *  rattraper sous les yeux du joueur. */
+  etablie(): boolean {
+    const r = this.dernier;
+    if (!r) return false;
+    if (this.horodatesFrais()) return true;
+    if (this.horodatageAttendu) return false;
+    return this.veilles.length > 0 && (r.baseLatency !== 0 || (r.outputLatency ?? 0) > 0);
   }
 
   private horodatesFrais(): boolean {

@@ -231,8 +231,8 @@
       resetPlayhead();
       return;
     }
-    // ⚠️ Pas d'arrêt quand on enchaîne : `stop()` ferme le contexte, donc les
-    // clics du précompte et l'instant de départ avec lui.
+    // ⚠️ Pas d'arrêt quand on enchaîne : `stop()` coupe les clics du
+    // précompte et ses repères, et l'instant de départ ne vaudrait plus rien.
     if (depart === undefined) engine.stop();
     resetPlayhead();
     /* ⚠️ Les quatre mesures d'`intrus` sont de la MATIÈRE à écouter, pas « ma
