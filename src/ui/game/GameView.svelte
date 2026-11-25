@@ -8,6 +8,7 @@
   import { parametre } from '../../model/parametres';
   import { repereDeNiveau, acteParId, ACTES, niveauxDeLActe } from '../../model/carriere';
   import { etapeDuTutoriel, consigneDuTutoriel } from '../../model/tutoriel';
+  import TeteLecture from '../xp/TeteLecture.svelte';
   import { analyserLigne } from '../../model/locuteurs';
   import { noterSession, sessionReprise } from '../../stores/session.svelte';
   import { noteNameForScaleDegree } from '../../model/presets/scales';
@@ -445,6 +446,7 @@
   /* Le seul chemin du jeu vers l'Atelier avec un rythme : la livraison de la
      sonnerie (`onLivraison`). */
   function saveToAtelier() {
+    game.depuisLeRecit = true;
     pattern.replace(game.toAtelierState());
     onGoAtelier?.();
   }
@@ -1393,7 +1395,7 @@
               <span class="count" class:ok={posees === attendues}>{posees}/{attendues}</span>
             </div>
             <div class="cells" style:--cols={total}>
-              {#if tete >= 0}<span class="tete" style:left="{tete * 100}%" aria-hidden="true"></span>{/if}
+              <TeteLecture position={tete} />
               {#each { length: total } as _, col (col)}
                 {@const vrai = n ? col % n : 0}
                 {@const echo = col >= n}
@@ -1731,7 +1733,7 @@
                 {/if}
               </div>
               <div class="cells" class:guide={tutoriel?.etape === 2} style:--cols={game.subdiv[name]}>
-                {#if tete >= 0}<span class="tete" style:left="{tete * 100}%" aria-hidden="true"></span>{/if}
+                <TeteLecture position={tete} />
                 {#each { length: game.subdiv[name] } as _, col (col)}
                   {@const st = game.guess[name][col]}
                   {@const locked = game.locked[name][col]}
@@ -2409,19 +2411,7 @@
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 3px;
   }
-  /* La tête de lecture continue : un trait, au-dessus des cases, que les
-     doigts traversent (aucun clic ne s'y arrête). */
-  .tete {
-    position: absolute;
-    top: -3px;
-    bottom: -3px;
-    width: 2px;
-    margin-left: -1px;
-    background: var(--xp-playhead);
-    box-shadow: 0 0 4px var(--xp-playhead);
-    pointer-events: none;
-    z-index: 2;
-  }
+
   .cell {
     position: relative;
     height: 34px;

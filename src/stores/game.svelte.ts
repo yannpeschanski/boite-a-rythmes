@@ -433,6 +433,10 @@ class GameStore {
    * ne fait pas avancer le récit. Rangé dans le curseur, il survivrait au
    * rechargement et bloquerait la carrière sur place. */
   repetitionCommande = $state(false);
+  /* Le joueur arrive dans l'Atelier depuis le RÉCIT sans commande ni montage
+   * — la livraison de la sonnerie. Volatil : l'Atelier le lit à son montage
+   * (barre « ◂ Retour au récit ») et l'efface en partant. */
+  depuisLeRecit = $state(false);
   /* ⚠️ Combien de fois la boucle a tourné EN ENTIER pendant qu'on travaillait —
    * l'un des deux axes de la note (voir `etoilesDeLivraison`). Compté par
    * l'Atelier, qui est le seul à savoir qu'on écoute, et remis à zéro à

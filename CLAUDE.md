@@ -171,6 +171,15 @@ appareil : le tampon de Chrome y valait 171 ms, contexte nu comme contexte
 `interactive`. Ce qui place l'image est l'HORODATAGE de sortie quand il existe
 (règle suivante), jamais un aveu pris seul.
 
+⚠️ **On arrive du jeu : l'Atelier dit OÙ on est et COMMENT repartir**
+(2026-11-24). Une BARRE fixe en bas d'écran dès qu'on vient du récit (commande,
+montage, sonnerie — `game.depuisLeRecit`, volatil) porte le SEUL bouton qui fait
+repartir : « Livrer à … » (désactivé, il dit « Coche tout le cahier »), ou
+« Retour au récit ». Le haut ne garde que « Laisser tomber ». Et un accueil, une
+fois par appareil (`boite-a-rythme:atelier-bienvenue`), dit ce qui est attendu
+ICI. La tête de lecture continue est la MÊME dans l'Atelier
+(`ui/xp/TeteLecture.svelte`, une seule définition).
+
 ⚠️ **Une case allumée BOITE d'une image ; une tête de lecture continue, non**
 (2026-11-24, « pas fluide »). Mesuré : un pas de 178,6 ms s'affichait en 166 à
 184 ms — une case ne change qu'à une image. Le Mode jeu porte donc une BARRE
