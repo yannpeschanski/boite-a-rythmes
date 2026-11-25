@@ -1325,7 +1325,7 @@ export class AudioEngine {
    * AFFICHAGE, ils devancent le son du retard de sortie entier. Ceci se lit
    * sur l'horloge entendue, à partir du début de chaque mesure rendue. */
   mesureEntendue(): { bar: number; dansSection: number; progres: number } {
-    const t = this.audioTime();
+    const t = this.tempsAffiche();
     const debuts = this.debutsDeMesure;
     if (t === null || !debuts.length) return { bar: 0, dansSection: 0, progres: 0 };
     while (debuts.length > 1 && debuts[1].t <= t) debuts.shift();
@@ -1618,6 +1618,31 @@ export class AudioEngine {
     return r ? this.horloge.maintenant(r) : null;
   }
 
+  /* L'heure où se place l'IMAGE — `audioTime()` moins le retard MESURÉ que le
+   * navigateur ne déclare pas (2026-11-25, « il faudrait que la latence du
+   * Bluetooth s'applique au défilement »).
+   *
+   * ⚠️ L'horloge entendue ne sait que ce que le navigateur AVOUE : Firefox
+   * annonce 22 ms au casque pour ~180 entendus, WebKit n'a pas
+   * d'`outputLatency` du tout. Là, l'image devance le son de tout le casque, et
+   * aucun calcul ne le voit. Le reste se MESURE : le calibrage (tape sur les
+   * clics, `ui/latence.svelte.ts`) donne ce qui manque, l'interface le pose ici
+   * (`poserDecalageImage`). Le calibrage étant RÉSIDUEL, un navigateur qui dit
+   * déjà vrai (Chrome Android, dont l'horodatage compte le Bluetooth) mesure ~0
+   * et rien ne bouge. Ce qui le lit : tout ce qu'on AFFICHE (cases, tête de
+   * lecture, repères). Jamais la date d'une frappe (`audioTimeA`), ni le
+   * retard mesuré : ceux-là parlent du son, pas de l'écran. Plafonné à ce qui
+   * est rendu — on n'entend jamais ce qui ne l'est pas. */
+  private static decalageImage = 0;
+  static poserDecalageImage(ms: number): void {
+    AudioEngine.decalageImage = Number.isFinite(ms) ? Math.max(-0.4, Math.min(0.4, ms / 1000)) : 0;
+  }
+  tempsAffiche(): number | null {
+    const t = this.audioTime();
+    if (t === null || !this.ctx) return t;
+    return Math.min(t - AudioEngine.decalageImage, this.ctx.currentTime);
+  }
+
   /* L'heure entendue à un instant MURAL passé — la date d'une frappe.
    *
    * Pour `event.timeStamp`, qui est sur l'horloge de `performance.now()` : on
@@ -1695,7 +1720,7 @@ export class AudioEngine {
     if (!this.ctx) return [];
     // Lue à chaque image même sans pas en attente : c'est aussi ce qui nourrit
     // l'horloge entre deux lectures.
-    const now = this.audioTime();
+    const now = this.tempsAffiche();
     if (now === null) return [];
     if (this.reperes.length) {
       const dus = this.reperes.filter((r) => r.t <= now);

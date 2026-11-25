@@ -136,9 +136,11 @@
 
 <div class="calibrage">
   <p class="consigne">
-    Le métronome tourne <strong>en continu</strong> : prends ton temps, puis tape sur le
-    pad à chaque clic. Ne cherche pas à bien faire — on mesure le retard de ton
-    appareil, pas ton sens du rythme. Il faut {FRAPPES_MINIMUM} frappes.
+    Avec un casque <strong>Bluetooth</strong>, le son arrive après l’image : la grille
+    défile en avance sur ce que tu entends. Tape sur le pad <strong>quand tu entends</strong>
+    chaque clic — on mesure ce retard et on recale le défilement dessus. Le métronome
+    tourne en continu, prends ton temps. Il faut {FRAPPES_MINIMUM} frappes.
+    <span class="muted">À refaire si tu changes de casque.</span>
   </p>
   <button class="pad" onpointerdown={frapper} aria-label="Frapper pour calibrer">
     {#if attente}

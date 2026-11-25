@@ -207,7 +207,10 @@ comptés en RAPPELS (un horodatage Chrome ne change qu'à chaque rappel), sinon 
 seul rappel bruité vaut six relevés. Un test qui affirme « ne recule jamais » ne
 peut pas échouer : on borne le GEL (`plusLongGel`).
 `tests/horloge-entendue.test.ts` (contextes feints), `tests/horloge-moteur.test.ts`.
-⚠️ Pas de réglage image/son à la main : essayé, « c'est imbitable ».
+⚠️ Pas de réglage image/son à la main : essayé, « c'est imbitable ». Ce que le
+navigateur n'avoue pas du casque se MESURE (calibrage, tape sur les clics) et
+recale l'IMAGE seule (`tempsAffiche`, 2026-11-25) — jamais la date d'une frappe.
+« 🎧 Son décalé ? » le rend joignable depuis le Mode jeu.
 
 ⚠️ **Ce qu'on AFFICHE d'une bascule attend l'oreille ; ce qu'on DÉCIDE reste sur
 le rendu.** Une bascule s'applique un retard de sortie AVANT d'être entendue
@@ -1278,8 +1281,8 @@ exige un chiffre que le navigateur ignore (Firefox + Bluetooth : 22 ms annoncés
 pour ~180) ; or un retard d'appareil est CONSTANT. Chaque fenêtre cherche donc
 le décalage constant (≤ `DECALAGE_MAX_MS`, 300) qui la cale le mieux, et se lit
 DANS L'ORDRE du motif — au plus proche, les quatre temps passaient le niveau du
-contretemps. Plus aucun calibrage, bouton ni correction dans le Mode jeu : n'en
-remettre aucun. ⚠️ Limite connue : 4 coups justes sur 5 = 80 %, pile le seuil.
+contretemps. Plus aucun calibrage ni correction dans la NOTATION : n'en
+remettre aucun (le « 🎧 Son décalé ? » de 2026-11-25 recale l'image, pas la note). ⚠️ Limite connue : 4 coups justes sur 5 = 80 %, pile le seuil.
 
 ⚠️ **« Jouer » note la MEILLEURE fenêtre consécutive, pas la moyenne du tour.** La
 boucle tourne en rond : moyenner rend les tâtonnements définitifs. La fenêtre doit

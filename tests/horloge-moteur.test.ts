@@ -125,6 +125,7 @@ function rouler(
 
 beforeEach(() => {
   AudioEngine.oublierSortieConnue();
+  AudioEngine.poserDecalageImage(0);
   // La lenteur de sortie vue par un test précédent ferait rouvrir le contexte.
   oublierSortie();
 });
@@ -463,5 +464,59 @@ describe('le métronome du calibrage', () => {
     const pas = (suite.debut - m.debut) / m.intervalle;
     expect(Math.abs(pas - Math.round(pas))).toBeLessThan(1e-9);
     expect(suite.debut).toBeGreaterThan(tel.ctx.currentTime);
+  });
+});
+
+describe('le retard que le navigateur n’avoue pas recale l’IMAGE, et elle seule (2026-11-25)', () => {
+  /* Firefox annonce 22 ms au casque pour ~180 entendus : l'horloge entendue
+     ne peut pas le voir, le calibrage le mesure et le pose ici. */
+  it('cases, tête de lecture et repères attendent le retard mesuré', () => {
+    const tel = telephone();
+    const etat = defaultState();
+    const { engine, prive } = moteur(tel.ctx, () => etat);
+    const mesure = barDuration(etat.tempo);
+    const debut = tel.ctx.currentTime + 0.06;
+    lancerA(engine, debut, mesure);
+    AudioEngine.poserDecalageImage(150);
+    let premierPas: number | null = null;
+    let repere: number | null = null;
+    engine.aLInstantEntendu(debut + 0.5, () => (repere = tel.entendu()));
+    const progres: { entendu: number; progres: number }[] = [];
+    rouler(tel, prive, 2500, () => {
+      for (const ev of engine.consumePlayhead()) if (premierPas === null && ev.name === 'kick') premierPas = tel.entendu();
+      progres.push({ entendu: tel.entendu(), progres: engine.mesureEntendue().progres });
+    });
+    // Le premier kick s'allume 150 ms APRÈS qu'on l'entend : c'est ce que dit
+    // la mesure — le son, lui, arrive 150 ms plus tard que le navigateur ne le croit.
+    expect(Math.abs(premierPas! - (debut + 0.15))).toBeLessThan(0.02);
+    expect(Math.abs(repere! - (debut + 0.65))).toBeLessThan(0.02);
+    // La tête de lecture : à mi-mesure (entendue), elle n'en est qu'à mi-mesure moins 150 ms.
+    const milieu = progres.find((p) => p.entendu >= debut + mesure / 2)!;
+    expect(milieu.progres * mesure).toBeCloseTo(mesure / 2 - 0.15, 1);
+  });
+
+  it('la date d’une frappe ne bouge pas — elle parle du son, pas de l’écran', () => {
+    const tel = telephone();
+    const { engine } = moteur(tel.ctx);
+    tel.avancer(3000);
+    for (let i = 0; i < 60; i++) {
+      tel.avancer(1000 / 60);
+      engine.audioTime();
+    }
+    const sans = engine.audioTimeA(tel.murMs - 40)!;
+    AudioEngine.poserDecalageImage(150);
+    expect(engine.audioTimeA(tel.murMs - 40)!).toBeCloseTo(sans, 3);
+    expect(engine.tempsAffiche()!).toBeCloseTo(engine.audioTime()! - 0.15, 2);
+  });
+
+  it('un retard NÉGATIF ne fait jamais afficher ce qui n’est pas encore rendu', () => {
+    const tel = telephone();
+    const { engine } = moteur(tel.ctx);
+    tel.avancer(3000);
+    AudioEngine.poserDecalageImage(-400);
+    for (let i = 0; i < 60; i++) {
+      tel.avancer(1000 / 60);
+      expect(engine.tempsAffiche()!).toBeLessThanOrEqual(tel.ctx.currentTime);
+    }
   });
 });

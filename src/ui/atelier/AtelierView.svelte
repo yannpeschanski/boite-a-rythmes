@@ -879,6 +879,7 @@
     {onSwitchView}
     onLoadPreset={loadPreset}
     onLoadBank={loadBankEntry}
+    onSynchro={ouvrirCalibrage}
     onExport={exportJson}
     onImport={() => fileInput.click()}
     onReset={() => {
