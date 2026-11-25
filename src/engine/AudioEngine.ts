@@ -670,6 +670,42 @@ export class AudioEngine {
    * lève ; ceci voit ce qui dort.
    *
    * Aucune dépendance à Svelte ni au DOM : ça reste du moteur. */
+  /* UNE LIGNE DU RELEVÉ DE DÉMARRAGE (`#diag`, 2026-11-25 — « au début
+   * l'image part sans le son », Chrome + Bluetooth). Ce que Chrome ANNONCE à
+   * cet instant, brut, et ce que l'horloge entendue en tire : sans ça, on ne
+   * sait pas si l'annonce du téléphone change pendant les premières secondes
+   * ou si c'est le casque qui mange le début du son. Le relevé n'écrit rien :
+   * le compter dans l'horloge changerait ce qu'il mesure. */
+  releveDemarrage(): {
+    ct: number;
+    base: number | null;
+    sortie: number | null;
+    tsCt: number | null;
+    tsAge: number | null;
+    retard: number | null;
+    etablie: boolean;
+    source: string | null;
+    joue: boolean;
+  } | null {
+    const r = this.releve();
+    const ctx = this.ctx;
+    if (!r || !ctx) return null;
+    const ms = (v: number | undefined | null) => (typeof v === 'number' ? Math.round(v * 1000) : null);
+    const ts = r.horodatage;
+    const entendu = this.horloge.entenduA(r.murMs);
+    return {
+      ct: Math.round(r.currentTime * 1000),
+      base: ms(r.baseLatency),
+      sortie: ms(r.outputLatency),
+      tsCt: ts && ts.contextTime > 0 ? ms(ts.contextTime) : null,
+      tsAge: ts && ts.performanceTime > 0 ? Math.round(r.murMs - ts.performanceTime) : null,
+      retard: entendu === null ? null : ms(r.currentTime - entendu),
+      etablie: this.horloge.etablie(),
+      source: this.horloge.source(),
+      joue: this.isPlaying,
+    };
+  }
+
   diagnostic(): Record<string, string | number | boolean | null> {
     const ctx = this.ctx;
     const ms = (v: number | undefined) =>
