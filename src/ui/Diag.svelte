@@ -93,6 +93,65 @@
     engine.stop();
   });
 
+  /* ── LE RELEVÉ DE DÉMARRAGE ────────────────────────────────────────────────
+   * « Au début l'image part sans le son, puis ça se recale » (Chrome +
+   * Bluetooth, 2026-11-25). Deux causes possibles, que l'oreille ne départage
+   * pas : le téléphone annonce un retard qui CHANGE pendant les premières
+   * secondes, ou le casque se réveille et mange le début du son. Ce relevé
+   * enregistre l'annonce toutes les 100 ms pendant une première lecture, un
+   * arrêt, puis une relecture — si les chiffres ne bougent pas, c'est le
+   * casque. Le texte se COPIE : il n'y a pas de console sur un téléphone. */
+  let releve = $state<string>('');
+  let enReleve = $state(false);
+  async function lancerReleve(): Promise<void> {
+    if (enReleve) return;
+    enReleve = true;
+    releve = '';
+    const lignes: string[] = ['t(ms) phase ct base sortie ts(ct@âge) retard établie source'];
+    const debut = performance.now();
+    let phase = 'L1';
+    const noterLigne = () => {
+      const r = engine.releveDemarrage();
+      const t = String(Math.round(performance.now() - debut)).padStart(5, '0');
+      if (!r) return lignes.push(`${t} ${phase} —`);
+      lignes.push(
+        `${t} ${phase}${r.joue ? '' : '…'} ${r.ct} ${r.base ?? '-'} ${r.sortie ?? '-'} ` +
+          `${r.tsCt ?? '-'}@${r.tsAge ?? '-'} ${r.retard ?? '-'} ${r.etablie ? 'E' : '·'} ${r.source ?? '-'}`,
+      );
+    };
+    const minute = setInterval(noterLigne, 100);
+    try {
+      engine.stop();
+      engine.fermerSortie();
+      await engine.start();
+      await new Promise((f) => setTimeout(f, 6000));
+      phase = 'ARRÊT';
+      engine.stop();
+      await new Promise((f) => setTimeout(f, 2000));
+      phase = 'L2';
+      await engine.start();
+      await new Promise((f) => setTimeout(f, 4000));
+      engine.stop();
+    } catch (e) {
+      lignes.push(`erreur : ${String(e)}`);
+    } finally {
+      clearInterval(minute);
+      noterLigne();
+      lignes.push(navigator.userAgent);
+      releve = lignes.join('\n');
+      enReleve = false;
+    }
+  }
+  let copie = $state('');
+  async function copierReleve(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(releve);
+      copie = 'copié ✓';
+    } catch {
+      copie = 'copie refusée : sélectionne le texte à la main';
+    }
+  }
+
   async function lecture(): Promise<void> {
     await essai('7. LECTURE (graphe + scheduler)', () => engine.start());
     suivre();
@@ -375,6 +434,21 @@
     </tbody>
   </table>
 
+  <h2>Relevé du démarrage</h2>
+  <p class="aide">
+    Branche ton casque, appuie, et écoute sans rien toucher : une lecture de six
+    secondes, un arrêt de deux, puis une relecture de quatre. Ensuite, copie le
+    texte et envoie-le.
+  </p>
+  <button class="tap44" onclick={lancerReleve} disabled={enReleve}
+    >{enReleve ? 'relevé en cours… (12 s)' : '8 · RELEVÉ DU DÉMARRAGE'}</button
+  >
+  {#if releve}
+    <textarea class="releve" readonly rows="10">{releve}</textarea>
+    <button class="tap44" onclick={copierReleve}>Copier le relevé</button>
+    {#if copie}<span class="aide">{copie}</span>{/if}
+  {/if}
+
   <h2>Journal</h2>
   {#if journal.length === 0}
     <p class="aide">Aucun essai lancé.</p>
@@ -507,5 +581,15 @@
   code {
     word-break: break-all;
     opacity: 0.8;
+  }
+  .releve {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--xp-mono);
+    font-size: 11px;
+    white-space: pre;
+    overflow: auto;
+    margin: 6px 0;
   }
 </style>

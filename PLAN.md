@@ -48,6 +48,16 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ Relevé du démarrage dans `#diag` (2026-11-25)
+
+Après #253 : « au début l'image part sans le son, puis ça se recale » (Chrome +
+Bluetooth). Deux causes que l'oreille ne départage pas : l'annonce du téléphone
+CHANGE pendant les premières secondes, ou le casque se réveille et mange le
+début du son. `AudioEngine.releveDemarrage()` (lecture seule) et le bouton
+« 8 · RELEVÉ DU DÉMARRAGE » : lecture 6 s, arrêt 2 s, relecture 4 s, une ligne
+toutes les 100 ms (currentTime, baseLatency, outputLatency, horodatage, retard
+suivi, établie, source), texte à copier. En attente du relevé de Yann.
+
 ### ✅ L'image attend le son ; la sortie reste ouverte (2026-11-25)
 
 « J'utilise Chrome et je trouve qu'il y a toujours un retard au début » puis
