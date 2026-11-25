@@ -48,6 +48,27 @@ puis ici ou dans l'archive correspondante (la démonstration).
 
 ## Journal des livraisons — Mode jeu et Mode carrière
 
+### ✅ L'Atelier accueille celui qui arrive du jeu (2026-11-24)
+
+**Retour** — « pas du tout évident de s'y retrouver […] il faut un tuto
+"bienvenue dans l'atelier" […] un bouton évident pour livrer son travail
+permettant de revenir dans le mode jeu. De plus, il faut que le visuel défile
+pareil. » **Mesuré avant** : commande de Kelvin = page de 1 972 px, cahier et
+« Livrer » en haut seulement ; sonnerie = aucune sortie sinon le menu Mode.
+
+**Fait** — `AtelierView` : barre fixe en bas (`.barre-recit`) dès qu'on vient
+du récit — « Livrer à KELVIN ▸ » avec le compte du cahier (désactivé : « Coche
+tout le cahier pour livrer »), « ◂ Revenir au récit » (montage), « ◂ Retour au
+récit » (sonnerie, `game.depuisLeRecit` posé par la livraison) ; accueil
+« 👋 Bienvenue dans l'Atelier », une fois par appareil, selon le cas. Tête de
+lecture : `ui/xp/TeteLecture.svelte` partagé, branché sur les cinq lignes de
+batterie (fraction de la mesure) et les trois de synthé (fraction du cycle de
+`cycleBars` mesures) via `mesureEntendue()`, et repris par le Mode jeu.
+
+**Vérifié** — check 0, 976 tests ; Chromium tactile 390 px : accueil, barre en
+bas avant et après défilement (bottom = 844), tête 25 % → 36 % en 300 ms,
+« Retour au récit » ramène au Mode carrière ; parcours complet et verrous OK.
+
 ### ✅ Des silences dans le charley, plus de grilles à 8 (2026-11-24)
 
 **Retours** — « niveau 3 différent dans le gameplay » (précisé : le silence de

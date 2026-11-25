@@ -1,4 +1,5 @@
 <script lang="ts">
+  import TeteLecture from '../xp/TeteLecture.svelte';
   // Une ligne synthé (Basse / Nappe / Mélodie). Un seul composant instancié
   // 3 fois — remplace les ~24 lignes de HTML triplées à la main de l'original.
   //
@@ -20,6 +21,7 @@
     name,
     label,
     playheadCol = -1,
+    mesure = null,
     playing = false,
     stepStartedAt = 0,
     horloge,
@@ -31,6 +33,9 @@
     name: SynthRowName;
     label: string;
     playheadCol?: number;
+    /** La mesure ENTENDUE, pour la tête de lecture continue. Une ligne de
+     *  synthé se déroule sur `cycleBars` mesures : la barre la parcourt toute. */
+    mesure?: { bar: number; progres: number } | null;
     playing?: boolean;
     stepStartedAt?: number;
     horloge?: () => number;
@@ -349,6 +354,9 @@
     style:--bars={row.cycleBars}
     style:--beats={beatLines}
   >
+    <TeteLecture
+      position={mesure ? ((mesure.bar % row.cycleBars) + mesure.progres) / row.cycleBars : -1}
+    />
     {#each visibleCols as col (col)}
       {@const v = row.pattern[col]}
       {@const active = isPad ? typeof v === 'number' && v >= 0 : v != null}
@@ -598,6 +606,7 @@
     margin-bottom: 4px;
   }
   .cells {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 3px;

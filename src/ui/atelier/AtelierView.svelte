@@ -115,6 +115,35 @@
     onSwitchView?.('game');
   }
 
+  /* ⚠️ ON ARRIVE DU JEU : L'ATELIER DIT OÙ ON EST ET COMMENT REPARTIR
+   * (2026-11-24) — « ce n'est pas du tout évident de s'y retrouver […] il
+   * devrait y avoir un bouton évident pour livrer son travail permettant de
+   * revenir dans le mode jeu ». Mesuré : la commande de Kelvin ouvrait une
+   * page de 1 972 px dont le cahier et « Livrer » occupaient le haut ; on les
+   * perdait en descendant vers la grille. Et la sonnerie n'avait AUCUNE
+   * sortie, sinon le menu Mode. D'où :
+   * - une BARRE fixe en bas d'écran, présente dès qu'on vient du récit
+   *   (commande, montage, sonnerie), qui porte le seul bouton qui fait
+   *   repartir — Livrer, ou Retour au récit ;
+   * - un ACCUEIL, une seule fois par appareil, qui dit ce qu'est l'Atelier et
+   *   ce qui est attendu ICI. */
+  const arriveeDuRecit = game.depuisLeRecit;
+  const barreRecit = $derived(!!commande || !!montage || arriveeDuRecit);
+  function retourAuRecit() {
+    game.depuisLeRecit = false;
+    onSwitchView?.('game');
+  }
+  const CLE_BIENVENUE = 'boite-a-rythme:atelier-bienvenue';
+  let bienvenue = $state(false);
+  function fermerBienvenue() {
+    bienvenue = false;
+    try {
+      localStorage.setItem(CLE_BIENVENUE, '1');
+    } catch {
+      /* stockage refusé : l'accueil reviendra, rien de pire */
+    }
+  }
+
 
   const engine = new AudioEngine(() => pattern.snapshot());
 
@@ -184,9 +213,17 @@
   }
   let fileInput: HTMLInputElement;
 
+  /* La mesure ENTENDUE, relue à chaque image : la tête de lecture continue des
+     lignes (`TeteLecture`, la même que dans le Mode jeu — « il faut que le
+     visuel défile pareil », 2026-11-24). `null` à l'arrêt. */
+  let mesure = $state<{ bar: number; progres: number } | null>(null);
   // Curseur visuel : consommé à chaque frame contre l'horloge audio.
   let raf = 0;
   function loop() {
+    if (playing) {
+      const m = engine.mesureEntendue();
+      mesure = { bar: m.bar, progres: m.progres };
+    } else if (mesure) mesure = null;
     for (const ev of engine.consumePlayhead()) {
       if (ev.name in playhead) playhead[ev.name as DrumRowName] = ev.col;
       else {
@@ -274,6 +311,13 @@
   }
 
   onMount(() => {
+    if (barreRecit) {
+      try {
+        bienvenue = localStorage.getItem(CLE_BIENVENUE) !== '1';
+      } catch {
+        bienvenue = true;
+      }
+    }
     raf = requestAnimationFrame(loop);
     window.addEventListener('keydown', onKey);
     window.addEventListener('input', markProductionTouched);
@@ -301,6 +345,7 @@
     }
   });
   onDestroy(() => {
+    game.depuisLeRecit = false;
     // Même raison qu'au transport : on ne quitte pas l'Atelier en y laissant
     // une lettre à la place de ce qu'on écrivait.
     arreterEcoute();
@@ -727,7 +772,21 @@
   }
 </script>
 
-<div class="atelier" data-theme="luna">
+<div class="atelier" class:avec-barre={barreRecit} data-theme="luna">
+  {#if bienvenue}
+    <div class="bienvenue" role="note">
+      <p class="bienvenue-titre">👋 BIENVENUE DANS L'ATELIER</p>
+      <p>Ici, tu composes librement. Chaque ligne est un son : touche une case pour l'allumer, retouche-la pour la changer. <b>▶ Lecture</b> fait tout entendre.</p>
+      {#if commande}
+        <p>Ce qu'on attend de toi est dans le <b>cahier</b>, juste en dessous : ses cases se cochent toutes seules pendant que tu travailles. Quand tout est coché, appuie sur <b>Livrer</b>, en bas de l'écran.</p>
+      {:else if montage}
+        <p>Suis la consigne juste en dessous, puis <b>Revenir au récit</b>, en bas de l'écran.</p>
+      {:else}
+        <p>Ta sonnerie est déjà posée sur la grille. Écoute-la, retouche-la si tu veux, exporte-la en MP3 plus bas — puis <b>Retour au récit</b>, en bas de l'écran.</p>
+      {/if}
+      <button class="xp-btn primary tap44-y" onclick={fermerBienvenue}>Compris ▸</button>
+    </div>
+  {/if}
   {#if calibrage}
     <!-- En SURCOUCHE et pas en panneau déroulant sous la ligne : le calibrage
          demande une douzaine de frappes régulières, et l'Atelier est un écran
@@ -754,9 +813,6 @@
         <span class="compte">{montage.modele}</span>
       </div>
       <p class="chapeau">{montage.dansLAtelier}</p>
-      <div class="commande-actions">
-        <button class="xp-btn primary tap44-y" onclick={revenirDuMontage}>◂ Revenir au récit</button>
-      </div>
     </div>
   {/if}
 
@@ -801,10 +857,9 @@
            livrant l'acte 4 (« LIVRER À SOL » alors que le client est Le
            Tunnel) et corrigé ici, l'acte 3 en ayant fait le troisième cas :
            Sol n'est pas la destinataire, elle est la patronne. -->
+      <!-- « Livrer » a déménagé dans la barre du bas, toujours visible ; ici ne
+           reste que la sortie sans livraison. -->
       <div class="commande-actions">
-        <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
-          Livrer à {commande.client} ▸
-        </button>
         <!-- ⚠️ « (0★) ▸ » dit les deux moitiés de ce que fait ce bouton : la
              note qu'on perd, et le récit qui avance quand même — même libellé
              que l'abandon d'un exercice du Mode jeu, qui est la même chose. -->
@@ -950,15 +1005,15 @@
         <div class="beat-ruler" aria-hidden="true">
           <span>1</span><span>2</span><span>3</span><span>4</span>
         </div>
-        <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick}
+        <DrumRowView name="kick" label="Kick" playheadCol={playhead.kick} {mesure}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-        <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare}
+        <DrumRowView name="snare" label="Snare" playheadCol={playhead.snare} {mesure}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-        <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat}
+        <DrumRowView name="hat" label="Hat" playheadCol={playhead.hat} {mesure}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-        <DrumRowView name="clap" label="Clap" playheadCol={playhead.clap}
+        <DrumRowView name="clap" label="Clap" playheadCol={playhead.clap} {mesure}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
-        <DrumRowView name="shaker" label="Shaker" playheadCol={playhead.shaker}
+        <DrumRowView name="shaker" label="Shaker" playheadCol={playhead.shaker} {mesure}
           onPreview={(n, s) => !playing && engine.preview(n, s)} onFxChanged={refreshFx} />
         <StatusLcd />
       {/if}
@@ -1064,6 +1119,7 @@
     {:else if activeTab === 'synthe'}
       <SynthModule
         playhead={synthPlayhead}
+        {mesure}
         {playing}
         stepAt={synthStepAt}
         horloge={horlogeAudioMs}
@@ -1134,12 +1190,68 @@
        c'est FINIR. On emporte ce qu'on vient de faire, quel que soit l'onglet
        ouvert et quels que soient les modules déverrouillés. -->
   <ExportBar {engine} {playing} {recordLive} />
+  {#if barreRecit}
+    <!-- La barre du RÉCIT : le seul bouton qui fait repartir, toujours sous le
+         pouce. Désactivé tant que le cahier n'est pas coché — et il dit
+         combien il en reste. -->
+    <div class="barre-recit" role="region" aria-label="Retour au récit">
+      {#if commande}
+        <span class="barre-compte">{verdict?.lignes.filter((l) => l.ok).length ?? 0}/{commande.cahier.length}</span>
+        <button class="xp-btn primary tap44-y" disabled={!verdict?.accepte} onclick={livrer}>
+          {verdict?.accepte ? `Livrer à ${commande.client} ▸` : 'Coche tout le cahier pour livrer'}
+        </button>
+      {:else if montage}
+        <button class="xp-btn primary tap44-y" onclick={revenirDuMontage}>◂ Revenir au récit</button>
+      {:else}
+        <button class="xp-btn primary tap44-y" onclick={retourAuRecit}>◂ Retour au récit</button>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
   /* La commande en cours — un fax épinglé en haut de l'établi. Le compteur
      et les cases se mettent à jour pendant qu'on travaille : c'est ce qui
      évite d'avoir à deviner ce qui bloque au moment de livrer. */
+  .bienvenue {
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    background: var(--xp-accent-amber-soft);
+    border-left: 3px solid var(--xp-accent-amber);
+    font-size: var(--xp-size-body);
+    color: var(--xp-text);
+  }
+  .bienvenue p {
+    margin: 0 0 6px;
+  }
+  .bienvenue-titre {
+    color: var(--xp-accent-amber);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  /* La place de la barre fixe, pour que rien ne passe dessous en fin de page. */
+  .atelier.avec-barre {
+    padding-bottom: 72px;
+  }
+  .barre-recit {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--xp-face);
+    border-top: 1px solid var(--xp-line);
+    box-shadow: 0 -3px 10px rgba(0, 0, 30, 0.3);
+  }
+  .barre-compte {
+    font-size: var(--xp-size-body);
+    color: var(--xp-accent-amber);
+    letter-spacing: 0.06em;
+  }
   .commande {
     margin: 0 0 8px;
     padding: 8px 10px;

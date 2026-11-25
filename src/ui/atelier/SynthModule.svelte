@@ -15,6 +15,7 @@
 
   let {
     playhead,
+    mesure = null,
     playing = false,
     stepAt,
     horloge,
@@ -24,6 +25,8 @@
     onFxChanged,
   }: {
     playhead: Record<SynthRowName, number>;
+    /** La mesure entendue, pour la tête de lecture continue (null à l'arrêt). */
+    mesure?: { bar: number; progres: number } | null;
     /** Lecture en cours : décide si le pad écrit pas-à-pas ou en direct. */
     playing?: boolean;
     /** `performance.now()` de l'arrivée du pas courant, par ligne. */
@@ -69,6 +72,7 @@
         name={name as SynthRowName}
         {label}
         playheadCol={playhead[name as SynthRowName]}
+        {mesure}
         {playing}
         stepStartedAt={stepAt?.[name as SynthRowName] ?? 0}
         {horloge}

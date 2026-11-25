@@ -1,4 +1,5 @@
 <script lang="ts">
+  import TeteLecture from '../xp/TeteLecture.svelte';
   // Une ligne drum : grille linéaire + réglages. Contrairement à l'original
   // (innerHTML + listeners reconstruits à chaque clic), Svelte ne re-rend que
   // la cellule touchée. Clic = cycle d'état ; clic droit / long-press = rafale.
@@ -13,12 +14,17 @@
     name,
     label,
     playheadCol = -1,
+    mesure = null,
     onPreview,
     onFxChanged,
   }: {
     name: DrumRowName;
     label: string;
     playheadCol?: number;
+    /** La mesure ENTENDUE (`AudioEngine.mesureEntendue`) — pour la tête de
+     *  lecture continue ; `null` à l'arrêt. Une ligne de batterie boucle sur
+     *  une mesure : la fraction parcourue est `progres`. */
+    mesure?: { bar: number; progres: number } | null;
     onPreview?: (name: DrumRowName, stepState: number) => void;
     onFxChanged?: () => void;
   } = $props();
@@ -119,6 +125,7 @@
        --beats:4 — les repères tombent aux mêmes x sur toutes les lignes,
        même quand leurs cases ne s'alignent pas. -->
   <div class="cells beat-grid" style:--cols={row.subdiv} style:--bars="1" style:--beats="4">
+    <TeteLecture position={mesure ? mesure.progres : -1} />
     {#each { length: row.subdiv } as _, col (col)}
       {@const state = row.pattern[col]}
       {@const roll = row.rolls[col]}
@@ -262,6 +269,7 @@
     white-space: nowrap;
   }
   .cells {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 3px;
